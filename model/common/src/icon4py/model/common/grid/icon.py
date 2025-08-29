@@ -9,7 +9,6 @@ import dataclasses
 import functools
 import logging
 import math
-import uuid
 from collections.abc import Mapping
 from typing import Final
 
@@ -82,9 +81,11 @@ class GlobalGridParams:
                 case base.GeometryType.ICOSAHEDRON:
                     return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
                 case base.GeometryType.TORUS:
-                    NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
+                    raise NotImplementedError(
+                        f"mean_cell_area not implemented for {self.geometry_type}"
+                    )
                 case _:
-                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
 
         return self._mean_cell_area
 
@@ -160,7 +161,7 @@ def _should_replace_skip_values(
 
 
 def icon_grid(
-    id_: uuid.UUID,
+    id_: str,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],

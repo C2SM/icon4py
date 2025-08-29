@@ -18,7 +18,7 @@ from typing import TypedDict
 
 from typing_extensions import Required
 
-import icon4py.model.common.exceptions as exceptions
+from icon4py.model.common import exceptions
 from icon4py.model.common.components import monitor
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils, ugrid, writers
@@ -181,11 +181,11 @@ class IOMonitor(monitor.Monitor):
         try:
             path.mkdir(parents=True, exist_ok=False, mode=0o777)
             self._output_path = path
-        except OSError as error:
+        except FileExistsError as error:
             log.error(
                 f"Output directory at {path} exists: {error}. Re-run with another output directory. Aborting."
             )
-            exit(1)
+            raise error
 
     def _write_ugrid(self) -> None:
         writer = ugrid.IconUGridWriter(self._grid_file, self._output_path)

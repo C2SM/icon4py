@@ -12,7 +12,7 @@ from gt4py import next as gtx
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.testing import datatest_utils as dt_utils
 from .. import utils
-from ..fixtures import *  # noqa: F401, F403
+from ...fixtures import *  # noqa: F401, F403
 
 
 @pytest.mark.datatest

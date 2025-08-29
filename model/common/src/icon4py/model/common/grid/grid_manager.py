@@ -283,7 +283,6 @@ class GridManager:
     ) -> tuple[
         dict[gtx.Dimension, data_alloc.NDArray],
         dict[gtx.Dimension, data_alloc.NDArray],
-        dict[gtx.Dimension, gtx.int32],
     ]:
         """ "
         Read the start/end indices from the grid file.
@@ -309,7 +308,7 @@ class GridManager:
             dim: self._get_index_field(name, transpose=False, apply_offset=True)[_CHILD_DOM]
             for dim, name in start_index_names.items()
         }
-        for dim in grid_refinement_dimensions.keys():
+        for dim in grid_refinement_dimensions:
             assert start_indices[dim].shape == (
                 max_refinement_control_values[dim],
             ), f"start index array for {dim} has wrong shape"
@@ -323,7 +322,7 @@ class GridManager:
             dim: self._get_index_field(name, transpose=False, apply_offset=False)[_CHILD_DOM]
             for dim, name in end_index_names.items()
         }
-        for dim in grid_refinement_dimensions.keys():
+        for dim in grid_refinement_dimensions:
             assert start_indices[dim].shape == (
                 max_refinement_control_values[dim],
             ), f"start index array for {dim} has wrong shape"
@@ -331,7 +330,7 @@ class GridManager:
                 max_refinement_control_values[dim],
             ), f"start index array for {dim} has wrong shape"
 
-        return start_indices, end_indices, grid_refinement_dimensions
+        return start_indices, end_indices
 
     @property
     def grid(self) -> icon.IconGrid:
@@ -425,9 +424,8 @@ class GridManager:
 
         # JOINT functionality
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
-        refinement_fields = self._read_grid_refinement_fields(backend)
-        # TODO(halungge): needs to be moved out of the joint section
-        start, end, _ = self._read_start_end_indices()
+
+        start, end = self._read_start_end_indices()
         start_indices = {
             k: v
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()

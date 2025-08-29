@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import functools
-import uuid
 from typing import Final
 
 import gt4py.next as gtx
@@ -478,12 +477,12 @@ def simple_grid(
     }
     end_indices = {
         **{cell_domain(zone): gtx.int32(_CELLS) for zone in h_grid.CELL_ZONES},
-        **{edge_domain(zone): gtx.int32(_EDGES) for zone in h_grid.Zone},
+        **{edge_domain(zone): gtx.int32(_EDGES) for zone in h_grid.EDGE_ZONES},
         **{vertex_domain(zone): gtx.int32(_VERTICES) for zone in h_grid.VERTEX_ZONES},
     }
 
     return base.Grid(
-        id=uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85"),
+        id="simple_grid",
         config=config,
         connectivities=connectivities,
         geometry_type=base.GeometryType.TORUS,

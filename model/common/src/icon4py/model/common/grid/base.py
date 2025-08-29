@@ -9,7 +9,6 @@ import dataclasses
 import enum
 import functools
 import logging
-import uuid
 from collections.abc import Mapping, Sequence
 from types import ModuleType
 
@@ -86,7 +85,7 @@ class Grid:
     require an 'IconGrid'.
     """
 
-    id: uuid.UUID
+    id: str
     """
     Unique identifier of the horizontal grid.
 

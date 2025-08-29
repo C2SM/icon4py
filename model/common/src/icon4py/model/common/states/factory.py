@@ -42,11 +42,12 @@ TODO: @halungge: allow to read configuration data
 import collections
 import enum
 import functools
-import inspect
 import logging
+import types
+import typing
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from types import ModuleType
-from typing import Any, Optional, Protocol, TypeVar, Union, get_args
+from typing import Any, Optional, Protocol, TypeVar
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -179,12 +180,12 @@ class FieldSource(GridProvider, Protocol):
                 raise ValueError(f"Invalid retrieval type {type_}")
 
     def _provided_by_source(self, name):
-        return name in self._sources._providers or name in self._sources.metadata.keys()
+        return name in self._sources._providers or name in self._sources.metadata
 
     def register_provider(self, provider: FieldProvider):
         # dependencies must be provider by this field source or registered in sources
         for dependency in provider.dependencies:
-            if not (dependency in self._providers.keys() or self._provided_by_source(dependency)):
+            if not (dependency in self._providers or self._provided_by_source(dependency)):
                 raise ValueError(
                     f"Missing dependency: '{dependency}' in registered of sources {self.__class__}"
                 )
@@ -304,7 +305,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
             f"{data_alloc.backend_name(factory.backend)}"
         )
         xp = data_alloc.import_array_ns(factory.backend)
-        metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields.keys()}
+        metadata = {k: factory.get(k, RetrievalType.METADATA) for k in self.fields}
         self._fields = self._allocate_fields(compute_backend, grid_provider, xp, metadata)
         # call field operator
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
@@ -388,7 +389,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
 
         return {
             k: _allocate(grid_provider, backend, xp, dtype=dtype_or_default(k, metadata))
-            for k in self._fields.keys()
+            for k in self._fields
         }
 
 
@@ -447,13 +448,13 @@ class ProgramFieldProvider(FieldProvider):
 
         allocate = gtx.constructors.zeros.partial(allocator=backend)
         field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
-        return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields.keys()}
+        return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
     # TODO(halungge): this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
     def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
         offset_providers = {}
-        for dim in self._compute_domain.keys():
+        for dim in self._compute_domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 horizontal_offsets = {
                     k: v
@@ -598,31 +599,39 @@ class NumpyFieldsProvider(FieldProvider):
         args.update(offsets)
         args.update(self._params)
         results = self._func(**args)
-        ## TODO(): can the order of return values be checked?
+        # TODO(): can the order of return values be checked?
         results = (results,) if isinstance(results, data_alloc.NDArray) else results
         self._fields = {
             k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
             for i, k in enumerate(self.fields)
         }
 
-    def _validate_dependencies(self):
-        func_signature = inspect.signature(self._func)
-        parameters = func_signature.parameters
-        for dep_key in self._dependencies.keys():
-            parameter_definition = parameters.get(dep_key)
-            checked = _check_union(parameter_definition, union=data_alloc.NDArray)
+    def _validate_dependencies(self) -> None:
+        # TODO(egparedes): dealing with type annotations at run-time is error prone
+        #   and requires robust utility functions. This snippet should use a better
+        #   solution in the future.
+        try:
+            annotations = typing.get_type_hints(self._func)
+        except TypeError:
+            obj = self._func
+            while hasattr(obj, "__wrapped__") or isinstance(obj, functools.partial):
+                obj = getattr(obj, "__wrapped__", None) or obj.func
+            annotations = typing.get_type_hints(obj)
+        for dep_key in self._dependencies:
+            parameter_annotation = annotations.get(dep_key)
+            checked = _is_compatible_union(parameter_annotation, expected=data_alloc.NDArray)
             assert checked, (
                 f"Dependency '{dep_key}' in function '{_func_name(self._func)}':  does not exist or has "
-                f"wrong type ('expected ndarray') but was '{parameter_definition}'."
+                f"wrong type ('expected ndarray') but was '{parameter_annotation}'."
             )
 
+        supported_scalars = state_utils.IntegerType | state_utils.FloatType
         for param_key, param_value in self._params.items():
-            parameter_definition = parameters.get(param_key)
-            checked = _check_union_and_type(
-                parameter_definition, param_value, union=state_utils.IntegerType
-            ) or _check_union_and_type(
-                parameter_definition, param_value, union=state_utils.FloatType
-            )
+            parameter_annotation = annotations.get(param_key)
+            checked = _is_compatible_union(
+                parameter_annotation, expected=supported_scalars
+            ) and _is_compatible_value(param_value, expected=supported_scalars)
+
             assert checked, (
                 f"Parameter '{param_key}' in function '{_func_name(self._func)}' does not "
                 f"exist or has the wrong type: '{type(param_value)}'."
@@ -641,30 +650,28 @@ class NumpyFieldsProvider(FieldProvider):
         return self._fields
 
 
-def _check_union_and_type(
-    parameter_definition: inspect.Parameter,
-    value: state_utils.ScalarType | gtx.Field,
-    union: Union,
-) -> bool:
-    _check_union(parameter_definition, union) and type(value) in get_args(union)
-    members = get_args(union)
-    return (
-        parameter_definition is not None
-        and parameter_definition.annotation in members
-        and type(value) in members
+def _is_compatible_union(annotation: Any, expected: types.UnionType | typing._SpecialForm) -> bool:
+    possible_types = (
+        typing.get_args(annotation)
+        if typing.get_origin(annotation) in {types.UnionType, typing.Union}
+        else (annotation,)
     )
+    expected_types = (
+        typing.get_args(expected)
+        if typing.get_origin(expected) in {types.UnionType, typing.Union}
+        else (expected,)
+    )
+    return set(possible_types) <= set(expected_types) and None not in possible_types
 
 
-def _check_union(
-    parameter_definition: inspect.Parameter,
-    union: Union,
+def _is_compatible_value(
+    value: state_utils.ScalarType | gtx.Field, expected: types.UnionType | typing._SpecialForm
 ) -> bool:
-    members = get_args(union)
-    # fix for unions with only one member, which implicitly are not Union but fallback to the type
-    if not members:
-        members = (union,)
-    annotation = parameter_definition.annotation
-    return parameter_definition is not None and (annotation == union or annotation in members)
+    return type(value) in set(
+        typing.get_args(expected)
+        if typing.get_origin(expected) in {types.UnionType, typing.Union}
+        else (expected,)
+    )
 
 
 def _func_name(callable_: Callable[..., Any]) -> str:
