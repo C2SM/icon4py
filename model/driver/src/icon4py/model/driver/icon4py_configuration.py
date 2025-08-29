@@ -9,6 +9,7 @@ import dataclasses
 import datetime
 import functools
 import logging
+import os
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
@@ -163,7 +164,7 @@ def read_config(
 
     def _gauss3d_vertical_config():
         return v_grid.VerticalGridConfig(
-            num_levels=20,
+            num_levels=int(os.environ.get("ICON4PY_NUM_LEVELS", 20)),
             rayleigh_damping_height=100.0,
             model_top_height=100.0,
             flat_height=100.0,
@@ -181,7 +182,7 @@ def read_config(
 
     def _gauss3d_config():
         icon_run_config = Icon4pyRunConfig(
-            dtime=datetime.timedelta(seconds=0.04),
+            dtime=datetime.timedelta(seconds=float(os.environ.get("ICON4PY_DTIME", 0.04))),
             end_date = datetime.datetime(year=1, month=1, day=1, hour=10, minute=0, second=0, microsecond=0),
             apply_initial_stabilization=False,
             n_substeps=5,
