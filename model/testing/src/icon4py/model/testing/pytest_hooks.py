@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import collections
 import contextlib
 import os
 import re
@@ -147,20 +146,6 @@ def _name_from_fullname(fullname: str) -> str:
     class_name = match.group("class")
     params = match.group("params")
     return f"{class_name}[{params}]" if params else class_name
-
-
-@pytest.hookimpl(hookwrapper=True)
-def pytest_benchmark_group_stats(config, benchmarks, group_by):
-    """
-    Replace 'name' of pytest benchmarks with a shorter name for better readability in bencher.
-
-    See also the 'pytest_benchmark_update_json' hook below.
-    """
-    result = collections.defaultdict(list)
-    for bench in benchmarks:
-        bench["name"] = _name_from_fullname(bench["fullname"])
-        result[bench["name"]].append(bench)
-    yield result.items()
 
 
 # pytest benchmark hook, see:

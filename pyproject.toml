@@ -180,7 +180,7 @@ markers = [
   "cpu_only",
   "infinite_concat_where",
   "gtfn_too_slow",
-  "to_performance_dashboard"
+  "continuous_benchmarking"
 ]
 pythonpath = [
   "model/atmosphere/diffusion",
@@ -189,7 +189,8 @@ pythonpath = [
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
   "model/driver",
-  "model/testing"
+  "model/testing",
+  "tools"
 ]
 
 # -- ruff --

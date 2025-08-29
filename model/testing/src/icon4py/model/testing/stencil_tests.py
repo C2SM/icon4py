@@ -69,6 +69,36 @@ class StandardStaticVariants(eve.StrEnum):
     COMPILE_TIME_VERTICAL = "compile_time_vertical"
 
 
+def test_and_benchmark(
+    self: StencilTest,
+    benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
+    grid: base.Grid,
+    _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+    _configured_program: Callable[..., None],
+) -> None:
+    reference_outputs = self.reference(
+        _ConnectivityConceptFixer(
+            grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+        ),
+        **{
+            k: v.asnumpy() if isinstance(v, gtx.Field) else v
+            for k, v in _properly_allocated_input_data.items()
+        },
+    )
+
+    _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
+    self._verify_stencil_test(
+        input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
+    )
+
+    if benchmark is not None and benchmark.enabled:
+        benchmark(
+            _configured_program,
+            **_properly_allocated_input_data,
+            offset_provider=grid.connectivities,
+        )
+
+
 class StencilTest:
     """
     Base class to be used for testing stencils.
@@ -137,35 +167,6 @@ class StencilTest:
         # it does not allocate for the correct device.
         return allocate_data(backend, input_data)
 
-    def test_stencil(
-        self: StencilTest,
-        benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
-        grid: base.Grid,
-        _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        _configured_program: Callable[..., None],
-    ) -> None:
-        reference_outputs = self.reference(
-            _ConnectivityConceptFixer(
-                grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-            ),
-            **{
-                k: v.asnumpy() if isinstance(v, gtx.Field) else v
-                for k, v in _properly_allocated_input_data.items()
-            },
-        )
-
-        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
-        self._verify_stencil_test(
-            input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
-        )
-
-        if benchmark is not None and benchmark.enabled:
-            benchmark(
-                _configured_program,
-                **_properly_allocated_input_data,
-                offset_provider=grid.connectivities,
-            )
-
     def _verify_stencil_test(
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
@@ -210,6 +211,8 @@ class StencilTest:
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
+
+        setattr(cls, f"test_{cls.__name__}", test_and_benchmark)
 
         # decorate `static_variant` with parametrized fixtures, since the
         # parametrization is only available in the concrete subclass definition
