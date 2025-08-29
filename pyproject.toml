@@ -182,6 +182,7 @@ markers = [
   "gtfn_too_slow",
   "continuous_benchmarking"
 ]
+# add all namespace packages to pythonpath to make them available for pytest
 pythonpath = [
   "model/atmosphere/diffusion",
   "model/atmosphere/dycore",
