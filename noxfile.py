@@ -58,6 +58,7 @@ def benchmark_model(session: nox.Session) -> None:
     session.run(
         *f"pytest \
         -v \
+        -m continuous_benchmarking \
         --benchmark-only \
         --benchmark-warmup=on \
         --benchmark-warmup-iterations=30 \
