@@ -12,7 +12,9 @@ from typing import Final
 import pytest
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common.grid import base as base_grid, simple as simple_grid
+from icon4py.model.common.grid import simple as simple_grid
+from icon4py.model.common.grid.base import Grid
+from icon4py.model.common.grid.grid_manager import GridManager
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 from icon4py.model.testing.pytest_hooks import parse_grid_spec
 
@@ -29,7 +31,7 @@ def _get_grid_from_preset(
     *,
     num_levels: int = DEFAULT_NUM_LEVELS,
     backend: gtx_backend.Backend | None = None,
-) -> base_grid.Grid:
+) -> Grid | GridManager:
     match grid_preset:
         case "icon_regional":
             return grid_utils.get_grid_manager_from_identifier(
@@ -37,20 +39,22 @@ def _get_grid_from_preset(
                 num_levels=num_levels,
                 keep_skip_values=False,
                 backend=backend,
-            ).grid
+            )
         case "icon_global":
             return grid_utils.get_grid_manager_from_identifier(
                 dt_utils.R02B04_GLOBAL,
                 num_levels=num_levels,
                 keep_skip_values=False,
                 backend=backend,
-            ).grid
+            )
         case _:
             return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
 
 
 @pytest.fixture(scope="session")
-def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) -> base_grid.Grid:
+def grid_manager(
+    request: pytest.FixtureRequest, backend: gtx_backend.Backend | None
+) -> Grid | GridManager:
     """
     Fixture for providing a grid instance.
 
@@ -59,21 +63,20 @@ def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) ->
     might refer to a known grid configuration or to an existing ICON NetCDF grid file,
     and `<grid_levels>` specifies the number of vertical levels to use (optional).
     """
-    spec = request.config.getoption("grid")
-    name, num_levels = parse_grid_spec(spec)
+    name, num_levels = parse_grid_spec(request.config.getoption("grid"))
 
     if name in VALID_GRID_PRESETS:
-        grid = _get_grid_from_preset(name, num_levels=num_levels, backend=backend)
+        grid_manager = _get_grid_from_preset(name, num_levels=num_levels, backend=backend)
     else:
         try:
             grid_file = pathlib.Path(name).resolve(strict=True)
-            grid = grid_utils.get_grid_manager(
+            grid_manager = grid_utils.get_grid_manager(
                 grid_file, num_levels=num_levels, keep_skip_values=False, backend=backend
-            ).grid
+            )
         except OSError as e:
             raise ValueError(
                 f"Invalid grid name in '--grid' option. It should be one of {VALID_GRID_PRESETS}"
                 " or a valid path to an ICON NetCDF grid file."
             ) from e
 
-    return grid
+    return grid_manager

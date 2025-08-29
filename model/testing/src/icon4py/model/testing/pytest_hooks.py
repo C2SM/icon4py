@@ -25,6 +25,10 @@ __all__ = [
 
 _TEST_LEVELS = ("any", "unit", "integration")
 
+# Defaults are defined in fixtures modules; keep this module dependency-light.
+DEFAULT_GRID: str = "simple"
+DEFAULT_NUM_LEVELS: int = 10
+
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
@@ -150,7 +154,25 @@ def pytest_benchmark_update_json(output_json):
 
     for bench in output_json["benchmarks"]:
         match = pattern.search(bench["fullname"])
-        class_name = match.group("class")
-        params = match.group("params")
+        if match is not None:
+            class_name = match.group("class")
+            params = match.group("params")
+            bench["fullname"] = f"{class_name}[{params}]" if params else class_name
 
-        bench["fullname"] = f"{class_name}[{params}]" if params else class_name
+
+def parse_grid_spec(spec: str | None) -> tuple[str, int]:
+    """Parse the '--grid' option string into (name, num_levels).
+
+    The expected format is '<grid_name>[:<grid_levels>]' where <grid_levels> is optional.
+    If spec is None, defaults to DEFAULT_GRID and DEFAULT_NUM_LEVELS.
+    """
+    if spec is None:
+        spec = DEFAULT_GRID
+    if not isinstance(spec, str):
+        raise TypeError("Grid spec must be a string or None")
+    if spec.count(":") > 1:
+        raise ValueError("Invalid grid spec in '--grid' option (spec: <grid_name>:<grid_levels>)")
+
+    name, *levels = spec.split(":")
+    num_levels = int(levels[0]) if levels and levels[0].strip() else DEFAULT_NUM_LEVELS
+    return name, num_levels
