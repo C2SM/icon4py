@@ -9,8 +9,7 @@
 import sys
 from typing import Final
 
-from gt4py.next import Field, common
-from gt4py.next.ffront.fbuiltins import int32, int64
+from gt4py.next import Field, common, int32, int64
 
 from icon4py.model.common import type_alias
 

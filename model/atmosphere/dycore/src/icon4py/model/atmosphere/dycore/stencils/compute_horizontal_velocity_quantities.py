@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
+from gt4py.next import astype, neighbor_sum
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     _accumulate_prep_adv_fields,

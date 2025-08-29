@@ -6,16 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _set_theta_v_prime_ic_at_lower_boundary(
     wgtfacq_c: fa.CellKField[vpfloat],
     z_rth_pr: fa.CellKField[vpfloat],
@@ -27,7 +25,7 @@ def _set_theta_v_prime_ic_at_lower_boundary(
     return z_theta_v_pr_ic_vp, astype(theta_v_ic_vp, wpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def set_theta_v_prime_ic_at_lower_boundary(
     wgtfacq_c: fa.CellKField[vpfloat],
     z_rth_pr: fa.CellKField[vpfloat],

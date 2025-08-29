@@ -10,7 +10,7 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import int32
 
 from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
     vertically_implicit_solver_at_corrector_step,

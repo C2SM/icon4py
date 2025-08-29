@@ -6,8 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.decorator import field_operator
-from gt4py.next.ffront.fbuiltins import astype, where
+from gt4py.next import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2CDim
@@ -17,7 +16,7 @@ from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_backward_trajectory_from_edge_center(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],
@@ -59,7 +58,7 @@ def _compute_backward_trajectory_from_edge_center(
     return p_distv_bary_1, p_distv_bary_2
 
 
-@field_operator
+@gtx.field_operator
 def _compute_upwind_values_of_rho_and_theta_v_at_edges(
     p_vn: fa.EdgeKField[wpfloat],
     rho_ref_me: fa.EdgeKField[vpfloat],
@@ -123,7 +122,7 @@ def _compute_upwind_values_of_rho_and_theta_v_at_edges(
     return z_rho_e_wp, z_theta_v_e_wp
 
 
-@field_operator
+@gtx.field_operator
 def _compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],

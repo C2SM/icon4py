@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     _init_cell_kdim_field_with_zero_wp,
@@ -17,7 +15,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _set_lower_boundary_condition_for_w_and_contravariant_correction(
     w_concorr_c: fa.CellKField[vpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
@@ -29,7 +27,7 @@ def _set_lower_boundary_condition_for_w_and_contravariant_correction(
     return w_nnew_wp, z_contr_w_fl_l_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def set_lower_boundary_condition_for_w_and_contravariant_correction(
     w_nnew: fa.CellKField[wpfloat],
     z_contr_w_fl_l: fa.CellKField[wpfloat],

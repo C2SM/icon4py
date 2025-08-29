@@ -6,17 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.experimental import as_offset
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
+from gt4py.next.experimental import as_offset
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2CDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
@@ -54,7 +52,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     return astype(z_gradh_exner_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],

@@ -6,16 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_explicit_part_for_rho_and_exner(
     rho_nnow: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
@@ -50,7 +48,7 @@ def _compute_explicit_part_for_rho_and_exner(
     return z_rho_expl_wp, z_exner_expl_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_explicit_part_for_rho_and_exner(
     z_rho_expl: fa.CellKField[wpfloat],
     z_exner_expl: fa.CellKField[wpfloat],
