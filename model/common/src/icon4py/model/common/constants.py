@@ -151,3 +151,10 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     grav_o_rd = GRAV_O_RD
     p0ref = REFERENCE_PRESSURE
     eps = DBL_EPS
+
+
+class RayleighType(eve_utils.FrozenNamespace[int]):
+    #: classical Rayleigh damping, which makes use of a reference state.
+    CLASSIC = 1
+    #: Klemp (2008) type Rayleigh damping
+    KLEMP = 2
