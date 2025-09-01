@@ -336,7 +336,7 @@ class GridManager:
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
             geometry_type = base.GeometryType(geometry_type)
         global_params = icon.GlobalGridParams(
-            icon.GridParams(
+            icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
             )

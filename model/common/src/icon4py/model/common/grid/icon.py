@@ -44,7 +44,7 @@ class GridSubdivision:
 
 
 @dataclasses.dataclass(kw_only=True)
-class GridParams:
+class GridShape:
     geometry_type: base.GeometryType
     subdivision: GridSubdivision | None
 
@@ -79,19 +79,19 @@ class GridParams:
 
 @dataclasses.dataclass
 class GlobalGridParams:
-    grid_params: Final[GridParams | None] = None
+    grid_shape: Final[GridShape | None] = None
     _num_cells: int | None = None
     _mean_cell_area: float | None = None
     radius: float = constants.EARTH_RADIUS
 
     def __init__(
         self,
-        grid_params: GridParams | None = None,
+        grid_shape: GridShape | None = None,
         num_cells: int | None = None,
         mean_cell_area: float | None = None,
         radius: float = constants.EARTH_RADIUS,
     ) -> None:
-        self.grid_params = grid_params
+        self.grid_shape = grid_shape
         self._num_cells = num_cells
         self._mean_cell_area = mean_cell_area
         self.radius = radius
@@ -100,12 +100,12 @@ class GlobalGridParams:
     def from_mean_cell_area(
         cls,
         mean_cell_area: float,
-        grid_params: GridParams | None = None,
+        grid_shape: GridShape | None = None,
         num_cells: int | None = None,
         radius: float = constants.EARTH_RADIUS,
     ):
         return cls(
-            grid_params,
+            grid_shape,
             num_cells,
             mean_cell_area,
             radius,
@@ -113,15 +113,15 @@ class GlobalGridParams:
 
     @property
     def geometry_type(self) -> base.GeometryType | None:
-        return self.grid_params.geometry_type if self.grid_params else None
+        return self.grid_shape.geometry_type if self.grid_shape else None
 
     @functools.cached_property
     def num_cells(self) -> int:
         if self._num_cells is None:
             match self.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
-                    assert self.grid_params.subdivision is not None
-                    return compute_icosahedron_num_cells(self.grid_params.subdivision)
+                    assert self.grid_shape.subdivision is not None
+                    return compute_icosahedron_num_cells(self.grid_shape.subdivision)
                 case base.GeometryType.TORUS:
                     raise NotImplementedError("TODO : lookup torus cell number computation")
                 case _:

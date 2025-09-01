@@ -252,7 +252,7 @@ def test_global_grid_params(
     expected_mean_cell_area,
 ):
     params = icon.GlobalGridParams(
-        icon.GridParams(
+        icon.GridShape(
             geometry_type=geometry_type,
             subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)
             if grid_root is not None
@@ -263,10 +263,10 @@ def test_global_grid_params(
     )
     assert geometry_type == params.geometry_type
     if geometry_type == base.GeometryType.TORUS:
-        assert None == params.grid_params.subdivision
+        assert None == params.grid_shape.subdivision
     else:
         assert (
-            icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_params.subdivision
+            icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_shape.subdivision
         )
     assert expected_num_cells == params.num_cells
     if geometry_type == base.GeometryType.TORUS:
@@ -286,7 +286,7 @@ def test_global_grid_params(
 def test_global_grid_params_fail(geometry_type, grid_root, grid_level, num_cells, mean_cell_area):
     with pytest.raises(ValueError) as e:
         _ = icon.GlobalGridParams(
-            icon.GridParams(
+            icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
             ),
@@ -315,7 +315,7 @@ def test_global_grid_params_from_mean_cell_area(
     params = icon.GlobalGridParams.from_mean_cell_area(
         mean_cell_area,
         num_cells=num_cells,
-        grid_params=icon.GridParams(
+        grid_shape=icon.GridShape(
             geometry_type=geometry_type,
             subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
         )

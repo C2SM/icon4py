@@ -91,7 +91,7 @@ DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/dow
 DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download"}
 
 
-def guess_grid_params(experiment: str) -> icon.GridParams:
+def guess_grid_shape(experiment: str) -> icon.GridShape:
     """Guess the grid type, root, and level from the experiment name.
 
     Reads the level and root parameters from a string in the canonical ICON gridfile format
@@ -101,11 +101,11 @@ def guess_grid_params(experiment: str) -> icon.GridParams:
         Returns: tuple[int, int]: The grid root and level.
     """
     if "torus" in experiment.lower():
-        return icon.GridParams(geometry_type=base.GeometryType.TORUS)
+        return icon.GridShape(geometry_type=base.GeometryType.TORUS)
 
     try:
         root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
-        return icon.GridParams(
+        return icon.GridShape(
             geometry_type=base.GeometryType.ICOSAHEDRON,
             subdivision=icon.GridSubdivision(root=root, level=level),
         )
