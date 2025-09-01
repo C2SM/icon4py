@@ -84,18 +84,6 @@ class GlobalGridParams:
     _mean_cell_area: float | None = None
     radius: float = constants.EARTH_RADIUS
 
-    def __init__(
-        self,
-        grid_shape: GridShape | None = None,
-        num_cells: int | None = None,
-        mean_cell_area: float | None = None,
-        radius: float = constants.EARTH_RADIUS,
-    ) -> None:
-        self.grid_shape = grid_shape
-        self._num_cells = num_cells
-        self._mean_cell_area = mean_cell_area
-        self.radius = radius
-
     @classmethod
     def from_mean_cell_area(
         cls,
