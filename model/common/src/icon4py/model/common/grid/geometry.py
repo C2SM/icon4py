@@ -587,19 +587,6 @@ class TorusGridGeometry(GridGeometry):
         )
 
         # TODO(msimberg): torus?
-        (
-            edge_orientation0_lat,
-            edge_orientation0_lon,
-            edge_orientation1_lat,
-            edge_orientation1_lon,
-        ) = create_auxiliary_coordinate_arrays_for_orientation(
-            self._grid,
-            coordinates[dims.CellDim]["lat"],
-            coordinates[dims.CellDim]["lon"],
-            coordinates[dims.EdgeDim]["lat"],
-            coordinates[dims.EdgeDim]["lon"],
-            self._backend,
-        )
         coordinates_ = {
             attrs.CELL_LAT: coordinates[dims.CellDim]["lat"],
             attrs.CELL_LON: coordinates[dims.CellDim]["lon"],
@@ -616,10 +603,6 @@ class TorusGridGeometry(GridGeometry):
             attrs.EDGE_CENTER_X: coordinates[dims.EdgeDim]["x"],
             attrs.EDGE_CENTER_Y: coordinates[dims.EdgeDim]["y"],
             attrs.EDGE_CENTER_Z: coordinates[dims.EdgeDim]["z"],
-            "latitude_of_edge_cell_neighbor_0": edge_orientation0_lat,
-            "longitude_of_edge_cell_neighbor_0": edge_orientation0_lon,
-            "latitude_of_edge_cell_neighbor_1": edge_orientation1_lat,
-            "longitude_of_edge_cell_neighbor_1": edge_orientation1_lon,
         }
         coodinate_provider = factory.PrecomputedFieldProvider(coordinates_)
         self.register_provider(coodinate_provider)
@@ -701,9 +684,8 @@ class TorusGridGeometry(GridGeometry):
         inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
         self.register_provider(inverse_edge_length)
 
-        # TODO(msimberg): Right or wrong?
         dual_length_provider = factory.ProgramFieldProvider(
-            func=stencils.compute_cell_center_arc_distance,
+            func=stencils.compute_cell_center_distance_torus,
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
@@ -714,15 +696,15 @@ class TorusGridGeometry(GridGeometry):
                 "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
             },
             deps={
-                "edge_neighbor_0_lat": "latitude_of_edge_cell_neighbor_0",
-                "edge_neighbor_0_lon": "longitude_of_edge_cell_neighbor_0",
-                "edge_neighbor_1_lat": "latitude_of_edge_cell_neighbor_1",
-                "edge_neighbor_1_lon": "longitude_of_edge_cell_neighbor_1",
+                "cell_center_x": attrs.CELL_CENTER_X,
+                "cell_center_y": attrs.CELL_CENTER_Y,
             },
-            params={"radius": self._grid.global_properties.radius},
+            params={
+                "domain_length": self._grid.global_properties.domain_length,
+                "domain_height": self._grid.global_properties.domain_height,
+            },
         )
         self.register_provider(dual_length_provider)
-        # TODO(msimberg): Wrong if above is wrong
         inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
         self.register_provider(inverse_dual_edge_length)
 
