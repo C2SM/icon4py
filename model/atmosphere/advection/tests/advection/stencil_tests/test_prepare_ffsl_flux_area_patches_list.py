@@ -113,6 +113,7 @@ def _line_intersect_numpy(
     return intersect_1, intersect_2
 
 
+@pytest.mark.gtfn_too_slow
 class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     PROGRAM = prepare_ffsl_flux_area_patches_list
     OUTPUTS = (
@@ -141,7 +142,6 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         "dreg_patch2_4_lon_vmask",
         "dreg_patch2_4_lat_vmask",
     )
-    MARKERS = (pytest.mark.gtfn_too_slow,)
 
     @staticmethod
     def _generate_flux_area_geometry(

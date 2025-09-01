@@ -20,7 +20,7 @@ from icon4py.tools.py2fgen import _definitions
 
 
 try:
-    import cupy as cp  # type: ignore
+    import cupy as cp  # type: ignore[import-not-found]
 except ImportError:
     cp = None
 
@@ -65,7 +65,7 @@ def _unpack_numpy(ffi: cffi.FFI, ptr: cffi.FFI.CData, *sizes: int) -> np.typing.
     dtype = C_STR_TYPE_TO_NP_DTYPE.get(c_type, np.dtype(c_type))
 
     # Create a NumPy array from the buffer, specifying the Fortran order
-    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
+    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore[call-overload]
         sizes, order="F"
     )
     return arr
