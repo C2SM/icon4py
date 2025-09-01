@@ -13,6 +13,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
+    base,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,
 )
@@ -148,6 +149,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     [
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-9),
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-2),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 3e-2),
     ],
 )
 def test_rbf_interpolation_coeffs_cell(
@@ -176,8 +178,14 @@ def test_rbf_interpolation_coeffs_cell(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        grid.global_properties.geometry_type,
+        # TODO(msimberg): Write this to config
+        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim)
+        if grid.global_properties.geometry_type is base.GeometryType.ICOSAHEDRON
+        else grid.mean_dual_edge_length,
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -213,6 +221,7 @@ def test_rbf_interpolation_coeffs_cell(
     [
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-10),
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-3),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 3e-2),
     ],
 )
 def test_rbf_interpolation_coeffs_vertex(
@@ -241,8 +250,14 @@ def test_rbf_interpolation_coeffs_vertex(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        grid.global_properties.geometry_type,
+        # TODO(msimberg): Write this to config
+        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim)
+        if grid.global_properties.geometry_type is base.GeometryType.ICOSAHEDRON
+        else grid.mean_dual_edge_length,
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -278,6 +293,7 @@ def test_rbf_interpolation_coeffs_vertex(
     [
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 8e-14),
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 2e-9),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-5),
     ],
 )
 def test_rbf_interpolation_coeffs_edge(
@@ -314,8 +330,14 @@ def test_rbf_interpolation_coeffs_edge(
         # coefficients in savepoint.
         grid_savepoint.e2c2e(),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        grid.global_properties.geometry_type,
+        # TODO(msimberg): Write this to config
+        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim)
+        if grid.global_properties.geometry_type is base.GeometryType.ICOSAHEDRON
+        else grid.mean_dual_edge_length,
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
         array_ns=data_alloc.import_array_ns(backend),
     )
 

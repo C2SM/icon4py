@@ -83,6 +83,8 @@ class GlobalGridParams:
     _num_cells: int | None = None
     _mean_cell_area: float | None = None
     radius: float = constants.EARTH_RADIUS
+    domain_length: float | None = None
+    domain_height: float | None = None
 
     def __init__(
         self,
@@ -92,12 +94,16 @@ class GlobalGridParams:
         num_cells: int | None = None,
         mean_cell_area: float | None = None,
         radius: float = constants.EARTH_RADIUS,
+        domain_length: float | None = None,
+        domain_height: float | None = None,
     ) -> None:
         self.grid_shape = grid_shape
         self._global_num_cells = global_num_cells
         self._num_cells = num_cells
         self._mean_cell_area = mean_cell_area
         self.radius = radius
+        self.domain_length = domain_length
+        self.domain_height = domain_height
 
     @property
     def geometry_type(self) -> base.GeometryType | None:
@@ -174,6 +180,9 @@ class IconGrid(base.Grid):
     refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
         default=None, kw_only=True
     )
+    # TODO(msimberg): Find a better place for this. Should it be derived from fields if
+    # not present?
+    mean_dual_edge_length: float | None = dataclasses.field(default=None, kw_only=True)
 
 
 def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool) -> bool:
@@ -228,6 +237,7 @@ def icon_grid(
     end_indices: Mapping[h_grid.Domain, gtx.int32],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
+    mean_dual_edge_length: float | None = None,
 ) -> IconGrid:
     connectivities = {
         offset.value: base.construct_connectivity(
@@ -250,4 +260,5 @@ def icon_grid(
         _end_indices=end_indices,
         global_properties=global_properties,
         refinement_control=refinement_control or {},
+        mean_dual_edge_length=mean_dual_edge_length,
     )

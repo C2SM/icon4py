@@ -185,6 +185,13 @@ class GeometryName(FieldName):
     # TODO(halungge): compute from coordinates
     EDGE_CELL_DISTANCE = "edge_cell_distance"
     EDGE_VERTEX_DISTANCE = "edge_vert_distance"
+    # TODO(msimberg): read from file for torus
+    EDGE_NORMAL_X = "edge_primal_normal_cartesian_x"
+    EDGE_NORMAL_Y = "edge_primal_normal_cartesian_y"
+    EDGE_NORMAL_Z = "edge_primal_normal_cartesian_z"
+    EDGE_TANGENT_X = "edge_dual_normal_cartesian_x"
+    EDGE_TANGENT_Y = "edge_dual_normal_cartesian_y"
+    EDGE_TANGENT_Z = "edge_dual_normal_cartesian_z"
 
 
 class CoordinateName(FieldName):
@@ -199,6 +206,16 @@ class CoordinateName(FieldName):
     EDGE_LATITUDE = "elat"
     VERTEX_LONGITUDE = "vlon"
     VERTEX_LATITUDE = "vlat"
+
+    CELL_X = "cell_circumcenter_cartesian_x"
+    CELL_Y = "cell_circumcenter_cartesian_y"
+    CELL_Z = "cell_circumcenter_cartesian_z"
+    EDGE_X = "edge_middle_cartesian_x"
+    EDGE_Y = "edge_middle_cartesian_y"
+    EDGE_Z = "edge_middle_cartesian_z"
+    VERTEX_X = "cartesian_x_vertices"
+    VERTEX_Y = "cartesian_y_vertices"
+    VERTEX_Z = "cartesian_z_vertices"
 
 
 class GridRefinementName(FieldName):

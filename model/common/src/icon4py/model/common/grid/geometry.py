@@ -82,8 +82,6 @@ class GridGeometry(factory.FieldSource):
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
         backend: gtx_backend.Backend | None,
-        coordinates: gm.CoordinateDict,
-        extra_fields: dict[InputGeometryFieldType, gtx.Field],
         metadata: dict[str, model.FieldMetaData],
     ):
         """
@@ -91,9 +89,7 @@ class GridGeometry(factory.FieldSource):
             grid: IconGrid the grid topology
             decomposition_info: data structure containing owner masks for field dimensions
             backend: backend used for memory allocation and computation
-            coordinates: dictionary containing geographical coordinates for grid cells, edges and vertices,
-            extra_fields: fields that are not computed but directly read off the grid file,
-                currently only the edge_system_orientation cell_area. Should eventually disappear.
+            # TODO(msimberg): Should eventually disappear? Using for now to pass cartesian coordinates for torus.
             metadata: a dictionary of FieldMetaData for all fields computed in GridGeometry.
 
         """
@@ -108,6 +104,55 @@ class GridGeometry(factory.FieldSource):
         log.info(
             f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
+
+    def _inverse_field_provider(self, field_name: str):
+        meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
+        name = meta["standard_name"]
+        self._attrs.update({name: meta})
+        provider = factory.ProgramFieldProvider(
+            func=math_helpers.compute_inverse_on_edges,
+            deps={"f": field_name},
+            fields={"f_inverse": name},
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                )
+            },
+        )
+        return provider
+
+    def __repr__(self):
+        return f"{self.__class__.__name__} for geometry_type={self._geometry_type._name_} (grid={self._grid.id!r})"
+
+    @property
+    def metadata(self) -> dict[str, model.FieldMetaData]:
+        return self._attrs
+
+    @property
+    def backend(self) -> gtx_backend.Backend:
+        return self._backend
+
+    @property
+    def grid(self):
+        return self._grid
+
+    @property
+    def vertical_grid(self):
+        return None
+
+
+class IcosahedronGridGeometry(GridGeometry):
+    def __init__(
+        self,
+        grid: icon.IconGrid,
+        decomposition_info: definitions.DecompositionInfo,
+        backend: gtx_backend.Backend | None,
+        coordinates: gm.CoordinateDict,
+        extra_fields: dict[InputGeometryFieldType, gtx.Field],
+        metadata: dict[str, model.FieldMetaData],
+    ):
+        super().__init__(grid, decomposition_info, backend, metadata)
 
         (
             edge_orientation0_lat,
@@ -524,41 +569,353 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(cartesian_cell_centers)
 
-    def _inverse_field_provider(self, field_name: str):
-        meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
-        name = meta["standard_name"]
-        self._attrs.update({name: meta})
-        provider = factory.ProgramFieldProvider(
-            func=math_helpers.compute_inverse_on_edges,
-            deps={"f": field_name},
-            fields={"f_inverse": name},
+
+class TorusGridGeometry(GridGeometry):
+    def __init__(
+        self,
+        grid: icon.IconGrid,
+        decomposition_info: definitions.DecompositionInfo,
+        backend: gtx_backend.Backend | None,
+        coordinates: gm.CoordinateDict,
+        extra_fields: dict[InputGeometryFieldType, gtx.Field],
+        metadata: dict[str, model.FieldMetaData],
+    ):
+        super().__init__(grid, decomposition_info, backend, metadata)
+
+        log.info(
+            f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
+        )
+
+        # TODO(msimberg): torus?
+        (
+            edge_orientation0_lat,
+            edge_orientation0_lon,
+            edge_orientation1_lat,
+            edge_orientation1_lon,
+        ) = create_auxiliary_coordinate_arrays_for_orientation(
+            self._grid,
+            coordinates[dims.CellDim]["lat"],
+            coordinates[dims.CellDim]["lon"],
+            coordinates[dims.EdgeDim]["lat"],
+            coordinates[dims.EdgeDim]["lon"],
+            self._backend,
+        )
+        coordinates_ = {
+            attrs.CELL_LAT: coordinates[dims.CellDim]["lat"],
+            attrs.CELL_LON: coordinates[dims.CellDim]["lon"],
+            attrs.CELL_CENTER_X: coordinates[dims.CellDim]["x"],
+            attrs.CELL_CENTER_Y: coordinates[dims.CellDim]["y"],
+            attrs.CELL_CENTER_Z: coordinates[dims.CellDim]["z"],
+            attrs.VERTEX_LAT: coordinates[dims.VertexDim]["lat"],
+            attrs.VERTEX_LON: coordinates[dims.VertexDim]["lon"],
+            attrs.VERTEX_X: coordinates[dims.VertexDim]["x"],
+            attrs.VERTEX_Y: coordinates[dims.VertexDim]["y"],
+            attrs.VERTEX_Z: coordinates[dims.VertexDim]["z"],
+            attrs.EDGE_LON: coordinates[dims.EdgeDim]["lon"],
+            attrs.EDGE_LAT: coordinates[dims.EdgeDim]["lat"],
+            attrs.EDGE_CENTER_X: coordinates[dims.EdgeDim]["x"],
+            attrs.EDGE_CENTER_Y: coordinates[dims.EdgeDim]["y"],
+            attrs.EDGE_CENTER_Z: coordinates[dims.EdgeDim]["z"],
+            "latitude_of_edge_cell_neighbor_0": edge_orientation0_lat,
+            "longitude_of_edge_cell_neighbor_0": edge_orientation0_lon,
+            "latitude_of_edge_cell_neighbor_1": edge_orientation1_lat,
+            "longitude_of_edge_cell_neighbor_1": edge_orientation1_lon,
+        }
+        coodinate_provider = factory.PrecomputedFieldProvider(coordinates_)
+        self.register_provider(coodinate_provider)
+
+        input_fields_provider = factory.PrecomputedFieldProvider(
+            {
+                # TODO(halungge): rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
+                attrs.EDGE_CELL_DISTANCE: extra_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE],
+                attrs.EDGE_VERTEX_DISTANCE: extra_fields[
+                    gridfile.GeometryName.EDGE_VERTEX_DISTANCE
+                ],
+                attrs.CELL_AREA: extra_fields[gridfile.GeometryName.CELL_AREA],
+                attrs.DUAL_AREA: extra_fields[gridfile.GeometryName.DUAL_AREA],
+                attrs.TANGENT_ORIENTATION: extra_fields[gridfile.GeometryName.TANGENT_ORIENTATION],
+                "edge_owner_mask": gtx.as_field(
+                    (dims.EdgeDim,),
+                    decomposition_info.owner_mask(dims.EdgeDim),
+                    dtype=bool,
+                    allocator=self._backend,
+                ),
+                attrs.CELL_NORMAL_ORIENTATION: extra_fields[
+                    gridfile.GeometryName.CELL_NORMAL_ORIENTATION
+                ],
+                attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
+                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX
+                ],
+                "vertex_owner_mask": gtx.as_field(
+                    (dims.VertexDim,),
+                    decomposition_info.owner_mask(dims.VertexDim),
+                    allocator=self._backend,
+                    dtype=bool,
+                ),
+                "cell_owner_mask": gtx.as_field(
+                    (dims.CellDim,),
+                    decomposition_info.owner_mask(dims.CellDim),
+                    allocator=self._backend,
+                    dtype=bool,
+                ),
+                attrs.EDGE_NORMAL_X: extra_fields[gridfile.GeometryName.EDGE_NORMAL_X],
+                attrs.EDGE_NORMAL_Y: extra_fields[gridfile.GeometryName.EDGE_NORMAL_Y],
+                attrs.EDGE_NORMAL_Z: extra_fields[gridfile.GeometryName.EDGE_NORMAL_Z],
+                attrs.EDGE_NORMAL_U: extra_fields[gridfile.GeometryName.EDGE_NORMAL_X],
+                attrs.EDGE_NORMAL_V: extra_fields[gridfile.GeometryName.EDGE_NORMAL_Y],
+                attrs.EDGE_TANGENT_X: extra_fields[gridfile.GeometryName.EDGE_TANGENT_X],
+                attrs.EDGE_TANGENT_Y: extra_fields[gridfile.GeometryName.EDGE_TANGENT_Y],
+                attrs.EDGE_TANGENT_Z: extra_fields[gridfile.GeometryName.EDGE_TANGENT_Z],
+                attrs.EDGE_DUAL_U: extra_fields[gridfile.GeometryName.EDGE_TANGENT_X],
+                attrs.EDGE_DUAL_V: extra_fields[gridfile.GeometryName.EDGE_TANGENT_Y],
+            }
+        )
+        self.register_provider(input_fields_provider)
+        self._register_computed_fields()
+
+    def _register_computed_fields(self):
+        # TODO(msimberg): This one will be wrong for torus. Uses VERTEX_LAT/LON
+        edge_length_provider = factory.ProgramFieldProvider(
+            func=stencils.compute_edge_length,
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
                     self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
+            fields={
+                "length": attrs.EDGE_LENGTH,
+            },
+            deps={
+                "vertex_lat": attrs.VERTEX_LAT,
+                "vertex_lon": attrs.VERTEX_LON,
+            },
+            params={"radius": self._grid.global_properties.radius},
         )
-        return provider
+        self.register_provider(edge_length_provider)
+        # TODO(msimberg): This will likely be wrong for the same reason as above.
+        meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
+        name = meta["standard_name"]
+        self._attrs.update({name: meta})
+        inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
+        self.register_provider(inverse_edge_length)
 
-    def __repr__(self):
-        return f"{self.__class__.__name__} for geometry_type={self._geometry_type._name_} (grid={self._grid.id!r})"
+        # TODO(msimberg): Right or wrong?
+        dual_length_provider = factory.ProgramFieldProvider(
+            func=stencils.compute_cell_center_arc_distance,
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                )
+            },
+            fields={
+                "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
+            },
+            deps={
+                "edge_neighbor_0_lat": "latitude_of_edge_cell_neighbor_0",
+                "edge_neighbor_0_lon": "longitude_of_edge_cell_neighbor_0",
+                "edge_neighbor_1_lat": "latitude_of_edge_cell_neighbor_1",
+                "edge_neighbor_1_lon": "longitude_of_edge_cell_neighbor_1",
+            },
+            params={"radius": self._grid.global_properties.radius},
+        )
+        self.register_provider(dual_length_provider)
+        # TODO(msimberg): Wrong if above is wrong
+        inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
+        self.register_provider(inverse_dual_edge_length)
 
-    @property
-    def metadata(self) -> dict[str, model.FieldMetaData]:
-        return self._attrs
+        # TODO(msimberg): Wrong for torus, uses VERTEX_LAT/LON
+        vertex_vertex_distance = factory.ProgramFieldProvider(
+            func=stencils.compute_arc_distance_of_far_edges_in_diamond,
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                )
+            },
+            fields={"far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH},
+            deps={
+                "vertex_lat": attrs.VERTEX_LAT,
+                "vertex_lon": attrs.VERTEX_LON,
+            },
+            params={"radius": self._grid.global_properties.radius},
+        )
+        self.register_provider(vertex_vertex_distance)
 
-    @property
-    def backend(self) -> gtx_backend.Backend:
-        return self._backend
+        # TODO(msimberg): Wrong if above is wrong
+        inverse_far_edge_distance_provider = self._inverse_field_provider(
+            attrs.VERTEX_VERTEX_LENGTH
+        )
+        self.register_provider(inverse_far_edge_distance_provider)
 
-    @property
-    def grid(self):
-        return self._grid
+        edge_areas = factory.ProgramFieldProvider(
+            func=stencils.compute_edge_area,
+            deps={
+                "owner_mask": "edge_owner_mask",
+                "primal_edge_length": attrs.EDGE_LENGTH,
+                "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
+            },
+            fields={"area": attrs.EDGE_AREA},
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        self.register_provider(edge_areas)
+        # TODO(msimberg): Wrong, uses EDGE_LAT. Does it even make sense for torus?
+        coriolis_params = factory.ProgramFieldProvider(
+            func=stencils.compute_coriolis_parameter_on_edges,
+            deps={"edge_center_lat": attrs.EDGE_LAT},
+            params={"angular_velocity": constants.EARTH_ANGULAR_VELOCITY},
+            fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        self.register_provider(coriolis_params)
 
-    @property
-    def vertical_grid(self):
-        return None
+        # TODO(msimberg): don't use lat/lon
+        # 3. primal_normal_vert, primal_normal_cell
+        normal_vert = factory.ProgramFieldProvider(
+            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_vertex,
+            deps={
+                "vertex_lat": attrs.VERTEX_LAT,
+                "vertex_lon": attrs.VERTEX_LON,
+                "x": attrs.EDGE_NORMAL_X,
+                "y": attrs.EDGE_NORMAL_Y,
+                "z": attrs.EDGE_NORMAL_Z,
+            },
+            fields={
+                "u_vertex_1": "u_vertex_1",
+                "v_vertex_1": "v_vertex_1",
+                "u_vertex_2": "u_vertex_2",
+                "v_vertex_2": "v_vertex_2",
+                "u_vertex_3": "u_vertex_3",
+                "v_vertex_3": "v_vertex_3",
+                "u_vertex_4": "u_vertex_4",
+                "v_vertex_4": "v_vertex_4",
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        normal_vert_wrapper = SparseFieldProviderWrapper(
+            normal_vert,
+            target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
+            fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
+            pairs=(
+                ("u_vertex_1", "u_vertex_2", "u_vertex_3", "u_vertex_4"),
+                ("v_vertex_1", "v_vertex_2", "v_vertex_3", "v_vertex_4"),
+            ),
+        )
+        self.register_provider(normal_vert_wrapper)
+        # TODO(msimberg): don't use lat/lon
+        normal_cell = factory.ProgramFieldProvider(
+            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
+            deps={
+                "cell_lat": attrs.CELL_LAT,
+                "cell_lon": attrs.CELL_LON,
+                "x": attrs.EDGE_NORMAL_X,
+                "y": attrs.EDGE_NORMAL_Y,
+                "z": attrs.EDGE_NORMAL_Z,
+            },
+            fields={
+                "u_cell_1": "u_cell_1",
+                "v_cell_1": "v_cell_1",
+                "u_cell_2": "u_cell_2",
+                "v_cell_2": "v_cell_2",
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        normal_cell_wrapper = SparseFieldProviderWrapper(
+            normal_cell,
+            target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
+            fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
+            pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
+        )
+        self.register_provider(normal_cell_wrapper)
+        # TODO(msimberg): don't use lat/lon
+        # 3. dual normals: the dual normals are the edge tangents
+        tangent_vert = factory.ProgramFieldProvider(
+            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_vertex,
+            deps={
+                "vertex_lat": attrs.VERTEX_LAT,
+                "vertex_lon": attrs.VERTEX_LON,
+                "x": attrs.EDGE_TANGENT_X,
+                "y": attrs.EDGE_TANGENT_Y,
+                "z": attrs.EDGE_TANGENT_Z,
+            },
+            fields={
+                "u_vertex_1": "u_vertex_1",
+                "v_vertex_1": "v_vertex_1",
+                "u_vertex_2": "u_vertex_2",
+                "v_vertex_2": "v_vertex_2",
+                "u_vertex_3": "u_vertex_3",
+                "v_vertex_3": "v_vertex_3",
+                "u_vertex_4": "u_vertex_4",
+                "v_vertex_4": "v_vertex_4",
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        tangent_vert_wrapper = SparseFieldProviderWrapper(
+            tangent_vert,
+            target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
+            fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
+            pairs=(
+                ("u_vertex_1", "u_vertex_2", "u_vertex_3", "u_vertex_4"),
+                ("v_vertex_1", "v_vertex_2", "v_vertex_3", "v_vertex_4"),
+            ),
+        )
+        self.register_provider(tangent_vert_wrapper)
+        # TODO(msimberg): don't use lat/lon
+        tangent_cell = factory.ProgramFieldProvider(
+            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
+            deps={
+                "cell_lat": attrs.CELL_LAT,
+                "cell_lon": attrs.CELL_LON,
+                "x": attrs.EDGE_TANGENT_X,
+                "y": attrs.EDGE_TANGENT_Y,
+                "z": attrs.EDGE_TANGENT_Z,
+            },
+            fields={
+                "u_cell_1": "u_cell_1",
+                "v_cell_1": "v_cell_1",
+                "u_cell_2": "u_cell_2",
+                "v_cell_2": "v_cell_2",
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        tangent_cell_wrapper = SparseFieldProviderWrapper(
+            tangent_cell,
+            target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
+            fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
+            pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
+        )
+        self.register_provider(tangent_cell_wrapper)
 
 
 HorizontalD = TypeVar("HorizontalD", bound=gtx.Dimension)
