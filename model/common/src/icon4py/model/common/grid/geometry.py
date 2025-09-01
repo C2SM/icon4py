@@ -674,9 +674,8 @@ class TorusGridGeometry(GridGeometry):
         self._register_computed_fields()
 
     def _register_computed_fields(self):
-        # TODO(msimberg): This one will be wrong for torus. Uses VERTEX_LAT/LON
         edge_length_provider = factory.ProgramFieldProvider(
-            func=stencils.compute_edge_length,
+            func=stencils.compute_edge_length_torus,
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
@@ -687,13 +686,15 @@ class TorusGridGeometry(GridGeometry):
                 "length": attrs.EDGE_LENGTH,
             },
             deps={
-                "vertex_lat": attrs.VERTEX_LAT,
-                "vertex_lon": attrs.VERTEX_LON,
+                "vertex_x": attrs.VERTEX_X,
+                "vertex_y": attrs.VERTEX_Y,
             },
-            params={"radius": self._grid.global_properties.radius},
+            params={
+                "domain_length": self._grid.global_properties.domain_length,
+                "domain_height": self._grid.global_properties.domain_height,
+            },
         )
         self.register_provider(edge_length_provider)
-        # TODO(msimberg): This will likely be wrong for the same reason as above.
         meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
