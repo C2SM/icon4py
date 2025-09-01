@@ -146,7 +146,7 @@ class GHexMultiNodeExchange:
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
         self._field_size: dict[gtx.Dimension : int] = {
-            dim: self._decomposition_info.global_index[dim].shape[0]
+            dim: self._decomposition_info.global_index(dim).shape[0]
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
@@ -216,6 +216,7 @@ class GHexMultiNodeExchange:
         size but the global_index fields used to initialize GHEX exchanges have only local num_edge,
         num_cell_num_vertex size.
         """
+        print(f" field = {field}, {type(field)}")
         try:
             assert field.ndarray.ndim == 2
             trim_length = self._field_size[dim]
@@ -223,7 +224,7 @@ class GHexMultiNodeExchange:
         except KeyError:
             log.warn(f"Trying to trim field of invalid dimension {dim} for exchange. Not trimming.")
 
-    def exchange(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]):
+    def exchange(self, dim: gtx.Dimension, fields: Sequence[gtx.Field]):
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
 
@@ -258,7 +259,7 @@ class GHexMultiNodeExchange:
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]):
         res = self.exchange(dim, *fields)
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")

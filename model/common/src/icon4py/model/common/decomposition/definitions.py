@@ -78,7 +78,8 @@ class DomainDescriptorIdGenerator:
             self._counter = self._counter + 1
         return next_id
 
-#TODO(halungge): halo_levels.. can we get rid of them?
+
+# TODO(halungge): halo_levels.. can we get rid of them?
 class DecompositionInfo:
     class EntryType(IntEnum):
         ALL = 0
@@ -192,9 +193,9 @@ class ExchangeResult(Protocol):
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult: ...
+    def exchange(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]) -> ExchangeResult: ...
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple) -> None: ...
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]) -> None: ...
 
     def get_size(self) -> int: ...
 
@@ -203,10 +204,10 @@ class ExchangeRuntime(Protocol):
 
 @dataclass
 class SingleNodeExchange:
-    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
+    def exchange(self, dim: gtx.Dimension, fields: Sequence[gtx.Field]) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple) -> None:
+    def exchange_and_wait(self, dim: gtx.Dimension, fields: Sequence[gtx.Field]) -> None:
         return
 
     def my_rank(self) -> int:

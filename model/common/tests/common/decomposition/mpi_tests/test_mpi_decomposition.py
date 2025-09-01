@@ -24,6 +24,8 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     processor_props,
     decomposition_info,
+    grid_savepoint,
+    icon_grid,
 )
 
 try:
@@ -122,7 +124,7 @@ def test_decomposition_info_local_index(
     decomposition_info,
     processor_props,
 ):
-    caplog.set_level("info")
+    caplog.set_level(logging.INFO)
     parallel_helpers.check_comm_size(processor_props, sizes=(2,))
     my_rank = processor_props.rank
     all_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.ALL)
