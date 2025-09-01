@@ -61,14 +61,14 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
         v_t[E2C2VDim(3)] - v_t[E2C2VDim(2)]
     ) * l_vv
 
-    kh_smag_e_wp = diff_multfac_smag_wp * sqrt(
+    kh_smag_wp = diff_multfac_smag_wp * sqrt(
         kh_smag_part1 * kh_smag_part1 + kh_smag_part2 * kh_smag_part2
     )
 
-    kh_smag_e_vp = maximum(vpfloat("0.0"), astype(kh_smag_e_wp - smag_offset_wp, vpfloat))
-    kh_smag_e_vp = minimum(kh_smag_e_vp, smag_limit)
+    kh_smag_vp_for_diffusion = maximum(vpfloat("0.0"), astype(kh_smag_wp - smag_offset_wp, vpfloat))
+    kh_smag_vp_for_diffusion = minimum(kh_smag_vp_for_diffusion, smag_limit)
 
-    return kh_smag_e_vp, astype(kh_smag_e_wp, vpfloat), nabla2_of_vn
+    return kh_smag_vp_for_diffusion, astype(kh_smag_wp, vpfloat), nabla2_of_vn
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
