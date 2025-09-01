@@ -22,7 +22,7 @@ from icon4py.model.common.utils.data_allocation import (
     random_field,
     zero_field,
 )
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_hydrostatic_correction_term_numpy(
@@ -90,10 +90,11 @@ def compute_hydrostatic_correction_term_numpy(
     return z_hydro_corr
 
 
+@pytest.mark.skip_value_error
+@pytest.mark.uses_as_offset
 class TestComputeHydrostaticCorrectionTerm(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = compute_hydrostatic_correction_term
-    MARKERS = (pytest.mark.uses_as_offset, pytest.mark.skip_value_error)
 
     @staticmethod
     def reference(

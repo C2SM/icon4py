@@ -18,13 +18,12 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
 from icon4py.model.common import (
     constants,
     dimension as dims,
-    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 from .test_add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation_numpy,
@@ -67,7 +66,8 @@ from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
 )
 
 
-class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
+@pytest.mark.uses_concat_where
+class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_predictor_step
     OUTPUTS = (
         "vertical_mass_flux_at_cells_on_half_levels",
@@ -82,7 +82,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         "dwdz_at_cells_on_model_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
@@ -310,7 +309,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == model_options.RayleighType.KLEMP:
+        if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (start_cell_index_nudging <= horz_idx)
                 & (horz_idx < end_cell_index_local)

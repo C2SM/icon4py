@@ -21,7 +21,7 @@ from icon4py.model.common.utils.data_allocation import (
     random_mask,
     zero_field,
 )
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
 from .test_calculate_nabla2_of_theta import calculate_nabla2_of_theta_numpy
@@ -31,14 +31,12 @@ from .test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
 from .test_update_theta_and_exner import update_theta_and_exner_numpy
 
 
+@pytest.mark.skip_value_error
+@pytest.mark.uses_as_offset
+@pytest.mark.embedded_remap_error
 class TestApplyDiffusionToThetaAndExner(StencilTest):
     PROGRAM = apply_diffusion_to_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
-    MARKERS = (
-        pytest.mark.embedded_remap_error,
-        pytest.mark.uses_as_offset,
-        pytest.mark.skip_value_error,
-    )
 
     @staticmethod
     def reference(

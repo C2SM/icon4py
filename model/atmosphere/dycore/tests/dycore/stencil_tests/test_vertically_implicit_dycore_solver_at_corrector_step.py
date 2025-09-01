@@ -23,7 +23,7 @@ from icon4py.model.common import (
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 from .test_add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation_numpy,
@@ -59,7 +59,8 @@ from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
 )
 
 
-class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
+@pytest.mark.uses_concat_where
+class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_corrector_step
     OUTPUTS = (
         "vertical_mass_flux_at_cells_on_half_levels",
@@ -75,7 +76,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         "dynamical_vertical_volumetric_flux_at_cells_on_half_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
@@ -278,7 +278,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(helpers.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == model_options.RayleighType.KLEMP:
+        if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)

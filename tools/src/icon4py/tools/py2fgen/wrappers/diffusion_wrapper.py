@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# type: ignore
 
 """
 Wrapper module for diffusion granule.
@@ -20,7 +19,7 @@ Fortran granule interfaces:
 import cProfile
 import dataclasses
 import pstats
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import gt4py.next as gtx
 import numpy as np
@@ -56,16 +55,14 @@ class DiffusionGranule:
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
 
-granule: Optional[DiffusionGranule] = None
+granule: DiffusionGranule | None = None
 
 
 def profile_enable():
-    global granule
     granule.profiler.enable()
 
 
 def profile_disable():
-    global granule
     granule.profiler.disable()
     stats = pstats.Stats(granule.profiler)
     stats.dump_stats(f"{__name__}.profile")
@@ -85,10 +82,10 @@ def diffusion_init(
     nudgecoeff_e: fa.EdgeField[wpfloat],
     rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
     rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    mask_hdiff: Optional[fa.CellKField[bool]],
-    zd_diffcoef: Optional[fa.CellKField[wpfloat]],
-    zd_vertoffset: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32]],
-    zd_intcoef: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.float64]],
+    mask_hdiff: fa.CellKField[bool] | None,
+    zd_diffcoef: fa.CellKField[wpfloat] | None,
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32] | None,
+    zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.float64] | None,
     ndyn_substeps: gtx.int32,
     rayleigh_damping_height: gtx.float64,
     nflat_gradp: gtx.int32,
@@ -117,7 +114,7 @@ def diffusion_init(
             "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    on_gpu = not vct_a.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = vct_a.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -205,7 +202,7 @@ def diffusion_init(
     )
 
     # Initialize the diffusion granule
-    global granule
+    global granule  # noqa: PLW0603 [global-statement]
     granule = DiffusionGranule(
         diffusion=Diffusion(
             grid=grid_wrapper.grid_state.grid,
@@ -231,14 +228,13 @@ def diffusion_run(
     exner: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     rho: fa.CellKField[wpfloat],
-    hdef_ic: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
-    div_ic: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
-    dwdx: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
-    dwdy: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    hdef_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
+    div_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
+    dwdx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
+    dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
     dtime: gtx.float64,
     linit: bool,
 ):
-    global granule
     if granule is None:
         raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init' first.")
 

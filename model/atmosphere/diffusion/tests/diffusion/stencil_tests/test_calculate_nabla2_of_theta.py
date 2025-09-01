@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta impor
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
 def calculate_nabla2_of_theta_numpy(
@@ -27,7 +27,7 @@ def calculate_nabla2_of_theta_numpy(
     return z_temp
 
 
-class TestCalculateNabla2OfTheta(helpers.StencilTest):
+class TestCalculateNabla2OfTheta(stencil_tests.StencilTest):
     PROGRAM = calculate_nabla2_of_theta
     OUTPUTS = ("z_temp",)
 

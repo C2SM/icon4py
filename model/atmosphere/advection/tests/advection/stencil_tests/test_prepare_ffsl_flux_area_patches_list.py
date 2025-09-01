@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.prepare_ffsl_flux_area_patches_list import (
     prepare_ffsl_flux_area_patches_list,
 )
@@ -113,7 +113,8 @@ def _line_intersect_numpy(
     return intersect_1, intersect_2
 
 
-class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
+@pytest.mark.gtfn_too_slow
+class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
     PROGRAM = prepare_ffsl_flux_area_patches_list
     OUTPUTS = (
         "dreg_patch0_1_lon_dsl",
@@ -141,7 +142,6 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
         "dreg_patch2_4_lon_vmask",
         "dreg_patch2_4_lat_vmask",
     )
-    MARKERS = (pytest.mark.gtfn_too_slow,)
 
     @staticmethod
     def _generate_flux_area_geometry(

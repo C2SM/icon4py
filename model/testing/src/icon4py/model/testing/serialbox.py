@@ -8,7 +8,7 @@
 import functools
 import logging
 import uuid
-from typing import Final, Literal, Optional, TypeAlias
+from typing import Final, Literal, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -19,7 +19,7 @@ import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, type_alias
-from icon4py.model.common.grid import base, icon
+from icon4py.model.common.grid import base, horizontal as h_grid, icon
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -48,12 +48,12 @@ class IconSavepoint:
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         size: dict,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
     ):
         self.savepoint = sp
         self.serializer = ser
         self.sizes = size
-        self.log = logging.getLogger((__name__))
+        self.log = logging.getLogger(__name__)
         self.backend = backend
         self.xp = data_alloc.import_array_ns(self.backend)
 
@@ -149,7 +149,7 @@ class IconGridSavepoint(IconSavepoint):
         size: dict,
         root: int,
         level: int,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
@@ -326,6 +326,34 @@ class IconGridSavepoint(IconSavepoint):
     def edge_start_index(self):
         return self._read_int32_shift1("e_start_index")
 
+    def start_index(self, dim: gtx.Dimension) -> np.ndarray:
+        """
+        Use to specify lower end of domains of a field for field_operators.
+        """
+        match dim:
+            case dims.CellDim:
+                return self.cells_start_index()
+            case dims.EdgeDim:
+                return self.edge_start_index()
+            case dims.VertexDim:
+                return self.vertex_start_index()
+            case _:
+                raise ValueError(f"Unsupported dimension {dim}")
+
+    def end_index(self, dim: gtx.Dimension) -> np.ndarray:
+        """
+        Use to specify upper end of domains of a field for field_operators.
+        """
+        match dim:
+            case dims.CellDim:
+                return self.cells_end_index()
+            case dims.EdgeDim:
+                return self.edge_end_index()
+            case dims.VertexDim:
+                return self.vertex_end_index()
+            case _:
+                raise ValueError(f"Unsupported dimension {dim}")
+
     def nflatlev(self):
         return self._read_int32_shift1("nflatlev").item()
 
@@ -488,14 +516,15 @@ class IconGridSavepoint(IconSavepoint):
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
         start_indices = {
-            dims.VertexDim: vertex_starts,
-            dims.EdgeDim: edge_starts,
-            dims.CellDim: cell_starts,
+            **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_starts),
+            **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_starts),
+            **h_grid.map_icon_domain_bounds(dims.CellDim, cell_starts),
         }
+
         end_indices = {
-            dims.VertexDim: vertex_ends,
-            dims.EdgeDim: edge_ends,
-            dims.CellDim: cell_ends,
+            **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_ends),
+            **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_ends),
+            **h_grid.map_icon_domain_bounds(dims.CellDim, cell_ends),
         }
 
         neighbor_tables = {
@@ -1254,6 +1283,79 @@ class NonHydroInitVerticallyImplicitSolverSavepoint(IconSavepoint):
         return self._get_field("vol_flx_ic", dims.CellDim, dims.KDim)
 
 
+class IconDycoreInit30To38Savepoint(IconSavepoint):
+    def z_vn_avg(self):
+        return self._get_field("z_vn_avg", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
+
+    def vn(self):
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
+
+    def vt(self):
+        return self._get_field("vt", dims.EdgeDim, dims.KDim)
+
+    def z_rho_e(self):
+        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_e(self):
+        return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
+
+    def z_vt_ie(self):
+        return self._get_field("z_vt_ie", dims.EdgeDim, dims.KDim)
+
+    def vn_ie(self):
+        return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
+
+    def mass_fl_e(self):
+        return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_fl_e(self):
+        return self._get_field("z_theta_v_fl_e", dims.EdgeDim, dims.KDim)
+
+    def z_kin_hor_e(self):
+        return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
+
+    def z_w_concorr_me(self):
+        return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
+
+
+class IconDycoreExit30To38Savepoint(IconSavepoint):
+    def z_vn_avg(self):
+        return self._get_field("z_vn_avg", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
+
+    def vt(self):
+        return self._get_field("vt", dims.EdgeDim, dims.KDim)
+
+    def mass_fl_e(self):
+        return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_fl_e(self):
+        return self._get_field("z_theta_v_fl_e", dims.EdgeDim, dims.KDim)
+
+    def vn_ie(self):
+        return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
+
+    def z_vt_ie(self):
+        return self._get_field("z_vt_ie", dims.EdgeDim, dims.KDim)
+
+    def z_kin_hor_e(self):
+        return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
+
+    def z_w_concorr_me(self):
+        return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
+
+    def vn_traj(self):
+        return self._get_field("vn_traj", dims.EdgeDim, dims.KDim)
+
+    def mass_flx_me(self):
+        return self._get_field("mass_flx_me", dims.EdgeDim, dims.KDim)
+
+
 class IconNonHydroExitSavepoint(IconSavepoint):
     def z_exner_ex_pr(self):
         return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)  # KHalfDim
@@ -1408,7 +1510,7 @@ class NonHydroExitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
         return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
 
 
-# TODO (magdalena) rename?
+# TODO(halungge): rename?
 class IconNonHydroFinalSavepoint(IconSavepoint):
     def theta_v_new(self):
         return self._get_field("theta_v", dims.CellDim, dims.KDim)
@@ -1548,7 +1650,7 @@ class IconJabwExitSavepoint(IconSavepoint):
     def temperature(self):
         return self._get_field("temperature", dims.CellDim, dims.KDim)
 
-    # TODO change field name
+    # TODO(): change field name
     def pressure_sfc(self):
         return self._get_field("surface_pressure", dims.CellDim)
 
@@ -1718,7 +1820,7 @@ class TopographySavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
         fname_prefix,
         path=".",
         do_print=False,
@@ -1842,6 +1944,20 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
+    def from_savepoint_30_to_38_init(
+        self, istep: int, date: str, substep: int
+    ) -> IconDycoreInit30To38Savepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-30to38-init"]
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return IconDycoreInit30To38Savepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
         savepoint = self.serializer.savepoint["interpolation-state"].as_savepoint()
         return InterpolationSavepoint(
@@ -1887,6 +2003,20 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconVelocityExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_30_to_38_exit(
+        self, istep: int, date: str, substep: int
+    ) -> IconDycoreExit30To38Savepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-30to38-exit"]
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return IconDycoreExit30To38Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 

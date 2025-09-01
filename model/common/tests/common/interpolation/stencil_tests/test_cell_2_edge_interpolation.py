@@ -17,13 +17,13 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
     cell_2_edge_interpolation,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
-class TestCell2EdgeInterpolation(helpers.StencilTest):
+@pytest.mark.skip_value_error
+class TestCell2EdgeInterpolation(stencil_tests.StencilTest):
     PROGRAM = cell_2_edge_interpolation
     OUTPUTS = ("out_field",)
-    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(

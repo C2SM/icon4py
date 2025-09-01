@@ -9,7 +9,6 @@ import functools
 import logging
 import math
 import pathlib
-from typing import Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -34,12 +33,12 @@ from icon4py.model.testing import serialbox as sb
 log = logging.getLogger(__name__)
 
 
-def model_initialization_jabw(
+def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,

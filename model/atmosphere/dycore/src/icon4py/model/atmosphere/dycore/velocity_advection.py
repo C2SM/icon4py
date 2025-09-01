@@ -9,8 +9,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
@@ -32,6 +30,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
+from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -45,7 +44,7 @@ class VelocityAdvection:
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_backend.Backend | None,
     ):
         self.grid: icon_grid.IconGrid = grid
         self._backend = backend
@@ -60,49 +59,116 @@ class VelocityAdvection:
         self._allocate_local_fields()
         self._determine_local_domains()
 
-        self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = (
-            compute_derived_horizontal_winds_and_ke_and_contravariant_correction.with_backend(
-                self._backend
-            ).compile(
-                enable_jit=False,
-                nflatlev=[self.vertical_params.nflatlev],
-                skip_compute_predictor_vertical_advection=[False, True],
-                vertical_start=[gtx.int32(0)],
-                vertical_end=[gtx.int32(self.grid.num_levels + 1)],
-                offset_provider=self.grid.connectivities,
-            )
-        )
-
-        self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = compute_contravariant_correction_and_advection_in_vertical_momentum_equation.with_backend(
-            self._backend
-        ).compile(
-            enable_jit=False,
-            end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
-            nflatlev=[self.vertical_params.nflatlev],
-            vertical_start=[gtx.int32(0)],
-            vertical_end=[self.grid.num_levels],
+        self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = setup_program(
+            backend=self._backend,
+            program=compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
+            constant_args={
+                "rbf_vec_coeff_e": self.interpolation_state.rbf_vec_coeff_e,
+                "wgtfac_e": self.metric_state.wgtfac_e,
+                "ddxn_z_full": self.metric_state.ddxn_z_full,
+                "ddxt_z_full": self.metric_state.ddxt_z_full,
+                "wgtfacq_e": self.metric_state.wgtfacq_e,
+                "c_intp": self.interpolation_state.c_intp,
+                "inv_dual_edge_length": self.edge_params.inverse_dual_edge_lengths,
+                "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
+                "tangent_orientation": self.edge_params.tangent_orientation,
+            },
+            variants={
+                "skip_compute_predictor_vertical_advection": [True, False],
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_lateral_boundary_level_5,
+                "horizontal_end": self._end_edge_halo_level_2,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self.grid.num_levels + 1),
+                "nflatlev": self.vertical_params.nflatlev,
+            },
             offset_provider=self.grid.connectivities,
         )
 
-        self._compute_advection_in_vertical_momentum_equation = (
-            compute_advection_in_vertical_momentum_equation.with_backend(self._backend).compile(
-                enable_jit=False,
-                end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
-                vertical_start=[gtx.int32(0)],
-                vertical_end=[self.grid.num_levels],
-                offset_provider=self.grid.connectivities,
-            )
+        # TODO(nfarabullini): add `skip_compute_predictor_vertical_advection` to `variants` once possible
+        self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = setup_program(
+            backend=self._backend,
+            program=compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
+            constant_args={
+                "coeff1_dwdz": self.metric_state.coeff1_dwdz,
+                "coeff2_dwdz": self.metric_state.coeff2_dwdz,
+                "e_bln_c_s": self.interpolation_state.e_bln_c_s,
+                "wgtfac_c": self.metric_state.wgtfac_c,
+                "ddqz_z_half": self.metric_state.ddqz_z_half,
+                "geofac_n2s": self.interpolation_state.geofac_n2s,
+                "owner_mask": self.c_owner_mask,
+            },
+            vertical_sizes={
+                "end_index_of_damping_layer": self.vertical_params.end_index_of_damping_layer,
+                "nflatlev": self.vertical_params.nflatlev,
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self.grid.num_levels,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_4,
+                "horizontal_end": self._end_cell_halo,
+            },
+            offset_provider=self.grid.connectivities,
         )
 
-        self._compute_advection_in_horizontal_momentum_equation = (
-            compute_advection_in_horizontal_momentum_equation.with_backend(self._backend).compile(
-                enable_jit=False,
-                end_index_of_damping_layer=[self.vertical_params.end_index_of_damping_layer],
-                apply_extra_diffusion_on_vn=[False, True],
-                vertical_start=[gtx.int32(0)],
-                vertical_end=[gtx.int32(self.grid.num_levels)],
-                offset_provider=self.grid.connectivities,
-            )
+        self._compute_advection_in_vertical_momentum_equation = setup_program(
+            backend=self._backend,
+            program=compute_advection_in_vertical_momentum_equation,
+            constant_args={
+                "coeff1_dwdz": self.metric_state.coeff1_dwdz,
+                "coeff2_dwdz": self.metric_state.coeff2_dwdz,
+                "c_intp": self.interpolation_state.c_intp,
+                "inv_dual_edge_length": self.edge_params.inverse_dual_edge_lengths,
+                "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
+                "tangent_orientation": self.edge_params.tangent_orientation,
+                "e_bln_c_s": self.interpolation_state.e_bln_c_s,
+                "ddqz_z_half": self.metric_state.ddqz_z_half,
+                "geofac_n2s": self.interpolation_state.geofac_n2s,
+                "owner_mask": self.c_owner_mask,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_4,
+                "horizontal_end": self._end_cell_halo,
+            },
+            vertical_sizes={
+                "end_index_of_damping_layer": self.vertical_params.end_index_of_damping_layer,
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self.grid.num_levels,
+            },
+            offset_provider=self.grid.connectivities,
+        )
+
+        self._compute_advection_in_horizontal_momentum_equation = setup_program(
+            backend=self._backend,
+            program=compute_advection_in_horizontal_momentum_equation,
+            constant_args={
+                "e_bln_c_s": self.interpolation_state.e_bln_c_s,
+                "geofac_rot": self.interpolation_state.geofac_rot,
+                "coeff_gradekin": self.metric_state.coeff_gradekin,
+                "c_lin_e": self.interpolation_state.c_lin_e,
+                "ddqz_z_full_e": self.metric_state.ddqz_z_full_e,
+                "area_edge": self.edge_params.edge_areas,
+                "tangent_orientation": self.edge_params.tangent_orientation,
+                "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
+                "geofac_grdiv": self.interpolation_state.geofac_grdiv,
+                "coriolis_frequency": self.edge_params.coriolis_frequency,
+            },
+            variants={
+                "apply_extra_diffusion_on_vn": [False, True],
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_nudging_level_2,
+                "horizontal_end": self._end_edge_local,
+            },
+            vertical_sizes={
+                "end_index_of_damping_layer": self.vertical_params.end_index_of_damping_layer,
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self.grid.num_levels,
+            },
+            offset_provider=self.grid.connectivities,
         )
 
     def _allocate_local_fields(self):
@@ -194,22 +260,7 @@ class VelocityAdvection:
             horizontal_advection_of_w_at_edges_on_half_levels=self._horizontal_advection_of_w_at_edges_on_half_levels,
             vn=prognostic_state.vn,
             w=prognostic_state.w,
-            rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
-            wgtfac_e=self.metric_state.wgtfac_e,
-            ddxn_z_full=self.metric_state.ddxn_z_full,
-            ddxt_z_full=self.metric_state.ddxt_z_full,
-            wgtfacq_e=self.metric_state.wgtfacq_e,
-            c_intp=self.interpolation_state.c_intp,
-            inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
-            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-            tangent_orientation=self.edge_params.tangent_orientation,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-            nflatlev=self.vertical_params.nflatlev,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self.grid.num_levels + 1),
-            offset_provider=self.grid.connectivities,
         )
 
         # TODO(havogt): however, our test data is probably not able to catch cfl_clipping conditons
@@ -221,25 +272,11 @@ class VelocityAdvection:
             w=prognostic_state.w,
             horizontal_advection_of_w_at_edges_on_half_levels=self._horizontal_advection_of_w_at_edges_on_half_levels,
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
-            coeff1_dwdz=self.metric_state.coeff1_dwdz,
-            coeff2_dwdz=self.metric_state.coeff2_dwdz,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            wgtfac_c=self.metric_state.wgtfac_c,
-            ddqz_z_half=self.metric_state.ddqz_z_half,
             area=cell_areas,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
-            owner_mask=self.c_owner_mask,
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
-            nflatlev=self.vertical_params.nflatlev,
-            end_index_of_damping_layer=self.vertical_params.end_index_of_damping_layer,
-            horizontal_start=self._start_cell_lateral_boundary_level_4,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.connectivities,
         )
 
         max_vertical_cfl = float(
@@ -256,28 +293,12 @@ class VelocityAdvection:
             vn=prognostic_state.vn,
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
             tangential_wind=diagnostic_state.tangential_wind,
-            coriolis_frequency=self.edge_params.coriolis_frequency,
             contravariant_corrected_w_at_cells_on_model_levels=self._contravariant_corrected_w_at_cells_on_model_levels,
             vn_on_half_levels=diagnostic_state.vn_on_half_levels,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            geofac_rot=self.interpolation_state.geofac_rot,
-            coeff_gradekin=self.metric_state.coeff_gradekin,
-            c_lin_e=self.interpolation_state.c_lin_e,
-            ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            area_edge=self.edge_params.edge_areas,
-            tangent_orientation=self.edge_params.tangent_orientation,
-            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-            geofac_grdiv=self.interpolation_state.geofac_grdiv,
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             dtime=dtime,
             apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
-            end_index_of_damping_layer=self.vertical_params.end_index_of_damping_layer,
-            horizontal_start=self._start_edge_nudging_level_2,
-            horizontal_end=self._end_edge_local,
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.connectivities,
         )
 
     def _scale_factors_by_dtime(self, dtime):
@@ -317,26 +338,10 @@ class VelocityAdvection:
             tangential_wind_on_half_levels=tangential_wind_on_half_levels,
             vn_on_half_levels=diagnostic_state.vn_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
-            coeff1_dwdz=self.metric_state.coeff1_dwdz,
-            coeff2_dwdz=self.metric_state.coeff2_dwdz,
-            c_intp=self.interpolation_state.c_intp,
-            inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
-            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-            tangent_orientation=self.edge_params.tangent_orientation,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            ddqz_z_half=self.metric_state.ddqz_z_half,
             area=cell_areas,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
-            owner_mask=self.c_owner_mask,
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
-            end_index_of_damping_layer=self.vertical_params.end_index_of_damping_layer,
-            horizontal_start=self._start_cell_lateral_boundary_level_4,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.connectivities,
         )
 
         max_vertical_cfl = float(
@@ -353,26 +358,10 @@ class VelocityAdvection:
             vn=prognostic_state.vn,
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
             tangential_wind=diagnostic_state.tangential_wind,
-            coriolis_frequency=self.edge_params.coriolis_frequency,
             contravariant_corrected_w_at_cells_on_model_levels=self._contravariant_corrected_w_at_cells_on_model_levels,
             vn_on_half_levels=diagnostic_state.vn_on_half_levels,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            geofac_rot=self.interpolation_state.geofac_rot,
-            coeff_gradekin=self.metric_state.coeff_gradekin,
-            c_lin_e=self.interpolation_state.c_lin_e,
-            ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            area_edge=self.edge_params.edge_areas,
-            tangent_orientation=self.edge_params.tangent_orientation,
-            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-            geofac_grdiv=self.interpolation_state.geofac_grdiv,
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             dtime=dtime,
             apply_extra_diffusion_on_vn=apply_extra_diffusion_on_vn,
-            end_index_of_damping_layer=self.vertical_params.end_index_of_damping_layer,
-            horizontal_start=self._start_edge_nudging_level_2,
-            horizontal_end=self._end_edge_local,
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self.grid.num_levels),
-            offset_provider=self.grid.connectivities,
         )

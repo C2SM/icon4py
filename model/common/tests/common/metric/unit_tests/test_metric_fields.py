@@ -14,7 +14,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers as testing_helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils as testing_helpers
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -301,7 +301,7 @@ def test_compute_exner_w_implicit_weight_parameter(
     )
 
 
-# TODO (@halungge) add test in test_metric_factory.py?
+# TODO(halungge): add test in test_metric_factory.py?
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_wgtfac_e(

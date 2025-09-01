@@ -5,8 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 import functools
-import uuid
+from typing import Final
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -34,6 +36,9 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+
+
+DEFAULT_NUM_LEVELS: Final = 10
 
 
 class SimpleGridData:
@@ -406,7 +411,9 @@ class SimpleGridData:
         )
 
 
-def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
+def simple_grid(
+    *, backend: gtx_backend.Backend | None = None, num_levels: int = DEFAULT_NUM_LEVELS
+) -> base.Grid:
     """
     Factory function to create a SimpleGrid instance.
 
@@ -420,7 +427,7 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
     horizontal_grid_size = base.HorizontalGridSize(
         num_vertices=_VERTICES, num_edges=_EDGES, num_cells=_CELLS
     )
-    vertical_grid_config = VerticalGridConfig(num_levels=10)
+    vertical_grid_config = VerticalGridConfig(num_levels=num_levels)
     config = base.GridConfig(
         horizontal_config=horizontal_grid_size,
         vertical_size=vertical_grid_config.num_levels,
@@ -451,38 +458,31 @@ def simple_grid(backend: gtx_backend.Backend | None = None) -> base.Grid:
         for offset, table in neighbor_tables.items()
     }
 
+    cell_domain = h_grid.domain(dims.CellDim)
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    vertex_domain = h_grid.domain(dims.VertexDim)
     start_indices = {
-        dims.CellDim: {
-            h_grid._map_to_index(dims.CellDim, zone): (0 if not zone.is_halo() else _CELLS)
-            for zone in h_grid.Zone
-            if zone in h_grid.CELL_ZONES
+        **{
+            cell_domain(zone): gtx.int32(0 if not zone.is_halo() else _CELLS)
+            for zone in h_grid.CELL_ZONES
         },
-        dims.EdgeDim: {
-            h_grid._map_to_index(dims.EdgeDim, zone): (0 if not zone.is_halo() else _EDGES)
-            for zone in h_grid.Zone
+        **{
+            edge_domain(zone): gtx.int32(0 if not zone.is_halo() else _EDGES)
+            for zone in h_grid.EDGE_ZONES
         },
-        dims.VertexDim: {
-            h_grid._map_to_index(dims.VertexDim, zone): (0 if not zone.is_halo() else _VERTICES)
-            for zone in h_grid.Zone
-            if zone in h_grid.VERTEX_ZONES
+        **{
+            vertex_domain(zone): gtx.int32(0 if not zone.is_halo() else _VERTICES)
+            for zone in h_grid.VERTEX_ZONES
         },
     }
     end_indices = {
-        dims.CellDim: {
-            h_grid._map_to_index(dims.CellDim, zone): _CELLS
-            for zone in h_grid.Zone
-            if zone in h_grid.CELL_ZONES
-        },
-        dims.EdgeDim: {h_grid._map_to_index(dims.EdgeDim, zone): _EDGES for zone in h_grid.Zone},
-        dims.VertexDim: {
-            h_grid._map_to_index(dims.VertexDim, zone): _VERTICES
-            for zone in h_grid.Zone
-            if zone in h_grid.VERTEX_ZONES
-        },
+        **{cell_domain(zone): gtx.int32(_CELLS) for zone in h_grid.CELL_ZONES},
+        **{edge_domain(zone): gtx.int32(_EDGES) for zone in h_grid.EDGE_ZONES},
+        **{vertex_domain(zone): gtx.int32(_VERTICES) for zone in h_grid.VERTEX_ZONES},
     }
 
     return base.Grid(
-        id=uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85"),
+        id="simple_grid",
         config=config,
         connectivities=connectivities,
         geometry_type=base.GeometryType.TORUS,

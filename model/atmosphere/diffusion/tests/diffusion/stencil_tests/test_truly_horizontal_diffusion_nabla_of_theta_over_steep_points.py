@@ -19,7 +19,7 @@ from icon4py.model.common.utils.data_allocation import (
     random_mask,
     zero_field,
 )
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
@@ -61,10 +61,11 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     return z_temp
 
 
+@pytest.mark.uses_as_offset
+@pytest.mark.skip_value_error
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
     OUTPUTS = ("z_temp",)
-    MARKERS = (pytest.mark.skip_value_error, pytest.mark.uses_as_offset)
 
     @staticmethod
     def reference(

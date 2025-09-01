@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import ap
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -25,10 +25,10 @@ from .test_apply_nabla2_to_vn_in_lateral_boundary import (
 from .test_calculate_nabla4 import calculate_nabla4_numpy
 
 
+@pytest.mark.uses_concat_where
 class TestApplyDiffusionToVn(StencilTest):
     PROGRAM = apply_diffusion_to_vn
     OUTPUTS = ("vn",)
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(

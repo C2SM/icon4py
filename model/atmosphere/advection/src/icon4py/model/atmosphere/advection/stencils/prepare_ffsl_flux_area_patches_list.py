@@ -113,7 +113,7 @@ def line_intersect(
 
 
 @gtx.field_operator
-def _prepare_ffsl_flux_area_patches_list(
+def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
     famask_int: fa.EdgeKField[gtx.int32],
     p_vn: fa.EdgeKField[ta.wpfloat],
     ptr_v3_lon: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],

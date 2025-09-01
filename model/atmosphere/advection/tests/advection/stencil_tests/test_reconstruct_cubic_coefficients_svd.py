@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.reconstruct_cubic_coefficients_svd import (
     reconstruct_cubic_coefficients_svd,
 )
@@ -20,7 +20,8 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 
 
-class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
+@pytest.mark.embedded_remap_error
+class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
     PROGRAM = reconstruct_cubic_coefficients_svd
     OUTPUTS = (
         "p_coeff_1_dsl",
@@ -34,7 +35,6 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
         "p_coeff_9_dsl",
         "p_coeff_10_dsl",
     )
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

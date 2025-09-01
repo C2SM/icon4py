@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# type: ignore
 
 """
 Wrapper module for dycore granule.
@@ -20,7 +19,8 @@ Fortran granule interfaces:
 import cProfile
 import dataclasses
 import pstats
-from typing import Annotated, Callable, Optional, TypeAlias
+from collections.abc import Callable
+from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -47,16 +47,14 @@ class SolveNonhydroGranule:
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
 
-granule: Optional[SolveNonhydroGranule]  # TODO(havogt): remove module global state
+granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 
 def profile_enable():
-    global granule
     granule.profiler.enable()
 
 
 def profile_disable():
-    global granule
     granule.profiler.disable()
     stats = pstats.Stats(granule.profiler)
     stats.dump_stats(f"{__name__}.profile")
@@ -150,7 +148,7 @@ def solve_nh_init(
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    on_gpu = not vct_a.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = vct_a.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -260,7 +258,7 @@ def solve_nh_init(
         ),  # Fortran vs Python indexing
     )
 
-    global granule
+    global granule  # noqa: PLW0603 [global-statement]
     granule = SolveNonhydroGranule(
         solve_nh=solve_nonhydro.SolveNonhydro(
             grid=grid_wrapper.grid_state.grid,
@@ -321,9 +319,9 @@ def solve_nh_run(
     grf_tend_vn: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    vn_incr: Optional[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64]],
-    rho_incr: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
-    exner_incr: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64] | None,
+    rho_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
+    exner_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
     mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -336,7 +334,6 @@ def solve_nh_run(
     ndyn_substeps_var: gtx.int32,
     idyn_timestep: gtx.int32,
 ):
-    global granule
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 

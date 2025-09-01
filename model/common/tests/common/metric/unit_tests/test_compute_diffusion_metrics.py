@@ -21,7 +21,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_weighted_cell_neighbor_sum,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -116,8 +116,8 @@ def test_compute_diffusion_mask_and_coeff(
         cell_nudging=cell_nudging,
         nlev=nlev,
     )
-    assert helpers.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
-    assert helpers.dallclose(
+    assert test_utils.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
+    assert test_utils.dallclose(
         zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
     )
 
@@ -203,5 +203,5 @@ def test_compute_diffusion_intcoef_and_vertoffset(
         cell_nudging=cell_nudging,
         nlev=nlev,
     )
-    assert helpers.dallclose(zd_vertoffset_dsl, metrics_savepoint.zd_vertoffset().asnumpy())
-    assert helpers.dallclose(zd_intcoef_dsl, metrics_savepoint.zd_intcoef().asnumpy())
+    assert test_utils.dallclose(zd_vertoffset_dsl, metrics_savepoint.zd_vertoffset().asnumpy())
+    assert test_utils.dallclose(zd_intcoef_dsl, metrics_savepoint.zd_intcoef().asnumpy())

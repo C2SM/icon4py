@@ -11,14 +11,14 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory import (
     compute_ffsl_backtrajectory,
 )
 from icon4py.model.common import dimension as dims
 
 
-class TestComputeFfslBacktrajectory(helpers.StencilTest):
+class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
     PROGRAM = compute_ffsl_backtrajectory
     OUTPUTS = (
         "p_cell_idx",
