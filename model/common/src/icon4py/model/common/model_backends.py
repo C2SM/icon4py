@@ -27,7 +27,7 @@ BACKENDS: dict[str, gtx_backend.Backend | None] = {
 try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
-    def make_custom_dace_backend(gpu: bool) -> gtx_backend.Backend:
+    def make_custom_dace_backend(on_gpu: bool) -> gtx_backend.Backend:
         """Customize the dace backend with the following configuration.
 
         async_sdfg_call:
@@ -39,6 +39,9 @@ try:
             Allocate temporary arrays at SDFG initialization, when it is loaded
             from the binary library. The memory will be persistent across all SDFG
             calls and released only at application exit.
+        use_memory_pool:
+            Allocate temporaries in memory pool, currently only supported for GPU
+            (based on CUDA memory pool).
         use_zero_origin:
             When set to `True`, the SDFG lowering will not generate the start symbol
             of the field range. Select this option if all fields have zero origin.
@@ -54,18 +57,19 @@ try:
         return make_dace_backend(
             auto_optimize=True,
             cached=True,
-            gpu=gpu,
+            gpu=on_gpu,
             async_sdfg_call=True,
             blocking_dim=dims.KDim,
             blocking_size=10,
             make_persistent=False,
+            use_memory_pool=on_gpu,
             use_zero_origin=True,
         )
 
     BACKENDS.update(
         {
-            "dace_cpu": make_custom_dace_backend(gpu=False),
-            "dace_gpu": make_custom_dace_backend(gpu=True),
+            "dace_cpu": make_custom_dace_backend(on_gpu=False),
+            "dace_gpu": make_custom_dace_backend(on_gpu=True),
         }
     )
 

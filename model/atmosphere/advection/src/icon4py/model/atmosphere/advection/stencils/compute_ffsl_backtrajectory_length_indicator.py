@@ -10,18 +10,18 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import sqrt, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2EC
+from icon4py.model.common.dimension import E2CDim
 
 
 @gtx.field_operator
 def _compute_ffsl_backtrajectory_length_indicator(
     p_vn: fa.EdgeKField[ta.wpfloat],
     p_vt: fa.EdgeKField[ta.wpfloat],
-    edge_cell_length: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    edge_cell_length: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     p_dt: ta.wpfloat,
 ) -> fa.EdgeKField[gtx.int32]:
     traj_length = sqrt(p_vn * p_vn + p_vt * p_vt) * p_dt
-    e2c_length = where(p_vn >= 0.0, edge_cell_length(E2EC[0]), edge_cell_length(E2EC[1]))
+    e2c_length = where(p_vn >= 0.0, edge_cell_length[E2CDim(0)], edge_cell_length[E2CDim(1)])
     opt_famask_dsl = where(traj_length > 1.25 * e2c_length, 1, 0)
     return opt_famask_dsl
 
@@ -30,7 +30,7 @@ def _compute_ffsl_backtrajectory_length_indicator(
 def compute_ffsl_backtrajectory_length_indicator(
     p_vn: fa.EdgeKField[ta.wpfloat],
     p_vt: fa.EdgeKField[ta.wpfloat],
-    edge_cell_length: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    edge_cell_length: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     opt_famask_dsl: fa.EdgeKField[gtx.int32],
     p_dt: ta.wpfloat,
     horizontal_start: gtx.int32,

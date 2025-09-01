@@ -12,7 +12,7 @@ import logging
 import math
 import pathlib
 from types import ModuleType
-from typing import Final, Optional
+from typing import Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -100,7 +100,7 @@ class VerticalGridConfig:
     #: Defined in ICON namelist nonhydrostatic_nml. Height [m] above which moist physics and advection of cloud and precipitation variables are turned off.
     htop_moist_proc: Final[float] = 22500.0
     #: file name containing vct_a and vct_b table
-    file_path: Optional[pathlib.Path] = None
+    file_path: pathlib.Path | None = None
 
     # Parameters for setting up the decay function of the topographic signal for
     # SLEVE. Default values from mo_sleve_nml.
@@ -179,9 +179,13 @@ class VerticalGrid:
         vertical_params_properties.append("Level    Coordinate    Thickness:")
         vct_a_array = self._vct_a.ndarray
         dvct = vct_a_array[:-1] - vct_a_array[1:]
-        array_value = [f"   0   {vct_a_array[0]:12.3f}"]
-        for k in range(vct_a_array.shape[0] - 1):
-            array_value.append(f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}")
+        array_value = [
+            f"   0   {vct_a_array[0]:12.3f}",
+            *(
+                f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}"
+                for k in range(vct_a_array.shape[0] - 1)
+            ),
+        ]
         array_value[self._end_index_of_flat_layer] += " End of flat layer "
         array_value[self._end_index_of_damping_layer] += " End of damping layer "
         array_value[self._start_index_for_moist_physics] += " Start of moist physics"
@@ -291,7 +295,7 @@ class VerticalGrid:
 
 
 def _read_vct_a_and_vct_b_from_file(
-    file_path: pathlib.Path, num_levels: int, backend: Optional[gtx_backend.Backend]
+    file_path: pathlib.Path, num_levels: int, backend: gtx_backend.Backend | None
 ) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
@@ -314,7 +318,7 @@ def _read_vct_a_and_vct_b_from_file(
     vct_a = np.zeros(num_levels_plus_one, dtype=float)
     vct_b = np.zeros(num_levels_plus_one, dtype=float)
     try:
-        with open(file_path, "r") as vertical_grid_file:
+        with file_path.open() as vertical_grid_file:
             # skip the first line that contains titles
             vertical_grid_file.readline()
             for k in range(num_levels_plus_one):
@@ -336,8 +340,8 @@ def _read_vct_a_and_vct_b_from_file(
     )
 
 
-def _compute_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, backend: Optional[gtx_backend.Backend]
+def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
+    vertical_config: VerticalGridConfig, backend: gtx_backend.Backend | None
 ) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
@@ -495,11 +499,11 @@ def _compute_vct_a_and_vct_b(
                         )
                 if modified_vct_a[0] == vct_a[0]:
                     vct_a[0:2] = modified_vct_a[0:2]
-                    vct_a[
-                        lowest_level_unmodified_thickness + 1 : vertical_config.num_levels
-                    ] = modified_vct_a[
-                        lowest_level_unmodified_thickness + 1 : vertical_config.num_levels
-                    ]
+                    vct_a[lowest_level_unmodified_thickness + 1 : vertical_config.num_levels] = (
+                        modified_vct_a[
+                            lowest_level_unmodified_thickness + 1 : vertical_config.num_levels
+                        ]
+                    )
                     vct_a[2 : lowest_level_unmodified_thickness + 1] = 0.5 * (
                         modified_vct_a[1:lowest_level_unmodified_thickness]
                         + modified_vct_a[3 : lowest_level_unmodified_thickness + 2]
@@ -523,7 +527,7 @@ def _compute_vct_a_and_vct_b(
 
 
 def get_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, backend: Optional[gtx_backend.Backend]
+    vertical_config: VerticalGridConfig, backend: gtx_backend.Backend | None
 ) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.

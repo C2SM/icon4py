@@ -11,10 +11,11 @@ from __future__ import annotations
 import os
 import re
 from collections.abc import Sequence
-from typing import Final, Literal, TypeAlias
 from datetime import datetime
+from typing import Final, Literal, TypeAlias
 
 import nox
+
 
 # -- nox configuration --
 nox.options.default_venv_backend = "uv"
@@ -30,7 +31,7 @@ ModelSubpackagePath: TypeAlias = Literal[
     "atmosphere/subgrid_scale_physics/muphys",
     "common",
     "driver",
-    # "testing", #TODO: Add tests to testing subpackage
+    "testing",
 ]
 MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
     nox.param(arg, id=arg.split("/")[-1]) for arg in ModelSubpackagePath.__args__
@@ -38,12 +39,13 @@ MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
 
 ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
 MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
-        nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
+    nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
 ]
 # -- nox sessions --
 #: This should just be `pytest.ExitCode.NO_TESTS_COLLECTED` but `pytest`
 #: is not guaranteed to be available in the venv where `nox` is running.
 NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
+
 
 # Model benchmark sessions
 # TODO(egparedes): Add backend parameter
@@ -56,6 +58,7 @@ def benchmark_model(session: nox.Session) -> None:
     session.run(
         *f"pytest \
         -v \
+        -m continuous_benchmarking \
         --benchmark-only \
         --benchmark-warmup=on \
         --benchmark-warmup-iterations=30 \
@@ -63,6 +66,7 @@ def benchmark_model(session: nox.Session) -> None:
         ./model".split(),
         *session.posargs,
     )
+
 
 @nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
 def __bencher_baseline_CI(session: nox.Session) -> None:
@@ -83,16 +87,21 @@ def __bencher_baseline_CI(session: nox.Session) -> None:
         --err \
         --file pytest_benchmark_results_{session.python}.json".split(),
         env={
-            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_PROJECT": os.environ[
+                "BENCHER_PROJECT"
+            ].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_BRANCH": "main",
             "BENCHER_TESTBED": f"{os.environ['RUNNER']}:{os.environ['SYSTEM_TAG']}:{os.environ['BACKEND']}:{os.environ['GRID']}",
             "BENCHER_ADAPTER": "python_pytest",
-            "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_HOST": os.environ[
+                "BENCHER_HOST"
+            ].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
         },
         external=True,
         silent=True,
     )
+
 
 @nox.session(python=["3.10", "3.11"], requires=["benchmark_model-{python}"])
 def __bencher_feature_branch_CI(session: nox.Session) -> None:
@@ -114,16 +123,21 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
         --ci-id run-{bencher_testbed.replace(':', '_')}-{int(datetime.now().strftime('%Y%m%d%H%M%S%f'))} \
         --file pytest_benchmark_results_{session.python}.json".split(),
         env={
-            "BENCHER_PROJECT": os.environ["BENCHER_PROJECT"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
-            "BENCHER_BRANCH": os.environ['FEATURE_BRANCH'].strip(),
+            "BENCHER_PROJECT": os.environ[
+                "BENCHER_PROJECT"
+            ].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_BRANCH": os.environ["FEATURE_BRANCH"].strip(),
             "BENCHER_TESTBED": bencher_testbed,
             "BENCHER_ADAPTER": "python_pytest",
-            "BENCHER_HOST": os.environ["BENCHER_HOST"].strip(),  # defined in https://cicd-ext-mw.cscs.ch
+            "BENCHER_HOST": os.environ[
+                "BENCHER_HOST"
+            ].strip(),  # defined in https://cicd-ext-mw.cscs.ch
             "BENCHER_API_TOKEN": os.environ["BENCHER_API_TOKEN"].strip(),
         },
         external=True,
         silent=True,
     )
+
 
 # Model test sessions
 # TODO(egparedes): Add backend parameter
@@ -131,7 +145,9 @@ def __bencher_feature_branch_CI(session: nox.Session) -> None:
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_TESTS_SUBSETS)
-def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath) -> None:
+def test_model(
+    session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath
+) -> None:
     """Run tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["dace", "fortran", "io", "testing"], groups=["test"])
 
@@ -144,21 +160,26 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
         )
 
-# @nox.session(python=["3.10", "3.11"])
-# @nox.parametrize("selection", MODEL_TEST_SELECTION)
-# def test_testing(session: nox.Session, selection: ModelTestKind) -> None:
-#     session.notify(
-#         f"test_model-{session.python}(selection='{selection}', subpackage='testing')"
-#     )
+
+@nox.session(python=["3.10", "3.11"])
+@nox.parametrize("selection", "basic")
+def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
+    session.notify(f"test_model-{session.python}(selection='{selection}', subpackage='testing')")
 
 
 # Tools test sessions
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("datatest", [
-    nox.param(True, id="datatest", tags=["datatest"]),
-    nox.param(False, id="unittest",)
-])
+@nox.parametrize(
+    "datatest",
+    [
+        nox.param(True, id="datatest", tags=["datatest"]),
+        nox.param(
+            False,
+            id="unittest",
+        ),
+    ],
+)
 def test_tools(session: nox.Session, datatest: bool) -> None:
     """Run tests for the Fortran integration tools."""
     _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
@@ -166,8 +187,9 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
     with session.chdir("tools"):
         session.run(
             *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
-            *session.posargs
+            *session.posargs,
         )
+
 
 # -- utils --
 def _install_session_venv(
@@ -177,9 +199,9 @@ def _install_session_venv(
     groups: Sequence[str] = (),
 ) -> None:
     """Install session packages using uv."""
-    #TODO(egparedes): remove this workaround once `backend` parameter is added to sessions
-    if (env_extras := os.environ.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", "")):
-        extras = [*extras, *re.split(r'\W+', env_extras)]
+    # TODO(egparedes): remove this workaround once `backend` parameter is added to sessions
+    if env_extras := os.environ.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", ""):
+        extras = [*extras, *re.split(r"\W+", env_extras)]
     env = dict(os.environ.items()) | {"UV_PROJECT_ENVIRONMENT": session.virtualenv.location}
     session.run_install(
         "uv",
@@ -188,16 +210,13 @@ def _install_session_venv(
         "--no-dev",
         *(f"--extra={e}" for e in extras),
         *(f"--group={g}" for g in groups),
-        env=env
+        env=env,
     )
     for item in args:
         session.run_install(
-            "uv",
-            "pip",
-            "install",
-            *((item,) if isinstance(item, str) else item),
-            env=env
+            "uv", "pip", "install", *((item,) if isinstance(item, str) else item), env=env
         )
+
 
 def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
     pytest_args = []

@@ -9,13 +9,10 @@ import dataclasses
 import enum
 import functools
 import logging
-import math
-import uuid
+from collections.abc import Mapping, Sequence
 from types import ModuleType
-from typing import Callable, Dict, Mapping, Sequence
 
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
 from icon4py.model.common import dimension as dims
@@ -51,7 +48,7 @@ class HorizontalGridSize:
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class GridConfig:
     horizontal_config: HorizontalGridSize
-    # TODO (Magdalena): Decouple the vertical from horizontal grid.
+    # TODO(halungge): Decouple the vertical from horizontal grid.
     vertical_size: int
     limited_area: bool = True
     n_shift_total: int = 0
@@ -76,23 +73,6 @@ class GridConfig:
         return self.horizontal_config.num_cells
 
 
-def _1d_size(connectivity: gtx_common.NeighborTable) -> int:
-    return math.prod(connectivity.shape)
-
-
-def _default_1d_sparse_connectivity_constructor(
-    offset: gtx.FieldOffset,
-    shape2d: tuple[int, int],
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
-) -> data_alloc.NDArray:
-    return gtx.as_connectivity(
-        domain=offset.target,
-        codomain=offset.source,
-        data=np.arange(shape2d[0] * shape2d[1], dtype=gtx.int32).reshape(shape2d),
-        allocator=allocator,
-    )
-
-
 @dataclasses.dataclass(frozen=True)
 class Grid:
     """
@@ -105,7 +85,7 @@ class Grid:
     require an 'IconGrid'.
     """
 
-    id: uuid.UUID
+    id: str
     """
     Unique identifier of the horizontal grid.
 
@@ -117,61 +97,20 @@ class Grid:
     connectivities: gtx_common.OffsetProvider
     geometry_type: GeometryType
     # only used internally for `start_index` and `end_index` public interface:
-    # TODO(havogt): consider refactoring to `Mapping[h_grid.Zone, gtx.int32]`
-    _start_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
-    _end_indices: dict[gtx.Dimension, Mapping[int, gtx.int32]]
-    # for construction:
-    allocator: dataclasses.InitVar[gtx_allocators.FieldBufferAllocationUtil | None]
-    sparse_1d_connectivity_constructor: dataclasses.InitVar[
-        Callable[
-            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
-            gtx_common.NeighborTable,
-        ]
-        | None
-    ] = None
+    _start_indices: Mapping[h_grid.Domain, gtx.int32]
+    _end_indices: Mapping[h_grid.Domain, gtx.int32]
 
-    def __post_init__(
-        self,
-        allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-        sparse_1d_connectivity_constructor: Callable[
-            [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
-            gtx_common.NeighborTable,
-        ]
-        | None,
-    ):
-        if sparse_1d_connectivity_constructor is None:
-            sparse_1d_connectivity_constructor = _default_1d_sparse_connectivity_constructor
+    def __post_init__(self):
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
         self.connectivities[dims.Koff.value] = dims.KDim
-        # 1d sparse connectivities
-        self.connectivities[dims.C2CE.value] = sparse_1d_connectivity_constructor(
-            dims.C2CE, self.get_connectivity(dims.C2E).shape, allocator=allocator
-        )
-        self.connectivities[dims.E2ECV.value] = sparse_1d_connectivity_constructor(
-            dims.E2ECV, self.get_connectivity(dims.E2C2V).shape, allocator=allocator
-        )
-        self.connectivities[dims.E2EC.value] = sparse_1d_connectivity_constructor(
-            dims.E2EC, self.get_connectivity(dims.E2C).shape, allocator=allocator
-        )
-        self.connectivities[dims.C2CEC.value] = sparse_1d_connectivity_constructor(
-            dims.C2CEC, self.get_connectivity(dims.C2E2C).shape, allocator=allocator
-        )
-        if dims.C2E2C2E2C.value in self.connectivities:  # TODO is this optional?
-            self.connectivities[dims.C2CECEC.value] = sparse_1d_connectivity_constructor(
-                dims.C2CECEC, self.get_connectivity(dims.C2E2C2E2C).shape, allocator=allocator
-            )
 
     @functools.cached_property
-    def size(self) -> Dict[gtx.Dimension, int]:
+    def size(self) -> dict[gtx.Dimension, int]:
         sizes = {
             dims.KDim: self.config.num_levels,
             dims.CellDim: self.config.num_cells,
             dims.EdgeDim: self.config.num_edges,
             dims.VertexDim: self.config.num_vertices,
-            # 1d sparse sizes cannot be deduced from their connectivity
-            dims.ECVDim: _1d_size(self.get_connectivity(dims.E2C2V)),
-            dims.CEDim: _1d_size(self.get_connectivity(dims.C2E)),
-            dims.ECDim: _1d_size(self.get_connectivity(dims.E2C)),
         }
 
         # extract sizes from connectivities
@@ -232,10 +171,10 @@ class Grid:
         For a given dimension, returns the start index of the
         horizontal region in a field given by the marker.
         """
-        if domain.local:
+        if domain.is_local:
             # special treatment because this value is not set properly in the underlying data.
             return gtx.int32(0)
-        return gtx.int32(self._start_indices[domain.dim][domain()])
+        return self._start_indices[domain]
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
@@ -247,7 +186,7 @@ class Grid:
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return gtx.int32(self.size[domain.dim])
-        return gtx.int32(self._end_indices[domain.dim][domain()])
+        return self._end_indices[domain]
 
 
 def construct_connectivity(

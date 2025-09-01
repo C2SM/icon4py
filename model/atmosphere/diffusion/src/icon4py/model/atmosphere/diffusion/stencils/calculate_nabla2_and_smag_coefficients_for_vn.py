@@ -11,7 +11,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype, maximum, minimum, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C2V, E2ECV
+from icon4py.model.common.dimension import E2C2V, E2C2VDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -23,10 +23,10 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
-    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
-    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
-    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
-    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
+    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
     smag_limit: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     smag_offset: vpfloat,
@@ -41,37 +41,37 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
 
     dvt_tang_wp = (
         -(
-            u_vert_wp(E2C2V[0]) * dual_normal_vert_x(E2ECV[0])
-            + v_vert_wp(E2C2V[0]) * dual_normal_vert_y(E2ECV[0])
+            u_vert_wp(E2C2V[0]) * dual_normal_vert_x[E2C2VDim(0)]
+            + v_vert_wp(E2C2V[0]) * dual_normal_vert_y[E2C2VDim(0)]
         )
     ) + (
-        u_vert_wp(E2C2V[1]) * dual_normal_vert_x(E2ECV[1])
-        + v_vert_wp(E2C2V[1]) * dual_normal_vert_y(E2ECV[1])
+        u_vert_wp(E2C2V[1]) * dual_normal_vert_x[E2C2VDim(1)]
+        + v_vert_wp(E2C2V[1]) * dual_normal_vert_y[E2C2VDim(1)]
     )
 
     dvt_norm_vp = astype(
         (
             -(
-                u_vert_wp(E2C2V[2]) * dual_normal_vert_x(E2ECV[2])
-                + v_vert_wp(E2C2V[2]) * dual_normal_vert_y(E2ECV[2])
+                u_vert_wp(E2C2V[2]) * dual_normal_vert_x[E2C2VDim(2)]
+                + v_vert_wp(E2C2V[2]) * dual_normal_vert_y[E2C2VDim(2)]
             )
         )
         + (
-            u_vert_wp(E2C2V[3]) * dual_normal_vert_x(E2ECV[3])
-            + v_vert_wp(E2C2V[3]) * dual_normal_vert_y(E2ECV[3])
+            u_vert_wp(E2C2V[3]) * dual_normal_vert_x[E2C2VDim(3)]
+            + v_vert_wp(E2C2V[3]) * dual_normal_vert_y[E2C2VDim(3)]
         ),
         vpfloat,
     )
 
     kh_smag_1_vp = (
         -astype(
-            u_vert_wp(E2C2V[0]) * primal_normal_vert_x(E2ECV[0])
-            + v_vert_wp(E2C2V[0]) * primal_normal_vert_y(E2ECV[0]),
+            u_vert_wp(E2C2V[0]) * primal_normal_vert_x[E2C2VDim(0)]
+            + v_vert_wp(E2C2V[0]) * primal_normal_vert_y[E2C2VDim(0)],
             vpfloat,
         )
     ) + astype(
-        u_vert_wp(E2C2V[1]) * primal_normal_vert_x(E2ECV[1])
-        + v_vert_wp(E2C2V[1]) * primal_normal_vert_y(E2ECV[1]),
+        u_vert_wp(E2C2V[1]) * primal_normal_vert_x[E2C2VDim(1)]
+        + v_vert_wp(E2C2V[1]) * primal_normal_vert_y[E2C2VDim(1)],
         vpfloat,
     )
 
@@ -86,13 +86,13 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
 
     kh_smag_2_vp = (
         -astype(
-            u_vert_wp(E2C2V[2]) * primal_normal_vert_x(E2ECV[2])
-            + v_vert_wp(E2C2V[2]) * primal_normal_vert_y(E2ECV[2]),
+            u_vert_wp(E2C2V[2]) * primal_normal_vert_x[E2C2VDim(2)]
+            + v_vert_wp(E2C2V[2]) * primal_normal_vert_y[E2C2VDim(2)],
             vpfloat,
         )
     ) + astype(
-        u_vert_wp(E2C2V[3]) * primal_normal_vert_x(E2ECV[3])
-        + v_vert_wp(E2C2V[3]) * primal_normal_vert_y(E2ECV[3]),
+        u_vert_wp(E2C2V[3]) * primal_normal_vert_x[E2C2VDim(3)]
+        + v_vert_wp(E2C2V[3]) * primal_normal_vert_y[E2C2VDim(3)],
         vpfloat,
     )
 
@@ -107,13 +107,13 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     z_nabla2_e_wp = (
         astype(
             astype(
-                u_vert_wp(E2C2V[0]) * primal_normal_vert_x(E2ECV[0])
-                + v_vert_wp(E2C2V[0]) * primal_normal_vert_y(E2ECV[0]),
+                u_vert_wp(E2C2V[0]) * primal_normal_vert_x[E2C2VDim(0)]
+                + v_vert_wp(E2C2V[0]) * primal_normal_vert_y[E2C2VDim(0)],
                 vpfloat,
             )
             + astype(
-                u_vert_wp(E2C2V[1]) * primal_normal_vert_x(E2ECV[1])
-                + v_vert_wp(E2C2V[1]) * primal_normal_vert_y(E2ECV[1]),
+                u_vert_wp(E2C2V[1]) * primal_normal_vert_x[E2C2VDim(1)]
+                + v_vert_wp(E2C2V[1]) * primal_normal_vert_y[E2C2VDim(1)],
                 vpfloat,
             ),
             wpfloat,
@@ -123,13 +123,13 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     z_nabla2_e_wp = z_nabla2_e_wp + (
         astype(
             astype(
-                u_vert_wp(E2C2V[2]) * primal_normal_vert_x(E2ECV[2])
-                + v_vert_wp(E2C2V[2]) * primal_normal_vert_y(E2ECV[2]),
+                u_vert_wp(E2C2V[2]) * primal_normal_vert_x[E2C2VDim(2)]
+                + v_vert_wp(E2C2V[2]) * primal_normal_vert_y[E2C2VDim(2)],
                 vpfloat,
             )
             + astype(
-                u_vert_wp(E2C2V[3]) * primal_normal_vert_x(E2ECV[3])
-                + v_vert_wp(E2C2V[3]) * primal_normal_vert_y(E2ECV[3]),
+                u_vert_wp(E2C2V[3]) * primal_normal_vert_x[E2C2VDim(3)]
+                + v_vert_wp(E2C2V[3]) * primal_normal_vert_y[E2C2VDim(3)],
                 vpfloat,
             ),
             wpfloat,
@@ -154,10 +154,10 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
-    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
-    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
-    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
-    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
+    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
     smag_limit: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],

@@ -10,7 +10,8 @@ import datetime
 import logging
 import pathlib
 import uuid
-from typing import Callable, NamedTuple
+from collections.abc import Callable
+from typing import NamedTuple
 
 import click
 import numpy as np
@@ -18,10 +19,7 @@ from devtools import Timer
 from gt4py.next import backend as gtx_backend, config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import (
-    diffusion,
-    diffusion_states,
-)
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -108,7 +106,7 @@ class TimeLoop:
         return self._substep_timestep
 
     def _full_name(self, func: Callable):
-        return ":".join((self.__class__.__name__, func.__name__))
+        return f"{self.__class__.__name__}:{func.__name__}"
 
     def time_integration(
         self,
@@ -127,11 +125,11 @@ class TimeLoop:
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
         )
 
-        # TODO (Chia Rui): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
+        # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
 
-        # TODO (Chia Rui): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
+        # TODO(OngChia): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
-        # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
+        # TODO(OngChia): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
         if (
             self.diffusion.config.apply_to_horizontal_wind
@@ -163,7 +161,7 @@ class TimeLoop:
                 log.debug(
                     f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
                 )
-                # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
+                # TODO(OngChia): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
@@ -183,11 +181,11 @@ class TimeLoop:
 
             self._is_first_step_in_simulation = False
 
-            # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
+            # TODO(OngChia): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
-            # TODO (Chia Rui): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
+            # TODO(OngChia): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
-            # TODO (Chia Rui): simple IO enough for JW test
+            # TODO(OngChia): simple IO enough for JW test
 
         timer_first_timestep.summary(True)
         if self.n_time_steps > 1:  # in case only one time step was run
@@ -205,7 +203,7 @@ class TimeLoop:
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): Add update_spinup_damping here to compute second_order_divdamp_factor
+        # TODO(OngChia): Add update_spinup_damping here to compute second_order_divdamp_factor
 
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
@@ -224,7 +222,7 @@ class TimeLoop:
 
         prognostic_states.swap()
 
-    # TODO (Chia Rui): add tracer advection here
+    # TODO(OngChia): add tracer advection here
 
     def _update_time_levels_for_velocity_tendencies(
         self,
@@ -273,9 +271,9 @@ class TimeLoop:
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): compute airmass for prognostic_state here
+        # TODO(OngChia): compute airmass for prognostic_state here
 
-        for dyn_substep in range(self._n_substeps_var):
+        for dyn_substep in range(self.n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
@@ -293,6 +291,7 @@ class TimeLoop:
                 prep_adv=prep_adv,
                 second_order_divdamp_factor=second_order_divdamp_factor,
                 dtime=self._substep_timestep,
+                ndyn_substeps_var=self.n_substeps_var,
                 at_initial_timestep=self._is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
@@ -302,7 +301,7 @@ class TimeLoop:
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
 
-        # TODO (Chia Rui): compute airmass for prognostic_state here
+        # TODO(OngChia): compute airmass for prognostic_state here
 
 
 class DriverStates(NamedTuple):
@@ -414,7 +413,7 @@ def initialize(
         diffusion_interpolation_state,
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
-        diagnostic_metric_state,
+        _,
     ) = driver_init.read_static_fields(
         icon_grid,
         file_path,
@@ -590,7 +589,7 @@ def icon4py_driver(
     if icon4py_driver_backend not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {icon4py_driver_backend}. \n"
-            f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS.keys()])}"
+            f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS])}"
         )
     backend = model_backends.BACKENDS[icon4py_driver_backend]
 

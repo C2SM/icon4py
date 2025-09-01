@@ -6,21 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from abc import ABC, abstractmethod
-from enum import Enum, auto
 import dataclasses
 import logging
-from typing import Optional
+from abc import ABC, abstractmethod
+from enum import Enum
 
-import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend as gtx_backend
 
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.advection import (
-    advection_states,
     advection_horizontal,
+    advection_states,
     advection_vertical,
 )
-
 from icon4py.model.atmosphere.advection.stencils.apply_density_increment import (
     apply_density_increment,
 )
@@ -28,14 +26,9 @@ from icon4py.model.atmosphere.advection.stencils.apply_interpolated_tracer_time_
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.atmosphere.advection.stencils.copy_cell_kdim_field import copy_cell_kdim_field
-
-from icon4py.model.common import (
-    dimension as dims,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -43,7 +36,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 Advection module ported from ICON mo_advection_stepping.f90.
 """
 
-# flake8: noqa
 log = logging.getLogger(__name__)
 
 
@@ -167,15 +159,15 @@ class NoAdvection(Advection):
     def __init__(
         self,
         grid: icon_grid.IconGrid,
-        backend: Optional[gtx_backend.Backend],
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        backend: gtx_backend.Backend | None,
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         log.debug("advection class init - start")
 
         # input arguments
         self._grid = grid
         self._backend = backend
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -223,8 +215,8 @@ class GodunovSplittingAdvection(Advection):
         vertical_advection: advection_vertical.VerticalAdvection,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend: Optional[gtx_backend.Backend],
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        backend: gtx_backend.Backend | None,
+        exchange: decomposition.ExchangeRuntime | None = None,
         even_timestep: bool = False,
     ):
         log.debug("advection class init - start")
@@ -235,7 +227,7 @@ class GodunovSplittingAdvection(Advection):
         self._grid = grid
         self._metric_state = metric_state
         self._backend = backend
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
         self._even_timestep = even_timestep  # originally jstep_adv(:)%marchuk_order = 1
 
         # cell indices
@@ -381,7 +373,7 @@ class GodunovSplittingAdvection(Advection):
         log.debug("advection run - end")
 
 
-def convert_config_to_horizontal_vertical_advection(
+def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-branches]
     config: AdvectionConfig,
     grid: icon_grid.IconGrid,
     interpolation_state: advection_states.AdvectionInterpolationState,
@@ -389,9 +381,11 @@ def convert_config_to_horizontal_vertical_advection(
     metric_state: advection_states.AdvectionMetricState,
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
-    backend: Optional[gtx_backend.Backend],
-    exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+    backend: gtx_backend.Backend | None,
+    exchange: decomposition.ExchangeRuntime | None = None,
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
+    exchange = exchange or decomposition.SingleNodeExchange()
+    assert exchange is not None, "Exchange runtime must not be None."
     match config.horizontal_advection_limiter:
         case HorizontalAdvectionLimiter.NO_LIMITER:
             horizontal_limiter = advection_horizontal.HorizontalFluxLimiter()
@@ -403,7 +397,7 @@ def convert_config_to_horizontal_vertical_advection(
                 exchange=exchange,
             )
         case _:
-            raise NotImplementedError(f"Unknown horizontal advection limiter.")
+            raise NotImplementedError("Unknown horizontal advection limiter.")
 
     match config.horizontal_advection_type:
         case HorizontalAdvectionType.NO_ADVECTION:
@@ -427,7 +421,7 @@ def convert_config_to_horizontal_vertical_advection(
                 exchange=exchange,
             )
         case _:
-            raise NotImplementedError(f"Unknown horizontal advection type.")
+            raise NotImplementedError("Unknown horizontal advection type.")
 
     match config.vertical_advection_limiter:
         case VerticalAdvectionLimiter.NO_LIMITER:
@@ -435,7 +429,7 @@ def convert_config_to_horizontal_vertical_advection(
         case VerticalAdvectionLimiter.SEMI_MONOTONIC:
             vertical_limiter = advection_vertical.SemiMonotonicLimiter(grid=grid, backend=backend)
         case _:
-            raise NotImplementedError(f"Unknown vertical advection limiter.")
+            raise NotImplementedError("Unknown vertical advection limiter.")
 
     match config.vertical_advection_type:
         case VerticalAdvectionType.NO_ADVECTION:
@@ -458,7 +452,7 @@ def convert_config_to_horizontal_vertical_advection(
                 backend=backend,
             )
         case _:
-            raise NotImplementedError(f"Unknown vertical advection type.")
+            raise NotImplementedError("Unknown vertical advection type.")
 
     return horizontal_advection, vertical_advection
 
@@ -471,10 +465,12 @@ def convert_config_to_advection(
     metric_state: advection_states.AdvectionMetricState,
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
-    backend: Optional[gtx_backend.Backend],
-    exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+    backend: gtx_backend.Backend | None,
+    exchange: decomposition.ExchangeRuntime | None = None,
     even_timestep: bool = False,
 ) -> Advection:
+    exchange = exchange or decomposition.SingleNodeExchange()
+    assert exchange is not None, "Exchange runtime must not be None."
     if (
         config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
         and config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION

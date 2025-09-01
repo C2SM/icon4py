@@ -13,7 +13,7 @@ import numpy as np
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def compute_zdiff_gradp_dsl(
+def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
     e2c,
     z_mc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
@@ -112,7 +112,4 @@ def compute_zdiff_gradp_dsl(
                         jk_start = jk1
                         break
 
-    zdiff_gradp_full_field = zdiff_gradp.reshape(
-        (zdiff_gradp.shape[0] * zdiff_gradp.shape[1],) + zdiff_gradp.shape[2:]
-    )
-    return zdiff_gradp_full_field
+    return zdiff_gradp

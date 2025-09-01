@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from abc import ABC, abstractmethod
 import logging
-from typing import Optional
+from abc import ABC, abstractmethod
 
-import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend as gtx_backend
 
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.advection import advection_states
-
 from icon4py.model.atmosphere.advection.stencils.apply_positive_definite_horizontal_multiplicative_flux_factor import (
     apply_positive_definite_horizontal_multiplicative_flux_factor,
 )
@@ -37,7 +35,6 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_horizontally i
 from icon4py.model.atmosphere.advection.stencils.reconstruct_linear_coefficients_svd import (
     reconstruct_linear_coefficients_svd,
 )
-
 from icon4py.model.common import (
     constants,
     dimension as dims,
@@ -45,15 +42,12 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-"""
-Advection components related to horizontal transport.
-"""
+"""Advection components related to horizontal transport."""
 
-# flake8: noqa
 log = logging.getLogger(__name__)
 
 
@@ -66,8 +60,7 @@ class HorizontalFluxLimiter:
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
-        ...
+    ): ...
 
 
 class PositiveDefinite(HorizontalFluxLimiter):
@@ -77,13 +70,13 @@ class PositiveDefinite(HorizontalFluxLimiter):
         self,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
-        backend: Optional[gtx_backend.Backend],
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        backend: gtx_backend.Backend | None,
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._grid = grid
         self._interpolation_state = interpolation_state
         self._backend = backend
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -180,8 +173,7 @@ class SemiLagrangianTracerFlux(ABC):
         p_distv_bary_2: fa.EdgeKField[ta.vpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
-        ...
+    ): ...
 
 
 class SecondOrderMiura(SemiLagrangianTracerFlux):
@@ -191,13 +183,13 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self,
         grid: icon_grid.IconGrid,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
-        backend: Optional[gtx_backend.Backend],
-        horizontal_limiter: HorizontalFluxLimiter = HorizontalFluxLimiter(),
+        backend: gtx_backend.Backend | None,
+        horizontal_limiter: HorizontalFluxLimiter | None = None,
     ):
         self._grid = grid
         self._least_squares_state = least_squares_state
         self._backend = backend
-        self._horizontal_limiter = horizontal_limiter
+        self._horizontal_limiter = horizontal_limiter or HorizontalFluxLimiter()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -327,7 +319,7 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
         log.debug("horizontal advection class init - start")
 
         # input arguments
@@ -413,8 +405,7 @@ class FiniteVolume(HorizontalAdvection):
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
-        ...
+    ): ...
 
     @abstractmethod
     def _update_unknowns(
@@ -425,8 +416,7 @@ class FiniteVolume(HorizontalAdvection):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
-        ...
+    ): ...
 
 
 class SemiLagrangian(FiniteVolume):
@@ -441,8 +431,8 @@ class SemiLagrangian(FiniteVolume):
         metric_state: advection_states.AdvectionMetricState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: Optional[gtx_backend.Backend],
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        backend: gtx_backend.Backend | None,
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         log.debug("horizontal advection class init - start")
 
@@ -455,7 +445,7 @@ class SemiLagrangian(FiniteVolume):
         self._edge_params = edge_params
         self._cell_params = cell_params
         self._backend = backend
-        self._exchange = exchange
+        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)

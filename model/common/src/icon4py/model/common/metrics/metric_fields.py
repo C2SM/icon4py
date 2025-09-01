@@ -5,6 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90."""
+
+from __future__ import annotations
+
 from types import ModuleType
 from typing import Final
 
@@ -12,7 +17,7 @@ import gt4py.next as gtx
 import numpy as np
 from gt4py.next import (
     GridType,
-    abs,
+    abs,  # noqa: A004
     astype,
     broadcast,
     exp,
@@ -30,15 +35,8 @@ from gt4py.next import (
 )
 from gt4py.next.ffront.experimental import concat_where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_options
-from icon4py.model.common.dimension import (
-    C2E,
-    C2E2C,
-    C2E2CO,
-    E2C,
-    C2E2CODim,
-    Koff,
-)
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, Koff
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
@@ -54,16 +52,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-"""
-Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
-"""
+rayleigh_damping_options: Final = constants.RayleighType()
 
 
-rayleigh_damping_options: Final = model_options.RayleighType()
-
-
-# TODO(@nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
-# TODO(@nfarabullini): change dimension type hint for ddqz_z_half to cell, khalf
+# TODO(nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
+# TODO(nfarabullini): change dimension type hint for ddqz_z_half to cell, khalf
 @field_operator
 def _compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
@@ -72,7 +65,9 @@ def _compute_ddqz_z_half(
 ) -> fa.CellKField[wpfloat]:
     ddqz_z_half = concat_where((dims.KDim > 0) & (dims.KDim < nlev), 0.0, 2.0 * (z_ifc - z_mc))
     ddqz_z_half = concat_where(
-        (0 < dims.KDim) & (dims.KDim < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half
+        (0 < dims.KDim) & (dims.KDim < nlev),  # noqa: SIM300 [yoda-conditions]
+        z_mc(Koff[-1]) - z_mc,
+        ddqz_z_half,
     )
     ddqz_z_half = concat_where(dims.KDim == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
     return ddqz_z_half
@@ -748,7 +743,7 @@ def _compute_mask_prog_halo_c(
     return mask_prog_halo_c
 
 
-# TODO (@halungge) not registered in factory
+# TODO(halungge): not registered in factory
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_mask_prog_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],
@@ -783,7 +778,7 @@ def _compute_bdy_halo_c(
     return bdy_halo_c
 
 
-# TODO (@halungge) not registered in factory
+# TODO(halungge): not registered in factory
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_bdy_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],
