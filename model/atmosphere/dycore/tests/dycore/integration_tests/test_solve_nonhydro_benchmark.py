@@ -56,7 +56,7 @@ def construct_dummy_decomposition_info(grid, backend) -> definitions.Decompositi
 
     return decomposition_info
 
-# TODO (Yilu): there is the duplication of the vertical_grid_params with the diffusion, probabaly we can move it to other places
+# TODO (Yilu): there is the duplication of the vertical_grid_params with the diffusion, probobaly we can move it to other places
 @pytest.fixture
 def vertical_grid_params(
     lowest_layer_thickness,
@@ -150,11 +150,11 @@ def test_run_solve_nonhydro_benchmark(
         rayleigh_damping_height=vertical_grid_params["damping_height"],
     )
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-        _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(), # TODO (Yilu)
     )
 
     dtime = sp.get_metadata("dtime").get("dtime") # TODO (Yilu): set dtime directly
@@ -208,8 +208,8 @@ def test_run_solve_nonhydro_benchmark(
             grid, dims.EdgeDim, dims.KDim, backend=backend
         ),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
-        ), # TODO (Yilu)
+            data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend), data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend)
+        ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(current_index), init_savepoint.ddt_w_adv_pc(next_index)
         ), # TODO (Yilu)
@@ -293,24 +293,24 @@ def test_run_solve_nonhydro_benchmark(
         bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
         mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
         rayleigh_w=metrics_field_source.get(metrics_attributes.RAYLEIGH_W),
-        time_extrapolation_parameter_for_exner=metrics_field_source.get(metrics_attributes.), # TODO (Yilu)
+        time_extrapolation_parameter_for_exner=metrics_field_source.get(metrics_attributes.EXNER_EXFAC),
         reference_exner_at_cells_on_model_levels=metrics_field_source.get(metrics_attributes.EXNER_REF_MC),
         wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
         wgtfacq_c=metrics_field_source.get(metrics_attributes.WGTFACQ_C),
         inv_ddqz_z_full=metrics_field_source.get(metrics_attributes.INV_DDQZ_Z_FULL),
-        reference_rho_at_cells_on_model_levels=metrics_field_source.get(metrics_attributes.), # TODO (Yilu)
+        reference_rho_at_cells_on_model_levels=metrics_field_source.get(metrics_attributes.RHO_REF_MC),
         reference_theta_at_cells_on_model_levels=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
         exner_w_explicit_weight_parameter=metrics_field_source.get(metrics_attributes.EXNER_W_EXPLICIT_WEIGHT_PARAMETER),
-        ddz_of_reference_exner_at_cells_on_half_levels=metrics_field_source.get(metrics_attributes.), # TODO (Yilu)
+        ddz_of_reference_exner_at_cells_on_half_levels=metrics_field_source.get(metrics_attributes.D_EXNER_DZ_REF_IC),
         ddqz_z_half=metrics_field_source.get(metrics_attributes.DDQZ_Z_HALF),
-        reference_theta_at_cells_on_half_levels=metrics_field_source.get(metrics_attributes.THETA_REF_MC),# TODO (Yilu)
+        reference_theta_at_cells_on_half_levels=metrics_field_source.get(metrics_attributes.THETA_REF_IC),
         d2dexdz2_fac1_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
         d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
-        reference_rho_at_edges_on_model_levels=,# TODO (Yilu)
-        reference_theta_at_edges_on_model_levels=,# TODO (Yilu)
+        reference_rho_at_edges_on_model_levels=metrics_field_source.get(metrics_attributes.RHO_REF_ME),
+        reference_theta_at_edges_on_model_levels=metrics_field_source.get(metrics_attributes.THETA_REF_ME),
         ddxn_z_full=metrics_field_source.get(metrics_attributes.DDXN_Z_FULL),
         zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
-        vertoffset_gradp=metrics_field_source.get(metrics_attributes.),# TODO (Yilu)
+        vertoffset_gradp=metrics_field_source.get(metrics_attributes.),# TODO (Yilu) vertoffset_gradp # TODOTODO
         pg_edgeidx_dsl=metrics_field_source.get(metrics_attributes.PG_EDGEIDX_DSL),
         pg_exdist=metrics_field_source.get(metrics_attributes.PG_EDGEDIST_DSL),
         ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),

@@ -1013,7 +1013,7 @@ def _compute_z_ifc_off_koff(
 
 
 @field_operator
-def _compute_theta_exner_ref_mc(
+def _compute_theta_exner_rho_ref_mc(
     z_mc: fa.CellKField[wpfloat],
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
@@ -1033,16 +1033,71 @@ def _compute_theta_exner_ref_mc(
     )
     exner_ref_mc = (z_aux1 / p0ref) ** rd_o_cpd
     z_temp = (t0sl_bg - del_t_bg) + del_t_bg * exp(-z_mc / h_scal_bg)
+    rho_ref_mc = z_aux1 / (rd * z_temp)
     theta_ref_mc = z_temp / exner_ref_mc
-    return exner_ref_mc, theta_ref_mc
+    return exner_ref_mc, theta_ref_mc, rho_ref_mc
+
+@field_operator
+def _compute_theta_rho_ref_me(
+    z_mc: fa.CellKField[wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    grav: wpfloat,
+    rd: wpfloat,
+    p0sl_bg: wpfloat,
+    rd_o_cpd: wpfloat,
+    p0ref: wpfloat,
+):
+    z_me=_cell_2_edge_interpolation(z_mc, c_lin_e)
+    z_aux1 = p0sl_bg * exp(
+        -grav
+        / rd
+        * h_scal_bg
+        / (t0sl_bg - del_t_bg)
+        * log((exp(z_me / h_scal_bg) * (t0sl_bg - del_t_bg) + del_t_bg) / t0sl_bg)
+    )
+    z_temp = (t0sl_bg - del_t_bg) + del_t_bg * exp(-z_me / h_scal_bg)
+    rho_ref_me = z_aux1 / (rd * z_temp)
+    theta_ref_me = z_temp / ((z_aux1/p0ref) ** rd_o_cpd)
+    return rho_ref_me, theta_ref_me
+
+@field_operator
+def _compute_theta_d_exner_dz_ref_ic(
+    z_ifc: fa.CellKField[wpfloat],
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    grav: wpfloat,
+    cpd: wpfloat,
+    rd: wpfloat,
+    p0sl_bg: wpfloat,
+    rd_o_cpd: wpfloat,
+    p0ref: wpfloat,
+):
+    z_aux1 = p0sl_bg * exp(
+        -grav
+        / rd
+        * h_scal_bg
+        / (t0sl_bg - del_t_bg)
+        * log((exp(z_ifc / h_scal_bg) * (t0sl_bg - del_t_bg) + del_t_bg) / t0sl_bg)
+    )
+    z_help = (z_aux1 / p0ref) ** rd_o_cpd
+    z_temp = (t0sl_bg - del_t_bg) + del_t_bg * exp(-z_ifc / h_scal_bg)
+    z_aux2 = z_aux1 / (rd * z_temp)
+    theta_ref_ic = z_temp / z_help
+    d_exner_dz_ref_ic = - grav/cpd/theta_ref_ic
+    return theta_ref_ic, d_exner_dz_ref_ic
 
 
 # TODO @halungge: duplicate program - see reference_atmosphere.py
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_theta_exner_ref_mc(
+def compute_theta_exner_rho_ref_mc(
     z_mc: fa.CellKField[wpfloat],
     exner_ref_mc: fa.CellKField[wpfloat],
     theta_ref_mc: fa.CellKField[wpfloat],
+    rho_ref_mc: fa.CellKField[wpfloat],
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
     h_scal_bg: wpfloat,
@@ -1056,7 +1111,7 @@ def compute_theta_exner_ref_mc(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_theta_exner_ref_mc(
+    _compute_theta_exner_rho_ref_mc(
         z_mc=z_mc,
         t0sl_bg=t0sl_bg,
         del_t_bg=del_t_bg,
@@ -1066,7 +1121,80 @@ def compute_theta_exner_ref_mc(
         p0sl_bg=p0sl_bg,
         rd_o_cpd=rd_o_cpd,
         p0ref=p0ref,
-        out=(exner_ref_mc, theta_ref_mc),
+        out=(exner_ref_mc, theta_ref_mc, rho_ref_mc),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_theta_rho_ref_me(
+    z_mc: fa.CellKField[wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+    rho_ref_me: fa.CellKField[wpfloat],
+    theta_ref_me: fa.CellKField[wpfloat],
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    grav: wpfloat,
+    rd: wpfloat,
+    p0sl_bg: wpfloat,
+    rd_o_cpd: wpfloat,
+    p0ref: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_theta_rho_ref_me(
+        z_mc=z_mc,
+        c_lin_e = c_lin_e,
+        t0sl_bg=t0sl_bg,
+        del_t_bg=del_t_bg,
+        h_scal_bg=h_scal_bg,
+        grav=grav,
+        rd=rd,
+        p0sl_bg=p0sl_bg,
+        rd_o_cpd=rd_o_cpd,
+        p0ref=p0ref,
+        out=(theta_ref_me, rho_ref_me),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_theta_d_exner_dz_ref_ic(
+    z_ifc: fa.CellKField[wpfloat],
+    d_exner_dz_ref_ic: fa.CellKField[wpfloat],
+    theta_ref_ic: fa.CellKField[wpfloat],
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    grav: wpfloat,
+    rd: wpfloat,
+    p0sl_bg: wpfloat,
+    rd_o_cpd: wpfloat,
+    p0ref: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_theta_d_exner_dz_ref_ic(
+        z_ifc=z_ifc,
+        t0sl_bg=t0sl_bg,
+        del_t_bg=del_t_bg,
+        h_scal_bg=h_scal_bg,
+        grav=grav,
+        cpd = cpd,
+        rd=rd,
+        p0sl_bg=p0sl_bg,
+        rd_o_cpd=rd_o_cpd,
+        p0ref=p0ref,
+        out=(theta_ref_ic, d_exner_dz_ref_ic),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

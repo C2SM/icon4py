@@ -297,8 +297,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_coeff_dwdz)
 
-        compute_theta_exner_ref_mc = factory.ProgramFieldProvider(
-            func=mf.compute_theta_exner_ref_mc.with_backend(self._backend),
+        compute_theta_exner_rho_ref_mc = factory.ProgramFieldProvider(
+            func=mf.compute_theta_exner_rho_ref_mc.with_backend(self._backend),
             deps={
                 "z_mc": attrs.Z_MC,
             },
@@ -312,7 +312,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"exner_ref_mc": attrs.EXNER_REF_MC, "theta_ref_mc": attrs.THETA_REF_MC},
+            fields={"exner_ref_mc": attrs.EXNER_REF_MC, "theta_ref_mc": attrs.THETA_REF_MC, "rho_ref_mc": attrs.RHO_REF_MC},
             params={
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
@@ -324,7 +324,66 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "p0ref": constants.REFERENCE_PRESSURE,
             },
         )
-        self.register_provider(compute_theta_exner_ref_mc)
+        self.register_provider(compute_theta_exner_rho_ref_mc)
+
+        compute_theta_rho_ref_me = factory.ProgramFieldProvider(
+            func=mf.compute_theta_rho_ref_me.with_backend(self._backend),
+            deps={
+                "z_mc": attrs.Z_MC,
+                "c_lin_e": interpolation_attributes.C_LIN_E
+            },
+            domain={
+                dims.CellDim: (
+                    cell_domain(h_grid.Zone.LOCAL),
+                    cell_domain(h_grid.Zone.END),
+                ),
+                dims.KDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"theta_ref_me": attrs.THETA_REF_ME, "rho_ref_me": attrs.RHO_REF_ME},
+            params={
+                "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
+                "del_t_bg": constants.DELTA_TEMPERATURE,
+                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
+                "grav": constants.GRAV,
+                "rd": constants.RD,
+                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
+                "rd_o_cpd": constants.RD_O_CPD,
+                "p0ref": constants.REFERENCE_PRESSURE,
+            },
+        )
+        self.register_provider(compute_theta_rho_ref_me)
+
+        compute_theta_d_exner_dz_ref_ic = factory.ProgramFieldProvider(
+            func=mf.compute_theta_d_exner_dz_ref_ic.with_backend(self._backend),
+            deps={
+                "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
+            },
+            domain={
+                dims.CellDim: (
+                    cell_domain(h_grid.Zone.LOCAL),
+                    cell_domain(h_grid.Zone.END),
+                ),
+                dims.KDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"theta_ref_ic": attrs.THETA_REF_IC, "d_exner_dz_ref_ic": attrs.D_EXNER_DZ_REF_IC},
+            params={
+                "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
+                "del_t_bg": constants.DELTA_TEMPERATURE,
+                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
+                "grav": constants.GRAV,
+                "rd": constants.RD,
+                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
+                "rd_o_cpd": constants.RD_O_CPD,
+                "p0ref": constants.REFERENCE_PRESSURE,
+            },
+        )
+        self.register_provider(compute_theta_d_exner_dz_ref_ic)
 
         compute_d2dexdz2_fac_mc = factory.ProgramFieldProvider(
             func=reference_atmosphere.compute_d2dexdz2_fac_mc.with_backend(self._backend),

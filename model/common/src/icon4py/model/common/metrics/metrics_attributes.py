@@ -28,6 +28,11 @@ COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
 COEFF2_DWDZ: Final[str] = "coeff2_dwdz"
 EXNER_REF_MC: Final[str] = "exner_ref_mc"
 THETA_REF_MC: Final[str] = "theta_ref_mc"
+THETA_REF_IC: Final[str] = "theta_ref_ic"
+THETA_REF_ME: Final[str] = "theta_ref_me"
+RHO_REF_MC: Final[str] = "rho_ref_mc"
+RHO_REF_ME: Final[str] = "rho_ref_me"
+D_EXNER_DZ_REF_IC: Final[str] = "d_exner_dz_ref_ic"
 D2DEXDZ2_FAC1_MC: Final[str] = "d2dexdz2_fac1_mc"
 D2DEXDZ2_FAC2_MC: Final[str] = "d2dexdz2_fac2_mc"
 VERT_OUT: Final[str] = "vert_out"
@@ -161,6 +166,38 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="theta_ref_mc",
+        dtype=ta.wpfloat,
+    ),
+    RHO_REF_MC: dict(
+        standard_name=RHO_REF_MC,
+        long_name="rho_ref_mc",
+        units="",
+        dims=(dims.CellDim, dims.KDim),
+        icon_var_name="rho_ref_mc",
+        dtype=ta.wpfloat,
+    ),
+    THETA_REF_IC: dict(
+        standard_name=THETA_REF_IC,
+        long_name="theta_ref_ic",
+        units="",
+        dims=(dims.CellDim, dims.KDim),
+        icon_var_name="theta_ref_ic",
+        dtype=ta.wpfloat,
+    ),
+    THETA_REF_ME: dict(
+        standard_name=THETA_REF_ME,
+        long_name="theta_ref_me",
+        units="",
+        dims=(dims.CellDim, dims.KDim),
+        icon_var_name="theta_ref_me",
+        dtype=ta.wpfloat,
+    ),
+    RHO_REF_ME: dict(
+        standard_name=RHO_REF_ME,
+        long_name="rho_ref_me",
+        units="",
+        dims=(dims.CellDim, dims.KDim),
+        icon_var_name="rho_ref_me",
         dtype=ta.wpfloat,
     ),
     D2DEXDZ2_FAC1_MC: dict(
