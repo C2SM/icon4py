@@ -59,6 +59,7 @@ from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
 )
 
 
+@pytest.mark.uses_concat_where
 class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_corrector_step
     OUTPUTS = (
@@ -75,7 +76,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         "dynamical_vertical_volumetric_flux_at_cells_on_half_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
@@ -278,7 +278,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == model_options.RayleighType.KLEMP:
+        if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)

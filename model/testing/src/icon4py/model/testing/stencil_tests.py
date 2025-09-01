@@ -69,6 +69,36 @@ class StandardStaticVariants(eve.StrEnum):
     COMPILE_TIME_VERTICAL = "compile_time_vertical"
 
 
+def test_and_benchmark(
+    self: StencilTest,
+    benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
+    grid: base.Grid,
+    _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+    _configured_program: Callable[..., None],
+) -> None:
+    reference_outputs = self.reference(
+        _ConnectivityConceptFixer(
+            grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+        ),
+        **{
+            k: v.asnumpy() if isinstance(v, gtx.Field) else v
+            for k, v in _properly_allocated_input_data.items()
+        },
+    )
+
+    _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
+    self._verify_stencil_test(
+        input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
+    )
+
+    if benchmark is not None and benchmark.enabled:
+        benchmark(
+            _configured_program,
+            **_properly_allocated_input_data,
+            offset_provider=grid.connectivities,
+        )
+
+
 class StencilTest:
     """
     Base class to be used for testing stencils.
@@ -78,7 +108,6 @@ class StencilTest:
         >>> class TestMultiplyByTwo(StencilTest):  # doctest: +SKIP
         ...     PROGRAM = multiply_by_two  # noqa: F821
         ...     OUTPUTS = ("some_output",)
-        ...     MARKERS = (pytest.mark.some_marker,)
         ...     STATIC_PARAMS = {"category_a": ["flag0"], "category_b": ["flag0", "flag1"]}
         ...
         ...     @pytest.fixture
@@ -92,7 +121,6 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program | FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
-    MARKERS: ClassVar[tuple | None] = None
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
@@ -139,36 +167,6 @@ class StencilTest:
         # it does not allocate for the correct device.
         return allocate_data(backend, input_data)
 
-    def test_stencil(
-        self: StencilTest,
-        benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
-        grid: base.Grid,
-        backend: gtx_backend.Backend | None,
-        _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        _configured_program: Callable[..., None],
-    ) -> None:
-        reference_outputs = self.reference(
-            _ConnectivityConceptFixer(
-                grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-            ),
-            **{
-                k: v.asnumpy() if isinstance(v, gtx.Field) else v
-                for k, v in _properly_allocated_input_data.items()
-            },
-        )
-
-        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
-        self._verify_stencil_test(
-            input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
-        )
-
-        if benchmark is not None and benchmark.enabled:
-            benchmark(
-                _configured_program,
-                **_properly_allocated_input_data,
-                offset_provider=grid.connectivities,
-            )
-
     def _verify_stencil_test(
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
@@ -214,6 +212,8 @@ class StencilTest:
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
+        setattr(cls, f"test_{cls.__name__}", test_and_benchmark)
+
         # decorate `static_variant` with parametrized fixtures, since the
         # parametrization is only available in the concrete subclass definition
         if cls.STATIC_PARAMS is None:
@@ -225,9 +225,3 @@ class StencilTest:
                     cls.static_variant
                 )
             )
-
-        # apply markers to the test function.
-        # TODO(egparedes,havogt): use directly pytest.mark as class decorators
-        if cls.MARKERS:
-            for marker in cls.MARKERS:
-                cls.test_stencil = marker(cls.test_stencil)  # type:ignore[method-assign] # we override with a decorated function

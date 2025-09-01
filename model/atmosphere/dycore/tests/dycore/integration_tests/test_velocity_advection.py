@@ -126,6 +126,8 @@ def test_verify_velocity_init_against_savepoint(
     ],
 )
 def test_scale_factors_by_dtime(
+    interpolation_savepoint,
+    metrics_savepoint,
     experiment,
     step_date_init,
     savepoint_velocity_init,
@@ -138,6 +140,8 @@ def test_scale_factors_by_dtime(
     backend,
 ):
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -148,11 +152,11 @@ def test_scale_factors_by_dtime(
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
-        metric_state=None,
-        interpolation_state=None,
+        metric_state=metric_state_nonhydro,
+        interpolation_state=interpolation_state,
         vertical_params=vertical_params,
-        edge_params=None,
-        owner_mask=None,
+        edge_params=grid_savepoint.construct_edge_geometry(),
+        owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
     (cfl_w_limit, scalfac_exdiff) = velocity_advection._scale_factors_by_dtime(dtime)
@@ -175,10 +179,6 @@ def test_velocity_predictor_step(
     step_date_init,
     step_date_exit,
     *,
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -189,7 +189,6 @@ def test_velocity_predictor_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_velocity_exit,
-    ndyn_substeps,
     backend,
     caplog,
 ):
