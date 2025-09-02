@@ -32,7 +32,7 @@ GAUSS3D_EXPERIMENT = "gauss3d_torus"
 WEISMAN_KLEMP_EXPERIMENT = "weisman_klemp_torus"
 
 TORUS_100X116_1000M_GRID_URI = "https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download"
-TORUS_50000x5000_RES500 = "https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"
+TORUS_50000x5000_RES500_GRID_URI = "https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"
 
 
 # GRID URIs for global grids
@@ -67,7 +67,7 @@ GRID_URIS = {
     R02B07_GLOBAL: R02B07_GLOBAL_GRID_URI,
     ICON_CH2_SMALL: MCH_OPR_R04B07_DOMAIN01_GRID_URI,
     REGIONAL_BENCHMARK: DOMAIN01_GRID_URI,
-    WEISMAN_KLEMP_EXPERIMENT: TORUS_50000x5000_RES500,  # TODO(): check
+    WEISMAN_KLEMP_EXPERIMENT: TORUS_50000x5000_RES500_GRID_URI,
 }
 
 GRID_IDS = {
@@ -104,7 +104,7 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         return 0, 2
 
     try:
-        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
+        root, level = map(int, re.search(r"[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
         return root, level
     except AttributeError as err:
         raise ValueError(

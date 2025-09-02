@@ -24,11 +24,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 divergence_damp_order = DivergenceDampingOrder()
 
 
+@pytest.mark.embedded_remap_error
 class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
     PROGRAM = apply_divergence_damping_and_update_vn
     OUTPUTS = ("next_vn",)
-
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
