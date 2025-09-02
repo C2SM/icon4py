@@ -152,7 +152,6 @@ module diffusion
                                       zd_intcoef_size_2, &
                                       ndyn_substeps, &
                                       rayleigh_damping_height, &
-                                      nflat_gradp, &
                                       diffusion_type, &
                                       hdiff_w, &
                                       hdiff_vn, &
@@ -273,8 +272,6 @@ module diffusion
          integer(c_int), value, target :: ndyn_substeps
 
          real(c_double), value, target :: rayleigh_damping_height
-
-         integer(c_int), value, target :: nflat_gradp
 
          integer(c_int), value, target :: diffusion_type
 
@@ -529,7 +526,6 @@ contains
                              zd_intcoef, &
                              ndyn_substeps, &
                              rayleigh_damping_height, &
-                             nflat_gradp, &
                              diffusion_type, &
                              hdiff_w, &
                              hdiff_vn, &
@@ -587,8 +583,6 @@ contains
       integer(c_int), value, target :: ndyn_substeps
 
       real(c_double), value, target :: rayleigh_damping_height
-
-      integer(c_int), value, target :: nflat_gradp
 
       integer(c_int), value, target :: diffusion_type
 
@@ -842,7 +836,6 @@ contains
                                   zd_intcoef_size_2=zd_intcoef_size_2, &
                                   ndyn_substeps=ndyn_substeps, &
                                   rayleigh_damping_height=rayleigh_damping_height, &
-                                  nflat_gradp=nflat_gradp, &
                                   diffusion_type=diffusion_type, &
                                   hdiff_w=hdiff_w, &
                                   hdiff_vn=hdiff_vn, &
