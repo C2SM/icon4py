@@ -122,7 +122,6 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.skip_value_error
 @pytest.mark.uses_as_offset
 class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
     PROGRAM = compute_theta_rho_face_values_and_pressure_gradient_and_update_vn
@@ -233,7 +232,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         )
 
         # initialize also nest boundary points with zero
-        if limited_area: # TODO check this
+        if limited_area:  # TODO check this
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = np.where(
                 (horz_idx >= start_edge_lateral_boundary) & (horz_idx < end_edge_halo),
                 (
