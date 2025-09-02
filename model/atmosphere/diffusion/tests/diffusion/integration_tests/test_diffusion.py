@@ -18,6 +18,7 @@ from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     vertical as v_grid,
 )
+from icon4py.model.common.model_backends import BACKENDS
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -201,6 +202,12 @@ def test_diffusion_init(
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
 
+    match_backend = [
+        backend_str.split("_")
+        for backend_str in BACKENDS.keys()
+        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    ][0]
+
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
@@ -211,6 +218,8 @@ def test_diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
+        device=match_backend[1],
+        backend_kind=match_backend[0],
     )
 
     assert diffusion_granule.diff_multfac_w == min(
@@ -328,6 +337,11 @@ def test_verify_diffusion_init_against_savepoint(
         vct_a=vct_a,
         vct_b=vct_b,
     )
+    match_backend = [
+        backend_str.split("_")
+        for backend_str in BACKENDS.keys()
+        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    ][0]
 
     diffusion_granule = diffusion.Diffusion(
         grid,
@@ -340,6 +354,8 @@ def test_verify_diffusion_init_against_savepoint(
         cell_params,
         orchestration=False,
         backend=backend,
+        device=match_backend[1],
+        backend_kind=match_backend[0],
     )
 
     _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule, backend)
@@ -408,6 +424,12 @@ def test_run_diffusion_single_step(
     config = construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
+    match_backend = [
+        backend_str.split("_")
+        for backend_str in BACKENDS.keys()
+        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    ][0]
+
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
         config=config,
@@ -419,6 +441,8 @@ def test_run_diffusion_single_step(
         cell_params=cell_geometry,
         backend=backend,
         orchestration=orchestration,
+        device=match_backend[1],
+        backend_kind=match_backend[0],
     )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -607,6 +631,11 @@ def test_run_diffusion_initial_step(
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
     config = construct_diffusion_config(experiment, ndyn_substeps=2)
     params = diffusion.DiffusionParams(config)
+    match_backend = [
+        backend_str.split("_")
+        for backend_str in BACKENDS.keys()
+        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    ][0]
 
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
@@ -619,6 +648,8 @@ def test_run_diffusion_initial_step(
         cell_params=cell_geometry,
         backend=backend,
         orchestration=orchestration,
+        device=match_backend[1],
+        backend_kind=match_backend[0],
     )
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
