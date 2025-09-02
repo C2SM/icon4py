@@ -22,10 +22,10 @@ from icon4py.model.testing.fixtures.stencil_tests import grid
 from icon4py.model.testing.fixtures.datatest import backend
 
 
+@pytest.mark.embedded_remap_error
 class TestNabla2OnCell(StencilTest):
     PROGRAM = compute_nabla2_on_cell
     OUTPUTS = ("nabla2_psi_c",)
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
@@ -51,10 +51,10 @@ class TestNabla2OnCell(StencilTest):
         )
 
 
+@pytest.mark.embedded_remap_error
 class TestNabla2OnCellK(StencilTest):
     PROGRAM = compute_nabla2_on_cell_k
     OUTPUTS = ("nabla2_psi_c",)
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

@@ -18,10 +18,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
+@pytest.mark.skip_value_error
 class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
     PROGRAM = calculate_nabla2_and_smag_coefficients_for_vn
     OUTPUTS = ("kh_smag_e", "kh_smag_ec", "z_nabla2_e")
-    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(

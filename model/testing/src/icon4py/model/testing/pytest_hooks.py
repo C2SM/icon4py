@@ -123,10 +123,29 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
     """Apply test item filters as the final test setup step."""
 
     item_marker_filters = filters.item_marker_filters
-    for marker_name in set(m.name for m in item.own_markers) & item_marker_filters.keys():
+    for marker_name in set(m.name for m in item.iter_markers()) & item_marker_filters.keys():
         item_filter = item_marker_filters[marker_name]
         if item_filter.condition(item):
             item_filter.action()
+
+
+_name_from_fullname_pattern = re.compile(
+    r"""
+        ::(?P<class>[A-Za-z_]\w*)       # capture class name
+        (?::: [A-Za-z_]\w*              # skip method name
+        (?:\[(?P<params>[^\]]+)\])? )   # optional parameterization
+        """,
+    re.VERBOSE,
+)
+
+
+def _name_from_fullname(fullname: str) -> str:
+    match = _name_from_fullname_pattern.search(fullname)
+    if match is None:
+        return fullname  # assume already fixed
+    class_name = match.group("class")
+    params = match.group("params")
+    return f"{class_name}[{params}]" if params else class_name
 
 
 # pytest benchmark hook, see:
@@ -139,18 +158,6 @@ def pytest_benchmark_update_json(output_json):
     Currently works only for 'StencilTest's as they have the following fixed structure:
       '<path>::<class_name>::test_stencil[<variant>]'.
     """
-    pattern = re.compile(
-        r"""
-        ::(?P<class>[A-Za-z_]\w*)       # capture class name
-        (?::: [A-Za-z_]\w*              # skip method name
-        (?:\[(?P<params>[^\]]+)\])? )   # optional parameterization
-        """,
-        re.VERBOSE,
-    )
 
     for bench in output_json["benchmarks"]:
-        match = pattern.search(bench["fullname"])
-        class_name = match.group("class")
-        params = match.group("params")
-
-        bench["fullname"] = f"{class_name}[{params}]" if params else class_name
+        bench["fullname"] = _name_from_fullname(bench["fullname"])

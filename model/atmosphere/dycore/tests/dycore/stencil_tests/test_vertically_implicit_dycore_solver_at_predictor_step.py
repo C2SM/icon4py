@@ -66,6 +66,7 @@ from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
 )
 
 
+@pytest.mark.uses_concat_where
 class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_predictor_step
     OUTPUTS = (
@@ -81,7 +82,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         "dwdz_at_cells_on_model_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
