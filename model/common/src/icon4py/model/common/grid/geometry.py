@@ -750,11 +750,11 @@ class TorusGridGeometry(GridGeometry):
             },
         )
         self.register_provider(edge_areas)
-        # TODO(msimberg): Wrong, uses EDGE_LAT. Does it even make sense for torus?
+        # TODO(msimberg): This should just be all zeros.
         coriolis_params = factory.ProgramFieldProvider(
-            func=stencils.compute_coriolis_parameter_on_edges,
-            deps={"edge_center_lat": attrs.EDGE_LAT},
-            params={"angular_velocity": constants.EARTH_ANGULAR_VELOCITY},
+            func=stencils.compute_coriolis_parameter_on_edges_torus,
+            deps={"edge_center_x": attrs.EDGE_CENTER_X},
+            params={},
             fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
             domain={
                 dims.EdgeDim: (

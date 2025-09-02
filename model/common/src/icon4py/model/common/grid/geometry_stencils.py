@@ -840,6 +840,21 @@ def coriolis_parameter_on_edges(
     return 2.0 * angular_velocity * sin(edge_center_lat)
 
 
+@gtx.field_operator
+def coriolis_parameter_on_edges_torus(
+    edge_center_x: fa.EdgeField[ta.wpfloat],
+) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Compute the coriolis force on edges.
+    Args:
+
+    Returns:
+        coriolis parameter
+    """
+    # TODO(msimberg): This is silly, how do I do a constant field?
+    return 0.0 * edge_center_x
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_coriolis_parameter_on_edges(
     edge_center_lat: fa.EdgeField[ta.wpfloat],
@@ -851,6 +866,20 @@ def compute_coriolis_parameter_on_edges(
     coriolis_parameter_on_edges(
         edge_center_lat,
         angular_velocity,
+        out=coriolis_parameter,
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_coriolis_parameter_on_edges_torus(
+    edge_center_x: fa.EdgeField[ta.wpfloat],
+    coriolis_parameter: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    coriolis_parameter_on_edges_torus(
+        edge_center_x,
         out=coriolis_parameter,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
