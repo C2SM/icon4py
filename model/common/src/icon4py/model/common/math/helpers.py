@@ -578,6 +578,7 @@ def distance_on_edges_torus(
         distance
 
     """
+    # TODO(msimberg): Is this the best way to compute this?
     xdiff = abs(x1 - x0)
     ydiff = abs(y1 - y0)
     return sqrt(
