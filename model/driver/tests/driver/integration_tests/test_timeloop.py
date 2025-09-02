@@ -179,7 +179,6 @@ def test_run_timeloop_single_step(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     additional_parameters = diffusion.DiffusionParams(diffusion_config)
 
@@ -243,6 +242,7 @@ def test_run_timeloop_single_step(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
+        nflat_gradp=grid_savepoint.nflat_grap(),
         pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
         pg_exdist=metrics_savepoint.pg_exdist(),
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),

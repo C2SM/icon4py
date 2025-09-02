@@ -638,9 +638,8 @@ def _compute_downward_extrapolation_distance(
     z_ifc: fa.CellField[wpfloat],
 ) -> fa.EdgeField[wpfloat]:
     extrapol_dist = 5.0
-    z_aux1 = maximum(z_ifc(E2C[0]), z_ifc(E2C[1]))
-    z_aux2 = z_aux1 - extrapol_dist
-    return z_aux2
+    x = maximum(z_ifc(E2C[0]), z_ifc(E2C[1]))
+    return x - extrapol_dist
 
 
 @field_operator

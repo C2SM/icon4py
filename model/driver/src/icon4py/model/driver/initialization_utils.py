@@ -365,7 +365,6 @@ def read_geometry_fields(
             config=vertical_grid_config,
             vct_a=vct_a,
             vct_b=vct_b,
-            _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
         )
         return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()
     else:
@@ -409,7 +408,9 @@ def read_decomp_info(
 
 
 def read_static_fields(
-    grid: icon_grid.IconGrid,
+    grid_id: str,
+    grid_root: int,
+    grid_level: int,
     path: pathlib.Path,
     backend: gtx_backend.Backend,
     rank=0,
@@ -465,6 +466,7 @@ def read_static_fields(
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
+        grid_savepoint = data_provider.from_savepoint_grid(grid_id, grid_root, grid_level)
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
@@ -487,12 +489,13 @@ def read_static_fields(
             ddxn_z_full=metrics_savepoint.ddxn_z_full(),
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
+            nflat_gradp=grid_savepoint.nflat_gradp(),
             pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
             pg_exdist=metrics_savepoint.pg_exdist(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
             wgtfac_e=metrics_savepoint.wgtfac_e(),
-            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid.num_levels),
+            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid_savepoint.num(dims.KDim)),
             exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
             horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
             scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),

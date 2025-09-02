@@ -518,7 +518,7 @@ class SolveNonhydro:
             },
             vertical_sizes={
                 "nflatlev": self._vertical_params.nflatlev,
-                "nflat_gradp": self._vertical_params.nflat_gradp,
+                "nflat_gradp": self._metric_state_nonhydro.nflat_gradp,
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
@@ -757,7 +757,7 @@ class SolveNonhydro:
             },
             vertical_sizes={
                 "nflatlev": self._vertical_params.nflatlev,
-                "nflat_gradp": self._vertical_params.nflat_gradp,
+                "nflat_gradp": self._metric_state_nonhydro.nflat_gradp,
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels + 1),
             },

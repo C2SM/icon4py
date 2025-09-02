@@ -57,7 +57,6 @@ def test_damping_layer_calculation(max_h, damping_height, delta, flat_height):
         config=vertical_config,
         vct_a=vct_a_field,
         vct_b=None,
-        _min_index_flat_horizontal_grad_pressure=10,
     )
     assert (
         vertical_params.end_index_of_damping_layer
@@ -82,7 +81,6 @@ def test_damping_layer_calculation_from_icon_input(
         config=vertical_config,
         vct_a=a,
         vct_b=b,
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
     )
     assert nrdmax == vertical_grid.end_index_of_damping_layer
     a_array = a.ndarray
@@ -98,7 +96,6 @@ def test_grid_size(grid_savepoint):
         config=config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
     )
 
     assert NUM_LEVELS == vertical_grid.size(dims.KDim)
@@ -131,7 +128,6 @@ def configure_vertical_grid(grid_savepoint, top_moist_threshold=22500.0):
         config=config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
     )
 
     return vertical_grid

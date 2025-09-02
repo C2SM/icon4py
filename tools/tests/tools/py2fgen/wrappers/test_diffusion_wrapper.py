@@ -158,7 +158,6 @@ def test_diffusion_wrapper_granule_inputs(
         config=expected_vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     expected_config = utils.construct_diffusion_config(experiment, ndyn_substeps)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
@@ -188,7 +187,6 @@ def test_diffusion_wrapper_granule_inputs(
             zd_intcoef=zd_intcoef,
             ndyn_substeps=ndyn_substeps,
             rayleigh_damping_height=damping_height,
-            nflat_gradp=nflat_gradp,
             diffusion_type=diffusion_type,
             hdiff_w=hdiff_w,
             hdiff_vn=hdiff_vn,
@@ -327,7 +325,6 @@ def test_diffusion_wrapper_single_step(
     itype_sher = (
         diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
-    nflat_gradp = grid_savepoint.nflat_gradp()
 
     # Metric state parameters
     vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
@@ -400,7 +397,6 @@ def test_diffusion_wrapper_single_step(
         zd_intcoef=zd_intcoef,
         ndyn_substeps=ndyn_substeps,
         rayleigh_damping_height=damping_height,
-        nflat_gradp=nflat_gradp,
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
         hdiff_vn=hdiff_vn,

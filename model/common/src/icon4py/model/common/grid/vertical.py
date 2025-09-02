@@ -129,7 +129,6 @@ class VerticalGrid:
     _end_index_of_damping_layer: Height index above which Rayleigh damping of vertical wind is applied.
     _start_index_for_moist_physics: Height index above which moist physics and advection of cloud and precipitation variables are turned off.
     _end_index_of_flat_layer: Height index above which coordinate surfaces are flat.
-    _min_index_flat_horizontal_grad_pressure: The minimum height index at which the height of the center of an edge lies within two neighboring cells so that horizontal pressure gradient can be computed by first order discretization scheme.
     """
 
     config: VerticalGridConfig
@@ -140,7 +139,6 @@ class VerticalGrid:
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
-    _min_index_flat_horizontal_grad_pressure: Final[gtx.int32] = None
 
     def __post_init__(self, vct_a, vct_b):
         object.__setattr__(
