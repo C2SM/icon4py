@@ -234,18 +234,7 @@ def decompose(grid: base_grid.Grid, processor_props):  # F811 # fixture
 #  Will uses geofac_div and geofac_n2s
 
 
-@pytest.mark.xfail
-@pytest.mark.mpi
-def test_halo_neighbor_access_c2e():
-    pytest.fail("TODO implement")
-    # geofac_div = primal_edge_length(C2E) * edge_orientation / area
 
-    # 1. read grid and distribue - GridManager
-
-    # 2. get geometry fields (from GridManger) primal_edge_length, edge_orientation, area (local read)
-    # 3. compute geofac_div = primal_edge_length * edge_orientation / area
-    # 4. gather geofac_div
-    # 5 compare (possible reorder
 
 
 def test_no_halo():

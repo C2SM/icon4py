@@ -127,7 +127,7 @@ def test_grid_manager_validate_decomposer(processor_props):
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_distributed_fields(processor_props, caplog):
+def test_fields_distribute_and_gather(processor_props, caplog):
     caplog.set_level(logging.INFO)
     print(f"myrank - {processor_props.rank}: running with processor_props =  {processor_props}")
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL.name)
@@ -138,8 +138,8 @@ def test_distributed_fields(processor_props, caplog):
     global_vertex_lon = grid_manager.coordinates[dims.VertexDim]["lon"]
 
     multinode = run_gridmananger_for_multinode(
-        file,
-        vertical_config,
+        file=file,
+        vertical_config=vertical_config,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
     )
@@ -228,3 +228,19 @@ def assert_gathered_field_against_global(
         assert test_helpers.dallclose(
             sorted_, global_reference_field
         ), f"Gathered field values do not match for dim {dim}.- "
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.mpi
+def test_halo_neighbor_access_c2e(grid_savepoint):
+    pytest.fail("TODO implement")
+    # geofac_div = primal_edge_length(C2E) * edge_orientation / area
+
+    # 1. read grid and distribue - GridManager
+
+    # 2. get geometry fields (from GridManger) primal_edge_length, edge_orientation, area (local read)
+    # 3. compute geofac_div = primal_edge_length * edge_orientation / area
+    # 4. gather geofac_div
+    # 5 compare (possible reorder
+    ...
