@@ -376,6 +376,37 @@ def zonal_and_meridional_component_of_edge_field_at_cell_center(
     )
 
 
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def zonal_and_meridional_component_of_edge_field_at_cell_center_torus(
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+) -> tuple[
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+]:
+    """
+    TODO: Trivial mapping, needed?
+
+    Compute zonal (U) and meridional (V) component of a vector (x, y, z) at cell centers (lat, lon)
+
+    The vector is defined on edges and the projection is computed for the neighboring cell center s of the edge.
+
+    Args:
+        x: x coordinate
+        y: y coordinate
+
+    Returns:
+        u_cell_0: zonal (U) component at first cell neighbor of the edge E2C[0]
+        v_cell_0: meridional (V) component at first cell neighbor of the edge E2C[1]
+        u_cell_0: zonal (U) component at first cell neighbor of the edge E2C[0]
+        v_cell_0: meridional (V) component at first cell neighbor of the edge E2C[1]
+
+    """
+    return (x, y, x, y)
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(
     cell_lat: fa.CellField[ta.wpfloat],
@@ -396,6 +427,30 @@ def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(
         x,
         y,
         z,
+        out=(
+            u_cell_1,
+            v_cell_1,
+            u_cell_2,
+            v_cell_2,
+        ),
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_zonal_and_meridional_component_of_edge_field_at_cell_center_torus(
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+    u_cell_1: fa.EdgeField[ta.wpfloat],
+    v_cell_1: fa.EdgeField[ta.wpfloat],
+    u_cell_2: fa.EdgeField[ta.wpfloat],
+    v_cell_2: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    zonal_and_meridional_component_of_edge_field_at_cell_center_torus(
+        x,
+        y,
         out=(
             u_cell_1,
             v_cell_1,

@@ -262,6 +262,7 @@ def test_cell_area(backend, grid_savepoint, experiment, grid_file):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
@@ -285,6 +286,7 @@ def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):

@@ -799,15 +799,11 @@ class TorusGridGeometry(GridGeometry):
             ),
         )
         self.register_provider(normal_vert_wrapper)
-        # TODO(msimberg): don't use lat/lon
         normal_cell = factory.ProgramFieldProvider(
-            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
+            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center_torus,
             deps={
-                "cell_lat": attrs.CELL_LAT,
-                "cell_lon": attrs.CELL_LON,
                 "x": attrs.EDGE_NORMAL_X,
                 "y": attrs.EDGE_NORMAL_Y,
-                "z": attrs.EDGE_NORMAL_Z,
             },
             fields={
                 "u_cell_1": "u_cell_1",
@@ -829,7 +825,6 @@ class TorusGridGeometry(GridGeometry):
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
         )
         self.register_provider(normal_cell_wrapper)
-        # TODO(msimberg): don't use lat/lon
         # 3. dual normals: the dual normals are the edge tangents
         tangent_vert = factory.ProgramFieldProvider(
             func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_vertex_torus,
@@ -864,15 +859,11 @@ class TorusGridGeometry(GridGeometry):
             ),
         )
         self.register_provider(tangent_vert_wrapper)
-        # TODO(msimberg): don't use lat/lon
         tangent_cell = factory.ProgramFieldProvider(
-            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
+            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center_torus,
             deps={
-                "cell_lat": attrs.CELL_LAT,
-                "cell_lon": attrs.CELL_LON,
                 "x": attrs.EDGE_TANGENT_X,
                 "y": attrs.EDGE_TANGENT_Y,
-                "z": attrs.EDGE_TANGENT_Z,
             },
             fields={
                 "u_cell_1": "u_cell_1",
