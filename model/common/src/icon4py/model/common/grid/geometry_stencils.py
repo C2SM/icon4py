@@ -222,6 +222,44 @@ def zonal_and_meridional_component_of_edge_field_at_vertex(
     )
 
 
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def zonal_and_meridional_component_of_edge_field_at_vertex_torus(
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+) -> tuple[
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+]:
+    """
+    TODO: Needed? This is a trivial remapping.
+
+    Compute the zonal (u) an meridional (v) component of a cartesian vector (x, y, z) on the torus.
+
+    The cartesian vector is defined on edges and it projection onto all 4 neighboring vertices of the diamond is computed.
+
+    Args:
+        x: x coordinate
+        y: y coordinate
+    Returns:
+        u_vertex_0: zonal (eastward positive) component at E2C2V[0]
+        v_vertex_0: meridional (northward) component at E2C2V[0]
+        u_vertex_1: zonal (eastward positive) component at E2C2V[1]
+        v_vertex_1: meridional (northward) component at E2C2V[1]
+        u_vertex_2: zonal (eastward positive) component at E2C2V[2]
+        v_vertex_2: meridional (northward) component at E2C2V[2]
+        u_vertex_3: zonal (eastward positive) component at E2C2V[3]
+        v_vertex_3: meridional (northward) component at E2C2V[3]
+
+    """
+    return (x, y, x, y, x, y, x, y)
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_component_of_edge_field_at_vertex(
     vertex_lat: fa.VertexField[ta.wpfloat],
@@ -246,6 +284,38 @@ def compute_zonal_and_meridional_component_of_edge_field_at_vertex(
         x,
         y,
         z,
+        out=(
+            u_vertex_1,
+            v_vertex_1,
+            u_vertex_2,
+            v_vertex_2,
+            u_vertex_3,
+            v_vertex_3,
+            u_vertex_4,
+            v_vertex_4,
+        ),
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_zonal_and_meridional_component_of_edge_field_at_vertex_torus(
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+    u_vertex_1: fa.EdgeField[ta.wpfloat],
+    v_vertex_1: fa.EdgeField[ta.wpfloat],
+    u_vertex_2: fa.EdgeField[ta.wpfloat],
+    v_vertex_2: fa.EdgeField[ta.wpfloat],
+    u_vertex_3: fa.EdgeField[ta.wpfloat],
+    v_vertex_3: fa.EdgeField[ta.wpfloat],
+    u_vertex_4: fa.EdgeField[ta.wpfloat],
+    v_vertex_4: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    zonal_and_meridional_component_of_edge_field_at_vertex_torus(
+        x,
+        y,
         out=(
             u_vertex_1,
             v_vertex_1,

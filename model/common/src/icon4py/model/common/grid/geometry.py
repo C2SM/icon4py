@@ -765,16 +765,12 @@ class TorusGridGeometry(GridGeometry):
         )
         self.register_provider(coriolis_params)
 
-        # TODO(msimberg): don't use lat/lon
         # 3. primal_normal_vert, primal_normal_cell
         normal_vert = factory.ProgramFieldProvider(
-            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_vertex,
+            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_vertex_torus,
             deps={
-                "vertex_lat": attrs.VERTEX_LAT,
-                "vertex_lon": attrs.VERTEX_LON,
                 "x": attrs.EDGE_NORMAL_X,
                 "y": attrs.EDGE_NORMAL_Y,
-                "z": attrs.EDGE_NORMAL_Z,
             },
             fields={
                 "u_vertex_1": "u_vertex_1",
@@ -836,13 +832,10 @@ class TorusGridGeometry(GridGeometry):
         # TODO(msimberg): don't use lat/lon
         # 3. dual normals: the dual normals are the edge tangents
         tangent_vert = factory.ProgramFieldProvider(
-            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_vertex,
+            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_vertex_torus,
             deps={
-                "vertex_lat": attrs.VERTEX_LAT,
-                "vertex_lon": attrs.VERTEX_LON,
                 "x": attrs.EDGE_TANGENT_X,
                 "y": attrs.EDGE_TANGENT_Y,
-                "z": attrs.EDGE_TANGENT_Z,
             },
             fields={
                 "u_vertex_1": "u_vertex_1",
