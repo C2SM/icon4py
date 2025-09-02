@@ -183,17 +183,6 @@ def test_run_timeloop_single_step(
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     additional_parameters = diffusion.DiffusionParams(diffusion_config)
-    match_backend = [
-        backend_str.split("_")
-        for backend_str in BACKENDS.keys()
-        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
-    ][0]
-    backend_options = {
-        "device": match_backend[1],
-        "backend_kind": match_backend[0],
-        "cached": True,
-        "auto_optimize": True,
-    }
 
     diffusion_granule = diffusion.Diffusion(
         grid=icon_grid,
@@ -205,7 +194,6 @@ def test_run_timeloop_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        backend_options=backend_options,
     )
 
     sp = savepoint_nonhydro_init

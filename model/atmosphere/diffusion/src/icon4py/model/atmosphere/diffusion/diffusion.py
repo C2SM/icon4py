@@ -12,10 +12,10 @@ import functools
 import logging
 import math
 import sys
-from typing import Final
+from typing import Any, Final, Literal
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend, int32
+from gt4py.next import int32
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
@@ -358,10 +358,9 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: gtx_backend.Backend | None,
+        backend: gtx.backend.Backend | Literal["gpu", "cpu"] | dict[str, Any] | None = None,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
-        backend_options: dict | None = None,
     ):
         self._backend = backend
         self._orchestration = orchestration
@@ -397,11 +396,8 @@ class Diffusion:
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
         self._determine_horizontal_domains()
 
-        if backend_options is None:
-            backend_options = backend
-
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=mo_intp_rbf_rbf_vec_interpol_vertex,
             constant_args={
                 "ptr_coeff_1": self._interpolation_state.rbf_coeff_1,
@@ -416,7 +412,7 @@ class Diffusion:
         )
 
         self.calculate_nabla2_and_smag_coefficients_for_vn = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=calculate_nabla2_and_smag_coefficients_for_vn,
             constant_args={
                 "tangent_orientation": self._edge_params.tangent_orientation,
@@ -436,7 +432,7 @@ class Diffusion:
         )
 
         self.calculate_diagnostic_quantities_for_turbulence = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=calculate_diagnostic_quantities_for_turbulence,
             constant_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
@@ -451,7 +447,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.apply_diffusion_to_vn = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=apply_diffusion_to_vn,
             constant_args={
                 "primal_normal_vert_v1": self._edge_params.primal_normal_vert[0],
@@ -473,7 +469,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
             constant_args={
                 "geofac_n2s": self._interpolation_state.geofac_n2s,
@@ -501,7 +497,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
             constant_args={
                 "theta_ref_mc": self._metric_state.theta_ref_mc,
@@ -519,7 +515,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.apply_diffusion_to_theta_and_exner = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=apply_diffusion_to_theta_and_exner,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
@@ -544,14 +540,14 @@ class Diffusion:
             },
             offset_provider=self._grid.connectivities,
         )
-        self.copy_field = setup_program(backend_options=backend_options, program=copy_field)
-        self.scale_k = setup_program(backend_options=backend_options, program=scale_k)
+        self.copy_field = setup_program(backend=backend, program=copy_field)
+        self.scale_k = setup_program(backend=backend, program=scale_k)
         self.setup_fields_for_initial_step = setup_program(
-            backend_options=backend_options, program=setup_fields_for_initial_step
+            backend=backend, program=setup_fields_for_initial_step
         )
 
         self.init_diffusion_local_fields_for_regular_timestep = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=init_diffusion_local_fields_for_regular_timestep,
             offset_provider={"Koff": dims.KDim},
         )
@@ -570,7 +566,7 @@ class Diffusion:
             offset_provider={"Koff": dims.KDim},
         )
         setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=diffusion_utils.init_nabla2_factor_in_upper_damping_zone,
             constant_args={
                 "physical_heights": self._vertical_grid.interface_physical_height,

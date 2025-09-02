@@ -82,9 +82,8 @@ except ImportError:
         raise NotImplementedError("Depends on dace module, which is not installed.")
 
 
-def make_custom_gtfn_backend(on_gpu: bool, auto_optimize=True, cached=True) -> GTFNBackendFactory:
+def make_custom_gtfn_backend(on_gpu: bool, cached=True) -> GTFNBackendFactory:
     return GTFNBackendFactory(
-        # auto_optimize=auto_optimize, # noqa: ERA001
         gpu=on_gpu,
         cached=cached,
     )

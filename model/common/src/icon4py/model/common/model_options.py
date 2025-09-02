@@ -23,19 +23,24 @@ from icon4py.model.common.model_backends import make_custom_dace_backend, make_c
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
-def get_options(program_name, arch):
-    backend_kind = backend_options.get("backend_kind", "default")
+
+def get_options(program_name, arch, **backend):
+    backend_kind = backend.get("backend_kind", "default")
     return dict(backend_kind=backend_kind)
 
 
 def setup_program(
-    backend_options,
     program: Program,
+    backend: gtx.backend.Backend
+    | typing.Literal["gpu", "cpu"]
+    | dict[str, typing.Any]
+    | None = None,
     constant_args: dict[str, Field | Scalar] | None = None,
     variants: dict[str, list[Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
     vertical_sizes: dict[str, gtx.int32] | None = None,
     offset_provider: OffsetProvider | None = None,
+    arch=None,
 ) -> typing.Callable[..., None]:
     """
     This function processes arguments to the GT4Py program. It
@@ -56,21 +61,20 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    if isinstance(backend_options, gtx.backend.Backend):
-        custom_backend = backend_options
+    if isinstance(backend, gtx.backend.Backend):
+        custom_backend = backend
     else:
-        # customized backend params  
-        options = get_options(program_name, arch, **backend_options)
+        # customized backend params
+        options = get_options(str(program.past_stage.past_node.id), arch, **backend)
         if options["backend_kind"] == "dace":
             backend_func = make_custom_dace_backend
         elif options["backend_kind"] == "gtfn":
             backend_func = make_custom_gtfn_backend
-        on_gpu = backend_options["device"] == "gpu"
+        on_gpu = backend["device"] == "gpu"
         custom_backend = backend_func(
             on_gpu=on_gpu,
             **options,
         )
-
 
     bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
     static_args_program = program.with_backend(custom_backend).compile(

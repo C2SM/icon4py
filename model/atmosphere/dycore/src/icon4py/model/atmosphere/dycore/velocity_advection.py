@@ -9,8 +9,9 @@
 
 from __future__ import annotations
 
+from typing import Any, Literal
+
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
@@ -44,8 +45,7 @@ class VelocityAdvection:
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx_backend.Backend | None,
-        backend_options: dict | None = None,
+        backend: gtx.backend.Backend | Literal["gpu", "cpu"] | dict[str, Any] | None = None,
     ):
         self.grid: icon_grid.IconGrid = grid
         self._backend = backend
@@ -60,11 +60,8 @@ class VelocityAdvection:
         self._allocate_local_fields()
         self._determine_local_domains()
 
-        if backend_options is None:
-            backend_options = backend
-
         self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
             constant_args={
                 "rbf_vec_coeff_e": self.interpolation_state.rbf_vec_coeff_e,
@@ -94,7 +91,7 @@ class VelocityAdvection:
 
         # TODO(nfarabullini): add `skip_compute_predictor_vertical_advection` to `variants` once possible
         self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
             constant_args={
                 "coeff1_dwdz": self.metric_state.coeff1_dwdz,
@@ -119,7 +116,7 @@ class VelocityAdvection:
         )
 
         self._compute_advection_in_vertical_momentum_equation = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_advection_in_vertical_momentum_equation,
             constant_args={
                 "coeff1_dwdz": self.metric_state.coeff1_dwdz,
@@ -146,7 +143,7 @@ class VelocityAdvection:
         )
 
         self._compute_advection_in_horizontal_momentum_equation = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_advection_in_horizontal_momentum_equation,
             constant_args={
                 "e_bln_c_s": self.interpolation_state.e_bln_c_s,

@@ -102,17 +102,17 @@ def test_verify_velocity_init_against_savepoint(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
-    match_backend = [
-        backend_str.split("_")
-        for backend_str in BACKENDS.keys()
-        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
-    ][0]
-    backend_options = {
-        "device": match_backend[1],
-        "backend_kind": match_backend[0],
-        "cached": True,
-        "auto_optimize": True,
-    }
+    # match_backend = [
+    #     backend_str.split("_")
+    #     for backend_str in BACKENDS.keys()
+    #     if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    # ][0]
+    # backend = {
+    #     "device": match_backend[1],
+    #     "backend_kind": match_backend[0],
+    #     "cached": True,
+    #     "auto_optimize": True,
+    # }
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -122,7 +122,6 @@ def test_verify_velocity_init_against_savepoint(
         edge_params=grid_savepoint.construct_edge_geometry(),
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
-        backend_options=backend_options,
     )
     assert velocity_advection.cfl_w_limit == 0.65
     assert velocity_advection.scalfac_exdiff == 0.05
@@ -163,17 +162,7 @@ def test_scale_factors_by_dtime(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
-    match_backend = [
-        backend_str.split("_")
-        for backend_str in BACKENDS.keys()
-        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
-    ][0]
-    backend_options = {
-        "device": match_backend[1],
-        "backend_kind": match_backend[0],
-        "cached": True,
-        "auto_optimize": True,
-    }
+
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
@@ -182,7 +171,6 @@ def test_scale_factors_by_dtime(
         edge_params=grid_savepoint.construct_edge_geometry(),
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
-        backend_options=backend_options,
     )
     (cfl_w_limit, scalfac_exdiff) = velocity_advection._scale_factors_by_dtime(dtime)
     assert cfl_w_limit == savepoint_velocity_init.cfl_w_limit()
@@ -269,17 +257,6 @@ def test_velocity_predictor_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
-    match_backend = [
-        backend_str.split("_")
-        for backend_str in BACKENDS.keys()
-        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
-    ][0]
-    backend_options = {
-        "device": match_backend[1],
-        "backend_kind": match_backend[0],
-        "cached": True,
-        "auto_optimize": True,
-    }
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -289,7 +266,6 @@ def test_velocity_predictor_step(
         edge_params=edge_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
-        backend_options=backend_options,
     )
 
     velocity_advection.run_predictor_step(
@@ -432,17 +408,17 @@ def test_velocity_corrector_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
-    match_backend = [
-        backend_str.split("_")
-        for backend_str in BACKENDS.keys()
-        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
-    ][0]
-    backend_options = {
-        "device": match_backend[1],
-        "backend_kind": match_backend[0],
-        "cached": True,
-        "auto_optimize": True,
-    }
+    # match_backend = [
+    #     backend_str.split("_")
+    #     for backend_str in BACKENDS.keys()
+    #     if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    # ][0]
+    # backend_options = {
+    #     "device": match_backend[1],
+    #     "backend_kind": match_backend[0],
+    #     "cached": True,
+    #     "auto_optimize": True,
+    # }
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -452,7 +428,6 @@ def test_velocity_corrector_step(
         edge_params=edge_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
-        backend_options=backend_options,
     )
 
     velocity_advection.run_corrector_step(

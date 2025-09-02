@@ -9,7 +9,7 @@
 
 import dataclasses
 import logging
-from typing import Final
+from typing import Any, Final, Literal
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -394,7 +394,7 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: Backend | Literal["gpu", "cpu"] | dict[str, Any] None = None,
+        backend: gtx.backend.Backend | Literal["gpu", "cpu"] | dict[str, Any] | None = None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange
@@ -410,11 +410,8 @@ class SolveNonhydro:
         self._cell_params = cell_geometry
         self._determine_local_domains()
 
-        if backend_options is None:
-            backend_options = backend
-
         self._compute_theta_and_exner = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_theta_and_exner,
             constant_args={
                 "bdy_halo_c": self._metric_state_nonhydro.bdy_halo_c,
@@ -432,7 +429,7 @@ class SolveNonhydro:
         )
 
         self._compute_exner_from_rhotheta = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_exner_from_rhotheta,
             constant_args={
                 "rd_o_cvd": constants.RD_O_CVD,
@@ -449,7 +446,7 @@ class SolveNonhydro:
         )
 
         self._update_theta_v = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=update_theta_v,
             constant_args={
                 "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
@@ -465,7 +462,7 @@ class SolveNonhydro:
         )
 
         self._compute_hydrostatic_correction_term = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_hydrostatic_correction_term,
             constant_args={
                 "ikoffset": self._metric_state_nonhydro.vertoffset_gradp,
@@ -486,7 +483,7 @@ class SolveNonhydro:
         )
 
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
             constant_args={
                 "reference_rho_at_edges_on_model_levels": self._metric_state_nonhydro.reference_rho_at_edges_on_model_levels,
@@ -529,7 +526,7 @@ class SolveNonhydro:
         )
 
         self._apply_divergence_damping_and_update_vn = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn,
             constant_args={
                 "horizontal_mask_for_3d_divdamp": self._metric_state_nonhydro.horizontal_mask_for_3d_divdamp,
@@ -559,7 +556,7 @@ class SolveNonhydro:
         )
 
         self._compute_horizontal_velocity_quantities_and_fluxes = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_horizontal_velocity_quantities_and_fluxes,
             constant_args={
                 "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
@@ -584,7 +581,7 @@ class SolveNonhydro:
         )
 
         self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
             constant_args={
                 "e_flx_avg": self._interpolation_state.e_flx_avg,
@@ -606,7 +603,7 @@ class SolveNonhydro:
         )
 
         self._vertically_implicit_solver_at_predictor_step = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
@@ -643,7 +640,7 @@ class SolveNonhydro:
         )
 
         self._vertically_implicit_solver_at_corrector_step = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step,
             constant_args={
                 "exner_w_explicit_weight_parameter": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
@@ -676,7 +673,7 @@ class SolveNonhydro:
         )
 
         self._compute_dwdz_for_divergence_damping = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_dwdz_for_divergence_damping,
             constant_args={
                 "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
@@ -693,7 +690,7 @@ class SolveNonhydro:
         )
 
         self._init_cell_kdim_field_with_zero_wp = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=init_cell_kdim_field_with_zero_wp,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary,
@@ -705,7 +702,7 @@ class SolveNonhydro:
             },
         )
         self._update_mass_flux_weighted = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=update_mass_flux_weighted,
             constant_args={
                 "vwind_expl_wgt": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
@@ -721,7 +718,7 @@ class SolveNonhydro:
             },
         )
         self._compute_rayleigh_damping_factor = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=dycore_utils.compute_rayleigh_damping_factor,
             constant_args={
                 "rayleigh_w": self._metric_state_nonhydro.rayleigh_w,
@@ -729,7 +726,7 @@ class SolveNonhydro:
         )
 
         self._compute_perturbed_quantities_and_interpolation = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_cell_diagnostics_for_dycore.compute_perturbed_quantities_and_interpolation,
             constant_args={
                 "reference_rho_at_cells_on_model_levels": self._metric_state_nonhydro.reference_rho_at_cells_on_model_levels,
@@ -768,7 +765,7 @@ class SolveNonhydro:
         )
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration,
             constant_args={
                 "reference_theta_at_cells_on_model_levels": self._metric_state_nonhydro.reference_theta_at_cells_on_model_levels,
@@ -790,7 +787,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
         self._stencils_61_62 = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=nhsolve_stencils.stencils_61_62,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary,
@@ -802,7 +799,7 @@ class SolveNonhydro:
             },
         )
         self._en_smag_fac_for_zero_nshift = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=smagorinsky.en_smag_fac_for_zero_nshift,
             constant_args={
                 "vect_a": self._vertical_params.interface_physical_height,
@@ -818,7 +815,7 @@ class SolveNonhydro:
             offset_provider={"Koff": dims.KDim},
         )
         self._init_test_fields = setup_program(
-            backend_options=backend_options,
+            backend=backend,
             program=nhsolve_stencils.init_test_fields,
             horizontal_sizes={
                 "edges_start": self._start_edge_lateral_boundary,
@@ -839,8 +836,7 @@ class SolveNonhydro:
             vertical_params,
             edge_geometry,
             owner_mask,
-            backend=self._backend,
-            backend_options=backend_options,
+            backend=backend,
         )
         self._allocate_local_fields()
 
