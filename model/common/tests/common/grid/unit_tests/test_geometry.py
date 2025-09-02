@@ -12,6 +12,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
+    base,
     geometry as geometry,
     geometry_attributes as attrs,
     horizontal as h_grid,
@@ -244,6 +245,7 @@ def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_cell_area(backend, grid_savepoint, experiment, grid_file):
@@ -343,6 +345,7 @@ def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_cartesian_centers_edge(backend, grid_file, experiment):
@@ -354,10 +357,13 @@ def test_cartesian_centers_edge(backend, grid_file, experiment):
     assert x.ndarray.shape == (grid.num_edges,)
     assert y.ndarray.shape == (grid.num_edges,)
     assert z.ndarray.shape == (grid.num_edges,)
-    # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
-    math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+    # those are coordinates on the unit sphere for the icosahedral grid: hence
+    # norm should be 1
+    if grid.geometry_type is base.GeometryType.ICOSAHEDRON:
+        norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
+        math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
+        assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
 @pytest.mark.parametrize(
@@ -365,6 +371,7 @@ def test_cartesian_centers_edge(backend, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_cartesian_centers_cell(backend, grid_file, experiment):
@@ -376,10 +383,13 @@ def test_cartesian_centers_cell(backend, grid_file, experiment):
     assert x.ndarray.shape == (grid.num_cells,)
     assert y.ndarray.shape == (grid.num_cells,)
     assert z.ndarray.shape == (grid.num_cells,)
-    # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
-    math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+    # those are coordinates on the unit sphere for the icosahedral grid: hence
+    # norm should be 1
+    if grid.geometry_type is base.GeometryType.ICOSAHEDRON:
+        norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
+        math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
+        assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
 @pytest.mark.parametrize(
@@ -387,6 +397,7 @@ def test_cartesian_centers_cell(backend, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_vertex(backend, grid_file, experiment):
@@ -398,10 +409,13 @@ def test_vertex(backend, grid_file, experiment):
     assert x.ndarray.shape == (grid.num_vertices,)
     assert y.ndarray.shape == (grid.num_vertices,)
     assert z.ndarray.shape == (grid.num_vertices,)
-    # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, backend=backend)
-    math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+    # those are coordinates on the unit sphere for the icosahedral grid: hence
+    # norm should be 1
+    if grid.geometry_type is base.GeometryType.ICOSAHEDRON:
+        norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, backend=backend)
+        math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
+        assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
 def test_sparse_fields_creator():
