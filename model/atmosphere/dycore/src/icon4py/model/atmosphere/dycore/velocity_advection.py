@@ -45,7 +45,7 @@ class VelocityAdvection:
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
         backend: gtx_backend.Backend | None,
-        backend_options,
+        backend_options: dict | None = None,
     ):
         self.grid: icon_grid.IconGrid = grid
         self._backend = backend
@@ -59,6 +59,9 @@ class VelocityAdvection:
         self.scalfac_exdiff: float = 0.05
         self._allocate_local_fields()
         self._determine_local_domains()
+
+        if backend_options is None:
+            backend_options = backend
 
         self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = setup_program(
             backend_options=backend_options,

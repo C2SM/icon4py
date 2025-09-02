@@ -207,6 +207,12 @@ def test_diffusion_init(
         for backend_str in BACKENDS.keys()
         if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
     ][0]
+    backend_options = {
+        "device": match_backend[1],
+        "backend_kind": match_backend[0],
+        "cached": True,
+        "auto_optimize": True,
+    }  # , "kwargs": **get_options_from_database(str(gt4py_program_name))}
 
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
@@ -218,8 +224,7 @@ def test_diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
-        device=match_backend[1],
-        backend_kind=match_backend[0],
+        backend_options=backend_options,
     )
 
     assert diffusion_granule.diff_multfac_w == min(
@@ -343,6 +348,13 @@ def test_verify_diffusion_init_against_savepoint(
         if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
     ][0]
 
+    backend_options = {
+        "device": match_backend[1],
+        "backend_kind": match_backend[0],
+        "cached": True,
+        "auto_optimize": True,
+    }
+
     diffusion_granule = diffusion.Diffusion(
         grid,
         config,
@@ -354,8 +366,7 @@ def test_verify_diffusion_init_against_savepoint(
         cell_params,
         orchestration=False,
         backend=backend,
-        device=match_backend[1],
-        backend_kind=match_backend[0],
+        backend_options=backend_options,
     )
 
     _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule, backend)
@@ -429,6 +440,12 @@ def test_run_diffusion_single_step(
         for backend_str in BACKENDS.keys()
         if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
     ][0]
+    backend_options = {
+        "device": match_backend[1],
+        "backend_kind": match_backend[0],
+        "cached": True,
+        "auto_optimize": True,
+    }
 
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
@@ -441,8 +458,7 @@ def test_run_diffusion_single_step(
         cell_params=cell_geometry,
         backend=backend,
         orchestration=orchestration,
-        device=match_backend[1],
-        backend_kind=match_backend[0],
+        backend_options=backend_options,
     )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -636,6 +652,12 @@ def test_run_diffusion_initial_step(
         for backend_str in BACKENDS.keys()
         if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
     ][0]
+    backend_options = {
+        "device": match_backend[1],
+        "backend_kind": match_backend[0],
+        "cached": True,
+        "auto_optimize": True,
+    }
 
     diffusion_granule = diffusion.Diffusion(
         grid=grid,
@@ -648,8 +670,7 @@ def test_run_diffusion_initial_step(
         cell_params=cell_geometry,
         backend=backend,
         orchestration=orchestration,
-        device=match_backend[1],
-        backend_kind=match_backend[0],
+        backend_options=backend_options,
     )
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v

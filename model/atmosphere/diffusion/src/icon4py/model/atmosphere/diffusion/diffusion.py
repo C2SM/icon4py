@@ -361,8 +361,7 @@ class Diffusion:
         backend: gtx_backend.Backend | None,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
-        device="gpu",
-        backend_kind="gtfn",
+        backend_options: dict | None = None,
     ):
         self._backend = backend
         self._orchestration = orchestration
@@ -398,12 +397,8 @@ class Diffusion:
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
         self._determine_horizontal_domains()
 
-        backend_options = {
-            "device": device,
-            "backend_kind": backend_kind,
-            "cached": True,
-            "auto_optimize": True,
-        }  # , "kwargs": **get_options_from_database(str(gt4py_program_name))}
+        if backend_options is None:
+            backend_options = backend
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
             backend_options=backend_options,
