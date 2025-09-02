@@ -32,9 +32,18 @@ from icon4py.model.testing.fixtures import (
 )
 
 
-def test_geometry_raises_for_unknown_field(backend):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
+    ],
+)
+def test_geometry_raises_for_unknown_field(backend, grid_file, experiment):
     geometry = grid_utils.get_grid_geometry(
-        backend, dt_utils.GLOBAL_EXPERIMENT, dt_utils.R02B04_GLOBAL
+        backend,
+        experiment,
+        grid_file,
     )
     with pytest.raises(ValueError) as e:
         geometry.get("foo")
