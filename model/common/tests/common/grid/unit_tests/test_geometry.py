@@ -46,6 +46,7 @@ def test_geometry_raises_for_unknown_field(backend):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-12),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -167,6 +168,7 @@ def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, grid_file
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_compute_coordinates_of_edge_tangent_and_normal(
