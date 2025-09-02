@@ -18,11 +18,10 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import (
-    flatten_first_two_dims,
     random_field,
     zero_field,
 )
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
@@ -48,11 +47,9 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
         return indexed
 
     e2c = connectivities[dims.E2CDim]
-    full_shape = e2c.shape + zdiff_gradp.shape[1:]
-    zdiff_gradp = zdiff_gradp.reshape(full_shape)
-    ikoffset = ikoffset.reshape(full_shape)
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
+    full_shape = ikoffset.shape
     z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, e2c, ikoffset)
     z_dexner_dz_c_1_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_1, e2c, ikoffset)
     z_dexner_dz_c_2_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_2, e2c, ikoffset)
@@ -69,10 +66,11 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
     return z_gradh_exner
 
 
+@pytest.mark.skip_value_error
+@pytest.mark.uses_as_offset
 class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels
     OUTPUTS = ("z_gradh_exner",)
-    MARKERS = (pytest.mark.uses_as_offset, pytest.mark.skip_value_error)
 
     @staticmethod
     def reference(
@@ -101,18 +99,15 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         zdiff_gradp = random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat)
-        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32).asnumpy()
+        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            ikoffset[:, :, k] = rng.integers(
+            ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]
                 low=0 - k,
                 high=grid.num_levels - k - 1,
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
-
-        zdiff_gradp_new = flatten_first_two_dims(dims.ECDim, dims.KDim, field=zdiff_gradp)
-        ikoffset_new = flatten_first_two_dims(dims.ECDim, dims.KDim, field=ikoffset)
 
         z_dexner_dz_c_1 = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         z_dexner_dz_c_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
@@ -121,8 +116,8 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,
             z_exner_ex_pr=z_exner_ex_pr,
-            zdiff_gradp=zdiff_gradp_new,
-            ikoffset=ikoffset_new,
+            zdiff_gradp=zdiff_gradp,
+            ikoffset=ikoffset,
             z_dexner_dz_c_1=z_dexner_dz_c_1,
             z_dexner_dz_c_2=z_dexner_dz_c_2,
             z_gradh_exner=z_gradh_exner,

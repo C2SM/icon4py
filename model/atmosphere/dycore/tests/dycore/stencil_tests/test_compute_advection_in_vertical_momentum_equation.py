@@ -19,7 +19,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.testing import stencil_tests as stencil_tests
 
 from .test_add_interpolated_horizontal_advection_of_w import (
     add_interpolated_horizontal_advection_of_w_numpy,
@@ -270,14 +270,14 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
     return vertical_wind_advective_tendency
 
 
-class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
+@pytest.mark.embedded_remap_error
+class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
     PROGRAM = compute_advection_in_vertical_momentum_equation
     OUTPUTS = (
         "vertical_wind_advective_tendency",
         "contravariant_corrected_w_at_cells_on_model_levels",
         "vertical_cfl",
     )
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
@@ -419,7 +419,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim, low=1.0e-5)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
 
         vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         owner_mask = data_alloc.random_mask(grid, dims.CellDim)
@@ -469,7 +469,8 @@ class TestFusedVelocityAdvectionStencilVMomentum(test_helpers.StencilTest):
         )
 
 
-class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(test_helpers.StencilTest):
+@pytest.mark.embedded_remap_error
+class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.StencilTest):
     PROGRAM = compute_contravariant_correction_and_advection_in_vertical_momentum_equation
     OUTPUTS = (
         "contravariant_correction_at_cells_on_half_levels",
@@ -477,7 +478,6 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(test_helpers.St
         "contravariant_corrected_w_at_cells_on_model_levels",
         "vertical_cfl",
     )
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
@@ -623,7 +623,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(test_helpers.St
         coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         coeff2_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
-        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
         vertical_cfl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)

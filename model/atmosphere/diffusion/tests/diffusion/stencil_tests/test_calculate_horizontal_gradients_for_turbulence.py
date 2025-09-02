@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def calculate_horizontal_gradients_for_turbulence_numpy(
@@ -33,10 +33,10 @@ def calculate_horizontal_gradients_for_turbulence_numpy(
     return dwdx, dwdy
 
 
+@pytest.mark.embedded_remap_error
 class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = calculate_horizontal_gradients_for_turbulence
     OUTPUTS = ("dwdx", "dwdy")
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

@@ -11,7 +11,7 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.metrics import compute_weight_factors as weight_factors
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -45,7 +45,7 @@ def test_compute_wgtfac_c(icon_grid, metrics_savepoint, experiment, backend):
         offset_provider={"Koff": dims.KDim},
     )
 
-    assert helpers.dallclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
+    assert test_utils.dallclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
 
 
 @pytest.mark.level("unit")
@@ -65,7 +65,9 @@ def test_compute_wgtfacq_e_dsl(metrics_savepoint, interpolation_savepoint, icon_
         array_ns=xp,
     )
 
-    assert helpers.dallclose(data_alloc.as_numpy(wgtfacq_e_dsl_full), wgtfacq_e_dsl_ref.asnumpy())
+    assert test_utils.dallclose(
+        data_alloc.as_numpy(wgtfacq_e_dsl_full), wgtfacq_e_dsl_ref.asnumpy()
+    )
 
 
 @pytest.mark.datatest
@@ -79,4 +81,4 @@ def test_compute_wgtfacq_c_dsl(icon_grid, metrics_savepoint, experiment, backend
         nlev=icon_grid.num_levels,
         array_ns=xp,
     )
-    assert helpers.dallclose(data_alloc.as_numpy(wgtfacq_c_dsl_ndarray), wgtfacq_c_dsl.asnumpy())
+    assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_c_dsl_ndarray), wgtfacq_c_dsl.asnumpy())

@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_mo
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.testing import stencil_tests as stencil_tests
 
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
@@ -41,7 +41,6 @@ def _compute_advective_normal_wind_tendency_numpy(
     horizontal_kinetic_energy_at_cells_on_model_levels_e2c = (
         horizontal_kinetic_energy_at_cells_on_model_levels[e2c]
     )
-    coeff_gradekin = coeff_gradekin.reshape(e2c.shape)
     coeff_gradekin = np.expand_dims(coeff_gradekin, axis=-1)
     coriolis_frequency = np.expand_dims(coriolis_frequency, axis=-1)
     c_lin_e = np.expand_dims(c_lin_e, axis=-1)
@@ -135,10 +134,10 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
     return normal_wind_advective_tendency
 
 
-class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
+@pytest.mark.embedded_remap_error
+class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
     PROGRAM = compute_advection_in_horizontal_momentum_equation
     OUTPUTS = ("normal_wind_advective_tendency",)
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
@@ -243,8 +242,8 @@ class TestFusedVelocityAdvectionStencilsHMomentum(test_helpers.StencilTest):
         vn_on_half_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
         )
-        coeff_gradekin = data_alloc.random_field(grid, dims.ECDim)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
+        coeff_gradekin = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         ddqz_z_full_e = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim, low=0.0

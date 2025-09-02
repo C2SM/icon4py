@@ -34,12 +34,14 @@ see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nw
 
 """
 
+import dataclasses
 import enum
 import functools
-from abc import abstractmethod
-from typing import Final, Protocol
+from collections.abc import Callable
+from typing import Any, Final
 
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.common import dimension as dims
 
@@ -142,7 +144,7 @@ class LineNumber(enum.IntEnum):
     EIGHTH = 7
 
 
-def _lateral_boundary(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _lateral_boundary(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
     """Indicate lateral boundary.
 
     These points correspond to the sorted points in ICON, the marker can be incremented in order
@@ -151,14 +153,14 @@ def _lateral_boundary(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
     return _domain_index(_LATERAL_BOUNDARY, dim, offset)
 
 
-def _domain_index(value_dict, dim: gtx.Dimension, offset: LineNumber) -> int:
+def _domain_index(value_dict: dict, dim: gtx.Dimension, offset: LineNumber) -> int:
     index = value_dict[dim] + offset
     assert index <= _BOUNDS[dim][1], f"Index {index} out of bounds for {dim}:  {_BOUNDS[dim]}"
     assert index >= _BOUNDS[dim][0], f"Index {index} out of bounds for {dim}: {_BOUNDS[dim]}"
     return index
 
 
-def _local(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _local(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
     """
     Indicate points that are owned by the processing unit, i.e. non halo points.
 
@@ -169,16 +171,16 @@ def _local(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
     return _domain_index(_LOCAL, dim, offset)
 
 
-def _halo(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _halo(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
     return _domain_index(_HALO, dim, offset)
 
 
-def _nudging(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _nudging(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
     """Indicate the nudging zone."""
     return _domain_index(_NUDGING, dim, offset)
 
 
-def _interior(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _interior(dim: gtx.Dimension, offset: LineNumber = LineNumber.FIRST) -> int:
     """Indicate interior i.e. unordered prognostic cells in ICON."""
     return _domain_index(_INTERIOR, dim, offset)
 
@@ -301,7 +303,36 @@ class Zone(str, enum.Enum):
         return self in (Zone.HALO, Zone.HALO_LEVEL_2)
 
 
-def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
+VERTEX_ZONES = (
+    Zone.END,
+    Zone.INTERIOR,
+    Zone.HALO,
+    Zone.HALO_LEVEL_2,
+    Zone.LOCAL,
+    Zone.LATERAL_BOUNDARY,
+    Zone.LATERAL_BOUNDARY_LEVEL_2,
+    Zone.LATERAL_BOUNDARY_LEVEL_3,
+    Zone.LATERAL_BOUNDARY_LEVEL_4,
+)
+
+
+CELL_ZONES = (
+    Zone.END,
+    Zone.INTERIOR,
+    Zone.HALO,
+    Zone.HALO_LEVEL_2,
+    Zone.LOCAL,
+    Zone.LATERAL_BOUNDARY,
+    Zone.LATERAL_BOUNDARY_LEVEL_2,
+    Zone.LATERAL_BOUNDARY_LEVEL_3,
+    Zone.LATERAL_BOUNDARY_LEVEL_4,
+    Zone.NUDGING,
+)
+
+EDGE_ZONES = tuple(Zone)
+
+
+def _map_to_icon_index(dim: gtx.Dimension, marker: Zone) -> int:  # noqa: PLR0911,PLR0912  [too-many-return-statements],[too-many-branches]
     match marker:
         case Zone.END:
             return _end(dim)
@@ -333,50 +364,40 @@ def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
             return _nudging(dim, LineNumber.FIRST)
         case Zone.NUDGING_LEVEL_2:
             return _nudging(dim, LineNumber.SECOND)
-        case _:
-            raise ValueError(f"Unknown marker {marker}")
 
 
-class Domain(Protocol):
+@dataclasses.dataclass(frozen=True)
+class Domain:
     """
-    Interface for a domain object.
-
-    Used to access horizontal domain zones in the ICON grid.
+    Domain Description on the horizontal grid
+    Used to access domain bounds in concrete the ICON grid.
     """
 
-    _dim: gtx.Dimension
-    _marker: Zone
-    _index: int
+    dim: gtx.Dimension
+    zone: Zone
 
-    def __str__(self):
-        return f"Domain (dim = {self.dim}: zone = {self._marker} /[ {self._index}])"
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Domain):
+            return self.dim == other.dim and self.zone == other.zone
+        return False
 
-    @abstractmethod
-    def _valid(self, marker: Zone) -> bool: ...
+    def __hash__(self) -> int:
+        return hash((self.dim, self.zone))
 
-    @property
-    def zone(self) -> Zone:
-        return self._marker
+    def __str__(self) -> str:
+        return f"Domain (dim = {self.dim}: zone = {self.zone} /ICON index[ {_map_to_icon_index(self.dim, self.zone)} ])"
 
-    def marker(self, marker: Zone):
-        assert self._valid(marker), f" Domain `{marker}` not a valid zone for use with '{self.dim}'"
-        self._marker = marker
-        self._index = _map_to_index(self.dim, marker)
-        return self
-
-    @property
-    def dim(self) -> gtx.Dimension:
-        return self._dim
+    def __post_init__(self):
+        assert _validate(
+            self.dim, self.zone
+        ), f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {get_zones_for_dim(self.dim)}"
 
     @functools.cached_property
-    def local(self) -> bool:
-        return self._marker == Zone.LOCAL
-
-    def __call__(self) -> int:
-        return self._index
+    def is_local(self) -> bool:
+        return self.zone == Zone.LOCAL
 
 
-def domain(dim: gtx.Dimension):
+def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
     """
     Factory function to create a domain object for a given dimension.
 
@@ -392,71 +413,40 @@ def domain(dim: gtx.Dimension):
 
     """
 
-    def _domain(marker: Zone):
-        return _domain_factory(dim, marker)
+    def _domain(marker: Zone) -> Domain:
+        return Domain(dim, marker)
 
     assert dim.kind == gtx.DimensionKind.HORIZONTAL, "Only defined for horizontal dimensions"
     return _domain
 
 
-def _domain_factory(dim: gtx.Dimension, marker: Zone):
-    if dim == dims.CellDim:
-        return CellDomain().marker(marker)
-    elif dim == dims.EdgeDim:
-        return EdgeDomain().marker(marker)
-    else:
-        return VertexDomain().marker(marker)
+def _validate(dim: gtx.Dimension, marker: Zone) -> bool:
+    return marker in get_zones_for_dim(dim)
 
 
-class EdgeDomain(Domain):
-    """Domain object for the Edge dimension."""
-
-    _dim = dims.EdgeDim
-
-    def _valid(self, marker: Zone):
-        return True
-
-
-VERTEX_ZONES = (
-    Zone.END,
-    Zone.INTERIOR,
-    Zone.HALO,
-    Zone.HALO_LEVEL_2,
-    Zone.LOCAL,
-    Zone.LATERAL_BOUNDARY,
-    Zone.LATERAL_BOUNDARY_LEVEL_2,
-    Zone.LATERAL_BOUNDARY_LEVEL_3,
-    Zone.LATERAL_BOUNDARY_LEVEL_4,
-)
+def get_zones_for_dim(dim: gtx.Dimension) -> tuple[Zone, ...]:
+    """
+    Get the grid zones valid for a given horizontal dimension in ICON .
+    """
+    match dim:
+        case dims.CellDim:
+            return CELL_ZONES
+        case dims.EdgeDim:
+            return EDGE_ZONES
+        case dims.VertexDim:
+            return VERTEX_ZONES
+        case _:
+            raise ValueError(
+                f"Dimension should be one of {(dims.MAIN_HORIZONTAL_DIMENSIONS.values())} but was {dim}"
+            )
 
 
-class VertexDomain(Domain):
-    """Domain object for the Vertex dimension."""
-
-    _dim = dims.VertexDim
-
-    def _valid(self, marker: Zone):
-        return marker in VERTEX_ZONES
-
-
-CELL_ZONES = (
-    Zone.END,
-    Zone.INTERIOR,
-    Zone.HALO,
-    Zone.HALO_LEVEL_2,
-    Zone.LOCAL,
-    Zone.LATERAL_BOUNDARY,
-    Zone.LATERAL_BOUNDARY_LEVEL_2,
-    Zone.LATERAL_BOUNDARY_LEVEL_3,
-    Zone.LATERAL_BOUNDARY_LEVEL_4,
-    Zone.NUDGING,
-)
-
-
-class CellDomain(Domain):
-    """Domain object for the Cell dimension."""
-
-    _dim = dims.CellDim
-
-    def _valid(self, marker: Zone):
-        return marker in CELL_ZONES
+def map_icon_domain_bounds(
+    dim: gtx.Dimension, pre_computed_bounds: np.ndarray
+) -> dict[Domain, gtx.int32]:  # type: ignore [name-defined]
+    get_domain = domain(dim)
+    domains = (get_domain(zone) for zone in get_zones_for_dim(dim))
+    return {
+        d: gtx.int32(pre_computed_bounds[_map_to_icon_index(dim, d.zone)].item())
+        for d in domains  # type: ignore [attr-defined]
+    }

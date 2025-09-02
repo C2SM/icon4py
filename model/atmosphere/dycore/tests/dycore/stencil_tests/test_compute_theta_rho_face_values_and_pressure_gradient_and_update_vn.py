@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.type_alias as ta
-import icon4py.model.testing.helpers as test_helpers
+import icon4py.model.testing.stencil_tests as test_helpers
 from icon4py.model.atmosphere.dycore.dycore_states import (
     HorizontalPressureDiscretizationType,
     RhoThetaAdvectionType,
@@ -121,6 +121,9 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
     return rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels
 
 
+@pytest.mark.embedded_remap_error
+@pytest.mark.skip_value_error
+@pytest.mark.uses_as_offset
 class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
     PROGRAM = compute_theta_rho_face_values_and_pressure_gradient_and_update_vn
     OUTPUTS = (
@@ -128,12 +131,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         "theta_v_at_edges_on_model_levels",
         "horizontal_pressure_gradient",
         "next_vn",
-    )
-
-    MARKERS = (
-        pytest.mark.uses_as_offset,
-        pytest.mark.skip_value_error,
-        pytest.mark.embedded_remap_error,
     )
 
     @staticmethod
@@ -333,9 +330,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             horizontal_pressure_gradient,
         )
 
-        full_shape = e2c.shape + zdiff_gradp.shape[1:]
-        zdiff_gradp = zdiff_gradp.reshape(full_shape)
-        ikoffset = ikoffset.reshape(full_shape)
+        full_shape = ikoffset.shape
 
         temporal_extrapolation_of_perturbed_exner_at_kidx = (
             _apply_index_field_for_multi_level_pressure_gradient(
@@ -415,12 +410,12 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        pos_on_tplane_e_x = data_alloc.random_field(grid, dims.ECDim)
-        pos_on_tplane_e_y = data_alloc.random_field(grid, dims.ECDim)
-        primal_normal_cell_x = data_alloc.random_field(grid, dims.ECDim)
-        dual_normal_cell_x = data_alloc.random_field(grid, dims.ECDim)
-        primal_normal_cell_y = data_alloc.random_field(grid, dims.ECDim)
-        dual_normal_cell_y = data_alloc.random_field(grid, dims.ECDim)
+        pos_on_tplane_e_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        pos_on_tplane_e_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         reference_rho_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
         )
@@ -445,7 +440,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         )
         hydrostatic_correction_on_lowest_level = data_alloc.random_field(grid, dims.EdgeDim)
-        zdiff_gradp = data_alloc.random_field(grid, dims.ECDim, dims.KDim)
+        zdiff_gradp = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim)
         ipeidx_dsl = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim)
         pg_exdist = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
@@ -468,15 +463,13 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         rng = np.random.default_rng()
         k_levels = grid.num_levels
 
-        ikoffset_np = np.zeros_like(ikoffset.asnumpy())
         for k in range(k_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            ikoffset_np[:, :, k] = rng.integers(
+            ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]
                 low=0 - k,
                 high=k_levels - k - 1,
-                size=(ikoffset.asnumpy().shape[0], ikoffset.asnumpy().shape[1]),
+                size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
-        ikoffset = data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=ikoffset_np)
 
         dtime = 0.9
         iau_wgt_dyn = 1.0

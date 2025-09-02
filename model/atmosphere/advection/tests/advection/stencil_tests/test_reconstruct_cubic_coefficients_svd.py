@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.helpers as helpers
+import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.reconstruct_cubic_coefficients_svd import (
     reconstruct_cubic_coefficients_svd,
 )
@@ -20,7 +20,8 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 
 
-class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
+@pytest.mark.embedded_remap_error
+class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
     PROGRAM = reconstruct_cubic_coefficients_svd
     OUTPUTS = (
         "p_coeff_1_dsl",
@@ -34,7 +35,6 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
         "p_coeff_9_dsl",
         "p_coeff_10_dsl",
     )
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
@@ -99,23 +99,14 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
         lsq_moments_6 = np.broadcast_to(lsq_moments_6, p_cc.shape)
         lsq_moments_7 = np.broadcast_to(lsq_moments_7, p_cc.shape)
         lsq_moments_8 = np.broadcast_to(lsq_moments_8, p_cc.shape)
-        lsq_pseudoinv_9 = helpers.reshape(lsq_pseudoinv_9, c2e2c2e2c.shape)
         lsq_pseudoinv_9 = np.expand_dims(lsq_pseudoinv_9, axis=-1)
-        lsq_pseudoinv_8 = helpers.reshape(lsq_pseudoinv_8, c2e2c2e2c.shape)
         lsq_pseudoinv_8 = np.expand_dims(lsq_pseudoinv_8, axis=-1)
-        lsq_pseudoinv_7 = helpers.reshape(lsq_pseudoinv_7, c2e2c2e2c.shape)
         lsq_pseudoinv_7 = np.expand_dims(lsq_pseudoinv_7, axis=-1)
-        lsq_pseudoinv_6 = helpers.reshape(lsq_pseudoinv_6, c2e2c2e2c.shape)
         lsq_pseudoinv_6 = np.expand_dims(lsq_pseudoinv_6, axis=-1)
-        lsq_pseudoinv_5 = helpers.reshape(lsq_pseudoinv_5, c2e2c2e2c.shape)
         lsq_pseudoinv_5 = np.expand_dims(lsq_pseudoinv_5, axis=-1)
-        lsq_pseudoinv_4 = helpers.reshape(lsq_pseudoinv_4, c2e2c2e2c.shape)
         lsq_pseudoinv_4 = np.expand_dims(lsq_pseudoinv_4, axis=-1)
-        lsq_pseudoinv_3 = helpers.reshape(lsq_pseudoinv_3, c2e2c2e2c.shape)
         lsq_pseudoinv_3 = np.expand_dims(lsq_pseudoinv_3, axis=-1)
-        lsq_pseudoinv_2 = helpers.reshape(lsq_pseudoinv_2, c2e2c2e2c.shape)
         lsq_pseudoinv_2 = np.expand_dims(lsq_pseudoinv_2, axis=-1)
-        lsq_pseudoinv_1 = helpers.reshape(lsq_pseudoinv_1, c2e2c2e2c.shape)
         lsq_pseudoinv_1 = np.expand_dims(lsq_pseudoinv_1, axis=-1)
 
         p_coeff_10_dsl = (
@@ -316,33 +307,16 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        lsq_pseudoinv_1_field = data_alloc.flatten_first_two_dims(
-            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        )
-        lsq_pseudoinv_2_field = data_alloc.flatten_first_two_dims(
-            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        )
-        lsq_pseudoinv_3_field = data_alloc.flatten_first_two_dims(
-            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        )
-        lsq_pseudoinv_4_field = data_alloc.flatten_first_two_dims(
-            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        )
-        lsq_pseudoinv_5_field = data_alloc.flatten_first_two_dims(
-            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        )
-        lsq_pseudoinv_6_field = data_alloc.flatten_first_two_dims(
-            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        )
-        lsq_pseudoinv_7_field = data_alloc.flatten_first_two_dims(
-            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        )
-        lsq_pseudoinv_8_field = data_alloc.flatten_first_two_dims(
-            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        )
-        lsq_pseudoinv_9_field = data_alloc.flatten_first_two_dims(
-            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
-        )
+        lsq_pseudoinv_1_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_2_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_3_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_4_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_5_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_6_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_7_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_8_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
+        lsq_pseudoinv_9_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
+
         lsq_moments_1 = data_alloc.random_field(grid, dims.CellDim)
         lsq_moments_2 = data_alloc.random_field(grid, dims.CellDim)
         lsq_moments_3 = data_alloc.random_field(grid, dims.CellDim)

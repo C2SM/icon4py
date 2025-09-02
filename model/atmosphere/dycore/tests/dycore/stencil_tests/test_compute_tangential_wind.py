@@ -17,7 +17,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_tangential_wind_numpy(
@@ -29,10 +29,10 @@ def compute_tangential_wind_numpy(
     return vt
 
 
+@pytest.mark.embedded_remap_error
 class TestComputeTangentialWind(StencilTest):
     PROGRAM = compute_tangential_wind
     OUTPUTS = ("vt",)
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

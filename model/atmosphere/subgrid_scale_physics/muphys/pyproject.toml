@@ -1,12 +1,12 @@
+# -- Build system requirements (PEP 518) --
+
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = ["setuptools>=61.0", "wheel>=0.40.0"]
 
+# -- Standard project description options (PEP 621) --
 [project]
-authors = [
-  {email = "gridtools@cscs.ch"},
-  {name = "ETH Zurich"}
-]
+authors = [{email = "gridtools@cscs.ch"}, {name = "ETH Zurich"}]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",
@@ -22,16 +22,19 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-  "gt4py==1.0.6",
+  # workspace members
   "icon4py-common[io]>=0.0.6",
+  # external dependencies
+  "gt4py==1.0.7",
   "packaging>=20.0"
 ]
 description = "ICON subgrid scale muphys parameterization."
-dynamic = ['version']
 license = {file = "BSD-3 License"}
 name = "icon4py-atmosphere-muphys"
 readme = "README.md"
 requires-python = ">=3.10"
+# managed by bump-my-version:
+version = "0.0.6"
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
@@ -61,6 +64,7 @@ version = "{current_version}"
 [[tool.bumpversion.files]]
 filename = "src/icon4py/model/atmosphere/subgrid_scale_physics/muphys/__init__.py"
 
+# --ruff --
 [tool.ruff]
 extend = "../../../../pyproject.toml"
 

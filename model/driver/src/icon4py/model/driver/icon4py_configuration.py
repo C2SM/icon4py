@@ -31,7 +31,7 @@ class Icon4pyRunConfig:
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
 
-    # TODO (Chia Rui): ndyn_substeps in timeloop may change in runtime
+    # TODO(OngChia): ndyn_substeps in timeloop may change in runtime
     n_substeps: int = 5
     """ndyn_substeps in ICON"""
 

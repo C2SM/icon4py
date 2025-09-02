@@ -102,7 +102,7 @@ def test_extract_horizontal_coordinates(file):
     with load_data_file(file) as ds:
         dim_sizes = ds.sizes
         coords = extract_horizontal_coordinates(ds)
-        # TODO (halungge) fix:
+        # TODO(halungge): fix:
         #  - 'long_name', 'standard_name' of attributes fx cell center latitudes
         # - 'units' of lat, lon are conventionally in degrees not in radians as ICON provides themconvert to degrees_north, degrees_east..
         for k in ("cell", "edge", "vertex"):

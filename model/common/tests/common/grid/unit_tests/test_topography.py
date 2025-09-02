@@ -10,7 +10,7 @@ import pytest
 
 from icon4py.model.common.grid import geometry, topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 from icon4py.model.testing.fixtures import *  # noqa: F403
 
 
@@ -48,4 +48,4 @@ def test_topography_smoothing_with_serialized_data(
         array_ns=xp,
     )
 
-    assert helpers.dallclose(topography_smoothed_ref, topography_smoothed, atol=1.0e-14)
+    assert test_utils.dallclose(topography_smoothed_ref, topography_smoothed, atol=1.0e-14)
