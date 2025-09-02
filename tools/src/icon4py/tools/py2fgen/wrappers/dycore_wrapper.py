@@ -225,7 +225,7 @@ def solve_nh_init(
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
-        nflat_gradp=gtx.int32(nflat_gradp-1), # Fortran vs Python indexing
+        nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
         pg_edgeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
@@ -250,11 +250,7 @@ def solve_nh_init(
     )
 
     # datatest config, vertical parameters
-    vertical_params = VerticalGrid(
-        config=vertical_config,
-        vct_a=vct_a,
-        vct_b=vct_b
-    )
+    vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
 
     global granule  # noqa: PLW0603 [global-statement]
     granule = SolveNonhydroGranule(
