@@ -394,9 +394,8 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx_backend.Backend | None,
+        backend: Backend | Literal["gpu", "cpu"] | dict[str, Any] None = None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
-        backend_options: dict | None = None,
     ):
         self._exchange = exchange
         self._backend = backend
