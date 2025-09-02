@@ -29,6 +29,21 @@ def get_options(program_name, arch, **backend):
     return dict(backend_kind=backend_kind)
 
 
+def customize_backend(program="", arch=None, **backend):
+    program_id = str(program.past_stage.past_node.id) if program != "" else program
+    options = get_options(program_id, arch, **backend)
+    if options["backend_kind"] == "dace":
+        backend_func = make_custom_dace_backend
+    elif options["backend_kind"] == "gtfn":
+        backend_func = make_custom_gtfn_backend
+    on_gpu = backend["device"] == "gpu"
+    custom_backend = backend_func(
+        on_gpu=on_gpu,
+        **options,
+    )
+    return custom_backend
+
+
 def setup_program(
     program: Program,
     backend: gtx.backend.Backend
@@ -65,16 +80,7 @@ def setup_program(
         custom_backend = backend
     else:
         # customized backend params
-        options = get_options(str(program.past_stage.past_node.id), arch, **backend)
-        if options["backend_kind"] == "dace":
-            backend_func = make_custom_dace_backend
-        elif options["backend_kind"] == "gtfn":
-            backend_func = make_custom_gtfn_backend
-        on_gpu = backend["device"] == "gpu"
-        custom_backend = backend_func(
-            on_gpu=on_gpu,
-            **options,
-        )
+        custom_backend = customize_backend(**backend)
 
     bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
     static_args_program = program.with_backend(custom_backend).compile(

@@ -408,17 +408,16 @@ def test_velocity_corrector_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
-    # match_backend = [
-    #     backend_str.split("_")
-    #     for backend_str in BACKENDS.keys()
-    #     if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
-    # ][0]
-    # backend_options = {
-    #     "device": match_backend[1],
-    #     "backend_kind": match_backend[0],
-    #     "cached": True,
-    #     "auto_optimize": True,
-    # }
+
+    match_backend = [
+        backend_str.split("_")
+        for backend_str in BACKENDS.keys()
+        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    ][0]
+    backend_options = {
+        "device": match_backend[1],
+        "backend_kind": match_backend[0],
+    }
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -427,7 +426,7 @@ def test_velocity_corrector_step(
         vertical_params=vertical_params,
         edge_params=edge_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
+        backend=backend_options,
     )
 
     velocity_advection.run_corrector_step(

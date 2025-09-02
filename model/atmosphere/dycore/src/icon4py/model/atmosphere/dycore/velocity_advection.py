@@ -31,7 +31,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.model_options import customize_backend, setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -48,7 +48,9 @@ class VelocityAdvection:
         backend: gtx.backend.Backend | Literal["gpu", "cpu"] | dict[str, Any] | None = None,
     ):
         self.grid: icon_grid.IconGrid = grid
-        self._backend = backend
+        self._backend = (
+            backend if isinstance(backend, gtx.backend.Backend) else customize_backend(**backend)
+        )
         self.metric_state: dycore_states.MetricStateNonHydro = metric_state
         self.interpolation_state: dycore_states.InterpolationState = interpolation_state
         self.vertical_params = vertical_params
