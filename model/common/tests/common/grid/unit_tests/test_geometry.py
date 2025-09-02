@@ -149,6 +149,7 @@ def test_compute_inverse_dual_edge_length(backend, grid_savepoint, grid_file, ex
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-10),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-14),
     ],
 )
 @pytest.mark.datatest

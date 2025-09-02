@@ -708,9 +708,10 @@ class TorusGridGeometry(GridGeometry):
         inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
         self.register_provider(inverse_dual_edge_length)
 
-        # TODO(msimberg): Wrong for torus, uses VERTEX_LAT/LON
+        # TODO(msimberg): Is this needed for torus? Even the serialized data
+        # doesn't seem to make sense. Earth radius is used even for the torus.
         vertex_vertex_distance = factory.ProgramFieldProvider(
-            func=stencils.compute_arc_distance_of_far_edges_in_diamond,
+            func=stencils.compute_distance_of_far_edges_in_diamond_torus,
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
@@ -719,14 +720,15 @@ class TorusGridGeometry(GridGeometry):
             },
             fields={"far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH},
             deps={
-                "vertex_lat": attrs.VERTEX_LAT,
-                "vertex_lon": attrs.VERTEX_LON,
+                "vertex_x": attrs.VERTEX_X,
+                "vertex_y": attrs.VERTEX_Y,
             },
-            params={"radius": self._grid.global_properties.radius},
+            params={
+                "domain_length": self._grid.global_properties.domain_length,
+                "domain_height": self._grid.global_properties.domain_height,
+            },
         )
         self.register_provider(vertex_vertex_distance)
-
-        # TODO(msimberg): Wrong if above is wrong
         inverse_far_edge_distance_provider = self._inverse_field_provider(
             attrs.VERTEX_VERTEX_LENGTH
         )
