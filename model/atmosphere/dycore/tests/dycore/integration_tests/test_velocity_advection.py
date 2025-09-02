@@ -31,6 +31,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
+from icon4py.model.common.model_backends import BACKENDS
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, test_utils
@@ -101,6 +102,17 @@ def test_verify_velocity_init_against_savepoint(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    match_backend = [
+        backend_str.split("_")
+        for backend_str in BACKENDS.keys()
+        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    ][0]
+    backend_options = {
+        "device": match_backend[1],
+        "backend_kind": match_backend[0],
+        "cached": True,
+        "auto_optimize": True,
+    }
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -110,6 +122,7 @@ def test_verify_velocity_init_against_savepoint(
         edge_params=grid_savepoint.construct_edge_geometry(),
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        backend_options=backend_options,
     )
     assert velocity_advection.cfl_w_limit == 0.65
     assert velocity_advection.scalfac_exdiff == 0.05
@@ -150,6 +163,17 @@ def test_scale_factors_by_dtime(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    match_backend = [
+        backend_str.split("_")
+        for backend_str in BACKENDS.keys()
+        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    ][0]
+    backend_options = {
+        "device": match_backend[1],
+        "backend_kind": match_backend[0],
+        "cached": True,
+        "auto_optimize": True,
+    }
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
@@ -158,6 +182,7 @@ def test_scale_factors_by_dtime(
         edge_params=grid_savepoint.construct_edge_geometry(),
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        backend_options=backend_options,
     )
     (cfl_w_limit, scalfac_exdiff) = velocity_advection._scale_factors_by_dtime(dtime)
     assert cfl_w_limit == savepoint_velocity_init.cfl_w_limit()
@@ -244,6 +269,17 @@ def test_velocity_predictor_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    match_backend = [
+        backend_str.split("_")
+        for backend_str in BACKENDS.keys()
+        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    ][0]
+    backend_options = {
+        "device": match_backend[1],
+        "backend_kind": match_backend[0],
+        "cached": True,
+        "auto_optimize": True,
+    }
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -253,6 +289,7 @@ def test_velocity_predictor_step(
         edge_params=edge_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        backend_options=backend_options,
     )
 
     velocity_advection.run_predictor_step(
@@ -338,9 +375,6 @@ def test_velocity_corrector_step(
     savepoint_velocity_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    ndyn_substeps,
-    substep_init,
-    substep_exit,
     backend,
 ):
     init_savepoint = savepoint_velocity_init
@@ -398,6 +432,17 @@ def test_velocity_corrector_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    match_backend = [
+        backend_str.split("_")
+        for backend_str in BACKENDS.keys()
+        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
+    ][0]
+    backend_options = {
+        "device": match_backend[1],
+        "backend_kind": match_backend[0],
+        "cached": True,
+        "auto_optimize": True,
+    }
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -407,6 +452,7 @@ def test_velocity_corrector_step(
         edge_params=edge_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        backend_options=backend_options,
     )
 
     velocity_advection.run_corrector_step(
@@ -459,9 +505,6 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     metrics_savepoint,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    substep_init,
-    istep_init,
-    istep_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -594,8 +637,6 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     savepoint_velocity_exit,
     backend,
     savepoint_velocity_init,
-    substep_init,
-    substep_exit,
 ):
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
@@ -737,8 +778,6 @@ def test_compute_advection_in_vertical_momentum_equation(
     metrics_savepoint,
     savepoint_velocity_exit,
     savepoint_velocity_init,
-    substep_init,
-    substep_exit,
     backend,
 ):
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
@@ -874,7 +913,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
     backend,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    substep_init,
 ):
     vn = savepoint_velocity_init.vn()
     horizontal_kinetic_energy_at_edges_on_model_levels = savepoint_velocity_exit.z_kin_hor_e()
