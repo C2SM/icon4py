@@ -420,7 +420,7 @@ class SolveNonhydro:
         }  # , "kwargs": **get_options_from_database(str(gt4py_program_name))}
 
         self._compute_theta_and_exner = setup_program(
-            backend_options=backend_options,  # (**get_options_from_database("compute_theta_and_exner"), <backend_kind>, <device>, <arch>),
+            backend_options=backend_options,
             program=compute_theta_and_exner,
             constant_args={
                 "bdy_halo_c": self._metric_state_nonhydro.bdy_halo_c,

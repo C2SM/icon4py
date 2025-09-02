@@ -52,17 +52,20 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    # customized backend params
-    if backend_options["backend_kind"] == "dace":
-        backend_func = make_custom_dace_backend
-    elif backend_options["backend_kind"] == "gtfn":
-        backend_func = make_custom_gtfn_backend
-    on_gpu = backend_options["backend_kind"] == "gpu"
-    custom_backend = backend_func(
-        on_gpu=on_gpu,
-        auto_optimize=backend_options["auto_optimize"],
-        cached=backend_options["cached"],
-    )
+    if isinstance(backend_options, gtx.backend.Backend):
+        custom_backend = backend_options
+    else:
+        # customized backend params
+        if backend_options["backend_kind"] == "dace":
+            backend_func = make_custom_dace_backend
+        elif backend_options["backend_kind"] == "gtfn":
+            backend_func = make_custom_gtfn_backend
+        on_gpu = backend_options["device"] == "gpu"
+        custom_backend = backend_func(
+            on_gpu=on_gpu,
+            auto_optimize=backend_options["auto_optimize"],
+            cached=backend_options["cached"],
+        )
 
     bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
     static_args_program = program.with_backend(custom_backend).compile(
