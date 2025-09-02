@@ -202,6 +202,7 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
@@ -226,6 +227,7 @@ def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
