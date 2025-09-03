@@ -1175,6 +1175,7 @@ def compute_theta_d_exner_dz_ref_ic(
     h_scal_bg: wpfloat,
     grav: wpfloat,
     rd: wpfloat,
+    cpd: wpfloat,
     p0sl_bg: wpfloat,
     rd_o_cpd: wpfloat,
     p0ref: wpfloat,

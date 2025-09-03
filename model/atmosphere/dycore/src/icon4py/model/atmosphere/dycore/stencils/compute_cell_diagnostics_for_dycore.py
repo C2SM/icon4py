@@ -386,7 +386,7 @@ def compute_perturbed_quantities_and_interpolation(
         - limited_area: option indicating the grid is limited area or not
         - igradp_method: option for pressure gradient computation (see HorizontalPressureDiscretizationType)
         - nflatlev: starting vertical index of flat levels
-        - nflat_gradp: starting vertical index when neighboring cell centers lie within the thicknees of the layer
+        - nflat_gradp: starting vertical index when neighboring cell centers lie within the thickness of the layer
         - start_cell_lateral_boundary: start index of the first lateral boundary level zone for cells
         - start_cell_lateral_boundary_level_3: start index of the 3rd lateral boundary level zone for cells
         - start_cell_halo_level_2: start index of the 2nd halo level zone for cells
