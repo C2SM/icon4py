@@ -43,7 +43,7 @@ class GridGeometry(factory.FieldSource):
     """
     Factory for the ICON grid geometry fields.
 
-    Computes geometry fields from the grid geographical coordinates fo cells, egdes, vertices.
+    Computes geometry fields from the grid geographical coordinates fo cells, edges, vertices.
     Computations are triggered upon first request.
 
     Can be queried for geometry fields and metadata

@@ -179,10 +179,12 @@ def test_rbf_interpolation_coeffs_cell(
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         grid.global_properties.geometry_type,
-        # TODO(msimberg): Write this to config
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim)
-        if grid.global_properties.geometry_type is base.GeometryType.ICOSAHEDRON
-        else grid.mean_dual_edge_length,
+        rbf.compute_default_rbf_scale(
+            grid.global_properties.geometry_type,
+            math.sqrt(grid_savepoint.mean_cell_area()),
+            grid.mean_dual_edge_length,
+            rbf_dim,
+        ),
         horizontal_start,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
@@ -251,10 +253,12 @@ def test_rbf_interpolation_coeffs_vertex(
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         grid.global_properties.geometry_type,
-        # TODO(msimberg): Write this to config
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim)
-        if grid.global_properties.geometry_type is base.GeometryType.ICOSAHEDRON
-        else grid.mean_dual_edge_length,
+        rbf.compute_default_rbf_scale(
+            grid.global_properties.geometry_type,
+            math.sqrt(grid_savepoint.mean_cell_area()),
+            grid.mean_dual_edge_length,
+            rbf_dim,
+        ),
         horizontal_start,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
@@ -331,10 +335,12 @@ def test_rbf_interpolation_coeffs_edge(
         grid_savepoint.e2c2e(),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         grid.global_properties.geometry_type,
-        # TODO(msimberg): Write this to config
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim)
-        if grid.global_properties.geometry_type is base.GeometryType.ICOSAHEDRON
-        else grid.mean_dual_edge_length,
+        rbf.compute_default_rbf_scale(
+            grid.global_properties.geometry_type,
+            math.sqrt(grid_savepoint.mean_cell_area()),
+            grid.mean_dual_edge_length,
+            rbf_dim,
+        ),
         horizontal_start,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
