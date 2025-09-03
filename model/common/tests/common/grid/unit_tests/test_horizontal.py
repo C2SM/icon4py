@@ -11,6 +11,7 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 
 from .. import utils
+from ..fixtures import *  # noqa: F401, F403
 
 
 log = logging.getLogger(__name__)

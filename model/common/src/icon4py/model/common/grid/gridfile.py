@@ -8,11 +8,13 @@
 
 import enum
 import logging
+from typing import Protocol
 
 import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.common import exceptions
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 _log = logging.getLogger(__name__)
@@ -27,6 +29,33 @@ except ImportError:
 
         def __init__(self, *args, **kwargs):
             raise ModuleNotFoundError("NetCDF4 is not installed.")
+
+
+class IndexTransformation(Protocol):
+    """Return a transformation field to be applied to index fields"""
+
+    def __call__(
+        self,
+        array: data_alloc.NDArray,
+    ) -> data_alloc.NDArray: ...
+
+
+class NoTransformation(IndexTransformation):
+    """Empty implementation of the Protocol. Just return zeros."""
+
+    def __call__(self, array: data_alloc.NDArray):
+        return np.zeros_like(array)
+
+
+class ToZeroBasedIndexTransformation(IndexTransformation):
+    def __call__(self, array: data_alloc.NDArray):
+        """
+        Calculate the index offset needed for usage with python.
+
+        Fortran indices are 1-based, hence the offset is -1 for 0-based ness of python except for
+        INVALID values which are marked with -1 in the grid file and are kept such.
+        """
+        return np.asarray(np.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
 
 class GridFileName(str, enum.Enum):
@@ -237,8 +266,9 @@ class GridFile:
 
     INVALID_INDEX = -1
 
-    def __init__(self, file_name: str):
+    def __init__(self, file_name: str, transformation: IndexTransformation):
         self._filename = file_name
+        self._offset = transformation
         self._dataset = None
 
     def dimension(self, name: DimensionName) -> int:
@@ -250,7 +280,11 @@ class GridFile:
         return self._dataset.getncattr(name)
 
     def int_variable(
-        self, name: FieldName, indices: np.ndarray = None, transpose: bool = True
+        self,
+        name: FieldName,
+        indices: np.ndarray | None = None,
+        transpose: bool = True,
+        apply_transformation: bool = True,
     ) -> np.ndarray:
         """Read a integer field from the grid file.
 
@@ -258,19 +292,27 @@ class GridFile:
 
         Args:
             name: name of the field to read
+            indices: list of indices to read
             transpose: flag to indicate whether the file should be transposed (for 2d fields)
+            apply_transformation: flag to indicate whether the transformation should be applied
+                to the indices, defaults to True
         Returns:
             NDArray: field data
 
         """
-        _log.debug(f"reading {name}: transposing = {transpose}")
-        return self.variable(name, indices, transpose=transpose, dtype=gtx.int32)
+        _log.debug(
+            f"reading {name}: transposing = {transpose} apply_transformation={apply_transformation}"
+        )
+        variable = self.variable(name, indices, transpose=transpose, dtype=gtx.int32)
+        if apply_transformation:
+            return variable + self._offset(variable)
+        return variable
 
     def variable(
         self,
         name: FieldName,
-        indices: np.ndarray = None,
-        transpose=False,
+        indices: np.ndarray | None = None,
+        transpose: bool = False,
         dtype: np.dtype = gtx.float64,
     ) -> np.ndarray:
         """Read a  field from the grid file.
@@ -278,15 +320,21 @@ class GridFile:
         If a index array is given it only reads the values at those positions.
         Args:
             name: name of the field to read
-            indices: indices to read
+            indices: indices to read if requesting a restricted set of indices. We assume this be a 1d array it will be applied to the 1. dimension (after transposition)
             transpose: flag indicateing whether the array needs to be transposed
                 to match icon4py dimension ordering, defaults to False
             dtype: datatype of the field
         """
+
+        assert indices is None or indices.ndim == 1, "indices must be 1 dimensional"
+
         try:
             variable = self._dataset.variables[name]
+            slicer = [slice(None) for _ in range(variable.ndim)]
+            if indices is not None and indices.size > 0:
+                slicer[(1 if transpose else 0)] = indices
             _log.debug(f"reading {name}: transposing = {transpose}")
-            data = variable[:] if indices is None else variable[indices]
+            data = variable[tuple(slicer)]
             data = np.array(data, dtype=dtype)
             return np.transpose(data) if transpose else data
         except KeyError as err:
@@ -294,6 +342,13 @@ class GridFile:
             _log.warning(msg)
             _log.debug(f"Error: {err}")
             raise exceptions.IconGridError(msg) from err
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def close(self):
         self._dataset.close()
