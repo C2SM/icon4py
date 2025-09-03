@@ -278,18 +278,20 @@ def test_global_grid_params(
 
 
 @pytest.mark.parametrize(
-    "geometry_type,grid_root,grid_level,num_cells,mean_cell_area",
+    "geometry_type,grid_root,grid_level",
     [
-        (base.GeometryType.ICOSAHEDRON, 0, 0, 42, 123.456),
+        (base.GeometryType.ICOSAHEDRON, None, None),
+        (base.GeometryType.ICOSAHEDRON, 0, 0),
+        (None, None, None),
     ],
 )
-def test_global_grid_params_fail(geometry_type, grid_root, grid_level, num_cells, mean_cell_area):
-    with pytest.raises(ValueError) as e:
+def test_global_grid_params_fail(geometry_type, grid_root, grid_level):
+    with pytest.raises(ValueError):
         _ = icon.GlobalGridParams(
             grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
-                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-            ),
-            num_cells=num_cells,
-            mean_cell_area=mean_cell_area,
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)
+                if grid_root is not None
+                else None,
+            )
         )

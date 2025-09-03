@@ -20,7 +20,7 @@ from icon4py.model.common import dimension as dims
 
 class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
     PROGRAM = compute_barycentric_backtrajectory
-    OUTPUTS = ("p_cell_idx", "p_cell_blk", "p_distv_bary_1", "p_distv_bary_2")
+    OUTPUTS = ("p_cell_idx", "p_distv_bary_1", "p_distv_bary_2")
 
     @staticmethod
     def reference(
@@ -28,7 +28,6 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
         p_vn: np.ndarray,
         p_vt: np.ndarray,
         cell_idx: np.ndarray,
-        cell_blk: np.ndarray,
         pos_on_tplane_e_1: np.ndarray,
         pos_on_tplane_e_2: np.ndarray,
         primal_normal_cell_1: np.ndarray,
@@ -40,7 +39,6 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
     ) -> dict:
         lvn_pos = p_vn >= 0.0
         cell_idx = np.expand_dims(cell_idx, axis=-1)
-        cell_blk = np.expand_dims(cell_blk, axis=-1)
         pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
         pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)
         primal_normal_cell_1 = np.expand_dims(primal_normal_cell_1, axis=-1)
@@ -50,7 +48,6 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
 
         p_cell_idx = np.where(lvn_pos, cell_idx[:, 0], cell_idx[:, 1])
         p_cell_rel_idx_dsl = np.where(lvn_pos, 0, 1)
-        p_cell_blk = np.where(lvn_pos, cell_blk[:, 0], cell_blk[:, 1])
 
         z_ntdistv_bary_1 = -(
             p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
@@ -78,7 +75,6 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
         return dict(
             p_cell_idx=p_cell_idx,
             p_cell_rel_idx_dsl=p_cell_rel_idx_dsl,
-            p_cell_blk=p_cell_blk,
             p_distv_bary_1=p_distv_bary_1,
             p_distv_bary_2=p_distv_bary_2,
         )
@@ -88,7 +84,6 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         cell_idx = grid.get_connectivity("E2C")
-        cell_blk = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
         pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
         primal_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
@@ -100,7 +95,6 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
 
         p_cell_idx = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_cell_rel_idx_dsl = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_cell_blk = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_dthalf = 2.0
@@ -109,7 +103,6 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
             p_vn=p_vn,
             p_vt=p_vt,
             cell_idx=cell_idx,
-            cell_blk=cell_blk,
             pos_on_tplane_e_1=pos_on_tplane_e_1,
             pos_on_tplane_e_2=pos_on_tplane_e_2,
             primal_normal_cell_1=primal_normal_cell_1,
@@ -118,7 +111,6 @@ class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):
             dual_normal_cell_2=dual_normal_cell_2,
             p_cell_idx=p_cell_idx,
             p_cell_rel_idx_dsl=p_cell_rel_idx_dsl,
-            p_cell_blk=p_cell_blk,
             p_distv_bary_1=p_distv_bary_1,
             p_distv_bary_2=p_distv_bary_2,
             p_dthalf=p_dthalf,
