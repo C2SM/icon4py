@@ -24,12 +24,12 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
-def get_options(program_name, arch, **backend):
+def get_options(program_name: str, arch: str, **backend):
     backend_kind = backend.get("backend_kind", "default")
     return dict(backend_kind=backend_kind)
 
 
-def customize_backend(program="", arch=None, **backend):
+def customize_backend(program: str = "", arch: str = "", **backend):
     program_id = str(program.past_stage.past_node.id) if program != "" else program
     options = get_options(program_id, arch, **backend)
     if options["backend_kind"] == "dace":
@@ -55,7 +55,6 @@ def setup_program(
     horizontal_sizes: dict[str, gtx.int32] | None = None,
     vertical_sizes: dict[str, gtx.int32] | None = None,
     offset_provider: OffsetProvider | None = None,
-    arch=None,
 ) -> typing.Callable[..., None]:
     """
     This function processes arguments to the GT4Py program. It

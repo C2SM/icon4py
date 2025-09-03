@@ -31,7 +31,6 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.model_backends import BACKENDS
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, test_utils
@@ -102,17 +101,6 @@ def test_verify_velocity_init_against_savepoint(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
-    # match_backend = [
-    #     backend_str.split("_")
-    #     for backend_str in BACKENDS.keys()
-    #     if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
-    # ][0]
-    # backend = {
-    #     "device": match_backend[1],
-    #     "backend_kind": match_backend[0],
-    #     "cached": True,
-    #     "auto_optimize": True,
-    # }
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -409,16 +397,6 @@ def test_velocity_corrector_step(
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    match_backend = [
-        backend_str.split("_")
-        for backend_str in BACKENDS.keys()
-        if set(backend_str.split("_")).issubset(set(backend.name.split("_")))
-    ][0]
-    backend_options = {
-        "device": match_backend[1],
-        "backend_kind": match_backend[0],
-    }
-
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
@@ -426,7 +404,7 @@ def test_velocity_corrector_step(
         vertical_params=vertical_params,
         edge_params=edge_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend_options,
+        backend=backend,
     )
 
     velocity_advection.run_corrector_step(

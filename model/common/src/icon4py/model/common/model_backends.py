@@ -29,7 +29,7 @@ try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
     def make_custom_dace_backend(
-        on_gpu: bool, auto_optimize=True, cached=True, **options
+        on_gpu: bool, auto_optimize: bool = True, cached: bool = True, **options
     ) -> gtx_backend.Backend:
         """Customize the dace backend with the following configuration.
 
@@ -82,7 +82,7 @@ except ImportError:
         raise NotImplementedError("Depends on dace module, which is not installed.")
 
 
-def make_custom_gtfn_backend(on_gpu: bool, cached=True, **options) -> GTFNBackendFactory:
+def make_custom_gtfn_backend(on_gpu: bool, cached: bool = True, **options) -> GTFNBackendFactory:
     return GTFNBackendFactory(
         gpu=on_gpu,
         cached=cached,

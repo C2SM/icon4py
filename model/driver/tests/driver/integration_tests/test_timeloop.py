@@ -10,11 +10,9 @@ import pytest
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.model_backends import BACKENDS
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
