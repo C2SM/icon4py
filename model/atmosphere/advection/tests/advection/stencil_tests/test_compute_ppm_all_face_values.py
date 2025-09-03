@@ -57,9 +57,6 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         p_face = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         slev = gtx.int32(1)
         slevp1 = gtx.int32(2)
-        # TODO(phimuell, edopao): Before `elev` was set to `grid.num_edges` which is
-        #   probably wrong if one considers its use above. However, even with that
-        #   it still fails for me locally, okay, GTFN also fails.
         elev = grid.num_levels - 2
         elevp1 = gtx.int32(elev + 1)
 
