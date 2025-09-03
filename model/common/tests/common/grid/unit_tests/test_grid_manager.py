@@ -612,6 +612,26 @@ def test_limited_area_on_grid(grid_file, expected):
     assert expected == grid.limited_area
 
 
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+@pytest.mark.parametrize("dim", utils.horizontal_dims())
+def test_decomposition_info_single_node(dim, grid_file, experiment, grid_savepoint, backend):
+    expected = grid_savepoint.construct_decomposition_info()
+    gm = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
+    result = gm.decomposition_info
+    assert np.all(result.local_index(dim) == expected.local_index(dim))
+    assert np.all(result.global_index(dim) == expected.global_index(dim))
+    assert np.all(result.owner_mask(dim) == expected.owner_mask(dim))
+    assert np.all(result.halo_levels(dim) == expected.halo_levels(dim))
+
+
+
+
 # TODO move to mpi_tests folder
 @pytest.mark.mpi
 @pytest.mark.parametrize(

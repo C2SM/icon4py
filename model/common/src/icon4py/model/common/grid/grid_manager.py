@@ -291,7 +291,7 @@ class GridManager:
 
         This should be used for a single node run. In the case of a multi node distributed run the  start and end indices need to be reconstructed from the decomposed grid.
         """
-        _CHILD_DOM = 0
+        _child_dom = 0
         grid_refinement_dimensions = {
             dims.CellDim: gridfile.DimensionName.CELL_GRF,
             dims.EdgeDim: gridfile.DimensionName.EDGE_GRF,
@@ -307,7 +307,7 @@ class GridManager:
         }
 
         start_indices = {
-            dim: self._get_index_field(name, transpose=False, apply_offset=True)[_CHILD_DOM]
+            dim: self._get_index_field(name, transpose=False, apply_offset=True)[_child_dom]
             for dim, name in start_index_names.items()
         }
         for dim in grid_refinement_dimensions:
@@ -321,7 +321,7 @@ class GridManager:
             dims.VertexDim: gridfile.GridRefinementName.END_INDEX_VERTICES,
         }
         end_indices = {
-            dim: self._get_index_field(name, transpose=False, apply_offset=False)[_CHILD_DOM]
+            dim: self._get_index_field(name, transpose=False, apply_offset=False)[_child_dom]
             for dim, name in end_index_names.items()
         }
         for dim in grid_refinement_dimensions:
@@ -403,6 +403,7 @@ class GridManager:
 
         # JOINT functionality
         # COMPUTE remaining derived connectivities
+
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
         start, end = self._read_start_end_indices()

@@ -9,7 +9,6 @@ import pathlib
 
 import gt4py.next.backend as gtx_backend
 
-from icon4py.model.common.decomposition import halo
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -17,7 +16,7 @@ from icon4py.model.common.grid import (
     gridfile,
     vertical as v_grid,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     config,
     data_handling,
@@ -148,8 +147,6 @@ def get_num_levels(experiment: str) -> int:
 def get_grid_geometry(
     backend: gtx_backend.Backend | None, experiment: str, grid_file: str
 ) -> geometry.GridGeometry:
-    on_gpu = device_utils.is_cupy_device(backend)
-    xp = data_alloc.array_ns(on_gpu)
     num_levels = get_num_levels(experiment)
     register_name = "_".join((experiment, data_alloc.backend_name(backend)))
 
@@ -158,12 +155,8 @@ def get_grid_geometry(
             grid_file, keep_skip_values=True, num_levels=num_levels, backend=backend
         )
         grid = gm.grid
-        dummy_halo_constructor = halo.NoHalos(
-            horizontal_size=grid.config.horizontal_size, num_levels=num_levels, backend=backend
-        )
-        decomposition_info = dummy_halo_constructor(xp.zeros((grid.num_levels,), dtype=int))
         geometry_source = geometry.GridGeometry(
-            grid, decomposition_info, backend, gm.coordinates, gm.geometry, geometry_attrs.attrs
+            grid, gm.decomposition_info, backend, gm.coordinates, gm.geometry, geometry_attrs.attrs
         )
         return geometry_source
 

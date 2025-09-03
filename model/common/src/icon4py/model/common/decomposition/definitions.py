@@ -79,7 +79,7 @@ class DomainDescriptorIdGenerator:
         return next_id
 
 
-# TODO(halungge): halo_levels.. can we get rid of them?
+# TODO(halungge): halo_levels.. they are the decomp_domain in ICON
 class DecompositionInfo:
     class EntryType(IntEnum):
         ALL = 0

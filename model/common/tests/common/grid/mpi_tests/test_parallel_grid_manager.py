@@ -18,7 +18,13 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 import icon4py.model.testing.grid_utils as grid_utils
 from icon4py.model.common import exceptions, dimension as dims
 from icon4py.model.common.decomposition import halo, mpi_decomposition, definitions as defs
-from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid, gridfile, geometry, geometry_attributes
+from icon4py.model.common.grid import (
+    grid_manager as gm,
+    vertical as v_grid,
+    gridfile,
+    geometry,
+    geometry_attributes,
+)
 from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -235,13 +241,13 @@ def assert_gathered_field_against_global(
 # TODO add test including halo access:
 #  Will uses geofac_div and geofac_n2s
 
+
 @pytest.mark.datatest
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi
 def test_halo_neighbor_access_c2e(processor_props):
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL.name)
     single_node_grid = run_grid_manager_for_singlenode(file, vertical_config).grid
-
 
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
@@ -253,14 +259,26 @@ def test_halo_neighbor_access_c2e(processor_props):
     extra_geometry_fields = multinode_grid_manager.geometry
     decomposition_info = multinode_grid_manager.decomposition_info
     coordinates = multinode_grid_manager.coordinates
-    distributed_geometry = geometry.GridGeometry(backend=None, grid=distributed_grid, coordinates=coordinates, decomposition_info=decomposition_info, extra_fields=extra_geometry_fields,
-                                                 metadata=geometry_attributes.attrs)
+    distributed_geometry = geometry.GridGeometry(
+        backend=None,
+        grid=distributed_grid,
+        coordinates=coordinates,
+        decomposition_info=decomposition_info,
+        extra_fields=extra_geometry_fields,
+        metadata=geometry_attributes.attrs,
+    )
     edge_length = distributed_geometry.get(geometry_attributes.EDGE_LENGTH)
     cell_area = distributed_geometry.get(geometry_attributes.CELL_AREA)
     edge_orientation = distributed_geometry.get(geometry_attributes.VERTEX_EDGE_ORIENTATION)
 
     geofac_div = data_alloc.zero_field(distributed_grid, dims.CellDim, dims.C2EDim)
-    interpolation_fields.compute_geofac_div(primal_edge_length = edge_length, area = cell_area, edge_orientation = edge_orientation, out = geofac_div,  offset_provider={"C2E": distributed_grid.get_connectivity("C2E")})
+    interpolation_fields.compute_geofac_div(
+        primal_edge_length=edge_length,
+        area=cell_area,
+        edge_orientation=edge_orientation,
+        out=geofac_div,
+        offset_provider={"C2E": distributed_grid.get_connectivity("C2E")},
+    )
     # geofac_div = primal_edge_length(C2E) * edge_orientation / area
 
     # 1. read grid and distribue - GridManager

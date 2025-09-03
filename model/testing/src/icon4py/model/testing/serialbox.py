@@ -482,7 +482,7 @@ class IconGridSavepoint(IconSavepoint):
     def _get_decomposition_fields(self, dim: gtx.Dimension):
         global_index = self.global_index(dim)
         mask = self.owner_mask(dim)[0 : self.num(dim)]
-        halo_levels = self.decomp_domain(dim)
+        halo_levels = self.decomp_domain(dim)[0 : self.num(dim)]
         return dim, global_index, mask, halo_levels
 
     def construct_icon_grid(

@@ -18,9 +18,10 @@ from icon4py.model.common.grid import (
     simple as simple,
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
+
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, test_utils
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, test_utils, definitions as test_defs
 from ..fixtures import *  # noqa: F401, F403
 
 
@@ -99,7 +100,7 @@ def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, experim
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
+        (test_defs.Grids.MCH_CH_R04B09_DSL.name, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )

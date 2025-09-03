@@ -61,7 +61,7 @@ def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
 
 
 @pytest.fixture
-def experiment()->str:
+def experiment() -> str:
     return dt_utils.REGIONAL_EXPERIMENT
 
 
@@ -83,7 +83,7 @@ def _download_ser_data(
     comm_size: int,
     _ranked_data_path: pathlib.Path,
     _experiment: str,
-)->None:
+) -> None:
     # not a fixture to be able to use this function outside of pytest
     try:
         destination_path = dt_utils.get_datapath_for_experiment(_ranked_data_path, _experiment)
@@ -126,7 +126,7 @@ def download_ser_data(
     ranked_data_path: pathlib.Path,
     experiment: str,
     pytestconfig,
-)->None:
+) -> None:
     """
     Get the binary ICON data from a remote server.
 
@@ -156,7 +156,7 @@ def grid_savepoint(
     return data_provider.from_savepoint_grid(grid_id, root, level)
 
 
-def is_regional(experiment_name)->bool:
+def is_regional(experiment_name) -> bool:
     return experiment_name == dt_utils.REGIONAL_EXPERIMENT
 
 
@@ -250,7 +250,7 @@ def metrics_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
-def metrics_nonhydro_savepoint(data_provider)->serialbox.MetricSavepoint:  # F811
+def metrics_nonhydro_savepoint(data_provider) -> serialbox.MetricSavepoint:  # F811
     """Load data from ICON metric state nonhydro savepoint."""
     return data_provider.from_metrics_savepoint()
 
@@ -262,7 +262,9 @@ def topography_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
-def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_init)->serialbox.IconVelocityInitSavepoint:  # F811
+def savepoint_velocity_init(
+    data_provider, step_date_init, istep_init, substep_init
+) -> serialbox.IconVelocityInitSavepoint:  # F811
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
 
@@ -297,7 +299,9 @@ def savepoint_nonhydro_init(
 
 
 @pytest.fixture
-def savepoint_dycore_30_to_38_init(data_provider, istep_init, step_date_init, substep_init)->serialbox.IconDycoreInit30To38Savepoint:
+def savepoint_dycore_30_to_38_init(
+    data_provider, istep_init, step_date_init, substep_init
+) -> serialbox.IconDycoreInit30To38Savepoint:
     """
     Load data from ICON savepoint directly before the first stencil in
     stencils 30 to 38 in mo_solve_nonhydro.f90 of solve_nonhydro module.
