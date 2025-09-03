@@ -307,7 +307,7 @@ url = "https://test.pypi.org/simple/"
 [tool.uv.sources]
 dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_08_28"}
 # ghex = {git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
-gt4py = {git = "https://github.com/philip-paul-mueller/gt4py", branch = "fixed_dimension_ordering_in_dace_lowering"}
+gt4py = {git = "https://github.com/edopao/gt4py", branch = "fixed_dimension_ordering_in_dace_lowering"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
