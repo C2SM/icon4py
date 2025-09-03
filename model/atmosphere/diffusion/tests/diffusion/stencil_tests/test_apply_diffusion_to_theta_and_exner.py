@@ -31,14 +31,12 @@ from .test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
 from .test_update_theta_and_exner import update_theta_and_exner_numpy
 
 
+@pytest.mark.skip_value_error
+@pytest.mark.uses_as_offset
+@pytest.mark.embedded_remap_error
 class TestApplyDiffusionToThetaAndExner(StencilTest):
     PROGRAM = apply_diffusion_to_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
-    MARKERS = (
-        pytest.mark.embedded_remap_error,
-        pytest.mark.uses_as_offset,
-        pytest.mark.skip_value_error,
-    )
 
     @staticmethod
     def reference(

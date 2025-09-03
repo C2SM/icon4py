@@ -179,7 +179,19 @@ markers = [
   "uses_concat_where",
   "cpu_only",
   "infinite_concat_where",
-  "gtfn_too_slow"
+  "gtfn_too_slow",
+  "continuous_benchmarking"
+]
+# add all namespace packages to pythonpath to make them available for pytest
+pythonpath = [
+  "model/atmosphere/diffusion",
+  "model/atmosphere/dycore",
+  "model/atmosphere/subgrid_scale_physics/microphysics",
+  "model/atmosphere/subgrid_scale_physics/muphys",
+  "model/common",
+  "model/driver",
+  "model/testing",
+  "tools"
 ]
 
 # -- ruff --

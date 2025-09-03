@@ -43,10 +43,10 @@ def cell_horizontal_gradients_by_green_gauss_method_numpy(
     )
 
 
+@pytest.mark.embedded_remap_error
 class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
     PROGRAM = cell_horizontal_gradients_by_green_gauss_method
     OUTPUTS = ("out",)
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

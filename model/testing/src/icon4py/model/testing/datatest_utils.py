@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import base, icon
 
 
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ GAUSS3D_EXPERIMENT = "gauss3d_torus"
 WEISMAN_KLEMP_EXPERIMENT = "weisman_klemp_torus"
 
 TORUS_100X116_1000M_GRID_URI = "https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download"
-TORUS_50000x5000_RES500 = "https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"
+TORUS_50000x5000_RES500_GRID_URI = "https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"
 
 
 # GRID URIs for global grids
@@ -67,7 +68,7 @@ GRID_URIS = {
     R02B07_GLOBAL: R02B07_GLOBAL_GRID_URI,
     ICON_CH2_SMALL: MCH_OPR_R04B07_DOMAIN01_GRID_URI,
     REGIONAL_BENCHMARK: DOMAIN01_GRID_URI,
-    WEISMAN_KLEMP_EXPERIMENT: TORUS_50000x5000_RES500,  # TODO(): check
+    WEISMAN_KLEMP_EXPERIMENT: TORUS_50000x5000_RES500_GRID_URI,
 }
 
 GRID_IDS = {
@@ -90,8 +91,8 @@ DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/dow
 DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download"}
 
 
-def get_global_grid_params(experiment: str) -> tuple[int, int]:
-    """Get the grid root and level from the experiment name.
+def guess_grid_shape(experiment: str) -> icon.GridShape:
+    """Guess the grid type, root, and level from the experiment name.
 
     Reads the level and root parameters from a string in the canonical ICON gridfile format
         RxyBab where 'xy' and 'ab' are numbers and denote the root and level of the icosahedron grid construction.
@@ -99,13 +100,15 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         Args: experiment: str: The experiment name.
         Returns: tuple[int, int]: The grid root and level.
     """
-    if "torus" in experiment:
-        # these magic values seem to mark a torus: they are set in all torus grid files.
-        return 0, 2
+    if "torus" in experiment.lower():
+        return icon.GridShape(geometry_type=base.GeometryType.TORUS)
 
     try:
-        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
-        return root, level
+        root, level = map(int, re.search(r"[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
+        return icon.GridShape(
+            geometry_type=base.GeometryType.ICOSAHEDRON,
+            subdivision=icon.GridSubdivision(root=root, level=level),
+        )
     except AttributeError as err:
         raise ValueError(
             f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."

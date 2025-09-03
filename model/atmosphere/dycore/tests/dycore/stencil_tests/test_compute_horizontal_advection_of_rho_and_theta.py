@@ -205,10 +205,11 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     return (z_rho_e, z_theta_v_e)
 
 
+@pytest.mark.embedded_remap_error
+@pytest.mark.skip_value_error
 class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
     PROGRAM = _compute_horizontal_advection_of_rho_and_theta
     OUTPUTS = ("out",)
-    MARKERS = (pytest.mark.skip_value_error, pytest.mark.embedded_remap_error)
 
     @staticmethod
     def reference(
