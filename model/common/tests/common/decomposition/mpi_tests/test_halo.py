@@ -230,12 +230,6 @@ def decompose(grid: base_grid.Grid, processor_props):  # F811 # fixture
     return labels
 
 
-# TODO add test including halo access:
-#  Will uses geofac_div and geofac_n2s
-
-
-
-
 
 def test_no_halo():
     grid_size = base_grid.HorizontalGridSize(num_cells=9, num_edges=14, num_vertices=6)
