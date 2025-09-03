@@ -175,7 +175,7 @@ class DiffusionConfig:
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
 
-        #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f89
+        #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f90
         self.thslp_zdiffu = thslp_zdiffu
         #: threshold [m] for height difference between adjacent grid points, defaults to 200m (temperature diffusion)
         self.thhgtd_zdiffu = thhgtd_zdiffu
