@@ -37,7 +37,7 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         elevp1: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        p_face_a = p_face_in
+        p_face_a = p_face_in.copy()
         p_face_a[:, 1:] = p_cc[:, 1:] * (
             1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])
         ) + (p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])) * (
@@ -57,7 +57,10 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         p_face = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         slev = gtx.int32(1)
         slevp1 = gtx.int32(2)
-        elev = grid.num_edges - 2
+        # TODO(phimuell, edopao): Before `elev` was set to `grid.num_edges` which is
+        #   probably wrong if one considers its use above. However, even with that
+        #   it still fails for me locally, okay, GTFN also fails.
+        elev = grid.num_levels - 2
         elevp1 = gtx.int32(elev + 1)
 
         return dict(

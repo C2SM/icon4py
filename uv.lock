@@ -1429,7 +1429,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "0.0.0+missing.version.info"
-source = { git = "https://github.com/edopao/gt4py?branch=fixed_dimension_ordering_in_dace_lowering#125496c2194a57b1e6c3c2b83b27cc62f2739424" }
+source = { git = "https://github.com/edopao/gt4py?branch=fixed_dimension_ordering_in_dace_lowering#bf4e2824756dbd7e8613f9c669ce2fabd5eb608f" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
