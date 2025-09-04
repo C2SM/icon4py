@@ -49,19 +49,11 @@ class Grid:
     description: str
     kind: GridKind
     sizes: Mapping[Literal["cell", "edge", "vertex"], int]
-    file_name: str | None = None
-    uri: str | None = None
+    file_name: str
+    uri: str
 
 
 class Grids:
-    SIMPLE: Final = Grid(
-        name="<simple-grid>",
-        description="Torus grid, fully defined in code (simple.py) used for testing ",
-        sizes={"cell": 18, "vertex": 9, "edge": 27},
-        kind=GridKind.TORUS,
-        file_name=None,
-        uri=None,
-    )
     R02B04_GLOBAL: Final = Grid(
         name="r02b04_global",
         description="R02B04, small global grid, default grid used in ICON testing, origin of this file is unclear (source = icon-dev)",
