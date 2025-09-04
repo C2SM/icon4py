@@ -192,7 +192,7 @@ def test_nonhydro_predictor_step(
     diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -326,7 +326,7 @@ def test_nonhydro_predictor_step(
     )
 
     # stencils 12
-    nflat_gradp = vertical_params.nflat_gradp
+    nflat_gradp = grid_savepoint.nflat_gradp()
     assert test_utils.dallclose(
         solve_nonhydro.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
             cell_start_lateral_boundary_level_2:, nflat_gradp:
@@ -587,7 +587,7 @@ def test_nonhydro_corrector_step(
     second_order_divdamp_factor = init_savepoint.divdamp_fac_o2()
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -785,7 +785,7 @@ def test_run_solve_nonhydro_single_step(
     diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -918,7 +918,7 @@ def test_run_solve_nonhydro_multi_step(
     prognostic_states = utils.create_prognostic_states(sp)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -1130,7 +1130,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     igradp_method = config.igradp_method
 
     nflatlev = vertical_params.nflatlev
-    nflat_gradp = vertical_params.nflat_gradp
+    nflat_gradp = grid_savepoint.nflat_gradp()
 
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_lateral_boundary = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
@@ -1578,7 +1578,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         nflatlev=vertical_params.nflatlev,
-        nflat_gradp=vertical_params.nflat_gradp,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
         start_edge_lateral_boundary=start_edge_lateral_boundary,
         start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
         start_edge_nudging_level_2=start_edge_nudging_level_2,

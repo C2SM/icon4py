@@ -31,6 +31,7 @@ from .test_compute_mass_flux import (
 )
 
 
+@pytest.mark.embedded_remap_error
 class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.StencilTest):
     PROGRAM = compute_averaged_vn_and_fluxes_and_prepare_tracer_advection
     OUTPUTS = (
@@ -40,7 +41,6 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         "substep_and_spatially_averaged_vn",
         "substep_averaged_mass_flux",
     )
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

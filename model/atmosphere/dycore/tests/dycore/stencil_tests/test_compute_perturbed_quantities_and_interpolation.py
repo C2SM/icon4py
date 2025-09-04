@@ -73,6 +73,7 @@ def compute_first_vertical_derivative_numpy(
     return first_vertical_derivative
 
 
+@pytest.mark.uses_concat_where
 class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
     PROGRAM = compute_perturbed_quantities_and_interpolation
     OUTPUTS = (
@@ -88,7 +89,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         "pressure_buoyancy_acceleration_at_cells_on_half_levels",
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(

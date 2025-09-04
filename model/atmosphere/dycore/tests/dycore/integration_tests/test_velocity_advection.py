@@ -62,10 +62,7 @@ def _compare_cfl(
 
 def create_vertical_params(vertical_config, grid_savepoint):
     return v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+        config=vertical_config, vct_a=grid_savepoint.vct_a(), vct_b=grid_savepoint.vct_b()
     )
 
 
@@ -92,7 +89,7 @@ def test_verify_velocity_init_against_savepoint(
     backend,
 ):
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -141,7 +138,7 @@ def test_scale_factors_by_dtime(
 ):
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -231,7 +228,7 @@ def test_velocity_predictor_step(
         exner=None,
     )
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -385,7 +382,7 @@ def test_velocity_corrector_step(
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
 
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()

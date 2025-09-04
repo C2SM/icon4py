@@ -70,10 +70,10 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
     return ddt_w_adv
 
 
+@pytest.mark.embedded_remap_error
 class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
     PROGRAM = add_extra_diffusion_for_w_con_approaching_cfl
     OUTPUTS = ("ddt_w_adv",)
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
