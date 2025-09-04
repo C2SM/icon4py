@@ -541,9 +541,11 @@ def vwind_offctr():
     else:
         return 0.2
 
+
 @pytest.fixture
 def rayleigh_type():
     return RayleighType.KLEMP
+
 
 @pytest.fixture
 def top_height_limit_for_maximal_layer_thickness():
