@@ -415,7 +415,9 @@ def initialize(
         solve_nonhydro_interpolation_state,
         _,
     ) = driver_init.read_static_fields(
-        icon_grid,
+        grid_id,
+        grid_root,
+        grid_level,
         file_path,
         backend,
         rank=props.rank,
