@@ -55,11 +55,10 @@ def get_cell_geometry_for_experiment(experiment, backend):
 
 
 def _get_or_initialize(experiment_name: str, backend, name):
-    experiment = dt_utils._experiment_from_name(experiment_name=experiment_name)
-    grid_file = experiment.grid.name
+    experiment = dt_utils._experiment_from_name(experiment_name=experiment_name)  # TODO
 
     if not grid_functionality[experiment_name].get(name):
-        geometry_ = grid_utils.get_grid_geometry(backend, experiment_name, grid_file)
+        geometry_ = grid_utils.get_grid_geometry(backend, experiment)
         grid = geometry_.grid
 
         cell_params = grid_states.CellParams(

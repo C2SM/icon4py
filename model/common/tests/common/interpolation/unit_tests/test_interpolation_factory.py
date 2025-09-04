@@ -22,6 +22,7 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     serialbox as sb,
+    definitions,
     test_utils as test_helpers,
 )
 from icon4py.model.testing.fixtures import (
@@ -54,14 +55,12 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 
 @pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-    ],
+    "experiment",
+    [definitions.Experiments.MCH_CH_R04B09],
 )
 @pytest.mark.datatest
 def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, decomposition_info):
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
         decomposition_info=decomposition_info,
@@ -93,12 +92,15 @@ def test_get_c_lin_e(interpolation_savepoint, grid_file, experiment, backend, rt
 
 
 def _get_interpolation_factory(
-    backend: gtx_backend.Backend | None, experiment: str, grid_file: str
+    backend: gtx_backend.Backend | None, experiment_name: str, grid_file: str
 ) -> interpolation_factory.InterpolationFieldsFactory:
-    registry_key = "_".join((experiment, data_alloc.backend_name(backend)))
+    experiment = dt_utils._experiment_from_name(experiment_name)
+    registry_key = "_".join((experiment_name, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+        # TODO this function should not have grid_file as param
+        assert experiment.grid.name == grid_file
+        geometry = gridtest_utils.get_grid_geometry(backend, experiment)
 
         factory = interpolation_factory.InterpolationFieldsFactory(
             grid=geometry.grid,

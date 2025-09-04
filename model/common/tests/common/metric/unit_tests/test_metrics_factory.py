@@ -78,20 +78,24 @@ def metrics_config(experiment: str) -> tuple:
 
 def _get_metrics_factory(
     backend: Optional[gtx_backend.Backend],
-    experiment: str,
+    experiment_name: str,
     grid_file: str,
     icon_grid,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
 ) -> metrics_factory.MetricsFieldsFactory:
-    registry_name = "_".join((experiment, data_alloc.backend_name(backend)))
+    registry_name = "_".join((experiment_name, data_alloc.backend_name(backend)))
     factory = metrics_factories.get(registry_name)
 
     topography = topography_savepoint.topo_c()
 
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+        experiment = dt_utils._experiment_from_name(experiment_name)
+        # TODO this function should not have `grid_file` as parameter
+        assert experiment.grid.name == grid_file
+
+        geometry = gridtest_utils.get_grid_geometry(backend, experiment)
         (
             lowest_layer_thickness,
             model_top_height,
@@ -101,7 +105,7 @@ def _get_metrics_factory(
             exner_expol,
             vwind_offctr,
             rayleigh_type,
-        ) = metrics_config(experiment)
+        ) = metrics_config(experiment_name)
 
         vertical_config = v_grid.VerticalGridConfig(
             geometry.grid.num_levels,
@@ -161,7 +165,7 @@ def test_factory_z_mc(
     field_ref = metrics_savepoint.z_mc()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -194,7 +198,7 @@ def test_factory_ddqz_z_and_inverse(
     field_ref = metrics_savepoint.ddqz_z_full()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -227,7 +231,7 @@ def test_factory_ddqz_full_e(
     field_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -260,7 +264,7 @@ def test_factory_ddqz_z_half(
     field_ref = metrics_savepoint.ddqz_z_half()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -292,7 +296,7 @@ def test_factory_scaling_factor_for_3d_divdamp(
     field_ref = metrics_savepoint.scalfac_dd3d()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -324,7 +328,7 @@ def test_factory_rayleigh_w(
     field_ref = metrics_savepoint.rayleigh_w()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -357,7 +361,7 @@ def test_factory_coeffs_dwdz(
     field_ref_2 = metrics_savepoint.coeff2_dwdz()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -392,7 +396,7 @@ def test_factory_ref_mc(
     field_ref_2 = metrics_savepoint.exner_ref_mc()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -427,7 +431,7 @@ def test_factory_d2dexdz2_facs_mc(
     field_ref_2 = metrics_savepoint.d2dexdz2_fac2_mc()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -460,7 +464,7 @@ def test_factory_ddxn_z_full(
     field_ref = metrics_savepoint.ddxn_z_full()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -493,7 +497,7 @@ def test_factory_ddxt_z_full(
     field_ref = metrics_savepoint.ddxt_z_full().asnumpy()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -530,7 +534,7 @@ def test_factory_exner_w_implicit_weight_parameter(
     field_ref = metrics_savepoint.vwind_impl_wgt()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -565,7 +569,7 @@ def test_factory_exner_w_explicit_weight_parameter(
     field_ref = metrics_savepoint.vwind_expl_wgt()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -598,7 +602,7 @@ def test_factory_exner_exfac(
     field_ref = metrics_savepoint.exner_exfac()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -632,7 +636,7 @@ def test_factory_pressure_gradient_fields(
     field_2_ref = metrics_savepoint.pg_edgeidx_dsl()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -666,7 +670,7 @@ def test_factory_mask_bdy_prog_halo_c(
     field_ref_2 = metrics_savepoint.bdy_halo_c()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -700,7 +704,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
     field_ref = metrics_savepoint.hmask_dd3d()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -734,7 +738,7 @@ def test_factory_zdiff_gradp(
     field_ref = metrics_savepoint.zdiff_gradp()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -766,7 +770,7 @@ def test_factory_coeff_gradekin(
     field_ref = metrics_savepoint.coeff_gradekin()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -797,7 +801,7 @@ def test_factory_wgtfacq_e(
 ):
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -829,7 +833,7 @@ def test_vertical_coordinates_on_half_levels(
 ):
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
@@ -865,7 +869,7 @@ def test_factory_compute_diffusion_metrics(
     field_ref_4 = metrics_savepoint.zd_vertoffset()
     factory = _get_metrics_factory(
         backend=backend,
-        experiment=experiment,
+        experiment_name=experiment,
         grid_file=grid_file,
         icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,

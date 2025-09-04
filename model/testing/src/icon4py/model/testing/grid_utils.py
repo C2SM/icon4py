@@ -20,13 +20,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import (
-    config,
-    data_handling,
-    datatest_utils as dt_utils,
-    definitions,
-    locking,
-)
+from icon4py.model.testing import config, data_handling, definitions, locking
 
 
 # TODO remove
@@ -124,12 +118,10 @@ def _download_grid_file(grid: definitions.Grid) -> pathlib.Path:
 
 
 def get_grid_geometry(
-    backend: gtx_backend.Backend | None, experiment_name: str, grid_file: str
+    backend: gtx_backend.Backend | None, experiment: definitions.Experiment
 ) -> geometry.GridGeometry:
     on_gpu = device_utils.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
-    experiment = dt_utils._experiment_from_name(experiment_name)
-    num_levels = experiment.num_levels
     register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
 
     def _construct_dummy_decomposition_info(
@@ -149,9 +141,9 @@ def get_grid_geometry(
 
     def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = get_grid_manager_from_identifier(
-            _grid_from_name(grid_file),  # TODO
+            experiment.grid,
             keep_skip_values=True,
-            num_levels=num_levels,
+            num_levels=experiment.num_levels,
             backend=backend,
         )
         grid = gm.grid

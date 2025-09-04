@@ -151,16 +151,16 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment, atol",
+    "experiment, atol",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-9),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-2),
+        (definitions.Experiments.EXCLAIM_APE, 3e-9),
+        (definitions.Experiments.MCH_CH_R04B09, 3e-2),
     ],
 )
 def test_rbf_interpolation_coeffs_cell(
-    grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
+    grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
 ):
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
 
@@ -216,16 +216,16 @@ def test_rbf_interpolation_coeffs_cell(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment, atol",
+    "experiment, atol",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-10),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-3),
+        (definitions.Experiments.EXCLAIM_APE, 3e-10),
+        (definitions.Experiments.MCH_CH_R04B09, 3e-3),
     ],
 )
 def test_rbf_interpolation_coeffs_vertex(
-    grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
+    grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
 ):
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
 
@@ -281,14 +281,13 @@ def test_rbf_interpolation_coeffs_vertex(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment, atol",
+    "experiment, atol",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 8e-14),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 2e-9),
+        (definitions.Experiments.EXCLAIM_APE, 8e-14),
+        (definitions.Experiments.MCH_CH_R04B09, 2e-9),
     ],
 )
 def test_rbf_interpolation_coeffs_edge(
-    grid_file,
     grid_savepoint,
     interpolation_savepoint,
     icon_grid,
@@ -296,7 +295,7 @@ def test_rbf_interpolation_coeffs_edge(
     experiment,
     atol,
 ):
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
 

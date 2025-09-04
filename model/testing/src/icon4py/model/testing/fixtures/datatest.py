@@ -62,6 +62,9 @@ def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
 
 @pytest.fixture
 def experiment():
+    """
+    Default experiment, in most tests this will be overridden.
+    """
     return dt_utils.REGIONAL_EXPERIMENT
 
 
@@ -113,7 +116,7 @@ def download_ser_data(
     request,
     processor_props: decomposition.ProcessProperties,
     ranked_data_path: pathlib.Path,
-    experiment: str,
+    experiment: str | definitions.Experiment,
     pytestconfig,
 ):
     """
@@ -125,13 +128,24 @@ def download_ser_data(
     if "not datatest" in request.config.getoption("-k", ""):
         return
 
+    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
+    if isinstance(experiment, definitions.Experiment):
+        experiment = experiment.name
+
     _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
 
 
 @pytest.fixture
 def data_provider(
-    download_ser_data, ranked_data_path, experiment, processor_props, backend
+    download_ser_data,
+    ranked_data_path,
+    experiment: str | definitions.Experiment,
+    processor_props,
+    backend: gtx_backend.Backend,
 ) -> serialbox.IconSerialDataProvider:
+    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
+    if isinstance(experiment, definitions.Experiment):
+        experiment = experiment.name
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
 
@@ -140,13 +154,12 @@ def data_provider(
 def grid_savepoint(
     data_provider: serialbox.IconSerialDataProvider, experiment: str
 ) -> serialbox.IconGridSavepoint:
+    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
+    if isinstance(experiment, definitions.Experiment):
+        experiment = experiment.name
     grid_shape = dt_utils.guess_grid_shape(experiment)
     grid_id = dt_utils.get_grid_id_for_experiment(experiment)
     return data_provider.from_savepoint_grid(grid_id, grid_shape)
-
-
-def is_regional(experiment_name):
-    return experiment_name == dt_utils.REGIONAL_EXPERIMENT
 
 
 @pytest.fixture
@@ -162,7 +175,10 @@ def icon_grid(
 
 
 @pytest.fixture
-def decomposition_info(data_provider, experiment):
+def decomposition_info(data_provider, experiment: str | definitions.Experiment):
+    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
+    if isinstance(experiment, definitions.Experiment):
+        experiment = experiment.name
     grid_shape = dt_utils.guess_grid_shape(experiment)
     grid_id = dt_utils.get_grid_id_for_experiment(experiment)
     return data_provider.from_savepoint_grid(
