@@ -532,14 +532,6 @@ icon4py.model.atmosphere.dycore.stencils.mo\_math\_divrot\_rot\_vertex\_ri\_dsl 
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.mo\_solve\_nonhydro\_stencil\_51 module
---------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.mo_solve_nonhydro_stencil_51
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.set\_lower\_boundary\_condition\_for\_w\_and\_contravariant\_correction module
 -----------------------------------------------------------------------------------------------------------------------
 
