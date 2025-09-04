@@ -127,3 +127,11 @@ def create_icon_serial_data_provider(
         mpi_rank=processor_props.rank,
         do_print=True,
     )
+
+
+# TODO temporarily for mapping from name to experiment
+def _experiment_from_name(experiment_name: str) -> definitions.Experiment:
+    for item in vars(definitions.Experiments).values():
+        if isinstance(item, definitions.Experiment) and item.name == experiment_name:
+            return item
+    raise ValueError(f"No such experiment: {experiment_name}")

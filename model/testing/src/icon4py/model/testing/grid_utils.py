@@ -29,8 +29,8 @@ from icon4py.model.testing import (
 )
 
 
+# TODO remove
 REGIONAL_GRIDFILE = "grid.nc"
-
 GLOBAL_GRIDFILE = "icon_grid_0013_R02B04_R.nc"
 
 GLOBAL_NUM_LEVELS = 60
@@ -41,33 +41,25 @@ grid_geometries: dict[str, geometry.GridGeometry] = {}
 
 
 def get_grid_manager_from_experiment(
-    experiment: str, keep_skip_values: bool, backend: gtx_backend.Backend | None = None
+    experiment: definitions.Experiment,
+    keep_skip_values: bool,
+    backend: gtx_backend.Backend | None = None,
 ) -> gm.GridManager:
-    if experiment == dt_utils.GLOBAL_EXPERIMENT:
-        return get_grid_manager_from_identifier(
-            dt_utils.R02B04_GLOBAL,
-            num_levels=GLOBAL_NUM_LEVELS,
-            keep_skip_values=keep_skip_values,
-            backend=backend,
-        )
-    elif experiment == dt_utils.REGIONAL_EXPERIMENT:
-        return get_grid_manager_from_identifier(
-            dt_utils.REGIONAL_EXPERIMENT,
-            num_levels=MCH_CH_R04B09_LEVELS,
-            keep_skip_values=keep_skip_values,
-            backend=backend,
-        )
-    else:
-        raise ValueError(f"Unknown experiment: {experiment}")
+    return get_grid_manager_from_identifier(
+        experiment.grid,
+        num_levels=experiment.num_levels,
+        keep_skip_values=keep_skip_values,
+        backend=backend,
+    )
 
 
 def get_grid_manager_from_identifier(
-    grid_file_identifier: str,
+    grid: definitions.Grid,
     num_levels: int,
     keep_skip_values: bool,
     backend: gtx_backend.Backend | None,
 ) -> gm.GridManager:
-    grid_file = _download_grid_file(grid_file_identifier)
+    grid_file = _download_grid_file(grid)
     return get_grid_manager(
         grid_file, num_levels=num_levels, keep_skip_values=keep_skip_values, backend=backend
     )
@@ -105,23 +97,19 @@ def _grid_from_name(grid_name: str) -> definitions.Grid:
     raise ValueError(f"No such grid: {grid_name}")
 
 
-def _file_name(grid_file: str) -> str:
-    return _grid_from_name(grid_file).file_name
+def resolve_full_grid_file_name(grid: definitions.Grid) -> pathlib.Path:
+    return definitions.grids_path().joinpath(grid.name, grid.file_name)
 
 
-def resolve_full_grid_file_name(grid_file_identifier: str) -> pathlib.Path:
-    return definitions.grids_path().joinpath(grid_file_identifier, _file_name(grid_file_identifier))
-
-
-def _download_grid_file(grid_file_identifier: str) -> pathlib.Path:
-    full_name = resolve_full_grid_file_name(grid_file_identifier)
+def _download_grid_file(grid: definitions.Grid) -> pathlib.Path:
+    full_name = resolve_full_grid_file_name(grid)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
     if config.ENABLE_GRID_DOWNLOAD:
         with locking.lock(grid_directory):
             if not full_name.exists():
                 data_handling.download_and_extract(
-                    dt_utils.GRID_URIS[grid_file_identifier],
+                    grid.uri,
                     grid_directory,
                 )
     else:
@@ -135,17 +123,14 @@ def _download_grid_file(grid_file_identifier: str) -> pathlib.Path:
     return full_name
 
 
-def get_num_levels(experiment: str) -> int:
-    return MCH_CH_R04B09_LEVELS if experiment == dt_utils.REGIONAL_EXPERIMENT else GLOBAL_NUM_LEVELS
-
-
 def get_grid_geometry(
-    backend: gtx_backend.Backend | None, experiment: str, grid_file: str
+    backend: gtx_backend.Backend | None, experiment_name: str, grid_file: str
 ) -> geometry.GridGeometry:
     on_gpu = device_utils.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
-    num_levels = get_num_levels(experiment)
-    register_name = "_".join((experiment, data_alloc.backend_name(backend)))
+    experiment = dt_utils._experiment_from_name(experiment_name)
+    num_levels = experiment.num_levels
+    register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
 
     def _construct_dummy_decomposition_info(
         grid: icon.IconGrid,
@@ -164,7 +149,10 @@ def get_grid_geometry(
 
     def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = get_grid_manager_from_identifier(
-            grid_file, keep_skip_values=True, num_levels=num_levels, backend=backend
+            _grid_from_name(grid_file),  # TODO
+            keep_skip_values=True,
+            num_levels=num_levels,
+            backend=backend,
         )
         grid = gm.grid
         decomposition_info = _construct_dummy_decomposition_info(grid)

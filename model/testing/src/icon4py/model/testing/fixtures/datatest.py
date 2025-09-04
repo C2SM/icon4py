@@ -77,14 +77,6 @@ def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathli
     )
 
 
-# TODO temporarily for mapping from name to experiment
-def _experiment_from_name(experiment_name: str) -> definitions.Experiment:
-    for item in vars(definitions.Experiments).values():
-        if isinstance(item, definitions.Experiment) and item.name == experiment_name:
-            return item
-    raise ValueError(f"No such experiment: {experiment_name}")
-
-
 def _download_ser_data(
     comm_size: int,
     _ranked_data_path: pathlib.Path,
@@ -93,7 +85,7 @@ def _download_ser_data(
     # not a fixture to be able to use this function outside of pytest
     try:
         destination_path = dt_utils.get_datapath_for_experiment(_ranked_data_path, _experiment)
-        uri = _experiment_from_name(_experiment).partitioned_data[comm_size]
+        uri = dt_utils._experiment_from_name(_experiment).partitioned_data[comm_size]
 
         data_file = _ranked_data_path.joinpath(f"{_experiment}_mpitask{comm_size}.tar.gz").name
         _ranked_data_path.mkdir(parents=True, exist_ok=True)

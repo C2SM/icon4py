@@ -123,7 +123,10 @@ def run_grid_manager(
     )
     if not managers.get(key):
         manager = gridtest_utils.get_grid_manager_from_identifier(
-            file, keep_skip_values=keep_skip_values, num_levels=1, backend=backend
+            gridtest_utils._grid_from_name(file),  # TODO
+            keep_skip_values=keep_skip_values,
+            num_levels=1,
+            backend=backend,
         )
         managers[key] = manager
     return managers.get(key)

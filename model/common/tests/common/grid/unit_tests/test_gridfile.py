@@ -10,7 +10,11 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import gridfile
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    grid_utils as gridtest_utils,
+    definitions,
+)
 from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
@@ -25,7 +29,9 @@ from .. import utils
 
 @pytest.mark.with_netcdf
 def test_grid_file_dimension():
-    global_grid_file = str(gridtest_utils.resolve_full_grid_file_name(dt_utils.R02B04_GLOBAL))
+    global_grid_file = str(
+        gridtest_utils.resolve_full_grid_file_name(definitions.Grids.R02B04_GLOBAL)
+    )
     parser = gridfile.GridFile(global_grid_file)
     try:
         parser.open()
@@ -43,14 +49,14 @@ def test_grid_file_dimension():
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
-    "grid_file, experiment",
+    "grid_descriptor, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (definitions.Grids.MCH_CH_R04B09_DSL, dt_utils.REGIONAL_EXPERIMENT),
+        (definitions.Grids.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_grid_file_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
-    file = gridtest_utils.resolve_full_grid_file_name(grid_file)
+def test_grid_file_vertex_cell_edge_dimensions(grid_savepoint, grid_descriptor):
+    file = gridtest_utils.resolve_full_grid_file_name(grid_descriptor)
     parser = gridfile.GridFile(str(file))
     try:
         parser.open()

@@ -20,7 +20,11 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    grid_utils as gridtest_utils,
+    definitions,
+)
 from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
@@ -38,7 +42,7 @@ from .. import utils
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
     return gridtest_utils.get_grid_manager_from_experiment(
-        dt_utils.REGIONAL_EXPERIMENT, keep_skip_values=True, backend=None
+        definitions.Experiments.MCH_CH_R04B09, keep_skip_values=True, backend=None
     ).grid
 
 

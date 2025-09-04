@@ -38,6 +38,7 @@ from ..utils import (
 )
 
 
+# TODO: is this a custom cache for this test?
 grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
 
 
@@ -53,15 +54,12 @@ def get_cell_geometry_for_experiment(experiment, backend):
     return _get_or_initialize(experiment, backend, "cell_geometry")
 
 
-def _get_or_initialize(experiment, backend, name):
-    grid_file = (
-        dt_utils.REGIONAL_EXPERIMENT
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else dt_utils.R02B04_GLOBAL
-    )
+def _get_or_initialize(experiment_name: str, backend, name):
+    experiment = dt_utils._experiment_from_name(experiment_name=experiment_name)
+    grid_file = experiment.grid.name
 
-    if not grid_functionality[experiment].get(name):
-        geometry_ = grid_utils.get_grid_geometry(backend, experiment, grid_file)
+    if not grid_functionality[experiment_name].get(name):
+        geometry_ = grid_utils.get_grid_geometry(backend, experiment_name, grid_file)
         grid = geometry_.grid
 
         cell_params = grid_states.CellParams(
@@ -93,10 +91,10 @@ def _get_or_initialize(experiment, backend, name):
             dual_normal_vert_x=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
             dual_normal_vert_y=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
         )
-        grid_functionality[experiment]["grid"] = grid
-        grid_functionality[experiment]["edge_geometry"] = edge_params
-        grid_functionality[experiment]["cell_geometry"] = cell_params
-    return grid_functionality[experiment].get(name)
+        grid_functionality[experiment_name]["grid"] = grid
+        grid_functionality[experiment_name]["edge_geometry"] = edge_params
+        grid_functionality[experiment_name]["cell_geometry"] = cell_params
+    return grid_functionality[experiment_name].get(name)
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):

@@ -23,6 +23,7 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     test_utils as test_helpers,
+    definitions,
 )
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -39,16 +40,18 @@ from icon4py.model.testing.fixtures.datatest import (
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment",
+    "grid_descriptor, experiment",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (definitions.Grids.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (definitions.Grids.MCH_CH_R04B09_DSL, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
 def test_construct_rbf_matrix_offsets_tables_for_cells(
-    grid_file, experiment, grid_savepoint, icon_grid, backend
+    grid_descriptor, experiment, grid_savepoint, icon_grid, backend
 ):
-    grid_manager = gridtest_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend)
+    grid_manager = gridtest_utils.get_grid_manager_from_identifier(
+        grid_descriptor, 1, True, backend
+    )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
     assert offset_table.shape == (
@@ -74,16 +77,18 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment",
+    "grid_descriptor, experiment",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (definitions.Grids.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (definitions.Grids.MCH_CH_R04B09_DSL, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
 def test_construct_rbf_matrix_offsets_tables_for_edges(
-    grid_file, experiment, grid_savepoint, icon_grid, backend
+    grid_descriptor, experiment, grid_savepoint, icon_grid, backend
 ):
-    grid_manager = gridtest_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend)
+    grid_manager = gridtest_utils.get_grid_manager_from_identifier(
+        grid_descriptor, 1, True, backend
+    )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
     assert offset_table.shape == (
@@ -107,16 +112,18 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment",
+    "grid_descriptor, experiment",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (definitions.Grids.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (definitions.Grids.MCH_CH_R04B09_DSL, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
 def test_construct_rbf_matrix_offsets_tables_for_vertices(
-    experiment, grid_file, grid_savepoint, icon_grid, backend
+    experiment, grid_descriptor, grid_savepoint, icon_grid, backend
 ):
-    grid_manager = gridtest_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend)
+    grid_manager = gridtest_utils.get_grid_manager_from_identifier(
+        grid_descriptor, 1, True, backend
+    )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
     assert offset_table.shape == (
