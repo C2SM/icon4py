@@ -23,14 +23,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc, device_uti
 from icon4py.model.testing import config, data_handling, definitions, locking
 
 
-# TODO remove
-REGIONAL_GRIDFILE = "grid.nc"
-GLOBAL_GRIDFILE = "icon_grid_0013_R02B04_R.nc"
-
-GLOBAL_NUM_LEVELS = 60
-
-MCH_CH_R04B09_LEVELS = 65
-
 grid_geometries: dict[str, geometry.GridGeometry] = {}
 
 
