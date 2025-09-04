@@ -16,7 +16,7 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.common.model_options import RayleighType
+from icon4py.model.common.constants import RayleighType
 from icon4py.model.testing import (
     config,
     data_handling as data,

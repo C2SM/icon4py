@@ -101,7 +101,14 @@ def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) ->
     and `<grid_levels>` specifies the number of vertical levels to use (optional).
     """
     spec = request.config.getoption("grid")
-    name, num_levels = parse_grid_spec(spec)
+    if spec is None:
+        spec = DEFAULT_GRID
+    assert isinstance(spec, str), "Grid spec must be a string"
+    if spec.count(":") > 1:
+        raise ValueError("Invalid grid spec in '--grid' option (spec: <grid_name>:<grid_levels>)")
+
+    name, *levels = spec.split(":")
+    num_levels = int(levels[0]) if levels and levels[0].strip() else DEFAULT_NUM_LEVELS
 
     if name in VALID_GRID_PRESETS:
         grid = _get_grid_from_preset(name, num_levels=num_levels, backend=backend)

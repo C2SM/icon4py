@@ -28,7 +28,6 @@ def get_test_data_root_path() -> pathlib.Path:
     common_path = model_path.parent.parent.parent.parent
     return common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
 
-
 def serialized_data_path() -> pathlib.Path:
     return get_test_data_root_path().joinpath("ser_icondata")
 

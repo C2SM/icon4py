@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.decomposition import definitions as decomposition
+import icon4py.model.testing.definitions as definitions
 from icon4py.model.common.grid import base, icon
 
 
@@ -32,10 +33,10 @@ JABW_EXPERIMENT = "jabw_R02B04"
 GAUSS3D_EXPERIMENT = "gauss3d_torus"
 WEISMAN_KLEMP_EXPERIMENT = "weisman_klemp_torus"
 
-MC_CH_R04B09_DSL_GRID_URI = decomposition.Grids.MCH_CH_R04B09_DSL.uri
+MC_CH_R04B09_DSL_GRID_URI = definitions.Grids.MCH_CH_R04B09_DSL.uri
 R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"
-TORUS_100X116_1000M_GRID_URI = decomposition.Grids.TORUS_100X116_1000M.uri
-TORUS_50000x5000_RES500_GRID_URI = decomposition.Grids.TORUS_50000x5000.uri
+TORUS_100X116_1000M_GRID_URI = definitions.Grids.TORUS_100X116_1000M.uri
+TORUS_50000x5000_RES500_GRID_URI = definitions.Grids.TORUS_50000x5000.uri
 EXTPAR_R04B09 = "https://polybox.ethz.ch/index.php/s/CWWtBHBC9iNpLEo/download"
 
 

@@ -16,7 +16,7 @@ from icon4py.model.common.grid import geometry as grid_geometry
 from icon4py.model.common.grid import geometry_attributes as geometry_meta
 from icon4py.model.common.grid import vertical as v_grid
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common.initialization.topography_initialization import topography_initialization
+from icon4py.model.common.initialization.jablonowski_williamson_topography import jablonowski_williamson_topography
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes
@@ -50,7 +50,7 @@ def test_run_diffusion_benchmark(
         hdiff_efdt_ratio=24.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
-        zdiffu_t=True,
+        zdiffu_t=False,
         thslp_zdiffu=0.02,
         thhgtd_zdiffu=125.0,
         velocity_boundary_diffusion_denom=150.0,
@@ -110,7 +110,7 @@ def test_run_diffusion_benchmark(
         dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
     )
 
-    topo_c = topography_initialization(
+    topo_c = jablonowski_williamson_topography(
         cell_lat=cell_geometry.cell_center_lat.asnumpy(),
         u0=35.0,
         backend=backend,
