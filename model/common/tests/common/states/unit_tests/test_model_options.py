@@ -23,8 +23,8 @@ def test_custom_backend():
         if set(backend_str.split("_")).issubset(set(backend.split("_")))
     ][0]
     backend_options = {
-        "device": match_backend[1],
-        "backend_kind": match_backend[0],
+        "device": "cpu", # or whatever it will be after the discussion
+        "backend_kind": "gtfn", # or the corresponding maker if we go that way
     }
     backend = customize_backend(**backend_options)
     field = data_alloc.zero_field(
