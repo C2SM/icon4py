@@ -66,7 +66,7 @@ def experiment() -> str:
 
 
 @pytest.fixture(scope="session", params=[False])
-def processor_props(request)-> decomposition.ProcessProperties:
+def processor_props(request) -> decomposition.ProcessProperties:
     with_mpi = request.param
     runtype = decomposition.get_runtype(with_mpi=with_mpi)
     return decomposition.get_processor_properties(runtype)

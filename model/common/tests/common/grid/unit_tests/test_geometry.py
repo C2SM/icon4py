@@ -21,7 +21,12 @@ from icon4py.model.common.grid.geometry import as_sparse_field
 
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, test_utils, definitions as test_defs
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    grid_utils,
+    test_utils,
+    definitions as test_defs,
+)
 from ..fixtures import *  # noqa: F401, F403
 
 

@@ -365,7 +365,10 @@ class GridManager:
         """
         xp = data_alloc.import_array_ns(backend)
         ## FULL GRID PROPERTIES
-        global_params, grid_config = self._construct_config(with_skip_values, xp)
+        global_params = self._construct_global_params()
+        cell_refinement = self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
+        global_size = self._read_full_grid_size()
+        limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
         neighbor_tables = {
@@ -386,12 +389,14 @@ class GridManager:
         neighbor_tables_for_halo_construction = neighbor_tables
         halo_constructor = halo.halo_constructor(
             run_properties=run_properties,
-            grid_config=grid_config,
+            num_levels=self._vertical_config.num_levels,
+            full_grid_size=global_size,
             connectivities=neighbor_tables_for_halo_construction,
             backend=backend,
         )
 
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
+        distributed_size = self._decomposition_info.get_horizontal_grid_size()
 
         # TODO(halungge): run this only for distrbuted grids otherwise to nothing internally
         neighbor_tables = {
@@ -418,6 +423,12 @@ class GridManager:
             for k, v in h_grid.map_icon_domain_bounds(dim, end[dim]).items()
         }
         refinement_fields = self._read_grid_refinement_fields(backend)
+        grid_config = base.GridConfig(
+            horizontal_size=distributed_size,
+            vertical_size=self._vertical_config.num_levels,
+            limited_area=limited_area,
+            keep_skip_values=with_skip_values,
+        )
 
         grid = icon.icon_grid(
             self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
@@ -431,19 +442,11 @@ class GridManager:
         )
         self._grid = grid
 
-    def _construct_config(self, with_skip_values, xp):
+    def _construct_global_params(self):
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
-        cell_refinement = self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
-        limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
-        grid_config = base.GridConfig(
-            horizontal_size=self._read_full_grid_size(),
-            vertical_size=self._vertical_config.num_levels,
-            limited_area=limited_area,
-            keep_skip_values=with_skip_values,
-        )
-        return global_params, grid_config
+        return global_params
 
     def _get_index_field(
         self,

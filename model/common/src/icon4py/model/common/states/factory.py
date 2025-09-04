@@ -450,9 +450,10 @@ class ProgramFieldProvider(FieldProvider):
         field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
         return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields}
 
-    def _grid_connectivities(self, grid: icon_grid.IconGrid) -> dict[str, gtx.Connectivity | gtx.Dimension]:
+    def _grid_connectivities(
+        self, grid: icon_grid.IconGrid
+    ) -> dict[str, gtx.Connectivity | gtx.Dimension]:
         return grid.connectivities
-
 
     def _domain_args(
         self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid

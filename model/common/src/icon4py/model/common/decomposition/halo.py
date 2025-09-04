@@ -435,7 +435,8 @@ class SingleNodeDecomposer(Decomposer):
 
 def halo_constructor(
     run_properties: defs.ProcessProperties,
-    grid_config: base.GridConfig,
+    num_levels: int,
+    full_grid_size: base.HorizontalGridSize,
     connectivities: dict[gtx.FieldOffset, data_alloc.NDArray],
     backend=gtx_backend.Backend | None,
 ) -> HaloConstructor:
@@ -448,7 +449,8 @@ def halo_constructor(
     parameter
     Args:
         processor_props:
-        grid_config:
+        num_levels:
+        full_grid_size
         connectivities:
         backend:
 
@@ -457,13 +459,13 @@ def halo_constructor(
     """
     if run_properties.single_node():
         return NoHalos(
-            num_levels=grid_config.num_levels,
-            horizontal_size=grid_config.horizontal_size,
+            num_levels=num_levels,
+            horizontal_size=full_grid_size,
             backend=backend,
         )
     else:
         return IconLikeHaloConstructor(
-            num_levels=grid_config.num_levels,
+            num_levels=num_levels,
             run_properties=run_properties,
             connectivities=connectivities,
             backend=backend,

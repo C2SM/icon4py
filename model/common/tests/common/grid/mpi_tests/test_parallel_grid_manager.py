@@ -25,7 +25,7 @@ from icon4py.model.common.grid import (
     geometry,
     geometry_attributes,
 )
-from icon4py.model.common.interpolation import interpolation_fields
+from icon4py.model.common.interpolation.interpolation_fields import compute_geofac_div
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     test_utils as test_helpers,
@@ -109,10 +109,10 @@ def test_start_end_index(
     ).grid
 
     for domain in utils.global_grid_domains(dim):
-        assert grid.start_index(domain) == single_node_grid.start_index(
+        assert icon_grid.start_index(domain) == single_node_grid.start_index(
             domain
         ), f"start index wrong for domain {domain}"
-        assert grid.end_index(domain) == single_node_grid.end_index(
+        assert icon_grid.end_index(domain) == single_node_grid.end_index(
             domain
         ), f"end index wrong for domain {domain}"
 
@@ -239,15 +239,40 @@ def assert_gathered_field_against_global(
 
 
 # TODO add test including halo access:
-#  Will uses geofac_div and geofac_n2s
+#  Will uses
+#    - geofac_div
+#    - geofac_n2s
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi
-def test_halo_neighbor_access_c2e(processor_props):
+def test_halo_neighbor_access_c2e(processor_props, interpolation_savepoint):
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL.name)
-    single_node_grid = run_grid_manager_for_singlenode(file, vertical_config).grid
+    backend = None
+    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node_grid = single_node.grid
+    single_node_geometry = geometry.GridGeometry(
+        backend=backend,
+        grid=single_node_grid,
+        coordinates=single_node.coordinates,
+        decomposition_info=single_node.decomposition_info,
+        extra_fields=single_node.geometry,
+        metadata=geometry_attributes.attrs,
+    )
+    reference = data_alloc.zero_field(single_node_grid, dims.CellDim, dims.C2EDim)
+    single_node_edge_length = single_node_geometry.get(geometry_attributes.EDGE_LENGTH)
+    single_node_cell_area = single_node_geometry.get(geometry_attributes.CELL_AREA)
+    single_node_edge_orientation = single_node_geometry.get(
+        geometry_attributes.VERTEX_EDGE_ORIENTATION
+    )
+    # compute_geofac_div.with_backend(backend)(
+    #    primal_edge_length=single_node_edge_length,
+    #    area=single_node_cell_area,
+    #    edge_orientation=single_node_edge_orientation,
+    #    out=reference,
+    #    offset_provider={"C2E": single_node_grid.get_connectivity("C2E")},
+    # )
 
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
@@ -258,11 +283,11 @@ def test_halo_neighbor_access_c2e(processor_props):
     distributed_grid = multinode_grid_manager.grid
     extra_geometry_fields = multinode_grid_manager.geometry
     decomposition_info = multinode_grid_manager.decomposition_info
-    coordinates = multinode_grid_manager.coordinates
+    distributed_coordinates = multinode_grid_manager.coordinates
     distributed_geometry = geometry.GridGeometry(
-        backend=None,
+        backend=backend,
         grid=distributed_grid,
-        coordinates=coordinates,
+        coordinates=distributed_coordinates,
         decomposition_info=decomposition_info,
         extra_fields=extra_geometry_fields,
         metadata=geometry_attributes.attrs,
@@ -271,16 +296,23 @@ def test_halo_neighbor_access_c2e(processor_props):
     cell_area = distributed_geometry.get(geometry_attributes.CELL_AREA)
     edge_orientation = distributed_geometry.get(geometry_attributes.VERTEX_EDGE_ORIENTATION)
 
-    geofac_div = data_alloc.zero_field(distributed_grid, dims.CellDim, dims.C2EDim)
-    interpolation_fields.compute_geofac_div(
-        primal_edge_length=edge_length,
-        area=cell_area,
-        edge_orientation=edge_orientation,
-        out=geofac_div,
-        offset_provider={"C2E": distributed_grid.get_connectivity("C2E")},
-    )
     # geofac_div = primal_edge_length(C2E) * edge_orientation / area
+    geofac_div = data_alloc.zero_field(distributed_grid, dims.CellDim, dims.C2EDim)
+    # compute_geofac_div.with_backend(backend)(
+    #    primal_edge_length=edge_length,
+    #    area=cell_area,
+    #    edge_orientation=edge_orientation,
+    #    out=geofac_div,
+    #    offset_provider={"C2E": distributed_grid.get_connectivity("C2E")},
+    # )
 
+    assert_gathered_field_against_global(
+        decomposition_info,
+        processor_props,
+        dims.EdgeDim,
+        global_reference_field=reference.asnumpy(),
+        local_field=geofac_div.asnumpy(),
+    )
     # 1. read grid and distribue - GridManager
 
     # 2. get geometry fields (from GridManger) primal_edge_length, edge_orientation, area (local read)

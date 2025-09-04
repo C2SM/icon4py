@@ -19,8 +19,8 @@ from typing import Any, Literal, Protocol, overload, runtime_checkable
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import utils
-from icon4py.model.common.grid import gridfile
+from icon4py.model.common import dimension as dims, utils
+from icon4py.model.common.grid import base, gridfile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -79,7 +79,6 @@ class DomainDescriptorIdGenerator:
         return next_id
 
 
-# TODO(halungge): halo_levels.. they are the decomp_domain in ICON
 class DecompositionInfo:
     class EntryType(IntEnum):
         ALL = 0
@@ -174,13 +173,20 @@ class DecompositionInfo:
             case _:
                 raise NotImplementedError()
 
+    def get_horizontal_size(self):
+        return base.HorizontalGridSize(
+            num_cells=self.global_index(dims.CellDim, self.EntryType.ALL).shape[0],
+            num_edges=self.global_index(dims.EdgeDim, self.EntryType.ALL).shape[0],
+            num_vertices=self.global_index(dims.VertexDim, self.EntryType.ALL).shape[0],
+        )
+
     def halo_levels(self, dim: gtx.Dimension):
         return self._halo_levels[dim]
 
     def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag):
         return np.where(self._halo_levels[dim] == level, True, False)
 
-    # TODO (@halungge): unused - delete
+    # TODO (@halungge): unused - delete?
     def is_on_node(self, dim, index: int, entryType: EntryType = EntryType.ALL) -> bool:
         return np.isin(index, self.global_index(dim, entry_type=entryType)).item()
 

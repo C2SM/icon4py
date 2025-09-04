@@ -630,8 +630,6 @@ def test_decomposition_info_single_node(dim, grid_file, experiment, grid_savepoi
     assert np.all(result.halo_levels(dim) == expected.halo_levels(dim))
 
 
-
-
 # TODO move to mpi_tests folder
 @pytest.mark.mpi
 @pytest.mark.parametrize(
