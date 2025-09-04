@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, StandardStaticVariants
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
 from .test_apply_nabla2_to_w_in_upper_damping_layer import (
@@ -28,9 +28,23 @@ from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
+    STATIC_PARAMS = {
+        StandardStaticVariants.NONE: None,
+        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+        ),
+        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+        ),
+    }
 
     @staticmethod
     def reference(
