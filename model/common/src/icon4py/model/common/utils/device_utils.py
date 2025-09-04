@@ -11,8 +11,8 @@ from collections.abc import Callable
 from typing import Any
 
 import gt4py.next as gtx
+import gt4py.next.allocators as gtx_allocators
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators
 
 
 try:
