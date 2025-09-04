@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Optional
 
 from gt4py.next import backend as gtx_backend
+import gt4py.next as gtx
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
@@ -45,42 +46,43 @@ def construct_interpolation_state(
 
 
 def construct_metric_state(
-    savepoint: sb.MetricSavepoint, num_k_lev
+    metrics_savepoint: sb.MetricSavepoint, grid_savepoint: sb.IconGridSavepoint
 ) -> dycore_states.MetricStateNonHydro:
     return dycore_states.MetricStateNonHydro(
-        bdy_halo_c=savepoint.bdy_halo_c(),
-        mask_prog_halo_c=savepoint.mask_prog_halo_c(),
-        rayleigh_w=savepoint.rayleigh_w(),
-        time_extrapolation_parameter_for_exner=savepoint.exner_exfac(),
-        reference_exner_at_cells_on_model_levels=savepoint.exner_ref_mc(),
-        wgtfac_c=savepoint.wgtfac_c(),
-        wgtfacq_c=savepoint.wgtfacq_c_dsl(),
-        inv_ddqz_z_full=savepoint.inv_ddqz_z_full(),
-        reference_rho_at_cells_on_model_levels=savepoint.rho_ref_mc(),
-        reference_theta_at_cells_on_model_levels=savepoint.theta_ref_mc(),
-        exner_w_explicit_weight_parameter=savepoint.vwind_expl_wgt(),
-        ddz_of_reference_exner_at_cells_on_half_levels=savepoint.d_exner_dz_ref_ic(),
-        ddqz_z_half=savepoint.ddqz_z_half(),
-        reference_theta_at_cells_on_half_levels=savepoint.theta_ref_ic(),
-        d2dexdz2_fac1_mc=savepoint.d2dexdz2_fac1_mc(),
-        d2dexdz2_fac2_mc=savepoint.d2dexdz2_fac2_mc(),
-        reference_rho_at_edges_on_model_levels=savepoint.rho_ref_me(),
-        reference_theta_at_edges_on_model_levels=savepoint.theta_ref_me(),
-        ddxn_z_full=savepoint.ddxn_z_full(),
-        zdiff_gradp=savepoint.zdiff_gradp(),
-        vertoffset_gradp=savepoint.vertoffset_gradp(),
-        pg_edgeidx_dsl=savepoint.pg_edgeidx_dsl(),
-        pg_exdist=savepoint.pg_exdist(),
-        ddqz_z_full_e=savepoint.ddqz_z_full_e(),
-        ddxt_z_full=savepoint.ddxt_z_full(),
-        wgtfac_e=savepoint.wgtfac_e(),
-        wgtfacq_e=savepoint.wgtfacq_e_dsl(num_k_lev),
-        exner_w_implicit_weight_parameter=savepoint.vwind_impl_wgt(),
-        horizontal_mask_for_3d_divdamp=savepoint.hmask_dd3d(),
-        scaling_factor_for_3d_divdamp=savepoint.scalfac_dd3d(),
-        coeff1_dwdz=savepoint.coeff1_dwdz(),
-        coeff2_dwdz=savepoint.coeff2_dwdz(),
-        coeff_gradekin=savepoint.coeff_gradekin(),
+        bdy_halo_c=metrics_savepoint.bdy_halo_c(),
+        mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
+        rayleigh_w=metrics_savepoint.rayleigh_w(),
+        time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
+        reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
+        reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
+        reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
+        exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
+        ddz_of_reference_exner_at_cells_on_half_levels=metrics_savepoint.d_exner_dz_ref_ic(),
+        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+        reference_theta_at_cells_on_half_levels=metrics_savepoint.theta_ref_ic(),
+        d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
+        d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
+        reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
+        reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
+        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
+        zdiff_gradp=metrics_savepoint.zdiff_gradp(),
+        vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
+        nflat_gradp=grid_savepoint.nflat_gradp(),
+        pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
+        pg_exdist=metrics_savepoint.pg_exdist(),
+        ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
+        ddxt_z_full=metrics_savepoint.ddxt_z_full(),
+        wgtfac_e=metrics_savepoint.wgtfac_e(),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid_savepoint.num(dims.KDim)),
+        exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
+        horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
+        scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
+        coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
+        coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
+        coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
 
 
@@ -118,7 +120,6 @@ def create_vertical_params(
         config=vertical_config,
         vct_a=sp.vct_a(),
         vct_b=sp.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
     )
 
 
