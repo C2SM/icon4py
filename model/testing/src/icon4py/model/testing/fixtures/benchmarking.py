@@ -10,13 +10,15 @@ import pathlib
 from typing import Final
 
 import pytest
+from docutils.writers.latex2e import definitions
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.grid.base import Grid
 from icon4py.model.common.grid.grid_manager import GridManager
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
-from icon4py.model.testing.pytest_hooks import parse_grid_spec
+import icon4py.model.testing.definitions as definitions
+
 
 
 DEFAULT_GRID: Final[str] = "simple"
@@ -51,7 +53,7 @@ def _get_grid_from_preset(
             return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", params=[(definitions.Grids.R02B04_GLOBAL.name, 85)])
 def grid_manager(
     request: pytest.FixtureRequest, backend: gtx_backend.Backend | None
 ) -> Grid | GridManager:
@@ -63,7 +65,7 @@ def grid_manager(
     might refer to a known grid configuration or to an existing ICON NetCDF grid file,
     and `<grid_levels>` specifies the number of vertical levels to use (optional).
     """
-    name, num_levels = parse_grid_spec(request.config.getoption("grid"))
+    name, num_levels = request.param
 
     if name in VALID_GRID_PRESETS:
         grid_manager = _get_grid_from_preset(name, num_levels=num_levels, backend=backend)

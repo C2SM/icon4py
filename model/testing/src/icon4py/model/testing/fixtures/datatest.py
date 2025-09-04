@@ -16,6 +16,7 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.model_options import RayleighType
 from icon4py.model.testing import (
     config,
     data_handling as data,
@@ -516,12 +517,6 @@ def htop_moist_proc():
 def maximal_layer_thickness():
     return 25000.0
 
-
-@pytest.fixture
-def top_height_limit_for_maximal_layer_thickness():
-    return 15000.0
-
-
 @pytest.fixture
 def rayleigh_coeff(experiment):
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
@@ -548,4 +543,4 @@ def vwind_offctr():
 
 @pytest.fixture
 def rayleigh_type():
-    return 2
+    return RayleighType.KLEMP

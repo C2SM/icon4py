@@ -5,88 +5,27 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
-
 import pytest
-import netCDF4 as nc4
-from pathlib import Path
-import numpy as np
-from icon4py.model.common.initialization.topography_initialization import topography_initialization
-import icon4py.model.common.dimension as dims
+from typing import Any, Dict
+
 import gt4py.next as gtx
-from icon4py.model.common.decomposition import definitions
-import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-
-from icon4py.model.common.grid import (
-    geometry_attributes as geometry_meta,
-    vertical as v_grid,
-    geometry,
-)
-from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.metrics import (
-    metrics_attributes,
-    metrics_factory,
-)
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-
-import icon4py.model.common.states.prognostic_state as prognostics
-
+from gt4py.next import backend as gtx_backend
+from icon4py.model.atmosphere.diffusion import diffusion
+import icon4py.model.common.dimension as dims
 from icon4py.model.common.grid import geometry as grid_geometry
+from icon4py.model.common.grid import geometry_attributes as geometry_meta
+from icon4py.model.common.grid import vertical as v_grid
+import icon4py.model.common.grid.states as grid_states
+from icon4py.model.common.initialization.topography_initialization import topography_initialization
+from icon4py.model.common.interpolation import interpolation_attributes
+from icon4py.model.common.interpolation import interpolation_factory
+from icon4py.model.common.metrics import metrics_attributes
+from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decomposition_info
 
 from ..fixtures import *
-
-
-def construct_dummy_decomposition_info(grid, backend) -> definitions.DecompositionInfo:
-    """A public helper function to construct a dummy decomposition info object for test cases
-    refactored from grid_utils.py"""
-
-    on_gpu = device_utils.is_cupy_device(backend)
-    xp = data_alloc.array_ns(on_gpu)
-
-    def _add_dimension(dim: gtx.Dimension):
-        indices = data_alloc.index_field(grid, dim, backend=backend)
-        owner_mask = xp.ones((grid.size[dim],), dtype=bool)
-        decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
-
-    decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
-    _add_dimension(dims.EdgeDim)
-    _add_dimension(dims.VertexDim)
-    _add_dimension(dims.CellDim)
-
-    return decomposition_info
-
-
-@pytest.fixture
-def vertical_grid_params(
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-):
-    """Group vertical grid configuration parameters into a dictionary."""
-    return {
-        "lowest_layer_thickness": lowest_layer_thickness,
-        "model_top_height": model_top_height,
-        "stretch_factor": stretch_factor,
-        "damping_height": damping_height,
-    }
-
-
-@pytest.fixture
-def metrics_factory_params(
-    rayleigh_coeff,
-    exner_expol,
-    vwind_offctr,
-    rayleigh_type,
-):
-    """Group rayleigh damping configuration parameters into a dictionary."""
-    return {
-        "rayleigh_coeff": rayleigh_coeff,
-        "exner_expol": exner_expol,
-        "vwind_offctr": vwind_offctr,
-        "rayleigh_type": rayleigh_type,
-    }
 
 
 @pytest.mark.embedded_remap_error
@@ -94,12 +33,12 @@ def metrics_factory_params(
     group="diffusion_benchmark",
 )
 def test_run_diffusion_benchmark(
-    grid_manager,
-    vertical_grid_params,
-    metrics_factory_params,
-    backend,
-    benchmark,
-):
+    grid_manager: Any,
+    vertical_grid_params: Dict[str, float],
+    metrics_factory_params: Dict[str, Any],
+    backend: Any,
+    benchmark: Any,
+) -> None:
     dtime = 10.0
 
     config = diffusion.DiffusionConfig(
@@ -111,7 +50,7 @@ def test_run_diffusion_benchmark(
         hdiff_efdt_ratio=24.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
-        zdiffu_t=False,  # TODO (Yilu): zdiffu_t is the issue
+        zdiffu_t=True,
         thslp_zdiffu=0.02,
         thhgtd_zdiffu=125.0,
         velocity_boundary_diffusion_denom=150.0,
@@ -126,9 +65,11 @@ def test_run_diffusion_benchmark(
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
+    decomposition_info = construct_dummy_decomposition_info(grid, backend)
+
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid,
-        decomposition_info=construct_dummy_decomposition_info(grid, backend),
+        decomposition_info=decomposition_info,
         backend=backend,
         coordinates=coordinates,
         extra_fields=geometry_input_fields,
@@ -192,7 +133,7 @@ def test_run_diffusion_benchmark(
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
         grid=grid,
-        decomposition_info=construct_dummy_decomposition_info(grid, backend),
+        decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
@@ -201,7 +142,7 @@ def test_run_diffusion_benchmark(
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
         grid=grid,
         vertical_grid=vertical_grid,
-        decomposition_info=construct_dummy_decomposition_info(grid, backend),
+        decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
         topography=gtx.as_field((dims.CellDim,), data=topo_c),
         interpolation_source=interpolation_field_source,
