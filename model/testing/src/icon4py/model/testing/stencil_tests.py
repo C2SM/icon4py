@@ -15,7 +15,7 @@ from typing import Any, ClassVar
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py import core as gt_core, eve
+from gt4py import eve
 from gt4py.next import backend as gtx_backend, constructors, typing as gtx_typing
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
@@ -34,7 +34,7 @@ def allocate_data(
         k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
         if isinstance(v, tuple)
         else _allocate_field(domain=v.domain, data=v.ndarray)
-        if not gt_core.is_scalar_type(v) and k != "domain"
+        if not gtx.is_scalar_type(v) and k != "domain"
         else v
         for k, v in input_data.items()
     }
