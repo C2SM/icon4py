@@ -53,7 +53,7 @@ def _get_grid_from_preset(
             return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
 
 
-@pytest.fixture(scope="session", params=[(definitions.Grids.R02B04_GLOBAL.name, 85)])
+@pytest.fixture(scope="session", params=[("icon_global", 85)])
 def grid_manager(
     request: pytest.FixtureRequest, backend: gtx_backend.Backend | None
 ) -> Grid | GridManager:
