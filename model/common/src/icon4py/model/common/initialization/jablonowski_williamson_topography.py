@@ -8,9 +8,10 @@
 
 import math
 
+from gt4py.next import backend as gtx_backend
+
 from icon4py.model.common import constants as phy_const
 from icon4py.model.common.utils import data_allocation as data_alloc
-from gt4py.next import backend as gtx_backend
 
 
 def jablonowski_williamson_topography(

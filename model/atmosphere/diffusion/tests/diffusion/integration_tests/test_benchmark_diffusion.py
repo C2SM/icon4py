@@ -16,7 +16,9 @@ from icon4py.model.common.grid import geometry as grid_geometry
 from icon4py.model.common.grid import geometry_attributes as geometry_meta
 from icon4py.model.common.grid import vertical as v_grid
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common.initialization.jablonowski_williamson_topography import jablonowski_williamson_topography
+from icon4py.model.common.initialization.jablonowski_williamson_topography import (
+    jablonowski_williamson_topography,
+)
 from icon4py.model.common.interpolation import interpolation_attributes
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes

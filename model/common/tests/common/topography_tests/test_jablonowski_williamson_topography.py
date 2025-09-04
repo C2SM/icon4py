@@ -7,7 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from icon4py.model.common.initialization.jablonowski_williamson_topography import jablonowski_williamson_topography
+from icon4py.model.common.initialization.jablonowski_williamson_topography import (
+    jablonowski_williamson_topography,
+)
 
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 from icon4py.model.testing import test_utils
