@@ -150,9 +150,9 @@ def data_provider(
 def grid_savepoint(
     data_provider: serialbox.IconSerialDataProvider, experiment: str
 ) -> serialbox.IconGridSavepoint:
-    root, level = dt_utils.get_global_grid_params(experiment)
+    grid_shape = dt_utils.guess_grid_shape(experiment)
     grid_id = dt_utils.get_grid_id_for_experiment(experiment)
-    return data_provider.from_savepoint_grid(grid_id, root, level)
+    return data_provider.from_savepoint_grid(grid_id, grid_shape)
 
 
 def is_regional(experiment_name):
@@ -173,10 +173,10 @@ def icon_grid(
 
 @pytest.fixture
 def decomposition_info(data_provider, experiment):
-    root, level = dt_utils.get_global_grid_params(experiment)
+    grid_shape = dt_utils.guess_grid_shape(experiment)
     grid_id = dt_utils.get_grid_id_for_experiment(experiment)
     return data_provider.from_savepoint_grid(
-        grid_id=grid_id, grid_root=root, grid_level=level
+        grid_id=grid_id, grid_shape=grid_shape
     ).construct_decomposition_info()
 
 

@@ -43,10 +43,10 @@ def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
     return z_gradh_exner
 
 
+@pytest.mark.skip_value_error
 class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates
     OUTPUTS = ("z_gradh_exner",)
-    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(

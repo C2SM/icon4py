@@ -333,7 +333,14 @@ class GridManager:
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
+        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
+            geometry_type = base.GeometryType(geometry_type)
+        global_params = icon.GlobalGridParams(
+            icon.GridShape(
+                geometry_type=geometry_type,
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            )
+        )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )

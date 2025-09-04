@@ -52,14 +52,13 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
-    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 dycore_consts: Final = constants.PhysicsConstants()
-rayleigh_damping_options: Final = model_options.RayleighType()
+rayleigh_damping_options: Final = constants.RayleighType()
 
 
 @gtx.field_operator
