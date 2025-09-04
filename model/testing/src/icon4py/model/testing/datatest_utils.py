@@ -32,9 +32,7 @@ R02B04_GLOBAL = definitions.Grids.R02B04_GLOBAL.name
 R02B07_GLOBAL = definitions.Grids.R02B07_GLOBAL.name
 ICON_CH2_SMALL = definitions.Grids.MCH_OPR_R04B07_DOMAIN01.name
 REGIONAL_BENCHMARK = definitions.Grids.MCH_OPR_R19B08_DOMAIN01.name
-JABW_EXPERIMENT = (
-    definitions.Experiments.JW.name
-)  # TODO is this used in test_diagnostic_calculations?
+JABW_EXPERIMENT = definitions.Experiments.JW.name
 GAUSS3D_EXPERIMENT = definitions.Experiments.GAUSS3D.name
 WEISMAN_KLEMP_EXPERIMENT = definitions.Experiments.WEISMAN_KLEMP_TORUS.name
 
@@ -49,7 +47,7 @@ GRID_URIS = {
     WEISMAN_KLEMP_EXPERIMENT: definitions.Grids.TORUS_50000x5000.uri,
 }
 
-# TODO
+# TODO still needed?
 GRID_IDS = {
     GLOBAL_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
     REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
@@ -107,9 +105,10 @@ def get_ranked_data_path(base_path: pathlib.Path, comm_size: int) -> pathlib.Pat
 
 
 def get_datapath_for_experiment(
-    ranked_base_path: pathlib.Path, experiment: str = REGIONAL_EXPERIMENT
+    ranked_base_path: pathlib.Path,
+    experiment: definitions.Experiment = definitions.Experiments.MCH_CH_R04B09,
 ) -> pathlib.Path:
-    return ranked_base_path.joinpath(f"{experiment}/ser_data")
+    return ranked_base_path.joinpath(f"{experiment.name}/ser_data")
 
 
 def create_icon_serial_data_provider(
