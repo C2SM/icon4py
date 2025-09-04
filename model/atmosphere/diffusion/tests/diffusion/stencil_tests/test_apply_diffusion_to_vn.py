@@ -35,6 +35,7 @@ class TestApplyDiffusionToVn(StencilTest):
         StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
+            "start_2nd_nudge_line_idx_e",
             "vertical_start",
             "vertical_end",
         ),
