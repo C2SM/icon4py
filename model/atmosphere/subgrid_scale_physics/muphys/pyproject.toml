@@ -25,7 +25,7 @@ dependencies = [
   # workspace members
   "icon4py-common[io]>=0.0.6",
   # external dependencies
-  "gt4py==1.0.7",
+  "gt4py==1.0.8",
   "packaging>=20.0"
 ]
 description = "ICON subgrid scale muphys parameterization."
