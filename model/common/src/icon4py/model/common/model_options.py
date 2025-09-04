@@ -8,7 +8,6 @@
 import functools
 import typing
 
-import gt4py.core as gt_core
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
@@ -45,7 +44,7 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    bound_static_args = {k: v for k, v in constant_args.items() if gt_core.is_scalar_type(v)}
+    bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend).compile(
         **dict_values_to_list(horizontal_sizes),
         **dict_values_to_list(vertical_sizes),
