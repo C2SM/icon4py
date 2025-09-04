@@ -38,7 +38,6 @@ from ..utils import (
 )
 
 
-# TODO: is this a custom cache for this test?
 grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
 
 
@@ -55,7 +54,7 @@ def get_cell_geometry_for_experiment(experiment, backend):
 
 
 def _get_or_initialize(experiment_name: str, backend, name):
-    experiment = dt_utils._experiment_from_name(experiment_name=experiment_name)  # TODO
+    experiment = dt_utils.experiment_from_name(experiment_name=experiment_name)  # TODO
 
     if not grid_functionality[experiment_name].get(name):
         geometry_ = grid_utils.get_grid_geometry(backend, experiment)

@@ -7,11 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import gridfile
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     definitions,
 )
@@ -24,22 +24,22 @@ from icon4py.model.testing.fixtures import (
     ranked_data_path,
 )
 
-from .. import utils
+if TYPE_CHECKING:
+    from icon4py.model.testing import serialbox
 
 
 @pytest.mark.with_netcdf
 def test_grid_file_dimension():
-    global_grid_file = str(
-        gridtest_utils.resolve_full_grid_file_name(definitions.Grids.R02B04_GLOBAL)
-    )
+    grid_descriptor = definitions.Grids.R02B04_GLOBAL
+    global_grid_file = str(gridtest_utils.resolve_full_grid_file_name(grid_descriptor))
     parser = gridfile.GridFile(global_grid_file)
     try:
         parser.open()
-        assert parser.dimension(gridfile.DimensionName.CELL_NAME) == utils.R02B04_GLOBAL_NUM_CELLS
+        assert parser.dimension(gridfile.DimensionName.CELL_NAME) == grid_descriptor.sizes["cell"]
         assert (
-            parser.dimension(gridfile.DimensionName.VERTEX_NAME) == utils.R02B04_GLOBAL_NUM_VERTEX
+            parser.dimension(gridfile.DimensionName.VERTEX_NAME) == grid_descriptor.sizes["vertex"]
         )
-        assert parser.dimension(gridfile.DimensionName.EDGE_NAME) == utils.R02B04_GLOBAL_NUM_EDGES
+        assert parser.dimension(gridfile.DimensionName.EDGE_NAME) == grid_descriptor.sizes["edge"]
     except Exception:
         pytest.fail()
     finally:
@@ -49,14 +49,16 @@ def test_grid_file_dimension():
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
-    "grid_descriptor, experiment",
+    "experiment",
     [
-        (definitions.Grids.MCH_CH_R04B09_DSL, dt_utils.REGIONAL_EXPERIMENT),
-        (definitions.Grids.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        definitions.Experiments.MCH_CH_R04B09,
+        definitions.Experiments.EXCLAIM_APE,
     ],
 )
-def test_grid_file_vertex_cell_edge_dimensions(grid_savepoint, grid_descriptor):
-    file = gridtest_utils.resolve_full_grid_file_name(grid_descriptor)
+def test_grid_file_vertex_cell_edge_dimensions(
+    experiment: definitions.Experiment, grid_savepoint: serialbox.IconGridSavepoint
+):
+    file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
     parser = gridfile.GridFile(str(file))
     try:
         parser.open()

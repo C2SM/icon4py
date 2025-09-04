@@ -75,14 +75,6 @@ def get_grid_manager(
     return manager
 
 
-# TODO temporarily for mapping from name to Grid
-def _grid_from_name(grid_name: str) -> definitions.Grid:
-    for item in vars(definitions.Grids).values():
-        if isinstance(item, definitions.Grid) and item.name == grid_name:
-            return item
-    raise ValueError(f"No such grid: {grid_name}")
-
-
 def resolve_full_grid_file_name(grid: definitions.Grid) -> pathlib.Path:
     return definitions.grids_path().joinpath(grid.name, grid.file_name)
 

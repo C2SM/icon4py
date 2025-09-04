@@ -91,7 +91,7 @@ def _get_metrics_factory(
     topography = topography_savepoint.topo_c()
 
     if not factory:
-        experiment = dt_utils._experiment_from_name(experiment_name)
+        experiment = dt_utils.experiment_from_name(experiment_name)
         # TODO this function should not have `grid_file` as parameter
         assert experiment.grid.name == grid_file
 

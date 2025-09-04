@@ -11,23 +11,18 @@ from __future__ import annotations
 import pathlib
 import re
 import uuid
-from typing import TYPE_CHECKING
 
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, icon
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, serialbox
 
-
-if TYPE_CHECKING:
-    from icon4py.model.testing import serialbox
 
 GLOBAL_EXPERIMENT = definitions.Experiments.EXCLAIM_APE.name
-REGIONAL_EXPERIMENT = definitions.Grids.MCH_CH_R04B09_DSL.name  # refers to grid_file and experiment
-assert (
-    definitions.Grids.MCH_CH_R04B09_DSL.name == definitions.Experiments.MCH_CH_R04B09.name
-)  # TODO remove (ensure refactoring is sane)
+REGIONAL_EXPERIMENT = definitions.Grids.MCH_CH_R04B09_DSL.name
+# we were using `REGIONAL_EXPERIMENT` for both grid and experiment, therefore we make sure their names match
+assert definitions.Grids.MCH_CH_R04B09_DSL.name == definitions.Experiments.MCH_CH_R04B09.name
 R02B04_GLOBAL = definitions.Grids.R02B04_GLOBAL.name
 R02B07_GLOBAL = definitions.Grids.R02B07_GLOBAL.name
 ICON_CH2_SMALL = definitions.Grids.MCH_OPR_R04B07_DOMAIN01.name
@@ -47,7 +42,7 @@ GRID_URIS = {
     WEISMAN_KLEMP_EXPERIMENT: definitions.Grids.TORUS_50000x5000.uri,
 }
 
-# TODO still needed?
+# TODO(havogt): is this still needed?
 GRID_IDS = {
     GLOBAL_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
     REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
@@ -113,23 +108,20 @@ def get_datapath_for_experiment(
 
 def create_icon_serial_data_provider(
     datapath: pathlib.Path,
-    processor_props: decomposition.ProcessProperties,
+    rank: int,
     backend: gtx_backend.Backend | None,
 ) -> serialbox.IconSerialDataProvider:
-    # note: this needs to be here, otherwise spack doesn't find serialbox
-    from icon4py.model.testing.serialbox import IconSerialDataProvider
-
-    return IconSerialDataProvider(
+    return serialbox.IconSerialDataProvider(
         backend=backend,
         fname_prefix="icon_pydycore",
         path=str(datapath),
-        mpi_rank=processor_props.rank,
+        mpi_rank=rank,
         do_print=True,
     )
 
 
-# TODO temporarily for mapping from name to experiment
-def _experiment_from_name(experiment_name: str) -> definitions.Experiment:
+# TODO(havogt): this function should disappear after the refactoring from raw string to Experiment is completed
+def experiment_from_name(experiment_name: str) -> definitions.Experiment:
     for item in vars(definitions.Experiments).values():
         if isinstance(item, definitions.Experiment) and item.name == experiment_name:
             return item

@@ -6,12 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-import logging
 import math
 import re
 
 import numpy as np
 import pytest
+
+import gt4py.next as gtx
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import (
@@ -21,7 +22,6 @@ from icon4py.model.common.grid import (
     icon,
 )
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     definitions,
 )
@@ -165,13 +165,12 @@ def test_grid_size(icon_grid):
     assert 31558 == icon_grid.size[dims.EdgeDim]
 
 
-@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
+@pytest.mark.parametrize(
+    "grid_descriptor", (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL)
+)
 @pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.value)
-def test_when_keep_skip_value_then_neighbor_table_matches_config(
-    grid_file, offset, backend, caplog
-):
-    caplog.set_level(logging.DEBUG)
-    grid = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend).grid
+def test_when_keep_skip_value_then_neighbor_table_matches_config(grid_descriptor, offset, backend):
+    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
     connectivity = grid.get_connectivity(offset)
 
     assert (
@@ -183,23 +182,26 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(
         assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
 
 
-@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
+@pytest.mark.parametrize(
+    "grid_descriptor", (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL)
+)
 @pytest.mark.parametrize("dim", (utils.local_dims()))
-def test_when_replace_skip_values_then_only_pentagon_points_remain(grid_file, dim, backend, caplog):
-    caplog.set_level(logging.DEBUG)
+def test_when_replace_skip_values_then_only_pentagon_points_remain(
+    grid_descriptor: definitions.Grid, dim: gtx.Dimension, backend
+):
     if dim == dims.V2E2VDim:
         pytest.skip("V2E2VDim is not supported in the current grid configuration.")
-    grid = utils.run_grid_manager(grid_file, keep_skip_values=False, backend=backend).grid
+    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=False, backend=backend).grid
     connectivity = grid.get_connectivity(dim.value)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
         assert np.any(
             connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX
-        ).item(), f"Connectivity {dim.value} for {grid_file} should have skip values."
+        ).item(), f"Connectivity {dim.value} for {grid_descriptor.name} should have skip values."
         assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
     else:
-        assert (
-            not np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item()
-        ), f"Connectivity {dim.value} for {grid_file} contains skip values, but none are expected."
+        assert not np.any(
+            connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX
+        ).item(), f"Connectivity {dim.value} for {grid_descriptor.name} contains skip values, but none are expected."
         assert connectivity.skip_value is None
 
 

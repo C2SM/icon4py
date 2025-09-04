@@ -130,24 +130,24 @@ def download_ser_data(
 
     # TODO(havogt): after refactoring is complete this should only accept `Experiment`
     if isinstance(experiment, str):
-        experiment = dt_utils._experiment_from_name(experiment)
+        experiment = dt_utils.experiment_from_name(experiment)
 
     _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
 
 
 @pytest.fixture
 def data_provider(
-    download_ser_data,
-    ranked_data_path,
+    download_ser_data,  # downloads data as side-effect
+    ranked_data_path: pathlib.Path,
     experiment: str | definitions.Experiment,
-    processor_props,
+    processor_props: decomposition.ProcessProperties,
     backend: gtx_backend.Backend,
 ) -> serialbox.IconSerialDataProvider:
     # TODO(havogt): after refactoring is complete this should only accept `Experiment`
     if isinstance(experiment, str):
-        experiment = dt_utils._experiment_from_name(experiment)
+        experiment = dt_utils.experiment_from_name(experiment)
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
+    return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
 
 
 @pytest.fixture
@@ -156,7 +156,7 @@ def grid_savepoint(
 ) -> serialbox.IconGridSavepoint:
     # TODO(havogt): after refactoring is complete this should only accept `Experiment`
     if isinstance(experiment, str):
-        experiment = dt_utils._experiment_from_name(experiment)
+        experiment = dt_utils.experiment_from_name(experiment)
     grid_shape = dt_utils.guess_grid_shape(experiment.name)
     grid_id = dt_utils.get_grid_id_for_experiment(experiment.name)
     return data_provider.from_savepoint_grid(grid_id, grid_shape)
@@ -178,7 +178,7 @@ def icon_grid(
 def decomposition_info(data_provider, experiment: str | definitions.Experiment):
     # TODO(havogt): after refactoring is complete this should only accept `Experiment`
     if isinstance(experiment, str):
-        experiment = dt_utils._experiment_from_name(experiment)
+        experiment = dt_utils.experiment_from_name(experiment)
     grid_shape = dt_utils.guess_grid_shape(experiment.name)
     grid_id = dt_utils.get_grid_id_for_experiment(experiment.name)
     return data_provider.from_savepoint_grid(

@@ -94,7 +94,7 @@ def test_get_c_lin_e(interpolation_savepoint, grid_file, experiment, backend, rt
 def _get_interpolation_factory(
     backend: gtx_backend.Backend | None, experiment_name: str, grid_file: str
 ) -> interpolation_factory.InterpolationFieldsFactory:
-    experiment = dt_utils._experiment_from_name(experiment_name)
+    experiment = dt_utils.experiment_from_name(experiment_name)
     registry_key = "_".join((experiment_name, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
     if not factory:
