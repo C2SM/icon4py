@@ -29,9 +29,8 @@ def get_options(program_name: str, arch: str, **backend):
     return dict(backend_kind=backend_kind)
 
 
-def customize_backend(program: str = "", arch: str = "", **backend):
-    program_id = str(program.past_stage.past_node.id) if program != "" else program
-    options = get_options(program_id, arch, **backend)
+def customize_backend(program_name: str = "", arch: str = "", **backend):
+    options = get_options(program_name, arch, **backend)
     if options["backend_kind"] == "dace":
         backend_func = make_custom_dace_backend
     elif options["backend_kind"] == "gtfn":
@@ -79,7 +78,9 @@ def setup_program(
         custom_backend = backend
     else:
         # customized backend params
-        custom_backend = customize_backend(**backend)
+        custom_backend = customize_backend(
+            program_name=str(program.past_stage.past_node.id), **backend
+        )
 
     bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
     static_args_program = program.with_backend(custom_backend).compile(
