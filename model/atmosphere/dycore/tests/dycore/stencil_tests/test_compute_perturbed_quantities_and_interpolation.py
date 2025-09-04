@@ -23,7 +23,6 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import int32
 
 from icon4py.model.atmosphere.dycore.dycore_states import (
     HorizontalPressureDiscretizationType,
@@ -219,7 +218,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
-            & (vert_idx[: vertical_end - 1] == int32(0)),
+            & (vert_idx[: vertical_end - 1] == gtx.int32(0)),
             compute_perturbation_of_rho_and_theta_numpy(
                 rho=current_rho,
                 rho_ref_mc=reference_rho_at_cells_on_model_levels,
@@ -239,7 +238,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
-            & (vert_idx[: vertical_end - 1] >= int32(1)),
+            & (vert_idx[: vertical_end - 1] >= gtx.int32(1)),
             compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
                 wgtfac_c=wgtfac_c[:, : vertical_end - 1],
                 rho=current_rho,
@@ -261,7 +260,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
-            & (vert_idx[: vertical_end - 1] >= int32(1)),
+            & (vert_idx[: vertical_end - 1] >= gtx.int32(1)),
             compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
                 connectivities=connectivities,
                 wgtfac_c=wgtfac_c[:, : vertical_end - 1],
