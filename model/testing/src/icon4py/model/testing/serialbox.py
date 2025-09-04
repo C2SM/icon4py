@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
-import uuid
 from typing import Final, Literal, TypeAlias
 
 import gt4py.next as gtx
@@ -145,7 +144,7 @@ class IconGridSavepoint(IconSavepoint):
         self,
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
-        grid_id: uuid.UUID,
+        grid_id: str,
         size: dict,
         grid_shape: icon.GridShape,
         backend: gtx_backend.Backend | None,
@@ -1857,9 +1856,7 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(
-        self, grid_id: uuid.UUID, grid_shape: icon.GridShape
-    ) -> IconGridSavepoint:
+    def from_savepoint_grid(self, grid_id: str, grid_shape: icon.GridShape) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
             savepoint,
