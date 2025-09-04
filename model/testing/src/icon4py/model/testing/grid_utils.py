@@ -97,24 +97,16 @@ def get_grid_manager(
     return manager
 
 
-def _file_name(grid_file: str) -> str:  # noqa: PLR0911 [too-many-return-statements]
-    match grid_file:
-        case dt_utils.REGIONAL_EXPERIMENT:
-            return REGIONAL_GRIDFILE
-        case dt_utils.R02B04_GLOBAL:
-            return GLOBAL_GRIDFILE
-        case dt_utils.R02B07_GLOBAL:
-            return "icon_grid_0023_R02B07_G.nc"
-        case dt_utils.ICON_CH2_SMALL:
-            return "mch_opr_r4b7_DOM01.nc"
-        case dt_utils.REGIONAL_BENCHMARK:
-            return "domain1_DOM01.nc"
-        case dt_utils.GAUSS3D_EXPERIMENT:
-            return "Torus_Triangles_50000m_x_5000m_res500m.nc"
-        case dt_utils.WEISMAN_KLEMP_EXPERIMENT:
-            return "Torus_Triangles_50000m_x_5000m_res500m.nc"
-        case _:
-            raise NotImplementedError(f"Add grid path for experiment '{grid_file}'")
+# TODO temporarily for mapping from name to Grid
+def _grid_from_name(grid_name: str) -> definitions.Grid:
+    for item in vars(definitions.Grids).values():
+        if isinstance(item, definitions.Grid) and item.name == grid_name:
+            return item
+    raise ValueError(f"No such grid: {grid_name}")
+
+
+def _file_name(grid_file: str) -> str:
+    return _grid_from_name(grid_file).file_name
 
 
 def resolve_full_grid_file_name(grid_file_identifier: str) -> pathlib.Path:

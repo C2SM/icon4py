@@ -23,18 +23,23 @@ from icon4py.model.testing import definitions
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox
 
-GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"  # experiment
-REGIONAL_EXPERIMENT = definitions.Grids.MCH_CH_R04B09_DSL.name  # grid_file and experiment
-R02B04_GLOBAL = definitions.Grids.R02B04_GLOBAL.name  # gridfile
-R02B07_GLOBAL = definitions.Grids.R02B07_GLOBAL.name  # gridfile
-ICON_CH2_SMALL = definitions.Grids.MCH_OPR_R04B07_DOMAIN01.name  # gridfile
-REGIONAL_BENCHMARK = definitions.Grids.MCH_OPR_R19B08_DOMAIN01.name  # gridfile
-JABW_EXPERIMENT = "jabw_R02B04"  # experiment # TODO is this used in test_diagnostic_calculations?
-GAUSS3D_EXPERIMENT = "gauss3d_torus"  # experiment
-WEISMAN_KLEMP_EXPERIMENT = "weisman_klemp_torus"  # experiment
+GLOBAL_EXPERIMENT = definitions.Experiments.EXCLAIM_APE.name
+REGIONAL_EXPERIMENT = definitions.Grids.MCH_CH_R04B09_DSL.name  # refers to grid_file and experiment
+assert (
+    definitions.Grids.MCH_CH_R04B09_DSL.name == definitions.Experiments.MCH_CH_R04B09.name
+)  # TODO remove (ensure refactoring is sane)
+R02B04_GLOBAL = definitions.Grids.R02B04_GLOBAL.name
+R02B07_GLOBAL = definitions.Grids.R02B07_GLOBAL.name
+ICON_CH2_SMALL = definitions.Grids.MCH_OPR_R04B07_DOMAIN01.name
+REGIONAL_BENCHMARK = definitions.Grids.MCH_OPR_R19B08_DOMAIN01.name
+JABW_EXPERIMENT = (
+    definitions.Experiments.JW.name
+)  # TODO is this used in test_diagnostic_calculations?
+GAUSS3D_EXPERIMENT = definitions.Experiments.GAUSS3D.name
+WEISMAN_KLEMP_EXPERIMENT = definitions.Experiments.WEISMAN_KLEMP_TORUS.name
 
 
-# maps experiment to grid URI (not grid to grid uri!)
+# maps experiment or grid to grid URI
 GRID_URIS = {
     REGIONAL_EXPERIMENT: definitions.Grids.MCH_CH_R04B09_DSL.uri,
     R02B04_GLOBAL: definitions.Grids.R02B04_GLOBAL.uri,
@@ -52,13 +57,6 @@ GRID_IDS = {
     GAUSS3D_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
     WEISMAN_KLEMP_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
 }
-
-
-DATA_URIS = definitions.Experiments.MCH_CH_R04B09.partitioned_data
-DATA_URIS_APE = definitions.Experiments.EXCLAIM_APE.partitioned_data
-DATA_URIS_JABW = definitions.Experiments.JW.partitioned_data
-DATA_URIS_GAUSS3D = definitions.Experiments.GAUSS3D.partitioned_data
-DATA_URIS_WK = definitions.Experiments.WEISMAN_KLEMP_TORUS.partitioned_data
 
 
 def guess_grid_shape(experiment: str) -> icon.GridShape:
