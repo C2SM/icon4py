@@ -44,5 +44,4 @@ from icon4py.model.testing.fixtures.datatest import (
     stretch_factor,
     substep_exit,
     substep_init,
-    top_height_limit_for_maximal_layer_thickness,
 )

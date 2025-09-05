@@ -59,8 +59,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
-        e_refin_ctrl: gtx.Field,
-        c_refin_ctrl: gtx.Field,
         rayleigh_type: int,
         rayleigh_coeff: float,
         exner_expol: float,
@@ -108,18 +106,23 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         c_owner_mask = gtx.as_field(
             (dims.CellDim,), self._decomposition_info.owner_mask(dims.CellDim)
         )
-
+        c_refin_ctrl = gtx.as_field(
+            (dims.CellDim,), self._grid.refinement_control[dims.CellDim].ndarray
+        )
+        e_refin_ctrl = gtx.as_field(
+            (dims.EdgeDim,), self._grid.refinement_control[dims.EdgeDim].ndarray
+        )
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
                     "topography": topography,
                     "vct_a": vct_a,
-                    "c_refin_ctrl": c_refin_ctrl,
-                    "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
                     "c_owner_mask": c_owner_mask,
                     "k_lev": k_index,
                     "e_lev": e_lev,
+                    "c_refin_ctrl": c_refin_ctrl,
+                    "e_refin_ctrl": e_refin_ctrl,
                 }
             )
         )
@@ -527,9 +530,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
-                dims.KDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
+                dims.KHalfDim: (
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
                 ),
             },
             fields={attrs.WGTFAC_C: attrs.WGTFAC_C},

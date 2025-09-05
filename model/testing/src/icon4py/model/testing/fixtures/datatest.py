@@ -15,12 +15,13 @@ from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
+from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import (
     config,
     data_handling as data,
     datatest_utils as dt_utils,
-    definitions,
+    definitions as testing_def,
     locking,
 )
 
@@ -73,7 +74,7 @@ def processor_props(request):
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathlib.Path:
     return dt_utils.get_ranked_data_path(
-        definitions.serialized_data_path(), processor_props.comm_size
+        testing_def.serialized_data_path(), processor_props.comm_size
     )
 
 
@@ -515,6 +516,35 @@ def htop_moist_proc():
 @pytest.fixture
 def maximal_layer_thickness():
     return 25000.0
+
+
+@pytest.fixture
+def rayleigh_coeff(experiment):
+    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+        return 0.1
+    else:
+        return 5.0
+
+
+@pytest.fixture
+def exner_expol(experiment):
+    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+        return 0.3333333333333
+    else:
+        return 0.333
+
+
+@pytest.fixture
+def vwind_offctr():
+    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+        return 0.15
+    else:
+        return 0.2
+
+
+@pytest.fixture
+def rayleigh_type():
+    return RayleighType.KLEMP
 
 
 @pytest.fixture
