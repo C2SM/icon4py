@@ -10,8 +10,9 @@ import functools
 from collections.abc import Callable
 from typing import Any
 
-import gt4py._core.definitions as gtx_core_defs  # TODO(havogt): avoid this private import
-from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+import gt4py.next as gtx
+import gt4py.next.allocators as gtx_allocators
+import gt4py.next.typing as gtx_typing
 
 
 try:
@@ -23,14 +24,10 @@ except ImportError:
 def is_cupy_device(
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
 ) -> bool:
-    # TODO(havogt): Add to gt4py `gtx_allocators.is_field_buffer_allocation_util_for(...)`
-    # and consider exposing CUPY_DEVICE_TYPE or move this function to gt4py.
-    if (allocator := gtx_allocators.get_allocator(allocator, default=None)) is not None:
-        return allocator.__gt_device_type__ is gtx_core_defs.CUPY_DEVICE_TYPE
-    return False
+    return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)
 
 
-def sync(backend: gtx_backend.Backend | None = None) -> None:
+def sync(backend: gtx_typing.Backend | None = None) -> None:
     """
     Synchronize the device if appropriate for the given backend.
 
@@ -40,7 +37,7 @@ def sync(backend: gtx_backend.Backend | None = None) -> None:
         cp.cuda.runtime.deviceSynchronize()
 
 
-def synchronized_function(func: Callable[..., Any], *, backend: gtx_backend.Backend | None):
+def synchronized_function(func: Callable[..., Any], *, backend: gtx_typing.Backend | None):
     """
     Wraps a function and synchronizes after execution
     """
@@ -55,7 +52,7 @@ def synchronized_function(func: Callable[..., Any], *, backend: gtx_backend.Back
 
 
 def synchronized(
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator that synchronizes the device after the function execution.

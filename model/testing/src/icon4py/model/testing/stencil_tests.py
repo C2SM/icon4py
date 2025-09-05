@@ -16,9 +16,10 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py import eve
-from gt4py._core.definitions import is_scalar_type
-from gt4py.next import backend as gtx_backend, constructors
-from gt4py.next.ffront.decorator import FieldOperator, Program
+from gt4py.next import backend as gtx_backend, constructors, typing as gtx_typing
+
+# TODO(havogt): import will disappear after FieldOperators support `.compile`
+from gt4py.next.ffront.decorator import FieldOperator
 
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
@@ -33,7 +34,7 @@ def allocate_data(
         k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
         if isinstance(v, tuple)
         else _allocate_field(domain=v.domain, data=v.ndarray)
-        if not is_scalar_type(v) and k != "domain"
+        if not gtx.is_scalar_type(v) and k != "domain"
         else v
         for k, v in input_data.items()
     }
@@ -119,7 +120,7 @@ class StencilTest:
         ...         return dict(some_output=np.asarray(some_input) * 2)
     """
 
-    PROGRAM: ClassVar[Program | FieldOperator]
+    PROGRAM: ClassVar[gtx_typing.Program | gtx_typing.FieldOperator]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
 

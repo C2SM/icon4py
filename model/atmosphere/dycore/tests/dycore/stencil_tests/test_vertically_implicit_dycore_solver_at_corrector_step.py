@@ -10,7 +10,6 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
     vertically_implicit_solver_at_corrector_step,
@@ -18,7 +17,6 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
 from icon4py.model.common import (
     constants,
     dimension as dims,
-    model_options,
 )
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
@@ -154,7 +152,9 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         tridiagonal_intermediate_result = np.zeros_like(current_rho)
 
         (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]) = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= int32(1)),
+            (horizontal_start <= horz_idx)
+            & (horz_idx < horizontal_end)
+            & (vert_idx >= gtx.int32(1)),
             compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
                 connectivities=connectivities,
                 w_nnow=current_w[:, :n_lev],
