@@ -8,7 +8,7 @@
 import pathlib
 
 import gt4py.next as gtx
-import gt4py.next.backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition_defs
@@ -29,7 +29,7 @@ grid_geometries: dict[str, geometry.GridGeometry] = {}
 def get_grid_manager_from_experiment(
     experiment: definitions.Experiment,
     keep_skip_values: bool,
-    backend: gtx_backend.Backend | None = None,
+    backend: gtx_typing.Backend | None = None,
 ) -> gm.GridManager:
     return get_grid_manager_from_identifier(
         experiment.grid,
@@ -43,7 +43,7 @@ def get_grid_manager_from_identifier(
     grid: definitions.Grid,
     num_levels: int,
     keep_skip_values: bool,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ) -> gm.GridManager:
     grid_file = _download_grid_file(grid)
     return get_grid_manager(
@@ -55,7 +55,7 @@ def get_grid_manager(
     grid_file: pathlib.Path,
     num_levels: int,
     keep_skip_values: bool,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ) -> gm.GridManager:
     """
     Construct a GridManager instance for an ICON grid file.
@@ -102,7 +102,7 @@ def _download_grid_file(grid: definitions.Grid) -> pathlib.Path:
 
 
 def get_grid_geometry(
-    backend: gtx_backend.Backend | None, experiment: definitions.Experiment
+    backend: gtx_typing.Backend | None, experiment: definitions.Experiment
 ) -> geometry.GridGeometry:
     on_gpu = device_utils.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
