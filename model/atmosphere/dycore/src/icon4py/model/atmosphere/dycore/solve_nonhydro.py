@@ -12,7 +12,7 @@ import logging
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -59,6 +59,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.model_backends import BackendDescription, DeviceType
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -135,7 +136,7 @@ class IntermediateFields:
     def allocate(
         cls,
         grid: grid_def.Grid,
-        backend: gtx_backend.Backend | None = None,
+        backend: gtx_typing.Backend | None = None,
     ):
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
@@ -394,7 +395,7 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | DeviceType | BackendDescription | None = None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange

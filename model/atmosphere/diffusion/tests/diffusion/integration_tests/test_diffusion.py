@@ -8,11 +8,9 @@
 import functools
 
 import numpy as np
-import pytest
 
-import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
@@ -23,8 +21,6 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils,
     reference_funcs as ref_funcs,
-    serialbox as sb,
-    stencil_tests,
     test_utils,
 )
 

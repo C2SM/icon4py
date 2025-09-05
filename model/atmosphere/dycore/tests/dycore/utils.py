@@ -10,8 +10,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from gt4py.next import backend as gtx_backend
-import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
@@ -126,7 +125,7 @@ def create_vertical_params(
 def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     grid: icon_grid.IconGrid,
-    backend: Optional[gtx_backend.Backend],
+    backend: Optional[gtx_typing.Backend],
     swap_vertical_wind_advective_tendency: bool = False,
 ):
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)

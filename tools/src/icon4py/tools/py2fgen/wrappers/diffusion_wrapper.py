@@ -22,8 +22,8 @@ import pstats
 from collections.abc import Callable
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
@@ -50,7 +50,7 @@ logger = setup_logger(__name__)
 @dataclasses.dataclass
 class DiffusionGranule:
     diffusion: Diffusion
-    backend: gtx_backend.Backend
+    backend: gtx_typing.Backend
     dummy_field_factory: Callable
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 

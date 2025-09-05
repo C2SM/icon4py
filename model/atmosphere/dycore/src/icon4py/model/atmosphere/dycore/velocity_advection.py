@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
@@ -30,6 +30,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
+from icon4py.model.common.model_backends import BackendDescription, DeviceType
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -44,15 +45,15 @@ class VelocityAdvection:
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | DeviceType | BackendDescription | None = None,
     ):
         self.grid: icon_grid.IconGrid = grid
-        self._backend = backend
         self.metric_state: dycore_states.MetricStateNonHydro = metric_state
         self.interpolation_state: dycore_states.InterpolationState = interpolation_state
         self.vertical_params = vertical_params
         self.edge_params = edge_params
         self.c_owner_mask = owner_mask
+        self._backend = backend
 
         self.cfl_w_limit: float = 0.65
         self.scalfac_exdiff: float = 0.05

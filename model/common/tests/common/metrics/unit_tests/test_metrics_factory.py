@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
@@ -87,7 +87,7 @@ def metrics_config(experiment: definitions.Experiment) -> tuple:
 
 
 def _get_metrics_factory(
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
@@ -154,7 +154,7 @@ def test_factory_z_mc(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.z_mc()
     factory = _get_metrics_factory(
@@ -174,7 +174,7 @@ def test_factory_ddqz_z_and_inverse(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     inverse_field_ref = metrics_savepoint.inv_ddqz_z_full()
     field_ref = metrics_savepoint.ddqz_z_full()
@@ -196,7 +196,7 @@ def test_factory_ddqz_full_e(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
     factory = _get_metrics_factory(
@@ -217,7 +217,7 @@ def test_factory_ddqz_z_half(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.ddqz_z_half()
     factory = _get_metrics_factory(
@@ -237,7 +237,7 @@ def test_factory_scaling_factor_for_3d_divdamp(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.scalfac_dd3d()
     factory = _get_metrics_factory(
@@ -257,7 +257,7 @@ def test_factory_rayleigh_w(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.rayleigh_w()
     factory = _get_metrics_factory(
@@ -277,7 +277,7 @@ def test_factory_coeffs_dwdz(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref_1 = metrics_savepoint.coeff1_dwdz()
     field_ref_2 = metrics_savepoint.coeff2_dwdz()
@@ -300,7 +300,7 @@ def test_factory_ref_mc(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref_1 = metrics_savepoint.theta_ref_mc()
     field_ref_2 = metrics_savepoint.exner_ref_mc()
@@ -323,7 +323,7 @@ def test_factory_d2dexdz2_facs_mc(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref_1 = metrics_savepoint.d2dexdz2_fac1_mc()
     field_ref_2 = metrics_savepoint.d2dexdz2_fac2_mc()
@@ -345,7 +345,7 @@ def test_factory_ddxn_z_full(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.ddxn_z_full()
     factory = _get_metrics_factory(
@@ -365,7 +365,7 @@ def test_factory_ddxt_z_full(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.ddxt_z_full().asnumpy()
     factory = _get_metrics_factory(
@@ -386,7 +386,7 @@ def test_factory_exner_w_implicit_weight_parameter(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.vwind_impl_wgt()
     factory = _get_metrics_factory(
@@ -406,7 +406,7 @@ def test_factory_exner_w_explicit_weight_parameter(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.vwind_expl_wgt()
     factory = _get_metrics_factory(
@@ -427,7 +427,7 @@ def test_factory_exner_exfac(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.exner_exfac()
     factory = _get_metrics_factory(
@@ -448,7 +448,7 @@ def test_factory_pressure_gradient_fields(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_1_ref = metrics_savepoint.pg_exdist()
     field_2_ref = metrics_savepoint.pg_edgeidx_dsl()
@@ -470,7 +470,7 @@ def test_factory_mask_bdy_prog_halo_c(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref_1 = metrics_savepoint.mask_prog_halo_c()
     field_ref_2 = metrics_savepoint.bdy_halo_c()
@@ -493,7 +493,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.hmask_dd3d()
     factory = _get_metrics_factory(
@@ -515,7 +515,7 @@ def test_factory_zdiff_gradp(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.zdiff_gradp()
     factory = _get_metrics_factory(
@@ -535,7 +535,7 @@ def test_factory_coeff_gradekin(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref = metrics_savepoint.coeff_gradekin()
     factory = _get_metrics_factory(
@@ -555,7 +555,7 @@ def test_factory_wgtfacq_e(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     factory = _get_metrics_factory(
         backend=backend,
@@ -575,7 +575,7 @@ def test_vertical_coordinates_on_half_levels(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     factory = _get_metrics_factory(
         backend=backend,
@@ -596,7 +596,7 @@ def test_factory_compute_diffusion_metrics(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ):
     field_ref_1 = metrics_savepoint.mask_hdiff()
     field_ref_2 = metrics_savepoint.zd_diffcoef()

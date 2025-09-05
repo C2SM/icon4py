@@ -16,7 +16,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py import eve
-from gt4py.next import backend as gtx_backend, constructors, typing as gtx_typing
+from gt4py.next import constructors, typing as gtx_typing
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
@@ -26,7 +26,7 @@ from icon4py.model.common.utils import device_utils
 
 
 def allocate_data(
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
 ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
     _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO(havogt): check why it doesn't understand the fluid_partial
@@ -129,7 +129,7 @@ class StencilTest:
     @pytest.fixture
     def _configured_program(
         self,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         static_variant: Sequence[str],
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         grid: base.Grid,
@@ -161,7 +161,7 @@ class StencilTest:
     def _properly_allocated_input_data(
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
         # TODO(havogt): this is a workaround,
         # because in the `input_data` fixture provided by the user

@@ -8,7 +8,7 @@
 
 from datetime import datetime, timedelta
 
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
@@ -105,7 +105,7 @@ def mch_ch_r04b09_dsl_icon4pyrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     ndyn_substeps: int,
 ) -> driver_config.Icon4pyRunConfig:
     """
@@ -129,7 +129,7 @@ def exclaim_ape_icon4pyrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     ndyn_substeps: int,
 ) -> driver_config.Icon4pyRunConfig:
     """
@@ -154,7 +154,7 @@ def construct_icon4pyrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     ndyn_substeps: int = 5,
 ):
     if name.lower() in "mch_ch_r04b09_dsl":

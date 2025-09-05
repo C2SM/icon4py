@@ -6,10 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Final
+import enum
+from typing import Any, Final, TypeAlias
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next.program_processors.runners.gtfn import GTFNBackendFactory
 
 from icon4py.model.common import dimension as dims
 
@@ -22,12 +24,24 @@ BACKENDS: dict[str, gtx_typing.Backend | None] = {
     "gtfn_cpu": gtx.gtfn_cpu,
     "gtfn_gpu": gtx.gtfn_gpu,
 }
+BackendDescription: TypeAlias = dict[str, Any]
+
+
+class DeviceType(enum.Enum):
+    """
+    Type of device: either CPU or GPU
+    """
+
+    CPU = gtx.DeviceType.CPU
+    GPU = gtx.CUPY_DEVICE_TYPE
 
 
 try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
-    def make_custom_dace_backend(on_gpu: bool) -> gtx_typing.Backend:
+    def make_custom_dace_backend(
+        device: str, auto_optimize: bool = True, cached: bool = True, **options
+    ) -> gtx_typing.Backend:
         """Customize the dace backend with the following configuration.
 
         async_sdfg_call:
@@ -54,9 +68,10 @@ try:
         Returns:
             A dace backend with custom configuration for the target device.
         """
+        on_gpu = device == "gpu"
         return make_dace_backend(
-            auto_optimize=True,
-            cached=True,
+            auto_optimize=auto_optimize,
+            cached=cached,
             gpu=on_gpu,
             async_sdfg_call=True,
             blocking_dim=dims.KDim,
@@ -68,8 +83,8 @@ try:
 
     BACKENDS.update(
         {
-            "dace_cpu": make_custom_dace_backend(on_gpu=False),
-            "dace_gpu": make_custom_dace_backend(on_gpu=True),
+            "dace_cpu": make_custom_dace_backend(device="cpu"),
+            "dace_gpu": make_custom_dace_backend(device="gpu"),
         }
     )
 
@@ -77,3 +92,11 @@ except ImportError:
     # dace module not installed, thus the dace backends are not available
     def make_custom_dace_backend(gpu: bool) -> gtx_typing.Backend:
         raise NotImplementedError("Depends on dace module, which is not installed.")
+
+
+def make_custom_gtfn_backend(device: str, cached: bool = True, **options) -> GTFNBackendFactory:
+    on_gpu = device == "gpu"
+    return GTFNBackendFactory(
+        gpu=on_gpu,
+        cached=cached,
+    )

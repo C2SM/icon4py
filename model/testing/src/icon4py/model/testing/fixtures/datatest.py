@@ -10,8 +10,8 @@ from __future__ import annotations
 import pkgutil
 from typing import TYPE_CHECKING
 
+import gt4py.next.typing as gtx_typing
 import pytest
-from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(scope="session")
-def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
+def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend:
     """
     Fixture to provide a GT4Py backend for the tests.
 
@@ -141,7 +141,7 @@ def data_provider(
     ranked_data_path: pathlib.Path,
     experiment: str | definitions.Experiment,
     processor_props: decomposition.ProcessProperties,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
     # TODO(havogt): after refactoring is complete this should only accept `Experiment`
     if isinstance(experiment, str):
@@ -164,7 +164,7 @@ def grid_savepoint(
 
 @pytest.fixture
 def icon_grid(
-    grid_savepoint: serialbox.IconGridSavepoint, backend: gtx_backend.Backend
+    grid_savepoint: serialbox.IconGridSavepoint, backend: gtx_typing.Backend
 ) -> base_grid.Grid:
     """
     Load the icon grid from an ICON savepoint.
