@@ -14,9 +14,10 @@ from collections.abc import Callable
 from typing import NamedTuple
 
 import click
+import gt4py.next.typing as gtx_typing
 import numpy as np
 from devtools import Timer
-from gt4py.next import backend as gtx_backend, config as gtx_config, metrics as gtx_metrics
+from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
@@ -342,7 +343,7 @@ def initialize(
     grid_id: uuid.UUID,
     grid_root,
     grid_level,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
     Initialize the driver run.

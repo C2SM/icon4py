@@ -13,7 +13,7 @@ import re
 import uuid
 from typing import TYPE_CHECKING
 
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, icon
@@ -147,7 +147,7 @@ def get_datapath_for_experiment(
 def create_icon_serial_data_provider(
     datapath: pathlib.Path,
     processor_props: decomposition.ProcessProperties,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ) -> serialbox.IconSerialDataProvider:
     # note: this needs to be here, otherwise spack doesn't find serialbox
     from icon4py.model.testing.serialbox import IconSerialDataProvider

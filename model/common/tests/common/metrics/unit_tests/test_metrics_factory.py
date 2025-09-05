@@ -77,7 +77,7 @@ def metrics_config(experiment: str) -> tuple:
 
 
 def _get_metrics_factory(
-    backend: Optional[gtx_backend.Backend],
+    backend: Optional[gtx_typing.Backend],
     experiment: str,
     grid_file: str,
     icon_grid,

@@ -10,8 +10,8 @@ import logging
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Literal, TypeAlias, TypeVar
 
+import gt4py.next.typing as gtx_typing
 from gt4py import next as gtx
-from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.math.helpers as math_helpers
 from icon4py.model.common import (
@@ -81,7 +81,7 @@ class GridGeometry(factory.FieldSource):
         self,
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         coordinates: gm.CoordinateDict,
         extra_fields: dict[InputGeometryFieldType, gtx.Field],
         metadata: dict[str, model.FieldMetaData],
@@ -549,7 +549,7 @@ class GridGeometry(factory.FieldSource):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_backend.Backend:
+    def backend(self) -> gtx_typing.Backend:
         return self._backend
 
     @property
@@ -582,7 +582,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         self,
         field_name: str,
         field_src: factory.FieldSource | None,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid: factory.GridProvider | None,
     ):
         if not self._fields.get(field_name):
@@ -612,7 +612,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
 def as_sparse_field(
     target_dims: tuple[HorizontalD, SparseD],
     data: Sequence[tuple[gtx.Field[gtx.Dims[HorizontalD], state_utils.ScalarType], ...]],
-    backend: gtx_backend.Backend | None = None,
+    backend: gtx_typing.Backend | None = None,
 ):
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
@@ -635,7 +635,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],

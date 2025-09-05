@@ -11,7 +11,7 @@ import math
 import pathlib
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -38,7 +38,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,

@@ -116,7 +116,7 @@ def valid_boundary_zones_for_dim(dim: dims.Dimension):
 
 
 def run_grid_manager(
-    file: str, keep_skip_values: bool, backend: Optional[gtx_backend.Backend]
+    file: str, keep_skip_values: bool, backend: Optional[gtx_typing.Backend]
 ) -> gm.GridManager:
     key = "_".join(
         (file, data_alloc.backend_name(backend), "skip" if keep_skip_values else "no_skip")

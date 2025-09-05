@@ -9,8 +9,8 @@
 import pathlib
 from typing import Final
 
+import gt4py.next.typing as gtx_typing
 import pytest
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
@@ -32,7 +32,7 @@ def _get_grid_from_preset(
     grid_preset: str,
     *,
     num_levels: int = DEFAULT_NUM_LEVELS,
-    backend: gtx_backend.Backend | None = None,
+    backend: gtx_typing.Backend | None = None,
 ) -> base_grid.Grid:
     match grid_preset:
         case "icon_regional":
@@ -61,7 +61,7 @@ def _get_grid_from_preset(
 
 
 @pytest.fixture(scope="session")
-def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) -> base_grid.Grid:
+def grid(request: pytest.FixtureRequest, backend: gtx_typing.Backend | None) -> base_grid.Grid:
     """
     Fixture for providing a grid instance.
 

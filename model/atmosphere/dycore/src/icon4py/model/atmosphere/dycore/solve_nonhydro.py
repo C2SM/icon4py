@@ -13,7 +13,6 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import backend as gtx_backend
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -137,7 +136,7 @@ class IntermediateFields:
     def allocate(
         cls,
         grid: grid_def.Grid,
-        backend: gtx_backend.Backend | None = None,
+        backend: gtx_typing.Backend | None = None,
     ):
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
