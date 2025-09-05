@@ -10,8 +10,7 @@ import enum
 from typing import Any, Final, TypeAlias
 
 import gt4py.next as gtx
-import gt4py.next.backend as gtx_backend
-from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
+import gt4py.next.typing as gtx_typing
 from gt4py.next.program_processors.runners.gtfn import GTFNBackendFactory
 
 from icon4py.model.common import dimension as dims
@@ -19,11 +18,11 @@ from icon4py.model.common import dimension as dims
 
 DEFAULT_BACKEND: Final = "embedded"
 
-BACKENDS: dict[str, gtx_backend.Backend | None] = {
+BACKENDS: dict[str, gtx_typing.Backend | None] = {
     "embedded": None,
-    "roundtrip": itir_python,
-    "gtfn_cpu": gtfn_cpu,
-    "gtfn_gpu": gtfn_gpu,
+    "roundtrip": gtx.itir_python,
+    "gtfn_cpu": gtx.gtfn_cpu,
+    "gtfn_gpu": gtx.gtfn_gpu,
 }
 BackendDescription: TypeAlias = dict[str, Any]
 
@@ -42,7 +41,7 @@ try:
 
     def make_custom_dace_backend(
         device: str, auto_optimize: bool = True, cached: bool = True, **options
-    ) -> gtx_backend.Backend:
+    ) -> gtx_typing.Backend:
         """Customize the dace backend with the following configuration.
 
         async_sdfg_call:
@@ -91,7 +90,7 @@ try:
 
 except ImportError:
     # dace module not installed, thus the dace backends are not available
-    def make_custom_dace_backend(gpu: bool) -> gtx_backend.Backend:
+    def make_custom_dace_backend(gpu: bool) -> gtx_typing.Backend:
         raise NotImplementedError("Depends on dace module, which is not installed.")
 
 

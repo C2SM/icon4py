@@ -9,13 +9,7 @@ import functools
 import typing
 
 import gt4py.next as gtx
-from gt4py._core.definitions import (
-    Scalar,
-    is_scalar_type,  # TODO(havogt): Should this function be public API?
-)
-from gt4py.next import Field
-from gt4py.next.common import OffsetProvider
-from gt4py.next.ffront.decorator import Program
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.model_backends import (
     BackendDescription,
@@ -49,13 +43,13 @@ def customize_backend(program_name: str = "", arch: str = "", **backend):
 
 
 def setup_program(
-    program: Program,
-    backend: gtx.backend.Backend | DeviceType | BackendDescription | None = None,
-    constant_args: dict[str, Field | Scalar] | None = None,
-    variants: dict[str, list[Scalar]] | None = None,
+    program: gtx_typing.Program,
+    backend: gtx_typing.Backend | DeviceType | BackendDescription | None = None,
+    constant_args: dict[str, gtx.Field | gtx_typing.Scalar] | None = None,
+    variants: dict[str, list[gtx_typing.Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
     vertical_sizes: dict[str, gtx.int32] | None = None,
-    offset_provider: OffsetProvider | None = None,
+    offset_provider: gtx_typing.OffsetProvider | None = None,
 ) -> typing.Callable[..., None]:
     """
     This function processes arguments to the GT4Py program. It
@@ -76,10 +70,11 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
+
     if not isinstance(backend, gtx.backend.Backend):
         backend = customize_backend(program_name=str(program.past_stage.past_node.id), **backend)
-
-    bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
+        
+    bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend).compile(
         **dict_values_to_list(horizontal_sizes),
         **dict_values_to_list(vertical_sizes),
