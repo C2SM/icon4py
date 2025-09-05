@@ -79,27 +79,26 @@ class GridShape:
 @dataclasses.dataclass
 class GlobalGridParams:
     grid_shape: Final[GridShape | None] = None
+    radius: float = constants.EARTH_RADIUS
     num_cells: int
     mean_cell_area: float
-    radius: float = constants.EARTH_RADIUS
 
     def __init__(
         self,
         *,
         grid_shape: GridShape | None = None,
+        radius: float = constants.EARTH_RADIUS,
         num_cells: int | None = None,
         mean_cell_area: float | None = None,
-        radius: float = constants.EARTH_RADIUS,
     ) -> None:
         self.grid_shape = grid_shape
+        self.radius = radius
 
         if num_cells is not None:
             self.num_cells = num_cells
 
         if mean_cell_area is not None:
             self.mean_cell_area = mean_cell_area
-
-        self.radius = radius
 
     @property
     def geometry_type(self) -> base.GeometryType | None:
