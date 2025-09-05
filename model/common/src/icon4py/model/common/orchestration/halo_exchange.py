@@ -43,7 +43,7 @@ def add_halo_tasklet(
     state: dace.sdfg.state.SDFGState,
     global_buffers: dict[str, dace.data.Data],
     exchange: common.decomposition.mpi_decomposition.GHexMultiNodeExchange,
-    dim: gtx.ffront.fbuiltins.Dimension,
+    dim: gtx.Dimension,
     unique_id: int,
     wait: bool,
     counter: int,

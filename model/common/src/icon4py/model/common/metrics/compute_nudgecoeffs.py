@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, exp, where
+from gt4py.next import astype, exp, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_nudgecoeffs(
     refin_ctrl: fa.EdgeField[gtx.int32],
     grf_nudge_start_e: gtx.int32,
@@ -31,7 +29,7 @@ def _compute_nudgecoeffs(
 
 
 # TODO(halungge): not registered in factory
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_nudgecoeffs(
     nudging_coefficients_for_edges: fa.EdgeField[wpfloat],
     refin_ctrl: fa.EdgeField[gtx.int32],

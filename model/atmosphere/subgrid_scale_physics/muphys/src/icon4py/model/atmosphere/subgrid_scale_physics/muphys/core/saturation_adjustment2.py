@@ -17,7 +17,7 @@ disappear soon.
 """
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import maximum, where
+from gt4py.next import maximum, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, t_d
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (

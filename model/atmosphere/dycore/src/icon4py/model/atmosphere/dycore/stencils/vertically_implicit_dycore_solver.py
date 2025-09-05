@@ -9,8 +9,8 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import astype, broadcast
+from gt4py.next import astype, broadcast
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     _add_analysis_increments_from_data_assimilation,
