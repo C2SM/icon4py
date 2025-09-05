@@ -25,6 +25,7 @@ include:
 .test_model_datatests:
   stage: test
   variables:
+    NUM_PROCESSES: 1
     SLURM_TIMELIMIT: '00:30:00'
   script:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
