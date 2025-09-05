@@ -48,12 +48,6 @@ if TYPE_CHECKING:
     from icon4py.model.common.decomposition import definitions as decomposition
 
 
-# TODO(havogt): use everywhere
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
-    return request.param
-
-
 V2E_SIZE = 6
 
 C2E_SIZE = 3

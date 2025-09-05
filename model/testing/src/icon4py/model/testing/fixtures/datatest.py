@@ -60,12 +60,12 @@ def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
     return backend
 
 
-@pytest.fixture
-def experiment() -> str:  # TODO(havogt): return definitions.Experiments.MCH_CH_R04B09
-    """
-    Default experiment, in most tests this will be overridden.
-    """
-    return dt_utils.REGIONAL_EXPERIMENT
+@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
+def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
+    """Default parametrization for experiments.
+
+    The default parametrization is often overwritten for specific tests."""
+    return request.param
 
 
 @pytest.fixture(params=[False], scope="session")

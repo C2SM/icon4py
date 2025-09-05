@@ -38,15 +38,6 @@ from icon4py.model.testing.fixtures.datatest import (
     topography_savepoint,
 )
 
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
-
-
-# TODO(havogt): use everywhere
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
-    return request.param
-
 
 metrics_factories: dict[str, metrics_factory.MetricsFieldsFactory] = {}
 
