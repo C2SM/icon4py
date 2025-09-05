@@ -34,12 +34,8 @@ from ..fixtures import *  # noqa: F403
         (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85),
     ],
 )
-# TODO (Chia Rui): the test is too slow, especially on gtfn backend. Only one date is used for this test.
 @pytest.mark.parametrize(
-    "date",
-    [
-        "2008-09-01T01:59:48.000",
-    ],
+    "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 def test_graupel(
     experiment,
@@ -65,7 +61,6 @@ def test_graupel(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
 
     metric_state = graupel.MetricStateIconGraupel(
