@@ -175,7 +175,9 @@ def icon_grid(
 
 
 @pytest.fixture
-def decomposition_info(data_provider, experiment: str | definitions.Experiment):
+def decomposition_info(
+    data_provider: serialbox.IconSerialDataProvider, experiment: str | definitions.Experiment
+) -> decomposition.DecompositionInfo:
     # TODO(havogt): after refactoring is complete this should only accept `Experiment`
     if isinstance(experiment, str):
         experiment = dt_utils.experiment_from_name(experiment)

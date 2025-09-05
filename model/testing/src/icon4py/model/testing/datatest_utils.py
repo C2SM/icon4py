@@ -23,24 +23,10 @@ GLOBAL_EXPERIMENT = definitions.Experiments.EXCLAIM_APE.name
 REGIONAL_EXPERIMENT = definitions.Grids.MCH_CH_R04B09_DSL.name
 # we were using `REGIONAL_EXPERIMENT` for both grid and experiment, therefore we make sure their names match
 assert definitions.Grids.MCH_CH_R04B09_DSL.name == definitions.Experiments.MCH_CH_R04B09.name
-R02B04_GLOBAL = definitions.Grids.R02B04_GLOBAL.name
-R02B07_GLOBAL = definitions.Grids.R02B07_GLOBAL.name
-ICON_CH2_SMALL = definitions.Grids.MCH_OPR_R04B07_DOMAIN01.name
-REGIONAL_BENCHMARK = definitions.Grids.MCH_OPR_R19B08_DOMAIN01.name
 JABW_EXPERIMENT = definitions.Experiments.JW.name
 GAUSS3D_EXPERIMENT = definitions.Experiments.GAUSS3D.name
 WEISMAN_KLEMP_EXPERIMENT = definitions.Experiments.WEISMAN_KLEMP_TORUS.name
 
-
-# maps experiment or grid to grid URI
-GRID_URIS = {
-    REGIONAL_EXPERIMENT: definitions.Grids.MCH_CH_R04B09_DSL.uri,
-    R02B04_GLOBAL: definitions.Grids.R02B04_GLOBAL.uri,
-    R02B07_GLOBAL: definitions.Grids.R02B07_GLOBAL.uri,
-    ICON_CH2_SMALL: definitions.Grids.MCH_OPR_R04B07_DOMAIN01.uri,
-    REGIONAL_BENCHMARK: definitions.Grids.MCH_OPR_R19B08_DOMAIN01.uri,
-    WEISMAN_KLEMP_EXPERIMENT: definitions.Grids.TORUS_50000x5000.uri,
-}
 
 # TODO(havogt): is this still needed?
 GRID_IDS = {
