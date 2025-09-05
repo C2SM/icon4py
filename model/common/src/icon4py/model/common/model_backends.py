@@ -6,8 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Final
+import enum
+from typing import Any, Final, TypeAlias
 
+import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 from gt4py.next.program_processors.runners.gtfn import GTFNBackendFactory
@@ -23,13 +25,23 @@ BACKENDS: dict[str, gtx_backend.Backend | None] = {
     "gtfn_cpu": gtfn_cpu,
     "gtfn_gpu": gtfn_gpu,
 }
+BackendDescription: TypeAlias = dict[str, Any]
+
+
+class DeviceType(enum.Enum):
+    """
+    Type of device: either CPU or GPU
+    """
+
+    CPU = gtx.DeviceType.CPU
+    GPU = gtx.CUPY_DEVICE_TYPE
 
 
 try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
     def make_custom_dace_backend(
-        on_gpu: bool, auto_optimize: bool = True, cached: bool = True, **options
+        device: str, auto_optimize: bool = True, cached: bool = True, **options
     ) -> gtx_backend.Backend:
         """Customize the dace backend with the following configuration.
 
@@ -57,6 +69,7 @@ try:
         Returns:
             A dace backend with custom configuration for the target device.
         """
+        on_gpu = device == "gpu"
         return make_dace_backend(
             auto_optimize=auto_optimize,
             cached=cached,
@@ -71,8 +84,8 @@ try:
 
     BACKENDS.update(
         {
-            "dace_cpu": make_custom_dace_backend(on_gpu=False),
-            "dace_gpu": make_custom_dace_backend(on_gpu=True),
+            "dace_cpu": make_custom_dace_backend(gpu="cpu"),
+            "dace_gpu": make_custom_dace_backend(gpu="gpu"),
         }
     )
 
@@ -82,7 +95,8 @@ except ImportError:
         raise NotImplementedError("Depends on dace module, which is not installed.")
 
 
-def make_custom_gtfn_backend(on_gpu: bool, cached: bool = True, **options) -> GTFNBackendFactory:
+def make_custom_gtfn_backend(device: str, cached: bool = True, **options) -> GTFNBackendFactory:
+    on_gpu = device == "gpu"
     return GTFNBackendFactory(
         gpu=on_gpu,
         cached=cached,

@@ -17,7 +17,12 @@ from gt4py.next import Field
 from gt4py.next.common import OffsetProvider
 from gt4py.next.ffront.decorator import Program
 
-from icon4py.model.common.model_backends import make_custom_dace_backend, make_custom_gtfn_backend
+from icon4py.model.common.model_backends import (
+    BackendDescription,
+    DeviceType,
+    make_custom_dace_backend,
+    make_custom_gtfn_backend,
+)
 
 
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
@@ -35,9 +40,9 @@ def customize_backend(program_name: str = "", arch: str = "", **backend):
         backend_func = make_custom_dace_backend
     elif options["backend_kind"] == "gtfn":
         backend_func = make_custom_gtfn_backend
-    on_gpu = backend["device"] == "gpu"
+    device = backend["device"]
     custom_backend = backend_func(
-        on_gpu=on_gpu,
+        device=device,
         **options,
     )
     return custom_backend
@@ -45,10 +50,7 @@ def customize_backend(program_name: str = "", arch: str = "", **backend):
 
 def setup_program(
     program: Program,
-    backend: gtx.backend.Backend
-    | typing.Literal["gpu", "cpu"]
-    | dict[str, typing.Any]
-    | None = None,
+    backend: gtx.backend.Backend | DeviceType | BackendDescription | None = None,
     constant_args: dict[str, Field | Scalar] | None = None,
     variants: dict[str, list[Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
@@ -74,16 +76,11 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    if isinstance(backend, gtx.backend.Backend):
-        custom_backend = backend
-    else:
-        # customized backend params
-        custom_backend = customize_backend(
-            program_name=str(program.past_stage.past_node.id), **backend
-        )
+    if not isinstance(backend, gtx.backend.Backend):
+        backend = customize_backend(program_name=str(program.past_stage.past_node.id), **backend)
 
     bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
-    static_args_program = program.with_backend(custom_backend).compile(
+    static_args_program = program.with_backend(backend).compile(
         **dict_values_to_list(horizontal_sizes),
         **dict_values_to_list(vertical_sizes),
         **variants,
