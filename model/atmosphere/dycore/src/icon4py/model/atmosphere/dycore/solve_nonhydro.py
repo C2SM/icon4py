@@ -9,9 +9,10 @@
 
 import dataclasses
 import logging
-from typing import Any, Final, Literal
+from typing import Final
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
@@ -59,6 +60,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.model_backends import BackendDescription, DeviceType
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -394,7 +396,7 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx.backend.Backend | Literal["gpu", "cpu"] | dict[str, Any] | None = None,
+        backend: gtx_typing.Backend | DeviceType | BackendDescription | None = None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange

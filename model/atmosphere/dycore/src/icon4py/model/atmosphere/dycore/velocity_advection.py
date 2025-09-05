@@ -9,9 +9,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
-
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
@@ -31,6 +30,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
+from icon4py.model.common.model_backends import BackendDescription, DeviceType
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -45,7 +45,7 @@ class VelocityAdvection:
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx.backend.Backend | Literal["gpu", "cpu"] | dict[str, Any] | None = None,
+        backend: gtx_typing.Backend | DeviceType | BackendDescription | None = None,
     ):
         self.grid: icon_grid.IconGrid = grid
         self.metric_state: dycore_states.MetricStateNonHydro = metric_state

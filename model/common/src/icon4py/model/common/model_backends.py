@@ -83,8 +83,8 @@ try:
 
     BACKENDS.update(
         {
-            "dace_cpu": make_custom_dace_backend(gpu="cpu"),
-            "dace_gpu": make_custom_dace_backend(gpu="gpu"),
+            "dace_cpu": make_custom_dace_backend(device="cpu"),
+            "dace_gpu": make_custom_dace_backend(device="gpu"),
         }
     )
 

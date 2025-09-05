@@ -12,7 +12,7 @@ import functools
 import logging
 import math
 import sys
-from typing import Any, Final, Literal
+from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -48,6 +48,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, v
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
+from icon4py.model.common.model_backends import BackendDescription, DeviceType
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.orchestration import decorator as dace_orchestration
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -358,7 +359,7 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: gtx_typing.Backend | Literal["gpu", "cpu"] | dict[str, Any] | None = None,
+        backend: gtx_typing.Backend | DeviceType | BackendDescription | None = None,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):

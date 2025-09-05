@@ -70,10 +70,9 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-
     if not isinstance(backend, gtx.backend.Backend):
         backend = customize_backend(program_name=str(program.past_stage.past_node.id), **backend)
-        
+
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend).compile(
         **dict_values_to_list(horizontal_sizes),
