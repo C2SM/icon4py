@@ -40,13 +40,6 @@ from icon4py.model.testing.fixtures.datatest import (
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
     from icon4py.model.testing import serialbox
-    from icon4py.model.common.grid import base as grid_base
-
-
-# TODO(havogt): use everywhere
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
-    return request.param
 
 
 @pytest.mark.level("unit")
