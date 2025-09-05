@@ -39,8 +39,10 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             "horizontal_end",
             "vertical_start",
             "vertical_end",
+            "limited_area",
         ),
         StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "limited_area",
             "vertical_start",
             "vertical_end",
         ),
