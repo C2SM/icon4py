@@ -47,12 +47,6 @@ def test_grid_file_dimension():
         parser.close()
 
 
-# TODO(havogt): use everywhere
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
-    return request.param
-
-
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 def test_grid_file_vertex_cell_edge_dimensions(

@@ -58,12 +58,6 @@ R02B04_GLOBAL_NUM_CELLS = 20480
 ZERO_BASE = gm.ToZeroBasedIndexTransformation()
 
 
-# TODO(havogt): use everywhere
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
-    return request.param
-
-
 # TODO @magdalena add test cases for hexagon vertices v2e2v
 # v2e2v: grid,???
 
