@@ -62,23 +62,9 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
 
 
 @pytest.mark.uses_as_offset
-@pytest.mark.continuous_benchmarking
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
     OUTPUTS = ("z_temp",)
-    STATIC_PARAMS = {
-        StandardStaticVariants.NONE: None,
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            "horizontal_start",
-            "horizontal_end",
-            "vertical_start",
-            "vertical_end",
-        ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            "vertical_start",
-            "vertical_end",
-        ),
-    }
 
     @staticmethod
     def reference(

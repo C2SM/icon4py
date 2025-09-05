@@ -37,14 +37,18 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
+            "halo_idx",
+            "interior_idx",
             "vertical_start",
             "vertical_end",
-            "limited_area",
+            "nrdmax",
+            "type_shear",
         ),
         StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            "limited_area",
             "vertical_start",
             "vertical_end",
+            "nrdmax",
+            "type_shear",
         ),
     }
 

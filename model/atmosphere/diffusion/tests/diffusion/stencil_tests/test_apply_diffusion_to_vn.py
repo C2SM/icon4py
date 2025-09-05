@@ -38,10 +38,12 @@ class TestApplyDiffusionToVn(StencilTest):
             "start_2nd_nudge_line_idx_e",
             "vertical_start",
             "vertical_end",
+            "limited_area",
         ),
         StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
+            "limited_area",
         ),
     }
 
