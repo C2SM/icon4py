@@ -55,7 +55,6 @@ def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
 def test_construct_rbf_matrix_offsets_tables_for_cells(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
-    icon_grid: grid_base.Grid,
     backend: gtx_typing.Backend | None,
 ):
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
@@ -74,7 +73,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
 
     # Savepoint neighbors before start index may not be populated correctly,
     # ignore them.
-    start_index = icon_grid.start_index(
+    start_index = grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
