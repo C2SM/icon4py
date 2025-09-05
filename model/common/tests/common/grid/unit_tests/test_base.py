@@ -13,10 +13,8 @@ from icon4py.model.common.grid import base, gridfile, simple
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures import backend
 
-from ...fixtures import grid_file
 
-
-def test_replace_skip_values(grid_file, caplog, backend):
+def test_replace_skip_values(backend):
     grid = simple.simple_grid(backend=backend)
     domain = (dims.CellDim, dims.C2E2CDim)
     xp = data_alloc.import_array_ns(backend)

@@ -42,8 +42,3 @@ def _delete_recursive(p: pathlib.Path) -> None:
         else:
             _delete_recursive(child)
     p.rmdir()
-
-
-@pytest.fixture
-def grid_file():
-    return REGIONAL_EXPERIMENT
