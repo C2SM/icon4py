@@ -13,6 +13,7 @@ import gt4py.next.backend as gtx_backend
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
+    base,
     geometry,
     geometry_attributes as geometry_attrs,
     grid_manager as gm,
@@ -176,10 +177,30 @@ def get_grid_geometry(
         )
         grid = gm.grid
         decomposition_info = _construct_dummy_decomposition_info(grid)
-        geometry_source = geometry.GridGeometry(
-            grid, decomposition_info, backend, gm.coordinates, gm.geometry, geometry_attrs.attrs
-        )
-        return geometry_source
+        match gm.grid.global_properties.geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                return geometry.IcosahedronGridGeometry(
+                    grid,
+                    decomposition_info,
+                    backend,
+                    gm.coordinates,
+                    gm.geometry,
+                    geometry_attrs.attrs,
+                )
+            case base.GeometryType.TORUS:
+                return geometry.TorusGridGeometry(
+                    grid,
+                    decomposition_info,
+                    backend,
+                    gm.coordinates,
+                    gm.geometry,
+                    geometry_attrs.attrs,
+                )
+            case _:
+                # TODO(msimberg): Warn? Error? Fall back to icosahedron?
+                raise ValueError(
+                    f"Geometry type {gm.grid.global_properties.geometry_type} not supported."
+                )
 
     if not grid_geometries.get(register_name):
         grid_geometries[register_name] = _construct_grid_geometry()

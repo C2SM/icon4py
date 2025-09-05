@@ -17,6 +17,7 @@ from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
 from icon4py.model.common.math.helpers import (
     arc_length_on_edges,
     cross_product_on_edges,
+    distance_on_edges_torus,
     geographical_to_cartesian_on_edges,
     geographical_to_cartesian_on_vertices,
     normalize_cartesian_vector_on_edges,
@@ -221,6 +222,44 @@ def zonal_and_meridional_component_of_edge_field_at_vertex(
     )
 
 
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def zonal_and_meridional_component_of_edge_field_at_vertex_torus(
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+) -> tuple[
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+]:
+    """
+    TODO: Needed? This is a trivial remapping.
+
+    Compute the zonal (u) an meridional (v) component of a cartesian vector (x, y, z) on the torus.
+
+    The cartesian vector is defined on edges and it projection onto all 4 neighboring vertices of the diamond is computed.
+
+    Args:
+        x: x coordinate
+        y: y coordinate
+    Returns:
+        u_vertex_0: zonal (eastward positive) component at E2C2V[0]
+        v_vertex_0: meridional (northward) component at E2C2V[0]
+        u_vertex_1: zonal (eastward positive) component at E2C2V[1]
+        v_vertex_1: meridional (northward) component at E2C2V[1]
+        u_vertex_2: zonal (eastward positive) component at E2C2V[2]
+        v_vertex_2: meridional (northward) component at E2C2V[2]
+        u_vertex_3: zonal (eastward positive) component at E2C2V[3]
+        v_vertex_3: meridional (northward) component at E2C2V[3]
+
+    """
+    return (x, y, x, y, x, y, x, y)
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_component_of_edge_field_at_vertex(
     vertex_lat: fa.VertexField[ta.wpfloat],
@@ -245,6 +284,38 @@ def compute_zonal_and_meridional_component_of_edge_field_at_vertex(
         x,
         y,
         z,
+        out=(
+            u_vertex_1,
+            v_vertex_1,
+            u_vertex_2,
+            v_vertex_2,
+            u_vertex_3,
+            v_vertex_3,
+            u_vertex_4,
+            v_vertex_4,
+        ),
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_zonal_and_meridional_component_of_edge_field_at_vertex_torus(
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+    u_vertex_1: fa.EdgeField[ta.wpfloat],
+    v_vertex_1: fa.EdgeField[ta.wpfloat],
+    u_vertex_2: fa.EdgeField[ta.wpfloat],
+    v_vertex_2: fa.EdgeField[ta.wpfloat],
+    u_vertex_3: fa.EdgeField[ta.wpfloat],
+    v_vertex_3: fa.EdgeField[ta.wpfloat],
+    u_vertex_4: fa.EdgeField[ta.wpfloat],
+    v_vertex_4: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    zonal_and_meridional_component_of_edge_field_at_vertex_torus(
+        x,
+        y,
         out=(
             u_vertex_1,
             v_vertex_1,
@@ -305,6 +376,37 @@ def zonal_and_meridional_component_of_edge_field_at_cell_center(
     )
 
 
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def zonal_and_meridional_component_of_edge_field_at_cell_center_torus(
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+) -> tuple[
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+]:
+    """
+    TODO: Trivial mapping, needed?
+
+    Compute zonal (U) and meridional (V) component of a vector (x, y, z) at cell centers (lat, lon)
+
+    The vector is defined on edges and the projection is computed for the neighboring cell center s of the edge.
+
+    Args:
+        x: x coordinate
+        y: y coordinate
+
+    Returns:
+        u_cell_0: zonal (U) component at first cell neighbor of the edge E2C[0]
+        v_cell_0: meridional (V) component at first cell neighbor of the edge E2C[1]
+        u_cell_0: zonal (U) component at first cell neighbor of the edge E2C[0]
+        v_cell_0: meridional (V) component at first cell neighbor of the edge E2C[1]
+
+    """
+    return (x, y, x, y)
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(
     cell_lat: fa.CellField[ta.wpfloat],
@@ -325,6 +427,30 @@ def compute_zonal_and_meridional_component_of_edge_field_at_cell_center(
         x,
         y,
         z,
+        out=(
+            u_cell_1,
+            v_cell_1,
+            u_cell_2,
+            v_cell_2,
+        ),
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_zonal_and_meridional_component_of_edge_field_at_cell_center_torus(
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+    u_cell_1: fa.EdgeField[ta.wpfloat],
+    v_cell_1: fa.EdgeField[ta.wpfloat],
+    u_cell_2: fa.EdgeField[ta.wpfloat],
+    v_cell_2: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    zonal_and_meridional_component_of_edge_field_at_cell_center_torus(
+        x,
+        y,
         out=(
             u_cell_1,
             v_cell_1,
@@ -411,6 +537,45 @@ def arc_distance_of_far_edges_in_diamond(
 
 
 @gtx.field_operator
+def distance_of_far_edges_in_diamond_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Compute the distance between the "far" vertices of an edge.
+
+    See arc_distance_of_far_edges_in_diamond for details.
+
+    Args:
+        vertex_x: x coordinate of vertices
+        vertex_y: y coordinate of vertices
+        domain_length: length of the domain
+        domain_height: height of the domain
+
+    Returns:
+        distance between the "far" vertices in the diamond.
+
+    """
+    # TODO(msimberg): Badbad. This is for the INV_VERT_VERT_LENGTH field for
+    # toruses. The EARTH_RADIUS scaling factor is there in icon-exclaim, but
+    # doesn't make sense physically. Is this field even used for toruses? Better
+    # remove it if not needed.
+    # cf.
+    # https://github.com/C2SM/icon-exclaim/blob/2a5147f3c2364fbec723a969d5f66e35fe1fa5b2/src/shr_horizontal/mo_intp_coeffs.f90#L1733-L1737,
+    # grid_sphere_radius unconditionally multiplied on the arc_length.
+    return 6.371229e6 * distance_on_edges_torus(
+        vertex_x(E2C2V[2]),
+        vertex_x(E2C2V[3]),
+        vertex_y(E2C2V[2]),
+        vertex_y(E2C2V[3]),
+        domain_length,
+        domain_height,
+    )
+
+
+@gtx.field_operator
 def edge_length(
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
@@ -444,6 +609,64 @@ def edge_length(
     return length
 
 
+@gtx.field_operator
+def edge_length_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Compute the length of an edge.
+
+    Args:
+        vertex_x: x coordinates of vertices
+        vertex_y: y coordinates of vertices
+        domain_length: length of the domain in
+        domain_height: length of the domain in
+
+    Returns:
+        edge length
+    """
+    return distance_on_edges_torus(
+        vertex_x(E2V[0]),
+        vertex_x(E2V[1]),
+        vertex_y(E2V[0]),
+        vertex_y(E2V[1]),
+        domain_length,
+        domain_height,
+    )
+
+
+@gtx.field_operator
+def cell_center_distance_torus(
+    cell_center_x: fa.CellField[ta.wpfloat],
+    cell_center_y: fa.CellField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Compute the length of a dual edge, i.e. distance between cell centers adjacent to an edge.
+
+    Args:
+        cell_center_x: x coordinates of cell centers
+        cell_center_y: y coordinates of cell centers
+        domain_length: length of the domain in
+        domain_height: length of the domain in
+
+    Returns:
+        edge length
+    """
+    return distance_on_edges_torus(
+        cell_center_x(E2C[0]),
+        cell_center_x(E2C[1]),
+        cell_center_y(E2C[0]),
+        cell_center_y(E2C[1]),
+        domain_length,
+        domain_height,
+    )
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_edge_length(
     vertex_lat: fa.VertexField[ta.wpfloat],
@@ -457,6 +680,26 @@ def compute_edge_length(
         vertex_lat,
         vertex_lon,
         radius,
+        out=length,
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_edge_length_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+    length: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    edge_length_torus(
+        vertex_x,
+        vertex_y,
+        domain_length,
+        domain_height,
         out=length,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
@@ -485,6 +728,26 @@ def compute_cell_center_arc_distance(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_cell_center_distance_torus(
+    cell_center_x: fa.CellField[ta.wpfloat],
+    cell_center_y: fa.CellField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+    dual_edge_length: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    cell_center_distance_torus(
+        cell_center_x,
+        cell_center_y,
+        domain_length,
+        domain_height,
+        out=dual_edge_length,
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_arc_distance_of_far_edges_in_diamond(
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
@@ -497,6 +760,26 @@ def compute_arc_distance_of_far_edges_in_diamond(
         vertex_lat,
         vertex_lon,
         radius,
+        out=far_vertex_distance,
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_distance_of_far_edges_in_diamond_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+    far_vertex_distance: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    distance_of_far_edges_in_diamond_torus(
+        vertex_x,
+        vertex_y,
+        domain_length,
+        domain_height,
         out=far_vertex_distance,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
@@ -557,6 +840,21 @@ def coriolis_parameter_on_edges(
     return 2.0 * angular_velocity * sin(edge_center_lat)
 
 
+@gtx.field_operator
+def coriolis_parameter_on_edges_torus(
+    edge_center_x: fa.EdgeField[ta.wpfloat],
+) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Compute the coriolis force on edges.
+    Args:
+
+    Returns:
+        coriolis parameter
+    """
+    # TODO(msimberg): This is silly, how do I do a constant field?
+    return 0.0 * edge_center_x
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_coriolis_parameter_on_edges(
     edge_center_lat: fa.EdgeField[ta.wpfloat],
@@ -568,6 +866,20 @@ def compute_coriolis_parameter_on_edges(
     coriolis_parameter_on_edges(
         edge_center_lat,
         angular_velocity,
+        out=coriolis_parameter,
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_coriolis_parameter_on_edges_torus(
+    edge_center_x: fa.EdgeField[ta.wpfloat],
+    coriolis_parameter: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    coriolis_parameter_on_edges_torus(
+        edge_center_x,
         out=coriolis_parameter,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )

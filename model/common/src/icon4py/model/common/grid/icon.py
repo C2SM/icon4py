@@ -79,32 +79,43 @@ class GridShape:
 @dataclasses.dataclass
 class GlobalGridParams:
     grid_shape: Final[GridShape | None] = None
+    _global_num_cells: int | None = None
     _num_cells: int | None = None
     _mean_cell_area: float | None = None
     radius: float = constants.EARTH_RADIUS
+    domain_length: float | None = None
+    domain_height: float | None = None
 
-    @classmethod
-    def from_mean_cell_area(
-        cls,
-        mean_cell_area: float,
+    def __init__(
+        self,
+        *,
         grid_shape: GridShape | None = None,
+        global_num_cells: int | None = None,
         num_cells: int | None = None,
+        mean_cell_area: float | None = None,
         radius: float = constants.EARTH_RADIUS,
-    ):
-        return cls(
-            grid_shape,
-            num_cells,
-            mean_cell_area,
-            radius,
-        )
+        domain_length: float | None = None,
+        domain_height: float | None = None,
+    ) -> None:
+        self.grid_shape = grid_shape
+        self._global_num_cells = global_num_cells
+        self._num_cells = num_cells
+        self._mean_cell_area = mean_cell_area
+        self.radius = radius
+        self.domain_length = domain_length
+        self.domain_height = domain_height
 
     @property
     def geometry_type(self) -> base.GeometryType | None:
         return self.grid_shape.geometry_type if self.grid_shape else None
 
+    @property
+    def subdivision(self) -> GridSubdivision | None:
+        return self.grid_params.subdivision if self.grid_params else None
+
     @functools.cached_property
-    def num_cells(self) -> int:
-        if self._num_cells is None:
+    def global_num_cells(self) -> int:
+        if self._global_num_cells is None:
             match self.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
                     assert self.grid_shape.subdivision is not None
@@ -113,6 +124,14 @@ class GlobalGridParams:
                     raise NotImplementedError("TODO : lookup torus cell number computation")
                 case _:
                     raise ValueError(f"Unknown geometry type {self.geometry_type}")
+
+        return self._global_num_cells
+
+    # TODO(msimberg): This is related to limited_area
+    @functools.cached_property
+    def num_cells(self) -> int:
+        if self._num_cells is None:
+            return self.global_num_cells
 
         return self._num_cells
 
@@ -125,7 +144,7 @@ class GlobalGridParams:
         if self._mean_cell_area is None:
             match self.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
-                    return compute_mean_cell_area_for_sphere(self.radius, self.num_cells)
+                    return compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells)
                 case base.GeometryType.TORUS:
                     raise NotImplementedError(
                         f"mean_cell_area not implemented for {self.geometry_type}"
@@ -161,6 +180,9 @@ class IconGrid(base.Grid):
     refinement_control: dict[gtx.Dimension, gtx.Field] = dataclasses.field(
         default=None, kw_only=True
     )
+    # TODO(msimberg): Find a better place for this. Should it be derived from fields if
+    # not present?
+    mean_dual_edge_length: float | None = dataclasses.field(default=None, kw_only=True)
 
 
 def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool) -> bool:
@@ -215,6 +237,7 @@ def icon_grid(
     end_indices: Mapping[h_grid.Domain, gtx.int32],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
+    mean_dual_edge_length: float | None = None,
 ) -> IconGrid:
     connectivities = {
         offset.value: base.construct_connectivity(
@@ -237,4 +260,5 @@ def icon_grid(
         _end_indices=end_indices,
         global_properties=global_properties,
         refinement_control=refinement_control or {},
+        mean_dual_edge_length=mean_dual_edge_length,
     )

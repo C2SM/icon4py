@@ -12,6 +12,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
+    base,
     geometry as geometry,
     geometry_attributes as attrs,
     horizontal as h_grid,
@@ -31,9 +32,18 @@ from icon4py.model.testing.fixtures import (
 )
 
 
-def test_geometry_raises_for_unknown_field(backend):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
+    ],
+)
+def test_geometry_raises_for_unknown_field(backend, grid_file, experiment):
     geometry = grid_utils.get_grid_geometry(
-        backend, dt_utils.GLOBAL_EXPERIMENT, dt_utils.R02B04_GLOBAL
+        backend,
+        experiment,
+        grid_file,
     )
     with pytest.raises(ValueError) as e:
         geometry.get("foo")
@@ -46,6 +56,7 @@ def test_geometry_raises_for_unknown_field(backend):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-12),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -61,6 +72,7 @@ def test_edge_control_area(backend, grid_savepoint, grid_file, experiment, rtol)
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 @pytest.mark.datatest
@@ -77,6 +89,7 @@ def test_coriolis_parameter(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -92,6 +105,7 @@ def test_compute_edge_length(backend, grid_savepoint, grid_file, experiment, rto
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -108,6 +122,7 @@ def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, experim
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-7),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -124,6 +139,7 @@ def test_compute_dual_edge_length(backend, grid_savepoint, grid_file, experiment
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -145,6 +161,7 @@ def test_compute_inverse_dual_edge_length(backend, grid_savepoint, grid_file, ex
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-10),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-14),
     ],
 )
 @pytest.mark.datatest
@@ -162,6 +179,7 @@ def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, grid_file
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_compute_coordinates_of_edge_tangent_and_normal(
@@ -195,6 +213,7 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
@@ -219,6 +238,7 @@ def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
@@ -235,6 +255,7 @@ def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_cell_area(backend, grid_savepoint, experiment, grid_file):
@@ -251,6 +272,7 @@ def test_cell_area(backend, grid_savepoint, experiment, grid_file):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
@@ -274,6 +296,7 @@ def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):
@@ -293,6 +316,7 @@ def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_primal_normal_vert(backend, grid_savepoint, grid_file, experiment):
@@ -316,6 +340,7 @@ def test_primal_normal_vert(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
@@ -334,6 +359,7 @@ def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_cartesian_centers_edge(backend, grid_file, experiment):
@@ -345,10 +371,13 @@ def test_cartesian_centers_edge(backend, grid_file, experiment):
     assert x.ndarray.shape == (grid.num_edges,)
     assert y.ndarray.shape == (grid.num_edges,)
     assert z.ndarray.shape == (grid.num_edges,)
-    # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
-    math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+    # those are coordinates on the unit sphere for the icosahedral grid: hence
+    # norm should be 1
+    if grid.geometry_type is base.GeometryType.ICOSAHEDRON:
+        norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
+        math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
+        assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
 @pytest.mark.parametrize(
@@ -356,6 +385,7 @@ def test_cartesian_centers_edge(backend, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_cartesian_centers_cell(backend, grid_file, experiment):
@@ -367,10 +397,13 @@ def test_cartesian_centers_cell(backend, grid_file, experiment):
     assert x.ndarray.shape == (grid.num_cells,)
     assert y.ndarray.shape == (grid.num_cells,)
     assert z.ndarray.shape == (grid.num_cells,)
-    # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
-    math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+    # those are coordinates on the unit sphere for the icosahedral grid: hence
+    # norm should be 1
+    if grid.geometry_type is base.GeometryType.ICOSAHEDRON:
+        norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
+        math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
+        assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
 @pytest.mark.parametrize(
@@ -378,6 +411,7 @@ def test_cartesian_centers_cell(backend, grid_file, experiment):
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT),
     ],
 )
 def test_vertex(backend, grid_file, experiment):
@@ -389,10 +423,13 @@ def test_vertex(backend, grid_file, experiment):
     assert x.ndarray.shape == (grid.num_vertices,)
     assert y.ndarray.shape == (grid.num_vertices,)
     assert z.ndarray.shape == (grid.num_vertices,)
-    # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, backend=backend)
-    math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+    # those are coordinates on the unit sphere for the icosahedral grid: hence
+    # norm should be 1
+    if grid.geometry_type is base.GeometryType.ICOSAHEDRON:
+        norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, backend=backend)
+        math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
+        assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
 def test_sparse_fields_creator():
