@@ -396,7 +396,7 @@ class GridManager:
         )
 
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
-        distributed_size = self._decomposition_info.get_horizontal_grid_size()
+        distributed_size = self._decomposition_info.get_horizontal_size()
 
         # TODO(halungge): run this only for distrbuted grids otherwise to nothing internally
         neighbor_tables = {
@@ -406,28 +406,24 @@ class GridManager:
             for k, v in neighbor_tables_for_halo_construction.items()
         }
 
-        # JOINT functionality
         # COMPUTE remaining derived connectivities
+        start_indices = {d: 0 for d in h_grid.EDGE_ZONES}
+        start_indices.update({d:0 for d in h_grid.VERTEX_ZONES})
+        start_indices.update({d:0 for d in h_grid.CELL_ZONES})
+        end_indices = {h_grid.domain(dims.EdgeDim)(d): distributed_size.num_edges  for d in h_grid.EDGE_ZONES}
+        end_indices.update({h_grid.domain(dims.VertexDim)(d): distributed_size.num_vertices  for d in h_grid.VERTEX_ZONES})
+        end_indices.update({h_grid.domain(dims.CellDim)(d): distributed_size.num_vertices for d in h_grid.CELL_ZONES})
 
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
-        start, end = self._read_start_end_indices()
-        start_indices = {
-            k: v
-            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-            for k, v in h_grid.map_icon_domain_bounds(dim, start[dim]).items()
-        }
-        end_indices = {
-            k: v
-            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-            for k, v in h_grid.map_icon_domain_bounds(dim, end[dim]).items()
-        }
+
+
         refinement_fields = self._read_grid_refinement_fields(backend)
+        # todo compute start end index
         grid_config = base.GridConfig(
             horizontal_size=distributed_size,
             vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
-            keep_skip_values=with_skip_values,
         )
 
         grid = icon.icon_grid(

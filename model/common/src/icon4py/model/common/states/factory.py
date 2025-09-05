@@ -43,6 +43,7 @@ import collections
 import enum
 import functools
 import logging
+import pdb
 import types
 import typing
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
@@ -61,6 +62,7 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     vertical as v_grid,
 )
+from icon4py.model.common.io.writers import processor_properties
 from icon4py.model.common.states import model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 

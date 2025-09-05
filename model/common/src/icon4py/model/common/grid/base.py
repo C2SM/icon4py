@@ -44,6 +44,9 @@ class HorizontalGridSize:
     num_edges: int
     num_cells: int
 
+    def __repr__(self):
+        return f"{self.__class__} (<num_cells = {self.num_cells}>, <num_edges={self.num_edges}>, <num_verts = {self.num_vertices})"
+
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class GridConfig:
