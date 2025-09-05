@@ -57,7 +57,6 @@ def test_saturation_adjustement(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     temperature_tendency = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, backend=backend

@@ -23,10 +23,10 @@ extern int diffusion_init_wrapper(
     int zd_vertoffset_size_0, int zd_vertoffset_size_1,
     int zd_vertoffset_size_2, double *zd_intcoef, int zd_intcoef_size_0,
     int zd_intcoef_size_1, int zd_intcoef_size_2, int ndyn_substeps,
-    double rayleigh_damping_height, int nflat_gradp, int diffusion_type,
-    int hdiff_w, int hdiff_vn, int zdiffu_t, int type_t_diffu,
-    int type_vn_diffu, double hdiff_efdt_ratio,
-    double smagorinski_scaling_factor, int hdiff_temp, double thslp_zdiffu,
-    double thhgtd_zdiffu, double denom_diffu_v, double nudge_max_coeff,
-    int itype_sher, int ltkeshs, double lowest_layer_thickness,
-    double model_top_height, double stretch_factor, int backend, int on_gpu);
+    double rayleigh_damping_height, int diffusion_type, int hdiff_w,
+    int hdiff_vn, int zdiffu_t, int type_t_diffu, int type_vn_diffu,
+    double hdiff_efdt_ratio, double smagorinski_scaling_factor, int hdiff_temp,
+    double thslp_zdiffu, double thhgtd_zdiffu, double denom_diffu_v,
+    double nudge_max_coeff, int itype_sher, int ltkeshs,
+    double lowest_layer_thickness, double model_top_height,
+    double stretch_factor, int backend, int on_gpu);

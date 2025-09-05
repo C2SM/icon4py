@@ -21,10 +21,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
+@pytest.mark.skip_value_error
 class TestComputeCells2VertsInterpolation(stencil_tests.StencilTest):
     PROGRAM = compute_cell_2_vertex_interpolation
     OUTPUTS = ("vert_out",)
-    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(

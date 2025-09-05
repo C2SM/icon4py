@@ -11,7 +11,7 @@ from types import ModuleType
 from typing import Literal, Protocol, TypeAlias
 
 import gt4py.next as gtx
-import gt4py.next.backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -116,7 +116,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: gtx_backend.Backend | None, keep_skip_values: bool):
+    def __call__(self, backend: gtx_typing.Backend | None, keep_skip_values: bool):
         if not self._reader:
             self.open()
         self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
@@ -124,7 +124,7 @@ class GridManager:
         self._geometry = self._read_geometry_fields(backend)
         self.close()
 
-    def _read_coordinates(self, backend: gtx_backend.Backend | None) -> CoordinateDict:
+    def _read_coordinates(self, backend: gtx_typing.Backend | None) -> CoordinateDict:
         return {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -170,7 +170,7 @@ class GridManager:
             },
         }
 
-    def _read_geometry_fields(self, backend: gtx_backend.Backend | None):
+    def _read_geometry_fields(self, backend: gtx_typing.Backend | None):
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
@@ -220,7 +220,7 @@ class GridManager:
     def _read_grid_refinement_fields(
         self,
         decomposition_info: decomposition.DecompositionInfo | None = None,
-        backend: gtx_backend.Backend | None = None,
+        backend: gtx_typing.Backend | None = None,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
@@ -313,7 +313,7 @@ class GridManager:
         return self._coordinates
 
     def _construct_grid(
-        self, backend: gtx_backend.Backend | None, with_skip_values: bool
+        self, backend: gtx_typing.Backend | None, with_skip_values: bool
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -333,7 +333,14 @@ class GridManager:
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
+        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
+            geometry_type = base.GeometryType(geometry_type)
+        global_params = icon.GlobalGridParams(
+            icon.GridShape(
+                geometry_type=geometry_type,
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            )
+        )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )

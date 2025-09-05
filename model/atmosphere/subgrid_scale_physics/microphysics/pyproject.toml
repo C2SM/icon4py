@@ -26,8 +26,8 @@ dependencies = [
   # workspace members
   "icon4py-common>=0.0.6",
   # external dependencies
-  "gt4py==1.0.7",
-  "packaging>=20.0"
+  "gt4py==1.0.8",
+  'packaging>=20.0'
 ]
 description = "ICON microphysics."
 license = {text = "BSD-3 License"}
