@@ -58,6 +58,12 @@ R02B04_GLOBAL_NUM_CELLS = 20480
 ZERO_BASE = gm.ToZeroBasedIndexTransformation()
 
 
+# TODO(havogt): use everywhere
+@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
+def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
+    return request.param
+
+
 # TODO @magdalena add test cases for hexagon vertices v2e2v
 # v2e2v: grid,???
 
@@ -65,13 +71,6 @@ ZERO_BASE = gm.ToZeroBasedIndexTransformation()
 # v2e: exists in serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_grid_manager_eval_v2e(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -91,13 +90,6 @@ def test_grid_manager_eval_v2e(
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 def test_grid_manager_refin_ctrl(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -118,13 +110,6 @@ def test_grid_manager_refin_ctrl(
 # v2c: exists in serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_grid_manager_eval_v2c(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -174,13 +159,6 @@ def _reset_invalid_index(index_array: np.ndarray) -> None:
 # e2v: exists in serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_grid_manager_eval_e2v(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -204,13 +182,6 @@ def has_invalid_index(ar: np.ndarray) -> np.bool_:
 # e2c : exists in serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_grid_manager_eval_e2c(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -228,13 +199,6 @@ def test_grid_manager_eval_e2c(
 # c2e: serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_grid_manager_eval_c2e(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -255,13 +219,6 @@ def test_grid_manager_eval_c2e(
 # c2e2c: exists in  serial, simple_mesh, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_grid_manager_eval_c2e2c(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -276,13 +233,6 @@ def test_grid_manager_eval_c2e2c(
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_grid_manager_eval_c2e2cO(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -299,13 +249,6 @@ def test_grid_manager_eval_c2e2cO(
 # e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_grid_manager_eval_e2c2e(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -332,13 +275,6 @@ def test_grid_manager_eval_e2c2e(
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_grid_manager_eval_e2c2v(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -359,13 +295,6 @@ def test_grid_manager_eval_e2c2v(
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_grid_manager_eval_c2v(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -465,10 +394,6 @@ def test_grid_manager_eval_c2e2c2e(
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.parametrize(
-    "experiment",
-    [definitions.Experiments.EXCLAIM_APE, definitions.Experiments.MCH_CH_R04B09],
-)
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_grid_manager_start_end_index(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -507,13 +432,6 @@ def test_grid_manager_start_end_index(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 def test_read_geometry_fields(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -530,13 +448,6 @@ def test_read_geometry_fields(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 @pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_coordinates(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -552,13 +463,6 @@ def test_coordinates(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 def test_tangent_orientation(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -573,13 +477,6 @@ def test_tangent_orientation(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 def test_edge_orientation_on_vertex(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -595,13 +492,6 @@ def test_edge_orientation_on_vertex(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 def test_dual_area(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -616,13 +506,6 @@ def test_dual_area(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 def test_edge_cell_distance(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -640,13 +523,6 @@ def test_edge_cell_distance(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 def test_cell_normal_orientation(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
@@ -661,13 +537,6 @@ def test_cell_normal_orientation(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 def test_edge_vertex_distance(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
