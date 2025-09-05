@@ -61,7 +61,10 @@ def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend:
 
 
 @pytest.fixture
-def experiment():
+def experiment() -> str:  # TODO(havogt): return definitions.Experiments.MCH_CH_R04B09
+    """
+    Default experiment, in most tests this will be overridden.
+    """
     return dt_utils.REGIONAL_EXPERIMENT
 
 
@@ -80,23 +83,14 @@ def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathli
 def _download_ser_data(
     comm_size: int,
     _ranked_data_path: pathlib.Path,
-    _experiment: str,
+    _experiment: definitions.Experiment,
 ):
     # not a fixture to be able to use this function outside of pytest
     try:
         destination_path = dt_utils.get_datapath_for_experiment(_ranked_data_path, _experiment)
-        if _experiment == dt_utils.GLOBAL_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_APE[comm_size]
-        elif _experiment == dt_utils.JABW_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_JABW[comm_size]
-        elif _experiment == dt_utils.GAUSS3D_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_GAUSS3D[comm_size]
-        elif _experiment == dt_utils.WEISMAN_KLEMP_EXPERIMENT:
-            uri = dt_utils.DATA_URIS_WK[comm_size]
-        else:
-            uri = dt_utils.DATA_URIS[comm_size]
+        uri = _experiment.partitioned_data[comm_size]
 
-        data_file = _ranked_data_path.joinpath(f"{_experiment}_mpitask{comm_size}.tar.gz").name
+        data_file = _ranked_data_path.joinpath(f"{_experiment.name}_mpitask{comm_size}.tar.gz").name
         _ranked_data_path.mkdir(parents=True, exist_ok=True)
         if config.ENABLE_TESTDATA_DOWNLOAD:
             with locking.lock(_ranked_data_path):
@@ -122,7 +116,7 @@ def download_ser_data(
     request,
     processor_props: decomposition.ProcessProperties,
     ranked_data_path: pathlib.Path,
-    experiment: str,
+    experiment: str | definitions.Experiment,
     pytestconfig,
 ):
     """
@@ -134,28 +128,38 @@ def download_ser_data(
     if "not datatest" in request.config.getoption("-k", ""):
         return
 
+    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
+    if isinstance(experiment, str):
+        experiment = dt_utils.experiment_from_name(experiment)
+
     _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
 
 
 @pytest.fixture
 def data_provider(
-    download_ser_data, ranked_data_path, experiment, processor_props, backend
+    download_ser_data,  # downloads data as side-effect
+    ranked_data_path: pathlib.Path,
+    experiment: str | definitions.Experiment,
+    processor_props: decomposition.ProcessProperties,
+    backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
+    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
+    if isinstance(experiment, str):
+        experiment = dt_utils.experiment_from_name(experiment)
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
+    return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
 
 
 @pytest.fixture
 def grid_savepoint(
-    data_provider: serialbox.IconSerialDataProvider, experiment: str
+    data_provider: serialbox.IconSerialDataProvider, experiment: str | definitions.Experiment
 ) -> serialbox.IconGridSavepoint:
-    grid_shape = dt_utils.guess_grid_shape(experiment)
-    grid_id = dt_utils.get_grid_id_for_experiment(experiment)
+    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
+    if isinstance(experiment, str):
+        experiment = dt_utils.experiment_from_name(experiment)
+    grid_shape = dt_utils.guess_grid_shape(experiment.name)
+    grid_id = dt_utils.get_grid_id_for_experiment(experiment.name)
     return data_provider.from_savepoint_grid(grid_id, grid_shape)
-
-
-def is_regional(experiment_name):
-    return experiment_name == dt_utils.REGIONAL_EXPERIMENT
 
 
 @pytest.fixture
@@ -171,9 +175,14 @@ def icon_grid(
 
 
 @pytest.fixture
-def decomposition_info(data_provider, experiment):
-    grid_shape = dt_utils.guess_grid_shape(experiment)
-    grid_id = dt_utils.get_grid_id_for_experiment(experiment)
+def decomposition_info(
+    data_provider: serialbox.IconSerialDataProvider, experiment: str | definitions.Experiment
+) -> decomposition.DecompositionInfo:
+    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
+    if isinstance(experiment, str):
+        experiment = dt_utils.experiment_from_name(experiment)
+    grid_shape = dt_utils.guess_grid_shape(experiment.name)
+    grid_id = dt_utils.get_grid_id_for_experiment(experiment.name)
     return data_provider.from_savepoint_grid(
         grid_id=grid_id, grid_shape=grid_shape
     ).construct_decomposition_info()

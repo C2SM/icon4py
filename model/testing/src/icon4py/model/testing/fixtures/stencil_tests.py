@@ -13,7 +13,7 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
+from icon4py.model.testing import definitions, grid_utils
 
 
 DEFAULT_GRID: Final[str] = "simple"
@@ -37,21 +37,21 @@ def _get_grid_from_preset(
     match grid_preset:
         case "icon_regional":
             return grid_utils.get_grid_manager_from_identifier(
-                dt_utils.REGIONAL_EXPERIMENT,
+                definitions.Grids.MCH_CH_R04B09_DSL,
                 num_levels=num_levels,
                 keep_skip_values=False,
                 backend=backend,
             ).grid
         case "icon_global":
             return grid_utils.get_grid_manager_from_identifier(
-                dt_utils.R02B04_GLOBAL,
+                definitions.Grids.R02B04_GLOBAL,
                 num_levels=num_levels,
                 keep_skip_values=False,
                 backend=backend,
             ).grid
         case "icon_benchmark":
             return grid_utils.get_grid_manager_from_identifier(
-                dt_utils.REGIONAL_BENCHMARK,
+                definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
                 num_levels=80,  # default benchmark size in ICON Fortran
                 keep_skip_values=False,
                 backend=backend,

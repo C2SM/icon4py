@@ -14,7 +14,7 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, test_utils
+from icon4py.model.testing import definitions, datatest_utils as dt_utils, grid_utils, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
     damping_height,
@@ -36,9 +36,6 @@ from icon4py.model.testing.fixtures import (
     top_height_limit_for_maximal_layer_thickness,
     topography_savepoint,
 )
-
-
-NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS
 
 
 @pytest.mark.parametrize(
@@ -90,7 +87,10 @@ def test_damping_layer_calculation_from_icon_input(
 
 
 @pytest.mark.datatest
-def test_grid_size(grid_savepoint):
+@pytest.mark.parametrize(
+    "experiment", [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE]
+)
+def test_grid_size(experiment: definitions.Experiment, grid_savepoint):
     config = v_grid.VerticalGridConfig(num_levels=grid_savepoint.num(dims.KDim))
     vertical_grid = v_grid.VerticalGrid(
         config=config,
@@ -98,8 +98,8 @@ def test_grid_size(grid_savepoint):
         vct_b=grid_savepoint.vct_b(),
     )
 
-    assert NUM_LEVELS == vertical_grid.size(dims.KDim)
-    assert NUM_LEVELS + 1 == vertical_grid.size(dims.KHalfDim)
+    assert experiment.num_levels == vertical_grid.size(dims.KDim)
+    assert experiment.num_levels + 1 == vertical_grid.size(dims.KHalfDim)
 
 
 @pytest.mark.parametrize(
@@ -237,15 +237,15 @@ def test_grid_index_flat(grid_savepoint, experiment, levels, dim, offset):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, levels",
-    [(dt_utils.REGIONAL_EXPERIMENT, NUM_LEVELS), (dt_utils.GLOBAL_EXPERIMENT, 60)],
+    "experiment",
+    [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
 )
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
-def test_grid_index_bottom(grid_savepoint, experiment, levels, dim, offset):
+def test_grid_index_bottom(grid_savepoint, experiment, dim, offset):
     valid_offset = -offset
     vertical_grid = configure_vertical_grid(grid_savepoint)
-    num_levels = levels if dim == dims.KDim else levels + 1
+    num_levels = experiment.num_levels if dim == dims.KDim else experiment.num_levels + 1
     domain = v_grid.Domain(dim, v_grid.Zone.BOTTOM, valid_offset)
     assert num_levels + valid_offset == vertical_grid.index(domain)
 
