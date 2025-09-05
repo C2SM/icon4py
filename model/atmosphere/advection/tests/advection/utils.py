@@ -10,7 +10,7 @@ import logging
 from typing import Optional
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.atmosphere.advection import advection, advection_states

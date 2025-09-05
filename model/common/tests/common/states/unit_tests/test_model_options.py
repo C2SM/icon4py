@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from icon4py.model.common.model_backends import BACKENDS
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.model_options import customize_backend
 from icon4py.model.common.type_alias import vpfloat

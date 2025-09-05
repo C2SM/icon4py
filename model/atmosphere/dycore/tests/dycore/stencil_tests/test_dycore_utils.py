@@ -22,7 +22,7 @@ from ..fixtures import backend
 
 
 if TYPE_CHECKING:
-    from gt4py.next import backend as gtx_backend
+    import gt4py.next.typing as gtx_typing
 
 # TODO(): apply StencilTest structure to this test
 
