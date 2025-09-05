@@ -87,6 +87,9 @@ def test_damping_layer_calculation_from_icon_input(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment", [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE]
+)
 def test_grid_size(experiment: definitions.Experiment, grid_savepoint):
     config = v_grid.VerticalGridConfig(num_levels=grid_savepoint.num(dims.KDim))
     vertical_grid = v_grid.VerticalGrid(
