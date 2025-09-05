@@ -79,8 +79,8 @@ class GridShape:
 @dataclasses.dataclass
 class GlobalGridParams:
     grid_shape: Final[GridShape | None] = None
-    num_cells: int | None
-    mean_cell_area: float | None
+    num_cells: int
+    mean_cell_area: float
     radius: float = constants.EARTH_RADIUS
 
     def __init__(
