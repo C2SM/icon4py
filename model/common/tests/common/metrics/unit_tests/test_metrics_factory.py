@@ -22,7 +22,6 @@ from icon4py.model.common.metrics import (
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
-    datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     serialbox,
     test_utils as test_helpers,
@@ -41,6 +40,12 @@ from icon4py.model.testing.fixtures.datatest import (
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
+
+
+# TODO(havogt): use everywhere
+@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
+def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
+    return request.param
 
 
 metrics_factories: dict[str, metrics_factory.MetricsFieldsFactory] = {}
@@ -143,13 +148,6 @@ def _get_metrics_factory(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_z_mc(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -170,13 +168,6 @@ def test_factory_z_mc(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_ddqz_z_and_inverse(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -199,13 +190,6 @@ def test_factory_ddqz_z_and_inverse(
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-7)
 
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_ddqz_full_e(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -226,13 +210,6 @@ def test_factory_ddqz_full_e(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 @pytest.mark.uses_concat_where
 def test_factory_ddqz_z_half(
@@ -254,13 +231,6 @@ def test_factory_ddqz_z_half(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_scaling_factor_for_3d_divdamp(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -281,13 +251,6 @@ def test_factory_scaling_factor_for_3d_divdamp(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_rayleigh_w(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -308,13 +271,6 @@ def test_factory_rayleigh_w(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_coeffs_dwdz(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -338,13 +294,6 @@ def test_factory_coeffs_dwdz(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_ref_mc(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -368,13 +317,6 @@ def test_factory_ref_mc(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_d2dexdz2_facs_mc(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -397,13 +339,6 @@ def test_factory_d2dexdz2_facs_mc(
     assert test_helpers.dallclose(field_2.asnumpy(), field_ref_2.asnumpy(), atol=1e-12)
 
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_ddxn_z_full(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -424,13 +359,6 @@ def test_factory_ddxn_z_full(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_ddxt_z_full(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -452,13 +380,6 @@ def test_factory_ddxt_z_full(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_exner_w_implicit_weight_parameter(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -479,13 +400,6 @@ def test_factory_exner_w_implicit_weight_parameter(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_exner_w_explicit_weight_parameter(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -507,13 +421,6 @@ def test_factory_exner_w_explicit_weight_parameter(
 
 @pytest.mark.level("integration")
 @pytest.mark.uses_concat_where
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_exner_exfac(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -535,13 +442,6 @@ def test_factory_exner_exfac(
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_pressure_gradient_fields(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -564,13 +464,6 @@ def test_factory_pressure_gradient_fields(
     assert test_helpers.dallclose(field_2_ref.asnumpy(), field_2.asnumpy())
 
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_mask_bdy_prog_halo_c(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -594,13 +487,6 @@ def test_factory_mask_bdy_prog_halo_c(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_horizontal_mask_for_3d_divdamp(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -623,13 +509,6 @@ def test_factory_horizontal_mask_for_3d_divdamp(
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.cpu_only  # TODO(halungge): slow on GPU due to vwind_impl_wgt computation)
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_zdiff_gradp(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -650,13 +529,6 @@ def test_factory_zdiff_gradp(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_coeff_gradekin(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -677,13 +549,6 @@ def test_factory_coeff_gradekin(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_wgtfacq_e(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -704,13 +569,6 @@ def test_factory_wgtfacq_e(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_vertical_coordinates_on_half_levels(
     grid_savepoint: serialbox.IconGridSavepoint,
@@ -732,13 +590,6 @@ def test_vertical_coordinates_on_half_levels(
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_factory_compute_diffusion_metrics(
     grid_savepoint: serialbox.IconGridSavepoint,

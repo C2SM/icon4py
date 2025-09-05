@@ -56,7 +56,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: grid_base.Grid,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
 ):
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
         experiment.grid, 1, True, backend
@@ -89,7 +89,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: grid_base.Grid,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
 ):
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
         experiment.grid, 1, True, backend
@@ -120,7 +120,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: grid_base.Grid,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
 ):
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
         experiment.grid, 1, True, backend
@@ -162,7 +162,7 @@ def test_rbf_interpolation_coeffs_cell(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     icon_grid: grid_base.Grid,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
 ):
@@ -232,7 +232,7 @@ def test_rbf_interpolation_coeffs_vertex(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     icon_grid: grid_base.Grid,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
 ):
@@ -302,7 +302,7 @@ def test_rbf_interpolation_coeffs_edge(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     icon_grid: grid_base.Grid,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
 ):

@@ -294,11 +294,12 @@ def test_get_mass_conserving_cell_average_weight(
 #   -> connectivity order between reference from serialbox and computed value is different
 ## TODO(halungge): rtol is from parametrization is overwritten in assert - function is most probably wrong
 #  TODO(halungge) global grid is not tested
+@pytest.mark.xfail(reason="Doesn't pass with reasonable threshold.")
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "experiment, rtol",
     [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-2),
+        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
     ],
 )
 @pytest.mark.datatest

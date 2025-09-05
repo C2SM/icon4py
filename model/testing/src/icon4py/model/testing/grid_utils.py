@@ -40,7 +40,7 @@ def get_grid_manager_from_experiment(
 
 
 def get_grid_manager_from_identifier(
-    grid: definitions.Grid,
+    grid: definitions.GridDescription,
     num_levels: int,
     keep_skip_values: bool,
     backend: gtx_typing.Backend | None,
@@ -75,11 +75,11 @@ def get_grid_manager(
     return manager
 
 
-def resolve_full_grid_file_name(grid: definitions.Grid) -> pathlib.Path:
+def resolve_full_grid_file_name(grid: definitions.GridDescription) -> pathlib.Path:
     return definitions.grids_path().joinpath(grid.name, grid.file_name)
 
 
-def _download_grid_file(grid: definitions.Grid) -> pathlib.Path:
+def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
     full_name = resolve_full_grid_file_name(grid)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)

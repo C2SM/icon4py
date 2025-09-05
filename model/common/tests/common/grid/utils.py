@@ -107,7 +107,9 @@ def valid_boundary_zones_for_dim(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
 
 
 def run_grid_manager(
-    grid: definitions.Grid, keep_skip_values: bool, backend: Optional[gtx_backend.Backend]
+    grid: definitions.GridDescription,
+    keep_skip_values: bool,
+    backend: Optional[gtx_backend.Backend],
 ) -> gm.GridManager:
     key = "_".join(
         (grid.name, data_alloc.backend_name(backend), "skip" if keep_skip_values else "no_skip")

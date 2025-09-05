@@ -187,7 +187,7 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(grid_descriptor
 )
 @pytest.mark.parametrize("dim", (utils.local_dims()))
 def test_when_replace_skip_values_then_only_pentagon_points_remain(
-    grid_descriptor: definitions.Grid, dim: gtx.Dimension, backend
+    grid_descriptor: definitions.GridDescription, dim: gtx.Dimension, backend
 ):
     if dim == dims.V2E2VDim:
         pytest.skip("V2E2VDim is not supported in the current grid configuration.")
