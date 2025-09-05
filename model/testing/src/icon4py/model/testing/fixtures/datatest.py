@@ -61,11 +61,11 @@ def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
 
 
 @pytest.fixture
-def experiment() -> definitions.Experiment:
+def experiment() -> str:  # TODO(havogt): return definitions.Experiments.MCH_CH_R04B09
     """
     Default experiment, in most tests this will be overridden.
     """
-    return definitions.Experiments.MCH_CH_R04B09
+    return dt_utils.REGIONAL_EXPERIMENT
 
 
 @pytest.fixture(params=[False], scope="session")

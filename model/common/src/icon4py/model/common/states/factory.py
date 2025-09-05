@@ -47,7 +47,7 @@ import types
 import typing
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from types import ModuleType
-from typing import Any, Optional, Protocol, TypeVar
+from typing import Any, Literal, Optional, Protocol, TypeVar, overload
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -141,6 +141,19 @@ class FieldSource(GridProvider, Protocol):
 
     def _backend_name(self) -> str:
         return "embedded" if self.backend is None else self.backend.name
+
+    @overload
+    def get(
+        self, field_name: str, type_: Literal[RetrievalType.FIELD] = RetrievalType.FIELD
+    ) -> state_utils.FieldType: ...  # TODO(havogt): FieldType is not strict enough
+
+    @overload
+    def get(self, field_name: str, type_: Literal[RetrievalType.DATA_ARRAY]) -> xa.DataArray: ...
+
+    @overload
+    def get(
+        self, field_name: str, type_: Literal[RetrievalType.METADATA]
+    ) -> model.FieldMetaData: ...
 
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
