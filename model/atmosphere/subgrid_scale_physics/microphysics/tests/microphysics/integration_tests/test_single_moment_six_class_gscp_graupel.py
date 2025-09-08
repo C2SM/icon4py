@@ -28,6 +28,7 @@ from icon4py.model.testing import (
 from ..fixtures import *  # noqa: F403
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor",
     [
