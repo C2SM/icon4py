@@ -10,7 +10,7 @@ import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.testing import serialbox as sb, test_utils
+from icon4py.model.testing import serialbox as sb, test_utils, definitions
 
 
 def verify_diffusion_fields(
@@ -63,10 +63,10 @@ def diff_multfac_vn_numpy(shape, k4, substeps):
 
 
 # TODO(): this code is replicated across the codebase currently. The configuration should be read from an external file.
-def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
-    if name.lower() in "mch_ch_r04b09_dsl":
+def construct_diffusion_config(experiment: definitions.Experiment, ndyn_substeps: int = 5):
+    if experiment.name.lower() in "mch_ch_r04b09_dsl":
         return r04b09_diffusion_config(ndyn_substeps)
-    elif name.lower() in "exclaim_ape_r02b04":
+    elif experiment.name.lower() in "exclaim_ape_r02b04":
         return exclaim_ape_diffusion_config(ndyn_substeps)
 
 

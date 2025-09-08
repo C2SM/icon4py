@@ -38,6 +38,7 @@ from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 def test_validate_divdamp_fields_against_savepoint_values(
     grid_savepoint, savepoint_nonhydro_init, icon_grid, backend
 ):
@@ -1030,6 +1031,7 @@ def test_run_solve_nonhydro_multi_step(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
     config = solve_nh.NonHydrostaticConfig()
     params = solve_nh.NonHydrostaticParams(config)

@@ -38,7 +38,7 @@ GRID_IDS = {
 }
 
 
-def guess_grid_shape(experiment: str) -> icon.GridShape:
+def guess_grid_shape(experiment: definitions.Experiment) -> icon.GridShape:
     """Guess the grid type, root, and level from the experiment name.
 
     Reads the level and root parameters from a string in the canonical ICON gridfile format
@@ -47,22 +47,22 @@ def guess_grid_shape(experiment: str) -> icon.GridShape:
         Args: experiment: str: The experiment name.
         Returns: tuple[int, int]: The grid root and level.
     """
-    if "torus" in experiment.lower():
+    if "torus" in experiment.name.lower():
         return icon.GridShape(geometry_type=base.GeometryType.TORUS)
 
     try:
-        root, level = map(int, re.search(r"[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
+        root, level = map(int, re.search(r"[Rr](\d+)[Bb](\d+)", experiment.name).groups())  # type:ignore[union-attr]
         return icon.GridShape(
             geometry_type=base.GeometryType.ICOSAHEDRON,
             subdivision=icon.GridSubdivision(root=root, level=level),
         )
     except AttributeError as err:
         raise ValueError(
-            f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."
+            f"Could not parse grid_root and grid_level from experiment: {experiment.name} no 'rXbY'pattern."
         ) from err
 
 
-def get_grid_id_for_experiment(experiment: str) -> uuid.UUID:
+def get_grid_id_for_experiment(experiment: definitions.Experiment) -> uuid.UUID:
     """Get the unique id of the grid used in the experiment.
 
     These ids are encoded in the original grid file that was used to run the simulation, but not serialized when generating the test data. So we duplicate the information here.
@@ -70,7 +70,7 @@ def get_grid_id_for_experiment(experiment: str) -> uuid.UUID:
     TODO(halungge): this becomes obsolete once we get the connectivities from the grid files.
     """
     try:
-        return GRID_IDS[experiment]
+        return GRID_IDS[experiment.name]
     except KeyError as err:
         raise ValueError(f"Experiment '{experiment}' has no grid id ") from err
 

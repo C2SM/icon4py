@@ -60,7 +60,10 @@ def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
     return backend
 
 
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
+@pytest.fixture(
+    params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
+    ids=lambda r: r.name,
+)
 def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
     """Default parametrization for experiments.
 
@@ -157,8 +160,8 @@ def grid_savepoint(
     # TODO(havogt): after refactoring is complete this should only accept `Experiment`
     if isinstance(experiment, str):
         experiment = dt_utils.experiment_from_name(experiment)
-    grid_shape = dt_utils.guess_grid_shape(experiment.name)
-    grid_id = dt_utils.get_grid_id_for_experiment(experiment.name)
+    grid_shape = dt_utils.guess_grid_shape(experiment)
+    grid_id = dt_utils.get_grid_id_for_experiment(experiment)
     return data_provider.from_savepoint_grid(grid_id, grid_shape)
 
 
@@ -181,22 +184,22 @@ def decomposition_info(
     # TODO(havogt): after refactoring is complete this should only accept `Experiment`
     if isinstance(experiment, str):
         experiment = dt_utils.experiment_from_name(experiment)
-    grid_shape = dt_utils.guess_grid_shape(experiment.name)
-    grid_id = dt_utils.get_grid_id_for_experiment(experiment.name)
+    grid_shape = dt_utils.guess_grid_shape(experiment)
+    grid_id = dt_utils.get_grid_id_for_experiment(experiment)
     return data_provider.from_savepoint_grid(
         grid_id=grid_id, grid_shape=grid_shape
     ).construct_decomposition_info()
 
 
 @pytest.fixture
-def ndyn_substeps(experiment) -> int:
+def ndyn_substeps(experiment: definitions.Experiment) -> int:
     """
     Return number of dynamical substeps.
 
     Serialized data of global and regional experiments uses a reduced number
     (2 instead of the default 5) in order to reduce the amount of data generated.
     """
-    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+    if experiment == definitions.Experiments.GAUSS3D:
         return 5
     else:
         return 2

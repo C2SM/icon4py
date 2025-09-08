@@ -24,8 +24,8 @@ from icon4py.model.testing import (
     grid_utils,
     reference_funcs as ref_funcs,
     serialbox as sb,
-    stencil_tests,
     test_utils,
+    definitions,
 )
 
 from ..fixtures import *  # noqa: F403
@@ -158,6 +158,14 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+# TODO(havogt): Remove custom `experiment` parametrization
+@pytest.mark.parametrize(
+    "experiment,step_date_init",
+    [
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
+    ],
+)
 def test_diffusion_init(
     savepoint_diffusion_init,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
@@ -632,6 +640,13 @@ def test_run_diffusion_initial_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
+# TODO(havogt): Remove custom `experiment` parametrization
+@pytest.mark.parametrize(
+    "experiment,step_date_init",
+    [
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+    ],
+)
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
 ):
