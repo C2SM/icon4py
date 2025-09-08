@@ -90,6 +90,7 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     )
 
 
+@pytest.mark.embedded_remap_error
 class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest):
     PROGRAM = compute_horizontal_velocity_quantities_and_fluxes
     OUTPUTS = (
@@ -103,7 +104,6 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         "horizontal_kinetic_energy_at_edges_on_model_levels",
         "contravariant_correction_at_edges_on_model_levels",
     )
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

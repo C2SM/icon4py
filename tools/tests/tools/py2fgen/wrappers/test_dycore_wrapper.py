@@ -15,7 +15,7 @@ import pytest
 import numpy as np
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims, model_options, utils as common_utils
+from icon4py.model.common import dimension as dims, constants, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -47,7 +47,7 @@ def solve_nh_init(
     itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-    rayleigh_type = model_options.RayleighType.KLEMP
+    rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False
@@ -302,7 +302,7 @@ def test_dycore_wrapper_granule_inputs(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     ndyn_substeps = ndyn_substeps
-    rayleigh_type = model_options.RayleighType.KLEMP
+    rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False
@@ -521,6 +521,7 @@ def test_dycore_wrapper_granule_inputs(
         reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
+        nflat_gradp=grid_savepoint.nflat_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
         pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
         pg_exdist=metrics_savepoint.pg_exdist(),
@@ -546,7 +547,6 @@ def test_dycore_wrapper_granule_inputs(
         config=expected_vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     expected_config = utils.construct_solve_nh_config(experiment)
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)

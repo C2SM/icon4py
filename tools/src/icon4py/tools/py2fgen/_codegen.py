@@ -321,7 +321,7 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
                     return f"{name} = c_loc({name})"
             return f"{name} = {name}"
 
-        param_names = ", &\n ".join([name for name in func.args.keys()] + ["rc"])
+        param_names = ", &\n ".join([name for name in func.args] + ["rc"])
         args = []
         for name, param in func.args.items():
             args.append(render_args(name, param))

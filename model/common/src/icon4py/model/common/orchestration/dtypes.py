@@ -9,8 +9,7 @@
 import sys
 from typing import Final
 
-from gt4py.next import Field, common
-from gt4py.next.ffront.fbuiltins import int32, int64
+from gt4py.next import Field, common, int32, int64
 
 from icon4py.model.common import type_alias
 
@@ -60,7 +59,7 @@ if dace:
             return EdgeDim_sym
         elif "vertex" in dim.value.lower():
             return VertexDim_sym
-        elif "k" == dim.value.lower():
+        elif dim.value.lower() == "k":
             return KDim_sym
         else:
             raise ValueError(f"The dimension [{dim}] is not supported.")

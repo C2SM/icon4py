@@ -10,7 +10,6 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
     vertically_implicit_solver_at_corrector_step,
@@ -18,7 +17,6 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
 from icon4py.model.common import (
     constants,
     dimension as dims,
-    model_options,
 )
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
@@ -59,6 +57,7 @@ from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
 )
 
 
+@pytest.mark.uses_concat_where
 class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_corrector_step
     OUTPUTS = (
@@ -70,7 +69,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         "dynamical_vertical_volumetric_flux_at_cells_on_half_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
@@ -155,7 +153,9 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         tridiagonal_intermediate_result = np.zeros_like(current_rho)
 
         (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]) = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= int32(1)),
+            (horizontal_start <= horz_idx)
+            & (horz_idx < horizontal_end)
+            & (vert_idx >= gtx.int32(1)),
             compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
                 connectivities=connectivities,
                 w_nnow=current_w[:, :n_lev],
@@ -279,7 +279,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == model_options.RayleighType.KLEMP:
+        if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)

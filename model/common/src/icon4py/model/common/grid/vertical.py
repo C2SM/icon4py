@@ -129,7 +129,6 @@ class VerticalGrid:
     _end_index_of_damping_layer: Height index above which Rayleigh damping of vertical wind is applied.
     _start_index_for_moist_physics: Height index above which moist physics and advection of cloud and precipitation variables are turned off.
     _end_index_of_flat_layer: Height index above which coordinate surfaces are flat.
-    _min_index_flat_horizontal_grad_pressure: The minimum height index at which the height of the center of an edge lies within two neighboring cells so that horizontal pressure gradient can be computed by first order discretization scheme.
     """
 
     config: VerticalGridConfig
@@ -140,7 +139,6 @@ class VerticalGrid:
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
-    _min_index_flat_horizontal_grad_pressure: Final[gtx.int32] = None
 
     def __post_init__(self, vct_a, vct_b):
         object.__setattr__(
@@ -318,7 +316,7 @@ def _read_vct_a_and_vct_b_from_file(
     vct_a = np.zeros(num_levels_plus_one, dtype=float)
     vct_b = np.zeros(num_levels_plus_one, dtype=float)
     try:
-        with open(file_path) as vertical_grid_file:
+        with file_path.open() as vertical_grid_file:
             # skip the first line that contains titles
             vertical_grid_file.readline()
             for k in range(num_levels_plus_one):
@@ -340,7 +338,7 @@ def _read_vct_a_and_vct_b_from_file(
     )
 
 
-def _compute_vct_a_and_vct_b(
+def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
     vertical_config: VerticalGridConfig, backend: gtx_backend.Backend | None
 ) -> tuple[fa.KField, fa.KField]:
     """

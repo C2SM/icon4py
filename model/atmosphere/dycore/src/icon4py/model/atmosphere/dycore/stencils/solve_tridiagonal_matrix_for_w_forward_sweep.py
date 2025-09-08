@@ -6,16 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program, scan_operator
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@scan_operator(
+@gtx.scan_operator(
     axis=dims.KDim,
     forward=True,
     init=(
@@ -46,7 +44,7 @@ def tridiagonal_forward_sweep_for_w(
     return c_new, d_new
 
 
-@field_operator
+@gtx.field_operator
 def _solve_tridiagonal_matrix_for_w_forward_sweep(
     vwind_impl_wgt: fa.CellField[wpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
@@ -71,7 +69,7 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     return z_q_res, w_res
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def solve_tridiagonal_matrix_for_w_forward_sweep(
     vwind_impl_wgt: fa.CellField[wpfloat],
     theta_v_ic: fa.CellKField[wpfloat],

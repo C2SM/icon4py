@@ -9,8 +9,8 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import astype, broadcast
+from gt4py.next import astype, broadcast
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     _add_analysis_increments_from_data_assimilation,
@@ -52,14 +52,13 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
-    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 dycore_consts: Final = constants.PhysicsConstants()
-rayleigh_damping_options: Final = model_options.RayleighType()
+rayleigh_damping_options: Final = constants.RayleighType()
 
 
 @gtx.field_operator

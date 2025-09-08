@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
-import uuid
 from typing import Final, Literal, TypeAlias
 
 import gt4py.next as gtx
@@ -19,7 +18,7 @@ import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, type_alias
-from icon4py.model.common.grid import base, icon
+from icon4py.model.common.grid import base, horizontal as h_grid, icon
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -145,16 +144,15 @@ class IconGridSavepoint(IconSavepoint):
         self,
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
-        grid_id: uuid.UUID,
+        grid_id: str,
         size: dict,
-        root: int,
-        level: int,
+        grid_shape: icon.GridShape,
         backend: gtx_backend.Backend | None,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
         self.global_grid_params = icon.GlobalGridParams.from_mean_cell_area(
-            self.mean_cell_area(), root=root, level=level
+            self.mean_cell_area(), grid_shape
         )
 
     def verts_vertex_lat(self):
@@ -326,6 +324,34 @@ class IconGridSavepoint(IconSavepoint):
     def edge_start_index(self):
         return self._read_int32_shift1("e_start_index")
 
+    def start_index(self, dim: gtx.Dimension) -> np.ndarray:
+        """
+        Use to specify lower end of domains of a field for field_operators.
+        """
+        match dim:
+            case dims.CellDim:
+                return self.cells_start_index()
+            case dims.EdgeDim:
+                return self.edge_start_index()
+            case dims.VertexDim:
+                return self.vertex_start_index()
+            case _:
+                raise ValueError(f"Unsupported dimension {dim}")
+
+    def end_index(self, dim: gtx.Dimension) -> np.ndarray:
+        """
+        Use to specify upper end of domains of a field for field_operators.
+        """
+        match dim:
+            case dims.CellDim:
+                return self.cells_end_index()
+            case dims.EdgeDim:
+                return self.edge_end_index()
+            case dims.VertexDim:
+                return self.vertex_end_index()
+            case _:
+                raise ValueError(f"Unsupported dimension {dim}")
+
     def nflatlev(self):
         return self._read_int32_shift1("nflatlev").item()
 
@@ -488,14 +514,15 @@ class IconGridSavepoint(IconSavepoint):
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
         start_indices = {
-            dims.VertexDim: vertex_starts,
-            dims.EdgeDim: edge_starts,
-            dims.CellDim: cell_starts,
+            **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_starts),
+            **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_starts),
+            **h_grid.map_icon_domain_bounds(dims.CellDim, cell_starts),
         }
+
         end_indices = {
-            dims.VertexDim: vertex_ends,
-            dims.EdgeDim: edge_ends,
-            dims.CellDim: cell_ends,
+            **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_ends),
+            **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_ends),
+            **h_grid.map_icon_domain_bounds(dims.CellDim, cell_ends),
         }
 
         neighbor_tables = {
@@ -1829,17 +1856,14 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(
-        self, grid_id: uuid.UUID, grid_root: int, grid_level: int
-    ) -> IconGridSavepoint:
+    def from_savepoint_grid(self, grid_id: str, grid_shape: icon.GridShape) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
             savepoint,
             self.serializer,
             grid_id=grid_id,
             size=self.grid_size,
-            root=grid_root,
-            level=grid_level,
+            grid_shape=grid_shape,
             backend=self.backend,
         )
 

@@ -33,10 +33,10 @@ def apply_nabla2_to_w_numpy(
     return w
 
 
+@pytest.mark.embedded_remap_error
 class TestMoApplyNabla2ToW(StencilTest):
     PROGRAM = apply_nabla2_to_w
     OUTPUTS = ("w",)
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
