@@ -1429,7 +1429,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "0.0.0+missing.version.info"
-source = { git = "https://github.com/edopao/gt4py?branch=fix_sdfg_build_folder#6c27eadb5e522673ab07a1c57a1f0e5431c85a5c" }
+source = { git = "https://github.com/edopao/gt4py?branch=fix_sdfg_build_folder#5bb477677bef7d754402c4f93dac5976344f2873" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
