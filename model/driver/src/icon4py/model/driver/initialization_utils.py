@@ -574,14 +574,12 @@ def configure_logging(
 
 def create_grid_info(
     grid_file: str,
-    grid_geometry: str,
 ) -> tuple[icon_grid.GridShape, uuid.UUID]:
     """
     Create grid shape and its uuid.
 
     Args:
         grid_file: path of the grid file
-        grid_geometry: grid geometry, icosahedral or torus grid
 
     Returns:
         grid_shape: grid shape containing the root, level, and geometry type
@@ -591,8 +589,14 @@ def create_grid_info(
     grid_root = grid.getncattr("grid_root")
     grid_level = grid.getncattr("grid_level")
     grid_uuid = uuid.UUID(grid.getncattr("uuidOfHGrid"))
+    try:
+        grid_geometry_type = base.GeometryType(grid.getncattr("grid_geometry"))
+    except AttributeError:
+        log.warning(
+            "Global attribute grid_geometry is not found in the grid. Icosahedral grid is assumed."
+        )
+        grid_geometry_type = base.GeometryType.ICOSAHEDRON
     grid.close()
-    grid_geometry_type = base.GeometryType(int(grid_geometry))
     return icon_grid.GridShape(
         grid_geometry_type, icon_grid.GridSubdivision(root=grid_root, level=grid_level)
     ), grid_uuid

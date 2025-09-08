@@ -521,11 +521,6 @@ def initialize(
     help="Path of the grid file.",
 )
 @click.option(
-    "--grid_geometry",
-    required=True,
-    help="Grid geometry (1 for icosahedral grid, 2 for torus grid).",
-)
-@click.option(
     "--enable_output",
     is_flag=True,
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
@@ -549,7 +544,6 @@ def icon4py_driver(
     serialization_type,
     experiment_type,
     grid_file,
-    grid_geometry,
     enable_output,
     enable_profiling,
     icon4py_driver_backend,
@@ -584,7 +578,7 @@ def icon4py_driver(
 
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
-    grid_shape, grid_uuid = driver_init.create_grid_info(grid_file, grid_geometry)
+    grid_shape, grid_uuid = driver_init.create_grid_info(grid_file)
 
     time_loop: TimeLoop
     ds: DriverStates
