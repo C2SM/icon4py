@@ -9,9 +9,9 @@ import dataclasses
 from typing import Final
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 from gt4py.eve import utils as eve_utils
-from gt4py.next import backend as gtx_backend
-from gt4py.next.ffront.fbuiltins import abs, exp, maximum, where  # noqa: A004
+from gt4py.next import abs, exp, maximum, where  # noqa: A004
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils as common_utils
@@ -126,7 +126,7 @@ class SaturationAdjustment:
         grid: icon_grid.IconGrid,
         vertical_params: v_grid.VerticalGrid,
         metric_state: MetricStateSaturationAdjustment,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         self._backend = backend
         self.config = config

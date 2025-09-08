@@ -57,7 +57,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         geometry_source: geometry.GridGeometry,
         topography: gtx.Field,
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
-        backend: gtx_backend.Backend,
+        backend: gtx_backend.Backend | None,
         metadata: dict[str, model.FieldMetaData],
         rayleigh_type: int,
         rayleigh_coeff: float,
