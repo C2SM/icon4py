@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _interpolate_contravariant_vertical_velocity_to_full_levels(
     z_w_con_c: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
@@ -23,7 +21,7 @@ def _interpolate_contravariant_vertical_velocity_to_full_levels(
     return z_w_con_c_full_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_contravariant_vertical_velocity_to_full_levels(
     z_w_con_c: fa.CellKField[vpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
