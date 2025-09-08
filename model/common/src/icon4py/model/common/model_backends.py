@@ -90,7 +90,7 @@ try:
 
 except ImportError:
     # dace module not installed, thus the dace backends are not available
-    def make_custom_dace_backend(gpu: bool) -> gtx_typing.Backend:
+    def make_custom_dace_backend(device: str, **options) -> gtx_typing.Backend:
         raise NotImplementedError("Depends on dace module, which is not installed.")
 
 
@@ -99,4 +99,5 @@ def make_custom_gtfn_backend(device: str, cached: bool = True, **options) -> GTF
     return GTFNBackendFactory(
         gpu=on_gpu,
         cached=cached,
+        otf_workflow__cached_translation=cached,
     )

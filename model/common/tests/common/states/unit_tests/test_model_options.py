@@ -5,24 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from icon4py.model.common import dimension as dims
 from icon4py.model.common.model_options import customize_backend
-from icon4py.model.common.type_alias import vpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.grid.simple import simple_grid
-from icon4py.model.testing import test_utils
-import numpy as np
+import pytest
+from icon4py.model.common.model_backends import BACKENDS, make_custom_dace_backend
 
 
-def test_custom_backend():
+@pytest.mark.parametrize(
+    "backend_kind, device", [("gtfn", "cpu"), ("gtfn", "gpu"), ("dace", "cpu"), ("dace", "gpu")]
+)
+def test_custom_backend(backend_kind, device):
     backend_options = {
-        "device": "cpu",  # or whatever it will be after the discussion
-        "backend_kind": "gtfn",  # or the corresponding maker if we go that way
+        "backend_kind": backend_kind,
+        "device": device,
     }
     backend = customize_backend(**backend_options)
-    field = data_alloc.zero_field(
-        simple_grid(), dims.EdgeDim, dims.KDim, backend=backend, dtype=vpfloat
-    )
-    assert test_utils.dallclose(
-        field.asnumpy(), np.zeros((simple_grid().num_edges, simple_grid().num_levels))
-    )
+    default_backend = backend_kind + "_" + device
+    assert str(BACKENDS[default_backend]) == str(backend)
