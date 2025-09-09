@@ -75,7 +75,7 @@ def test_grid_file_vertex_cell_edge_dimensions(
         parser.close()
 
 
-@pytest.mark.parametrize("filename", (test_defs.Grids.R02B04_GLOBAL.name,))
+@pytest.mark.parametrize("filename", (definitions.Grids.R02B04_GLOBAL,))
 @pytest.mark.parametrize("apply_transformation", (True, False))
 def test_int_variable(filename, apply_transformation):
     file = gridtest_utils.resolve_full_grid_file_name(filename)
@@ -107,7 +107,7 @@ def index_selection() -> Iterable[list[int]]:
     "selection",
     index_selection(),
 )
-@pytest.mark.parametrize("filename", (test_defs.Grids.R02B04_GLOBAL.name,))
+@pytest.mark.parametrize("filename", (definitions.Grids.R02B04_GLOBAL.name,))
 def test_index_read_for_1d_fields(filename, selection):
     file = gridtest_utils.resolve_full_grid_file_name(filename)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
@@ -121,7 +121,7 @@ def test_index_read_for_1d_fields(filename, selection):
     "selection",
     index_selection(),
 )
-@pytest.mark.parametrize("filename", (test_defs.Grids.R02B04_GLOBAL.name,))
+@pytest.mark.parametrize("filename", (definitions.Grids.R02B04_GLOBAL.name,))
 @pytest.mark.parametrize(
     "field",
     (gridfile.ConnectivityName.V2E, gridfile.ConnectivityName.V2C, gridfile.ConnectivityName.E2V),

@@ -86,9 +86,9 @@ def run_grid_manager_for_singlenode(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "grid_file, experiment",
+    "experiment",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        (test_defs.Experiments.EXCLAIM_APE),
         # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT)
     ],
 )
@@ -97,6 +97,7 @@ def test_start_end_index(
     caplog, backend, processor_props, grid_file, experiment, dim, icon_grid
 ):  # fixture
     caplog.set_level(logging.INFO)
+    grid_file = experiment.grid
     file = grid_utils.resolve_full_grid_file_name(grid_file)
 
     partitioner = halo.SimpleMetisDecomposer()

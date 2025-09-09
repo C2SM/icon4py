@@ -21,7 +21,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
+from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 from ..fixtures import *  # noqa: F401, F403
 
 from .. import utils

@@ -66,7 +66,7 @@ def test_valid_refinement_values(dim):
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize(
-    "grid_file, expected",
+    "grid_descriptor, expected",
     [(test_defs.Grids.R02B04_GLOBAL, False), (test_defs.Grids.MCH_CH_R04B09_DSL, True)],
 )
 def test_is_local_area_grid_for_grid_files(grid_descriptor, expected, dim, backend):

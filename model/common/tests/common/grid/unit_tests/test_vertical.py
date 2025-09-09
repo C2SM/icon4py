@@ -14,7 +14,7 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, test_utils
+from icon4py.model.testing import definitions, test_utils
 from ..fixtures import *  # noqa: F401, F403
 
 
@@ -42,7 +42,7 @@ def test_damping_layer_calculation(max_h, damping_height, delta, flat_height):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
 def test_damping_layer_calculation_from_icon_input(
     grid_savepoint, experiment, damping_height, flat_height
 ):
@@ -116,7 +116,7 @@ def configure_vertical_grid(grid_savepoint, top_moist_threshold=22500.0):
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, expected_moist_level",
-    [(dt_utils.REGIONAL_EXPERIMENT, 0), (dt_utils.GLOBAL_EXPERIMENT, 25)],
+    [(definitions.Experiments.MCH_CH_R04B09, 0), (definitions.Experiments.EXCLAIM_APE, 25)],
 )
 def test_moist_level_calculation(grid_savepoint, experiment, expected_moist_level):
     threshold = 22500.0
@@ -134,8 +134,8 @@ def test_interface_physical_height(grid_savepoint):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_flat_level_calculation(grid_savepoint, experiment, flat_height):
+@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
+def test_flat_level_calculation(grid_savepoint, experiment):
     vertical_grid = configure_vertical_grid(grid_savepoint)
 
     assert grid_savepoint.nflatlev() == vertical_grid.nflatlev
@@ -171,7 +171,7 @@ def test_grid_index_top(grid_savepoint, dim, offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(definitions.Experiments.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(grid_savepoint, experiment, levels, dim, offset):
@@ -186,7 +186,7 @@ def test_grid_index_damping(grid_savepoint, experiment, levels, dim, offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(definitions.Experiments.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(grid_savepoint, experiment, levels, dim, offset):
@@ -201,7 +201,7 @@ def test_grid_index_moist(grid_savepoint, experiment, levels, dim, offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(definitions.Experiments.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(grid_savepoint, experiment, levels, dim, offset):
@@ -231,7 +231,7 @@ def test_grid_index_bottom(grid_savepoint, experiment, dim, offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(definitions.Experiments.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
@@ -247,7 +247,7 @@ def test_grid_index_raises_if_index_above_num_levels(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(definitions.Experiments.EXCLAIM_APE, 60)])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
@@ -263,7 +263,7 @@ def test_grid_index_raises_if_index_below_zero(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT))
+@pytest.mark.parametrize("experiment", (definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE))
 def test_vct_a_vct_b_calculation_from_icon_input(
     grid_savepoint,
     experiment,
@@ -298,7 +298,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment",
-    [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GAUSS3D_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT],
+    [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.GAUSS3D, definitions.Experiments.EXCLAIM_APE],
 )
 def test_compute_vertical_coordinate(
     grid_savepoint,
@@ -317,7 +317,7 @@ def test_compute_vertical_coordinate(
 
     specific_values = (
         {"rayleigh_damping_height": 12500.0, "stretch_factor": 0.65, "lowest_layer_thickness": 20.0}
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
+        if experiment == definitions.Experiments.MCH_CH_R04B09
         else {
             "rayleigh_damping_height": 45000.0,
             "stretch_factor": 1.0,
@@ -340,9 +340,9 @@ def test_compute_vertical_coordinate(
     )
     assert vertical_geometry.nflatlev == grid_savepoint.nflatlev()
 
-    if experiment in (dt_utils.REGIONAL_EXPERIMENT, dt_utils.GAUSS3D_EXPERIMENT):
+    if experiment in (definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.GAUSS3D):
         topography = topography_savepoint.topo_c()
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == definitions.Experiments.EXCLAIM_APE:
         topography = data_alloc.zero_field(
             icon_grid, dims.CellDim, backend=backend, dtype=ta.wpfloat
         )
