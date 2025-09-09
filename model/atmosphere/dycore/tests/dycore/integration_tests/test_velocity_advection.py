@@ -11,10 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore import (
-    dycore_states,
-    velocity_advection as advection,
-)
+from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
     compute_advection_in_horizontal_momentum_equation,
 )

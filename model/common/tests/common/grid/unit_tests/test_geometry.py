@@ -12,20 +12,20 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
-    geometry as geometry,
+    geometry,
     geometry_attributes as attrs,
     horizontal as h_grid,
-    simple as simple,
+    simple,
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import grid_utils, test_utils, definitions
+from icon4py.model.testing import definitions, grid_utils, test_utils
 from icon4py.model.testing.fixtures import (
-    experiment,
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     processor_props,
     ranked_data_path,

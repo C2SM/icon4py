@@ -7,24 +7,23 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import pytest
 from typing import TYPE_CHECKING
+
+import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import gridfile
-from icon4py.model.testing import (
-    grid_utils as gridtest_utils,
-    definitions,
-)
+from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     processor_props,
     ranked_data_path,
-    experiment,
 )
+
 
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox

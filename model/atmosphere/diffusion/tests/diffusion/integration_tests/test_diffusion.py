@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
 import numpy as np
 import pytest
 
@@ -15,17 +16,14 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import (
-    geometry_attributes as geometry_meta,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import geometry_attributes as geometry_meta, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
+    definitions,
     grid_utils,
     reference_funcs as ref_funcs,
     serialbox as sb,
     test_utils,
-    definitions,
 )
 
 from ..fixtures import *  # noqa: F403
@@ -36,6 +34,7 @@ from ..utils import (
     smag_limit_numpy,
     verify_diffusion_fields,
 )
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
@@ -111,10 +110,10 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
 
     params = diffusion.DiffusionParams(config)
 
-    assert params.K2 == pytest.approx(0.125, abs=1e-12)
-    assert params.K4 == pytest.approx(0.125 / 8.0, abs=1e-12)
-    assert params.K6 == pytest.approx(0.125 / 64.0, abs=1e-12)
-    assert params.K4W == pytest.approx(1.0 / 72.0, abs=1e-12)
+    assert pytest.approx(0.125, abs=1e-12) == params.K2
+    assert pytest.approx(0.125 / 8.0, abs=1e-12) == params.K4
+    assert pytest.approx(0.125 / 64.0, abs=1e-12) == params.K6
+    assert pytest.approx(1.0 / 72.0, abs=1e-12) == params.K4W
 
 
 def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):

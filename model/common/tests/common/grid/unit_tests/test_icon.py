@@ -9,22 +9,13 @@ import functools
 import math
 import re
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import gt4py.next as gtx
-
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import (
-    base,
-    gridfile,
-    horizontal as h_grid,
-    icon,
-)
-from icon4py.model.testing import (
-    grid_utils as gridtest_utils,
-    definitions,
-)
+from icon4py.model.common.grid import base, gridfile, horizontal as h_grid, icon
+from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
@@ -166,9 +157,9 @@ def test_interior(grid, dim):
 
 @pytest.mark.datatest
 def test_grid_size(icon_grid):
-    assert 10663 == icon_grid.size[dims.VertexDim]
-    assert 20896 == icon_grid.size[dims.CellDim]
-    assert 31558 == icon_grid.size[dims.EdgeDim]
+    assert icon_grid.size[dims.VertexDim] == 10663
+    assert icon_grid.size[dims.CellDim] == 20896
+    assert icon_grid.size[dims.EdgeDim] == 31558
 
 
 @pytest.mark.parametrize(
@@ -275,7 +266,7 @@ def test_global_grid_params(
     )
     assert geometry_type == params.geometry_type
     if geometry_type == base.GeometryType.TORUS:
-        assert None == params.grid_shape.subdivision
+        assert params.grid_shape.subdivision is None
     else:
         assert (
             icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_shape.subdivision
@@ -296,7 +287,7 @@ def test_global_grid_params(
     ],
 )
 def test_global_grid_params_fail(geometry_type, grid_root, grid_level, num_cells, mean_cell_area):
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(ValueError):
         _ = icon.GlobalGridParams(
             icon.GridShape(
                 geometry_type=geometry_type,

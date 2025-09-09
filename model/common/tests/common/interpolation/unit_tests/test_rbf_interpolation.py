@@ -6,25 +6,22 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
-import math
 
+import math
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import (
-    geometry_attributes as geometry_attrs,
-    horizontal as h_grid,
-)
+from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
+    definitions,
     grid_utils as gridtest_utils,
     test_utils as test_helpers,
-    definitions,
 )
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -37,8 +34,10 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+
     from icon4py.model.testing import serialbox
 
 

@@ -8,8 +8,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
@@ -17,7 +15,7 @@ from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import serialbox as sb, definitions
+from icon4py.model.testing import definitions, serialbox as sb
 
 
 def construct_interpolation_state(
@@ -126,7 +124,7 @@ def create_vertical_params(
 def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     grid: icon_grid.IconGrid,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
     swap_vertical_wind_advective_tendency: bool = False,
 ) -> dycore_states.DiagnosticStateNonHydro:
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)

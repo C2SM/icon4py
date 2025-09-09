@@ -6,23 +6,23 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
+
 import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.testing import definitions
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
-from icon4py.model.common.metrics.metric_fields import (
-    compute_flat_idx,
-)
+from icon4py.model.common.metrics.metric_fields import compute_flat_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions
 from icon4py.model.testing.fixtures.datatest import (
-    experiment,
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -30,12 +30,12 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.testing.test_utils import (
-    dallclose,
-)
+from icon4py.model.testing.test_utils import dallclose
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 

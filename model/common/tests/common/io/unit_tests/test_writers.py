@@ -14,11 +14,7 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
 from icon4py.model.common.io import cf_utils, utils, writers
-from icon4py.model.common.io.writers import (
-    NETCDFWriter,
-    TimeProperties,
-    filter_by_standard_name,
-)
+from icon4py.model.common.io.writers import NETCDFWriter, TimeProperties, filter_by_standard_name
 from icon4py.model.common.states import data, metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -115,7 +111,7 @@ def test_initialize_writer_heights(test_path, random_name):
 
 
 def test_writer_append_timeslice(test_path, random_name):
-    writer, grid = initialized_writer(test_path, random_name)
+    writer, _ = initialized_writer(test_path, random_name)
     time = datetime.now()
     assert len(writer.variables[writers.TIME]) == 0
     slice1 = {}

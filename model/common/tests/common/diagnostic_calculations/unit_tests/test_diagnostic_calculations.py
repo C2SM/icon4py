@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -20,13 +21,8 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_temperature,
 )
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.interpolation.stencils import (
-    edge_2_cell_vector_rbf_interpolation as rbf,
-)
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    tracer_state as tracers,
-)
+from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
+from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_state as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -41,8 +37,10 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 

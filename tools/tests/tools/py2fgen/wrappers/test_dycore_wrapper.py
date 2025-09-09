@@ -11,11 +11,11 @@ from unittest import mock
 
 import cffi
 import gt4py.next as gtx
-import pytest
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims, constants, utils as common_utils
+from icon4py.model.common import constants, dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -295,7 +295,6 @@ def test_dycore_wrapper_granule_inputs(
     itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-    ndyn_substeps = ndyn_substeps
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
@@ -699,7 +698,7 @@ def test_dycore_wrapper_granule_inputs(
         )
 
         # Check input arguments to SolveNonhydro.init
-        captured_args, captured_kwargs = mock_init.call_args
+        _, captured_kwargs = mock_init.call_args
 
         # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
         try:
@@ -804,7 +803,7 @@ def test_dycore_wrapper_granule_inputs(
         )
 
         # Check input arguments to SolveNonhydro.time_step
-        captured_args, captured_kwargs = mock_init.call_args
+        _, captured_kwargs = mock_init.call_args
 
         result, error_message = utils.compare_objects(
             captured_kwargs["diagnostic_state_nh"], expected_diagnostic_state_nh
@@ -1135,7 +1134,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     for i_substep in range(1, ndyn_substeps + 1):
         if not (at_initial_timestep and i_substep == 1):
             ddt_w_adv_ntl1, ddt_w_adv_ntl2 = ddt_w_adv_ntl2, ddt_w_adv_ntl1
-        if not i_substep == 1:
+        if i_substep != 1:
             ddt_vn_apc_ntl1, ddt_vn_apc_ntl2 = ddt_vn_apc_ntl2, ddt_vn_apc_ntl1
 
         dycore_wrapper.solve_nh_run(

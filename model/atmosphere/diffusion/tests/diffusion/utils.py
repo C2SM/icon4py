@@ -10,7 +10,7 @@ import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.testing import serialbox as sb, test_utils, definitions
+from icon4py.model.testing import definitions, serialbox as sb, test_utils
 
 
 def verify_diffusion_fields(

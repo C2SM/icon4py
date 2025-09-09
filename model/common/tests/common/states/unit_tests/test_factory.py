@@ -84,7 +84,7 @@ class SimpleFieldSource(factory.FieldSource):
         return self._grid
 
     @property
-    def vertical_grid(self) -> Optional[v_grid.VerticalGrid]:
+    def vertical_grid(self) -> v_grid.VerticalGrid | None:
         return self._vertical_grid
 
     @property

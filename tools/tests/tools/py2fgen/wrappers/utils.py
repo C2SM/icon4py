@@ -20,7 +20,7 @@ except ImportError:
     cp = None
 
 
-def compare_values_shallow(value1, value2, obj_name="value"):
+def compare_values_shallow(value1, value2, obj_name="value"):  # noqa: PLR0911, PLR0912
     # Handle comparison of NdArrayField objects
     if isinstance(value1, NdArrayField) and isinstance(value2, NdArrayField):
         try:
@@ -86,7 +86,7 @@ def compare_values_shallow(value1, value2, obj_name="value"):
         return True, None
 
 
-def compare_objects(obj1, obj2, obj_name="object"):
+def compare_objects(obj1, obj2, obj_name="object"):  # noqa: PLR0911
     # Check if both objects are instances of numpy scalar types
     if isinstance(obj1, np.ScalarType) and isinstance(obj2, np.ScalarType):
         if obj1 != obj2:

@@ -11,10 +11,10 @@ from gt4py import next as gtx
 
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.testing import definitions
-from .. import utils
-from ...fixtures import *  # noqa: F401, F403
-
 from icon4py.model.testing.fixtures import experiment
+
+from ...fixtures import *  # noqa: F403
+from .. import utils
 
 
 @pytest.mark.datatest
@@ -32,7 +32,7 @@ def test_map_domain_bounds_end_index(dim, grid_savepoint):
     _map_and_assert_array(dim, end_index_array)
 
 
-def _map_and_assert_array(dim, index_array):
+def _map_and_assert_array(dim, index_array):  # noqa: PLR0912
     index_map = h_grid.map_icon_domain_bounds(dim, index_array)
     same_index = False
     for d, index in index_map.items():

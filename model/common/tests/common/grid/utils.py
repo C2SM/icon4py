@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import Optional
 from collections.abc import Iterator, Sequence
 
 import gt4py.next as gtx
@@ -16,10 +15,7 @@ from gt4py.next import backend as gtx_backend
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import (
-    definitions,
-    grid_utils as gridtest_utils,
-)
+from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 
 
 managers: dict[str, gm.GridManager] = {}
@@ -83,11 +79,11 @@ def global_grid_domains(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
 
 def _domain(dim: gtx.Dimension, zones: Sequence[h_grid.Zone]) -> Iterator[h_grid.Domain]:
     domain = h_grid.domain(dim)
-    for zone in zones:
-        try:
+    try:
+        for zone in zones:
             yield domain(zone)
-        except AssertionError:
-            ...
+    except AssertionError:
+        ...
 
 
 def valid_boundary_zones_for_dim(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
@@ -109,7 +105,7 @@ def valid_boundary_zones_for_dim(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
 def run_grid_manager(
     grid: definitions.GridDescription,
     keep_skip_values: bool,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
 ) -> gm.GridManager:
     key = "_".join(
         (grid.name, data_alloc.backend_name(backend), "skip" if keep_skip_values else "no_skip")

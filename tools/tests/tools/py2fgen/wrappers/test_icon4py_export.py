@@ -69,7 +69,7 @@ def fun_non_optional(_: int):
     pass
 
 
-def fun_with_optional(_: Optional[int]):
+def fun_with_optional(_: int | None):
     pass
 
 
@@ -113,4 +113,4 @@ def test_unpack_optional_type_hint(fun, is_optional):
     result, is_optional = icon4py_export._unpack_optional_type_hint(testee)
 
     assert result is int
-    assert is_optional == is_optional
+    assert is_optional

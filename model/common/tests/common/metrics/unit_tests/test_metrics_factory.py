@@ -15,10 +15,7 @@ from gt4py.next import backend as gtx_backend
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.metrics import (
-    metrics_attributes as attrs,
-    metrics_factory,
-)
+from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,

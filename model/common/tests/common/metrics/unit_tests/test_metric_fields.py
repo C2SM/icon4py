@@ -6,8 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
-from typing import TYPE_CHECKING
+
 import math
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
@@ -18,10 +19,10 @@ from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils as testing_helpers
 from icon4py.model.testing.fixtures.datatest import (
-    experiment,
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -30,8 +31,10 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 
@@ -428,7 +431,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         horizontal_end_distance=icon_grid.num_edges,
         horizontal_start=start_edge_nudging_2,
         horizontal_end=icon_grid.num_edges,
-        vertical_start=int(0),
+        vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C": icon_grid.get_connectivity("E2C"),
@@ -550,9 +553,9 @@ def test_compute_theta_exner_ref_mc(
         p0sl_bg=p0sl_bg,
         rd_o_cpd=rd_o_cpd,
         p0ref=p0ref,
-        horizontal_start=int(0),
+        horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=int(0),
+        vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={},
     )

@@ -209,7 +209,6 @@ docstring-code-format = true
 
 [tool.ruff.lint]
 # -- Rules set to be considered --
-exclude = ["**/tests/**"]
 explicit-preview-rules = true
 ignore = [
   'E501',  # [line-too-long]
@@ -284,11 +283,20 @@ max-complexity = 15
 [tool.ruff.lint.per-file-ignores]
 # Avoid messing up conditions in gt4py stencils
 "**/model/**/stencils/*.py" = ["SIM300"]
-# Ignore spurious errors when explicitly importing fixtures in tests.
+# Ignore spurious errors when explicitly importing fixtures in tests (F401, F811).
 # Check: https://github.com/astral-sh/ruff/issues/10662
-"**/tests/**/*_test.py" = ["F401", "F811"]
-"**/tests/**/fixtures.py" = ["F401", "F811"]
-"**/tests/**/test_*.py" = ["F401", "F811"]
+# TODO(havogt): remove PLR0915, PLR0911, TD, RUF012
+"**/tests/**/*_test.py" = ["F401", "F811", "PLR0915", "PLR0911", "TD", "RUF012"]
+"**/tests/**/conftest.py" = ["F401", "F811"]
+"**/tests/**/fixtures.py" = [
+  "F401",
+  "F811",
+  "PLR0915",
+  "PLR0911",
+  "TD",
+  "RUF012"
+]
+"**/tests/**/test_*.py" = ["F401", "F811", "PLR0915", "PLR0911", "TD", "RUF012"]
 
 [tool.ruff.lint.pylint]
 max-branches = 12

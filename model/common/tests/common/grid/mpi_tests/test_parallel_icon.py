@@ -12,10 +12,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.testing.parallel_helpers import (
-    check_comm_size,
-    processor_props,
-)
+from icon4py.model.testing.parallel_helpers import check_comm_size, processor_props
 
 from .. import utils
 

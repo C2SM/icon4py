@@ -30,8 +30,7 @@ def out_of_range(dim: gtx.Dimension):
 def refinement_value(dim: gtx.Dimension):
     lower = refin._UNORDERED[dim][1]
     upper = refin._MAX_ORDERED[dim]
-    for v in range(lower, upper):
-        yield v
+    yield from range(lower, upper)
 
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())

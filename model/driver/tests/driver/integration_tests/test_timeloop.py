@@ -6,7 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
+
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
@@ -33,8 +35,10 @@ from ..utils import (
     construct_nonhydrostatic_config,
 )
 
+
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 

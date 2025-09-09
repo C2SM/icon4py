@@ -6,7 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
+
 import pytest
+
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 
@@ -24,8 +26,7 @@ def test_domain_raises_for_non_horizontal_dim(dim):
 
 
 def zones():
-    for zone in h_grid.Zone.__members__.values():
-        yield zone
+    yield from h_grid.Zone.__members__.values()
 
 
 @pytest.mark.parametrize("dim", utils.horizontal_dims())
@@ -33,7 +34,7 @@ def zones():
 def test_domain_raises_for_invalid_zones(dim, zone, caplog):
     caplog.set_level(logging.DEBUG)
     log.debug(f"dim={dim}, zone={zone},")
-    if dim == dims.CellDim or dim == dims.VertexDim:
+    if dim in (dims.CellDim, dims.VertexDim):
         if zone in (
             h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5,
             h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6,

@@ -38,7 +38,6 @@ from icon4py.model.testing.fixtures.datatest import (
     interpolation_savepoint,
     processor_props,
     ranked_data_path,
-    experiment,
 )
 
 

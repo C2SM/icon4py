@@ -27,9 +27,9 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
-    experiment,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -38,8 +38,10 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 

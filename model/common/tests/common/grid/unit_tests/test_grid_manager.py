@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
+
 import logging
 import typing
 
@@ -22,15 +23,12 @@ from icon4py.model.common.grid import (
     refinement as refin,
     vertical as v_grid,
 )
-from icon4py.model.testing import (
-    datatest_utils as dt_utils,
-    test_utils,
-    definitions,
-)
+from icon4py.model.testing import datatest_utils as dt_utils, definitions, test_utils
 
 
 if typing.TYPE_CHECKING:
     import netCDF4
+
     from icon4py.model.testing import serialbox
 
 try:
@@ -43,10 +41,10 @@ from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     processor_props,
     ranked_data_path,
-    experiment,
 )
 
 from .. import utils
@@ -147,7 +145,7 @@ def _reset_invalid_index(index_array: np.ndarray) -> None:
 
     """
     for i in range(0, index_array.shape[0]):
-        uq, index = np.unique(index_array[i, :], return_index=True)
+        _, index = np.unique(index_array[i, :], return_index=True)
         index_array[i, max(index) + 1 :] = gridfile.GridFile.INVALID_INDEX
 
 
@@ -308,9 +306,9 @@ def test_grid_manager_grid_size(
     backend: gtx_typing.Backend, grid_descriptor: definitions.GridDescription
 ) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    grid_descriptor.sizes["cell"] == grid.size[dims.CellDim]
-    grid_descriptor.sizes["edge"] == grid.size[dims.EdgeDim]
-    grid_descriptor.sizes["vertex"] == grid.size[dims.VertexDim]
+    assert grid_descriptor.sizes["cell"] == grid.size[dims.CellDim]
+    assert grid_descriptor.sizes["edge"] == grid.size[dims.EdgeDim]
+    assert grid_descriptor.sizes["vertex"] == grid.size[dims.VertexDim]
 
 
 def assert_up_to_order(
@@ -323,7 +321,7 @@ def assert_up_to_order(
     reduced_reference = reference_table[start_index:, :]
     for n in range(reduced_table.shape[0]):
         assert np.all(
-            np.in1d(reduced_table[n, :], reduced_reference[n, :])
+            np.isin(reduced_table[n, :], reduced_reference[n, :])
         ), f"values in row {n+start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
 
 

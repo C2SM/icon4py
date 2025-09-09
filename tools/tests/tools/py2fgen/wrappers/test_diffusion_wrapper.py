@@ -18,10 +18,7 @@ from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.testing import definitions, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
-from icon4py.tools.py2fgen.wrappers import (
-    common as wrapper_common,
-    diffusion_wrapper,
-)
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common, diffusion_wrapper
 
 from . import utils
 from .test_grid_init import grid_init
@@ -73,7 +70,6 @@ def test_diffusion_wrapper_granule_inputs(
     itype_sher = (
         diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
-    nflat_gradp = grid_savepoint.nflat_gradp()
 
     # --- Extract Metric State Parameters ---
     vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
@@ -213,7 +209,7 @@ def test_diffusion_wrapper_granule_inputs(
         )
 
         # Check input arguments to Diffusion.init
-        captured_args, captured_kwargs = mock_init.call_args
+        _, captured_kwargs = mock_init.call_args
 
         # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
         try:
@@ -280,7 +276,7 @@ def test_diffusion_wrapper_granule_inputs(
         )
 
         # Check input arguments to Diffusion.run
-        captured_args, captured_kwargs = mock_run.call_args
+        _, captured_kwargs = mock_run.call_args
         assert utils.compare_objects(captured_kwargs["diagnostic_state"], expected_diagnostic_state)
         assert utils.compare_objects(captured_kwargs["prognostic_state"], expected_prognostic_state)
         assert captured_kwargs["dtime"] == expected_dtime

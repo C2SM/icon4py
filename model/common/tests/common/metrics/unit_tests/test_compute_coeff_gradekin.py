@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import pytest
@@ -18,13 +19,14 @@ from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
     processor_props,
     ranked_data_path,
-    experiment,
 )
+
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid

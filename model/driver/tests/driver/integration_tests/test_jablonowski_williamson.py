@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import pytest
@@ -18,9 +19,12 @@ from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
 
+
 if TYPE_CHECKING:
     import pathlib
+
     import gt4py.next.typing as gtx_typing
+
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 
@@ -41,13 +45,13 @@ def test_jabw_initial_condition(
     default_surface_pressure = data_alloc.constant_field(icon_grid, 1e5, dims.CellDim)
 
     (
-        diffusion_diagnostic_state,
+        _,
         solve_nonhydro_diagnostic_state,
-        prep_adv,
-        divdamp_fac_o2,
+        _,
+        _,
         diagnostic_state,
         prognostic_state_now,
-        prognostic_state_next,
+        _,
     ) = jabw.model_initialization_jabw(
         icon_grid,
         cell_geometry,

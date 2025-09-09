@@ -13,13 +13,13 @@ from icon4py.model.common.grid import horizontal as h_grid, simple
 
 
 def domain_generator():
-    for dim in (dims.EdgeDim, dims.CellDim, dims.VertexDim):
-        for z in h_grid.Zone:
-            try:
+    try:
+        for dim in (dims.EdgeDim, dims.CellDim, dims.VertexDim):
+            for z in h_grid.Zone:
                 domain = h_grid.domain(dim)(z)
                 yield domain
-            except AssertionError:
-                pass
+    except AssertionError:
+        pass
 
 
 @pytest.mark.parametrize("domain", domain_generator())

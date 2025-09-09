@@ -7,18 +7,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.dycore import (
-    dycore_states,
-    dycore_utils,
-    solve_nonhydro as solve_nh,
-)
+from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
@@ -30,15 +26,17 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import test_utils, definitions
+from icon4py.model.testing import definitions, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
+
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-    from icon4py.model.testing import serialbox as sb
+
     from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
 
 
 @pytest.mark.datatest
@@ -1146,7 +1144,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     start_cell_halo_level_2 = icon_grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
     end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
-    end_cell_halo_level_2 = icon_grid.end_index((cell_domain(h_grid.Zone.HALO_LEVEL_2)))
+    end_cell_halo_level_2 = icon_grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
     reference_rho_at_cells_on_model_levels = metrics_savepoint.rho_ref_mc()
     reference_theta_at_cells_on_model_levels = metrics_savepoint.theta_ref_mc()
@@ -1976,7 +1974,6 @@ def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     edge_domain = h_grid.domain(dims.EdgeDim)
 
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
-    config = utils.construct_solve_nh_config(experiment)
 
     z_vn_avg = savepoint_dycore_30_to_38_init.z_vn_avg()
     mass_fl_e = savepoint_dycore_30_to_38_init.mass_fl_e()
