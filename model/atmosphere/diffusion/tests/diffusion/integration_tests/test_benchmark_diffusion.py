@@ -26,6 +26,7 @@ from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decomposition_info
+from icon4py.model.testing import definitions
 
 from ..fixtures import *
 
@@ -34,6 +35,7 @@ from ..fixtures import *
 @pytest.mark.benchmark(
     group="diffusion_benchmark",
 )
+@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R19B08_DOMAIN01])
 def test_run_diffusion_benchmark(
     grid_manager: Any,
     vertical_grid_params: Dict[str, float],
