@@ -12,6 +12,7 @@ from gt4py.next.embedded.nd_array_field import NdArrayField
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+from icon4py.model.testing import definitions
 
 
 try:
@@ -120,10 +121,10 @@ def compare_objects(obj1, obj2, obj_name="object"):  # noqa: PLR0911
     return True, None
 
 
-def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
-    if name.lower() in "mch_ch_r04b09_dsl":
+def construct_diffusion_config(experiment: definitions.Experiment, ndyn_substeps: int = 5):
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
         return r04b09_diffusion_config(ndyn_substeps)
-    elif name.lower() in "exclaim_ape_r02b04":
+    elif experiment == definitions.Experiments.EXCLAIM_APE:
         return exclaim_ape_diffusion_config(ndyn_substeps)
 
 
@@ -175,14 +176,14 @@ def exclaim_ape_diffusion_config(ndyn_substeps):
     )
 
 
-def construct_solve_nh_config(name: str, ndyn_substeps: int = 5):
-    if name.lower() in "mch_ch_r04b09_dsl":
+def construct_solve_nh_config(experiment: definitions.Experiment, ndyn_substeps: int = 5):
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
         return _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps)
-    elif name.lower() in "exclaim_ape_r02b04":
+    elif experiment == definitions.Experiments.EXCLAIM_APE:
         return _exclaim_ape_nonhydrostatic_config(ndyn_substeps)
 
 
-def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
+def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps: int):
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
         divdamp_order=24,
@@ -193,7 +194,7 @@ def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
     return config
 
 
-def _exclaim_ape_nonhydrostatic_config(ndyn_substeps):
+def _exclaim_ape_nonhydrostatic_config(ndyn_substeps: int):
     """Create configuration for EXCLAIM APE experiment."""
     return solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
