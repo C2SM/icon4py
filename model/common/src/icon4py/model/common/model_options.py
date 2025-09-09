@@ -30,10 +30,7 @@ def get_options(program_name: str, arch: str, **backend):
 
 def customize_backend(program_name: str = "", arch: str = "", **backend):
     options = get_options(program_name, arch, **backend)
-    if options["backend_kind"] == "dace":
-        backend_func = make_custom_dace_backend
-    elif options["backend_kind"] == "gtfn":
-        backend_func = make_custom_gtfn_backend
+    backend_func = backend.get("backend_factory", make_custom_gtfn_backend)
     device = backend["device"]
     custom_backend = backend_func(
         device=device,
