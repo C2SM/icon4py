@@ -7,18 +7,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from icon4py.model.common.initialization.topography_initialization import topography_initialization
+from icon4py.model.common.initialization.jablonowski_williamson_topography import (
+    jablonowski_williamson_topography,
+)
 
 from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 from icon4py.model.testing import test_utils
 from icon4py.model.common.grid import geometry as grid_geometry
-from model.atmosphere.diffusion.tests.diffusion.integration_tests.test_benchmark_diffusion import (
-    construct_dummy_decomposition_info,
-    get_cell_geometry_for_grid_file,
-)
-from icon4py.model.common.grid import (
-    geometry_attributes as geometry_meta,
-)
+import icon4py.model.common.grid.states as grid_states
+from icon4py.model.common.grid import geometry_attributes as geometry_meta
+from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decomposition_info
 from model.common.tests.common.fixtures import *  # noqa: F403
 
 
@@ -29,7 +27,7 @@ from model.common.tests.common.fixtures import *  # noqa: F403
         (dt_utils.R02B04_GLOBAL, dt_utils.JABW_EXPERIMENT),
     ],
 )
-def test_topography_initialization(
+def test_jablonowski_williamson_topography(
     grid_file,
     backend,
     topography_savepoint,
@@ -54,9 +52,13 @@ def test_topography_initialization(
         metadata=geometry_meta.attrs,
     )
 
-    cell_geometry = get_cell_geometry_for_grid_file(grid_file, geometry_field_source, backend)
+    cell_geometry = grid_states.CellParams(
+        cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
+        cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
+        area=geometry_field_source.get(geometry_meta.CELL_AREA),
+    )
 
-    topo_c = topography_initialization(
+    topo_c = jablonowski_williamson_topography(
         cell_lat=cell_geometry.cell_center_lat.asnumpy(),
         u0=35.0,
         backend=backend,

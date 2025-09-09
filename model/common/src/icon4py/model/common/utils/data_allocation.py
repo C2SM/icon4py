@@ -94,6 +94,20 @@ def random_field(
     return gtx.as_field(dims, arr, allocator=backend)
 
 
+def random_sign(
+    grid,
+    *dims,
+    dtype: npt.DTypeLike | None = None,
+    extend: dict[gtx.Dimension, int] | None = None,
+    backend=None,
+) -> gtx.Field:
+    """Generate a random field with values -1 or 1."""
+    arr = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dims, extend=extend))
+    if dtype:
+        arr = arr.astype(dtype)
+    return gtx.as_field(dims, arr, allocator=backend)
+
+
 def random_mask(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,

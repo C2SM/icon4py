@@ -23,13 +23,13 @@ from ...fixtures import test_path
 
 
 def grid_files():
-    files = [
-        (datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE),
-        (datatest_utils.REGIONAL_EXPERIMENT, grid_utils.REGIONAL_GRIDFILE),
+    grids = [
+        definitions.Grids.R02B04_GLOBAL,
+        definitions.Grids.MCH_CH_R04B09_DSL,
     ]
 
-    for ff in files:
-        yield definitions.grids_path().joinpath(ff[0]).joinpath(ff[1])
+    for grid in grids:
+        yield definitions.grids_path().joinpath(grid.name).joinpath(grid.file_name)
 
 
 @pytest.mark.parametrize("file", grid_files())

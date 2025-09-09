@@ -47,11 +47,10 @@ import types
 import typing
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from types import ModuleType
-from typing import Any, Optional, Protocol, TypeVar
+from typing import Any, Literal, Optional, Protocol, TypeVar, overload
 
 import gt4py.next as gtx
-import gt4py.next.backend as gtx_backend
-import gt4py.next.ffront.decorator as gtx_decorator
+import gt4py.next.typing as gtx_typing
 import xarray as xa
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -95,7 +94,7 @@ class FieldProvider(Protocol):
         self,
         field_name: str,
         field_src: Optional["FieldSource"],
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid: GridProvider | None,
     ) -> state_utils.FieldType: ...
 
@@ -137,10 +136,23 @@ class FieldSource(GridProvider, Protocol):
     #      there are fields which need to be computed on a specific backend, which can be different from the
     #      general run backend
     @property
-    def backend(self) -> gtx_backend.Backend: ...
+    def backend(self) -> gtx_typing.Backend: ...
 
     def _backend_name(self) -> str:
         return "embedded" if self.backend is None else self.backend.name
+
+    @overload
+    def get(
+        self, field_name: str, type_: Literal[RetrievalType.FIELD] = RetrievalType.FIELD
+    ) -> state_utils.FieldType: ...  # TODO(havogt): FieldType is not strict enough
+
+    @overload
+    def get(self, field_name: str, type_: Literal[RetrievalType.DATA_ARRAY]) -> xa.DataArray: ...
+
+    @overload
+    def get(
+        self, field_name: str, type_: Literal[RetrievalType.METADATA]
+    ) -> model.FieldMetaData: ...
 
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
@@ -207,7 +219,7 @@ class CompositeSource(FieldSource):
         return self._metadata
 
     @property
-    def backend(self) -> gtx_backend.Backend:
+    def backend(self) -> gtx_typing.Backend:
         return self._backend
 
     @property
@@ -257,7 +269,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
 
     def __init__(
         self,
-        func: gtx_decorator.FieldOperator,
+        func: gtx_typing.FieldOperator,
         domain: tuple[gtx.Dimension, ...],
         fields: dict[str, str],  # keyword arg to (field_operator, field_name)
         deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
@@ -289,7 +301,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
         self,
         field_name: str,
         field_src: FieldSource | None,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid: GridProvider,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
@@ -355,7 +367,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
 
     def _allocate_fields(
         self,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
         xp: ModuleType,
         metadata: dict[str, model.FieldMetaData],
@@ -378,7 +390,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
 
         def _allocate(
             grid_provider: GridProvider,
-            backend: gtx_backend.Backend,
+            backend: gtx_typing.Backend,
             array_ns: ModuleType,
             dtype: state_utils.ScalarType = ta.wpfloat,
         ) -> gtx.Field:
@@ -414,7 +426,7 @@ class ProgramFieldProvider(FieldProvider):
 
     def __init__(
         self,
-        func: gtx_decorator.Program,
+        func: gtx_typing.Program,
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
         fields: dict[str, str],
         deps: dict[str, str],
@@ -432,7 +444,7 @@ class ProgramFieldProvider(FieldProvider):
 
     def _allocate(
         self,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid: base_grid.Grid,  # TODO @halungge: change to vertical grid
         dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
@@ -501,7 +513,7 @@ class ProgramFieldProvider(FieldProvider):
         self,
         field_name: str,
         factory: FieldSource,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
     ):
         if any([f is None for f in self.fields.values()]):
@@ -511,7 +523,7 @@ class ProgramFieldProvider(FieldProvider):
     def _compute(
         self,
         factory: FieldSource,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
     ) -> None:
         try:
@@ -577,7 +589,7 @@ class NumpyFieldsProvider(FieldProvider):
         self,
         field_name: str,
         factory: FieldSource,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid: GridProvider,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
@@ -587,7 +599,7 @@ class NumpyFieldsProvider(FieldProvider):
     def _compute(
         self,
         factory: FieldSource,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
     ) -> None:
         self._validate_dependencies()

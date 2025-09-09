@@ -8,11 +8,17 @@
 
 import math
 
+from gt4py.next import backend as gtx_backend
+
 from icon4py.model.common import constants as phy_const
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def topography_initialization(cell_lat, u0, backend):
+def jablonowski_williamson_topography(
+    cell_lat: data_alloc.NDArray,
+    u0: float,
+    backend: gtx_backend.Backend | None,
+) -> data_alloc.NDArray:
     """Function to initialize topography."""
     xp = data_alloc.import_array_ns(backend)
     sin_lat = xp.sin(cell_lat)

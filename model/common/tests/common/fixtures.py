@@ -12,14 +12,6 @@ import random
 import pytest
 
 from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
-from icon4py.model.testing.fixtures.datatest import (
-    grid_savepoint,
-    data_provider,
-    download_ser_data,
-    processor_props,
-    ranked_data_path,
-    backend,
-)
 
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -47,7 +39,6 @@ from icon4py.model.testing.fixtures.datatest import (
     step_date_exit,
     step_date_init,
     stretch_factor,
-    top_height_limit_for_maximal_layer_thickness,
 )
 
 
