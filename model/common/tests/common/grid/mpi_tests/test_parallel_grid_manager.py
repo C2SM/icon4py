@@ -9,6 +9,7 @@ import functools
 import logging
 import operator
 import pathlib
+from typing import Iterator
 
 import numpy as np
 import pytest
@@ -357,3 +358,48 @@ def test_halo_neighbor_access_c2e(processor_props):
     # 3. compute geofac_div = primal_edge_length * edge_orientation / area
     # 4. gather geofac_div
     # 5 compare (possible reorder
+
+
+# TODO move to mpi_tests folder
+@pytest.mark.mpi
+@pytest.mark.parametrize(
+    "field_offset",
+    [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
+)
+def test_local_connectivities(
+    processor_props: defs.ProcessProperties,
+    caplog: Iterator,
+    field_offset: gtx.FieldOffset,
+) -> None:  # fixture
+    caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
+    grid = utils.run_grid_manager(
+        test_defs.Grids.R02B04_GLOBAL, keep_skip_values=True, backend=None
+    ).grid
+    partitioner = halo.SimpleMetisDecomposer()
+    face_face_connectivity = grid.connectivities[dims.C2E2CDim.value].ndarray  # type: ignore[union-attr]
+    neighbor_tables = {k: v.ndarray for k, v in grid.connectivities.items()}
+    labels = partitioner(face_face_connectivity, num_partitions=processor_props.comm_size)
+    halo_generator = halo.IconLikeHaloConstructor(
+        connectivities=neighbor_tables,
+        run_properties=processor_props,
+        num_levels=1,
+    )
+
+    decomposition_info = halo_generator(labels)
+
+    connectivity = gm.construct_local_connectivity(
+        field_offset, decomposition_info, connectivity=grid.connectivities[field_offset].ndarray
+    )
+    # there is an neighbor list for each index of the target dimension on the node
+    assert (
+        connectivity.shape[0]
+        == decomposition_info.global_index(
+            field_offset.target[0], defs.DecompositionInfo.EntryType.ALL
+        ).size
+    )
+    # all neighbor indices are valid local indices
+    assert np.max(connectivity) == np.max(
+        decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
+    )
+    # TODO what else to assert?
+    # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)

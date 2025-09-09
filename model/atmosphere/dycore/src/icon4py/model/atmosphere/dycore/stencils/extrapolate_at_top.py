@@ -6,16 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _extrapolate_at_top(
     wgtfacq_e: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
@@ -32,7 +30,7 @@ def _extrapolate_at_top(
     return astype(vn_ie_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def extrapolate_at_top(
     wgtfacq_e: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],

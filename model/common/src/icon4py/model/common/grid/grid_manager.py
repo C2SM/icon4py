@@ -11,7 +11,7 @@ from types import ModuleType
 from typing import Literal, TypeAlias
 
 import gt4py.next as gtx
-import gt4py.next.backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -96,7 +96,7 @@ class GridManager:
 
     def __call__(
         self,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         keep_skip_values: bool,
         decomposer: halo.Decomposer = _single_node_decomposer,
         run_properties=_single_process_props,
@@ -118,7 +118,7 @@ class GridManager:
 
         self.close()
 
-    def _read_coordinates(self, backend: gtx_backend.Backend | None) -> CoordinateDict:
+    def _read_coordinates(self, backend: gtx_typing.Backend | None) -> CoordinateDict:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
@@ -179,7 +179,7 @@ class GridManager:
             },
         }
 
-    def _read_geometry_fields(self, backend: gtx_backend.Backend | None):
+    def _read_geometry_fields(self, backend: gtx_typing.Backend | None):
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
@@ -247,7 +247,7 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self,
-        backend: gtx_backend.Backend | None = None,
+        backend: gtx_typing.Backend | None = None,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
@@ -352,7 +352,7 @@ class GridManager:
 
     def _construct_decomposed_grid(
         self,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         with_skip_values: bool,
         decomposer: halo.Decomposer,
         run_properties: decomposition.ProcessProperties,

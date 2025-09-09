@@ -15,7 +15,7 @@ import sys
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend, int32
+import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
@@ -175,7 +175,7 @@ class DiffusionConfig:
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
 
-        #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f89
+        #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f90
         self.thslp_zdiffu = thslp_zdiffu
         #: threshold [m] for height difference between adjacent grid points, defaults to 200m (temperature diffusion)
         self.thhgtd_zdiffu = thhgtd_zdiffu
@@ -358,7 +358,7 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):
@@ -477,7 +477,7 @@ class Diffusion:
                 "geofac_grg_y": self._interpolation_state.geofac_grg_y,
                 "area": self._cell_params.area,
                 "diff_multfac_w": self.diff_multfac_w,
-                "type_shear": int32(
+                "type_shear": gtx.int32(
                     self.config.shear_type.value
                 ),  # DaCe parser peculiarity (does not work as gtx.int32)
             },
@@ -490,7 +490,7 @@ class Diffusion:
             vertical_sizes={
                 "vertical_start": 0,
                 "vertical_end": self._grid.num_levels,
-                "nrdmax": int32(  # DaCe parser peculiarity (does not work as gtx.int32)
+                "nrdmax": gtx.int32(  # DaCe parser peculiarity (does not work as gtx.int32)
                     self._vertical_grid.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
             },
@@ -907,7 +907,7 @@ class Diffusion:
             *[
                 name
                 for name in self.__dict__
-                if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
+                if isinstance(self.__dict__[name], gtx_typing.Program)
             ],
         ]
         return dace_orchestration.generate_orchestration_uid(

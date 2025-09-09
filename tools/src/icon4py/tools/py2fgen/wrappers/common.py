@@ -269,9 +269,10 @@ def construct_decomposition(
 
     decomposition_info = (
         definitions.DecompositionInfo(klevels=num_levels)
-        .set_dimension(dims.CellDim, c_glb_index, c_owner_mask)
-        .set_dimension(dims.EdgeDim, e_glb_index, e_owner_mask)
-        .set_dimension(dims.VertexDim, v_glb_index, v_owner_mask)
+        # TODO (halungge): last argument is called `decomp_domain` in icon, it is not needed in the granules should we pass it nevertheless?
+        .set_dimension(dims.CellDim, c_glb_index, c_owner_mask, None)
+        .set_dimension(dims.EdgeDim, e_glb_index, e_owner_mask, None)
+        .set_dimension(dims.VertexDim, v_glb_index, v_owner_mask, None)
     )
     processor_props = definitions.get_processor_properties(definitions.MultiNodeRun(), comm_id)
     exchange = definitions.create_exchange(processor_props, decomposition_info)
