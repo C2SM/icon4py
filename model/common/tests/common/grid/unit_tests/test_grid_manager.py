@@ -46,6 +46,7 @@ from icon4py.model.testing.fixtures import (
     grid_savepoint,
     processor_props,
     ranked_data_path,
+    experiment,
 )
 
 from .. import utils

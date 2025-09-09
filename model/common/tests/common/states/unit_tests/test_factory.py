@@ -16,16 +16,22 @@ from icon4py.model.common.grid import horizontal as h_grid, icon, vertical as v_
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
-    experiment,
     grid_savepoint,
     metrics_savepoint,
     processor_props,
     ranked_data_path,
 )
+
+
+@pytest.fixture(scope="module")
+def experiment():
+    # TODO(havogt): understand why the tests only work with this experiment
+    return definitions.Experiments.MCH_CH_R04B09
 
 
 cell_domain = h_grid.domain(dims.CellDim)
