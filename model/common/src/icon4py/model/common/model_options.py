@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import enum
 import functools
 import typing
 
@@ -14,7 +15,6 @@ import gt4py.next.typing as gtx_typing
 from icon4py.model.common.model_backends import (
     BackendDescription,
     DeviceType,
-    make_custom_dace_backend,
     make_custom_gtfn_backend,
 )
 
@@ -23,21 +23,15 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
-def get_options(program_name: str, arch: str, **backend):
-    backend_kind = backend.get("backend_kind", "default")
-    return dict(backend_kind=backend_kind)
-
-
-def customize_backend(program_name: str = "", arch: str = "", **backend):
-    if isinstance(backend, DeviceType):
+def customize_backend(backend):
+    if isinstance(backend, enum.Enum):
         backend = {"device": backend}
-    # TODO: implement the lookup function as below
-    # options = get_options(program_name, arch, **backend)
+    # TODO(havogt): implement the lookup function as below
+    # options = get_options(program_name, arch, **backend) # noqa: ERA001
     backend_func = backend.get("backend_factory", make_custom_gtfn_backend)
     device = backend["device"]
     custom_backend = backend_func(
         device=device,
-        **options,
     )
     return custom_backend
 
@@ -71,7 +65,7 @@ def setup_program(
     offset_provider = {} if offset_provider is None else offset_provider
 
     if not isinstance(backend, (gtx.backend.Backend, None)):
-        backend = customize_backend(program_name=str(program.past_stage.past_node.id), **backend)
+        backend = customize_backend(**backend)
 
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend).compile(
