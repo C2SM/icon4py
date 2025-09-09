@@ -11,14 +11,13 @@ from __future__ import annotations
 from typing import Optional
 
 from gt4py.next import backend as gtx_backend
-import gt4py.next as gtx
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import serialbox as sb
+from icon4py.model.testing import serialbox as sb, definitions
 
 
 def construct_interpolation_state(
@@ -86,17 +85,18 @@ def construct_metric_state(
     )
 
 
-def construct_solve_nh_config(name: str):
-    if name.lower() in "mch_ch_r04b09_dsl":
+def construct_solve_nh_config(experiment: definitions.Experiment) -> solve_nh.NonHydrostaticConfig:
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
         return _mch_ch_r04b09_dsl_nonhydrostatic_config()
-    elif name.lower() in "exclaim_ape_r02b04":
+    else:
+        assert experiment == definitions.Experiments.EXCLAIM_APE
         return _exclaim_ape_nonhydrostatic_config()
 
 
-def _mch_ch_r04b09_dsl_nonhydrostatic_config():
+def _mch_ch_r04b09_dsl_nonhydrostatic_config() -> solve_nh.NonHydrostaticConfig:
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
-        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
+        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # `NonHydrostaticConfig` is lying about the type of `divdamp_order`
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coefficient=0.375,
@@ -104,18 +104,18 @@ def _mch_ch_r04b09_dsl_nonhydrostatic_config():
     return config
 
 
-def _exclaim_ape_nonhydrostatic_config():
+def _exclaim_ape_nonhydrostatic_config() -> solve_nh.NonHydrostaticConfig:
     """Create configuration for EXCLAIM APE experiment."""
     return solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
-        divdamp_order=24,
+        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # `NonHydrostaticConfig` is lying about the type of `divdamp_order`
     )
 
 
 def create_vertical_params(
     vertical_config: v_grid.VerticalGridConfig,
     sp: sb.IconGridSavepoint,
-):
+) -> v_grid.VerticalGrid:
     return v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=sp.vct_a(),
@@ -128,7 +128,7 @@ def construct_diagnostics(
     grid: icon_grid.IconGrid,
     backend: Optional[gtx_backend.Backend],
     swap_vertical_wind_advective_tendency: bool = False,
-):
+) -> dycore_states.DiagnosticStateNonHydro:
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=0.0,
@@ -160,7 +160,9 @@ def construct_diagnostics(
     )
 
 
-def create_prognostic_states(sp) -> common_utils.TimeStepPair[prognostics.PrognosticState]:
+def create_prognostic_states(
+    sp: sb.IconNonHydroInitSavepoint,
+) -> common_utils.TimeStepPair[prognostics.PrognosticState]:
     prognostic_state_nnow = prognostics.PrognosticState(
         w=sp.w_now(),
         vn=sp.vn_now(),

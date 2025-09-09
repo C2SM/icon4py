@@ -15,7 +15,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils as testing_test_utils
+from icon4py.model.testing import definitions, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 from icon4py.tools.py2fgen.wrappers import (
@@ -31,7 +31,11 @@ from .test_grid_init import grid_init
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -286,7 +290,11 @@ def test_diffusion_wrapper_granule_inputs(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))

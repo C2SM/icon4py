@@ -11,7 +11,6 @@ import random
 
 import pytest
 
-from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
 from icon4py.model.testing.fixtures.datatest import (
     grid_savepoint,
     data_provider,

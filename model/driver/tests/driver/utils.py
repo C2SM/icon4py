@@ -13,6 +13,7 @@ from gt4py.next import backend as gtx_backend
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.driver import icon4py_configuration as driver_config
+from icon4py.model.testing import definitions
 
 
 # TODO(OngChia): The diffusion and solve_nonhydro configs are duplication of the same functions in
@@ -68,10 +69,10 @@ def r04b09_diffusion_config(
     )
 
 
-def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
-    if name.lower() in "mch_ch_r04b09_dsl":
+def construct_diffusion_config(experiment: definitions.Experiment, ndyn_substeps: int = 5):
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
         return r04b09_diffusion_config(ndyn_substeps)
-    elif name.lower() in "exclaim_ape_r02b04":
+    elif experiment == definitions.Experiments.EXCLAIM_APE:
         return exclaim_ape_diffusion_config(ndyn_substeps)
 
 
@@ -94,10 +95,10 @@ def exclaim_ape_nonhydrostatic_config():
     )
 
 
-def construct_nonhydrostatic_config(name: str):
-    if name.lower() in "mch_ch_r04b09_dsl":
+def construct_nonhydrostatic_config(experiment: definitions.Experiment):
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
         return mch_ch_r04b09_dsl_nonhydrostatic_config()
-    elif name.lower() in "exclaim_ape_r02b04":
+    elif experiment == definitions.Experiments.EXCLAIM_APE:
         return exclaim_ape_nonhydrostatic_config()
 
 
@@ -150,18 +151,18 @@ def exclaim_ape_icon4pyrun_config(
 
 
 def construct_icon4pyrun_config(
-    name: str,
+    experiment: definitions.Experiment,
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
     backend: gtx_backend.Backend,
     ndyn_substeps: int = 5,
 ):
-    if name.lower() in "mch_ch_r04b09_dsl":
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
         return mch_ch_r04b09_dsl_icon4pyrun_config(
             date_init, date_exit, diffusion_linit_init, backend, ndyn_substeps
         )
-    elif name.lower() in "exclaim_ape_r02b04":
+    elif experiment == definitions.Experiments.EXCLAIM_APE:
         return exclaim_ape_icon4pyrun_config(
             date_init, date_exit, diffusion_linit_init, backend, ndyn_substeps
         )

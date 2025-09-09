@@ -144,7 +144,7 @@ class FieldSource(GridProvider, Protocol):
     @overload
     def get(
         self, field_name: str, type_: Literal[RetrievalType.FIELD] = RetrievalType.FIELD
-    ) -> state_utils.FieldType: ...  # TODO(havogt): FieldType is not strict enough
+    ) -> state_utils.GTXFieldType: ...
 
     @overload
     def get(self, field_name: str, type_: Literal[RetrievalType.DATA_ARRAY]) -> xa.DataArray: ...
@@ -156,7 +156,7 @@ class FieldSource(GridProvider, Protocol):
 
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
-    ) -> state_utils.FieldType | xa.DataArray | model.FieldMetaData:
+    ) -> state_utils.GTXFieldType | xa.DataArray | model.FieldMetaData:
         """
         Get a field or its metadata from the factory.
 

@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -14,9 +17,9 @@ from icon4py.model.common.grid import horizontal as h_grid, refinement
 from icon4py.model.common.metrics.compute_nudgecoeffs import compute_nudgecoeffs
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
+    experiment,
     data_provider,
     download_ser_data,
     experiment,
@@ -27,15 +30,19 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
+
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_nudgecoeffs_e(
-    grid_savepoint,
-    interpolation_savepoint,
-    icon_grid,
-    backend,
-):
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     nudgecoeff_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dtype=wpfloat, backend=backend)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
     refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)

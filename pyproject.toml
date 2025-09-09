@@ -151,18 +151,21 @@ warn_unused_ignores = true
 # TODO(): fix gtx.int32 export in gt4py
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
-module = '*.stencil_tests.*'
+module = ['*.stencil_tests.*', '*.unit_tests.*']
 
 [[tool.mypy.overrides]]
 ignore_errors = true
 module = [
-  'icon4py.model.testing.fixtures.datatest',
   'icon4py.model.testing.pytest_hooks',
   'icon4py.model.testing.serialbox',
   'icon4py.tools.py2fgen.wrappers.diffusion_wrapper',
   'icon4py.tools.py2fgen.wrappers.dycore_wrapper',
   'icon4py.tools.py2fgen.wrappers.grid_wrapper'
 ]
+
+[[tool.mypy.overrides]]
+disallow_untyped_defs = false
+module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 
 # -- pytest --
 [tool.pytest]

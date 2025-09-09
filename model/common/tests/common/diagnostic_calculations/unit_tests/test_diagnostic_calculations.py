@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
@@ -26,7 +28,7 @@ from icon4py.model.common.states import (
     tracer_state as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
+from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -39,20 +41,17 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
+
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        dt_utils.JABW_EXPERIMENT,
-    ],
-)
+@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_diagnose_temperature(
-    experiment,
-    data_provider,
-    icon_grid,
-    backend,
-):
+    data_provider: sb.IconSerialDataProvider, icon_grid: base_grid.Grid, backend: gtx_typing.Backend
+) -> None:
     diagnostic_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
     temperature_ref = diagnostic_reference_savepoint.temperature().asnumpy()
     virtual_temperature_ref = diagnostic_reference_savepoint.virtual_temperature().asnumpy()
@@ -104,19 +103,13 @@ def test_diagnose_temperature(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        dt_utils.JABW_EXPERIMENT,
-    ],
-)
+@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_diagnose_meridional_and_zonal_winds(
-    experiment,
-    data_provider,
-    interpolation_savepoint,
-    icon_grid,
-    backend,
-):
+    data_provider: sb.IconSerialDataProvider,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     prognostics_init_savepoint = data_provider.from_savepoint_prognostics_initial()
     vn = prognostics_init_savepoint.vn_now()
     rbv_vec_coeff_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
@@ -163,15 +156,13 @@ def test_diagnose_meridional_and_zonal_winds(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        dt_utils.JABW_EXPERIMENT,
-    ],
-)
+@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_diagnose_surface_pressure(
-    experiment, data_provider, icon_grid, backend, metrics_savepoint
-):
+    data_provider: sb.IconSerialDataProvider,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+    metrics_savepoint: sb.MetricSavepoint,
+) -> None:
     initial_diagnostic_savepoint = data_provider.from_savepoint_diagnostics_initial()
     surface_pressure_ref = initial_diagnostic_savepoint.pressure_sfc().asnumpy()
     initial_prognostic_savepoint = data_provider.from_savepoint_prognostics_initial()
@@ -204,13 +195,13 @@ def test_diagnose_surface_pressure(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        dt_utils.JABW_EXPERIMENT,
-    ],
-)
-def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metrics_savepoint):
+@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+def test_diagnose_pressure(
+    data_provider: sb.IconSerialDataProvider,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+    metrics_savepoint: sb.MetricSavepoint,
+) -> None:
     ddqz_z_full = metrics_savepoint.ddqz_z_full()
 
     diagnostics_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
@@ -254,9 +245,7 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
 
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor",
-    [
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85),
-    ],
+    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0, 8000.0, 0.85)],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
@@ -264,18 +253,14 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
 @pytest.mark.parametrize("location", [("interface-nwp")])
 @pytest.mark.datatest
 def test_diagnostic_update_after_saturation_adjustement(
-    experiment,
-    location,
-    model_top_height,
-    damping_height,
-    stretch_factor,
-    date,
-    data_provider,
-    grid_savepoint,
-    metrics_savepoint,
-    icon_grid,
-    backend,
-):
+    location: str,
+    date: str,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     satad_init = data_provider.from_savepoint_satad_init(location=location, date=date)
     satad_exit = data_provider.from_savepoint_satad_exit(location=location, date=date)
 

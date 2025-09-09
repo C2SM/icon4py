@@ -5,8 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
+from __future__ import annotations
 
+from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
@@ -20,7 +21,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
     grid_utils,
     reference_funcs as ref_funcs,
     serialbox as sb,
@@ -37,26 +37,35 @@ from ..utils import (
     verify_diffusion_fields,
 )
 
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
 
-grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
+
+# TODO default_dict?
+grid_functionality = {
+    definitions.Experiments.EXCLAIM_APE.name: {},
+    definitions.Experiments.MCH_CH_R04B09.name: {},
+}
 
 
-def get_grid_for_experiment(experiment, backend):
+def get_grid_for_experiment(experiment: definitions.Experiment, backend: gtx_typing.Backend):
     return _get_or_initialize(experiment, backend, "grid")
 
 
-def get_edge_geometry_for_experiment(experiment, backend):
+def get_edge_geometry_for_experiment(
+    experiment: definitions.Experiment, backend: gtx_typing.Backend
+):
     return _get_or_initialize(experiment, backend, "edge_geometry")
 
 
-def get_cell_geometry_for_experiment(experiment, backend):
+def get_cell_geometry_for_experiment(
+    experiment: definitions.Experiment, backend: gtx_typing.Backend
+):
     return _get_or_initialize(experiment, backend, "cell_geometry")
 
 
-def _get_or_initialize(experiment_name: str, backend, name):
-    experiment = dt_utils.experiment_from_name(experiment_name=experiment_name)  # TODO
-
-    if not grid_functionality[experiment_name].get(name):
+def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.Backend, name: str):
+    if not grid_functionality[experiment.name].get(name):
         geometry_ = grid_utils.get_grid_geometry(backend, experiment)
         grid = geometry_.grid
 
@@ -89,10 +98,10 @@ def _get_or_initialize(experiment_name: str, backend, name):
             dual_normal_vert_x=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
             dual_normal_vert_y=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
         )
-        grid_functionality[experiment_name]["grid"] = grid
-        grid_functionality[experiment_name]["edge_geometry"] = edge_params
-        grid_functionality[experiment_name]["cell_geometry"] = cell_params
-    return grid_functionality[experiment_name].get(name)
+        grid_functionality[experiment.name]["grid"] = grid
+        grid_functionality[experiment.name]["edge_geometry"] = edge_params
+        grid_functionality[experiment.name]["cell_geometry"] = cell_params
+    return grid_functionality[experiment.name].get(name)
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
@@ -293,10 +302,10 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.parametrize(
     "experiment,step_date_init",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:04.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -354,8 +363,16 @@ def test_verify_diffusion_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            definitions.Experiments.EXCLAIM_APE,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
@@ -437,7 +454,11 @@ def test_run_diffusion_single_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -561,7 +582,7 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
 # TODO(): Enable dace orchestration, currently broken by precompiled programs
 @pytest.mark.parametrize("orchestration", [False])

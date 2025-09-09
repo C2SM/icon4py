@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
@@ -19,9 +20,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     icon4py_configuration,
     icon4py_driver,
+    initialization_utils as driver_init,
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
+from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
@@ -31,6 +33,11 @@ from ..utils import (
     construct_nonhydrostatic_config,
 )
 
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
+
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
@@ -38,7 +45,7 @@ from ..utils import (
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            definitions.Experiments.MCH_CH_R04B09,
             1,
             2,
             1,
@@ -52,7 +59,7 @@ from ..utils import (
             False,
         ),
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            definitions.Experiments.MCH_CH_R04B09,
             1,
             2,
             1,
@@ -66,7 +73,7 @@ from ..utils import (
             True,
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            definitions.Experiments.EXCLAIM_APE,
             1,
             2,
             1,
@@ -80,7 +87,7 @@ from ..utils import (
             False,
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
+            definitions.Experiments.EXCLAIM_APE,
             1,
             2,
             1,
@@ -94,7 +101,7 @@ from ..utils import (
             True,
         ),
         (
-            dt_utils.GAUSS3D_EXPERIMENT,
+            definitions.Experiments.GAUSS3D,
             1,
             2,
             1,
@@ -110,38 +117,31 @@ from ..utils import (
     ],
 )
 def test_run_timeloop_single_step(
-    experiment,
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
-    timeloop_date_init,
-    timeloop_date_exit,
-    step_date_init,
-    step_date_exit,
-    timeloop_diffusion_linit_init,
-    timeloop_diffusion_linit_exit,
-    vn_only,
+    experiment: definitions.Experiment,
+    timeloop_date_init: str,
+    timeloop_date_exit: str,
+    timeloop_diffusion_linit_init: bool,
+    vn_only: bool,  # TODO unused?
     *,
-    grid_savepoint,
-    icon_grid,
-    metrics_savepoint,
-    interpolation_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    ndyn_substeps,
-    timeloop_diffusion_savepoint_init,
-    timeloop_diffusion_savepoint_exit,
-    savepoint_velocity_init,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
-    backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    icon_grid: base_grid.Grid,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    lowest_layer_thickness: float,
+    model_top_height: float,
+    stretch_factor: float,
+    damping_height: float,
+    ndyn_substeps: int,
+    timeloop_diffusion_savepoint_init: sb.IconDiffusionInitSavepoint,
+    timeloop_diffusion_savepoint_exit: sb.IconDiffusionExitSavepoint,
+    savepoint_velocity_init: sb.IconVelocityInitSavepoint,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    backend: gtx_typing.Backend,
 ):
-    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+    if experiment == definitions.Experiments.GAUSS3D:
         config = icon4py_configuration.read_config(
-            experiment_type=experiment,
+            experiment_type=driver_init.ExperimentType.GAUSS3D,
             backend=backend,
         )
         diffusion_config = config.diffusion_config

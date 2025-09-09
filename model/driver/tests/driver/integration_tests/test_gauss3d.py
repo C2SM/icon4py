@@ -5,14 +5,22 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
 import pytest
 
 from icon4py.model.driver.testcases import gauss3d
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils, definitions
 from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
+
+if TYPE_CHECKING:
+    import pathlib
+    import gt4py.next.typing as gtx_typing
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
 
 
 @pytest.mark.datatest
@@ -23,14 +31,14 @@ from ..fixtures import *  # noqa: F403
     ],
 )
 def test_gauss3d_initial_condition(
-    experiment,
-    ranked_data_path,
-    backend,
-    rank,
-    data_provider,
-    grid_savepoint,
-    icon_grid,
-):
+    experiment: definitions.Experiment,
+    ranked_data_path: pathlib.Path,
+    backend: gtx_typing.Backend,
+    rank: int,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    icon_grid: base_grid.Grid,
+) -> None:
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
     (

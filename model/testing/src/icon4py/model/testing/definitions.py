@@ -127,7 +127,7 @@ class Experiment:
     description: str
     grid: GridDescription
     num_levels: int
-    partitioned_data: Mapping[int, str] | None = None
+    partitioned_data: Mapping[int, str]
 
 
 class Experiments:

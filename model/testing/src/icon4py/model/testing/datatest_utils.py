@@ -19,22 +19,15 @@ from icon4py.model.common.grid import base, icon
 from icon4py.model.testing import definitions, serialbox
 
 
-GLOBAL_EXPERIMENT = definitions.Experiments.EXCLAIM_APE.name
-REGIONAL_EXPERIMENT = definitions.Grids.MCH_CH_R04B09_DSL.name
-# we were using `REGIONAL_EXPERIMENT` for both grid and experiment, therefore we make sure their names match
-assert definitions.Grids.MCH_CH_R04B09_DSL.name == definitions.Experiments.MCH_CH_R04B09.name
-JABW_EXPERIMENT = definitions.Experiments.JW.name
-GAUSS3D_EXPERIMENT = definitions.Experiments.GAUSS3D.name
-WEISMAN_KLEMP_EXPERIMENT = definitions.Experiments.WEISMAN_KLEMP_TORUS.name
-
-
 # TODO(havogt): is this still needed?
 GRID_IDS = {
-    GLOBAL_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
-    REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
-    JABW_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
-    GAUSS3D_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
-    WEISMAN_KLEMP_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
+    definitions.Experiments.EXCLAIM_APE.name: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    definitions.Experiments.MCH_CH_R04B09.name: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
+    definitions.Experiments.JW.name: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    definitions.Experiments.GAUSS3D.name: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
+    definitions.Experiments.WEISMAN_KLEMP_TORUS.name: uuid.UUID(
+        "80ae276e-ec54-11ee-bf58-e36354187f08"
+    ),
 }
 
 

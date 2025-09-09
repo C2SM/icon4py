@@ -20,8 +20,9 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.grid.geometry import as_sparse_field
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, test_utils, definitions
+from icon4py.model.testing import grid_utils, test_utils, definitions
 from icon4py.model.testing.fixtures import (
+    experiment,
     backend,
     data_provider,
     download_ser_data,
@@ -54,13 +55,6 @@ def test_edge_control_area(backend, grid_savepoint, experiment, rtol):
     assert test_utils.dallclose(expected.asnumpy(), result.asnumpy(), rtol)
 
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 @pytest.mark.datatest
 def test_coriolis_parameter(backend, grid_savepoint, experiment):
     geometry_source = grid_utils.get_grid_geometry(backend, experiment)
@@ -155,13 +149,6 @@ def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, experimen
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    " experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_compute_coordinates_of_edge_tangent_and_normal(backend, grid_savepoint, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     x_normal = grid_geometry.get(attrs.EDGE_NORMAL_X)
@@ -186,13 +173,6 @@ def test_compute_coordinates_of_edge_tangent_and_normal(backend, grid_savepoint,
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_compute_primal_normals(backend, grid_savepoint, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     primal_normal_u = grid_geometry.get(attrs.EDGE_NORMAL_U)
@@ -210,13 +190,6 @@ def test_compute_primal_normals(backend, grid_savepoint, experiment):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_tangent_orientation(backend, grid_savepoint, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     result = grid_geometry.get(attrs.TANGENT_ORIENTATION)
@@ -226,13 +199,6 @@ def test_tangent_orientation(backend, grid_savepoint, experiment):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_cell_area(backend, grid_savepoint, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     result = grid_geometry.get(attrs.CELL_AREA)
@@ -242,13 +208,6 @@ def test_cell_area(backend, grid_savepoint, experiment):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_primal_normal_cell(backend, grid_savepoint, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     primal_normal_cell_u_ref = grid_savepoint.primal_normal_cell_x().asnumpy()
@@ -265,13 +224,6 @@ def test_primal_normal_cell(backend, grid_savepoint, experiment):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_dual_normal_cell(backend, grid_savepoint, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     dual_normal_cell_u_ref = grid_savepoint.dual_normal_cell_x().asnumpy()
@@ -284,13 +236,6 @@ def test_dual_normal_cell(backend, grid_savepoint, experiment):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_primal_normal_vert(backend, grid_savepoint, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     primal_normal_vert_u_ref = grid_savepoint.primal_normal_vert_x().asnumpy()
@@ -307,13 +252,6 @@ def test_primal_normal_vert(backend, grid_savepoint, experiment):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_dual_normal_vert(backend, grid_savepoint, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     dual_normal_vert_u_ref = grid_savepoint.dual_normal_vert_x().asnumpy()
@@ -325,13 +263,6 @@ def test_dual_normal_vert(backend, grid_savepoint, experiment):
     assert test_utils.dallclose(dual_normal_vert_v.asnumpy(), dual_normal_vert_v_ref, atol=1e-12)
 
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_cartesian_centers_edge(backend, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     grid = grid_geometry.grid
@@ -347,13 +278,6 @@ def test_cartesian_centers_edge(backend, experiment):
     assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_cartesian_centers_cell(backend, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     grid = grid_geometry.grid
@@ -369,13 +293,6 @@ def test_cartesian_centers_cell(backend, experiment):
     assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-    ],
-)
 def test_vertex(backend, experiment):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     grid = grid_geometry.grid
@@ -407,16 +324,9 @@ def test_sparse_fields_creator():
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "grid_descriptor, experiment",  # experiment fixture is implicitly used in grid_savepoint
-    [
-        (definitions.Grids.MCH_CH_R04B09_DSL, dt_utils.REGIONAL_EXPERIMENT),
-        (definitions.Grids.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
-def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_descriptor):
+def test_create_auxiliary_orientation_coordinates(backend, experiment: definitions.Experiment):
     gm = grid_utils.get_grid_manager_from_identifier(
-        grid_descriptor,
+        experiment.grid,
         num_levels=1,
         keep_skip_values=True,
         backend=backend,
