@@ -137,8 +137,6 @@ def _get_metrics_factory(
             interpolation_source=interpolation_field_source,
             backend=backend,
             metadata=attrs.attrs,
-            e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim),
-            c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),
             rayleigh_type=rayleigh_type,
             rayleigh_coeff=rayleigh_coeff,
             exner_expol=exner_expol,
@@ -163,6 +161,7 @@ def test_factory_z_mc(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.Z_MC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-10)
@@ -305,16 +304,20 @@ def test_factory_ref_mc(
 ):
     field_ref_1 = metrics_savepoint.theta_ref_mc()
     field_ref_2 = metrics_savepoint.exner_ref_mc()
+    field_ref_3 = metrics_savepoint.rho_ref_mc()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint
     )
     field_1 = factory.get(attrs.THETA_REF_MC)
     field_2 = factory.get(attrs.EXNER_REF_MC)
+    field_3 = factory.get(attrs.RHO_REF_MC)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1e-9)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-10)
+    assert test_helpers.dallclose(field_ref_3.asnumpy(), field_3.asnumpy(), atol=1e-9)
 
 
 @pytest.mark.level("integration")
@@ -583,6 +586,7 @@ def test_vertical_coordinates_on_half_levels(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.CELL_HEIGHT_ON_HALF_LEVEL)
     field_ref = metrics_savepoint.z_ifc()
@@ -590,13 +594,7 @@ def test_vertical_coordinates_on_half_levels(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_compute_wgtfac_c(
     grid_savepoint,
@@ -668,3 +666,52 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
     field_2 = factory.get(attrs.ZD_VERTOFFSET_DSL)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
+
+@pytest.mark.level("integration")
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+def test_factory_compute_theta_d_exner_dz_ref_ic(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_backend.Backend | None,
+):
+    field_ref_1 = metrics_savepoint.theta_ref_ic()
+    field_ref_2 = metrics_savepoint.d_exner_dz_ref_ic()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
+    )
+    field_1 = factory.get(attrs.THETA_REF_IC)
+    field_2 = factory.get(attrs.D_EXNER_DZ_REF_IC)
+    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-15)
+
+@pytest.mark.level("integration")
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+def test_factory_compute_theta_rho_ref_me(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_backend.Backend | None,
+):
+    field_ref_1 = metrics_savepoint.rho_ref_me()
+    field_ref_2 = metrics_savepoint.theta_ref_me()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
+    )
+    field_1 = factory.get(attrs.RHO_REF_ME)
+    field_2 = factory.get(attrs.THETA_REF_ME)
+    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
+

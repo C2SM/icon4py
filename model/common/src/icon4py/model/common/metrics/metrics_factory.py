@@ -333,16 +333,16 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "c_lin_e": interpolation_attributes.C_LIN_E
             },
             domain={
-                dims.CellDim: (
-                    cell_domain(h_grid.Zone.LOCAL),
-                    cell_domain(h_grid.Zone.END),
+                dims.EdgeDim: (
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    edge_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"theta_ref_me": attrs.THETA_REF_ME, "rho_ref_me": attrs.RHO_REF_ME},
+            fields={"rho_ref_me": attrs.RHO_REF_ME, "theta_ref_me": attrs.THETA_REF_ME,},
             params={
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
@@ -366,9 +366,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LOCAL),
                     cell_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
+                dims.KHalfDim: (
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
                 ),
             },
             fields={"theta_ref_ic": attrs.THETA_REF_IC, "d_exner_dz_ref_ic": attrs.D_EXNER_DZ_REF_IC},
@@ -378,6 +378,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
                 "grav": constants.GRAV,
                 "rd": constants.RD,
+                "cpd": constants.CPD,
                 "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
                 "rd_o_cpd": constants.RD_O_CPD,
                 "p0ref": constants.REFERENCE_PRESSURE,
@@ -648,6 +649,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(max_flat_index_provider)
+
+
 
         pressure_gradient_fields = factory.ProgramFieldProvider(
             func=mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(

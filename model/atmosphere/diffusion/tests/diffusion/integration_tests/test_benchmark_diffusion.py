@@ -37,14 +37,14 @@ from ..fixtures import *
 )
 @pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R19B08_DOMAIN01])
 def test_run_diffusion_benchmark(
-    grid_manager: Any,
+    grid: definitions.GridDescription,
     vertical_grid_params: Dict[str, float],
     metrics_factory_params: Dict[str, Any],
     backend: Any,
     benchmark: Any,
 ) -> None:
     dtime = 10.0
-
+    grid_manager = grid_utils.get_grid_manager_from_identifier(grid, num_levels=80, backend=backend)
     config = diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
@@ -65,11 +65,11 @@ def test_run_diffusion_benchmark(
 
     diffusion_parameters = diffusion.DiffusionParams(config)
 
-    grid = grid_manager.grid
+    mesh = grid_manager.grid
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
-    decomposition_info = construct_dummy_decomposition_info(grid, backend)
+    decomposition_info = construct_dummy_decomposition_info(mesh, backend)
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid,
