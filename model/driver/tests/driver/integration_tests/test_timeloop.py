@@ -29,11 +29,7 @@ from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
-from ..utils import (
-    construct_diffusion_config,
-    construct_icon4pyrun_config,
-    construct_nonhydrostatic_config,
-)
+from ..utils import construct_icon4pyrun_config
 
 
 if TYPE_CHECKING:
@@ -153,8 +149,10 @@ def test_run_timeloop_single_step(
         icon4pyrun_config = config.run_config
 
     else:
-        diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
-        nonhydro_config = construct_nonhydrostatic_config(experiment)
+        diffusion_config = definitions.construct_diffusion_config(
+            experiment, ndyn_substeps=ndyn_substeps
+        )
+        nonhydro_config = definitions.construct_nonhydrostatic_config(experiment)
         icon4pyrun_config = construct_icon4pyrun_config(
             experiment,
             timeloop_date_init,

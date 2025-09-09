@@ -541,7 +541,7 @@ def test_dycore_wrapper_granule_inputs(
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
     )
-    expected_config = utils.construct_solve_nh_config(experiment)
+    expected_config = definitions.construct_nonhydrostatic_config(experiment)
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---

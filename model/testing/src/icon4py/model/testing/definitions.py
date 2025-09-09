@@ -12,6 +12,8 @@ import pathlib
 from collections.abc import Mapping
 from typing import Final, Literal
 
+from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.testing import config
 
 
@@ -170,3 +172,63 @@ class Experiments:
         num_levels=64,
         partitioned_data={1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download"},
     )
+
+
+# TODO(havogt): the following configs should be part of the serialized experiment
+def construct_diffusion_config(
+    experiment: Experiment, ndyn_substeps: int = 5
+) -> diffusion.DiffusionConfig:
+    if experiment == Experiments.MCH_CH_R04B09:
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+            hdiff_w=True,
+            hdiff_vn=True,
+            type_t_diffu=2,
+            type_vn_diffu=1,
+            hdiff_efdt_ratio=24.0,
+            hdiff_w_efdt_ratio=15.0,
+            smagorinski_scaling_factor=0.025,
+            zdiffu_t=True,
+            thslp_zdiffu=0.02,
+            thhgtd_zdiffu=125.0,
+            velocity_boundary_diffusion_denom=150.0,
+            max_nudging_coefficient=0.375,
+            n_substeps=ndyn_substeps,
+            shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+        )
+    elif experiment == Experiments.EXCLAIM_APE:
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+            hdiff_w=True,
+            hdiff_vn=True,
+            zdiffu_t=False,
+            type_t_diffu=2,
+            type_vn_diffu=1,
+            hdiff_efdt_ratio=24.0,
+            smagorinski_scaling_factor=0.025,
+            hdiff_temp=True,
+            n_substeps=ndyn_substeps,
+        )
+    else:
+        raise NotImplementedError(
+            f"DiffusionConfig for experiment {experiment.name} not implemented."
+        )
+
+
+def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydrostaticConfig:
+    if experiment == Experiments.MCH_CH_R04B09:
+        return solve_nh.NonHydrostaticConfig(
+            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
+            iau_wgt_dyn=1.0,
+            fourth_order_divdamp_factor=0.004,
+            max_nudging_coefficient=0.375,
+        )
+    elif experiment == Experiments.EXCLAIM_APE:
+        return solve_nh.NonHydrostaticConfig(
+            rayleigh_coeff=0.1,
+            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
+        )
+    else:
+        raise NotImplementedError(
+            f"NonHydrostaticConfig for experiment {experiment.name} not implemented."
+        )

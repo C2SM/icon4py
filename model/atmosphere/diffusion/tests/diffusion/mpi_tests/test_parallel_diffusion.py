@@ -65,7 +65,7 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    config = utils.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
@@ -192,7 +192,7 @@ def test_parallel_diffusion_multiple_steps(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    config = utils.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     diffusion_params = diffusion_.DiffusionParams(config)
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     print(

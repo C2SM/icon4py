@@ -75,7 +75,7 @@ def test_run_solve_nonhydro_single_step(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = utils.construct_solve_nh_config(experiment)
+    config = definitions.construct_nonhydrostatic_config(experiment)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = nh.NonHydrostaticParams(config)

@@ -10,12 +10,12 @@ from __future__ import annotations
 
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, serialbox as sb
+from icon4py.model.testing import serialbox as sb
 
 
 def construct_interpolation_state(
@@ -80,33 +80,6 @@ def construct_metric_state(
         coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
         coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
-    )
-
-
-def construct_solve_nh_config(experiment: definitions.Experiment) -> solve_nh.NonHydrostaticConfig:
-    if experiment == definitions.Experiments.MCH_CH_R04B09:
-        return _mch_ch_r04b09_dsl_nonhydrostatic_config()
-    else:
-        assert experiment == definitions.Experiments.EXCLAIM_APE
-        return _exclaim_ape_nonhydrostatic_config()
-
-
-def _mch_ch_r04b09_dsl_nonhydrostatic_config() -> solve_nh.NonHydrostaticConfig:
-    """Create configuration matching the mch_chR04b09_dsl experiment."""
-    config = solve_nh.NonHydrostaticConfig(
-        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # `NonHydrostaticConfig` is lying about the type of `divdamp_order`
-        iau_wgt_dyn=1.0,
-        fourth_order_divdamp_factor=0.004,
-        max_nudging_coefficient=0.375,
-    )
-    return config
-
-
-def _exclaim_ape_nonhydrostatic_config() -> solve_nh.NonHydrostaticConfig:
-    """Create configuration for EXCLAIM APE experiment."""
-    return solve_nh.NonHydrostaticConfig(
-        rayleigh_coeff=0.1,
-        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # `NonHydrostaticConfig` is lying about the type of `divdamp_order`
     )
 
 

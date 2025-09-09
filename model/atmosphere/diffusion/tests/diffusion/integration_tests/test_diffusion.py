@@ -7,8 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import collections
 
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
@@ -29,22 +30,13 @@ from icon4py.model.testing import (
 from ..fixtures import *  # noqa: F403
 from ..utils import (
     compare_dace_orchestration_multiple_steps,
-    construct_diffusion_config,
     diff_multfac_vn_numpy,
     smag_limit_numpy,
     verify_diffusion_fields,
 )
 
 
-if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
-
-# TODO default_dict?
-grid_functionality = {
-    definitions.Experiments.EXCLAIM_APE.name: {},
-    definitions.Experiments.MCH_CH_R04B09.name: {},
-}
+grid_functionality = collections.defaultdict(dict)
 
 
 def get_grid_for_experiment(experiment: definitions.Experiment, backend: gtx_typing.Backend):
@@ -104,7 +96,7 @@ def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.B
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
-    config = construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
     config.hdiff_efdt_ratio = 1.0
     config.hdiff_w_efdt_ratio = 2.0
 
@@ -117,7 +109,7 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
 
 
 def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
-    config = construct_diffusion_config(experiment)
+    config = definitions.construct_diffusion_config(experiment)
     config.hdiff_efdt_ratio = 0.0
     config.hdiff_w_efdt_ratio = 0.0
 
@@ -130,7 +122,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
 
 
 def test_smagorinski_factor_for_diffusion_type_4(experiment):
-    config = construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 4
 
@@ -143,7 +135,7 @@ def test_smagorinski_factor_for_diffusion_type_4(experiment):
 def test_smagorinski_heights_diffusion_type_5_are_consistent(
     experiment,
 ):
-    config = construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 5
 
@@ -158,7 +150,9 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
 
 
 def test_smagorinski_factor_diffusion_type_5(experiment):
-    params = diffusion.DiffusionParams(construct_diffusion_config(experiment, ndyn_substeps=5))
+    params = diffusion.DiffusionParams(
+        definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
+    )
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert all(p >= 0 for p in params.smagorinski_factor)
@@ -187,7 +181,7 @@ def test_diffusion_init(
     ndyn_substeps,
     backend,
 ):
-    config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
     grid = get_grid_for_experiment(experiment, backend)
@@ -325,7 +319,7 @@ def test_verify_diffusion_init_against_savepoint(
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
-    config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
@@ -425,7 +419,7 @@ def test_run_diffusion_single_step(
         vct_b=vct_b,
     )
 
-    config = construct_diffusion_config(experiment, ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
     diffusion_granule = diffusion.Diffusion(
@@ -501,7 +495,7 @@ def test_run_diffusion_multiple_steps(
         config=vertical_config, vct_a=grid_savepoint.vct_a(), vct_b=grid_savepoint.vct_b()
     )
 
-    config = construct_diffusion_config(experiment, ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
     ######################################################################
@@ -626,7 +620,7 @@ def test_run_diffusion_initial_step(
         dwdy=savepoint_diffusion_init.dwdy(),
     )
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    config = construct_diffusion_config(experiment, ndyn_substeps=2)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=2)
     params = diffusion.DiffusionParams(config)
 
     diffusion_granule = diffusion.Diffusion(
@@ -671,7 +665,7 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
 ):
     savepoint = savepoint_diffusion_init
-    config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
 
     params = diffusion.DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()

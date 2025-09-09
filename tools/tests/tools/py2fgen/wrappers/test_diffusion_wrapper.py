@@ -159,7 +159,7 @@ def test_diffusion_wrapper_granule_inputs(
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
     )
-    expected_config = utils.construct_diffusion_config(experiment, ndyn_substeps)
+    expected_config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Mock and Test Diffusion.init ---
