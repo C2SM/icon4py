@@ -180,7 +180,7 @@ class DecompositionInfo:
             num_vertices=self.global_index(dims.VertexDim, self.EntryType.ALL).shape[0],
         )
 
-    def get_halo_size(self, dim: gtx.Dimension, flag: DecompositionFlag)->int:
+    def get_halo_size(self, dim: gtx.Dimension, flag: DecompositionFlag) -> int:
         return np.count_nonzero(self.halo_level_mask(dim, flag))
 
     def halo_levels(self, dim: gtx.Dimension):

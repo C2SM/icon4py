@@ -408,18 +408,28 @@ class GridManager:
 
         # COMPUTE remaining derived connectivities
         start_indices = {d: 0 for d in h_grid.EDGE_ZONES}
-        start_indices.update({d:0 for d in h_grid.VERTEX_ZONES})
-        start_indices.update({d:0 for d in h_grid.CELL_ZONES})
-        end_indices = {h_grid.domain(dims.EdgeDim)(d): distributed_size.num_edges  for d in h_grid.EDGE_ZONES}
-        end_indices.update({h_grid.domain(dims.VertexDim)(d): distributed_size.num_vertices  for d in h_grid.VERTEX_ZONES})
-        end_indices.update({h_grid.domain(dims.CellDim)(d): distributed_size.num_vertices for d in h_grid.CELL_ZONES})
+        start_indices.update({d: 0 for d in h_grid.VERTEX_ZONES})
+        start_indices.update({d: 0 for d in h_grid.CELL_ZONES})
+        end_indices = {
+            h_grid.domain(dims.EdgeDim)(d): distributed_size.num_edges for d in h_grid.EDGE_ZONES
+        }
+        end_indices.update(
+            {
+                h_grid.domain(dims.VertexDim)(d): distributed_size.num_vertices
+                for d in h_grid.VERTEX_ZONES
+            }
+        )
+        end_indices.update(
+            {
+                h_grid.domain(dims.CellDim)(d): distributed_size.num_vertices
+                for d in h_grid.CELL_ZONES
+            }
+        )
 
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
-
-
         refinement_fields = self._read_grid_refinement_fields(backend)
-        # todo compute start end index
+        # TODO(halungge): compute start end index
         grid_config = base.GridConfig(
             horizontal_size=distributed_size,
             vertical_size=self._vertical_config.num_levels,

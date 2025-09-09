@@ -130,8 +130,7 @@ def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool) -> bool:
         limited_area and dimension in CONNECTIVITIES_ON_BOUNDARIES
     )
 
-    #return value
-    return True
+    return value
 
 
 def _should_replace_skip_values(

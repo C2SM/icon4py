@@ -194,10 +194,9 @@ def test_fields_distribute_and_gather(processor_props, caplog):
 
 def gather_field(field: np.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
     constant_dims = field.shape[1:]
-    constant_length = functools.reduce(operator.mul, constant_dims)  if len(constant_dims) > 0 else 1
+    constant_length = functools.reduce(operator.mul, constant_dims) if len(constant_dims) > 0 else 1
 
     local_sizes = np.array(comm.gather(field.size, root=0))
-
 
     if comm.rank == 0:
         recv_buffer = np.empty(np.sum(local_sizes), dtype=field.dtype)
@@ -206,17 +205,20 @@ def gather_field(field: np.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
         )
     else:
         recv_buffer = None
+
     comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
     if comm.rank == 0:
         log.debug(f"fields gathered:")
         log.debug(f"field sizes {local_sizes}")
-
-
-    local_first_dim = tuple(ls/constant_length for ls in local_sizes)
-    gathered_field = recv_buffer.reshape((-1 + constant_dims))
+        local_first_dim = tuple(size / constant_length for size in local_sizes)
+        gathered_field = recv_buffer.reshape((-1, *constant_dims))
+    else:
+        gathered_field = None
+        local_first_dim = field.shape[0]
     return local_first_dim, gathered_field
 
-#TODO (halungge): deal with 2d fields
+
+# TODO (halungge): deal with 2d fields
 def assert_gathered_field_against_global(
     decomposition_info: defs.DecompositionInfo,
     processor_props: defs.ProcessProperties,  # F811 # fixture
@@ -224,7 +226,6 @@ def assert_gathered_field_against_global(
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
 ):
-
     assert (
         local_field.shape[0]
         == decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.ALL).shape[0]
@@ -238,15 +239,26 @@ def assert_gathered_field_against_global(
         processor_props.comm,
     )
     if processor_props.rank == 0:
-        print(f"rank = {processor_props.rank}: asserting gathered fields")
+        print(f"rank = {processor_props.rank}: asserting gathered fields: ")
         assert np.all(
             gathered_sizes == global_index_sizes
         ), f"gathered field sizes do not match  {gathered_sizes}"
+        print(
+            f"rank = {processor_props.rank}: Checking field size: --- gathered sizes {gathered_sizes}"
+        )
+        print(
+            f"rank = {processor_props.rank}:                      --- gathered field has size {gathered_sizes}"
+        )
         sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)
         sorted_[gathered_global_indices] = gathered_field
         assert test_helpers.dallclose(
             sorted_, global_reference_field
         ), f"Gathered field values do not match for dim {dim}.- "
+        print(
+            f"rank = {processor_props.rank}:  comparing fields (samples) "
+            f"\n      -- gathered {sorted_[:6]}  "
+            f"\n    -- global ref {global_reference_field[:6]}"
+        )
 
 
 # TODO add test including halo access:
@@ -272,13 +284,15 @@ def test_halo_neighbor_access_c2e(processor_props):
         metadata=geometry_attributes.attrs,
     )
 
-    print(f"rank = {processor_props.rank} : single node grid has size {single_node.decomposition_info.get_horizontal_size()!r}")
+    print(
+        f"rank = {processor_props.rank} : single node grid has size {single_node.decomposition_info.get_horizontal_size()!r}"
+    )
     reference = data_alloc.zero_field(single_node_grid, dims.CellDim, dims.C2EDim)
     single_node_edge_length = single_node_geometry.get(geometry_attributes.EDGE_LENGTH)
     single_node_cell_area = single_node_geometry.get(geometry_attributes.CELL_AREA)
     single_node_edge_orientation = single_node_geometry.get(
-         geometry_attributes.CELL_NORMAL_ORIENTATION
-     )
+        geometry_attributes.CELL_NORMAL_ORIENTATION
+    )
     compute_geofac_div.with_backend(backend)(
         primal_edge_length=single_node_edge_length,
         area=single_node_cell_area,
@@ -287,28 +301,31 @@ def test_halo_neighbor_access_c2e(processor_props):
         offset_provider={"C2E": single_node_grid.get_connectivity("C2E")},
     )
     print(
-        f"rank = {processor_props.rank} : single node computed field reference has size  {reference.asnumpy().shape}")
+        f"rank = {processor_props.rank} : single node computed field reference has size  {reference.asnumpy().shape}"
+    )
     processor_props.comm.barrier()
     multinode_grid_manager = run_gridmananger_for_multinode(
-         file=file,
-         vertical_config=vertical_config,
-         run_properties=processor_props,
-         decomposer=halo.SimpleMetisDecomposer(),
+        file=file,
+        vertical_config=vertical_config,
+        run_properties=processor_props,
+        decomposer=halo.SimpleMetisDecomposer(),
     )
     distributed_grid = multinode_grid_manager.grid
     extra_geometry_fields = multinode_grid_manager.geometry
     decomposition_info = multinode_grid_manager.decomposition_info
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
-    print(f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LINE)})")
+    print(
+        f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+    )
     distributed_coordinates = multinode_grid_manager.coordinates
     distributed_geometry = geometry.GridGeometry(
-         backend=backend,
-         grid=distributed_grid,
-         coordinates=distributed_coordinates,
-         decomposition_info=decomposition_info,
-         extra_fields=extra_geometry_fields,
-         metadata=geometry_attributes.attrs,
+        backend=backend,
+        grid=distributed_grid,
+        coordinates=distributed_coordinates,
+        decomposition_info=decomposition_info,
+        extra_fields=extra_geometry_fields,
+        metadata=geometry_attributes.attrs,
     )
 
     edge_length = distributed_geometry.get(geometry_attributes.EDGE_LENGTH)
@@ -323,15 +340,15 @@ def test_halo_neighbor_access_c2e(processor_props):
         edge_orientation=edge_orientation,
         out=geofac_div,
         offset_provider={"C2E": distributed_grid.get_connectivity("C2E")},
-     )
+    )
 
     assert_gathered_field_against_global(
-         decomposition_info,
-         processor_props,
-         dims.CellDim,
-         global_reference_field=reference.asnumpy(),
-         local_field=geofac_div.asnumpy(),
-     )
+        decomposition_info,
+        processor_props,
+        dims.CellDim,
+        global_reference_field=reference.asnumpy(),
+        local_field=geofac_div.asnumpy(),
+    )
 
     print(f"rank = {processor_props.rank} - DONE")
     # 1. read grid and distribue - GridManager
@@ -340,4 +357,3 @@ def test_halo_neighbor_access_c2e(processor_props):
     # 3. compute geofac_div = primal_edge_length * edge_orientation / area
     # 4. gather geofac_div
     # 5 compare (possible reorder
-
