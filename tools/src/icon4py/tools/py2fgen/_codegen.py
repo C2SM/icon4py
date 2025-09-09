@@ -142,10 +142,12 @@ from {{ library_name }} import ffi
 from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
 
 logger = logging.getLogger(__name__)
-log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
-logging.basicConfig(level=getattr(logging, runtime_config.LOG_LEVEL),
-                format=log_format,
-                datefmt='%Y-%m-%d %H:%M:%S')
+log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
+logging.basicConfig(
+    level=getattr(logging, runtime_config.LOG_LEVEL),
+    format=log_format,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 # embedded function imports
