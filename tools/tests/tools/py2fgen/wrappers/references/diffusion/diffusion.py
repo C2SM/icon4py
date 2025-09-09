@@ -316,7 +316,7 @@ def diffusion_run_wrapper(
             logger.info("Python execution of diffusion_run completed.")
 
     except Exception as e:
-        logger.exception(f"A Python error occurred: {e}")
+        print(f"A Python error occurred: {e}")
         return 1
 
     return 0
