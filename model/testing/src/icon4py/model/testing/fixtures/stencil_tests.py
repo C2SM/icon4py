@@ -14,7 +14,7 @@ import pytest
 from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as base_grid, icon, simple as simple_grid
 from icon4py.model.common.grid.base import Grid
 from icon4py.model.common.grid.grid_manager import GridManager
@@ -101,7 +101,7 @@ def _get_grid_manager_from_preset(
 def construct_dummy_decomposition_info(
     grid: icon.IconGrid,
     backend: gtx_backend.Backend | None = None,
-) -> definitions.DecompositionInfo:
+) -> decomposition_defs.DecompositionInfo:
     """
     A public helper function to construct a dummy decomposition info object for test cases
     refactored from grid_utils.py
@@ -116,7 +116,7 @@ def construct_dummy_decomposition_info(
         owner_mask = xp.ones((grid.size[dim],), dtype=bool)
         decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
-    decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
+    decomposition_info = decomposition_defs.DecompositionInfo(klevels=grid.num_levels)
     _add_dimension(dims.EdgeDim)
     _add_dimension(dims.VertexDim)
     _add_dimension(dims.CellDim)

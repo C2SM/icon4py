@@ -27,7 +27,7 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decomposition_info
 from icon4py.model.testing import definitions
-
+from icon4py.model.testing import grid_utils
 from ..fixtures import *
 
 
