@@ -2,14 +2,13 @@ import logging
 from diffusion import ffi
 from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
 
-if __debug__:
-    logger = logging.getLogger(__name__)
-    log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
-    logging.basicConfig(
-        level=getattr(logging, runtime_config.LOG_LEVEL),
-        format=log_format,
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+logger = logging.getLogger(__name__)
+log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
+logging.basicConfig(
+    level=getattr(logging, runtime_config.LOG_LEVEL),
+    format=log_format,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 # embedded function imports
@@ -316,7 +315,7 @@ def diffusion_run_wrapper(
             logger.info("Python execution of diffusion_run completed.")
 
     except Exception as e:
-        print(f"A Python error occurred: {e}")
+        logger.exception(f"A Python error occurred: {e}")
         return 1
 
     return 0
