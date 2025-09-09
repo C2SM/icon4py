@@ -56,7 +56,7 @@ def test_jabw_initial_condition(
         icon_grid,
         cell_geometry,
         edge_geometry,
-        ranked_data_path.joinpath(f"{experiment}/ser_data"),
+        ranked_data_path.joinpath(f"{experiment.name}/ser_data"),
         backend,
         rank,
     )
