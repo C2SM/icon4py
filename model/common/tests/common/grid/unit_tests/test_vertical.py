@@ -208,7 +208,7 @@ def test_grid_index_top(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(definitions.Experiments.EXCLAIM_APE, 60)])
+@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(
@@ -225,7 +225,7 @@ def test_grid_index_damping(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(definitions.Experiments.EXCLAIM_APE, 60)])
+@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(
@@ -242,7 +242,7 @@ def test_grid_index_moist(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(definitions.Experiments.EXCLAIM_APE, 60)])
+@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(
