@@ -20,13 +20,13 @@ if TYPE_CHECKING:
 
 
 def domain_generator() -> Iterator[h_grid.Domain]:
-    try:
-        for dim in (dims.EdgeDim, dims.CellDim, dims.VertexDim):
-            for z in h_grid.Zone:
+    for dim in (dims.EdgeDim, dims.CellDim, dims.VertexDim):
+        for z in h_grid.Zone:
+            try:
                 domain = h_grid.domain(dim)(z)
                 yield domain
-    except AssertionError:
-        pass
+            except AssertionError:  # noqa: PERF203
+                ...
 
 
 @pytest.mark.parametrize("domain", domain_generator())

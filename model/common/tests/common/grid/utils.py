@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Iterator, Sequence
 
 import gt4py.next as gtx
@@ -79,11 +80,9 @@ def global_grid_domains(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
 
 def _domain(dim: gtx.Dimension, zones: Sequence[h_grid.Zone]) -> Iterator[h_grid.Domain]:
     domain = h_grid.domain(dim)
-    try:
-        for zone in zones:
+    for zone in zones:
+        with contextlib.suppress(AssertionError):
             yield domain(zone)
-    except AssertionError:
-        ...
 
 
 def valid_boundary_zones_for_dim(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
