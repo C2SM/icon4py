@@ -435,6 +435,7 @@ class GridManager:
             horizontal_size=distributed_size,
             vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
+            keep_skip_values=with_skip_values
         )
 
         grid = icon.icon_grid(

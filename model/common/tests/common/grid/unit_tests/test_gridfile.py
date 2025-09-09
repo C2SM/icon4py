@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import gridfile
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     definitions,
 )
@@ -31,7 +30,7 @@ if TYPE_CHECKING:
 def test_grid_file_dimension():
     grid_descriptor = definitions.Grids.R02B04_GLOBAL
     global_grid_file = str(gridtest_utils.resolve_full_grid_file_name(grid_descriptor))
-    parser = gridfile.GridFile(global_grid_file)
+    parser = gridfile.GridFile(global_grid_file, transformation=gridfile.NoTransformation())
     try:
         parser.open()
         assert parser.dimension(gridfile.DimensionName.CELL_NAME) == grid_descriptor.sizes["cell"]
@@ -107,7 +106,7 @@ def index_selection() -> Iterable[list[int]]:
     "selection",
     index_selection(),
 )
-@pytest.mark.parametrize("filename", (definitions.Grids.R02B04_GLOBAL.name,))
+@pytest.mark.parametrize("filename", (definitions.Grids.R02B04_GLOBAL,))
 def test_index_read_for_1d_fields(filename, selection):
     file = gridtest_utils.resolve_full_grid_file_name(filename)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
@@ -121,7 +120,7 @@ def test_index_read_for_1d_fields(filename, selection):
     "selection",
     index_selection(),
 )
-@pytest.mark.parametrize("filename", (definitions.Grids.R02B04_GLOBAL.name,))
+@pytest.mark.parametrize("filename", (definitions.Grids.R02B04_GLOBAL,))
 @pytest.mark.parametrize(
     "field",
     (gridfile.ConnectivityName.V2E, gridfile.ConnectivityName.V2C, gridfile.ConnectivityName.E2V),
