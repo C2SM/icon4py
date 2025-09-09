@@ -40,6 +40,9 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("location", ["nwp-gscp-interface", "interface-nwp"])
 def test_saturation_adjustement(
     location: str,
+    model_top_height: float,  # TODO(havogt): unused?
+    damping_height: float,  # TODO(havogt): unused?
+    stretch_factor: float,  # TODO(havogt): unused?
     date: str,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
