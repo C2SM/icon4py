@@ -29,7 +29,10 @@ def get_options(program_name: str, arch: str, **backend):
 
 
 def customize_backend(program_name: str = "", arch: str = "", **backend):
-    options = get_options(program_name, arch, **backend)
+    if isinstance(backend, DeviceType):
+        backend = {"device": backend}
+    # TODO: implement the lookup function as below
+    # options = get_options(program_name, arch, **backend)
     backend_func = backend.get("backend_factory", make_custom_gtfn_backend)
     device = backend["device"]
     custom_backend = backend_func(
