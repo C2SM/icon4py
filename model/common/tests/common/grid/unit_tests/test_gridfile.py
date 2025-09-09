@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.with_netcdf
-def test_grid_file_dimension():
+def test_grid_file_dimension() -> None:
     grid_descriptor = definitions.Grids.R02B04_GLOBAL
     global_grid_file = str(gridtest_utils.resolve_full_grid_file_name(grid_descriptor))
     parser = gridfile.GridFile(global_grid_file)
@@ -51,7 +51,7 @@ def test_grid_file_dimension():
 @pytest.mark.with_netcdf
 def test_grid_file_vertex_cell_edge_dimensions(
     experiment: definitions.Experiment, grid_savepoint: serialbox.IconGridSavepoint
-):
+) -> None:
     file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
     parser = gridfile.GridFile(str(file))
     try:

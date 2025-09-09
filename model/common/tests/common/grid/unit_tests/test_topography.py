@@ -39,7 +39,7 @@ def test_topography_smoothing_with_serialized_data(
     interpolation_savepoint: sb.InterpolationSavepoint,
     topography_savepoint: sb.TopographySavepoint,
     backend: gtx_typing.Backend,
-):
+) -> None:
     cell_geometry = grid_savepoint.construct_cell_geometry()
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 

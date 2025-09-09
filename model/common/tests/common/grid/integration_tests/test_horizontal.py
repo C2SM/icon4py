@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 from gt4py import next as gtx
@@ -17,9 +20,17 @@ from ...fixtures import *  # noqa: F403
 from .. import utils
 
 
+if TYPE_CHECKING:
+    import numpy as np
+
+    from icon4py.model.testing import serialbox as sb
+
+
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_map_domain_bounds_start_index(dim, grid_savepoint):
+def test_map_domain_bounds_start_index(
+    dim: gtx.Dimension, grid_savepoint: sb.IconGridSavepoint
+) -> None:
     grid_savepoint.start_index(dim)
     start_index_array = grid_savepoint.start_index(dim)
     _map_and_assert_array(dim, start_index_array)
@@ -27,12 +38,14 @@ def test_map_domain_bounds_start_index(dim, grid_savepoint):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_map_domain_bounds_end_index(dim, grid_savepoint):
+def test_map_domain_bounds_end_index(
+    dim: gtx.Dimension, grid_savepoint: sb.IconGridSavepoint
+) -> None:
     end_index_array = grid_savepoint.end_index(dim)
     _map_and_assert_array(dim, end_index_array)
 
 
-def _map_and_assert_array(dim, index_array):  # noqa: PLR0912
+def _map_and_assert_array(dim: gtx.Dimension, index_array: np.ndarray) -> None:  # noqa: PLR0912
     index_map = h_grid.map_icon_domain_bounds(dim, index_array)
     same_index = False
     for d, index in index_map.items():
