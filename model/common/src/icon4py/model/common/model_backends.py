@@ -40,7 +40,7 @@ try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
     def make_custom_dace_backend(
-        device: str, auto_optimize: bool = True, cached: bool = True, **options
+        device: DeviceType, auto_optimize: bool = True, cached: bool = True, **_
     ) -> gtx_typing.Backend:
         """Customize the dace backend with the following configuration.
 
