@@ -37,7 +37,7 @@ from ..fixtures import *
 )
 @pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R19B08_DOMAIN01])
 def test_run_diffusion_benchmark(
-    grid_manager: Any,
+    grid: Any,
     vertical_grid_params: Dict[str, float],
     metrics_factory_params: Dict[str, Any],
     backend: Any,
@@ -65,14 +65,16 @@ def test_run_diffusion_benchmark(
 
     diffusion_parameters = diffusion.DiffusionParams(config)
 
-    grid = grid_manager.grid
+    grid_manager = grid_utils.get_grid_manager_from_identifier(grid, num_levels=80, keep_skip_values=True, backend=backend)
+
+    mesh = grid_manager.grid
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
-    decomposition_info = construct_dummy_decomposition_info(grid, backend)
+    decomposition_info = construct_dummy_decomposition_info(mesh, backend) # TODO (Yilu) check the
 
     geometry_field_source = grid_geometry.GridGeometry(
-        grid=grid,
+        grid=mesh,
         decomposition_info=decomposition_info,
         backend=backend,
         coordinates=coordinates,
@@ -121,7 +123,7 @@ def test_run_diffusion_benchmark(
     )
 
     vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
+        mesh.num_levels, # TODO (Yilu) check the levels
         lowest_layer_thickness=vertical_grid_params["lowest_layer_thickness"],
         model_top_height=vertical_grid_params["model_top_height"],
         stretch_factor=vertical_grid_params["stretch_factor"],
@@ -136,7 +138,7 @@ def test_run_diffusion_benchmark(
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        grid=grid,
+        grid=mesh,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
         backend=backend,
@@ -144,7 +146,7 @@ def test_run_diffusion_benchmark(
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
-        grid=grid,
+        grid=mesh,
         vertical_grid=vertical_grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
@@ -180,22 +182,22 @@ def test_run_diffusion_benchmark(
 
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-        div_ic=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-        dwdx=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-        dwdy=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
+        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
+        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
+        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
     )
 
     prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=0.0),
-        vn=data_alloc.random_field(grid, dims.EdgeDim, dims.KDim),
-        exner=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-        theta_v=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-        rho=data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, low=0.0),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim),
+        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
+        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
     )
 
     diffusion_granule = diffusion.Diffusion(
-        grid=grid,
+        grid=mesh,
         config=config,
         params=diffusion_parameters,
         vertical_grid=vertical_grid,
