@@ -80,6 +80,12 @@ class GridShape:
 class GlobalGridParams:
     grid_shape: Final[GridShape | None] = None
     radius: float = constants.EARTH_RADIUS
+    domain_length: float | None = None
+    domain_height: float | None = None
+    mean_edge_length: float | None = None
+    mean_dual_edge_length: float | None = None
+    mean_dual_cell_area: float | None = None
+    # TODO(msimberg): Let these to be initialized with a default.
     global_num_cells: int
     num_cells: int
     mean_cell_area: float
@@ -89,12 +95,22 @@ class GlobalGridParams:
         *,
         grid_shape: GridShape | None = None,
         radius: float = constants.EARTH_RADIUS,
+        domain_length: float | None = None,
+        domain_height: float | None = None,
         global_num_cells: int | None = None,
         num_cells: int | None = None,
+        mean_edge_length: float | None = None,
+        mean_dual_edge_length: float | None = None,
         mean_cell_area: float | None = None,
+        mean_dual_cell_area: float | None = None,
     ) -> None:
         self.grid_shape = grid_shape
         self.radius = radius
+        self.domain_length = domain_length
+        self.domain_height = domain_height
+        self.mean_edge_length = mean_edge_length
+        self.mean_dual_edge_length = mean_dual_edge_length
+        self.mean_dual_cell_area = mean_dual_cell_area
 
         if global_num_cells is not None:
             self.global_num_cells = global_num_cells

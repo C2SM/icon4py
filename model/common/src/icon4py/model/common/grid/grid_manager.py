@@ -336,6 +336,11 @@ class GridManager:
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
             geometry_type = base.GeometryType(geometry_type)
 
+        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
+        mean_dual_edge_length = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
+        )
+
         # TODO(msimberg): Put mean_cell_area and num_cells in separate class? They're
         # derived from either global grid parameters or geometry fields.
         # TODO(msimberg): At least three ways to get the mean cell area:
@@ -343,19 +348,37 @@ class GridManager:
         # - computing from cell area geometry fields (should always be there, or can be derived)
         # - computing from the number of cells and sphere area (only for sphere)
         # They don't always give the same result. Does it matter? Which one should we prioritize?
-        if mean_cell_area := self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA):
-            mean_cell_area = float(mean_cell_area)
+        mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
         if mean_cell_area is None:
             assert self.geometry is not None
             mean_cell_area = xp.mean(self.geometry[gridfile.GeometryName.CELL_AREA.value].ndarray)
+
+        mean_dual_cell_area = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
+        )
+        if mean_dual_cell_area is None:
+            assert self.geometry is not None
+            mean_dual_cell_area = xp.mean(
+                self.geometry[gridfile.GeometryName.DUAL_AREA.value].ndarray
+            )
+
+        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
+        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
+        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
 
         global_params = icon.GlobalGridParams(
             grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
             ),
+            radius=sphere_radius,
+            domain_length=domain_length,
+            domain_height=domain_height,
             num_cells=num_cells,
+            mean_edge_length=mean_edge_length,
+            mean_dual_edge_length=mean_dual_edge_length,
             mean_cell_area=mean_cell_area,
+            mean_dual_cell_area=mean_dual_cell_area,
         )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
