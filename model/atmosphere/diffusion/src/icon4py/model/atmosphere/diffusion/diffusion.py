@@ -359,7 +359,7 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: gtx_typing.Backend | DeviceType | BackendDescription | None = None,
+        backend: gtx_typing.Backend | DeviceType | BackendDescription | None,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):
