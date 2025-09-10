@@ -22,8 +22,8 @@ from .. import utils
 @pytest.mark.parametrize(
     "grid_file, expected",
     [
-        (test_defs.Grids.R02B04_GLOBAL.name, False),
-        (test_defs.Grids.MCH_OPR_R04B07_DOMAIN01.name, True),
+        (test_defs.Grids.R02B04_GLOBAL, False),
+        (test_defs.Grids.MCH_OPR_R04B07_DOMAIN01, True),
     ],
 )
 def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
@@ -84,7 +84,7 @@ vertex_bounds: dict[h_grid.Zone, tuple[int, int]] = {
 )
 def test_compute_start_index_for_limited_area_grid(dim, expected):
     grid = grid_utils.get_grid_manager_from_identifier(
-        test_defs.Grids.MCH_OPR_R04B07_DOMAIN01.name, 1, True, None
+        test_defs.Grids.MCH_OPR_R04B07_DOMAIN01, 1, True, None
     ).grid
     refinement_field = grid.refinement_control
     start_index, end_index = refinement.compute_domain_bounds(dim, refinement_field, array_ns=np)
@@ -102,7 +102,7 @@ def test_compute_start_index_for_limited_area_grid(dim, expected):
         ), f"Expected end index {expected_value} for domain = {d} , but got {v}"
 
 
-@pytest.mark.parametrize("file", (test_defs.Grids.R02B04_GLOBAL.name,))
+@pytest.mark.parametrize("file", (test_defs.Grids.R02B04_GLOBAL,))
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_compute_domain_bounds_for_global_grid(file, dim):
     grid = grid_utils.get_grid_manager_from_identifier(file, 1, True, None).grid
