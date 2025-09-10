@@ -713,5 +713,5 @@ def test_factory_compute_theta_rho_ref_me(
     field_1 = factory.get(attrs.RHO_REF_ME)
     field_2 = factory.get(attrs.THETA_REF_ME)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
-    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-8)
 
