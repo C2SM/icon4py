@@ -14,6 +14,10 @@ import pytest
 
 import gt4py.next as gtx
 
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    test_utils as testing_test_utils,
+)
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import (
     base,
@@ -166,7 +170,8 @@ def test_grid_size(icon_grid):
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor", (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL)
+    "grid_descriptor",
+    (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL),
 )
 @pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.value)
 def test_when_keep_skip_value_then_neighbor_table_matches_config(grid_descriptor, offset, backend):
@@ -183,7 +188,8 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(grid_descriptor
 
 
 @pytest.mark.parametrize(
-    "grid_descriptor", (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL)
+    "grid_descriptor",
+    (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL),
 )
 @pytest.mark.parametrize("dim", (utils.local_dims()))
 def test_when_replace_skip_values_then_only_pentagon_points_remain(
@@ -260,9 +266,11 @@ def test_global_grid_params(
     params = icon.GlobalGridParams(
         grid_shape=icon.GridShape(
             geometry_type=geometry_type,
-            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)
-            if grid_root is not None
-            else None,
+            subdivision=(
+                icon.GridSubdivision(root=grid_root, level=grid_level)
+                if grid_root is not None
+                else None
+            ),
         ),
         num_cells=num_cells,
         mean_cell_area=mean_cell_area,
@@ -296,9 +304,11 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level):
         _ = icon.GlobalGridParams(
             grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
-                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)
-                if grid_root is not None
-                else None,
+                subdivision=(
+                    icon.GridSubdivision(root=grid_root, level=grid_level)
+                    if grid_root is not None
+                    else None
+                ),
             )
         )
 
@@ -366,7 +376,13 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level):
     ],
 )
 def test_global_grid_params_from_grid_manager(
-    grid_file, backend, geometry_type, subdivision, global_num_cells, num_cells, mean_cell_area
+    grid_file,
+    backend,
+    geometry_type,
+    subdivision,
+    global_num_cells,
+    num_cells,
+    mean_cell_area,
 ):
     params = utils.run_grid_manager(
         grid_file, keep_skip_values=False, backend=backend
