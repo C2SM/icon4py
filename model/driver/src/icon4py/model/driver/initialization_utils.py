@@ -570,7 +570,7 @@ def _create_grid_global_params(
     grid_file: pathlib.Path,
 ) -> tuple[icon_grid.GlobalGridParams, str]:
     """
-    Create grid shape and its uuid.
+    Create global grid params and its uuid.
 
     Args:
         grid_file: path of the grid file
