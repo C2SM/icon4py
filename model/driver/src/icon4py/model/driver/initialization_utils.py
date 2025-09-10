@@ -7,9 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import enum
+import functools
 import logging
 import pathlib
-import uuid
 
 import netCDF4 as nc4
 from gt4py.next import backend as gtx_backend
@@ -37,11 +37,6 @@ from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
 from icon4py.model.testing import serialbox as sb
 
 
-# TODO(egparedes): Read these hardcoded constants from grid file
-GRID_LEVEL = 4
-GRID_ROOT = 2
-GLOBAL_GRID_ID = uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba")
-
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 INITIALIZATION_ERROR_MSG = "The requested experiment type is not implemented."
 
@@ -67,7 +62,7 @@ def read_icon_grid(
     path: pathlib.Path,
     backend: gtx_backend.Backend,
     grid_shape: icon_grid.GridShape,
-    grid_uuid: uuid.UUID = GLOBAL_GRID_ID,
+    grid_file: pathlib.Path,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> icon_grid.IconGrid:
@@ -86,9 +81,8 @@ def read_icon_grid(
         return _grid_savepoint(
             backend=backend,
             path=path,
+            grid_file=grid_file,
             rank=rank,
-            grid_shape=grid_shape,
-            grid_uuid=grid_uuid,
         ).construct_icon_grid(backend=backend)
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -331,8 +325,7 @@ def read_geometry_fields(
     path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     backend: gtx_backend.Backend,
-    grid_shape: icon_grid.GridShape,
-    grid_uuid: uuid.UUID = GLOBAL_GRID_ID,
+    grid_file: pathlib.Path,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
@@ -347,8 +340,7 @@ def read_geometry_fields(
     Args:
         path: path to the serialized input data
         vertical_grid_config: Vertical grid configuration
-        grid_shape: grid shape containing the root, level, and geometry type
-        grid_uuid: id (uuid) of the horizontal grid
+        grid_file: path of the grid
         rank: mpi rank of the current compute node
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
@@ -356,7 +348,7 @@ def read_geometry_fields(
         the data is originally obtained from the grid file (horizontal fields) or some special input files.
     """
     if ser_type == SerializationType.SB:
-        sp = _grid_savepoint(backend, path, rank, grid_shape, grid_uuid)
+        sp = _grid_savepoint(backend, path, grid_file, rank)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, backend)
@@ -389,11 +381,17 @@ def _serial_data_provider(
 def _grid_savepoint(
     backend: gtx_backend.Backend,
     path: pathlib.Path,
+    grid_file: pathlib.Path,
     rank: int,
-    grid_shape: icon_grid.GridShape,
-    grid_uuid: uuid.UUID,
 ) -> sb.IconGridSavepoint:
-    sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(grid_uuid, grid_shape)
+    grid_geometry_type, grid_root, grid_level, grid_uuid = _create_grid_global_params(grid_file)
+    sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
+        grid_uuid,
+        icon_grid.GridShape(
+            geometry_type=grid_geometry_type,
+            subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
+        ),
+    )
     return sp
 
 
@@ -401,17 +399,15 @@ def read_decomp_info(
     path: pathlib.Path,
     procs_props: decomposition.ProcessProperties,
     backend: gtx_backend.Backend,
-    grid_shape: icon_grid.GridShape,
-    grid_uuid: uuid.UUID = GLOBAL_GRID_ID,
+    grid_file: pathlib.Path,
     ser_type=SerializationType.SB,
 ) -> decomposition.DecompositionInfo:
     if ser_type == SerializationType.SB:
         return _grid_savepoint(
             backend,
             path,
+            grid_file,
             procs_props.rank,
-            grid_shape,
-            grid_uuid,
         ).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -420,8 +416,7 @@ def read_decomp_info(
 def read_static_fields(
     path: pathlib.Path,
     backend: gtx_backend.Backend,
-    grid_shape: icon_grid.GridShape,
-    grid_uuid: uuid.UUID = GLOBAL_GRID_ID,
+    grid_file: pathlib.Path,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
@@ -435,10 +430,8 @@ def read_static_fields(
     Read fields for metric and interpolation state.
 
      Args:
-        grid: IconGrid
         path: path to the serialized input data
-        grid_shape: grid shape containing the root, level, and geometry type
-        grid_uuid: id (uuid) of the horizontal grid
+        grid_file: path of the grid
         rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
@@ -477,7 +470,7 @@ def read_static_fields(
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
-        grid_savepoint = data_provider.from_savepoint_grid(grid_uuid, grid_shape)
+        grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
@@ -572,9 +565,10 @@ def configure_logging(
     logging.getLogger("").addHandler(console_handler)
 
 
-def create_grid_info(
-    grid_file: str,
-) -> tuple[icon_grid.GridShape, uuid.UUID]:
+@functools.cache
+def _create_grid_global_params(
+    grid_file: pathlib.Path,
+) -> tuple[base.GeometryType, int, int, str]:
     """
     Create grid shape and its uuid.
 
@@ -582,13 +576,15 @@ def create_grid_info(
         grid_file: path of the grid file
 
     Returns:
-        grid_shape: grid shape containing the root, level, and geometry type
+        grid_geometry_type: GeometryType, indicating the grid is icosahedron or torus
+        grid_root: grid root
+        grid_level: grid level
         grid_uuid: id (uuid) of the horizontal grid
     """
     grid = nc4.Dataset(grid_file, "r", format="NETCDF4")
     grid_root = grid.getncattr("grid_root")
     grid_level = grid.getncattr("grid_level")
-    grid_uuid = uuid.UUID(grid.getncattr("uuidOfHGrid"))
+    grid_uuid = grid.getncattr("uuidOfHGrid")
     try:
         grid_geometry_type = base.GeometryType(grid.getncattr("grid_geometry"))
     except AttributeError:
@@ -597,6 +593,4 @@ def create_grid_info(
         )
         grid_geometry_type = base.GeometryType.ICOSAHEDRON
     grid.close()
-    return icon_grid.GridShape(
-        grid_geometry_type, icon_grid.GridSubdivision(root=grid_root, level=grid_level)
-    ), grid_uuid
+    return grid_geometry_type, grid_root, grid_level, grid_uuid

@@ -9,7 +9,6 @@
 import datetime
 import logging
 import pathlib
-import uuid
 from collections.abc import Callable
 from typing import NamedTuple
 
@@ -23,7 +22,6 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -340,8 +338,7 @@ def initialize(
     props: decomposition.ProcessProperties,
     serialization_type: driver_init.SerializationType,
     experiment_type: driver_init.ExperimentType,
-    grid_shape: icon_grid.GridShape,
-    grid_uuid: uuid.UUID,
+    grid_file: pathlib.Path,
     backend: gtx_backend.Backend,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
@@ -359,8 +356,8 @@ def initialize(
         props: Processor properties.
         serialization_type: Serialization type.
         experiment_type: Experiment type.
-        grid_uuid: Grid UUID.
-        grid_shape: Grid shape.
+        grid_file: Path of the grid.
+        backend: GT4Py backend.
 
     Returns:
         TimeLoop: Time loop object.
@@ -372,20 +369,18 @@ def initialize(
     config = driver_config.read_config(experiment_type=experiment_type, backend=backend)
 
     decomp_info = driver_init.read_decomp_info(
-        file_path,
-        props,
-        backend,
-        grid_shape,
-        grid_uuid,
-        serialization_type,
+        path=file_path,
+        procs_props=props,
+        backend=backend,
+        grid_file=grid_file,
+        ser_type=serialization_type,
     )
 
     log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = driver_init.read_icon_grid(
-        file_path,
+    grid = driver_init.read_icon_grid(
+        path=file_path,
         backend=backend,
-        grid_shape=grid_shape,
-        grid_uuid=grid_uuid,
+        grid_file=grid_file,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -399,8 +394,7 @@ def initialize(
         file_path,
         vertical_grid_config=config.vertical_grid_config,
         backend=backend,
-        grid_shape=grid_shape,
-        grid_uuid=grid_uuid,
+        grid_file=grid_file,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -413,8 +407,7 @@ def initialize(
     ) = driver_init.read_static_fields(
         file_path,
         backend,
-        grid_shape=grid_shape,
-        grid_uuid=grid_uuid,
+        grid_file=grid_file,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -423,7 +416,7 @@ def initialize(
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
     diffusion_granule = diffusion.Diffusion(
-        icon_grid,
+        grid,
         config.diffusion_config,
         diffusion_params,
         vertical_geometry,
@@ -438,7 +431,7 @@ def initialize(
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        grid=icon_grid,
+        grid=grid,
         backend=backend,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
@@ -459,10 +452,10 @@ def initialize(
         prognostic_state_now,
         prognostic_state_next,
     ) = driver_init.read_initial_state(
-        icon_grid,
-        cell_geometry,
-        edge_geometry,
-        file_path,
+        grid=grid,
+        cell_param=cell_geometry,
+        edge_param=edge_geometry,
+        path=file_path,
         backend=backend,
         rank=props.rank,
         experiment_type=experiment_type,
@@ -578,7 +571,6 @@ def icon4py_driver(
 
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
-    grid_shape, grid_uuid = driver_init.create_grid_info(grid_file)
 
     time_loop: TimeLoop
     ds: DriverStates
@@ -588,8 +580,7 @@ def icon4py_driver(
         parallel_props,
         serialization_type,
         experiment_type,
-        grid_shape,
-        grid_uuid,
+        pathlib.Path(grid_file),
         backend,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
