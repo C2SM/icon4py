@@ -60,9 +60,8 @@ class ExperimentType(str, enum.Enum):
 
 def read_icon_grid(
     path: pathlib.Path,
-    backend: gtx_backend.Backend,
-    grid_shape: icon_grid.GridShape,
     grid_file: pathlib.Path,
+    backend: gtx_backend.Backend,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> icon_grid.IconGrid:
@@ -71,8 +70,8 @@ def read_icon_grid(
 
     Args:
         path: path where to find the input data
-        grid_shape: grid shape containing the root, level, and geometry type
-        grid_uuid: id (uuid) of the horizontal grid
+        grid_file: path of the grid
+        backend: GT4Py backend
         rank: mpi rank of the current compute node
         ser_type: type of input data. Currently only 'sb (serialbox)' is supported. It reads from ppser serialized test data
     Returns:  IconGrid parsed from a given input type.
@@ -323,9 +322,9 @@ def read_initial_state(
 
 def read_geometry_fields(
     path: pathlib.Path,
+    grid_file: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     backend: gtx_backend.Backend,
-    grid_file: pathlib.Path,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
@@ -339,8 +338,9 @@ def read_geometry_fields(
 
     Args:
         path: path to the serialized input data
-        vertical_grid_config: Vertical grid configuration
         grid_file: path of the grid
+        vertical_grid_config: Vertical grid configuration
+        backend: GT4py backend
         rank: mpi rank of the current compute node
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
@@ -397,9 +397,9 @@ def _grid_savepoint(
 
 def read_decomp_info(
     path: pathlib.Path,
+    grid_file: pathlib.Path,
     procs_props: decomposition.ProcessProperties,
     backend: gtx_backend.Backend,
-    grid_file: pathlib.Path,
     ser_type=SerializationType.SB,
 ) -> decomposition.DecompositionInfo:
     if ser_type == SerializationType.SB:
@@ -415,8 +415,8 @@ def read_decomp_info(
 
 def read_static_fields(
     path: pathlib.Path,
-    backend: gtx_backend.Backend,
     grid_file: pathlib.Path,
+    backend: gtx_backend.Backend,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
@@ -432,6 +432,7 @@ def read_static_fields(
      Args:
         path: path to the serialized input data
         grid_file: path of the grid
+        backend: GT4Py backend
         rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
@@ -539,6 +540,8 @@ def configure_logging(
     Args:
         run_path: path to the output folder where the logfile should be stored
         experiment_name: name of the simulation
+        enable_output: enable output logging messages above debug level
+        processor_procs: ProcessProperties
 
     """
     run_dir = (

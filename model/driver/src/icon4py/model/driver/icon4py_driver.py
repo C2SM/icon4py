@@ -370,17 +370,17 @@ def initialize(
 
     decomp_info = driver_init.read_decomp_info(
         path=file_path,
+        grid_file=grid_file,
         procs_props=props,
         backend=backend,
-        grid_file=grid_file,
         ser_type=serialization_type,
     )
 
     log.info(f"initializing the grid from '{file_path}'")
     grid = driver_init.read_icon_grid(
         path=file_path,
-        backend=backend,
         grid_file=grid_file,
+        backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -391,10 +391,10 @@ def initialize(
         vertical_geometry,
         c_owner_mask,
     ) = driver_init.read_geometry_fields(
-        file_path,
+        path=file_path,
+        grid_file=grid_file,
         vertical_grid_config=config.vertical_grid_config,
         backend=backend,
-        grid_file=grid_file,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -405,9 +405,9 @@ def initialize(
         solve_nonhydro_interpolation_state,
         _,
     ) = driver_init.read_static_fields(
-        file_path,
-        backend,
+        path=file_path,
         grid_file=grid_file,
+        backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
