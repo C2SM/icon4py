@@ -45,7 +45,7 @@ class VelocityAdvection:
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx_typing.Backend | DeviceType | BackendDescription | None = None,
+        backend: gtx_typing.Backend | DeviceType | BackendDescription | None,
     ):
         self.grid: icon_grid.IconGrid = grid
         self.metric_state: dycore_states.MetricStateNonHydro = metric_state
