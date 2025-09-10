@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import enum
 import functools
 import typing
 
@@ -14,16 +13,22 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import model_backends
 
+
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
-def customize_backend(backend):
+def customize_backend(
+    backend: gtx_typing.Backend
+    | model_backends.DeviceType
+    | model_backends.BackendDescription
+    | None,
+):
     if isinstance(backend, model_backends.DeviceType):
         backend = {"device": backend}
     # TODO(havogt): implement the lookup function as below
     # options = get_options(program_name, arch, **backend) # noqa: ERA001
-    backend_func = backend.get("backend_factory", make_custom_gtfn_backend)
+    backend_func = backend.get("backend_factory", model_backends.make_custom_gtfn_backend)
     device = backend["device"]
     custom_backend = backend_func(
         device=device,
@@ -33,7 +38,10 @@ def customize_backend(backend):
 
 def setup_program(
     program: gtx_typing.Program,
-    backend: gtx_typing.Backend | DeviceType | BackendDescription | None,
+    backend: gtx_typing.Backend
+    | model_backends.DeviceType
+    | model_backends.BackendDescription
+    | None,
     constant_args: dict[str, gtx.Field | gtx_typing.Scalar] | None = None,
     variants: dict[str, list[gtx_typing.Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,

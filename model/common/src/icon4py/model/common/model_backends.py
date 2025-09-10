@@ -5,8 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-import enum
 from typing import Any, Final, TypeAlias
 
 import gt4py.next as gtx
@@ -26,15 +24,11 @@ BACKENDS: dict[str, gtx_typing.Backend | None] = {
 }
 BackendDescription: TypeAlias = dict[str, Any]
 
+# DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
+DeviceType: TypeAlias = gtx.DeviceType
 
-class DeviceType(enum.Enum):
-    """
-    Type of device: either CPU or GPU
-    """
-
-    CPU = gtx.DeviceType.CPU
-    GPU = gtx.CUPY_DEVICE_TYPE
-
+CPU = DeviceType.CPU
+GPU = gtx.CUPY_DEVICE_TYPE
 
 try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
@@ -68,7 +62,7 @@ try:
         Returns:
             A dace backend with custom configuration for the target device.
         """
-        on_gpu = device == DeviceType.GPU
+        on_gpu = device == GPU
         return make_dace_backend(
             auto_optimize=auto_optimize,
             cached=cached,
@@ -83,8 +77,8 @@ try:
 
     BACKENDS.update(
         {
-            "dace_cpu": make_custom_dace_backend(device="cpu"),
-            "dace_gpu": make_custom_dace_backend(device="gpu"),
+            "dace_cpu": make_custom_dace_backend(device=CPU),
+            "dace_gpu": make_custom_dace_backend(device=GPU),
         }
     )
 
@@ -95,7 +89,7 @@ except ImportError:
 
 
 def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gtx_typing.Backend:
-    on_gpu = device == DeviceType.GPU
+    on_gpu = device == GPU
     return GTFNBackendFactory(
         gpu=on_gpu,
         cached=cached,

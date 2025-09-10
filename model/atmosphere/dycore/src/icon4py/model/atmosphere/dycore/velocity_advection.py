@@ -23,14 +23,18 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    model_backends,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon as icon_grid,
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.model_backends import BackendDescription, DeviceType
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -45,7 +49,10 @@ class VelocityAdvection:
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx_typing.Backend | DeviceType | BackendDescription | None,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescription
+        | None,
     ):
         self.grid: icon_grid.IconGrid = grid
         self.metric_state: dycore_states.MetricStateNonHydro = metric_state
