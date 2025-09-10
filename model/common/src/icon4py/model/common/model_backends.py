@@ -94,7 +94,7 @@ except ImportError:
         raise NotImplementedError("Depends on dace module, which is not installed.")
 
 
-def make_custom_gtfn_backend(device: str, cached: bool = True, **options) -> GTFNBackendFactory:
+def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gtx_typing.Backend:
     on_gpu = device == DeviceType.GPU
     return GTFNBackendFactory(
         gpu=on_gpu,
