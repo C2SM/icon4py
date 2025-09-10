@@ -19,7 +19,7 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
 
 
 def customize_backend(backend):
-    if isinstance(backend, enum.Enum):
+    if isinstance(backend, model_backends.DeviceType):
         backend = {"device": backend}
     # TODO(havogt): implement the lookup function as below
     # options = get_options(program_name, arch, **backend) # noqa: ERA001
