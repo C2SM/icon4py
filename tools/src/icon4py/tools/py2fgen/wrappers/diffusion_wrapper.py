@@ -88,7 +88,6 @@ def diffusion_init(
     zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.float64] | None,
     ndyn_substeps: gtx.int32,
     rayleigh_damping_height: gtx.float64,
-    nflat_gradp: gtx.int32,
     diffusion_type: gtx.int32,
     hdiff_w: bool,
     hdiff_vn: bool,
@@ -159,7 +158,6 @@ def diffusion_init(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-        _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
     nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels

@@ -97,7 +97,7 @@ class GlobalGridParams:
         self.radius = radius
 
         if global_num_cells is not None:
-            self.global_num_cells = num_cells
+            self.global_num_cells = global_num_cells
 
         if num_cells is not None:
             self.num_cells = num_cells
@@ -127,10 +127,7 @@ class GlobalGridParams:
     # TODO(msimberg): This is related to limited_area
     @functools.cached_property
     def num_cells(self) -> int:
-        if self._num_cells is None:
-            return self.global_num_cells
-
-        return self._num_cells
+        return self.global_num_cells
 
     @functools.cached_property
     def characteristic_length(self) -> float:
