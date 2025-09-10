@@ -68,7 +68,7 @@ try:
         Returns:
             A dace backend with custom configuration for the target device.
         """
-        on_gpu = device == "gpu"
+        on_gpu = device == DeviceType.GPU
         return make_dace_backend(
             auto_optimize=auto_optimize,
             cached=cached,
