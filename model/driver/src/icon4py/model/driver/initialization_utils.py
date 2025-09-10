@@ -384,13 +384,10 @@ def _grid_savepoint(
     grid_file: pathlib.Path,
     rank: int,
 ) -> sb.IconGridSavepoint:
-    grid_geometry_type, grid_root, grid_level, grid_uuid = _create_grid_global_params(grid_file)
+    global_grid_params, grid_uuid = _create_grid_global_params(grid_file)
     sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
         grid_uuid,
-        icon_grid.GridShape(
-            geometry_type=grid_geometry_type,
-            subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
-        ),
+        global_grid_params.grid_shape,
     )
     return sp
 
@@ -571,7 +568,7 @@ def configure_logging(
 @functools.cache
 def _create_grid_global_params(
     grid_file: pathlib.Path,
-) -> tuple[base.GeometryType, int, int, str]:
+) -> tuple[icon_grid.GlobalGridParams, str]:
     """
     Create grid shape and its uuid.
 
@@ -579,9 +576,7 @@ def _create_grid_global_params(
         grid_file: path of the grid file
 
     Returns:
-        grid_geometry_type: GeometryType, indicating the grid is icosahedron or torus
-        grid_root: grid root
-        grid_level: grid level
+        global_grid_params: GlobalGridParams
         grid_uuid: id (uuid) of the horizontal grid
     """
     grid = nc4.Dataset(grid_file, "r", format="NETCDF4")
@@ -596,4 +591,10 @@ def _create_grid_global_params(
         )
         grid_geometry_type = base.GeometryType.ICOSAHEDRON
     grid.close()
-    return grid_geometry_type, grid_root, grid_level, grid_uuid
+    global_grid_params = icon_grid.GlobalGridParams(
+        grid_shape=icon_grid.GridShape(
+            geometry_type=grid_geometry_type,
+            subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
+        ),
+    )
+    return global_grid_params, grid_uuid
