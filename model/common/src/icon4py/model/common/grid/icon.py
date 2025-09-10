@@ -77,6 +77,8 @@ class GridShape:
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class GlobalGridParams:
+    # TODO(msimberg): Which of these belong here and which belong in e.g.
+    # GridConfig, HorizontalGridConfig, etc.?
     grid_shape: Final[GridShape | None] = None
     radius: float = constants.EARTH_RADIUS
     domain_length: float | None = None
