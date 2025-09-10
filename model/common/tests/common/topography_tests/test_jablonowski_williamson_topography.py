@@ -17,7 +17,7 @@ from icon4py.model.common.grid import geometry as grid_geometry
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common.grid import geometry_attributes as geometry_meta
 from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decomposition_info
-from model.common.tests.common.fixtures import *  # noqa: F403
+from ..fixtures import *  # noqa: F403
 from icon4py.model.testing import definitions
 
 
