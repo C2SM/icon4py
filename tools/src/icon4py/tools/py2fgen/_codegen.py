@@ -141,12 +141,13 @@ import logging
 from {{ library_name }} import ffi
 from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
 
-if __debug__:
-    logger = logging.getLogger(__name__)
-    log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
-    logging.basicConfig(level=getattr(logging, runtime_config.LOG_LEVEL),
-                    format=log_format,
-                    datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
+log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
+logging.basicConfig(
+    level=getattr(logging, runtime_config.LOG_LEVEL),
+    format=log_format,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 # embedded function imports
@@ -321,7 +322,7 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
                     return f"{name} = c_loc({name})"
             return f"{name} = {name}"
 
-        param_names = ", &\n ".join([name for name in func.args.keys()] + ["rc"])
+        param_names = ", &\n ".join([name for name in func.args] + ["rc"])
         args = []
         for name, param in func.args.items():
             args.append(render_args(name, param))

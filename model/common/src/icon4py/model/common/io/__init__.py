@@ -192,9 +192,8 @@ monitor.store(model_state, time)
 
 """
 
-import importlib
+import importlib.util
 
 
 if not importlib.util.find_spec("xarray"):
-    print("Optional icon4py-common[io] dependencies are missing!")
-    SystemExit(1)
+    raise RuntimeError("Optional icon4py-common[io] dependencies are missing!")

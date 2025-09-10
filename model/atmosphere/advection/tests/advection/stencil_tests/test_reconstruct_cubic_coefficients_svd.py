@@ -20,6 +20,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 
 
+@pytest.mark.embedded_remap_error
 class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
     PROGRAM = reconstruct_cubic_coefficients_svd
     OUTPUTS = (
@@ -34,7 +35,6 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
         "p_coeff_9_dsl",
         "p_coeff_10_dsl",
     )
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

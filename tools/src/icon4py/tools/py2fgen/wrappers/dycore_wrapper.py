@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# type: ignore
 
 """
 Wrapper module for dycore granule.
@@ -52,12 +51,10 @@ granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 
 def profile_enable():
-    global granule
     granule.profiler.enable()
 
 
 def profile_disable():
-    global granule
     granule.profiler.disable()
     stats = pstats.Stats(granule.profiler)
     stats.dump_stats(f"{__name__}.profile")
@@ -151,7 +148,7 @@ def solve_nh_init(
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    on_gpu = not vct_a.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = vct_a.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -228,6 +225,7 @@ def solve_nh_init(
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
+        nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
         pg_edgeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
@@ -252,16 +250,9 @@ def solve_nh_init(
     )
 
     # datatest config, vertical parameters
-    vertical_params = VerticalGrid(
-        config=vertical_config,
-        vct_a=vct_a,
-        vct_b=vct_b,
-        _min_index_flat_horizontal_grad_pressure=gtx.int32(
-            nflat_gradp - 1
-        ),  # Fortran vs Python indexing
-    )
+    vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
 
-    global granule
+    global granule  # noqa: PLW0603 [global-statement]
     granule = SolveNonhydroGranule(
         solve_nh=solve_nonhydro.SolveNonhydro(
             grid=grid_wrapper.grid_state.grid,
@@ -337,7 +328,6 @@ def solve_nh_run(
     ndyn_substeps_var: gtx.int32,
     idyn_timestep: gtx.int32,
 ):
-    global granule
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 

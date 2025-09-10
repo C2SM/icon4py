@@ -194,7 +194,7 @@ class SingleNodeExchange:
             dim: The dimension along which the exchange is performed.
             wait: If True, the operation will block until the exchange is completed (default: True).
         """
-        dim = kwargs.get("dim", None)
+        dim = kwargs.get("dim")
         wait = kwargs.get("wait", True)
 
         res = self.exchange(dim, *args)

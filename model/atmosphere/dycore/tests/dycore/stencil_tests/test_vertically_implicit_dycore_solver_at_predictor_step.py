@@ -10,7 +10,6 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
     vertically_implicit_solver_at_predictor_step,
@@ -18,7 +17,6 @@ from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver 
 from icon4py.model.common import (
     constants,
     dimension as dims,
-    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -67,6 +65,7 @@ from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
 )
 
 
+@pytest.mark.uses_concat_where
 class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_predictor_step
     OUTPUTS = (
@@ -82,7 +81,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         "dwdz_at_cells_on_model_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
@@ -188,7 +186,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]) = np.where(
             (start_cell_index_nudging <= horz_idx)
             & (horz_idx < end_cell_index_local)
-            & (vert_idx >= int32(1)),
+            & (vert_idx >= gtx.int32(1)),
             compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
                 connectivities=connectivities,
                 w_nnow=current_w[:, :n_lev],
@@ -310,7 +308,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == model_options.RayleighType.KLEMP:
+        if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (start_cell_index_nudging <= horz_idx)
                 & (horz_idx < end_cell_index_local)

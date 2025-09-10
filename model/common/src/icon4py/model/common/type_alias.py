@@ -9,27 +9,27 @@
 import os
 from typing import Literal, TypeAlias
 
-from gt4py.next.ffront.fbuiltins import float32, float64
+import gt4py.next as gtx
 
 
 DEFAULT_PRECISION = "double"
 
-wpfloat: TypeAlias = float64
-vpfloat: type[float32] | type[float64] = wpfloat
+wpfloat: TypeAlias = gtx.float64
+vpfloat: type[gtx.float32] | type[gtx.float64] = wpfloat
 
 precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 
 
 def set_precision(new_precision: Literal["double", "mixed"]) -> None:
-    global precision
-    global vpfloat
+    global precision  # noqa: PLW0603 [global-statement]
+    global vpfloat  # noqa: PLW0603 [global-statement]
 
     precision = new_precision.lower()
     match precision:
         case "double":
             vpfloat = wpfloat
         case "mixed":
-            vpfloat = float32
+            vpfloat = gtx.float32
         case _:
             raise ValueError("Only 'double' and 'mixed' precision are supported.")
 

@@ -133,7 +133,7 @@ def orchestrate(
                 default_build_folder = Path(".dacecache") / f"uid_{unique_id}"
                 default_build_folder.mkdir(parents=True, exist_ok=True)
 
-                if (cache_item := orchestrator_cache.get(unique_id, None)) is None:
+                if (cache_item := orchestrator_cache.get(unique_id)) is None:
                     fuse_func_orig_annotations = fuse_func.__annotations__
                     fuse_func.__annotations__ = dace_annotations
 
@@ -582,7 +582,7 @@ if dace:
             for k_v in flattened_xargs_type_value:
                 if k_v[0] is not dace_cls:
                     continue
-                for member in orig_cls.__dataclass_fields__.keys():
+                for member in orig_cls.__dataclass_fields__:
                     for stride in range(getattr(k_v[1], member).ndarray.ndim):
                         concretized_symbols[
                             orchestration_dtypes.stride_symbol_name_from_field(
@@ -640,7 +640,7 @@ if dace:
                     mod_args_kwargs[i] = dace_cls.dtype._typeclass.as_ctypes()(
                         **{
                             member: getattr(k_v[1], member).data_ptr()
-                            for member in orig_cls.__dataclass_fields__.keys()
+                            for member in orig_cls.__dataclass_fields__
                         }
                     )
 

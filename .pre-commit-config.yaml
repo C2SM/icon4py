@@ -44,7 +44,7 @@ repos:
         args: [--unsafe]
       - id: debug-statements
       - id: end-of-file-fixer
-        exclude: ^tools/tests/py2fgen/wrappers/references/
+        exclude: ^tools/tests/tools/py2fgen/wrappers/references/
       - id: pretty-format-json
         args: [--autofix, --indent, "2"]
 
@@ -55,7 +55,7 @@ repos:
         name: add license for all ICON4Py Python source files
         types: [python]
         args: [--comment-style, "|#|", --license-filepath, ./HEADER.txt, --fuzzy-match-generates-todo]
-        exclude: ^tools/tests/py2fgen/wrappers/references/
+        exclude: ^tools/tests/tools/py2fgen/wrappers/references/
 
   # The following hooks use development tools which are already managed by 'uv'.
   # To avoid inconsistencies between the development and the pre-commit
@@ -103,7 +103,7 @@ repos:
       - <<: *uv-managed-hook
         id: mypy
         name: mypy static type checker
-        entry: uv run --group dev --frozen --isolated mypy tools/src/icon4py/tools model/testing/src model/atmosphere/dycore/tests/dycore/stencil_tests # model/common/src/icon4py/model/common # TODO(egparedes): fix and activate mypy hook for all packages
+        entry: uv run --group dev --frozen --isolated mypy tools/src/icon4py/tools model/testing/src model/atmosphere/dycore/tests/dycore/stencil_tests model/common/tests/common/grid/unit_tests/test_grid_manager.py # TODO(egparedes): fix and activate mypy hook for all packages
         types_or: [python, pyi]
         pass_filenames: false
 

@@ -30,7 +30,7 @@ def print_grid_decomp_info(
         processor_props.rank,
         "\n".join(
             [
-                f"{k:<10}  - {icon_grid.start_index(k)}"
+                f"{k!s}  - {icon_grid.start_index(k)}"
                 for k in h_grid.get_domains_for_dim(dims.CellDim)
             ]
         ),
@@ -39,10 +39,7 @@ def print_grid_decomp_info(
         "icon_grid:cell_end for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
-            [
-                f"{k:<10}  - {icon_grid.end_index(k)}"
-                for k in h_grid.get_domains_for_dim(dims.CellDim)
-            ]
+            [f"{k!s}  - {icon_grid.end_index(k)}" for k in h_grid.get_domains_for_dim(dims.CellDim)]
         ),
     )
     log.info(
@@ -50,7 +47,7 @@ def print_grid_decomp_info(
         processor_props.rank,
         "\n".join(
             [
-                f"{k:<10}  - {icon_grid.start_index(k)}"
+                f"{k!s}  - {icon_grid.start_index(k)}"
                 for k in h_grid.get_domains_for_dim(dims.VertexDim)
             ]
         ),
@@ -60,7 +57,7 @@ def print_grid_decomp_info(
         processor_props.rank,
         "\n".join(
             [
-                f"{k:<10}  - {icon_grid.end_index(k)}"
+                f"{k!s}  - {icon_grid.end_index(k)}"
                 for k in h_grid.get_domains_for_dim(dims.VertexDim)
             ]
         ),
@@ -70,7 +67,7 @@ def print_grid_decomp_info(
         processor_props.rank,
         "\n".join(
             [
-                f"{k:<10}  - {icon_grid.start_index(k)}"
+                f"{k!s}  - {icon_grid.start_index(k)}"
                 for k in h_grid.get_domains_for_dim(dims.EdgeDim)
             ]
         ),
@@ -79,10 +76,7 @@ def print_grid_decomp_info(
         "icon_grid:edge_end for rank %s is.... %s",
         processor_props.rank,
         "\n".join(
-            [
-                f"{k:<10}  - {icon_grid.end_index(k)}"
-                for k in h_grid.get_domains_for_dim(dims.EdgeDim)
-            ]
+            [f"{k!s}  - {icon_grid.end_index(k)}" for k in h_grid.get_domains_for_dim(dims.EdgeDim)]
         ),
     )
 

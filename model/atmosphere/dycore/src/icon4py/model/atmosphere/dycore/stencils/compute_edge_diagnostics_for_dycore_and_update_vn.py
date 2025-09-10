@@ -9,9 +9,8 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import broadcast
+from gt4py.next import broadcast
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
@@ -361,7 +360,7 @@ def _apply_divergence_damping_and_update_vn(
     return next_vn
 
 
-@gtx.program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -527,7 +526,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     )
 
 
-@gtx.program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_divergence_damping_and_update_vn(
     horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.vpfloat],
     next_vn: fa.EdgeKField[ta.wpfloat],

@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
+from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import (
     _compute_tangential_wind,
@@ -21,7 +19,7 @@ from icon4py.model.common.dimension import E2C2EO, E2C2EODim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_avg_vn_and_graddiv_vn_and_vt(
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
@@ -39,7 +37,7 @@ def _compute_avg_vn_and_graddiv_vn_and_vt(
     return z_vn_avg_wp, z_graddiv_vn_vp, vt_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_avg_vn_and_graddiv_vn_and_vt(
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],

@@ -9,7 +9,7 @@
 import sys
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import astype, broadcast, where
+from gt4py.next import astype, broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2CDim
@@ -113,7 +113,7 @@ def line_intersect(
 
 
 @gtx.field_operator
-def _prepare_ffsl_flux_area_patches_list(
+def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
     famask_int: fa.EdgeKField[gtx.int32],
     p_vn: fa.EdgeKField[ta.wpfloat],
     ptr_v3_lon: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],

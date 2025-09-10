@@ -10,7 +10,7 @@ import time as _time
 
 
 try:
-    import cupy as cp  # type: ignore
+    import cupy as cp  # type: ignore[import-not-found]
 
     def _sync() -> None:
         cp.cuda.runtime.deviceSynchronize()
