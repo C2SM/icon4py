@@ -395,7 +395,7 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx_typing.Backend | DeviceType | BackendDescription | None = None,
+        backend: gtx_typing.Backend | DeviceType | BackendDescription | None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange
