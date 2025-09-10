@@ -18,34 +18,27 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common.grid import geometry_attributes as geometry_meta
 from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decomposition_info
 from model.common.tests.common.fixtures import *  # noqa: F403
-
+from icon4py.model.testing import definitions
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.R02B04_GLOBAL, dt_utils.JABW_EXPERIMENT),
-    ],
-)
+@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_jablonowski_williamson_topography(
-    grid_file,
+    experiment,
     backend,
     topography_savepoint,
 ):
-    num_levels = 65
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid_file_identifier=grid_file,
-        num_levels=num_levels,
+    grid_manager = grid_utils.get_grid_manager_from_experiment(
+        experiment,
         keep_skip_values=True,
         backend=backend,
     )
-    grid = grid_manager.grid
+    mesh = grid_manager.grid
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
     geometry_field_source = grid_geometry.GridGeometry(
-        grid=grid,
-        decomposition_info=construct_dummy_decomposition_info(grid, backend),
+        grid=mesh,
+        decomposition_info=construct_dummy_decomposition_info(mesh, backend),
         backend=backend,
         coordinates=coordinates,
         extra_fields=geometry_input_fields,

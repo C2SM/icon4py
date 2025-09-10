@@ -137,8 +137,6 @@ def _get_metrics_factory(
             interpolation_source=interpolation_field_source,
             backend=backend,
             metadata=attrs.attrs,
-            e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim),
-            c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),
             rayleigh_type=rayleigh_type,
             rayleigh_coeff=rayleigh_coeff,
             exner_expol=exner_expol,
@@ -163,6 +161,7 @@ def test_factory_z_mc(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.Z_MC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-10)
@@ -184,6 +183,7 @@ def test_factory_ddqz_z_and_inverse(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     inverse_field = factory.get(attrs.INV_DDQZ_Z_FULL)
     field = factory.get(attrs.DDQZ_Z_FULL)
@@ -205,6 +205,7 @@ def test_factory_ddqz_full_e(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.DDQZ_Z_FULL_E)
     assert test_helpers.dallclose(field_ref, field.asnumpy(), rtol=1e-8)
@@ -226,6 +227,7 @@ def test_factory_ddqz_z_half(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.DDQZ_Z_HALF)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
@@ -246,6 +248,7 @@ def test_factory_scaling_factor_for_3d_divdamp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.SCALING_FACTOR_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -266,6 +269,7 @@ def test_factory_rayleigh_w(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.RAYLEIGH_W)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -287,6 +291,7 @@ def test_factory_coeffs_dwdz(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field_1 = factory.get(attrs.COEFF1_DWDZ)
     field_2 = factory.get(attrs.COEFF2_DWDZ)
@@ -310,6 +315,7 @@ def test_factory_ref_mc(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field_1 = factory.get(attrs.THETA_REF_MC)
     field_2 = factory.get(attrs.EXNER_REF_MC)
@@ -333,6 +339,7 @@ def test_factory_d2dexdz2_facs_mc(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field_1 = factory.get(attrs.D2DEXDZ2_FAC1_MC)
     field_2 = factory.get(attrs.D2DEXDZ2_FAC2_MC)
@@ -354,6 +361,7 @@ def test_factory_ddxn_z_full(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.DDXN_Z_FULL)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1e-8)
@@ -374,6 +382,7 @@ def test_factory_ddxt_z_full(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.DDXT_Z_FULL)
     # TODO(halungge): these are the np.allclose default values: single precision
@@ -395,6 +404,7 @@ def test_factory_exner_w_implicit_weight_parameter(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
@@ -415,6 +425,7 @@ def test_factory_exner_w_explicit_weight_parameter(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
@@ -436,6 +447,7 @@ def test_factory_exner_exfac(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.EXNER_EXFAC)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1e-8)
@@ -458,6 +470,7 @@ def test_factory_pressure_gradient_fields(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field_1 = factory.get(attrs.PG_EDGEDIST_DSL)
     assert test_helpers.dallclose(field_1_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
@@ -480,6 +493,7 @@ def test_factory_mask_bdy_prog_halo_c(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field_1 = factory.get(attrs.MASK_PROG_HALO_C)
     field_2 = factory.get(attrs.BDY_HALO_C)
@@ -502,6 +516,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
@@ -524,6 +539,7 @@ def test_factory_zdiff_gradp(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.ZDIFF_GRADP)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-5)
@@ -544,6 +560,7 @@ def test_factory_coeff_gradekin(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.COEFF_GRADEKIN)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
@@ -563,6 +580,7 @@ def test_factory_wgtfacq_e(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.WGTFACQ_E)
     field_ref = metrics_savepoint.wgtfacq_e_dsl(field.shape[1])
@@ -583,6 +601,7 @@ def test_vertical_coordinates_on_half_levels(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.CELL_HEIGHT_ON_HALF_LEVEL)
     field_ref = metrics_savepoint.z_ifc()
@@ -590,19 +609,11 @@ def test_vertical_coordinates_on_half_levels(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_compute_wgtfac_c(
     grid_savepoint,
     metrics_savepoint,
     topography_savepoint,
-    grid_file,
     icon_grid,
     experiment,
     backend,
@@ -610,11 +621,9 @@ def test_compute_wgtfac_c(
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.WGTFAC_C)
     field_ref = metrics_savepoint.wgtfac_c()
@@ -638,6 +647,7 @@ def test_factory_compute_diffusion_mask_and_coef(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field_1 = factory.get(attrs.MASK_HDIFF)
     field_2 = factory.get(attrs.ZD_DIFFCOEF_DSL)
@@ -663,6 +673,7 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
+        metrics_savepoint=metrics_savepoint,
     )
     field_1 = factory.get(attrs.ZD_INTCOEF_DSL)
     field_2 = factory.get(attrs.ZD_VERTOFFSET_DSL)
