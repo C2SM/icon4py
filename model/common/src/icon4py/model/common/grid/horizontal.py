@@ -50,6 +50,12 @@ _EDGE_GRF: Final[int] = 24
 _CELL_GRF: Final[int] = 14
 _VERTEX_GRF: Final[int] = 13
 
+_ICON_CONSTANTS_BOUNDS = {
+    dims.CellDim: (0, _CELL_GRF - 1),
+    dims.EdgeDim: (0, _EDGE_GRF - 1),
+    dims.VertexDim: (0, _VERTEX_GRF - 1),
+}
+
 _ICON_LATERAL_BOUNDARY: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 9,
     dims.EdgeDim: 14,
@@ -79,12 +85,6 @@ _ICON_END = {
     dims.CellDim: 0,
     dims.EdgeDim: 0,
     dims.VertexDim: 0,
-}
-
-_ICON_CONSTANTS_BOUNDS = {
-    dims.CellDim: (0, _CELL_GRF - 1),
-    dims.EdgeDim: (0, _EDGE_GRF - 1),
-    dims.VertexDim: (0, _VERTEX_GRF - 1),
 }
 """
 Indices used to look up start index and end index in the arrays int `start_idx_[c,e,v]` from ICON.

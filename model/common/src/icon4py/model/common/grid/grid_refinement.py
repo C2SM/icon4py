@@ -234,7 +234,9 @@ def is_limited_area_grid(
     It only operates works for non nested grids. It should be used like this
 
     >>> refinement_edges: fa.EdgeField[int] = grid.refinement_control[dims.EdgeDim]
-    >>> non_nested_edge_refinement = convert_to_non_nested_refinement_values(refinement_edges, dims.EdgeDim)
+    >>> non_nested_edge_refinement = convert_to_non_nested_refinement_values(
+    ...     refinement_edges, dims.EdgeDim
+    ... )
     >>> assert is_limited_area_grid(non_nested_edge_refinement)
     """
     return array_ns.any(refinement_field > 0).item()
