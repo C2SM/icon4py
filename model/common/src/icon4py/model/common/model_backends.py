@@ -95,7 +95,7 @@ except ImportError:
 
 
 def make_custom_gtfn_backend(device: str, cached: bool = True, **options) -> GTFNBackendFactory:
-    on_gpu = device == "gpu"
+    on_gpu = device == DeviceType.GPU
     return GTFNBackendFactory(
         gpu=on_gpu,
         cached=cached,
