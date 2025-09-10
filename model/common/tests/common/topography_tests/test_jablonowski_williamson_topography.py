@@ -20,6 +20,7 @@ from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decompo
 from ..fixtures import *
 from icon4py.model.testing import definitions
 
+
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_jablonowski_williamson_topography(
