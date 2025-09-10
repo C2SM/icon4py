@@ -272,7 +272,7 @@ def test_global_grid_params(
                 else None
             ),
         ),
-        num_cells=num_cells,
+        global_num_cells=num_cells,  # TODO(msimberg):
         mean_cell_area=mean_cell_area,
     )
     assert geometry_type == params.geometry_type
@@ -333,7 +333,14 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level):
             1310720,
             389176284.94852674,
         ),
-        # TODO(msimberg): R19_B07_MCH_LOCAL
+        (
+            definitions.Grids.R19_B07_MCH_LOCAL,
+            base.GeometryType.ICOSAHEDRON,
+            icon.GridSubdivision(root=19, level=7),
+            118292480,
+            283876,
+            4119096.374920686,
+        ),
         (
             definitions.Grids.MCH_OPR_R04B07_DOMAIN01,
             base.GeometryType.ICOSAHEDRON,
@@ -342,7 +349,14 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level):
             10700,
             87967127.69851978,
         ),
-        # TODO(msimberg): MCH_OPR_R19B08_DOMAIN01
+        (
+            definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
+            base.GeometryType.ICOSAHEDRON,
+            icon.GridSubdivision(root=19, level=8),
+            473169920,
+            44528,
+            1029968.5064089653,
+        ),
         (
             definitions.Grids.MCH_CH_R04B09_DSL,
             base.GeometryType.ICOSAHEDRON,
@@ -351,7 +365,14 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level):
             20896,
             6080879.45232143,
         ),
-        # TODO(msimberg): TORUS_100X116_1000M,
+        (
+            definitions.Grids.TORUS_100X116_1000M,
+            base.GeometryType.TORUS,
+            None,
+            None,
+            23200,
+            433012.7018922193,
+        ),
         (
             definitions.Grids.TORUS_50000x5000,
             base.GeometryType.TORUS,
