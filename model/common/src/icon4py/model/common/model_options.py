@@ -38,7 +38,7 @@ def customize_backend(backend):
 
 def setup_program(
     program: gtx_typing.Program,
-    backend: gtx_typing.Backend | DeviceType | BackendDescription | None = None,
+    backend: gtx_typing.Backend | DeviceType | BackendDescription | None,
     constant_args: dict[str, gtx.Field | gtx_typing.Scalar] | None = None,
     variants: dict[str, list[gtx_typing.Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
