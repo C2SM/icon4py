@@ -17,9 +17,8 @@ from icon4py.model.common.grid import geometry as grid_geometry
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common.grid import geometry_attributes as geometry_meta
 from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decomposition_info
-from ..fixtures import *  # noqa: F403
+from ..fixtures import *
 from icon4py.model.testing import definitions
-
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
