@@ -111,7 +111,7 @@ class GlobalGridParams:
 
     @property
     def subdivision(self) -> GridSubdivision | None:
-        return self.grid_params.subdivision if self.grid_params else None
+        return self.grid_shape.subdivision if self.grid_shape else None
 
     @functools.cached_property
     def global_num_cells(self) -> int:

@@ -15,7 +15,7 @@ import pytest
 import gt4py.next as gtx
 
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
+    definitions,
     test_utils as testing_test_utils,
 )
 from icon4py.model.common import constants, dimension as dims
@@ -315,18 +315,10 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, geometry_type, subdivision, global_num_cells, num_cells, mean_cell_area",
+    "grid_descriptor, geometry_type, subdivision, global_num_cells, num_cells, mean_cell_area",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT,
-            base.GeometryType.ICOSAHEDRON,
-            icon.GridSubdivision(root=4, level=9),
-            83886080,
-            20896,
-            6080879.45232143,
-        ),
-        (
-            dt_utils.R02B04_GLOBAL,
+            definitions.Grids.R02B04_GLOBAL,
             base.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=2, level=4),
             20480,
@@ -334,39 +326,34 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level):
             24907282236.708576,
         ),
         (
-            dt_utils.R02B07_GLOBAL,
+            definitions.Grids.R02B07_GLOBAL,
             base.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=2, level=7),
             1310720,
             1310720,
             389176284.94852674,
         ),
+        # TODO(msimberg): R19_B07_MCH_LOCAL
         (
-            dt_utils.ICON_CH2_SMALL,
+            definitions.Grids.MCH_OPR_R04B07_DOMAIN01,
             base.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=4, level=7),
             5242880,
             10700,
             87967127.69851978,
         ),
+        # TODO(msimberg): MCH_OPR_R19B08_DOMAIN01
         (
-            dt_utils.REGIONAL_BENCHMARK,
+            definitions.Grids.MCH_CH_R04B09_DSL,
             base.GeometryType.ICOSAHEDRON,
-            icon.GridSubdivision(root=19, level=8),
-            473169920,
-            44528,
-            1078050.650827068,
+            icon.GridSubdivision(root=4, level=9),
+            83886080,
+            20896,
+            6080879.45232143,
         ),
+        # TODO(msimberg): TORUS_100X116_1000M,
         (
-            dt_utils.GAUSS3D_EXPERIMENT,
-            base.GeometryType.TORUS,
-            None,
-            None,
-            1056,
-            248515.0952090332,
-        ),
-        (
-            dt_utils.WEISMAN_KLEMP_EXPERIMENT,
+            definitions.Grids.TORUS_50000x5000,
             base.GeometryType.TORUS,
             None,
             None,
@@ -376,7 +363,7 @@ def test_global_grid_params_fail(geometry_type, grid_root, grid_level):
     ],
 )
 def test_global_grid_params_from_grid_manager(
-    grid_file,
+    grid_descriptor,
     backend,
     geometry_type,
     subdivision,
@@ -384,9 +371,8 @@ def test_global_grid_params_from_grid_manager(
     num_cells,
     mean_cell_area,
 ):
-    params = utils.run_grid_manager(
-        grid_file, keep_skip_values=False, backend=backend
-    ).grid.global_properties
+    grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
+    params = grid.global_properties
     assert params is not None
     assert params.geometry_type == geometry_type
     assert params.subdivision == subdivision
