@@ -35,7 +35,7 @@ from ..fixtures import *
 @pytest.mark.benchmark(
     group="diffusion_benchmark",
 )
-@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R19B08_DOMAIN01])
+@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01])
 def test_run_diffusion_benchmark(
     grid: Any,
     vertical_grid_params: Dict[str, float],
@@ -73,7 +73,7 @@ def test_run_diffusion_benchmark(
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
-    decomposition_info = construct_dummy_decomposition_info(mesh, backend)  # TODO (Yilu) check the
+    decomposition_info = construct_dummy_decomposition_info(mesh, backend)
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
@@ -125,7 +125,7 @@ def test_run_diffusion_benchmark(
     )
 
     vertical_config = v_grid.VerticalGridConfig(
-        mesh.num_levels,  # TODO (Yilu) check the levels
+        mesh.num_levels,
         lowest_layer_thickness=vertical_grid_params["lowest_layer_thickness"],
         model_top_height=vertical_grid_params["model_top_height"],
         stretch_factor=vertical_grid_params["stretch_factor"],
