@@ -16,11 +16,9 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.common.dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as base_grid, icon, simple as simple_grid
-from icon4py.model.common.grid.base import Grid
-from icon4py.model.common.grid.grid_manager import GridManager
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 from icon4py.model.testing import definitions, grid_utils
+
 
 DEFAULT_GRID: Final[str] = "simple"
 DEFAULT_NUM_LEVELS: Final[int] = (

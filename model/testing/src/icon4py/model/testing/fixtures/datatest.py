@@ -21,7 +21,7 @@ from icon4py.model.testing import (
     config,
     data_handling as data,
     datatest_utils as dt_utils,
-    definitions as testing_def,
+    definitions,
     locking,
 )
 
@@ -77,7 +77,7 @@ def processor_props(request):
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathlib.Path:
     return dt_utils.get_ranked_data_path(
-        testing_def.serialized_data_path(), processor_props.comm_size
+        definitions.serialized_data_path(), processor_props.comm_size
     )
 
 

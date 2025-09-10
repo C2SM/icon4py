@@ -65,13 +65,15 @@ def test_run_diffusion_benchmark(
 
     diffusion_parameters = diffusion.DiffusionParams(config)
 
-    grid_manager = grid_utils.get_grid_manager_from_identifier(grid, num_levels=80, keep_skip_values=True, backend=backend)
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid, num_levels=80, keep_skip_values=True, backend=backend
+    )
 
     mesh = grid_manager.grid
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
-    decomposition_info = construct_dummy_decomposition_info(mesh, backend) # TODO (Yilu) check the
+    decomposition_info = construct_dummy_decomposition_info(mesh, backend)  # TODO (Yilu) check the
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
@@ -123,7 +125,7 @@ def test_run_diffusion_benchmark(
     )
 
     vertical_config = v_grid.VerticalGridConfig(
-        mesh.num_levels, # TODO (Yilu) check the levels
+        mesh.num_levels,  # TODO (Yilu) check the levels
         lowest_layer_thickness=vertical_grid_params["lowest_layer_thickness"],
         model_top_height=vertical_grid_params["model_top_height"],
         stretch_factor=vertical_grid_params["stretch_factor"],
