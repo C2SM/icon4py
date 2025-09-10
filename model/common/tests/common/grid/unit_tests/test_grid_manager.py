@@ -102,7 +102,7 @@ def test_grid_manager_refin_ctrl(
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
     assert np.all(
         refin_ctrl_serialized.ndarray
-        == refin.convert_to_unnested_refinement_values(refin_ctrl[dim].ndarray, dim)
+        == refin.convert_to_non_nested_refinement_values(refin_ctrl[dim].ndarray, dim)
     )
 
 
