@@ -397,14 +397,7 @@ def test_global_grid_params_from_grid_manager(
     assert params is not None
     assert params.geometry_type == geometry_type
     assert params.subdivision == subdivision
-
-    if geometry_type == base.GeometryType.TORUS:
-        with pytest.raises(NotImplementedError) as e:
-            assert params.global_num_cells == global_num_cells
-            e.match("TODO : lookup torus cell number computation")
-    else:
-        assert params.global_num_cells == global_num_cells
-
+    assert params.global_num_cells == global_num_cells
     assert params.num_cells == num_cells
     # Depending on which method is used to calculate the mean cell area, the
     # result may be slightly different. Allow a bit of tolerance.
