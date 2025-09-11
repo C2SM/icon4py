@@ -131,6 +131,18 @@ class GlobalGridParams:
         )
 
     def __post_init__(self) -> None:
+        if self.geometry_type is not None:
+            match self.geometry_type:
+                case base.GeometryType.ICOSAHEDRON:
+                    object.__setattr__(self, "domain_length", None)
+                    object.__setattr__(self, "domain_height", None)
+                    if self.radius is None:
+                        object.__setattr__(self, "radius", constants.EARTH_RADIUS)
+                case base.GeometryType.TORUS:
+                    object.__setattr__(self, "radius", None)
+                case _:
+                    ...
+
         if self.global_num_cells is None and self.geometry_type is base.GeometryType.ICOSAHEDRON:
             object.__setattr__(
                 self,
