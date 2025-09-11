@@ -459,10 +459,6 @@ def test_global_grid_params_from_grid_manager(
     assert params.domain_height == domain_height
     assert params.global_num_cells == global_num_cells
     assert params.num_cells == num_cells
-    print(f"{params.mean_dual_cell_area}")
-    print(f"{params.mean_edge_length}")
-    print(f"{params.mean_dual_edge_length}")
-    print(f"{params.characteristic_length}")
     assert params.mean_edge_length == mean_edge_length
     assert params.mean_dual_edge_length == mean_dual_edge_length
     assert params.mean_cell_area == mean_cell_area
