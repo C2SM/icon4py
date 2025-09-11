@@ -101,7 +101,7 @@ def test_compute_edge_length(backend, grid_savepoint, experiment, rtol):
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-9),
         (definitions.Experiments.EXCLAIM_APE, 1e-12),
-        (definitions.WEISMAN_KLEMP_TORUS, 1e-13),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-13),
     ],
 )
 @pytest.mark.datatest
