@@ -142,19 +142,21 @@ def model_initialization_serialbox(
         normal_wind_tendency_due_to_slow_physics_process=solve_nonhydro_init_savepoint.ddt_vn_phy(),
         grf_tend_vn=solve_nonhydro_init_savepoint.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            velocity_init_savepoint.ddt_vn_apc_pc(0),
             velocity_init_savepoint.ddt_vn_apc_pc(1),
-            velocity_init_savepoint.ddt_vn_apc_pc(2),
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            velocity_init_savepoint.ddt_w_adv_pc(0),
             velocity_init_savepoint.ddt_w_adv_pc(1),
-            velocity_init_savepoint.ddt_w_adv_pc(2),
         ),
         tangential_wind=velocity_init_savepoint.vt(),
         vn_on_half_levels=velocity_init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=velocity_init_savepoint.w_concorr_c(),
-        rho_iau_increment=solve_nonhydro_init_savepoint.rho_incr(),
-        normal_wind_iau_increment=solve_nonhydro_init_savepoint.vn_incr(),
-        exner_iau_increment=solve_nonhydro_init_savepoint.exner_incr(),
+        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        normal_wind_iau_increment=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, backend=backend
+        ),
+        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
         exner_dynamical_increment=solve_nonhydro_init_savepoint.exner_dyn_incr(),
     )
 
@@ -541,13 +543,15 @@ def configure_logging(
         processor_procs: ProcessProperties
 
     """
+    if not enable_output:
+        return
     run_dir = (
         pathlib.Path(run_path).absolute() if run_path else pathlib.Path(__file__).absolute().parent
     )
     run_dir.mkdir(exist_ok=True)
     logfile = run_dir.joinpath(f"dummy_dycore_driver_{experiment_name}.log")
     logfile.touch(exist_ok=True)
-    logging_level = logging.DEBUG if enable_output else logging.CRITICAL
+    logging_level = logging.DEBUG
     logging.basicConfig(
         level=logging_level,
         format="%(asctime)s %(filename)-20s (%(lineno)-4d) : %(funcName)-20s:  %(levelname)-8s %(message)s",

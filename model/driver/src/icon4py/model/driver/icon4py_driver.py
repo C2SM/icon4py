@@ -516,6 +516,7 @@ def initialize(
 @click.option(
     "--enable_output",
     is_flag=True,
+    default=False,
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
 )
 @click.option(
