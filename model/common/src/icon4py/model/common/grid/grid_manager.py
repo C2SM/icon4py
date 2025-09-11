@@ -335,38 +335,34 @@ class GridManager:
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
             geometry_type = base.GeometryType(geometry_type)
+        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
+        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
+        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
 
         mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
         mean_dual_edge_length = self._reader.try_attribute(
             gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
         )
-
-        # TODO(msimberg): Put mean_cell_area and num_cells in separate class? They're
-        # derived from either global grid parameters or geometry fields.
-        # TODO(msimberg): At least three ways to get the mean cell area:
-        # - from the grid file (if present; seems to be there for torus, maybe not always for sphere)
-        # - computing from cell area geometry fields (should always be there, or can be derived)
-        # - computing from the number of cells and sphere area (only for sphere)
-        # They don't always give the same result. Does it matter? Which one should we prioritize?
         mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
-        if mean_cell_area is None:
-            assert self.geometry is not None
-            mean_cell_area = xp.mean(self.geometry[gridfile.GeometryName.CELL_AREA.value].ndarray)
-
         mean_dual_cell_area = self._reader.try_attribute(
             gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
         )
-        if mean_dual_cell_area is None:
-            assert self.geometry is not None
-            mean_dual_cell_area = xp.mean(
-                self.geometry[gridfile.GeometryName.DUAL_AREA.value].ndarray
-            )
 
-        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
-        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
-        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
+        # TODO(msimberg): EDGE_LENGTH requires GridGeometry (not just
+        # GeometryDict). GridGeometry requires the IconGrid.  IconGrid requires
+        # GlobalGridParams.  GlobalGridParams requires EDGE_LENGTH. EDGE_LENGTH
+        # requires GridGeometry.
+        # - Option 1: only use MEAN_EDGE_LENGTH from grid file.
+        # - Option 2: Fix circular dependency.
+        # edge_lengths = self.geometry[gridfile.GeometryName.EDGE_LENGTH.value].ndarray # noqa: ERA001
+        # dual_edge_lengths = self.geometry[gridfile.GeometryName.DUAL_EDGE_LENGTH.value].ndarray # noqa: ERA001
+        cell_areas = self.geometry[gridfile.GeometryName.CELL_AREA.value].ndarray
+        dual_cell_areas = mean_dual_cell_area = xp.mean(
+            self.geometry[gridfile.GeometryName.DUAL_AREA.value].ndarray
+        )
 
-        global_params = icon.GlobalGridParams(
+        global_params = icon.GlobalGridParams.from_fields(
+            backend=backend,
             grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
@@ -379,6 +375,8 @@ class GridManager:
             mean_dual_edge_length=mean_dual_edge_length,
             mean_cell_area=mean_cell_area,
             mean_dual_cell_area=mean_dual_cell_area,
+            cell_areas=cell_areas,
+            dual_cell_areas=dual_cell_areas,
         )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells

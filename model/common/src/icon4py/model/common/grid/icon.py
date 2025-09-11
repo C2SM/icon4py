@@ -9,7 +9,7 @@ import dataclasses
 import logging
 import math
 from collections.abc import Mapping
-from typing import Final
+from typing import Final, TypeVar
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
@@ -75,6 +75,9 @@ class GridShape:
         self.subdivision = subdivision
 
 
+T = TypeVar("T")
+
+
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class GlobalGridParams:
     # TODO(msimberg): Which of these belong here and which belong in e.g.
@@ -91,20 +94,50 @@ class GlobalGridParams:
     mean_dual_cell_area: float | None = None
     characteristic_length: float | None = None
 
+    # factory method
+    @classmethod
+    def from_fields(
+        cls: type[T],
+        backend: gtx.typing.Backend | None,
+        mean_edge_length: float | None = None,
+        edge_lengths: data_alloc.NDArray | None = None,
+        mean_dual_edge_length: float | None = None,
+        dual_edge_lengths: data_alloc.NDArray | None = None,
+        mean_cell_area: float | None = None,
+        cell_areas: data_alloc.NDArray | None = None,
+        mean_dual_cell_area: float | None = None,
+        dual_cell_areas: data_alloc.NDArray | None = None,
+        **kwargs,
+    ) -> T:
+        xp = data_alloc.import_array_ns(backend)
+
+        def init_mean(value: float | None, data: data_alloc.NDArray | None) -> float | None:
+            if value is not None:
+                return value
+            if data is not None:
+                return xp.mean(data)
+            return None
+
+        mean_edge_length = init_mean(mean_edge_length, edge_lengths)
+        mean_dual_edge_length = init_mean(mean_dual_edge_length, dual_edge_lengths)
+        mean_cell_area = init_mean(mean_cell_area, cell_areas)
+        mean_dual_cell_area = init_mean(mean_dual_cell_area, dual_cell_areas)
+
+        return cls(
+            mean_edge_length=mean_edge_length,
+            mean_dual_edge_length=mean_dual_edge_length,
+            mean_cell_area=mean_cell_area,
+            mean_dual_cell_area=mean_dual_cell_area,
+            **kwargs,
+        )
+
     def __post_init__(self) -> None:
-        if self.global_num_cells is None and self.geometry_type is not None:
-            match self.geometry_type:
-                case base.GeometryType.ICOSAHEDRON:
-                    assert self.grid_shape.subdivision is not None
-                    object.__setattr__(
-                        self,
-                        "global_num_cells",
-                        compute_icosahedron_num_cells(self.grid_shape.subdivision),
-                    )
-                case base.GeometryType.TORUS:
-                    ...
-                case _:
-                    ...
+        if self.global_num_cells is None and self.geometry_type is base.GeometryType.ICOSAHEDRON:
+            object.__setattr__(
+                self,
+                "global_num_cells",
+                compute_icosahedron_num_cells(self.grid_shape.subdivision),
+            )
 
         if self.num_cells is None and self.global_num_cells is not None:
             object.__setattr__(self, "num_cells", self.global_num_cells)
@@ -113,19 +146,13 @@ class GlobalGridParams:
             self.mean_cell_area is None
             and self.radius is not None
             and self.global_num_cells is not None
-            and self.geometry_type is not None
+            and self.geometry_type is base.GeometryType.ICOSAHEDRON
         ):
-            match self.geometry_type:
-                case base.GeometryType.ICOSAHEDRON:
-                    object.__setattr__(
-                        self,
-                        "mean_cell_area",
-                        compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells),
-                    )
-                case base.GeometryType.TORUS:
-                    ...
-                case _:
-                    ...
+            object.__setattr__(
+                self,
+                "mean_cell_area",
+                compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells),
+            )
 
         if self.characteristic_length is None and self.mean_cell_area is not None:
             object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
