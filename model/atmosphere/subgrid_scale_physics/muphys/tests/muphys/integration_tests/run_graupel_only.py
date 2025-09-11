@@ -111,7 +111,7 @@ def calc_dz(ksize, z):
 
 def write_fields(
     output_filename,
-    ncells,
+    ncell,
     nlev,
     t,
     qv,
@@ -127,14 +127,17 @@ def write_fields(
     pflx,
     pre_gsp,
 ):
-    ncfile = Dataset(output_filename, mode="w")
-    ta_var = ncfile.createVariable("ta", np.double, ("height", "ncells"))
+    ncfile  = Dataset(output_filename, mode="w")
+    ncells  = ncfile.createDimension("ncells", ncell)
+    height  = ncfile.createDimension("height", nlev)
+    height1 = ncfile.createDimension("height1", nlev+1)
+    ta_var  = ncfile.createVariable("ta", np.double, ("height", "ncells"))
     hus_var = ncfile.createVariable("hus", np.double, ("height", "ncells"))
     clw_var = ncfile.createVariable("clw", np.double, ("height", "ncells"))
     cli_var = ncfile.createVariable("cli", np.double, ("height", "ncells"))
-    qr_var = ncfile.createVariable("qr", np.double, ("height", "ncells"))
-    qs_var = ncfile.createVariable("qs", np.double, ("height", "ncells"))
-    qg_var = ncfile.createVariable("qg", np.double, ("height", "ncells"))
+    qr_var  = ncfile.createVariable("qr", np.double, ("height", "ncells"))
+    qs_var  = ncfile.createVariable("qs", np.double, ("height", "ncells"))
+    qg_var  = ncfile.createVariable("qg", np.double, ("height", "ncells"))
     pflx_var = ncfile.createVariable("pflx", np.double, ("height", "ncells"))
     prr_gsp_var = ncfile.createVariable("prr_gsp", np.double, ("height1", "ncells"))
     prs_gsp_var = ncfile.createVariable("prs_gsp", np.double, ("height1", "ncells"))
@@ -156,7 +159,6 @@ def write_fields(
     prg_gsp_var[:, :] = prg_gsp
     pre_gsp_var[:, :] = pre_gsp
     ncfile.close()
-
 
 args = get_args()
 

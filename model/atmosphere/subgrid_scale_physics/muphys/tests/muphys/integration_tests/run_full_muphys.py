@@ -14,15 +14,22 @@ WORK IN PROGRESS!!!!  Do not try to run this.
 
 import argparse
 import sys
+import time
 
 import gt4py.next as gtx
 import netCDF4
 import numpy as np
 
+try:
+    from netCDF4 import Dataset
+except ImportError:
+    print("Netcdf not installed")
+    sys.exit()
+
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel import (
     graupel_run,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.thermo import saturation_adjustment
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import saturation_adjustment
 from icon4py.model.common import dimension as dims, model_backends
 
 
@@ -109,7 +116,7 @@ def calc_dz(ksize, z):
 
 def write_fields(
     output_filename,
-    ncells,
+    ncell,
     nlev,
     t,
     qv,
@@ -125,7 +132,10 @@ def write_fields(
     pflx,
     pre_gsp,
 ):
-    ncfile = netCDF4.Dataset(output_filename, mode="w")
+    ncfile  = Dataset(output_filename, mode="w")
+    ncells  = ncfile.createDimension("ncells", ncell)
+    height  = ncfile.createDimension("height", nlev)
+    height1 = ncfile.createDimension("height1", nlev+1)
     ta_var = ncfile.createVariable("ta", np.double, ("height", "ncells"))
     hus_var = ncfile.createVariable("hus", np.double, ("height", "ncells"))
     clw_var = ncfile.createVariable("clw", np.double, ("height", "ncells"))
@@ -262,7 +272,15 @@ mask_out = gtx.as_field(
     data.mask_out,
 )
 
-saturation_adjustment(
+start_time = time.time()
+
+for _x in range(int(args.itime)+1):
+    
+    if _x == 1:      # Only start timing second iteration
+        start_time = time.time()
+
+    saturation_adjustment = saturation_adjustment.with_backend(model_backends.BACKENDS["gtfn_cpu"])
+    saturation_adjustment(
     te=gtx.as_field(
         (
             dims.CellDim,
@@ -310,12 +328,12 @@ saturation_adjustment(
     qce_out=qc_out,  # Specific cloud water content
     mask_out=mask_out,  # Mask of interest
     offset_provider={"Koff": dims.KDim},
-)
+    )
 
-ksize = data.dz.shape[0]
-k = gtx.as_field((dims.KDim,), np.arange(0, ksize, dtype=np.int32))
-graupel_run = graupel_run.with_backend(model_backends.BACKENDS["gtfn_cpu"])
-graupel_run(
+    ksize = data.dz.shape[0]
+    k = gtx.as_field((dims.KDim,), np.arange(0, ksize, dtype=np.int32))
+    graupel_run = graupel_run.with_backend(model_backends.BACKENDS["gtfn_cpu"])
+    graupel_run(
     k=k,
     last_lev=ksize - 1,
     dz=gtx.as_field(
@@ -404,15 +422,16 @@ graupel_run(
     pg=pg_out,
     pre=pre_out,
     offset_provider={"Koff": dims.KDim},
-)
+    )
 
-data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize - 1)].asnumpy())
-data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize - 1)].asnumpy())
-data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize - 1)].asnumpy())
-data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
-data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
+    data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize - 1)].asnumpy())
+    data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize - 1)].asnumpy())
+    data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize - 1)].asnumpy())
+    data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
+    data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
 
-saturation_adjustment(
+    saturation_adjustment = saturation_adjustment.with_backend(model_backends.BACKENDS["gtfn_cpu"])
+    saturation_adjustment(
     te=gtx.as_field(
         (
             dims.CellDim,
@@ -460,8 +479,14 @@ saturation_adjustment(
     qce_out=qc_out,  # Specific cloud water content
     mask_out=mask_out,  # Mask of interest
     offset_provider={"Koff": dims.KDim},
-)
+    )
 
+    if _x == int(args.itime):      # End timer on last iteration
+        end_time = time.time()
+
+
+elapsed_time = end_time - start_time
+print("For", int(args.itime), "iterations it took", elapsed_time, "seconds!")
 write_fields(
     args.output_file,
     data.ncells,
@@ -480,3 +505,4 @@ write_fields(
     pflx=np.transpose(pflx_out.asnumpy()),
     pre_gsp=data.pre_gsp,
 )
+
