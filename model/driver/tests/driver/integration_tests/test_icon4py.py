@@ -392,15 +392,15 @@ def test_run_timeloop_single_step(
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, grid",
+    "experiment",
     [
-        (definitions.Experiments.MCH_CH_R04B09, definitions.Grids.MCH_CH_R04B09_DSL),
+        definitions.Experiments.MCH_CH_R04B09,
     ],
 )
 def test_driver(
     experiment,
-    grid,
     *,
+    data_provider,
     ranked_data_path,
     backend,
 ):
@@ -413,7 +413,11 @@ def test_driver(
         ranked_base_path=ranked_data_path,
         experiment=experiment,
     )
-    grid_file = grid_utils.resolve_full_grid_file_name(grid)
+    gm = grid_utils.get_grid_manager_from_experiment(
+        experiment=experiment,
+        keep_skip_values=True,
+        backend=backend,
+    )
 
     backend_name = None
     for key, value in model_backends.BACKENDS.items():
@@ -423,6 +427,12 @@ def test_driver(
     assert backend_name is not None
 
     icon4py_driver.icon4py_driver(
-        [str(data_path), "--grid_file", str(grid_file), "--icon4py_driver_backend", backend_name],
+        [
+            str(data_path),
+            "--grid_file",
+            str(gm._file_name),
+            "--icon4py_driver_backend",
+            backend_name,
+        ],
         standalone_mode=False,
     )
