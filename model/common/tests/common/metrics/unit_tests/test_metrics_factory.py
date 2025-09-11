@@ -547,7 +547,6 @@ def test_factory_zdiff_gradp(
     assert test_helpers.dallclose(zdiff_gradp_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
     assert test_helpers.dallclose(vertoffset_gradp_ref.asnumpy(), field_2.asnumpy(), atol=1.0e-5)
 
-
 @pytest.mark.level("integration")
 @pytest.mark.datatest
 def test_factory_coeff_gradekin(

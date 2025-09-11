@@ -571,50 +571,28 @@ def compute_wgtfac_e(
         },
     )
 
-
-@gtx.field_operator
-def _compute_flat_idx(
-    z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    k_lev: fa.KField[gtx.int32],
-) -> fa.EdgeKField[gtx.int32]:
-    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
+def compute_flat_idx(
+    z_mc: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    k_lev: data_alloc.NDArray,
+    array_ns: ModuleType = np
+) -> data_alloc.NDArray:
+    connectivities: dict[gtx.Dimension, np.ndarray]
+    e2c = connectivities[dims.E2CDim]
+    coeff_ = np.expand_dims(c_lin_e, axis=-1)
+    z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
     z_ifc_e_0 = z_ifc(E2C[0])
     z_ifc_e_k_0 = z_ifc_e_0(Koff[1])
     z_ifc_e_1 = z_ifc(E2C[1])
     z_ifc_e_k_1 = z_ifc_e_1(Koff[1])
-    flat_idx = where(
+    flat_idx = array_ns.where(
         (z_me <= z_ifc_e_0) & (z_me >= z_ifc_e_k_0) & (z_me <= z_ifc_e_1) & (z_me >= z_ifc_e_k_1),
         k_lev,
         0,
     )
     return flat_idx
 
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_flat_idx(
-    z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    k_lev: fa.KField[int32],
-    flat_idx: fa.EdgeKField[int32],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _compute_flat_idx(
-        z_mc=z_mc,
-        c_lin_e=c_lin_e,
-        z_ifc=z_ifc,
-        k_lev=k_lev,
-        out=flat_idx,
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
 
 
 def compute_max_index(

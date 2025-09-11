@@ -619,8 +619,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={attrs.WGTFAC_E: attrs.WGTFAC_E},
         )
         self.register_provider(compute_wgtfac_e)
-        compute_flat_edge_idx = factory.ProgramFieldProvider(
-            func=mf.compute_flat_idx.with_backend(self._backend),
+
+        compute_flat_edge_idx = factory.NumpyFieldsProvider(
+            func=mf.compute_flat_idx.with_backend(self._backend, array_ns =self._xp),
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
@@ -640,6 +641,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={"flat_idx": attrs.FLAT_EDGE_INDEX},
         )
         self.register_provider(compute_flat_edge_idx)
+
         max_flat_index_provider = factory.NumpyFieldsProvider(
             func=functools.partial(mf.compute_max_index, array_ns=self._xp),
             domain=(dims.EdgeDim,),
@@ -649,9 +651,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(max_flat_index_provider)
-
-
-
         pressure_gradient_fields = factory.ProgramFieldProvider(
             func=mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(
                 self._backend
