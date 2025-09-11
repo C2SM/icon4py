@@ -368,7 +368,7 @@ def test_grid_manager_grid_level_and_root(
         global_num_cells
         == utils.run_grid_manager(
             grid_descriptor, keep_skip_values=True, backend=backend
-        ).grid.global_properties.num_cells
+        ).grid.global_properties.global_num_cells
     )
 
 
