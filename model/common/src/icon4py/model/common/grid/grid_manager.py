@@ -185,6 +185,16 @@ class GridManager:
                 self._reader.variable(gridfile.GeometryName.DUAL_AREA),
                 allocator=backend,
             ),
+            gridfile.GeometryName.EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_LENGTH),
+                allocator=backend,
+            ),
+            gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH),
+                allocator=backend,
+            ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
                 self._reader.variable(gridfile.GeometryName.EDGE_CELL_DISTANCE, transpose=True),
@@ -352,10 +362,12 @@ class GridManager:
         # GeometryDict). GridGeometry requires the IconGrid.  IconGrid requires
         # GlobalGridParams.  GlobalGridParams requires EDGE_LENGTH. EDGE_LENGTH
         # requires GridGeometry.
-        # - Option 1: only use MEAN_EDGE_LENGTH from grid file.
+        # - Option 1: Only use MEAN_EDGE_LENGTH from grid file.
         # - Option 2: Fix circular dependency.
-        # edge_lengths = self.geometry[gridfile.GeometryName.EDGE_LENGTH.value].ndarray # noqa: ERA001
-        # dual_edge_lengths = self.geometry[gridfile.GeometryName.DUAL_EDGE_LENGTH.value].ndarray # noqa: ERA001
+        # - Option 3: Use EDGE_LENGTH from grid file to make it available in
+        #   GeometryDict. This is implemented below. Is the field always there?
+        edge_lengths = self.geometry[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
+        dual_edge_lengths = self.geometry[gridfile.GeometryName.DUAL_EDGE_LENGTH.value].ndarray
         cell_areas = self.geometry[gridfile.GeometryName.CELL_AREA.value].ndarray
         dual_cell_areas = mean_dual_cell_area = xp.mean(
             self.geometry[gridfile.GeometryName.DUAL_AREA.value].ndarray
@@ -370,11 +382,16 @@ class GridManager:
             radius=sphere_radius,
             domain_length=domain_length,
             domain_height=domain_height,
+            # TODO(msimberg): The above is given for the grid, not derived from
+            # anything. The below can be derived in the worst case, so keep
+            # separate?
             num_cells=num_cells,
             mean_edge_length=mean_edge_length,
             mean_dual_edge_length=mean_dual_edge_length,
             mean_cell_area=mean_cell_area,
             mean_dual_cell_area=mean_dual_cell_area,
+            edge_lengths=edge_lengths,
+            dual_edge_lengths=dual_edge_lengths,
             cell_areas=cell_areas,
             dual_cell_areas=dual_cell_areas,
         )
