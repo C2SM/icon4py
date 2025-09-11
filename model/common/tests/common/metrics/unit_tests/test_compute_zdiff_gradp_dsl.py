@@ -30,16 +30,18 @@ from icon4py.model.testing.fixtures.datatest import (
 from icon4py.model.testing.test_utils import (
     dallclose,
 )
+from icon4py.model.testing import definitions
 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
 def test_compute_zdiff_gradp_dsl(
     icon_grid, metrics_savepoint, interpolation_savepoint, backend, experiment
 ):
     xp = data_alloc.import_array_ns(backend)
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
+    vertoffset_gradp_ref = metrics_savepoint.vertoffset_gradp()
 
     c_lin_e = interpolation_savepoint.c_lin_e()
     z_ifc = metrics_savepoint.z_ifc()
@@ -71,7 +73,7 @@ def test_compute_zdiff_gradp_dsl(
 
     flat_idx_np = xp.amax(flat_idx.ndarray, axis=1)
 
-    zdiff_gradp_full_field = compute_zdiff_gradp_dsl(
+    zdiff_gradp_full_field, vertoffset_gradp_full_field = compute_zdiff_gradp_dsl(
         e2c=icon_grid.get_connectivity("E2C").ndarray,
         z_mc=z_mc.ndarray,
         c_lin_e=c_lin_e.ndarray,
@@ -87,6 +89,13 @@ def test_compute_zdiff_gradp_dsl(
     assert dallclose(
         data_alloc.as_numpy(zdiff_gradp_full_field),
         zdiff_gradp_ref.asnumpy(),
+        atol=1e-10,
+        rtol=1.0e-9,
+    )
+
+    assert dallclose(
+        data_alloc.as_numpy(vertoffset_gradp_full_field)[start_nudging:, :,:],
+        vertoffset_gradp_ref.asnumpy()[start_nudging:, :,:],
         atol=1e-10,
         rtol=1.0e-9,
     )
