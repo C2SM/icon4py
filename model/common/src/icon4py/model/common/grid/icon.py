@@ -94,7 +94,6 @@ class GlobalGridParams:
     mean_dual_cell_area: float | None = None
     characteristic_length: float | None = None
 
-    # factory method
     @classmethod
     def from_fields(
         cls: type[T],
