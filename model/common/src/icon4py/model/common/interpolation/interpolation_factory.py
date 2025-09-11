@@ -56,7 +56,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._geometry = geometry_source
         geometry_type = self._grid.global_properties.geometry_type
         characteristic_length = self._grid.global_properties.characteristic_length
-        mean_dual_edge_length = self._grid.mean_dual_edge_length
+        mean_dual_edge_length = self._grid.global_properties.mean_dual_edge_length
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
             "divavg_cntrwgt": 0.5,

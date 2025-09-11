@@ -256,7 +256,6 @@ def icon_grid(
     end_indices: Mapping[h_grid.Domain, gtx.int32],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
-    mean_dual_edge_length: float | None = None,
 ) -> IconGrid:
     connectivities = {
         offset.value: base.construct_connectivity(
@@ -279,5 +278,4 @@ def icon_grid(
         _end_indices=end_indices,
         global_properties=global_properties,
         refinement_control=refinement_control or {},
-        mean_dual_edge_length=mean_dual_edge_length,
     )

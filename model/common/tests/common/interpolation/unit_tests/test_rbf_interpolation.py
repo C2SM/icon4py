@@ -193,8 +193,8 @@ def test_rbf_interpolation_coeffs_cell(
         grid.global_properties.geometry_type,
         rbf.compute_default_rbf_scale(
             grid.global_properties.geometry_type,
-            math.sqrt(grid_savepoint.mean_cell_area()),
-            grid.mean_dual_edge_length,
+            grid.global_properties.characteristic_length,
+            grid.global_properties.mean_dual_edge_length,
             rbf_dim,
         ),
         horizontal_start,
@@ -272,8 +272,8 @@ def test_rbf_interpolation_coeffs_vertex(
         grid.global_properties.geometry_type,
         rbf.compute_default_rbf_scale(
             grid.global_properties.geometry_type,
-            math.sqrt(grid_savepoint.mean_cell_area()),
-            grid.mean_dual_edge_length,
+            grid.global_properties.characteristic_length,
+            grid.global_properties.mean_dual_edge_length,
             rbf_dim,
         ),
         horizontal_start,
@@ -353,8 +353,8 @@ def test_rbf_interpolation_coeffs_edge(
         grid.global_properties.geometry_type,
         rbf.compute_default_rbf_scale(
             grid.global_properties.geometry_type,
-            math.sqrt(grid_savepoint.mean_cell_area()),
-            grid.mean_dual_edge_length,
+            grid.global_properties.characteristic_length,
+            grid.global_properties.mean_dual_edge_length,
             rbf_dim,
         ),
         horizontal_start,

@@ -538,10 +538,6 @@ class GridManager:
             end_indices=end_indices,
             global_properties=global_params,
             refinement_control=refinement_fields,
-            # TODO(msimberg): Global properties?
-            mean_dual_edge_length=self._reader.try_attribute(
-                gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
-            ),
         )
 
     def _get_index_field(self, field: gridfile.GridFileName, transpose=True, apply_offset=True):
