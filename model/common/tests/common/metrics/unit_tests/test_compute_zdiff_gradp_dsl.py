@@ -94,8 +94,8 @@ def test_compute_zdiff_gradp_dsl(
     )
 
     assert dallclose(
-        data_alloc.as_numpy(vertoffset_gradp_full_field)[start_nudging:, :,:],
-        vertoffset_gradp_ref.asnumpy()[start_nudging:, :,:],
+        data_alloc.as_numpy(vertoffset_gradp_full_field),
+        vertoffset_gradp_ref.asnumpy(),
         atol=1e-10,
         rtol=1.0e-9,
     )

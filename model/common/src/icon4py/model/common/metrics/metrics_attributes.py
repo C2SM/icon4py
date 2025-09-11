@@ -56,6 +56,7 @@ MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
 BDY_HALO_C: Final[str] = "bdy_halo_c"
 HORIZONTAL_MASK_FOR_3D_DIVDAMP: Final[str] = "horizontal_mask_for_3d_divdamp"
 ZDIFF_GRADP: Final[str] = "zdiff_gradp"
+VERTOFFSET_GRADP: Final[str] = "vertoffset_gradp"
 COEFF_GRADEKIN: Final[str] = "coeff_gradekin"
 WGTFACQ_C: Final[str] = "weighting_factor_for_quadratic_interpolation_to_cell_surface"
 WGTFACQ_E: Final[str] = "weighting_factor_for_quadratic_interpolation_to_edge_center"
@@ -358,6 +359,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="zdiff_gradp",
+        dtype=ta.wpfloat,
+    ),
+    VERTOFFSET_GRADP: dict(
+    standard_name=VERTOFFSET_GRADP,
+    long_name="vertoffset_gradp",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="vertoffset_gradp",
         dtype=ta.wpfloat,
     ),
     COEFF_GRADEKIN: dict(

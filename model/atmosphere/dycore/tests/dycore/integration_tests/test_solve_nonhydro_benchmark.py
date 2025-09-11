@@ -310,7 +310,7 @@ def test_run_solve_nonhydro_benchmark(
         reference_theta_at_edges_on_model_levels=metrics_field_source.get(metrics_attributes.THETA_REF_ME),
         ddxn_z_full=metrics_field_source.get(metrics_attributes.DDXN_Z_FULL),
         zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
-        vertoffset_gradp=metrics_field_source.get(metrics_attributes.),# TODO (Yilu) vertoffset_gradp # TODOTODO
+        vertoffset_gradp=metrics_field_source.get(metrics_attributes.VERTOFFSET_GRADP),
         pg_edgeidx_dsl=metrics_field_source.get(metrics_attributes.PG_EDGEIDX_DSL),
         pg_exdist=metrics_field_source.get(metrics_attributes.PG_EDGEDIST_DSL),
         ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),

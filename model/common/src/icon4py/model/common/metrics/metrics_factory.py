@@ -733,7 +733,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"e2c": dims.E2CDim},
             domain=(dims.EdgeDim, dims.E2CDim, dims.KDim),
-            fields=(attrs.ZDIFF_GRADP,),
+            fields=(
+                attrs.ZDIFF_GRADP,
+                attrs.VERTOFFSET_GRADP,),
             params={
                 "nlev": self._grid.num_levels,
                 "horizontal_start": self._grid.start_index(

@@ -533,7 +533,8 @@ def test_factory_zdiff_gradp(
     experiment: definitions.Experiment,
     backend: gtx_backend.Backend | None,
 ):
-    field_ref = metrics_savepoint.zdiff_gradp()
+    zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
+    vertoffset_gradp_ref = metrics_savepoint.vertoffset_gradp()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
@@ -541,8 +542,10 @@ def test_factory_zdiff_gradp(
         topography_savepoint=topography_savepoint,
         metrics_savepoint=metrics_savepoint,
     )
-    field = factory.get(attrs.ZDIFF_GRADP)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-5)
+    field_1 = factory.get(attrs.ZDIFF_GRADP)
+    field_2 = factory.get(attrs.VERTOFFSET_GRADP)
+    assert test_helpers.dallclose(zdiff_gradp_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
+    assert test_helpers.dallclose(vertoffset_gradp_ref.asnumpy(), field_2.asnumpy(), atol=1.0e-5)
 
 
 @pytest.mark.level("integration")
