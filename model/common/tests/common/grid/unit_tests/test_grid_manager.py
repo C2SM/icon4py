@@ -438,8 +438,8 @@ def test_read_geometry_fields(
     backend: gtx_typing.Backend,
 ) -> None:
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
-    cell_area = manager.geometry[gridfile.GeometryName.CELL_AREA]
-    tangent_orientation = manager.geometry[gridfile.GeometryName.TANGENT_ORIENTATION]
+    cell_area = manager._geometry[gridfile.GeometryName.CELL_AREA]
+    tangent_orientation = manager._geometry[gridfile.GeometryName.TANGENT_ORIENTATION]
 
     assert test_utils.dallclose(cell_area.asnumpy(), grid_savepoint.cell_areas().asnumpy())
     assert test_utils.dallclose(
@@ -470,7 +470,7 @@ def test_tangent_orientation(
 ) -> None:
     expected = grid_savepoint.tangent_orientation()
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
-    geometry_fields = manager.geometry
+    geometry_fields = manager._geometry
     assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.TANGENT_ORIENTATION].asnumpy(), expected.asnumpy()
     )
@@ -484,7 +484,7 @@ def test_edge_orientation_on_vertex(
 ) -> None:
     expected = grid_savepoint.vertex_edge_orientation()
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
-    geometry_fields = manager.geometry
+    geometry_fields = manager._geometry
     assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX].asnumpy(),
         expected.asnumpy(),
@@ -499,7 +499,7 @@ def test_dual_area(
 ) -> None:
     expected = grid_savepoint.vertex_dual_area()
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
-    geometry_fields = manager.geometry
+    geometry_fields = manager._geometry
     assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.DUAL_AREA].asnumpy(), expected.asnumpy()
     )
@@ -513,7 +513,7 @@ def test_edge_cell_distance(
 ) -> None:
     expected = grid_savepoint.edge_cell_length()
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
-    geometry_fields = manager.geometry
+    geometry_fields = manager._geometry
 
     assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE].asnumpy(),
@@ -530,7 +530,7 @@ def test_cell_normal_orientation(
 ) -> None:
     expected = grid_savepoint.edge_orientation()
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
-    geometry_fields = manager.geometry
+    geometry_fields = manager._geometry
     assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.CELL_NORMAL_ORIENTATION].asnumpy(), expected.asnumpy()
     )
@@ -544,7 +544,7 @@ def test_edge_vertex_distance(
 ) -> None:
     expected = grid_savepoint.edge_vert_length()
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
-    geometry_fields = manager.geometry
+    geometry_fields = manager._geometry
 
     assert test_utils.dallclose(
         geometry_fields[gridfile.GeometryName.EDGE_VERTEX_DISTANCE].asnumpy(),

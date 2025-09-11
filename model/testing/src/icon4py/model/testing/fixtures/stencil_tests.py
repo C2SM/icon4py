@@ -16,11 +16,9 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.common.dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as base_grid, icon, simple as simple_grid
-from icon4py.model.common.grid.base import Grid
-from icon4py.model.common.grid.grid_manager import GridManager
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
 from icon4py.model.testing import definitions, grid_utils
+
 
 DEFAULT_GRID: Final[str] = "simple"
 DEFAULT_NUM_LEVELS: Final[int] = (
@@ -62,38 +60,6 @@ def _get_grid_from_preset(
                 keep_skip_values=False,
                 backend=backend,
             ).grid
-        case _:
-            return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
-
-
-def _get_grid_manager_from_preset(
-    grid_preset: str,
-    *,
-    num_levels: int = DEFAULT_NUM_LEVELS,
-    backend: gtx_backend.Backend | None = None,
-) -> Grid | GridManager:
-    match grid_preset:
-        case "icon_regional":
-            return grid_utils.get_grid_manager_from_identifier(
-                dt_utils.REGIONAL_EXPERIMENT,
-                num_levels=num_levels,
-                keep_skip_values=False,
-                backend=backend,
-            )
-        case "icon_global":
-            return grid_utils.get_grid_manager_from_identifier(
-                dt_utils.R02B04_GLOBAL,
-                num_levels=num_levels,
-                keep_skip_values=False,
-                backend=backend,
-            )
-        case "icon_benchmark":
-            return grid_utils.get_grid_manager_from_identifier(
-                dt_utils.REGIONAL_BENCHMARK,
-                num_levels=80,  # default benchmark size in ICON Fortran
-                keep_skip_values=False,
-                backend=backend,
-            )
         case _:
             return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
 
@@ -159,33 +125,6 @@ def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) ->
             ) from e
 
     return grid
-
-
-@pytest.fixture(scope="session", params=[("icon_benchmark", 85)])
-def grid_manager(
-    request: pytest.FixtureRequest, backend: gtx_backend.Backend | None
-) -> Grid | GridManager:
-    """
-    Fixture for providing the grid manager.
-    The grid can be parameterized with the fixture itself
-    """
-    name, num_levels = request.param
-
-    if name in VALID_GRID_PRESETS:
-        grid_manager = _get_grid_manager_from_preset(name, num_levels=num_levels, backend=backend)
-    else:
-        try:
-            grid_file = pathlib.Path(name).resolve(strict=True)
-            grid_manager = grid_utils.get_grid_manager(
-                grid_file, num_levels=num_levels, keep_skip_values=False, backend=backend
-            )
-        except OSError as e:
-            raise ValueError(
-                f"Invalid grid name in '--grid' option. It should be one of {VALID_GRID_PRESETS}"
-                " or a valid path to an ICON NetCDF grid file."
-            ) from e
-
-    return grid_manager
 
 
 @pytest.fixture
