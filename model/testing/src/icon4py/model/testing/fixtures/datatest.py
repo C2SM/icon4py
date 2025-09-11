@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(scope="session")
-def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
+def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend | None:
     """
     Fixture to provide a GT4Py backend for the tests.
 

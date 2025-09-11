@@ -279,18 +279,18 @@ def test_grid_index_bottom(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(definitions.Experiments.EXCLAIM_APE, 60)])
+@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_above_num_levels(
     grid_savepoint: sb.IconGridSavepoint,
-    levels: int,
+    experiment: definitions.Experiment,
     zone: v_grid.Zone,
     dim: gtx.Dimension,
     offset: int,
 ) -> None:
-    vertical_size = levels if dim == dims.KDim else levels + 1
+    vertical_size = experiment.num_levels if dim == dims.KDim else experiment.num_levels + 1
     invalid_offset = vertical_size + 1 + offset
     vertical_grid = configure_vertical_grid(grid_savepoint)
     domain = v_grid.Domain(dim, zone, invalid_offset)
@@ -299,18 +299,18 @@ def test_grid_index_raises_if_index_above_num_levels(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(definitions.Experiments.EXCLAIM_APE, 60)])
+@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_below_zero(
     grid_savepoint: sb.IconGridSavepoint,
-    levels: int,
+    experiment: definitions.Experiment,
     zone: v_grid.Zone,
     dim: gtx.Dimension,
     offset: int,
 ) -> None:
-    vertical_size = levels if dim == dims.KDim else levels + 1
+    vertical_size = experiment.num_levels if dim == dims.KDim else experiment.num_levels + 1
     invalid_offset = -(vertical_size + 1 + offset)
     vertical_grid = configure_vertical_grid(grid_savepoint)
     with pytest.raises(expected_exception=AssertionError):

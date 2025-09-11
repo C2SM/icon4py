@@ -285,7 +285,7 @@ max-complexity = 15
 "**/model/**/stencils/*.py" = ["SIM300"]
 # Ignore spurious errors when explicitly importing fixtures in tests (F401, F811).
 # Check: https://github.com/astral-sh/ruff/issues/10662
-# TODO(havogt): remove PLR0915, PLR0911, TD, RUF012
+# TODO(havogt): fix error related to PLR0915, PLR0911, TD, RUF012 and remove ignores below
 "**/tests/**/*_test.py" = ["F401", "F811", "PLR0915", "PLR0911", "TD", "RUF012"]
 "**/tests/**/conftest.py" = ["F401", "F811"]
 "**/tests/**/fixtures.py" = [

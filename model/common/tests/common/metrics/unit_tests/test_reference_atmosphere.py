@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
 ) -> None:
     exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
     rho_ref_mc_ref = metrics_savepoint.rho_ref_mc()
@@ -95,7 +95,9 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
 
 @pytest.mark.datatest
 def test_compute_reference_atmosphere_on_half_level_mass_points(
-    icon_grid: base_grid.Grid, metrics_savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend
+    icon_grid: base_grid.Grid,
+    metrics_savepoint: sb.MetricSavepoint,
+    backend: gtx_typing.Backend | None,
 ) -> None:
     theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
     z_ifc = metrics_savepoint.z_ifc()
@@ -134,7 +136,9 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
 
 @pytest.mark.datatest
 def test_compute_d_exner_dz_ref_ic(
-    icon_grid: base_grid.Grid, metrics_savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend
+    icon_grid: base_grid.Grid,
+    metrics_savepoint: sb.MetricSavepoint,
+    backend: gtx_typing.Backend | None,
 ) -> None:
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
     d_exner_dz_ref_ic_ref = metrics_savepoint.d_exner_dz_ref_ic()
@@ -157,7 +161,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     icon_grid: base_grid.Grid,
     interpolation_savepoint: sb.InterpolationSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
 ) -> None:
     rho_ref_me_ref = metrics_savepoint.rho_ref_me()
     theta_ref_me_ref = metrics_savepoint.theta_ref_me()
@@ -210,7 +214,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
 def test_compute_d2dexdz2_fac_mc(
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
 ) -> None:
     z_mc = metrics_savepoint.z_mc()
     d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()
