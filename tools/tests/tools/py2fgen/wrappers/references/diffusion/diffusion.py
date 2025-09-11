@@ -2,14 +2,13 @@ import logging
 from diffusion import ffi
 from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
 
-if __debug__:
-    logger = logging.getLogger(__name__)
-    log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
-    logging.basicConfig(
-        level=getattr(logging, runtime_config.LOG_LEVEL),
-        format=log_format,
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+logger = logging.getLogger(__name__)
+log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
+logging.basicConfig(
+    level=getattr(logging, runtime_config.LOG_LEVEL),
+    format=log_format,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 # embedded function imports
@@ -373,7 +372,6 @@ def diffusion_init_wrapper(
     zd_intcoef_size_2,
     ndyn_substeps,
     rayleigh_damping_height,
-    nflat_gradp,
     diffusion_type,
     hdiff_w,
     hdiff_vn,
@@ -578,7 +576,6 @@ def diffusion_init_wrapper(
             zd_intcoef=zd_intcoef,
             ndyn_substeps=ndyn_substeps,
             rayleigh_damping_height=rayleigh_damping_height,
-            nflat_gradp=nflat_gradp,
             diffusion_type=diffusion_type,
             hdiff_w=hdiff_w,
             hdiff_vn=hdiff_vn,

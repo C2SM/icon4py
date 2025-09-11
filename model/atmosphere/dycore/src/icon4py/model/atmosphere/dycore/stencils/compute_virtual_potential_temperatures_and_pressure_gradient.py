@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
@@ -21,7 +19,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_virtual_potential_temperatures_and_pressure_gradient(
     wgtfac_c: fa.CellKField[ta.vpfloat],
     z_rth_pr_2: fa.CellKField[ta.vpfloat],
@@ -50,7 +48,7 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
     return z_theta_v_pr_ic_vp, theta_v_ic_wp, astype(z_th_ddz_exner_c_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_virtual_potential_temperatures_and_pressure_gradient(
     wgtfac_c: fa.CellKField[ta.vpfloat],
     z_rth_pr_2: fa.CellKField[ta.vpfloat],
@@ -83,7 +81,7 @@ def compute_virtual_potential_temperatures_and_pressure_gradient(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_virtual_potential_temperatures(
     wgtfac_c: fa.CellKField[ta.vpfloat],
     z_rth_pr_2: fa.CellKField[ta.vpfloat],
@@ -101,7 +99,7 @@ def _compute_virtual_potential_temperatures(
     return z_theta_v_pr_ic_vp, theta_v_ic_wp
 
 
-@field_operator
+@gtx.field_operator
 def _compute_pressure_gradient(
     vwind_expl_wgt: fa.CellField[ta.wpfloat],
     theta_v_ic: fa.CellKField[ta.wpfloat],

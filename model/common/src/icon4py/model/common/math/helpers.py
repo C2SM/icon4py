@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py import next as gtx
-from gt4py.next.ffront.fbuiltins import (
+from gt4py.next import (
     abs,  # noqa: A004
     arccos,
     cos,

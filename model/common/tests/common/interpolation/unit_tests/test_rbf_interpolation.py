@@ -5,8 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+from __future__ import annotations
 import math
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -24,6 +26,7 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     test_utils as test_helpers,
+    definitions,
 )
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -36,20 +39,28 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+    from icon4py.model.testing import serialbox
+    from icon4py.model.common.grid import base as grid_base
+
+
+# TODO(havogt): use everywhere
+@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
+def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
+    return request.param
+
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-    ],
-)
 def test_construct_rbf_matrix_offsets_tables_for_cells(
-    grid_file, experiment, grid_savepoint, icon_grid, backend
+    experiment: definitions.Experiment,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    backend: gtx_typing.Backend | None,
 ):
-    grid_manager = gridtest_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend)
+    grid_manager = gridtest_utils.get_grid_manager_from_identifier(
+        experiment.grid, 1, True, backend
+    )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
     assert offset_table.shape == (
@@ -63,7 +74,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
 
     # Savepoint neighbors before start index may not be populated correctly,
     # ignore them.
-    start_index = icon_grid.start_index(
+    start_index = grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
@@ -74,17 +85,15 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-    ],
-)
 def test_construct_rbf_matrix_offsets_tables_for_edges(
-    grid_file, experiment, grid_savepoint, icon_grid, backend
+    experiment: definitions.Experiment,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    icon_grid: grid_base.Grid,
+    backend: gtx_typing.Backend | None,
 ):
-    grid_manager = gridtest_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend)
+    grid_manager = gridtest_utils.get_grid_manager_from_identifier(
+        experiment.grid, 1, True, backend
+    )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
     assert offset_table.shape == (
@@ -107,17 +116,15 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-    ],
-)
 def test_construct_rbf_matrix_offsets_tables_for_vertices(
-    experiment, grid_file, grid_savepoint, icon_grid, backend
+    experiment: definitions.Experiment,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    icon_grid: grid_base.Grid,
+    backend: gtx_typing.Backend | None,
 ):
-    grid_manager = gridtest_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend)
+    grid_manager = gridtest_utils.get_grid_manager_from_identifier(
+        experiment.grid, 1, True, backend
+    )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
     assert offset_table.shape == (
@@ -145,17 +152,22 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment, atol",
+    "experiment, atol",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-9),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-2),
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-15),
+        (definitions.Experiments.EXCLAIM_APE, 3e-9),
+        (definitions.Experiments.MCH_CH_R04B09, 3e-2),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-15),
     ],
 )
 def test_rbf_interpolation_coeffs_cell(
-    grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
+    grid_savepoint: serialbox.IconGridSavepoint,
+    interpolation_savepoint: serialbox.IconGridSavepoint,
+    icon_grid: grid_base.Grid,
+    backend: gtx_typing.Backend | None,
+    experiment: definitions.Experiment,
+    atol: float,
 ):
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
 
@@ -219,17 +231,22 @@ def test_rbf_interpolation_coeffs_cell(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment, atol",
+    "experiment, atol",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-10),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 3e-3),
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 1e-15),
+        (definitions.Experiments.EXCLAIM_APE, 3e-10),
+        (definitions.Experiments.MCH_CH_R04B09, 3e-3),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-15),
     ],
 )
 def test_rbf_interpolation_coeffs_vertex(
-    grid_file, grid_savepoint, interpolation_savepoint, icon_grid, backend, experiment, atol
+    grid_savepoint: serialbox.IconGridSavepoint,
+    interpolation_savepoint: serialbox.IconGridSavepoint,
+    icon_grid: grid_base.Grid,
+    backend: gtx_typing.Backend | None,
+    experiment: definitions.Experiment,
+    atol: float,
 ):
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
 
@@ -293,23 +310,22 @@ def test_rbf_interpolation_coeffs_vertex(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_file, experiment, atol",
+    "experiment, atol",
     [
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 8e-14),
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 2e-9),
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, dt_utils.WEISMAN_KLEMP_EXPERIMENT, 0),
+        (definitions.Experiments.EXCLAIM_APE, 8e-14),
+        (definitions.Experiments.MCH_CH_R04B09, 2e-9),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 0),
     ],
 )
 def test_rbf_interpolation_coeffs_edge(
-    grid_file,
-    grid_savepoint,
-    interpolation_savepoint,
-    icon_grid,
-    backend,
-    experiment,
-    atol,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    interpolation_savepoint: serialbox.IconGridSavepoint,
+    icon_grid: grid_base.Grid,
+    backend: gtx_typing.Backend | None,
+    experiment: definitions.Experiment,
+    atol: float,
 ):
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
 

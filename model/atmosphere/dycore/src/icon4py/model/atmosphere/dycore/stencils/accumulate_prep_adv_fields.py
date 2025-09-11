@@ -6,14 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _accumulate_prep_adv_fields(
     z_vn_avg: fa.EdgeKField[wpfloat],
     mass_fl_e: fa.EdgeKField[wpfloat],
@@ -27,7 +25,7 @@ def _accumulate_prep_adv_fields(
     return vn_traj_wp, mass_flx_me_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def accumulate_prep_adv_fields(
     z_vn_avg: fa.EdgeKField[wpfloat],
     mass_fl_e: fa.EdgeKField[wpfloat],

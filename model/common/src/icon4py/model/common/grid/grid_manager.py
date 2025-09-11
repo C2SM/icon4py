@@ -11,7 +11,7 @@ from types import ModuleType
 from typing import Literal, Protocol, TypeAlias
 
 import gt4py.next as gtx
-import gt4py.next.backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -116,7 +116,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: gtx_backend.Backend | None, keep_skip_values: bool):
+    def __call__(self, backend: gtx_typing.Backend | None, keep_skip_values: bool):
         if not self._reader:
             self.open()
         self._geometry = self._read_geometry_fields(backend)
@@ -124,7 +124,7 @@ class GridManager:
         self._coordinates = self._read_coordinates(backend)
         self.close()
 
-    def _read_coordinates(self, backend: gtx_backend.Backend | None) -> CoordinateDict:
+    def _read_coordinates(self, backend: gtx_typing.Backend | None) -> CoordinateDict:
         coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -232,7 +232,7 @@ class GridManager:
 
         return coordinates
 
-    def _read_geometry_fields(self, backend: gtx_backend.Backend | None):
+    def _read_geometry_fields(self, backend: gtx_typing.Backend | None):
         geometry_fields = {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
@@ -245,6 +245,16 @@ class GridManager:
             gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.GeometryName.DUAL_AREA),
+                allocator=backend,
+            ),
+            gridfile.GeometryName.EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_LENGTH),
+                allocator=backend,
+            ),
+            gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH),
                 allocator=backend,
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
@@ -320,7 +330,7 @@ class GridManager:
     def _read_grid_refinement_fields(
         self,
         decomposition_info: decomposition.DecompositionInfo | None = None,
-        backend: gtx_backend.Backend | None = None,
+        backend: gtx_typing.Backend | None = None,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
@@ -413,7 +423,7 @@ class GridManager:
         return self._coordinates
 
     def _construct_grid(
-        self, backend: gtx_backend.Backend | None, with_skip_values: bool
+        self, backend: gtx_typing.Backend | None, with_skip_values: bool
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -435,35 +445,55 @@ class GridManager:
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
             geometry_type = base.GeometryType(geometry_type)
-        if domain_length := self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH):
-            domain_length = float(domain_length)
-        if domain_height := self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT):
-            domain_height = float(domain_height)
+        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
+        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
+        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
 
-        # TODO(msimberg): Put mean_cell_area and num_cells in separate class? They're
-        # derived from either global grid parameters or geometry fields.
-        # TODO(msimberg): At least three ways to get the mean cell area:
-        # - from the grid file (if present; seems to be there for torus, maybe not always for sphere)
-        # - computing from cell area geometry fields (should always be there, or can be derived)
-        # - computing from the number of cells and sphere area (only for sphere)
-        # They don't always give the same result. Does it matter? Which one should we prioritize?
-        if mean_cell_area := self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA):
-            mean_cell_area = float(mean_cell_area)
-        if mean_cell_area is None:
-            assert self.geometry is not None
-            mean_cell_area = xp.mean(self.geometry[gridfile.GeometryName.CELL_AREA.value].ndarray)
+        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
+        mean_dual_edge_length = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
+        )
+        mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
+        mean_dual_cell_area = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
+        )
 
-        global_params = icon.GlobalGridParams(
-            # TODO(msimberg): Read sphere radius?
+        # TODO(msimberg): EDGE_LENGTH requires GridGeometry (not just
+        # GeometryDict). GridGeometry requires the IconGrid.  IconGrid requires
+        # GlobalGridParams.  GlobalGridParams requires EDGE_LENGTH. EDGE_LENGTH
+        # requires GridGeometry.
+        # - Option 1: Only use MEAN_EDGE_LENGTH from grid file.
+        # - Option 2: Fix circular dependency.
+        # - Option 3: Use EDGE_LENGTH from grid file to make it available in
+        #   GeometryDict. This is implemented below. Is the field always there?
+        edge_lengths = self.geometry[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
+        dual_edge_lengths = self.geometry[gridfile.GeometryName.DUAL_EDGE_LENGTH.value].ndarray
+        cell_areas = self.geometry[gridfile.GeometryName.CELL_AREA.value].ndarray
+        dual_cell_areas = mean_dual_cell_area = xp.mean(
+            self.geometry[gridfile.GeometryName.DUAL_AREA.value].ndarray
+        )
+
+        global_params = icon.GlobalGridParams.from_fields(
+            backend=backend,
             grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
             ),
-            num_cells=num_cells,
-            mean_cell_area=mean_cell_area,
-            # TODO(msimberg): Where?
-            domain_height=domain_height,
+            radius=sphere_radius,
             domain_length=domain_length,
+            domain_height=domain_height,
+            # TODO(msimberg): The above is given for the grid, not derived from
+            # anything. The below can be derived in the worst case, so keep
+            # separate?
+            num_cells=num_cells,
+            mean_edge_length=mean_edge_length,
+            mean_dual_edge_length=mean_dual_edge_length,
+            mean_cell_area=mean_cell_area,
+            mean_dual_cell_area=mean_dual_cell_area,
+            edge_lengths=edge_lengths,
+            dual_edge_lengths=dual_edge_lengths,
+            cell_areas=cell_areas,
+            dual_cell_areas=dual_cell_areas,
         )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells

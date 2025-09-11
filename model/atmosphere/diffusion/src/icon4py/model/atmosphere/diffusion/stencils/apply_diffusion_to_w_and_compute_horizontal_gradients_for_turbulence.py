@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import _apply_nabla2_to_w
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
@@ -25,7 +23,7 @@ from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: fa.CellField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[CellDim, C2E2CODim], wpfloat],
@@ -72,7 +70,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     return w, dwdx, dwdy
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: fa.CellField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[CellDim, C2E2CODim], wpfloat],
