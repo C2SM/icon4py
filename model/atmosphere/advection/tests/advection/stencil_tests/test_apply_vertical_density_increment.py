@@ -11,13 +11,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.apply_vertical_density_increment import (
     apply_vertical_density_increment,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import stencil_tests
 
 
 class TestApplyVerticalDensityIncrement(stencil_tests.StencilTest):

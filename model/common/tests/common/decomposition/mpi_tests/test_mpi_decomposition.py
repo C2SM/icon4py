@@ -35,10 +35,7 @@ from icon4py.model.testing.fixtures.datatest import (  # import fixtures from te
     metrics_savepoint,
     ranked_data_path,
 )
-from icon4py.model.testing.parallel_helpers import (
-    check_comm_size,
-    processor_props,
-)
+from icon4py.model.testing.parallel_helpers import check_comm_size, processor_props
 
 
 """

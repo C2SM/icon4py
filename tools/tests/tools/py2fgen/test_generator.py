@@ -63,7 +63,7 @@ def test_compile_and_run_cffi_plugin_from_C():
 
             # Write the main C program to a file
             main_program_path = build_path / "main.c"
-            with open(main_program_path, "w") as main_program_file:
+            with pathlib.Path.open(main_program_path, "w") as main_program_file:
                 main_program_file.write(c_source_code)
 
             # Compile the main C program against the shared library
