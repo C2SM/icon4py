@@ -653,9 +653,9 @@ class TorusGridGeometry(GridGeometry):
             }
         )
         self.register_provider(input_fields_provider)
-        self._register_computed_fields()
+        self._register_computed_fields(input_fields_provider)
 
-    def _register_computed_fields(self):
+    def _register_computed_fields(self, input_fields_provider):
         edge_length_provider = factory.ProgramFieldProvider(
             func=stencils.compute_edge_length_torus,
             domain={
@@ -765,123 +765,65 @@ class TorusGridGeometry(GridGeometry):
         self.register_provider(coriolis_params)
 
         # 3. primal_normal_vert, primal_normal_cell
-        normal_vert = factory.ProgramFieldProvider(
-            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_vertex_torus,
-            deps={
-                "x": attrs.EDGE_NORMAL_X,
-                "y": attrs.EDGE_NORMAL_Y,
-            },
-            fields={
-                "u_vertex_1": "u_vertex_1",
-                "v_vertex_1": "v_vertex_1",
-                "u_vertex_2": "u_vertex_2",
-                "v_vertex_2": "v_vertex_2",
-                "u_vertex_3": "u_vertex_3",
-                "v_vertex_3": "v_vertex_3",
-                "u_vertex_4": "u_vertex_4",
-                "v_vertex_4": "v_vertex_4",
-            },
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.END),
-                )
-            },
-        )
         normal_vert_wrapper = SparseFieldProviderWrapper(
-            normal_vert,
+            input_fields_provider,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
             fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
             pairs=(
-                ("u_vertex_1", "u_vertex_2", "u_vertex_3", "u_vertex_4"),
-                ("v_vertex_1", "v_vertex_2", "v_vertex_3", "v_vertex_4"),
+                (
+                    attrs.EDGE_NORMAL_X,
+                    attrs.EDGE_NORMAL_X,
+                    attrs.EDGE_NORMAL_X,
+                    attrs.EDGE_NORMAL_X,
+                ),
+                (
+                    attrs.EDGE_NORMAL_Y,
+                    attrs.EDGE_NORMAL_Y,
+                    attrs.EDGE_NORMAL_Y,
+                    attrs.EDGE_NORMAL_Y,
+                ),
             ),
         )
         self.register_provider(normal_vert_wrapper)
-        normal_cell = factory.ProgramFieldProvider(
-            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center_torus,
-            deps={
-                "x": attrs.EDGE_NORMAL_X,
-                "y": attrs.EDGE_NORMAL_Y,
-            },
-            fields={
-                "u_cell_1": "u_cell_1",
-                "v_cell_1": "v_cell_1",
-                "u_cell_2": "u_cell_2",
-                "v_cell_2": "v_cell_2",
-            },
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.END),
-                )
-            },
-        )
         normal_cell_wrapper = SparseFieldProviderWrapper(
-            normal_cell,
+            input_fields_provider,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
             fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
-            pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
+            pairs=(
+                (attrs.EDGE_NORMAL_X, attrs.EDGE_NORMAL_X),
+                (attrs.EDGE_NORMAL_Y, attrs.EDGE_NORMAL_Y),
+            ),
         )
         self.register_provider(normal_cell_wrapper)
         # 3. dual normals: the dual normals are the edge tangents
-        tangent_vert = factory.ProgramFieldProvider(
-            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_vertex_torus,
-            deps={
-                "x": attrs.EDGE_TANGENT_X,
-                "y": attrs.EDGE_TANGENT_Y,
-            },
-            fields={
-                "u_vertex_1": "u_vertex_1",
-                "v_vertex_1": "v_vertex_1",
-                "u_vertex_2": "u_vertex_2",
-                "v_vertex_2": "v_vertex_2",
-                "u_vertex_3": "u_vertex_3",
-                "v_vertex_3": "v_vertex_3",
-                "u_vertex_4": "u_vertex_4",
-                "v_vertex_4": "v_vertex_4",
-            },
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.END),
-                )
-            },
-        )
         tangent_vert_wrapper = SparseFieldProviderWrapper(
-            tangent_vert,
+            input_fields_provider,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
             fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
             pairs=(
-                ("u_vertex_1", "u_vertex_2", "u_vertex_3", "u_vertex_4"),
-                ("v_vertex_1", "v_vertex_2", "v_vertex_3", "v_vertex_4"),
+                (
+                    attrs.EDGE_TANGENT_X,
+                    attrs.EDGE_TANGENT_X,
+                    attrs.EDGE_TANGENT_X,
+                    attrs.EDGE_TANGENT_X,
+                ),
+                (
+                    attrs.EDGE_TANGENT_Y,
+                    attrs.EDGE_TANGENT_Y,
+                    attrs.EDGE_TANGENT_Y,
+                    attrs.EDGE_TANGENT_Y,
+                ),
             ),
         )
         self.register_provider(tangent_vert_wrapper)
-        tangent_cell = factory.ProgramFieldProvider(
-            func=stencils.compute_zonal_and_meridional_component_of_edge_field_at_cell_center_torus,
-            deps={
-                "x": attrs.EDGE_TANGENT_X,
-                "y": attrs.EDGE_TANGENT_Y,
-            },
-            fields={
-                "u_cell_1": "u_cell_1",
-                "v_cell_1": "v_cell_1",
-                "u_cell_2": "u_cell_2",
-                "v_cell_2": "v_cell_2",
-            },
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.END),
-                )
-            },
-        )
         tangent_cell_wrapper = SparseFieldProviderWrapper(
-            tangent_cell,
+            input_fields_provider,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
             fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
-            pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
+            pairs=(
+                (attrs.EDGE_TANGENT_X, attrs.EDGE_TANGENT_X),
+                (attrs.EDGE_TANGENT_Y, attrs.EDGE_TANGENT_Y),
+            ),
         )
         self.register_provider(tangent_cell_wrapper)
 
@@ -893,7 +835,7 @@ SparseD = TypeVar("SparseD", bound=gtx.Dimension)
 class SparseFieldProviderWrapper(factory.FieldProvider):
     def __init__(
         self,
-        field_provider: factory.ProgramFieldProvider,
+        field_provider: factory.FieldProvider,
         target_dims: tuple[HorizontalD, SparseD],
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
