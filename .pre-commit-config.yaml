@@ -84,7 +84,7 @@ repos:
         name: ruff checker
         entry: uv run --group dev --frozen --isolated ruff check --force-exclude --fix
         types_or: [python, pyi, jupyter]
-        exclude: "^(.*/tests/.*|.*/docs/.*|.*/examples/.*)" # TODO(egparedes): remove the exclusions
+        exclude: "^(.*/docs/.*|.*/examples/.*)" # TODO(egparedes): remove the exclusions
         require_serial: true
 
       - <<: *uv-managed-hook
@@ -103,7 +103,7 @@ repos:
       - <<: *uv-managed-hook
         id: mypy
         name: mypy static type checker
-        entry: uv run --group dev --frozen --isolated mypy tools/src/icon4py/tools model/testing/src model/atmosphere/dycore/tests/dycore/stencil_tests model/common/tests/common/grid/unit_tests/test_grid_manager.py # TODO(egparedes): fix and activate mypy hook for all packages
+        entry: uv run --group dev --frozen --isolated mypy tools/src/icon4py/tools model/testing/src model/atmosphere/dycore/tests/dycore model/common/tests/common/grid model/common/tests/common/metrics model/common/tests/common/states # TODO(egparedes): fix and activate mypy hook for all packages
         types_or: [python, pyi]
         pass_filenames: false
 

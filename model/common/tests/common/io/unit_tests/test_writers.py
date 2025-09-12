@@ -14,11 +14,6 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
 from icon4py.model.common.io import cf_utils, utils, writers
-from icon4py.model.common.io.writers import (
-    NETCDFWriter,
-    TimeProperties,
-    filter_by_standard_name,
-)
 from icon4py.model.common.states import data, metadata
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -29,24 +24,24 @@ from .. import utils as test_io_utils
 @pytest.mark.parametrize("value", ["air_density", "upward_air_velocity"])
 def test_filter_by_standard_name(value):
     state = test_io_utils.model_state(test_io_utils.simple_grid)
-    assert filter_by_standard_name(state, value) == {value: state[value]}
+    assert writers.filter_by_standard_name(state, value) == {value: state[value]}
 
 
 def test_filter_by_standard_name_key_differs_from_name():
     state = test_io_utils.model_state(test_io_utils.simple_grid)
-    assert filter_by_standard_name(state, "virtual_potential_temperature") == {
+    assert writers.filter_by_standard_name(state, "virtual_potential_temperature") == {
         "theta_v": state["theta_v"]
     }
 
 
 def test_filter_by_standard_name_non_existing_name():
     state = test_io_utils.model_state(test_io_utils.simple_grid)
-    assert filter_by_standard_name(state, "does_not_exist") == {}
+    assert writers.filter_by_standard_name(state, "does_not_exist") == {}
 
 
 def initialized_writer(
     test_path, random_name, grid=test_io_utils.simple_grid
-) -> tuple[NETCDFWriter, grid_def.Grid]:
+) -> tuple[writers.NETCDFWriter, grid_def.Grid]:
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
@@ -57,11 +52,11 @@ def initialized_writer(
     )
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
-    writer = NETCDFWriter(
+    writer = writers.NETCDFWriter(
         fname,
         vertical_params,
         horizontal,
-        TimeProperties(cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR),
+        writers.TimeProperties(cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
     )
     writer.initialize_dataset()
@@ -115,7 +110,7 @@ def test_initialize_writer_heights(test_path, random_name):
 
 
 def test_writer_append_timeslice(test_path, random_name):
-    writer, grid = initialized_writer(test_path, random_name)
+    writer, _ = initialized_writer(test_path, random_name)
     time = datetime.now()
     assert len(writer.variables[writers.TIME]) == 0
     slice1 = {}
