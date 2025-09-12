@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
 )
-from icon4py.model.common import dimension as dims, utils as common_utils, type_alias as ta
+from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
     states as grid_states,
