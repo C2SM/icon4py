@@ -278,7 +278,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
     def __init__(
         self,
         func: gtx_typing.FieldOperator,
-        domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
+        domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
         fields: dict[str, str],  # keyword arg to (field_operator, field_name)
         deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
         params: dict[str, state_utils.ScalarType]
