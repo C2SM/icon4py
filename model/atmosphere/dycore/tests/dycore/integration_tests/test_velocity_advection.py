@@ -628,7 +628,9 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     horizontal_advection_of_w_at_edges_on_half_levels = savepoint_velocity_exit.z_v_grad_w()
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
-    vertical_cfl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+    vertical_cfl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=backend
+    )  # TODO(edopao,havogt): read 'vertical_cfl' from savepoint
     skip_compute_predictor_vertical_advection = savepoint_velocity_init.lvn_only()
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
@@ -780,7 +782,9 @@ def test_compute_advection_in_vertical_momentum_equation(
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
-    vertical_cfl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+    vertical_cfl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=backend
+    )  # TODO(edopao,havogt): read 'vertical_cfl' from savepoint
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
