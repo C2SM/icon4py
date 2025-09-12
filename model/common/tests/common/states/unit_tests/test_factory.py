@@ -299,7 +299,7 @@ def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:
 @pytest.mark.datatest
 def test_compute_scalar_value_from_numpy_provider(
     height_coordinate_source: factory.FieldSource,
-    metrics_savepoint: serialbox.MetricsSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
     value_ref = np.min(np.min(metrics_savepoint.z_ifc()))
