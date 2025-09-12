@@ -38,7 +38,7 @@ from ..fixtures import *
 @pytest.mark.benchmark(
     group="diffusion_benchmark",
 )
-@pytest.mark.parametrize("grid", [definitions.Grids.R19_B07_MCH_LOCAL])
+@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01])
 def test_run_diffusion_benchmark(
     grid: Any,
     vertical_grid_params: dict[str, float],

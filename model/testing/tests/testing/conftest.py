@@ -17,7 +17,4 @@ except KeyError:
 
 __all__ = [
     # imported fixtures:
-    "grid_file",
-    "backend",
-    "topography_savepoint",
 ]
