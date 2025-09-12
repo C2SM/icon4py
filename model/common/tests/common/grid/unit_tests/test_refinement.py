@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
@@ -17,7 +20,13 @@ from icon4py.model.testing.fixtures import backend
 from .. import utils
 
 
-def out_of_range(dim: gtx.Dimension):
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    import gt4py.next.typing as gtx_typing
+
+
+def out_of_range(dim: gtx.Dimension) -> Iterator[int]:
     lower = range(-36, refin._UNORDERED[dim][1])
     for v in lower:
         yield v
@@ -27,15 +36,14 @@ def out_of_range(dim: gtx.Dimension):
         yield v
 
 
-def refinement_value(dim: gtx.Dimension):
+def refinement_value(dim: gtx.Dimension) -> Iterator[int]:
     lower = refin._UNORDERED[dim][1]
     upper = refin._MAX_ORDERED[dim]
-    for v in range(lower, upper):
-        yield v
+    yield from range(lower, upper)
 
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_ordered(dim):
+def test_ordered(dim: gtx.Dimension) -> None:
     for value in refinement_value(dim):
         ordered = refin.RefinementValue(dim, value)
 
@@ -46,7 +54,7 @@ def test_ordered(dim):
 
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_nested(dim):
+def test_nested(dim: gtx.Dimension) -> None:
     for value in refinement_value(dim):
         nested = refin.RefinementValue(dim, value)
         if nested.value < 0:
@@ -56,7 +64,7 @@ def test_nested(dim):
 
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_valid_refinement_values(dim):
+def test_valid_refinement_values(dim: gtx.Dimension) -> None:
     for value in out_of_range(dim):
         with pytest.raises(AssertionError):
             refin.RefinementValue(dim, value)
@@ -67,7 +75,12 @@ def test_valid_refinement_values(dim):
     "grid_descriptor, expected",
     [(definitions.Grids.R02B04_GLOBAL, False), (definitions.Grids.MCH_CH_R04B09_DSL, True)],
 )
-def test_is_local_area_grid_for_grid_files(grid_descriptor, expected, dim, backend):
+def test_is_local_area_grid_for_grid_files(
+    grid_descriptor: definitions.GridDescription,
+    expected: bool,
+    dim: gtx.Dimension,
+    backend: gtx_typing.Backend,
+) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(grid_descriptor, 1, True, backend).grid
     xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     refinement_field = grid.refinement_control[dim]

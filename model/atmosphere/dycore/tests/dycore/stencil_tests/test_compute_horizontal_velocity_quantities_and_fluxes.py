@@ -20,19 +20,13 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.testing import stencil_tests
 
-from .test_compute_avg_vn_and_graddiv_vn_and_vt import (
-    compute_avg_vn_and_graddiv_vn_and_vt_numpy,
-)
-from .test_compute_contravariant_correction import (
-    compute_contravariant_correction_numpy,
-)
+from .test_compute_avg_vn_and_graddiv_vn_and_vt import compute_avg_vn_and_graddiv_vn_and_vt_numpy
+from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     extrapolate_to_surface_numpy,
 )
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
-from .test_compute_mass_flux import (
-    compute_mass_flux_numpy,
-)
+from .test_compute_mass_flux import compute_mass_flux_numpy
 from .test_interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
     interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy,
 )
@@ -54,7 +48,7 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     k_nlev = k[:, :-1]
 
     vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels = np.where(
-        1 <= k_nlev,
+        k_nlev >= 1,
         interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
             wgtfac_e, vn, tangential_wind
         ),
@@ -62,7 +56,7 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
     )
 
     tangential_wind_on_half_levels = np.where(
-        1 <= k_nlev,
+        k_nlev >= 1,
         interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind),
         tangential_wind_on_half_levels,
     )

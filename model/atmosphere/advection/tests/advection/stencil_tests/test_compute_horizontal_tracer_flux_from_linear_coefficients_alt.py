@@ -11,13 +11,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import stencil_tests
 
 
 class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(stencil_tests.StencilTest):
