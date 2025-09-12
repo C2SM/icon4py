@@ -7,10 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-import pytest
 import gt4py.next.typing as gtx_typing
+import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid

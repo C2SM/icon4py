@@ -18,15 +18,13 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
-def customize_backend(
-    backend: model_backends.DeviceType | model_backends.BackendDescription
-):
+def customize_backend(backend: model_backends.DeviceType | model_backends.BackendDescription):
     if isinstance(backend, model_backends.DeviceType):
         backend = {"device": backend}
     # TODO(havogt): implement the lookup function as below
     # options = get_options(program_name, arch, **backend) # noqa: ERA001
     backend_func = backend.get("backend_factory", model_backends.make_custom_gtfn_backend)
-    device = backend["device"]
+    device = backend.get("device", model_backends.DeviceType.CPU)
     custom_backend = backend_func(
         device=device,
     )
@@ -64,8 +62,8 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    if not isinstance(backend, (gtx.backend.Backend, None)):
-        backend = customize_backend(**backend)
+    if isinstance(backend, (gtx.DeviceType, dict)):
+        backend = customize_backend(backend)
 
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend).compile(

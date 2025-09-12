@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import contextlib
 from collections.abc import Iterator, Sequence
-import gt4py.next.typing as gtx_typing
+
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid

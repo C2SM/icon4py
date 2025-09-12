@@ -11,7 +11,6 @@ import logging
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
