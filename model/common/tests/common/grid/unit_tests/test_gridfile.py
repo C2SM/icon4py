@@ -7,30 +7,30 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import pytest
 from typing import TYPE_CHECKING
+
+import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import gridfile
-from icon4py.model.testing import (
-    grid_utils as gridtest_utils,
-    definitions,
-)
+from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     processor_props,
     ranked_data_path,
 )
+
 
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox
 
 
 @pytest.mark.with_netcdf
-def test_grid_file_dimension():
+def test_grid_file_dimension() -> None:
     grid_descriptor = definitions.Grids.R02B04_GLOBAL
     global_grid_file = str(gridtest_utils.resolve_full_grid_file_name(grid_descriptor))
     parser = gridfile.GridFile(global_grid_file)
@@ -47,17 +47,11 @@ def test_grid_file_dimension():
         parser.close()
 
 
-# TODO(havogt): use everywhere
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
-    return request.param
-
-
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 def test_grid_file_vertex_cell_edge_dimensions(
     experiment: definitions.Experiment, grid_savepoint: serialbox.IconGridSavepoint
-):
+) -> None:
     file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
     parser = gridfile.GridFile(str(file))
     try:

@@ -6,26 +6,22 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
-import math
 
+import math
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import (
-    geometry_attributes as geometry_attrs,
-    horizontal as h_grid,
-)
+from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
+    definitions,
     grid_utils as gridtest_utils,
     test_utils as test_helpers,
-    definitions,
 )
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -38,16 +34,11 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+
     from icon4py.model.testing import serialbox
-    from icon4py.model.common.grid import base as grid_base
-
-
-# TODO(havogt): use everywhere
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
-    return request.param
 
 
 @pytest.mark.level("unit")
@@ -87,7 +78,6 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
 def test_construct_rbf_matrix_offsets_tables_for_edges(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
-    icon_grid: grid_base.Grid,
     backend: gtx_typing.Backend | None,
 ):
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
@@ -104,7 +94,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
     offset_table_savepoint = grid_savepoint.e2c2e()
     assert offset_table.shape == offset_table_savepoint.shape
 
-    start_index = icon_grid.start_index(
+    start_index = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
@@ -118,7 +108,6 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
 def test_construct_rbf_matrix_offsets_tables_for_vertices(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
-    icon_grid: grid_base.Grid,
     backend: gtx_typing.Backend | None,
 ):
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
@@ -135,7 +124,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     offset_table_savepoint = grid_savepoint.v2e()
     assert offset_table.shape == offset_table_savepoint.shape
 
-    start_index = icon_grid.start_index(
+    start_index = grid.start_index(
         h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
@@ -160,7 +149,6 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
 def test_rbf_interpolation_coeffs_cell(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
-    icon_grid: grid_base.Grid,
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
@@ -169,7 +157,7 @@ def test_rbf_interpolation_coeffs_cell(
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
 
-    horizontal_start = icon_grid.start_index(
+    horizontal_start = grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     assert horizontal_start < grid.num_cells
@@ -199,11 +187,11 @@ def test_rbf_interpolation_coeffs_cell(
     assert rbf_vec_coeff_c1.shape == rbf_vec_coeff_c1_ref.shape
     assert rbf_vec_coeff_c2.shape == rbf_vec_coeff_c2_ref.shape
     assert rbf_vec_coeff_c1_ref.shape == (
-        icon_grid.num_cells,
+        grid.num_cells,
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert rbf_vec_coeff_c2_ref.shape == (
-        icon_grid.num_cells,
+        grid.num_cells,
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
@@ -230,7 +218,6 @@ def test_rbf_interpolation_coeffs_cell(
 def test_rbf_interpolation_coeffs_vertex(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
-    icon_grid: grid_base.Grid,
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
@@ -239,7 +226,7 @@ def test_rbf_interpolation_coeffs_vertex(
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
 
-    horizontal_start = icon_grid.start_index(
+    horizontal_start = grid.start_index(
         h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     assert horizontal_start < grid.num_vertices
@@ -269,11 +256,11 @@ def test_rbf_interpolation_coeffs_vertex(
     assert rbf_vec_coeff_v1.shape == rbf_vec_coeff_v1_ref.shape
     assert rbf_vec_coeff_v2.shape == rbf_vec_coeff_v2_ref.shape
     assert rbf_vec_coeff_v1_ref.shape == (
-        icon_grid.num_vertices,
+        grid.num_vertices,
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert rbf_vec_coeff_v2_ref.shape == (
-        icon_grid.num_vertices,
+        grid.num_vertices,
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
@@ -300,7 +287,6 @@ def test_rbf_interpolation_coeffs_vertex(
 def test_rbf_interpolation_coeffs_edge(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
-    icon_grid: grid_base.Grid,
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
@@ -309,7 +295,7 @@ def test_rbf_interpolation_coeffs_edge(
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
 
-    horizontal_start = icon_grid.start_index(
+    horizontal_start = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     assert horizontal_start < grid.num_edges
@@ -339,7 +325,7 @@ def test_rbf_interpolation_coeffs_edge(
 
     assert rbf_vec_coeff_e.shape == rbf_vec_coeff_e_ref.shape
     assert rbf_vec_coeff_e_ref.shape == (
-        icon_grid.num_edges,
+        grid.num_edges,
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(

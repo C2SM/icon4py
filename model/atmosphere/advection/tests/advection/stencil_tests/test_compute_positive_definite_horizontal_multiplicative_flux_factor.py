@@ -11,11 +11,11 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.testing import stencil_tests
 
 
 class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_tests.StencilTest):
