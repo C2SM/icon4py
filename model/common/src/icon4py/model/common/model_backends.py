@@ -5,7 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Final, TypeAlias, Callable
+from collections.abc import Callable
+from typing import Final, TypeAlias
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
