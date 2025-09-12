@@ -20,7 +20,7 @@ from icon4py.model.common.states import (
     tracer_state as tracers,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
+from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -30,7 +30,7 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor",
     [
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0, 8000.0, 0.85),
     ],
 )
 @pytest.mark.parametrize(
