@@ -179,6 +179,8 @@ class GeometryName(FieldName):
     CELL_AREA = "cell_area"
     # TODO(halungge): compute from coordinates
     DUAL_AREA = "dual_area"
+    EDGE_LENGTH = "edge_length"
+    DUAL_EDGE_LENGTH = "dual_edge_length"
     CELL_NORMAL_ORIENTATION = "orientation_of_normal"
     TANGENT_ORIENTATION = "edge_system_orientation"
     EDGE_ORIENTATION_ON_VERTEX = "edge_orientation"
