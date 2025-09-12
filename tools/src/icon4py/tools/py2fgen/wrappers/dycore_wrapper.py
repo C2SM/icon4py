@@ -24,7 +24,7 @@ from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import backend as gtx_backend
+from gt4py.next import backend as gtx_backend, config as gtx_config, metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
@@ -411,5 +411,10 @@ def solve_nh_run(
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
     )
+
+    # dump gt4py timers
+    if gtx_config.COLLECT_METRICS_LEVEL > 0:
+        gtx_metrics.dump_json("gt4py_timers.json")
+        logger.info(gtx_metrics.dumps())
 
     max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl  # pass back to Fortran
