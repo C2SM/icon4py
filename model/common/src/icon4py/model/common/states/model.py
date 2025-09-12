@@ -18,7 +18,7 @@ import icon4py.model.common.type_alias as ta
 
 
 """Contains type definitions used for the model`s state representation."""
-DimensionNames: TypeAlias = Literal["cell", "edge", "vertex"]
+DimensionNames: TypeAlias = Literal["cell", "edge", "vertex", "scalar"]
 DimensionT: TypeAlias = gtx.Dimension | DimensionNames
 BufferT: TypeAlias = np_t.ArrayLike | gtx.Field
 DTypeT: TypeAlias = ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64

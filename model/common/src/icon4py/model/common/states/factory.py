@@ -38,7 +38,7 @@ val = factory.get("foo", RetrievalType.DATA_ARRAY)
 TODO: @halungge: allow to read configuration data
 
 """
-
+from __future__ import annotations
 import collections
 import enum
 import functools
@@ -47,7 +47,7 @@ import types
 import typing
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from types import ModuleType
-from typing import Any, Literal, Optional, Protocol, TypeVar, overload
+from typing import Any, Literal, Protocol, TypeVar, overload
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -89,14 +89,23 @@ class FieldProvider(Protocol):
      - dependencies: returns a list of field_names that the fields provided by this provider depend on.
 
     """
+    @overload
+    def __call__(self, field_name: str, field_src: FieldSource|None, backend: gtx_typing.Backend|None, grid:GridProvider|None )->state_utils.ScalarType:
+        ...
+    @overload
+    def __call__(self, field_name: str, field_src: FieldSource | None, backend: gtx_typing.Backend | None,
+                 grid: GridProvider | None) -> state_utils.FieldType:
+        ...
 
     def __call__(
         self,
         field_name: str,
-        field_src: Optional["FieldSource"],
+        field_src: FieldSource | None,
         backend: gtx_typing.Backend | None,
-        grid: GridProvider | None,
-    ) -> state_utils.FieldType: ...
+        grid: GridProvider | None,   #TODO(halungge) does this need to be an optiona;?
+    ) -> state_utils.FieldType|state_utils.ScalarType: ...
+
+
 
     @property
     def dependencies(self) -> Sequence[str]: ...
@@ -108,10 +117,13 @@ class FieldProvider(Protocol):
     def func(self) -> Callable: ...
 
 
+
+
 class RetrievalType(enum.Enum):
     FIELD = 0
     DATA_ARRAY = 1
     METADATA = 2
+    SCALAR = 3
 
 
 class FieldSource(GridProvider, Protocol):
@@ -124,7 +136,7 @@ class FieldSource(GridProvider, Protocol):
     _providers: MutableMapping[str, FieldProvider] = {}  # noqa:  RUF012 instance variable
 
     @property
-    def _sources(self) -> "FieldSource":
+    def _sources(self) -> FieldSource:
         return self
 
     @property
@@ -132,11 +144,13 @@ class FieldSource(GridProvider, Protocol):
         """Returns metadata for the fields that this field source provides."""
         ...
 
-    # TODO @halungge: this is the target Backend: not necessarily the one that the field is computed and
-    #      there are fields which need to be computed on a specific backend, which can be different from the
-    #      general run backend
     @property
-    def backend(self) -> gtx_typing.Backend: ...
+    def backend(self) -> gtx_typing.Backend | None:
+        """Target backend: this is the backend that the field should be produced for when requested from the source.
+        The field computation might
+        be done on a different backend, as there are FieldOperators that require a specific backend (mostly embedded)
+        to be used. """
+        ...
 
     def _backend_name(self) -> str:
         return "embedded" if self.backend is None else self.backend.name
@@ -154,9 +168,13 @@ class FieldSource(GridProvider, Protocol):
         self, field_name: str, type_: Literal[RetrievalType.METADATA]
     ) -> model.FieldMetaData: ...
 
+    @overload
+    def get(self, field_name:str, type_:Literal[RetrievalType.SCALAR])->state_utils.ScalarType:
+        ...
+
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
-    ) -> state_utils.FieldType | xa.DataArray | model.FieldMetaData:
+    ) -> state_utils.FieldType | xa.DataArray | model.FieldMetaData| state_utils.ScalarType:
         """
         Get a field or its metadata from the factory.
 
@@ -554,7 +572,7 @@ class ProgramFieldProvider(FieldProvider):
         return list(self._dependencies.values())
 
 
-class NumpyFieldsProvider(FieldProvider):
+class NumpyFieldProvider(FieldProvider):
     """
     Computes a field defined by a numpy function.
 
