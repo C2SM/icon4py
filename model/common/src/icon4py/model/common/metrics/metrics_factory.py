@@ -32,13 +32,11 @@ from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
     compute_zdiff_gradp_dsl,
-    dummy,
     metric_fields as mf,
     metrics_attributes as attrs,
     reference_atmosphere,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.states.factory import NumpyFieldProvider
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -842,13 +840,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
 
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
-        dummy_scalar_provider = NumpyFieldProvider(
-            func=dummy.reduce_scalar_min,
-            deps={"ar": attrs.FLAT_IDX_MAX},
-            domain=(),
-            fields=(attrs.NFLAT_GRADP,),
-        )
-        self.register_provider(dummy_scalar_provider)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
