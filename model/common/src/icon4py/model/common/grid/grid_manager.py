@@ -63,7 +63,10 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         )
 
 
-CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+# TODO(msimberg): x, y, z added temporarily for torus grids, but should they be in a separate dict?
+CoordinateDict: TypeAlias = dict[
+    gtx.Dimension, dict[Literal["lat", "lon", "x", "y", "z"], gtx.Field]
+]
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
 
