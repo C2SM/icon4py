@@ -10,16 +10,11 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
     vertically_implicit_solver_at_corrector_step,
 )
-from icon4py.model.common import (
-    constants,
-    dimension as dims,
-    model_options,
-)
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -28,8 +23,9 @@ from icon4py.model.testing import stencil_tests
 from .test_add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation_numpy,
 )
-from .test_apply_rayleigh_damping_mechanism import (
-    apply_rayleigh_damping_mechanism_numpy,
+from .test_apply_rayleigh_damping_mechanism import apply_rayleigh_damping_mechanism_numpy
+from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
+    compute_divergence_of_fluxes_of_rho_and_theta_numpy,
 )
 from .test_compute_explicit_part_for_rho_and_exner import (
     compute_explicit_part_for_rho_and_exner_numpy,
@@ -40,9 +36,7 @@ from .test_compute_explicit_vertical_wind_from_advection_and_vertical_wind_densi
 from .test_compute_results_for_thermodynamic_variables import (
     compute_results_for_thermodynamic_variables_numpy,
 )
-from .test_compute_solver_coefficients_matrix import (
-    compute_solver_coefficients_matrix_numpy,
-)
+from .test_compute_solver_coefficients_matrix import compute_solver_coefficients_matrix_numpy
 from .test_set_lower_boundary_condition_for_w_and_contravariant_correction import (
     set_lower_boundary_condition_for_w_and_contravariant_correction_numpy,
 )
@@ -54,9 +48,6 @@ from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
 )
 from .test_update_dynamical_exner_time_increment import update_dynamical_exner_time_increment_numpy
 from .test_update_mass_volume_flux import update_mass_volume_flux_numpy
-from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
-    compute_divergence_of_fluxes_of_rho_and_theta_numpy,
-)
 
 
 @pytest.mark.uses_concat_where
@@ -154,7 +145,9 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         tridiagonal_intermediate_result = np.zeros_like(current_rho)
 
         (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]) = np.where(
-            (horizontal_start <= horz_idx) & (horz_idx < horizontal_end) & (vert_idx >= int32(1)),
+            (horizontal_start <= horz_idx)
+            & (horz_idx < horizontal_end)
+            & (vert_idx >= gtx.int32(1)),
             compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
                 connectivities=connectivities,
                 w_nnow=current_w[:, :n_lev],

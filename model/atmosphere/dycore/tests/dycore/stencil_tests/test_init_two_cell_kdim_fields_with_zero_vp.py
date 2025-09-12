@@ -9,7 +9,7 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest as pytest
+import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
     init_two_cell_kdim_fields_with_zero_vp,

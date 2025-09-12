@@ -7,7 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import Optional
+import contextlib
+from collections.abc import Iterator, Sequence
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -15,70 +16,57 @@ from gt4py.next import backend as gtx_backend
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import (
-    datatest_utils as dt_utils,
-    definitions,
-    grid_utils as gridtest_utils,
-)
+from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 
 
-r04b09_dsl_grid_path = definitions.grids_path().joinpath(dt_utils.REGIONAL_EXPERIMENT)
-r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1.tar.gz").name
-
-r02b04_global_grid_path = definitions.grids_path().joinpath(dt_utils.R02B04_GLOBAL)
-r02b04_global_data_file = r02b04_global_grid_path.joinpath("icon_grid_0013_R02B04_R.tar.gz").name
-
-R02B04_GLOBAL_NUM_CELLS = 20480
-R02B04_GLOBAL_NUM_EDGES = 30720
-R02B04_GLOBAL_NUM_VERTEX = 10242
-managers = {}
+managers: dict[str, gm.GridManager] = {}
 
 
-def horizontal_dims():
+def horizontal_dims() -> Iterator[gtx.Dimension]:
     for d in vars(dims).values():
         if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.HORIZONTAL:
             yield d
 
 
-def main_horizontal_dims():
+def main_horizontal_dims() -> Iterator[gtx.Dimension]:
     yield from dims.MAIN_HORIZONTAL_DIMENSIONS.values()
 
 
-def vertical_dims():
+def vertical_dims() -> Iterator[gtx.Dimension]:
     for d in vars(dims).values():
         if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.VERTICAL:
             yield d
 
 
-def non_horizontal_dims():
+def non_horizontal_dims() -> Iterator[gtx.Dimension]:
     yield from vertical_dims()
     yield from local_dims()
 
 
-def local_dims():
+def local_dims() -> Iterator[gtx.Dimension]:
     for d in vars(dims).values():
         if isinstance(d, gtx.Dimension) and d.kind == gtx.DimensionKind.LOCAL:
             yield d
 
 
-def horizontal_offsets():
+def horizontal_offsets() -> Iterator[gtx.FieldOffset]:
     for d in vars(dims).values():
         if isinstance(d, gtx.FieldOffset) and len(d.target) == 2:
             yield d
 
 
-def non_local_dims():
+def non_local_dims() -> Iterator[gtx.Dimension]:
     yield from vertical_dims()
     yield from horizontal_dims()
 
 
-def all_dims():
+def all_dims() -> Iterator[gtx.Dimension]:
     yield from vertical_dims()
     yield from horizontal_dims()
     yield from local_dims()
 
 
-def global_grid_domains(dim: gtx.Dimension):
+def global_grid_domains(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
     zones = [
         h_grid.Zone.END,
         h_grid.Zone.LOCAL,
@@ -90,16 +78,14 @@ def global_grid_domains(dim: gtx.Dimension):
     yield from _domain(dim, zones)
 
 
-def _domain(dim, zones):
+def _domain(dim: gtx.Dimension, zones: Sequence[h_grid.Zone]) -> Iterator[h_grid.Domain]:
     domain = h_grid.domain(dim)
     for zone in zones:
-        try:
+        with contextlib.suppress(AssertionError):
             yield domain(zone)
-        except AssertionError:
-            ...
 
 
-def valid_boundary_zones_for_dim(dim: dims.Dimension):
+def valid_boundary_zones_for_dim(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
     zones = [
         h_grid.Zone.LATERAL_BOUNDARY,
         h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2,
@@ -116,14 +102,21 @@ def valid_boundary_zones_for_dim(dim: dims.Dimension):
 
 
 def run_grid_manager(
-    file: str, keep_skip_values: bool, backend: Optional[gtx_backend.Backend]
+    grid: definitions.GridDescription,
+    keep_skip_values: bool,
+    backend: gtx_backend.Backend | None,
 ) -> gm.GridManager:
     key = "_".join(
-        (file, data_alloc.backend_name(backend), "skip" if keep_skip_values else "no_skip")
+        (grid.name, data_alloc.backend_name(backend), "skip" if keep_skip_values else "no_skip")
     )
-    if not managers.get(key):
+    if (manager := managers.get(key)) is not None:
+        return manager
+    else:
         manager = gridtest_utils.get_grid_manager_from_identifier(
-            file, keep_skip_values=keep_skip_values, num_levels=1, backend=backend
+            grid,
+            keep_skip_values=keep_skip_values,
+            num_levels=1,
+            backend=backend,
         )
         managers[key] = manager
-    return managers.get(key)
+        return manager

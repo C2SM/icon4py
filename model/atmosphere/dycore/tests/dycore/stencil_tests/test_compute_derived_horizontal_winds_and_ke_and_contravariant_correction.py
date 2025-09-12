@@ -16,7 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import stencil_tests as stencil_tests
+from icon4py.model.testing import stencil_tests
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -100,7 +100,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
 
         tangential_wind = compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e)
 
-        condition2 = 1 <= k_nlev
+        condition2 = k_nlev >= 1
         vn_on_half_levels[:, :-1], horizontal_kinetic_energy_at_edges_on_model_levels = np.where(
             condition2,
             interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_numpy(
