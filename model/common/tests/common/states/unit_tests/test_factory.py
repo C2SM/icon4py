@@ -18,7 +18,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon, vertical as v_
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, serialbox
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -294,12 +294,16 @@ def reduce_scalar_min(ar: data_alloc.NDArray) -> gtx.float:
         ar = np.min(ar)
     return ar.item()
 
-def test_compute_scalar_value_from_numpy_provider(height_coordinate_source:factory.FieldSource, metrics_savepoint:serialbox.MetricsSavepoint,
-                                                  backend:gtx_typing.Backend):
+
+def test_compute_scalar_value_from_numpy_provider(
+    height_coordinate_source: factory.FieldSource,
+    metrics_savepoint: serialbox.MetricsSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     value_ref = np.min(np.min(metrics_savepoint.z_ifc()))
     provider = factory.NumpyFieldProvider(
         func=reduce_scalar_min,
-        deps={"ar":"height_coordinate" },
+        deps={"ar": "height_coordinate"},
         domain=(),
         fields=("minimal_height",),
     )
@@ -307,4 +311,3 @@ def test_compute_scalar_value_from_numpy_provider(height_coordinate_source:facto
     value = height_coordinate_source.get("minimal_height", factory.RetrievalType.SCALAR)
     assert np.isscalar(value)
     assert value_ref == value
-
