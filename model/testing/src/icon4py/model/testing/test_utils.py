@@ -11,12 +11,17 @@ from typing import Any
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
+import numpy.typing as npt
 import pytest
 from typing_extensions import Buffer
 
 
 def dallclose(
-    a: np.ndarray, b: np.ndarray, rtol: float = 1.0e-12, atol: float = 0.0, equal_nan: bool = False
+    a: npt.ArrayLike,
+    b: npt.ArrayLike,
+    rtol: float = 1.0e-12,
+    atol: float = 0.0,
+    equal_nan: bool = False,
 ) -> bool:
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 

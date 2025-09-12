@@ -13,7 +13,6 @@ import numpy as np
 import pytest
 from gt4py.next import backend as gtx_backend
 
-import icon4py.model.common.states.factory as factory
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (
@@ -21,19 +20,15 @@ from icon4py.model.common.interpolation import (
     interpolation_factory,
     rbf_interpolation as rbf,
 )
+from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
-    grid_utils as gridtest_utils,
     definitions,
+    grid_utils as gridtest_utils,
     test_utils as test_helpers,
 )
-from icon4py.model.testing.fixtures import (
-    backend,
-    data_provider,
-    decomposition_info,
-    experiment,
-)
+from icon4py.model.testing.fixtures import backend, data_provider, decomposition_info, experiment
 from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
     interpolation_savepoint,
@@ -44,14 +39,9 @@ from icon4py.model.testing.fixtures.datatest import (
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-    from icon4py.model.testing import serialbox
+
     from icon4py.model.common.decomposition import definitions as decomposition
-
-
-# TODO(havogt): use everywhere
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
-    return request.param
+    from icon4py.model.testing import serialbox
 
 
 V2E_SIZE = 6
