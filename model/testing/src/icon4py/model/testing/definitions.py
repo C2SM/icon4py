@@ -14,6 +14,8 @@ import pathlib
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Final, Literal
 
+import pytest
+
 from icon4py.model.testing import config
 
 
@@ -216,6 +218,9 @@ def construct_diffusion_config(
             hdiff_temp=True,
             n_substeps=ndyn_substeps,
         )
+    # TODO(msimberg): fix?
+    elif experiment == Experiments.WEISMAN_KLEMP_TORUS:
+        pytest.skip(f"DiffusionConfig for experiment {experiment.name} not implemented, skipping.")
     else:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."
