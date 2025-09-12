@@ -187,7 +187,6 @@ class GeometryName(FieldName):
     # TODO(halungge): compute from coordinates
     EDGE_CELL_DISTANCE = "edge_cell_distance"
     EDGE_VERTEX_DISTANCE = "edge_vert_distance"
-    # TODO(msimberg): read from file for torus
     EDGE_NORMAL_X = "edge_primal_normal_cartesian_x"
     EDGE_NORMAL_Y = "edge_primal_normal_cartesian_y"
     EDGE_NORMAL_Z = "edge_primal_normal_cartesian_z"

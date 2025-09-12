@@ -587,7 +587,6 @@ class TorusGridGeometry(GridGeometry):
             f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
 
-        # TODO(msimberg): torus?
         coordinates_ = {
             attrs.CELL_LAT: coordinates[dims.CellDim]["lat"],
             attrs.CELL_LON: coordinates[dims.CellDim]["lon"],
@@ -610,7 +609,6 @@ class TorusGridGeometry(GridGeometry):
 
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
-                # TODO(halungge): rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
                 attrs.EDGE_CELL_DISTANCE: extra_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE],
                 attrs.EDGE_VERTEX_DISTANCE: extra_fields[
                     gridfile.GeometryName.EDGE_VERTEX_DISTANCE
