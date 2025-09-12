@@ -5,30 +5,32 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import pytest
-from typing import Any, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
+import pytest
+
+
 if TYPE_CHECKING:
-      import gt4py.next.typing as gtx_typing
-from icon4py.model.atmosphere.diffusion import diffusion
+    import gt4py.next.typing as gtx_typing
 import icon4py.model.common.dimension as dims
-from icon4py.model.common.grid import geometry as grid_geometry
-from icon4py.model.common.grid import geometry_attributes as geometry_meta
-from icon4py.model.common.grid import vertical as v_grid
 import icon4py.model.common.grid.states as grid_states
+from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.common.grid import (
+    geometry as grid_geometry,
+    geometry_attributes as geometry_meta,
+    vertical as v_grid,
+)
 from icon4py.model.common.initialization.jablonowski_williamson_topography import (
     jablonowski_williamson_topography,
 )
-from icon4py.model.common.interpolation import interpolation_attributes
-from icon4py.model.common.interpolation import interpolation_factory
-from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions, grid_utils
 from icon4py.model.testing.grid_utils import _construct_dummy_decomposition_info
-from icon4py.model.testing import definitions
-from icon4py.model.testing import grid_utils
+
 from ..fixtures import *
 
 
@@ -39,8 +41,8 @@ from ..fixtures import *
 @pytest.mark.parametrize("grid", [definitions.Grids.R19_B07_MCH_LOCAL])
 def test_run_diffusion_benchmark(
     grid: Any,
-    vertical_grid_params: Dict[str, float],
-    metrics_factory_params: Dict[str, Any],
+    vertical_grid_params: dict[str, float],
+    metrics_factory_params: dict[str, Any],
     backend: Any,
     benchmark: Any,
 ) -> None:

@@ -22,7 +22,6 @@ from icon4py.model.testing.fixtures.datatest import (
     grid_savepoint,
     htop_moist_proc,
     icon_grid,
-    topography_savepoint,
     interpolation_savepoint,
     linit,
     lowest_layer_thickness,
@@ -30,10 +29,10 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     model_top_height,
     ndyn_substeps,
-    grid_savepoint,
     processor_props,
     ranked_data_path,
     stretch_factor,
+    topography_savepoint,
 )
 
 

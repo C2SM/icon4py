@@ -6,16 +6,21 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import pytest
-from icon4py.model.common.initialization  import jablonowski_williamson_topography as topography
 from typing import TYPE_CHECKING
-from icon4py.model.testing import test_utils
+
+import pytest
+
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.initialization import jablonowski_williamson_topography as topography
+from icon4py.model.testing import definitions, test_utils
+
 from ..fixtures import *
-from icon4py.model.testing import definitions
+
+
 if TYPE_CHECKING:
-    import icon4py.model.testing.serialbox as sb
     import gt4py.next.typing as gtx_typing
+
+    import icon4py.model.testing.serialbox as sb
 
 
 @pytest.mark.datatest

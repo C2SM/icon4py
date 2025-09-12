@@ -100,12 +100,14 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
             )
     return full_name
 
+
 def _construct_dummy_decomposition_info(
     grid: icon.IconGrid,
     backend: gtx_typing.Backend | None = None,
 ) -> decomposition_defs.DecompositionInfo:
     on_gpu = device_utils.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
+
     def _add_dimension(dim: gtx.Dimension) -> None:
         indices = data_alloc.index_field(grid, dim, backend=backend)
         owner_mask = xp.ones((grid.size[dim],), dtype=bool)
@@ -122,7 +124,6 @@ def _construct_dummy_decomposition_info(
 def get_grid_geometry(
     backend: gtx_typing.Backend | None, experiment: definitions.Experiment
 ) -> geometry.GridGeometry:
-
     register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
 
     def _construct_grid_geometry() -> geometry.GridGeometry:

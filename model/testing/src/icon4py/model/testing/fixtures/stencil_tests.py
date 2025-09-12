@@ -9,16 +9,12 @@
 import pathlib
 from typing import Final
 
-import gt4py.next as gtx
 import pytest
 from gt4py.next import backend as gtx_backend
 
-import icon4py.model.common.dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import base as base_grid, icon, simple as simple_grid
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.common.grid import base as base_grid, simple as simple_grid
 from icon4py.model.testing import definitions, grid_utils
-import icon4py.model.common.constants as constants
+
 
 DEFAULT_GRID: Final[str] = "simple"
 DEFAULT_NUM_LEVELS: Final[int] = (
@@ -62,6 +58,7 @@ def _get_grid_from_preset(
             ).grid
         case _:
             return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
+
 
 @pytest.fixture(scope="session")
 def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) -> base_grid.Grid:
@@ -114,6 +111,7 @@ def vertical_grid_params(
         "stretch_factor": stretch_factor,
         "damping_height": damping_height,
     }
+
 
 @pytest.fixture
 def metrics_factory_params(
