@@ -12,7 +12,7 @@ import pathlib
 import re
 import uuid
 
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, icon
@@ -88,7 +88,7 @@ def get_datapath_for_experiment(
 def create_icon_serial_data_provider(
     datapath: pathlib.Path,
     rank: int,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ) -> serialbox.IconSerialDataProvider:
     return serialbox.IconSerialDataProvider(
         backend=backend,
