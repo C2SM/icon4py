@@ -96,7 +96,7 @@ class GlobalGridParams:
 
     @classmethod
     def from_fields(
-        cls: type[T],
+        cls: type[_T],
         backend: gtx.typing.Backend | None,
         mean_edge_length: float | None = None,
         edge_lengths: data_alloc.NDArray | None = None,
@@ -107,7 +107,7 @@ class GlobalGridParams:
         mean_dual_cell_area: float | None = None,
         dual_cell_areas: data_alloc.NDArray | None = None,
         **kwargs,
-    ) -> T:
+    ) -> _T:
         xp = data_alloc.import_array_ns(backend)
 
         def init_mean(value: float | None, data: data_alloc.NDArray | None) -> float | None:
