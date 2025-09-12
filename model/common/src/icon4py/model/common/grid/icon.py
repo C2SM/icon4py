@@ -75,7 +75,7 @@ class GridShape:
         self.subdivision = subdivision
 
 
-T = TypeVar("T")
+_T = TypeVar("_T")
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)

@@ -226,12 +226,13 @@ def _sphere_area(radius: float) -> float:
 
 # TODO(msimberg): Test construction from fields.
 @pytest.mark.parametrize(
-    "geometry_type,grid_root,grid_level,num_cells,mean_cell_area,expected_num_cells,expected_mean_cell_area",
+    "geometry_type,grid_root,grid_level,global_num_cells,num_cells,mean_cell_area,expected_num_cells,expected_mean_cell_area",
     [
         (
             base.GeometryType.ICOSAHEDRON,
             1,
             0,
+            None,
             None,
             None,
             20,
@@ -243,6 +244,7 @@ def _sphere_area(radius: float) -> float:
             1,
             None,
             None,
+            None,
             20 * 4,
             _sphere_area(constants.EARTH_RADIUS) / (20 * 4),
         ),
@@ -252,22 +254,24 @@ def _sphere_area(radius: float) -> float:
             2,
             None,
             None,
+            None,
             20 * 16,
             _sphere_area(constants.EARTH_RADIUS) / (20 * 16),
         ),
-        (base.GeometryType.ICOSAHEDRON, 2, 4, None, None, 20480, 24907282236.708576),
-        (base.GeometryType.ICOSAHEDRON, 4, 9, None, None, 83886080, 6080879.45232143),
-        (base.GeometryType.ICOSAHEDRON, 2, 4, 42, 123.456, 42, 123.456),
-        (base.GeometryType.ICOSAHEDRON, 4, 9, None, 123.456, 83886080, 123.456),
-        (base.GeometryType.ICOSAHEDRON, 4, 9, 42, None, 42, 12145265243042.658),
-        (base.GeometryType.TORUS, 2, 0, 42, 123.456, 42, 123.456),
-        (base.GeometryType.TORUS, None, None, 42, None, 42, None),
+        (base.GeometryType.ICOSAHEDRON, 2, 4, None, None, None, 20480, 24907282236.708576),
+        (base.GeometryType.ICOSAHEDRON, 4, 9, 765, None, None, 765, 666798876088.6165),
+        (base.GeometryType.ICOSAHEDRON, 2, 4, None, 42, 123.456, 42, 123.456),
+        (base.GeometryType.ICOSAHEDRON, 4, 9, None, None, 123.456, 83886080, 123.456),
+        (base.GeometryType.ICOSAHEDRON, 4, 9, None, 42, None, 42, 6080879.45232143),
+        (base.GeometryType.TORUS, 2, 0, None, 42, 123.456, 42, 123.456),
+        (base.GeometryType.TORUS, None, None, None, 42, None, 42, None),
     ],
 )
 def test_global_grid_params(
     geometry_type: base.GeometryType,
     grid_root: int | None,
     grid_level: int | None,
+    global_num_cells: int | None,
     num_cells: int | None,
     mean_cell_area: float | None,
     expected_num_cells: int | None,
@@ -284,7 +288,8 @@ def test_global_grid_params(
                 else None
             ),
         ),
-        global_num_cells=num_cells,  # TODO(msimberg):
+        global_num_cells=global_num_cells,
+        num_cells=num_cells,
         mean_cell_area=mean_cell_area,
     )
     assert geometry_type == params.geometry_type
