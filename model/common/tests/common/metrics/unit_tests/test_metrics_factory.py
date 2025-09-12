@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 from gt4py.next import backend as gtx_backend
 
@@ -19,6 +20,7 @@ from icon4py.model.common.metrics import (
     metrics_attributes as attrs,
     metrics_factory,
 )
+from icon4py.model.common.states.factory import RetrievalType
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
@@ -616,3 +618,24 @@ def test_factory_compute_diffusion_metrics(
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-10)
     assert test_helpers.dallclose(field_ref_3.asnumpy(), field_3.asnumpy(), atol=1.0e-8)
     assert test_helpers.dallclose(field_ref_4.asnumpy(), field_4.asnumpy())
+
+
+@pytest.mark.datatest
+@pytest.mark.level("integration")
+def test_nflatgradp_scalar_computation(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_backend.Backend | None,
+):
+    value_ref = grid_savepoint.nflat_gradp()
+    factory = factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+    )
+    value = factory.get(attrs.NFLAT_GRADP, RetrievalType.SCALAR)
+    assert np.isscalar((value))
+    assert value_ref == value

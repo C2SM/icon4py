@@ -5,8 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from collections.abc import Sequence
-from typing import TypeAlias, TypeVar, TypedDict, MutableMapping
+from collections.abc import MutableMapping, Sequence
+from typing import TypeAlias, TypeVar
 
 import gt4py.next as gtx
 import xarray as xa
@@ -20,7 +20,6 @@ DimT = TypeVar("DimT", dims.KDim, dims.KHalfDim, dims.CellDim, dims.EdgeDim, dim
 FloatType: TypeAlias = ta.wpfloat | ta.vpfloat | float
 IntegerType: TypeAlias = gtx.int32 | gtx.int64 | int
 ScalarType: TypeAlias = FloatType | bool | IntegerType
-DictLike: TypeAlias = dict| TypedDict
 
 T = TypeVar("T", ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64)
 

@@ -38,7 +38,9 @@ val = factory.get("foo", RetrievalType.DATA_ARRAY)
 TODO: @halungge: allow to read configuration data
 
 """
+
 from __future__ import annotations
+
 import collections
 import enum
 import functools
@@ -89,34 +91,27 @@ class FieldProvider(Protocol):
      - dependencies: returns a list of field_names that the fields provided by this provider depend on.
 
     """
-    @overload
-    def __call__(self, field_name: str, field_src: FieldSource|None, backend: gtx_typing.Backend|None, grid:GridProvider|None )->state_utils.ScalarType:
-        ...
-    @overload
-    def __call__(self, field_name: str, field_src: FieldSource | None, backend: gtx_typing.Backend | None,
-                 grid: GridProvider | None) -> state_utils.FieldType:
-        ...
 
     def __call__(
         self,
         field_name: str,
         field_src: FieldSource | None,
         backend: gtx_typing.Backend | None,
-        grid: GridProvider | None,   #TODO(halungge) does this need to be an optiona;?
-    ) -> state_utils.FieldType|state_utils.ScalarType: ...
-
-
+        grid: GridProvider | None,  # TODO(halungge): does this need to be an optional?
+    ) -> state_utils.FieldType | state_utils.ScalarType: ...
 
     @property
     def dependencies(self) -> Sequence[str]: ...
 
     @property
-    def fields(self) -> Mapping[str, Any]: ...
+    def fields(
+        self,
+    ) -> Mapping[
+        str, state_utils.FieldType | state_utils.ScalarType
+    ]: ...  # TODO(halungge): properly type value type state_utils.FieldType|state_utils.ScalarType?
 
     @property
     def func(self) -> Callable: ...
-
-
 
 
 class RetrievalType(enum.Enum):
@@ -149,7 +144,7 @@ class FieldSource(GridProvider, Protocol):
         """Target backend: this is the backend that the field should be produced for when requested from the source.
         The field computation might
         be done on a different backend, as there are FieldOperators that require a specific backend (mostly embedded)
-        to be used. """
+        to be used."""
         ...
 
     def _backend_name(self) -> str:
@@ -169,12 +164,13 @@ class FieldSource(GridProvider, Protocol):
     ) -> model.FieldMetaData: ...
 
     @overload
-    def get(self, field_name:str, type_:Literal[RetrievalType.SCALAR])->state_utils.ScalarType:
-        ...
+    def get(
+        self, field_name: str, type_: Literal[RetrievalType.SCALAR]
+    ) -> state_utils.ScalarType: ...
 
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
-    ) -> state_utils.FieldType | xa.DataArray | model.FieldMetaData| state_utils.ScalarType:
+    ) -> state_utils.FieldType | xa.DataArray | model.FieldMetaData | state_utils.ScalarType:
         """
         Get a field or its metadata from the factory.
 
@@ -193,7 +189,7 @@ class FieldSource(GridProvider, Protocol):
         match type_:
             case RetrievalType.METADATA:
                 return self.metadata[field_name]
-            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY:
+            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY | RetrievalType.SCALAR:
                 provider = self._providers[field_name]
                 if field_name not in provider.fields:
                     raise ValueError(
@@ -203,9 +199,12 @@ class FieldSource(GridProvider, Protocol):
                 buffer = provider(field_name, self._sources, self.backend, self)
                 return (
                     buffer
-                    if type_ == RetrievalType.FIELD
-                    else state_utils.to_data_array(buffer, self.metadata[field_name])
+                    if type_ == RetrievalType.FIELD or RetrievalType.SCALAR
+                    else state_utils.to_data_array(
+                        buffer, self.metadata[field_name]
+                    )  # TODO (halungge): typing?
                 )
+
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
 
@@ -595,10 +594,12 @@ class NumpyFieldProvider(FieldProvider):
         deps: dict[str, str],
         connectivities: dict[str, gtx.Dimension] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
-    ):
+    ) -> None:
         self._func = func
         self._dims = domain
-        self._fields: dict[str, state_utils.FieldType | None] = {name: None for name in fields}
+        self._fields: dict[str, state_utils.ScalarType | state_utils.FieldType | None] = {
+            name: None for name in fields
+        }
         self._dependencies = deps
         self._connectivities = connectivities if connectivities is not None else {}
         self._params = params if params is not None else {}
@@ -629,12 +630,17 @@ class NumpyFieldProvider(FieldProvider):
         args.update(offsets)
         args.update(self._params)
         results = self._func(**args)
-        # TODO(): can the order of return values be checked?
-        results = (results,) if isinstance(results, data_alloc.NDArray) else results
+        # convert to tuple
+        results = (results,) if not isinstance(results, tuple) else results
         self._fields = {
-            k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
+            k: self._as_field(backend, results[i]) if self._dims else results[i]
             for i, k in enumerate(self.fields)
         }
+
+    def _as_field(
+        self, backend: gtx_typing.Backend | None, value: data_alloc.NDArray
+    ) -> state_utils.GTXFieldType:
+        return gtx.as_field(tuple(self._dims), value, allocator=backend)
 
     def _validate_dependencies(self) -> None:
         # TODO(egparedes): dealing with type annotations at run-time is error prone

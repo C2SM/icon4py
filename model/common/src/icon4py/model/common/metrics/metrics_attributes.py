@@ -17,7 +17,12 @@ from icon4py.model.common.states import model
 # TODO(): revise names with domain scientists
 
 Z_MC: Final[str] = "height"
-FLAT_EDGE_INDEX: Final[str] = "flat_edge_index"
+FLAT_IDX_MAX: Final[str] = (
+    "flat_idx_max"  # TODO (halungge): delete - this is only an auxiliary field
+)
+FLAT_EDGE_INDEX: Final[str] = (
+    "flat_edge_index"  # TODO (halungge): delete - this is only an auxiliary field
+)
 DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels"
 DDQZ_Z_FULL: Final[str] = "functional_determinant_of_metrics_on_full_levels"
 DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on_edges"
@@ -44,13 +49,14 @@ EXNER_W_EXPLICIT_WEIGHT_PARAMETER: Final[str] = (
 EXNER_EXFAC: Final[str] = "exner_exfac"
 WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
-FLAT_IDX_MAX: Final[str] = "flat_idx_max"
+
 PG_EDGEIDX_DSL: Final[str] = "edge_mask_for_pressure_gradient_extrapolation"
 PG_EDGEDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
 MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
 BDY_HALO_C: Final[str] = "bdy_halo_c"
 HORIZONTAL_MASK_FOR_3D_DIVDAMP: Final[str] = "horizontal_mask_for_3d_divdamp"
 ZDIFF_GRADP: Final[str] = "zdiff_gradp"
+NFLAT_GRADP: Final[str] = "nflat_gradp"
 COEFF_GRADEKIN: Final[str] = "coeff_gradekin"
 WGTFACQ_C: Final[str] = "weighting_factor_for_quadratic_interpolation_to_cell_surface"
 WGTFACQ_E: Final[str] = "weighting_factor_for_quadratic_interpolation_to_edge_center"
@@ -314,6 +320,14 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="zdiff_gradp",
         dtype=ta.wpfloat,
+    ),
+    NFLAT_GRADP: dict(
+        standard_name=NFLAT_GRADP,
+        long_name="nflatgradp",  # TODO (halungge): find better name from ICON
+        units="",
+        icon_var_name="nflat_gradp",
+        dims=(),
+        dtype=gtx.int32,
     ),
     COEFF_GRADEKIN: dict(
         standard_name=COEFF_GRADEKIN,
