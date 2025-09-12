@@ -22,24 +22,18 @@ from icon4py.model.common.model_options import customize_backend, setup_program
         (model_backends.make_custom_dace_backend, "dace"),
     ],
 )
-@pytest.mark.parametrize(
-    "device, expected_device",
-    [(model_backends.CPU, "cpu"), (model_backends.GPU, "gpu")],
-)
-def test_custom_backend_backend_options(
-    backend_factory, device, expected_backend, expected_device
-) -> None:
+def test_custom_backend_options(backend_factory, expected_backend) -> None:
     backend_options = {
         "backend_factory": backend_factory,
-        "device": device,
+        "device": model_backends.CPU,
     }
     backend = customize_backend(backend_options)
-    backend_name = expected_backend + "_" + expected_device
+    backend_name = expected_backend + "_cpu"
     assert str(model_backends.BACKENDS[backend_name]) == str(backend)
 
 
 def test_custom_backend_device() -> None:
-    device = gtx.DeviceType.CPU
+    device = model_backends.CPU
     backend = customize_backend(device)
     default_backend = "gtfn_cpu"
     assert str(model_backends.BACKENDS[default_backend]) == str(backend)
@@ -72,7 +66,6 @@ def test_setup_program_defaults(backend) -> None:
     "backend_params, expected_backend",
     [
         (model_backends.BACKENDS["gtfn_gpu"], "gtfn_gpu"),
-        model_backends.GPU,
         (
             {
                 "backend_factory": model_backends.make_custom_dace_backend,
