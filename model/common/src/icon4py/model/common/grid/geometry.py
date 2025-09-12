@@ -95,6 +95,7 @@ class GridGeometry(factory.FieldSource):
         """
         self._providers = {}
         self._backend = backend
+        self._xp = data_alloc.import_array_ns(backend)
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
         self._decomposition_info = decomposition_info
@@ -750,18 +751,18 @@ class TorusGridGeometry(GridGeometry):
             },
         )
         self.register_provider(edge_areas)
-        # TODO(msimberg): This should just be all zeros.
-        coriolis_params = factory.ProgramFieldProvider(
-            func=stencils.compute_coriolis_parameter_on_edges_torus,
-            deps={"edge_center_x": attrs.EDGE_CENTER_X},
-            params={},
-            fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.END),
+        coriolis_params = factory.PrecomputedFieldProvider(
+            {
+                "coriolis_parameter": gtx.as_field(
+                    (dims.EdgeDim,),
+                    self._xp.zeros(
+                        self._grid.start_index(self._edge_domain(h_grid.Zone.END))
+                        - self._grid.start_index(self._edge_domain(h_grid.Zone.LOCAL))
+                    ),
+                    dtype=ta.wpfloat,
+                    allocator=self._backend,
                 )
-            },
+            }
         )
         self.register_provider(coriolis_params)
 
