@@ -13,17 +13,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
     tracer_state as tracers,
 )
-from icon4py.model.testing import (
-    datatest_utils as dt_utils,
-    test_utils,
-)
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import datatest_utils as dt_utils, test_utils
 
 from ..fixtures import *  # noqa: F403
 
