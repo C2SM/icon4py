@@ -5,8 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
+from __future__ import annotations
 
+import collections
+
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
@@ -14,49 +17,46 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import (
-    geometry_attributes as geometry_meta,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import geometry_attributes as geometry_meta, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
+    definitions,
     grid_utils,
     reference_funcs as ref_funcs,
     serialbox as sb,
-    stencil_tests,
     test_utils,
 )
 
 from ..fixtures import *  # noqa: F403
 from ..utils import (
     compare_dace_orchestration_multiple_steps,
-    construct_diffusion_config,
     diff_multfac_vn_numpy,
     smag_limit_numpy,
     verify_diffusion_fields,
 )
 
 
-grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
+grid_functionality = collections.defaultdict(dict)
 
 
-def get_grid_for_experiment(experiment, backend):
+def get_grid_for_experiment(experiment: definitions.Experiment, backend: gtx_typing.Backend):
     return _get_or_initialize(experiment, backend, "grid")
 
 
-def get_edge_geometry_for_experiment(experiment, backend):
+def get_edge_geometry_for_experiment(
+    experiment: definitions.Experiment, backend: gtx_typing.Backend
+):
     return _get_or_initialize(experiment, backend, "edge_geometry")
 
 
-def get_cell_geometry_for_experiment(experiment, backend):
+def get_cell_geometry_for_experiment(
+    experiment: definitions.Experiment, backend: gtx_typing.Backend
+):
     return _get_or_initialize(experiment, backend, "cell_geometry")
 
 
-def _get_or_initialize(experiment_name: str, backend, name):
-    experiment = dt_utils.experiment_from_name(experiment_name=experiment_name)  # TODO
-
-    if not grid_functionality[experiment_name].get(name):
+def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.Backend, name: str):
+    if not grid_functionality[experiment.name].get(name):
         geometry_ = grid_utils.get_grid_geometry(backend, experiment)
         grid = geometry_.grid
 
@@ -89,27 +89,27 @@ def _get_or_initialize(experiment_name: str, backend, name):
             dual_normal_vert_x=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
             dual_normal_vert_y=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
         )
-        grid_functionality[experiment_name]["grid"] = grid
-        grid_functionality[experiment_name]["edge_geometry"] = edge_params
-        grid_functionality[experiment_name]["cell_geometry"] = cell_params
-    return grid_functionality[experiment_name].get(name)
+        grid_functionality[experiment.name]["grid"] = grid
+        grid_functionality[experiment.name]["edge_geometry"] = edge_params
+        grid_functionality[experiment.name]["cell_geometry"] = cell_params
+    return grid_functionality[experiment.name].get(name)
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
-    config = construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
     config.hdiff_efdt_ratio = 1.0
     config.hdiff_w_efdt_ratio = 2.0
 
     params = diffusion.DiffusionParams(config)
 
-    assert params.K2 == pytest.approx(0.125, abs=1e-12)
-    assert params.K4 == pytest.approx(0.125 / 8.0, abs=1e-12)
-    assert params.K6 == pytest.approx(0.125 / 64.0, abs=1e-12)
-    assert params.K4W == pytest.approx(1.0 / 72.0, abs=1e-12)
+    assert pytest.approx(0.125, abs=1e-12) == params.K2
+    assert pytest.approx(0.125 / 8.0, abs=1e-12) == params.K4
+    assert pytest.approx(0.125 / 64.0, abs=1e-12) == params.K6
+    assert pytest.approx(1.0 / 72.0, abs=1e-12) == params.K4W
 
 
 def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
-    config = construct_diffusion_config(experiment)
+    config = definitions.construct_diffusion_config(experiment)
     config.hdiff_efdt_ratio = 0.0
     config.hdiff_w_efdt_ratio = 0.0
 
@@ -122,7 +122,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
 
 
 def test_smagorinski_factor_for_diffusion_type_4(experiment):
-    config = construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 4
 
@@ -135,7 +135,7 @@ def test_smagorinski_factor_for_diffusion_type_4(experiment):
 def test_smagorinski_heights_diffusion_type_5_are_consistent(
     experiment,
 ):
-    config = construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 5
 
@@ -150,7 +150,9 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
 
 
 def test_smagorinski_factor_diffusion_type_5(experiment):
-    params = diffusion.DiffusionParams(construct_diffusion_config(experiment, ndyn_substeps=5))
+    params = diffusion.DiffusionParams(
+        definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
+    )
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert all(p >= 0 for p in params.smagorinski_factor)
@@ -158,6 +160,14 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
 
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
+# TODO(havogt): Remove custom `experiment` parametrization
+@pytest.mark.parametrize(
+    "experiment,step_date_init",
+    [
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
+    ],
+)
 def test_diffusion_init(
     savepoint_diffusion_init,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
@@ -171,7 +181,7 @@ def test_diffusion_init(
     ndyn_substeps,
     backend,
 ):
-    config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
     grid = get_grid_for_experiment(experiment, backend)
@@ -285,10 +295,10 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.parametrize(
     "experiment,step_date_init",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:04.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -309,7 +319,7 @@ def test_verify_diffusion_init_against_savepoint(
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
-    config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
@@ -346,8 +356,16 @@ def test_verify_diffusion_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            definitions.Experiments.EXCLAIM_APE,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
@@ -401,7 +419,7 @@ def test_run_diffusion_single_step(
         vct_b=vct_b,
     )
 
-    config = construct_diffusion_config(experiment, ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
     diffusion_granule = diffusion.Diffusion(
@@ -429,7 +447,11 @@ def test_run_diffusion_single_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -473,7 +495,7 @@ def test_run_diffusion_multiple_steps(
         config=vertical_config, vct_a=grid_savepoint.vct_a(), vct_b=grid_savepoint.vct_b()
     )
 
-    config = construct_diffusion_config(experiment, ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
     ######################################################################
@@ -553,7 +575,7 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("linit", [True])
 # TODO(): Enable dace orchestration, currently broken by precompiled programs
 @pytest.mark.parametrize("orchestration", [False])
@@ -598,7 +620,7 @@ def test_run_diffusion_initial_step(
         dwdy=savepoint_diffusion_init.dwdy(),
     )
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    config = construct_diffusion_config(experiment, ndyn_substeps=2)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=2)
     params = diffusion.DiffusionParams(config)
 
     diffusion_granule = diffusion.Diffusion(
@@ -632,11 +654,18 @@ def test_run_diffusion_initial_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
+# TODO(havogt): Remove custom `experiment` parametrization
+@pytest.mark.parametrize(
+    "experiment,step_date_init",
+    [
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+    ],
+)
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
 ):
     savepoint = savepoint_diffusion_init
-    config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
 
     params = diffusion.DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()

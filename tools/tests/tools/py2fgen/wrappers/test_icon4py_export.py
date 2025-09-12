@@ -69,7 +69,7 @@ def fun_non_optional(_: int):
     pass
 
 
-def fun_with_optional(_: Optional[int]):
+def fun_with_optional(_: int | None):
     pass
 
 
@@ -99,7 +99,7 @@ def test_is_optional_type_hint(fun, is_optional):
 
 
 @pytest.mark.parametrize(
-    "fun,is_optional",
+    "fun,expected_is_optional",
     [
         (fun_non_optional, False),
         (fun_with_optional, True),
@@ -107,10 +107,10 @@ def test_is_optional_type_hint(fun, is_optional):
         (fun_with_None_first, True),
     ],
 )
-def test_unpack_optional_type_hint(fun, is_optional):
+def test_unpack_optional_type_hint(fun, expected_is_optional):
     testee = typing.get_type_hints(fun)["_"]
 
     result, is_optional = icon4py_export._unpack_optional_type_hint(testee)
 
     assert result is int
-    assert is_optional == is_optional
+    assert is_optional == expected_is_optional

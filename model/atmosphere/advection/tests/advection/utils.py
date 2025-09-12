@@ -7,20 +7,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
-from typing import Optional
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
 import numpy as np
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.testing import serialbox as sb, test_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import serialbox as sb, test_utils
 
 
-# flake8: noqa
 log = logging.getLogger(__name__)
 
 
@@ -39,7 +37,7 @@ def construct_config(
 
 
 def construct_interpolation_state(
-    savepoint: sb.InterpolationSavepoint, backend: Optional[gtx_backend.Backend]
+    savepoint: sb.InterpolationSavepoint, backend: gtx_backend.Backend | None
 ) -> advection_states.AdvectionInterpolationState:
     return advection_states.AdvectionInterpolationState(
         geofac_div=savepoint.geofac_div(),
@@ -50,7 +48,7 @@ def construct_interpolation_state(
 
 
 def construct_least_squares_state(
-    savepoint: sb.InterpolationSavepoint, backend: Optional[gtx_backend.Backend]
+    savepoint: sb.InterpolationSavepoint, backend: gtx_backend.Backend | None
 ) -> advection_states.AdvectionLeastSquaresState:
     return advection_states.AdvectionLeastSquaresState(
         lsq_pseudoinv_1=savepoint.lsq_pseudoinv_1(),
@@ -59,7 +57,7 @@ def construct_least_squares_state(
 
 
 def construct_metric_state(
-    icon_grid, savepoint: sb.MetricSavepoint, backend: Optional[gtx_backend.Backend]
+    icon_grid, savepoint: sb.MetricSavepoint, backend: gtx_backend.Backend | None
 ) -> advection_states.AdvectionMetricState:
     constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim, backend=backend)
     ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
@@ -75,7 +73,7 @@ def construct_diagnostic_init_state(
     icon_grid,
     savepoint: sb.AdvectionInitSavepoint,
     ntracer: int,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
 ) -> advection_states.AdvectionDiagnosticState:
     return advection_states.AdvectionDiagnosticState(
         airmass_now=savepoint.airmass_now(),
@@ -92,7 +90,7 @@ def construct_diagnostic_exit_state(
     icon_grid,
     savepoint: sb.AdvectionExitSavepoint,
     ntracer: int,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_backend.Backend | None,
 ) -> advection_states.AdvectionDiagnosticState:
     return advection_states.AdvectionDiagnosticState(
         airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),

@@ -5,9 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import pathlib
 import random
+from collections.abc import Generator
 
 import pytest
 
@@ -32,6 +32,7 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     model_top_height,
     ndyn_substeps,
+    grid_savepoint,
     processor_props,
     ranked_data_path,
     savepoint_diffusion_exit,
@@ -48,7 +49,7 @@ def random_name() -> str:
 
 
 @pytest.fixture
-def test_path(tmp_path):
+def test_path(tmp_path: pathlib.Path) -> Generator[pathlib.Path, None, None]:
     base_path = tmp_path.joinpath("io_tests")
     base_path.mkdir(exist_ok=True, parents=True, mode=0o777)
     yield base_path
@@ -62,8 +63,3 @@ def _delete_recursive(p: pathlib.Path) -> None:
         else:
             _delete_recursive(child)
     p.rmdir()
-
-
-@pytest.fixture
-def grid_file():
-    return REGIONAL_EXPERIMENT
