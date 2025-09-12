@@ -72,7 +72,7 @@ DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
 
 class GridProvider(Protocol):
     @property
-    def grid(self) -> icon_grid.IconGrid | None: ...
+    def grid(self) -> icon_grid.IconGrid: ...
 
     @property
     def vertical_grid(self) -> v_grid.VerticalGrid | None: ...
@@ -97,8 +97,8 @@ class FieldProvider(Protocol):
         field_name: str,
         field_src: FieldSource | None,
         backend: gtx_typing.Backend | None,
-        grid: GridProvider | None,  # TODO(halungge): does this need to be an optional?
-    ) -> state_utils.FieldType | state_utils.ScalarType: ...
+        grid: GridProvider,
+    ) -> state_utils.GTXFieldType | state_utils.ScalarType: ...
 
     @property
     def dependencies(self) -> Sequence[str]: ...
@@ -118,7 +118,6 @@ class RetrievalType(enum.Enum):
     FIELD = 0
     DATA_ARRAY = 1
     METADATA = 2
-    SCALAR = 3
 
 
 class FieldSource(GridProvider, Protocol):
@@ -163,11 +162,6 @@ class FieldSource(GridProvider, Protocol):
         self, field_name: str, type_: Literal[RetrievalType.METADATA]
     ) -> model.FieldMetaData: ...
 
-    @overload
-    def get(
-        self, field_name: str, type_: Literal[RetrievalType.SCALAR]
-    ) -> state_utils.ScalarType: ...
-
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
     ) -> state_utils.GTXFieldType | xa.DataArray | model.FieldMetaData | state_utils.ScalarType:
@@ -189,7 +183,7 @@ class FieldSource(GridProvider, Protocol):
         match type_:
             case RetrievalType.METADATA:
                 return self.metadata[field_name]
-            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY | RetrievalType.SCALAR:
+            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY:
                 provider = self._providers[field_name]
                 if field_name not in provider.fields:
                     raise ValueError(
@@ -199,10 +193,8 @@ class FieldSource(GridProvider, Protocol):
                 buffer = provider(field_name, self._sources, self.backend, self)
                 return (
                     buffer
-                    if type_ == RetrievalType.FIELD or RetrievalType.SCALAR
-                    else state_utils.to_data_array(
-                        buffer, self.metadata[field_name]
-                    )  # TODO (halungge): typing?
+                    if type_ == RetrievalType.FIELD
+                    else state_utils.to_data_array(buffer, self.metadata[field_name])
                 )
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
@@ -251,7 +243,7 @@ class PrecomputedFieldProvider(FieldProvider):
     """Simple FieldProvider that does not do any computation but gets its fields at construction
     and returns it upon provider.get(field_name)."""
 
-    def __init__(self, fields: dict[str, state_utils.FieldType]):
+    def __init__(self, fields: dict[str, state_utils.GTXFieldType]):
         self._fields = fields
 
     @property
@@ -260,11 +252,11 @@ class PrecomputedFieldProvider(FieldProvider):
 
     def __call__(
         self, field_name: str, field_src=None, backend=None, grid=None
-    ) -> state_utils.FieldType:
+    ) -> state_utils.GTXFieldType:
         return self.fields[field_name]
 
     @property
-    def fields(self) -> Mapping[str, state_utils.FieldType]:
+    def fields(self) -> Mapping[str, state_utils.GTXFieldType]:
         return self._fields
 
     @property

@@ -134,8 +134,8 @@ class GridGeometry(factory.FieldSource):
             "latitude_of_edge_cell_neighbor_1": edge_orientation1_lat,
             "longitude_of_edge_cell_neighbor_1": edge_orientation1_lon,
         }
-        coodinate_provider = factory.PrecomputedFieldProvider(coordinates_)
-        self.register_provider(coodinate_provider)
+        coordinate_provider = factory.PrecomputedFieldProvider(coordinates_)
+        self.register_provider(coordinate_provider)
 
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
@@ -176,7 +176,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(input_fields_provider)
         self._register_computed_fields()
 
-    def _register_computed_fields(self):
+    def _register_computed_fields(self) -> None:
         edge_length_provider = factory.ProgramFieldProvider(
             func=stencils.compute_edge_length,
             domain={
@@ -483,7 +483,12 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(tangent_cell_wrapper)
         cartesian_vertices = factory.EmbeddedFieldOperatorProvider(
             func=math_helpers.geographical_to_cartesian_on_vertices.with_backend(self.backend),
-            domain=(dims.VertexDim,),
+            domain={
+                dims.VertexDim: (
+                    h_grid.vertex_domain(h_grid.Zone.LOCAL),
+                    h_grid.vertex_domain(h_grid.Zone.END),
+                )
+            },
             fields={
                 attrs.VERTEX_X: attrs.VERTEX_X,
                 attrs.VERTEX_Y: attrs.VERTEX_Y,
@@ -497,7 +502,12 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(cartesian_vertices)
         cartesian_edge_centers = factory.EmbeddedFieldOperatorProvider(
             func=math_helpers.geographical_to_cartesian_on_edges.with_backend(self.backend),
-            domain=(dims.EdgeDim,),
+            domain={
+                dims.EdgeDim: (
+                    h_grid.edge_domain(h_grid.Zone.LOCAL),
+                    h_grid.edge_domain(h_grid.Zone.END),
+                )
+            },
             fields={
                 attrs.EDGE_CENTER_X: attrs.EDGE_CENTER_X,
                 attrs.EDGE_CENTER_Y: attrs.EDGE_CENTER_Y,
@@ -511,7 +521,12 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(cartesian_edge_centers)
         cartesian_cell_centers = factory.EmbeddedFieldOperatorProvider(
             func=math_helpers.geographical_to_cartesian_on_cells.with_backend(self.backend),
-            domain=(dims.CellDim,),
+            domain={
+                dims.CellDim: (
+                    h_grid.cell_domain(h_grid.Zone.LOCAL),
+                    h_grid.cell_domain(h_grid.Zone.END),
+                )
+            },
             fields={
                 attrs.CELL_CENTER_X: attrs.CELL_CENTER_X,
                 attrs.CELL_CENTER_Y: attrs.CELL_CENTER_Y,
@@ -524,7 +539,7 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(cartesian_cell_centers)
 
-    def _inverse_field_provider(self, field_name: str):
+    def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
@@ -541,7 +556,7 @@ class GridGeometry(factory.FieldSource):
         )
         return provider
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__} for geometry_type={self._geometry_type._name_} (grid={self._grid.id!r})"
 
     @property
@@ -549,15 +564,15 @@ class GridGeometry(factory.FieldSource):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_backend.Backend:
+    def backend(self) -> gtx_backend.Backend | None:
         return self._backend
 
     @property
-    def grid(self):
+    def grid(self) -> icon.IconGrid:
         return self._grid
 
     @property
-    def vertical_grid(self):
+    def vertical_grid(self) -> None:
         return None
 
 
@@ -583,11 +598,10 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         field_name: str,
         field_src: factory.FieldSource | None,
         backend: gtx_backend.Backend | None,
-        grid: factory.GridProvider | None,
-    ):
+        grid: factory.GridProvider,
+    ) -> state_utils.GTXFieldType | None:
         if not self._fields.get(field_name):
             # get the fields from the wrapped provider
-
             input_fields = []
             for p in self._pairs:
                 t = tuple([self._wrapped_provider(name, field_src, backend, grid) for name in p])
@@ -613,7 +627,7 @@ def as_sparse_field(
     target_dims: tuple[HorizontalD, SparseD],
     data: Sequence[tuple[gtx.Field[gtx.Dims[HorizontalD], state_utils.ScalarType], ...]],
     backend: gtx_backend.Backend | None = None,
-):
+) -> state_utils.GTXFieldType:
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
     assert target_dims[1].kind == gtx.DimensionKind.LOCAL

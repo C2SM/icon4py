@@ -17,6 +17,7 @@ import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
+    base,
     geometry,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,
@@ -80,8 +81,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
         log.debug(f"using array_ns {self._xp} ")
-        vct_a = self._vertical_grid.vct_a
-        vct_a_1 = vct_a.asnumpy()[0]
+        vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0]
         self._config = {
             "divdamp_trans_start": 12500.0,
             "divdamp_trans_end": 17500.0,
@@ -113,7 +113,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             factory.PrecomputedFieldProvider(
                 {
                     "topography": topography,
-                    "vct_a": vct_a,
+                    "vct_a": self._vertical_grid.interface_physical_height,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
@@ -125,24 +125,21 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self._register_computed_fields()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__} on (grid={self._grid!r}) providing fields f{self.metadata.keys()}"
 
     @property
     def _sources(self) -> factory.FieldSource:
         return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
 
-    def _register_computed_fields(self):  # noqa: PLR0915 [too-many-statements]
+    def _register_computed_fields(self) -> None:  # noqa: PLR0915 [too-many-statements]
         vertical_coordinates_on_half_levels = factory.NumpyFieldProvider(
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
                 array_ns=self._xp,
             ),
             fields=(attrs.CELL_HEIGHT_ON_HALF_LEVEL,),
-            domain={
-                dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
-                dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
-            },
+            domain=(dims.CellDim, dims.KDim),
             deps={
                 "vct_a": "vct_a",
                 "topography": "topography",
@@ -649,8 +646,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP: attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP},
             params={
-                "grf_nudge_start_e": gtx.int32(h_grid._GRF_NUDGEZONE_START_EDGES),
-                "grf_nudgezone_width": gtx.int32(h_grid._GRF_NUDGEZONE_WIDTH),
+                "grf_nudge_start_e": gtx.int32(h_grid._GRF_NUDGEZONE_START_EDGES),  # type: ignore [attr-defined]
+                "grf_nudgezone_width": gtx.int32(h_grid._GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
             },
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
@@ -846,13 +843,13 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_backend.Backend:
+    def backend(self) -> gtx_backend.Backend | None:
         return self._backend
 
     @property
-    def grid(self):
+    def grid(self) -> base.Grid:
         return self._grid
 
     @property
-    def vertical_grid(self):
+    def vertical_grid(self) -> v_grid.VerticalGrid:
         return self._vertical_grid
