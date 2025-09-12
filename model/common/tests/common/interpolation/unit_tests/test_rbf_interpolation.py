@@ -14,7 +14,11 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
+from icon4py.model.common.grid import (
+    base,
+    geometry_attributes as geometry_attrs,
+    horizontal as h_grid,
+)
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -27,6 +31,7 @@ from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -144,6 +149,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     [
         (definitions.Experiments.EXCLAIM_APE, 3e-9),
         (definitions.Experiments.MCH_CH_R04B09, 3e-2),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-15),
     ],
 )
 def test_rbf_interpolation_coeffs_cell(
@@ -176,8 +182,16 @@ def test_rbf_interpolation_coeffs_cell(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        grid.global_properties.geometry_type,
+        rbf.compute_default_rbf_scale(
+            grid.global_properties.geometry_type,
+            grid.global_properties.characteristic_length,
+            grid.global_properties.mean_dual_edge_length,
+            rbf_dim,
+        ),
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -213,6 +227,7 @@ def test_rbf_interpolation_coeffs_cell(
     [
         (definitions.Experiments.EXCLAIM_APE, 3e-10),
         (definitions.Experiments.MCH_CH_R04B09, 3e-3),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-15),
     ],
 )
 def test_rbf_interpolation_coeffs_vertex(
@@ -245,8 +260,16 @@ def test_rbf_interpolation_coeffs_vertex(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        grid.global_properties.geometry_type,
+        rbf.compute_default_rbf_scale(
+            grid.global_properties.geometry_type,
+            grid.global_properties.characteristic_length,
+            grid.global_properties.mean_dual_edge_length,
+            rbf_dim,
+        ),
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -282,6 +305,7 @@ def test_rbf_interpolation_coeffs_vertex(
     [
         (definitions.Experiments.EXCLAIM_APE, 8e-14),
         (definitions.Experiments.MCH_CH_R04B09, 2e-9),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 0),
     ],
 )
 def test_rbf_interpolation_coeffs_edge(
@@ -316,8 +340,16 @@ def test_rbf_interpolation_coeffs_edge(
         # coefficients in savepoint.
         grid_savepoint.e2c2e(),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        grid.global_properties.geometry_type,
+        rbf.compute_default_rbf_scale(
+            grid.global_properties.geometry_type,
+            grid.global_properties.characteristic_length,
+            grid.global_properties.mean_dual_edge_length,
+            rbf_dim,
+        ),
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
         array_ns=data_alloc.import_array_ns(backend),
     )
 

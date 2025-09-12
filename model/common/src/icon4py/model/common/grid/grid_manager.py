@@ -119,13 +119,13 @@ class GridManager:
     def __call__(self, backend: gtx_typing.Backend | None, keep_skip_values: bool):
         if not self._reader:
             self.open()
+        self._geometry = self._read_geometry_fields(backend)
         self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
         self._coordinates = self._read_coordinates(backend)
-        self._geometry = self._read_geometry_fields(backend)
         self.close()
 
     def _read_coordinates(self, backend: gtx_typing.Backend | None) -> CoordinateDict:
-        return {
+        coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
                     (dims.CellDim,),
@@ -170,8 +170,70 @@ class GridManager:
             },
         }
 
+        # TODO(msimberg): Don't read the geometry multiple times, set it up once.
+        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
+            geometry_type = base.GeometryType(geometry_type)
+
+        if geometry_type == base.GeometryType.TORUS:
+            coordinates[dims.CellDim]["x"] = gtx.as_field(
+                (dims.CellDim,),
+                self._reader.variable(gridfile.CoordinateName.CELL_X),
+                dtype=ta.wpfloat,
+                allocator=backend,
+            )
+            coordinates[dims.CellDim]["y"] = gtx.as_field(
+                (dims.CellDim,),
+                self._reader.variable(gridfile.CoordinateName.CELL_Y),
+                dtype=ta.wpfloat,
+                allocator=backend,
+            )
+            coordinates[dims.CellDim]["z"] = gtx.as_field(
+                (dims.CellDim,),
+                self._reader.variable(gridfile.CoordinateName.CELL_Z),
+                dtype=ta.wpfloat,
+                allocator=backend,
+            )
+            coordinates[dims.EdgeDim]["x"] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.CoordinateName.EDGE_X),
+                dtype=ta.wpfloat,
+                allocator=backend,
+            )
+            coordinates[dims.EdgeDim]["y"] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.CoordinateName.EDGE_Y),
+                dtype=ta.wpfloat,
+                allocator=backend,
+            )
+            coordinates[dims.EdgeDim]["z"] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.CoordinateName.EDGE_Z),
+                dtype=ta.wpfloat,
+                allocator=backend,
+            )
+            coordinates[dims.VertexDim]["x"] = gtx.as_field(
+                (dims.VertexDim,),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_X),
+                dtype=ta.wpfloat,
+                allocator=backend,
+            )
+            coordinates[dims.VertexDim]["y"] = gtx.as_field(
+                (dims.VertexDim,),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_Y),
+                dtype=ta.wpfloat,
+                allocator=backend,
+            )
+            coordinates[dims.VertexDim]["z"] = gtx.as_field(
+                (dims.VertexDim,),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_Z),
+                dtype=ta.wpfloat,
+                allocator=backend,
+            )
+
+        return coordinates
+
     def _read_geometry_fields(self, backend: gtx_typing.Backend | None):
-        return {
+        geometry_fields = {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
             gridfile.GeometryName.CELL_AREA.value: gtx.as_field(
@@ -183,6 +245,16 @@ class GridManager:
             gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.GeometryName.DUAL_AREA),
+                allocator=backend,
+            ),
+            gridfile.GeometryName.EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_LENGTH),
+                allocator=backend,
+            ),
+            gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH),
                 allocator=backend,
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
@@ -216,6 +288,44 @@ class GridManager:
                 allocator=backend,
             ),
         }
+
+        # TODO(msimberg): Don't read the geometry multiple times, set it up once.
+        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
+            geometry_type = base.GeometryType(geometry_type)
+
+        if geometry_type == base.GeometryType.TORUS:
+            geometry_fields[gridfile.GeometryName.EDGE_NORMAL_X.value] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_NORMAL_X),
+                allocator=backend,
+            )
+            geometry_fields[gridfile.GeometryName.EDGE_NORMAL_Y.value] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_NORMAL_Y),
+                allocator=backend,
+            )
+            geometry_fields[gridfile.GeometryName.EDGE_NORMAL_Z.value] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_NORMAL_Z),
+                allocator=backend,
+            )
+            geometry_fields[gridfile.GeometryName.EDGE_TANGENT_X.value] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_TANGENT_X),
+                allocator=backend,
+            )
+            geometry_fields[gridfile.GeometryName.EDGE_TANGENT_Y.value] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_TANGENT_Y),
+                allocator=backend,
+            )
+            geometry_fields[gridfile.GeometryName.EDGE_TANGENT_Z.value] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_TANGENT_Z),
+                allocator=backend,
+            )
+
+        return geometry_fields
 
     def _read_grid_refinement_fields(
         self,
@@ -335,11 +445,55 @@ class GridManager:
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
             geometry_type = base.GeometryType(geometry_type)
-        global_params = icon.GlobalGridParams(
+        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
+        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
+        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
+
+        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
+        mean_dual_edge_length = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
+        )
+        mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
+        mean_dual_cell_area = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
+        )
+
+        # TODO(msimberg): EDGE_LENGTH requires GridGeometry (not just
+        # GeometryDict). GridGeometry requires the IconGrid.  IconGrid requires
+        # GlobalGridParams.  GlobalGridParams requires EDGE_LENGTH. EDGE_LENGTH
+        # requires GridGeometry.
+        # - Option 1: Only use MEAN_EDGE_LENGTH from grid file.
+        # - Option 2: Fix circular dependency.
+        # - Option 3: Use EDGE_LENGTH from grid file to make it available in
+        #   GeometryDict. This is implemented below. Is the field always there?
+        edge_lengths = self.geometry[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
+        dual_edge_lengths = self.geometry[gridfile.GeometryName.DUAL_EDGE_LENGTH.value].ndarray
+        cell_areas = self.geometry[gridfile.GeometryName.CELL_AREA.value].ndarray
+        dual_cell_areas = mean_dual_cell_area = xp.mean(
+            self.geometry[gridfile.GeometryName.DUAL_AREA.value].ndarray
+        )
+
+        global_params = icon.GlobalGridParams.from_fields(
+            backend=backend,
             grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-            )
+            ),
+            radius=sphere_radius,
+            domain_length=domain_length,
+            domain_height=domain_height,
+            # TODO(msimberg): The above is given for the grid, not derived from
+            # anything. The below can be derived in the worst case, so keep
+            # separate?
+            num_cells=num_cells,
+            mean_edge_length=mean_edge_length,
+            mean_dual_edge_length=mean_dual_edge_length,
+            mean_cell_area=mean_cell_area,
+            mean_dual_cell_area=mean_dual_cell_area,
+            edge_lengths=edge_lengths,
+            dual_edge_lengths=dual_edge_lengths,
+            cell_areas=cell_areas,
+            dual_cell_areas=dual_cell_areas,
         )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells

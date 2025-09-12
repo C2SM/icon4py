@@ -54,7 +54,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
+        geometry_type = self._grid.global_properties.geometry_type
         characteristic_length = self._grid.global_properties.characteristic_length
+        mean_dual_edge_length = self._grid.global_properties.mean_dual_edge_length
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
             "divavg_cntrwgt": 0.5,
@@ -66,13 +68,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
             "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
             "rbf_scale_cell": rbf.compute_default_rbf_scale(
-                characteristic_length, rbf.RBFDimension.CELL
+                geometry_type, characteristic_length, mean_dual_edge_length, rbf.RBFDimension.CELL
             ),
             "rbf_scale_edge": rbf.compute_default_rbf_scale(
-                characteristic_length, rbf.RBFDimension.EDGE
+                geometry_type, characteristic_length, mean_dual_edge_length, rbf.RBFDimension.EDGE
             ),
             "rbf_scale_vertex": rbf.compute_default_rbf_scale(
-                characteristic_length, rbf.RBFDimension.VERTEX
+                geometry_type, characteristic_length, mean_dual_edge_length, rbf.RBFDimension.VERTEX
             ),
         }
         log.info(
@@ -363,10 +365,17 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.C2E2C2EDim},
             params={
                 "rbf_kernel": self._config["rbf_kernel_cell"].value,
+                "geometry_type": self._grid.global_properties.geometry_type.value,
                 "scale_factor": self._config["rbf_scale_cell"],
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
+                "domain_length": self._grid.global_properties.domain_length
+                if self._grid.global_properties.domain_length
+                else -1.0,
+                "domain_height": self._grid.global_properties.domain_height
+                if self._grid.global_properties.domain_height
+                else -1.0,
             },
         )
         self.register_provider(rbf_vec_coeff_c)
@@ -390,10 +399,17 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.E2C2EDim},
             params={
                 "rbf_kernel": self._config["rbf_kernel_edge"].value,
+                "geometry_type": self._grid.global_properties.geometry_type.value,
                 "scale_factor": self._config["rbf_scale_edge"],
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
+                "domain_length": self._grid.global_properties.domain_length
+                if self._grid.global_properties.domain_length
+                else -1.0,
+                "domain_height": self._grid.global_properties.domain_height
+                if self._grid.global_properties.domain_height
+                else -1.0,
             },
         )
         self.register_provider(rbf_vec_coeff_e)
@@ -418,10 +434,17 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"rbf_offset": dims.V2EDim},
             params={
                 "rbf_kernel": self._config["rbf_kernel_vertex"].value,
+                "geometry_type": self._grid.global_properties.geometry_type.value,
                 "scale_factor": self._config["rbf_scale_vertex"],
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
+                "domain_length": self._grid.global_properties.domain_length
+                if self._grid.global_properties.domain_length
+                else -1.0,
+                "domain_height": self._grid.global_properties.domain_height
+                if self._grid.global_properties.domain_height
+                else -1.0,
             },
         )
         self.register_provider(rbf_vec_coeff_v)

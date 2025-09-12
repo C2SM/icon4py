@@ -34,6 +34,7 @@ VALIDATION_GRIDS = (
     definitions.Grids.R02B04_GLOBAL,
     definitions.Grids.MCH_CH_R04B09_DSL,
     definitions.Grids.MCH_OPR_R04B07_DOMAIN01,
+    definitions.Grids.TORUS_50000x5000,
 )  # change to MCH_OPR_R04B07_DOMAIN01
 app = typer.Typer()
 
@@ -52,7 +53,7 @@ def download_validation_grids() -> None:
     config.TEST_DATA_PATH = pathlib.Path.cwd() / definitions.DEFAULT_TEST_DATA_FOLDER
     for grid in VALIDATION_GRIDS:
         print(f"downloading and unpacking {grid.name}")
-        fname = grid_utils._download_grid_file(grid.name)
+        fname = grid_utils._download_grid_file(grid)
         print(f"done - downloaded {fname}")
 
 
