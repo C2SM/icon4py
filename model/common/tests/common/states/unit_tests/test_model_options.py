@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+import typing
 
-import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
@@ -22,8 +22,8 @@ from icon4py.model.common.model_options import customize_backend, setup_program
         (model_backends.make_custom_dace_backend, "dace"),
     ],
 )
-def test_custom_backend_options(backend_factory, expected_backend) -> None:
-    backend_options = {
+def test_custom_backend_options(backend_factory: typing.Callable, expected_backend: str) -> None:
+    backend_options: dict = {
         "backend_factory": backend_factory,
         "device": model_backends.CPU,
     }
@@ -49,7 +49,7 @@ def test_custom_backend_device() -> None:
         {"device": model_backends.CPU},
     ],
 )
-def test_setup_program_defaults(backend) -> None:
+def test_setup_program_defaults(backend: typing.Any) -> None:
     partial_program = setup_program(backend=backend, program=scale_k)
     backend = model_backends.BACKENDS["gtfn_cpu"]
     expected_partial = functools.partial(
@@ -77,7 +77,7 @@ def test_setup_program_defaults(backend) -> None:
         ({"device": model_backends.GPU}, "gtfn_gpu"),
     ],
 )
-def test_setup_program_dace_gpu(backend_params, expected_backend) -> None:
+def test_setup_program_dace_gpu(backend_params: typing.Any, expected_backend: str) -> None:
     partial_program = setup_program(backend=backend_params, program=scale_k)
     backend = model_backends.BACKENDS[expected_backend]
     expected_partial = functools.partial(

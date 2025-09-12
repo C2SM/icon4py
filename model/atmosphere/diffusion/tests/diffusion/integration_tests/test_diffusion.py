@@ -11,9 +11,10 @@ import collections
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
+import pytest
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import geometry_attributes as geometry_meta, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
