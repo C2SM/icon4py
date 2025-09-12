@@ -114,7 +114,7 @@ def compute_diffusion_mask_and_coef(
     cell_nudging: int,
     nlev: int,
     array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     n_cells = c2e2c.shape[0]
     mask_hdiff = array_ns.zeros(shape=(n_cells, nlev), dtype=bool)
     zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
@@ -167,7 +167,7 @@ def compute_diffusion_intcoef_and_vertoffset(
     cell_nudging: int,
     nlev: int,
     array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     n_cells = c2e2c.shape[0]
     n_c2e2c = c2e2c.shape[1]
     z_mc_off = z_mc[c2e2c]

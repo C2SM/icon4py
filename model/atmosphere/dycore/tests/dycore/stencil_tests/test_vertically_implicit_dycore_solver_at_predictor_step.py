@@ -14,11 +14,7 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
     vertically_implicit_solver_at_predictor_step,
 )
-from icon4py.model.common import (
-    constants,
-    dimension as dims,
-    type_alias as ta,
-)
+from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -27,18 +23,15 @@ from icon4py.model.testing import stencil_tests
 from .test_add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation_numpy,
 )
-from .test_apply_rayleigh_damping_mechanism import (
-    apply_rayleigh_damping_mechanism_numpy,
-)
-from .test_compute_contravariant_correction_of_w import (
-    compute_contravariant_correction_of_w_numpy,
-)
+from .test_apply_rayleigh_damping_mechanism import apply_rayleigh_damping_mechanism_numpy
+from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy
 from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
     compute_contravariant_correction_of_w_for_lower_boundary_numpy,
 )
-from .test_compute_dwdz_for_divergence_damping import (
-    compute_dwdz_for_divergence_damping_numpy,
+from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
+    compute_divergence_of_fluxes_of_rho_and_theta_numpy,
 )
+from .test_compute_dwdz_for_divergence_damping import compute_dwdz_for_divergence_damping_numpy
 from .test_compute_explicit_part_for_rho_and_exner import (
     compute_explicit_part_for_rho_and_exner_numpy,
 )
@@ -48,9 +41,7 @@ from .test_compute_explicit_vertical_wind_speed_and_vertical_wind_times_density 
 from .test_compute_results_for_thermodynamic_variables import (
     compute_results_for_thermodynamic_variables_numpy,
 )
-from .test_compute_solver_coefficients_matrix import (
-    compute_solver_coefficients_matrix_numpy,
-)
+from .test_compute_solver_coefficients_matrix import compute_solver_coefficients_matrix_numpy
 from .test_set_lower_boundary_condition_for_w_and_contravariant_correction import (
     set_lower_boundary_condition_for_w_and_contravariant_correction_numpy,
 )
@@ -59,9 +50,6 @@ from .test_solve_tridiagonal_matrix_for_w_back_substitution import (
 )
 from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep_numpy,
-)
-from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
-    compute_divergence_of_fluxes_of_rho_and_theta_numpy,
 )
 
 
