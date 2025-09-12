@@ -117,7 +117,7 @@ def _dot_product(
     return array_ns.matmul(v1, v2_tilde)
 
 
-def _arc_length_pairwise(
+def _distance_pairwise(
     geometry_type: base_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
@@ -133,7 +133,6 @@ def _arc_length_pairwise(
            dimension of the points.
         array_ns: numpy or cupy module to use for computations.
     """
-    # TODO(msimberg): Precompute these outside RBF interpolation
     match geometry_type:
         case base_grid.GeometryType.ICOSAHEDRON:
             # For pairs of points p1 and p2 compute:
@@ -152,20 +151,18 @@ def _arc_length_pairwise(
         case base_grid.GeometryType.TORUS:
             # For pairs of points p1 and p2 compute:
             # norm(p1 - p2), taking into account the periodic boundaries noqa: ERA001
-            # TODO(msimberg): tidy up
             diff = array_ns.abs(v[:, :, array_ns.newaxis, :] - v[:, array_ns.newaxis, :, :])
             domain_size = array_ns.asarray([domain_length, domain_height, ta.wpfloat(0.0)])
             domain_size_expanded = domain_size[array_ns.newaxis, array_ns.newaxis, :]
             inverted_diff = array_ns.subtract(domain_size_expanded, diff)
-            modulo_diff = array_ns.minimum(diff, inverted_diff)
-            dist = array_ns.linalg.norm(modulo_diff, axis=-1)
-            return dist
+            array_ns.minimum(diff, inverted_diff, out=diff)
+            return array_ns.linalg.norm(diff, axis=-1)
         case _:
             raise ValueError(f"Unsupported geometry type: {geometry_type}")
 
 
 # TODO(msimberg): Rename this to something without "arc". It's arc length only for the icosahedron.
-def _arc_length_vector_matrix(
+def _distance_vector_matrix(
     geometry_type: base_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
@@ -202,14 +199,12 @@ def _arc_length_vector_matrix(
         case base_grid.GeometryType.TORUS:
             # For pairs of points p1 and p2 compute:
             # norm(p1 - p2) noqa: ERA001
-            # TODO(msimberg): tidy up
             diff = np.abs(v1 - v2)
             domain_size = array_ns.asarray([domain_length, domain_height, ta.wpfloat(0.0)])
             domain_size_expanded = domain_size[array_ns.newaxis, array_ns.newaxis, :]
             inverted_diff = array_ns.subtract(domain_size_expanded, diff)
-            modulo_diff = array_ns.minimum(diff, inverted_diff)
-            dist = array_ns.linalg.norm(modulo_diff, axis=-1)
-            return dist
+            diff = array_ns.minimum(diff, inverted_diff, out=diff)
+            return array_ns.linalg.norm(diff, axis=-1)
         case _:
             raise ValueError(f"Unsupported geometry type: {geometry_type}")
 
@@ -336,7 +331,7 @@ def _compute_rbf_interpolation_coeffs(
         axis=-1,
     )
     assert element_center.shape == (rbf_offset.shape[0], 3)
-    vector_dist = _arc_length_vector_matrix(
+    vector_dist = _distance_vector_matrix(
         geometry_type,
         domain_length,
         domain_height,
@@ -382,7 +377,7 @@ def _compute_rbf_interpolation_coeffs(
     )
 
     # Distance between edge midpoints for RBF interpolation matrix
-    z_dist = _arc_length_pairwise(
+    z_dist = _distance_pairwise(
         geometry_type, domain_length, domain_height, edge_center, array_ns=array_ns
     )
     assert z_dist.shape == (
