@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, utils as common_utils
@@ -286,3 +287,24 @@ def test_composite_field_source_raises_upon_get_unknown_field(
     with pytest.raises(ValueError) as err:
         composite.get("alice")
         assert "not provided by source " in err.value  # type: ignore[operator]
+
+
+def reduce_scalar_min(ar: data_alloc.NDArray) -> gtx.float:
+    while ar.ndim > 0:
+        ar = np.min(ar)
+    return ar.item()
+
+def test_compute_scalar_value_from_numpy_provider(height_coordinate_source:factory.FieldSource, metrics_savepoint:serialbox.MetricsSavepoint,
+                                                  backend:gtx_typing.Backend):
+    value_ref = np.min(np.min(metrics_savepoint.z_ifc()))
+    provider = factory.NumpyFieldProvider(
+        func=reduce_scalar_min,
+        deps={"ar":"height_coordinate" },
+        domain=(),
+        fields=("minimal_height",),
+    )
+    height_coordinate_source.register_provider(provider)
+    value = height_coordinate_source.get("minimal_height", factory.RetrievalType.SCALAR)
+    assert np.isscalar(value)
+    assert value_ref == value
+
