@@ -5,13 +5,23 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 
-from icon4py.model.common.grid import geometry, topography as topo
+from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
+from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures import *  # noqa: F403
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
 
 
 @pytest.mark.embedded_remap_error
@@ -19,19 +29,18 @@ from icon4py.model.testing.fixtures import *  # noqa: F403
 @pytest.mark.parametrize(
     "experiment",
     [
-        dt_utils.GAUSS3D_EXPERIMENT,
-        dt_utils.REGIONAL_EXPERIMENT,
+        definitions.Experiments.GAUSS3D,
+        definitions.Experiments.MCH_CH_R04B09,
     ],
 )
 def test_topography_smoothing_with_serialized_data(
-    icon_grid,
-    grid_savepoint,
-    interpolation_savepoint,
-    topography_savepoint,
-    backend,
-    experiment,
-):
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    icon_grid: base_grid.Grid,
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    topography_savepoint: sb.TopographySavepoint,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    cell_geometry = grid_savepoint.construct_cell_geometry()
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     num_iterations = 25

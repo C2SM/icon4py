@@ -5,31 +5,24 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 import functools
 import math
 import re
+from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import gt4py.next as gtx
-
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import (
-    base,
-    gridfile,
-    horizontal as h_grid,
-    icon,
-)
-from icon4py.model.testing import (
-    grid_utils as gridtest_utils,
-    definitions,
-)
+from icon4py.model.common.grid import base, gridfile, horizontal as h_grid, icon
+from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
     download_ser_data,
-    experiment,
     grid_savepoint,
     icon_grid,
     processor_props,
@@ -39,6 +32,20 @@ from icon4py.model.testing.fixtures import (
 from .. import utils
 
 
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
+
+
+@pytest.fixture(scope="module")
+def experiment() -> definitions.Experiment:
+    """The module uses hard-coded references for the MCH_CH_R04B09 experiment."""
+    return definitions.Experiments.MCH_CH_R04B09
+
+
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
     return gridtest_utils.get_grid_manager_from_experiment(
@@ -46,13 +53,13 @@ def grid_from_limited_area_grid_file() -> icon.IconGrid:
     ).grid
 
 
-def lateral_boundary():
+def lateral_boundary() -> Iterator[h_grid.Zone]:
     for marker in h_grid.Zone.__members__.values():
         if "lb" in marker.value:
             yield marker
 
 
-def nudging():
+def nudging() -> Iterator[h_grid.Zone]:
     for marker in h_grid.Zone.__members__.values():
         if "nudging" in marker.value:
             yield marker
@@ -81,7 +88,7 @@ INTERIOR_IDX = {
 
 
 @pytest.fixture(params=["serialbox", "file"])
-def grid(icon_grid, request):
+def grid(icon_grid: base_grid.Grid, request: pytest.FixtureRequest) -> base_grid.Grid:
     if request.param == "serialbox":
         return icon_grid
     else:
@@ -91,7 +98,7 @@ def grid(icon_grid, request):
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
-def test_halo(grid, dim, marker):
+def test_halo(grid: base_grid.Grid, dim: gtx.Dimension, marker: h_grid.Zone) -> None:
     # For single node this returns an empty region - start and end index are the same see  also ./mpi_tests/test_icon.py
     domain = h_grid.domain(dim)(marker)
     assert grid.start_index(domain) == HALO_IDX[dim][0]
@@ -100,7 +107,7 @@ def test_halo(grid, dim, marker):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_local(dim, grid):
+def test_local(dim: gtx.Dimension, grid: base_grid.Grid) -> None:
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
     assert grid.start_index(domain) == 0
     assert grid.end_index(domain) == grid.size[dim]
@@ -109,7 +116,7 @@ def test_local(dim, grid):
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("marker", lateral_boundary())
-def test_lateral_boundary(grid, dim, marker):
+def test_lateral_boundary(grid: base_grid.Grid, dim: gtx.Dimension, marker: h_grid.Zone) -> None:
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if num > 4 and dim in (dims.VertexDim, dims.CellDim):
         with pytest.raises(AssertionError) as e:
@@ -125,7 +132,7 @@ def test_lateral_boundary(grid, dim, marker):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_end(grid, dim):
+def test_end(grid: base_grid.Grid, dim: gtx.Dimension) -> None:
     domain = h_grid.domain(dim)(h_grid.Zone.END)
     assert grid.start_index(domain) == grid.size[dim]
     assert grid.end_index(domain) == grid.size[dim]
@@ -134,7 +141,7 @@ def test_end(grid, dim):
 @pytest.mark.datatest
 @pytest.mark.parametrize("marker", nudging())
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_nudging(grid, dim, marker):
+def test_nudging(grid: base_grid.Grid, dim: gtx.Dimension, marker: h_grid.Zone) -> None:
     num = int(next(iter(re.findall(r"\d+", marker.value))))
     if dim == dims.VertexDim or (dim == dims.CellDim and num > 1):
         with pytest.raises(AssertionError) as e:
@@ -150,7 +157,7 @@ def test_nudging(grid, dim, marker):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_interior(grid, dim):
+def test_interior(grid: base_grid.Grid, dim: gtx.Dimension) -> None:
     domain = h_grid.domain(dim)(h_grid.Zone.INTERIOR)
     start_index = grid.start_index(domain)
     end_index = grid.end_index(domain)
@@ -159,17 +166,21 @@ def test_interior(grid, dim):
 
 
 @pytest.mark.datatest
-def test_grid_size(icon_grid):
-    assert 10663 == icon_grid.size[dims.VertexDim]
-    assert 20896 == icon_grid.size[dims.CellDim]
-    assert 31558 == icon_grid.size[dims.EdgeDim]
+def test_grid_size(icon_grid: base_grid.Grid) -> None:
+    assert icon_grid.size[dims.VertexDim] == 10663
+    assert icon_grid.size[dims.CellDim] == 20896
+    assert icon_grid.size[dims.EdgeDim] == 31558
 
 
 @pytest.mark.parametrize(
     "grid_descriptor", (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL)
 )
 @pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.value)
-def test_when_keep_skip_value_then_neighbor_table_matches_config(grid_descriptor, offset, backend):
+def test_when_keep_skip_value_then_neighbor_table_matches_config(
+    grid_descriptor: definitions.GridDescription,
+    offset: gtx.FieldOffset,
+    backend: gtx_typing.Backend,
+) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
     connectivity = grid.get_connectivity(offset)
 
@@ -187,8 +198,8 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(grid_descriptor
 )
 @pytest.mark.parametrize("dim", (utils.local_dims()))
 def test_when_replace_skip_values_then_only_pentagon_points_remain(
-    grid_descriptor: definitions.GridDescription, dim: gtx.Dimension, backend
-):
+    grid_descriptor: definitions.GridDescription, dim: gtx.Dimension, backend: gtx_typing.Backend
+) -> None:
     if dim == dims.V2E2VDim:
         pytest.skip("V2E2VDim is not supported in the current grid configuration.")
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=False, backend=backend).grid
@@ -249,18 +260,20 @@ def _sphere_area(radius: float) -> float:
     ],
 )
 def test_global_grid_params(
-    geometry_type,
-    grid_root,
-    grid_level,
-    num_cells,
-    mean_cell_area,
-    expected_num_cells,
-    expected_mean_cell_area,
-):
+    geometry_type: base.GeometryType,
+    grid_root: int | None,
+    grid_level: int | None,
+    num_cells: int | None,
+    mean_cell_area: float | None,
+    expected_num_cells: int | None,
+    expected_mean_cell_area: float | None,
+) -> None:
+    if grid_root is None:
+        assert grid_level is None
     params = icon.GlobalGridParams(
         grid_shape=icon.GridShape(
             geometry_type=geometry_type,
-            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)
+            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level)  # type: ignore[arg-type]
             if grid_root is not None
             else None,
         ),
@@ -269,10 +282,11 @@ def test_global_grid_params(
     )
     assert geometry_type == params.geometry_type
     if geometry_type == base.GeometryType.TORUS:
-        assert None == params.grid_shape.subdivision
+        assert params.grid_shape is not None
+        assert params.grid_shape.subdivision is None
     else:
         assert (
-            icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_shape.subdivision
+            icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_shape.subdivision  # type: ignore[arg-type, union-attr]
         )
     assert expected_num_cells == params.num_cells
     if geometry_type == base.GeometryType.TORUS:
@@ -291,7 +305,11 @@ def test_global_grid_params(
         (None, None, None),
     ],
 )
-def test_global_grid_params_fail(geometry_type, grid_root, grid_level):
+def test_global_grid_params_fail(
+    geometry_type: base.GeometryType,
+    grid_root: int,
+    grid_level: int,
+) -> None:
     with pytest.raises(ValueError):
         _ = icon.GlobalGridParams(
             grid_shape=icon.GridShape(

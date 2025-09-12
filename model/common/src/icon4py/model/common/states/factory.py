@@ -153,7 +153,7 @@ class FieldSource(GridProvider, Protocol):
     @overload
     def get(
         self, field_name: str, type_: Literal[RetrievalType.FIELD] = RetrievalType.FIELD
-    ) -> state_utils.FieldType: ...  # TODO(havogt): FieldType is not strict enough
+    ) -> state_utils.GTXFieldType: ...
 
     @overload
     def get(self, field_name: str, type_: Literal[RetrievalType.DATA_ARRAY]) -> xa.DataArray: ...
@@ -170,7 +170,7 @@ class FieldSource(GridProvider, Protocol):
 
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
-    ) -> state_utils.FieldType | xa.DataArray | model.FieldMetaData | state_utils.ScalarType:
+    ) -> state_utils.GTXFieldType | xa.DataArray | model.FieldMetaData | state_utils.ScalarType:
         """
         Get a field or its metadata from the factory.
 
@@ -204,7 +204,6 @@ class FieldSource(GridProvider, Protocol):
                         buffer, self.metadata[field_name]
                     )  # TODO (halungge): typing?
                 )
-
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
 
@@ -244,7 +243,7 @@ class CompositeSource(FieldSource):
         return self._vertical_grid
 
     @property
-    def grid(self) -> icon_grid.IconGrid | None:
+    def grid(self) -> icon_grid.IconGrid:
         return self._grid
 
 
@@ -287,7 +286,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
     def __init__(
         self,
         func: gtx_typing.FieldOperator,
-        domain: tuple[gtx.Dimension, ...],
+        domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
         fields: dict[str, str],  # keyword arg to (field_operator, field_name)
         deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
         params: dict[str, state_utils.ScalarType]
@@ -594,7 +593,7 @@ class NumpyFieldProvider(FieldProvider):
         deps: dict[str, str],
         connectivities: dict[str, gtx.Dimension] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
-    ) -> None:
+    ):
         self._func = func
         self._dims = domain
         self._fields: dict[str, state_utils.ScalarType | state_utils.FieldType | None] = {
