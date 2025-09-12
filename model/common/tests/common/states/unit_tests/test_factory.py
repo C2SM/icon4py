@@ -296,6 +296,7 @@ def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:
         ar = xp.min(ar)
     return ar.item()
 
+
 @pytest.mark.datatest
 def test_compute_scalar_value_from_numpy_provider(
     height_coordinate_source: factory.FieldSource,

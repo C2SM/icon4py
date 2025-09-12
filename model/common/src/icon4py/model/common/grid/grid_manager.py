@@ -64,7 +64,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
 
 
 CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
-#TODO (halungge) use a TypeDict for that
+# TODO (halungge): use a TypeDict for that
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
 

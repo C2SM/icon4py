@@ -90,14 +90,14 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self._register_computed_fields()
 
-    def __repr__(self)->str:
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__} on (grid={self._grid!r}) providing fields f{self.metadata.keys()}"
 
     @property
     def _sources(self) -> factory.FieldSource:
         return factory.CompositeSource(self, (self._geometry,))
 
-    def _register_computed_fields(self)->None:
+    def _register_computed_fields(self) -> None:
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
             func=common_metrics.compute_nudgecoeffs.with_backend(None),
             domain={
@@ -431,13 +431,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_backend.Backend|None:
+    def backend(self) -> gtx_backend.Backend | None:
         return self._backend
 
     @property
-    def grid(self)->icon.IconGrid:
+    def grid(self) -> icon.IconGrid:
         return self._grid
 
     @property
-    def vertical_grid(self)->None:
+    def vertical_grid(self) -> None:
         return None

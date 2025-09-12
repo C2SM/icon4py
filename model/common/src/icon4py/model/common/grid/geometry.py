@@ -8,7 +8,7 @@
 import functools
 import logging
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, Literal, TypeAlias, TypeVar, TypedDict
+from typing import Any
 
 from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
@@ -32,7 +32,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-
 
 
 log = logging.getLogger(__name__)
@@ -573,9 +572,6 @@ class GridGeometry(factory.FieldSource):
     @property
     def vertical_grid(self) -> None:
         return None
-
-
-
 
 
 class SparseFieldProviderWrapper(factory.FieldProvider):
