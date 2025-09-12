@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -14,35 +17,39 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
+from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor",
-    [
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85),
-    ],
+    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0, 8000.0, 0.85)],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 @pytest.mark.parametrize("location", ["nwp-gscp-interface", "interface-nwp"])
 def test_saturation_adjustement(
-    experiment,
-    location,
-    model_top_height,
-    damping_height,
-    stretch_factor,
-    date,
-    data_provider,
-    grid_savepoint,
-    metrics_savepoint,
-    icon_grid,
-    backend,
-):
+    location: str,
+    model_top_height: float,  # TODO(havogt): unused?
+    damping_height: float,  # TODO(havogt): unused?
+    stretch_factor: float,  # TODO(havogt): unused?
+    date: str,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     satad_init = data_provider.from_savepoint_satad_init(location=location, date=date)
     satad_exit = data_provider.from_savepoint_satad_exit(location=location, date=date)
 

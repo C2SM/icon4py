@@ -11,11 +11,11 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory import (
     compute_ffsl_backtrajectory,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.testing import stencil_tests
 
 
 class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
@@ -57,8 +57,6 @@ class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
         p_dt: float,
         **kwargs,
     ) -> dict:
-        e2c_shape = connectivities[dims.E2CDim].shape
-
         lvn_pos = p_vn >= 0.0
         cell_idx = np.expand_dims(cell_idx, axis=-1)
         cell_blk = np.expand_dims(cell_blk, axis=-1)
