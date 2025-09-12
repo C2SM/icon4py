@@ -18,8 +18,7 @@ import icon4py.model.common.type_alias as ta
 
 
 """Contains type definitions used for the model`s state representation."""
-DimensionNames: TypeAlias = Literal["cell", "edge", "vertex", "scalar"]
-DimensionT: TypeAlias = gtx.Dimension | DimensionNames
+DimensionNames: TypeAlias = Literal["cell", "edge", "vertex"]
 BufferT: TypeAlias = np_t.ArrayLike | gtx.Field
 DTypeT: TypeAlias = ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
 
@@ -30,7 +29,7 @@ class OptionalMetaData(TypedDict, total=False):
     #: we might not have this one for all fields. But it is useful to have it for tractability with ICON
     icon_var_name: str
     # TODO(halungge): dims should probably be required?
-    dims: tuple[DimensionT, ...]
+    dims: tuple[gtx.Dimension, ...] | tuple[DimensionNames, ...]
     dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
 
 

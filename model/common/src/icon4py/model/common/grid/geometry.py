@@ -8,7 +8,7 @@
 import functools
 import logging
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, Literal, TypeAlias, TypeVar
+from typing import Any, Literal, TypeAlias, TypeVar, TypedDict
 
 from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
@@ -34,7 +34,6 @@ from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
 
-InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +82,7 @@ class GridGeometry(factory.FieldSource):
         decomposition_info: definitions.DecompositionInfo,
         backend: gtx_backend.Backend | None,
         coordinates: gm.CoordinateDict,
-        extra_fields: dict[InputGeometryFieldType, gtx.Field],
+        extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
     ):
         """
@@ -103,7 +102,7 @@ class GridGeometry(factory.FieldSource):
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
+        self._geometry_type: base.GeometryType = base.GeometryType.ICOSAHEDRON
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         log.info(
             f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -576,15 +575,14 @@ class GridGeometry(factory.FieldSource):
         return None
 
 
-HorizontalD = TypeVar("HorizontalD", bound=gtx.Dimension)
-SparseD = TypeVar("SparseD", bound=gtx.Dimension)
+
 
 
 class SparseFieldProviderWrapper(factory.FieldProvider):
     def __init__(
         self,
         field_provider: factory.ProgramFieldProvider,
-        target_dims: tuple[HorizontalD, SparseD],
+        target_dims: tuple[gtx.Dimension, gtx.Dimension],
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
     ):
@@ -624,10 +622,10 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
 
 
 def as_sparse_field(
-    target_dims: tuple[HorizontalD, SparseD],
-    data: Sequence[tuple[gtx.Field[gtx.Dims[HorizontalD], state_utils.ScalarType], ...]],
+    target_dims: tuple[gtx.Dimension, gtx.Dimension],
+    data: Sequence[tuple[gtx.Field[gtx.Dims[gtx.Dimension], state_utils.ScalarType], ...]],
     backend: gtx_backend.Backend | None = None,
-) -> state_utils.GTXFieldType:
+) -> Sequence[state_utils.GTXFieldType]:
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
     assert target_dims[1].kind == gtx.DimensionKind.LOCAL

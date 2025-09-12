@@ -520,7 +520,7 @@ class ProgramFieldProvider(FieldProvider):
     def __call__(
         self,
         field_name: str,
-        factory: FieldSource,
+        factory: FieldSource | None,
         backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
     ):
