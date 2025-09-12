@@ -18,7 +18,7 @@ from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import base as base_grid, icon, simple as simple_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import definitions, grid_utils
-
+import icon4py.model.common.constants as constants
 
 DEFAULT_GRID: Final[str] = "simple"
 DEFAULT_NUM_LEVELS: Final[int] = (
@@ -62,33 +62,6 @@ def _get_grid_from_preset(
             ).grid
         case _:
             return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
-
-
-def construct_dummy_decomposition_info(
-    grid: icon.IconGrid,
-    backend: gtx_backend.Backend | None = None,
-) -> decomposition_defs.DecompositionInfo:
-    """
-    A public helper function to construct a dummy decomposition info object for test cases
-    refactored from grid_utils.py
-    It can be removed once the grid manager returns the decomposition info
-    """
-
-    on_gpu = device_utils.is_cupy_device(backend)
-    xp = data_alloc.array_ns(on_gpu)
-
-    def _add_dimension(dim: gtx.Dimension) -> None:
-        indices = data_alloc.index_field(grid, dim, backend=backend)
-        owner_mask = xp.ones((grid.size[dim],), dtype=bool)
-        decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
-
-    decomposition_info = decomposition_defs.DecompositionInfo(klevels=grid.num_levels)
-    _add_dimension(dims.EdgeDim)
-    _add_dimension(dims.VertexDim)
-    _add_dimension(dims.CellDim)
-
-    return decomposition_info
-
 
 @pytest.fixture(scope="session")
 def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) -> base_grid.Grid:
@@ -141,7 +114,6 @@ def vertical_grid_params(
         "stretch_factor": stretch_factor,
         "damping_height": damping_height,
     }
-
 
 @pytest.fixture
 def metrics_factory_params(

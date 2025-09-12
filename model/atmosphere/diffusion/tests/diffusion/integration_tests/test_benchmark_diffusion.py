@@ -6,10 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
-from typing import Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+if TYPE_CHECKING:
+      import gt4py.next.typing as gtx_typing
 from icon4py.model.atmosphere.diffusion import diffusion
 import icon4py.model.common.dimension as dims
 from icon4py.model.common.grid import geometry as grid_geometry
@@ -25,7 +26,7 @@ from icon4py.model.common.metrics import metrics_attributes
 from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decomposition_info
+from icon4py.model.testing.grid_utils import _construct_dummy_decomposition_info
 from icon4py.model.testing import definitions
 from icon4py.model.testing import grid_utils
 from ..fixtures import *
@@ -35,7 +36,7 @@ from ..fixtures import *
 @pytest.mark.benchmark(
     group="diffusion_benchmark",
 )
-@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01])
+@pytest.mark.parametrize("grid", [definitions.Grids.R19_B07_MCH_LOCAL])
 def test_run_diffusion_benchmark(
     grid: Any,
     vertical_grid_params: Dict[str, float],
@@ -73,7 +74,7 @@ def test_run_diffusion_benchmark(
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
-    decomposition_info = construct_dummy_decomposition_info(mesh, backend)
+    decomposition_info = _construct_dummy_decomposition_info(mesh, backend)
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
