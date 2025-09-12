@@ -361,12 +361,18 @@ def test_cartesian_centers_edge(
     assert y.ndarray.shape == (grid.num_edges,)
     assert z.ndarray.shape == (grid.num_edges,)
 
-    # those are coordinates on the unit sphere for the icosahedral grid: hence
-    # norm should be 1
-    if grid.geometry_type is base.GeometryType.ICOSAHEDRON:
-        norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
-        math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
-        assert test_utils.dallclose(norm.asnumpy(), 1.0)
+    match grid.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            # those are coordinates on the unit sphere: hence norm should be 1
+            norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
+            math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
+            assert test_utils.dallclose(norm.asnumpy(), 1.0)
+        case base.GeometryType.TORUS:
+            assert all(x.asnumpy() >= 0.0)
+            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(y.asnumpy() >= 0.0)
+            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(z.asnumpy() == 0.0)
 
 
 @pytest.mark.datatest
@@ -382,12 +388,18 @@ def test_cartesian_centers_cell(
     assert y.ndarray.shape == (grid.num_cells,)
     assert z.ndarray.shape == (grid.num_cells,)
 
-    # those are coordinates on the unit sphere for the icosahedral grid: hence
-    # norm should be 1
-    if grid.geometry_type is base.GeometryType.ICOSAHEDRON:
-        norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
-        math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
-        assert test_utils.dallclose(norm.asnumpy(), 1.0)
+    match grid.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            # those are coordinates on the unit sphere: hence norm should be 1
+            norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
+            math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
+            assert test_utils.dallclose(norm.asnumpy(), 1.0)
+        case base.GeometryType.TORUS:
+            assert all(x.asnumpy() >= 0.0)
+            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(y.asnumpy() >= 0.0)
+            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(z.asnumpy() == 0.0)
 
 
 @pytest.mark.datatest
@@ -401,12 +413,18 @@ def test_vertex(backend: gtx_typing.Backend, experiment: definitions.Experiment)
     assert y.ndarray.shape == (grid.num_vertices,)
     assert z.ndarray.shape == (grid.num_vertices,)
 
-    # those are coordinates on the unit sphere for the icosahedral grid: hence
-    # norm should be 1
-    if grid.geometry_type is base.GeometryType.ICOSAHEDRON:
-        norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, backend=backend)
-        math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
-        assert test_utils.dallclose(norm.asnumpy(), 1.0)
+    match grid.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            # those are coordinates on the unit sphere: hence norm should be 1
+            norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
+            math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
+            assert test_utils.dallclose(norm.asnumpy(), 1.0)
+        case base.GeometryType.TORUS:
+            assert all(x.asnumpy() >= 0.0)
+            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(y.asnumpy() >= 0.0)
+            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(z.asnumpy() == 0.0)
 
 
 def test_sparse_fields_creator() -> None:
