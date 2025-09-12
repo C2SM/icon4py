@@ -571,50 +571,28 @@ def compute_wgtfac_e(
         },
     )
 
-
-@gtx.field_operator
-def _compute_flat_idx(
-    z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    k_lev: fa.KField[gtx.int32],
-) -> fa.EdgeKField[gtx.int32]:
-    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
+def compute_flat_idx(
+    z_mc: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    k_lev: data_alloc.NDArray,
+    array_ns: ModuleType = np
+) -> data_alloc.NDArray:
+    connectivities: dict[gtx.Dimension, np.ndarray]
+    e2c = connectivities[dims.E2CDim]
+    coeff_ = np.expand_dims(c_lin_e, axis=-1)
+    z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
     z_ifc_e_0 = z_ifc(E2C[0])
     z_ifc_e_k_0 = z_ifc_e_0(Koff[1])
     z_ifc_e_1 = z_ifc(E2C[1])
     z_ifc_e_k_1 = z_ifc_e_1(Koff[1])
-    flat_idx = where(
+    flat_idx = array_ns.where(
         (z_me <= z_ifc_e_0) & (z_me >= z_ifc_e_k_0) & (z_me <= z_ifc_e_1) & (z_me >= z_ifc_e_k_1),
         k_lev,
         0,
     )
     return flat_idx
 
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_flat_idx(
-    z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    k_lev: fa.KField[int32],
-    flat_idx: fa.EdgeKField[int32],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _compute_flat_idx(
-        z_mc=z_mc,
-        c_lin_e=c_lin_e,
-        z_ifc=z_ifc,
-        k_lev=k_lev,
-        out=flat_idx,
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
 
 
 def compute_max_index(
@@ -1008,7 +986,7 @@ def _compute_z_ifc_off_koff(
 
 
 @gtx.field_operator
-def _compute_theta_exner_ref_mc(
+def _compute_theta_exner_rho_ref_mc(
     z_mc: fa.CellKField[wpfloat],
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
@@ -1028,16 +1006,72 @@ def _compute_theta_exner_ref_mc(
     )
     exner_ref_mc = (z_aux1 / p0ref) ** rd_o_cpd
     z_temp = (t0sl_bg - del_t_bg) + del_t_bg * exp(-z_mc / h_scal_bg)
+    rho_ref_mc = z_aux1 / (rd * z_temp)
     theta_ref_mc = z_temp / exner_ref_mc
-    return exner_ref_mc, theta_ref_mc
+    return exner_ref_mc, theta_ref_mc, rho_ref_mc
+
+@gtx.field_operator
+def _compute_theta_rho_ref_me(
+    z_mc: fa.CellKField[wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    grav: wpfloat,
+    rd: wpfloat,
+    p0sl_bg: wpfloat,
+    rd_o_cpd: wpfloat,
+    p0ref: wpfloat,
+)-> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
+    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
+    z_aux1 = p0sl_bg * exp(
+        -grav
+        / rd
+        * h_scal_bg
+        / (t0sl_bg - del_t_bg)
+        * log((exp(z_me / h_scal_bg) * (t0sl_bg - del_t_bg) + del_t_bg) / t0sl_bg)
+    )
+    z_temp = (t0sl_bg - del_t_bg) + del_t_bg * exp(-z_me / h_scal_bg)
+    rho_ref_me = z_aux1 / (rd * z_temp)
+    exner_ref_me = (z_aux1 / p0ref) ** rd_o_cpd
+    theta_ref_me = z_temp / exner_ref_me
+    return rho_ref_me, theta_ref_me
+
+@gtx.field_operator
+def _compute_theta_d_exner_dz_ref_ic(
+    z_ifc: fa.CellKField[wpfloat],
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    grav: wpfloat,
+    cpd: wpfloat,
+    rd: wpfloat,
+    p0sl_bg: wpfloat,
+    rd_o_cpd: wpfloat,
+    p0ref: wpfloat,
+):
+    z_aux1 = p0sl_bg * exp(
+        -grav
+        / rd
+        * h_scal_bg
+        / (t0sl_bg - del_t_bg)
+        * log((exp(z_ifc / h_scal_bg) * (t0sl_bg - del_t_bg) + del_t_bg) / t0sl_bg)
+    )
+    z_help = (z_aux1 / p0ref) ** rd_o_cpd
+    z_temp = (t0sl_bg - del_t_bg) + del_t_bg * exp(-z_ifc / h_scal_bg)
+    z_aux2 = z_aux1 / (rd * z_temp)
+    theta_ref_ic = z_temp / z_help
+    d_exner_dz_ref_ic = - grav/cpd/theta_ref_ic
+    return theta_ref_ic, d_exner_dz_ref_ic
 
 
 # TODO @halungge: duplicate program - see reference_atmosphere.py
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_theta_exner_ref_mc(
+def compute_theta_exner_rho_ref_mc(
     z_mc: fa.CellKField[wpfloat],
     exner_ref_mc: fa.CellKField[wpfloat],
     theta_ref_mc: fa.CellKField[wpfloat],
+    rho_ref_mc: fa.CellKField[wpfloat],
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
     h_scal_bg: wpfloat,
@@ -1051,7 +1085,7 @@ def compute_theta_exner_ref_mc(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_theta_exner_ref_mc(
+    _compute_theta_exner_rho_ref_mc(
         z_mc=z_mc,
         t0sl_bg=t0sl_bg,
         del_t_bg=del_t_bg,
@@ -1061,7 +1095,81 @@ def compute_theta_exner_ref_mc(
         p0sl_bg=p0sl_bg,
         rd_o_cpd=rd_o_cpd,
         p0ref=p0ref,
-        out=(exner_ref_mc, theta_ref_mc),
+        out=(exner_ref_mc, theta_ref_mc, rho_ref_mc),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_theta_rho_ref_me(
+    z_mc: fa.CellKField[wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+    rho_ref_me: fa.EdgeKField[wpfloat],
+    theta_ref_me: fa.EdgeKField[wpfloat],
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    grav: wpfloat,
+    rd: wpfloat,
+    p0sl_bg: wpfloat,
+    rd_o_cpd: wpfloat,
+    p0ref: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_theta_rho_ref_me(
+        z_mc=z_mc,
+        c_lin_e = c_lin_e,
+        t0sl_bg=t0sl_bg,
+        del_t_bg=del_t_bg,
+        h_scal_bg=h_scal_bg,
+        grav=grav,
+        rd=rd,
+        p0sl_bg=p0sl_bg,
+        rd_o_cpd=rd_o_cpd,
+        p0ref=p0ref,
+        out=(rho_ref_me, theta_ref_me),
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_theta_d_exner_dz_ref_ic(
+    z_ifc: fa.CellKField[wpfloat],
+    d_exner_dz_ref_ic: fa.CellKField[wpfloat],
+    theta_ref_ic: fa.CellKField[wpfloat],
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    grav: wpfloat,
+    rd: wpfloat,
+    cpd: wpfloat,
+    p0sl_bg: wpfloat,
+    rd_o_cpd: wpfloat,
+    p0ref: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_theta_d_exner_dz_ref_ic(
+        z_ifc=z_ifc,
+        t0sl_bg=t0sl_bg,
+        del_t_bg=del_t_bg,
+        h_scal_bg=h_scal_bg,
+        grav=grav,
+        cpd = cpd,
+        rd=rd,
+        p0sl_bg=p0sl_bg,
+        rd_o_cpd=rd_o_cpd,
+        p0ref=p0ref,
+        out=(theta_ref_ic, d_exner_dz_ref_ic),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

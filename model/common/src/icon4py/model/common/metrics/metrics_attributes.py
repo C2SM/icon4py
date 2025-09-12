@@ -28,6 +28,11 @@ COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
 COEFF2_DWDZ: Final[str] = "coeff2_dwdz"
 EXNER_REF_MC: Final[str] = "exner_ref_mc"
 THETA_REF_MC: Final[str] = "theta_ref_mc"
+THETA_REF_IC: Final[str] = "theta_ref_ic"
+THETA_REF_ME: Final[str] = "theta_ref_me"
+RHO_REF_MC: Final[str] = "rho_ref_mc"
+RHO_REF_ME: Final[str] = "rho_ref_me"
+D_EXNER_DZ_REF_IC: Final[str] = "d_exner_dz_ref_ic"
 D2DEXDZ2_FAC1_MC: Final[str] = "d2dexdz2_fac1_mc"
 D2DEXDZ2_FAC2_MC: Final[str] = "d2dexdz2_fac2_mc"
 VERT_OUT: Final[str] = "vert_out"
@@ -51,6 +56,7 @@ MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
 BDY_HALO_C: Final[str] = "bdy_halo_c"
 HORIZONTAL_MASK_FOR_3D_DIVDAMP: Final[str] = "horizontal_mask_for_3d_divdamp"
 ZDIFF_GRADP: Final[str] = "zdiff_gradp"
+VERTOFFSET_GRADP: Final[str] = "vertoffset_gradp"
 COEFF_GRADEKIN: Final[str] = "coeff_gradekin"
 WGTFACQ_C: Final[str] = "weighting_factor_for_quadratic_interpolation_to_cell_surface"
 WGTFACQ_E: Final[str] = "weighting_factor_for_quadratic_interpolation_to_edge_center"
@@ -161,6 +167,46 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="theta_ref_mc",
+        dtype=ta.wpfloat,
+    ),
+    RHO_REF_MC: dict(
+        standard_name=RHO_REF_MC,
+        long_name="rho_ref_mc",
+        units="",
+        dims=(dims.CellDim, dims.KDim),
+        icon_var_name="rho_ref_mc",
+        dtype=ta.wpfloat,
+    ),
+    THETA_REF_IC: dict(
+        standard_name=THETA_REF_IC,
+        long_name="theta_ref_ic",
+        units="",
+        dims=(dims.CellDim, dims.KHalfDim),
+        icon_var_name="theta_ref_ic",
+        dtype=ta.wpfloat,
+    ),
+    D_EXNER_DZ_REF_IC: dict(
+        standard_name=D_EXNER_DZ_REF_IC,
+        long_name="d_exner_dz_ref_ic",
+        units="",
+        dims=(dims.CellDim, dims.KHalfDim),
+        icon_var_name="d_exner_dz_ref_ic",
+        dtype=ta.wpfloat,
+    ),
+    THETA_REF_ME: dict(
+        standard_name=THETA_REF_ME,
+        long_name="theta_ref_me",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="theta_ref_me",
+        dtype=ta.wpfloat,
+    ),
+    RHO_REF_ME: dict(
+        standard_name=RHO_REF_ME,
+        long_name="rho_ref_me",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="rho_ref_me",
         dtype=ta.wpfloat,
     ),
     D2DEXDZ2_FAC1_MC: dict(
@@ -315,6 +361,14 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="zdiff_gradp",
         dtype=ta.wpfloat,
     ),
+    VERTOFFSET_GRADP: dict(
+    standard_name=VERTOFFSET_GRADP,
+    long_name="vertoffset_gradp",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="vertoffset_gradp",
+        dtype=ta.wpfloat,
+    ),
     COEFF_GRADEKIN: dict(
         standard_name=COEFF_GRADEKIN,
         long_name="coeff_gradekin",
@@ -409,7 +463,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
         icon_var_name="zd_vertoffset_dsl",
-        dtype=ta.wpfloat,
+        dtype=gtx.int32,
     ),
     CELL_HEIGHT_ON_HALF_LEVEL: dict(
         standard_name=CELL_HEIGHT_ON_HALF_LEVEL,
