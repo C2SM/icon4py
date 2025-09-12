@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import functools
+from types import ModuleType
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -289,9 +291,9 @@ def test_composite_field_source_raises_upon_get_unknown_field(
         assert "not provided by source " in err.value  # type: ignore[operator]
 
 
-def reduce_scalar_min(ar: data_alloc.NDArray) -> gtx.float:
+def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:
     while ar.ndim > 0:
-        ar = np.min(ar)
+        ar = xp.min(ar)
     return ar.item()
 
 
@@ -301,8 +303,9 @@ def test_compute_scalar_value_from_numpy_provider(
     backend: gtx_typing.Backend,
 ) -> None:
     value_ref = np.min(np.min(metrics_savepoint.z_ifc()))
+    sample_func = functools.partial(reduce_scalar_min, xp = data_alloc.import_array_ns(backend))
     provider = factory.NumpyFieldProvider(
-        func=reduce_scalar_min,
+        func=sample_func,
         deps={"ar": "height_coordinate"},
         domain=(),
         fields=("minimal_height",),
