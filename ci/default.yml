@@ -39,11 +39,11 @@ test_tools_datatests_aarch64:
   rules:
     - if: $BACKEND == 'dace_gpu' && $COMPONENT != 'diffusion' && $COMPONENT != 'dycore'
       when: never  # run only in daily CI, to save compute resources
-    - if: $COMPONENT == 'common' && $LEVEL == 'integration' && $BACKEND == 'gtfn_gpu'
+    - if: $COMPONENT == 'common' && $LEVEL == 'integration'
       variables:
         NUM_PROCESSES: 2
         SLURM_TIMELIMIT: '00:30:00'
-    - if: $COMPONENT == 'dycore' && $BACKEND == 'dace_gpu'
+    - if: $BACKEND == 'dace_gpu'
       variables:
         SLURM_TIMELIMIT: '01:00:00'
     - if: $BACKEND == 'embedded'
