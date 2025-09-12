@@ -19,10 +19,7 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
 
 
 def customize_backend(
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescription
-    | None,
+    backend: model_backends.DeviceType | model_backends.BackendDescription
 ):
     if isinstance(backend, model_backends.DeviceType):
         backend = {"device": backend}
