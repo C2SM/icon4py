@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -173,8 +173,8 @@ dependencies = [
     { name = "packaging" },
     { name = "pathspec" },
     { name = "platformdirs" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d8/0d/cc2fb42b8c50d80143221515dd7e4766995bd07c56c9a3ed30baf080b6dc/black-24.10.0.tar.gz", hash = "sha256:846ea64c97afe3bc677b761787993be4991810ecc7a4a937816dd6bddedc4875", size = 645813, upload-time = "2024-10-07T19:20:50.361Z" }
 wheels = [
@@ -587,7 +587,7 @@ name = "click"
 version = "8.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/96/d3/f04c7bfcf5c1862a2a5b845c6b2b360488cf47af55dfa79c98f6a6bf98b5/click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de", size = 336121, upload-time = "2023-08-17T17:29:11.868Z" }
 wheels = [
@@ -1428,8 +1428,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.8"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.9"
+source = { registry = "https://test.pypi.org/simple/" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1460,9 +1460,9 @@ dependencies = [
     { name = "versioningit" },
     { name = "xxhash" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/45/83/0d546c3b8987ddb771a0a9780bc74688bdd2f702e925ea30da667506b72a/gt4py-1.0.8.tar.gz", hash = "sha256:1dd686836377dbcbd4d0c20ba4757fdb4ed605d3468c548a5dabb52aed5d3047", size = 723685, upload-time = "2025-09-04T07:22:23.997Z" }
+sdist = { url = "https://test-files.pythonhosted.org/packages/e9/8c/4769d12a87f6d6b2f0f0ed4856e0df40522d6d8fadf9433467c5ac017667/gt4py-1.0.9.tar.gz", hash = "sha256:e4c164fbd44ecdeac43a6ee67f354c46434e6c5962cef01d9c421337d5a7ef00", size = 724558, upload-time = "2025-09-12T11:23:01.289Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/6d/5b1119125f3a76f06160a745ff1e714440fa8dcc1123e637977b51f944d1/gt4py-1.0.8-py3-none-any.whl", hash = "sha256:4ad705ddbbaee8aed1a7a38748314ee6223b93ef705721c29bd9730eec3ac6c5", size = 924753, upload-time = "2025-09-04T07:22:22.23Z" },
+    { url = "https://test-files.pythonhosted.org/packages/fa/a1/8c3d74ac2e5b32b07124a154c70e04c8f16cb8e9541e068c193cfb559c8d/gt4py-1.0.9-py3-none-any.whl", hash = "sha256:158dc21dadec4594df1e653c62381a7293052f19ce1af74ac12fffff2363c7ff", size = 925459, upload-time = "2025-09-12T11:22:58.664Z" },
 ]
 
 [package.optional-dependencies]
@@ -1805,7 +1805,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.8" },
+    { name = "gt4py", specifier = "==1.0.9", index = "https://test.pypi.org/simple/" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1822,7 +1822,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.8" },
+    { name = "gt4py", specifier = "==1.0.9", index = "https://test.pypi.org/simple/" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1839,7 +1839,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.8" },
+    { name = "gt4py", specifier = "==1.0.9", index = "https://test.pypi.org/simple/" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1856,7 +1856,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.8" },
+    { name = "gt4py", specifier = "==1.0.9", index = "https://test.pypi.org/simple/" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1873,7 +1873,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.0.8" },
+    { name = "gt4py", specifier = "==1.0.9", index = "https://test.pypi.org/simple/" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1943,10 +1943,10 @@ requires-dist = [
     { name = "dace", marker = "extra == 'dace'", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_08_28" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", specifier = "==1.0.8" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
-    { name = "gt4py", extras = ["next"], marker = "extra == 'dace'" },
+    { name = "gt4py", specifier = "==1.0.9", index = "https://test.pypi.org/simple/" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", index = "https://test.pypi.org/simple/" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", index = "https://test.pypi.org/simple/" },
+    { name = "gt4py", extras = ["next"], marker = "extra == 'dace'", index = "https://test.pypi.org/simple/" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["dace", "distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1982,7 +1982,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.0.8" },
+    { name = "gt4py", specifier = "==1.0.9", index = "https://test.pypi.org/simple/" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2010,7 +2010,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", specifier = "==1.0.8" },
+    { name = "gt4py", specifier = "==1.0.9", index = "https://test.pypi.org/simple/" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2056,9 +2056,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", specifier = "==1.0.8" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", specifier = "==1.0.9", index = "https://test.pypi.org/simple/" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", index = "https://test.pypi.org/simple/" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", index = "https://test.pypi.org/simple/" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
@@ -4776,7 +4776,7 @@ version = "3.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5c/9b/941647e9e3616b5da7bbc4601ed9920f44a886704100fa8151406c07c149/versioningit-3.1.2.tar.gz", hash = "sha256:4db83ed99f56b07d83940bee3445ca46ca120d13b6b304cdb5fb44e5aa4edec0", size = 213047, upload-time = "2024-07-20T12:41:07.927Z" }
 wheels = [
