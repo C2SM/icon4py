@@ -393,13 +393,21 @@ def test_run_timeloop_single_step(
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment",
+    "experiment, experiment_type",
     [
-        definitions.Experiments.MCH_CH_R04B09,
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            driver_init.ExperimentType.ANY.value,
+        ),
+        (
+            definitions.Experiments.GAUSS3D,
+            driver_init.ExperimentType.GAUSS3D.value,
+        ),
     ],
 )
 def test_driver(
     experiment,
+    experiment_type,
     *,
     data_provider,
     ranked_data_path,
@@ -430,6 +438,8 @@ def test_driver(
     icon4py_driver.icon4py_driver(
         [
             str(data_path),
+            "--experiment_type",
+            experiment_type,
             "--grid_file",
             str(gm._file_name),
             "--icon4py_driver_backend",
