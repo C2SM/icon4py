@@ -119,12 +119,20 @@ class GridManager:
     def __call__(self, backend: gtx_typing.Backend | None, keep_skip_values: bool):
         if not self._reader:
             self.open()
-        self._geometry = self._read_geometry_fields(backend)
-        self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
-        self._coordinates = self._read_coordinates(backend)
+
+        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
+            geometry_type = base.GeometryType(geometry_type)
+
+        self._geometry = self._read_geometry_fields(backend, geometry_type)
+        self._grid = self._construct_grid(
+            backend=backend, with_skip_values=keep_skip_values, geometry_type=geometry_type
+        )
+        self._coordinates = self._read_coordinates(backend, geometry_type)
         self.close()
 
-    def _read_coordinates(self, backend: gtx_typing.Backend | None) -> CoordinateDict:
+    def _read_coordinates(
+        self, backend: gtx_typing.Backend | None, geometry_type: base.GeometryType | None
+    ) -> CoordinateDict:
         coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -169,10 +177,6 @@ class GridManager:
                 ),
             },
         }
-
-        # TODO(msimberg): Don't read the geometry multiple times, set it up once.
-        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
-            geometry_type = base.GeometryType(geometry_type)
 
         if geometry_type == base.GeometryType.TORUS:
             coordinates[dims.CellDim]["x"] = gtx.as_field(
@@ -232,7 +236,9 @@ class GridManager:
 
         return coordinates
 
-    def _read_geometry_fields(self, backend: gtx_typing.Backend | None):
+    def _read_geometry_fields(
+        self, backend: gtx_typing.Backend | None, geometry_type: base.GeometryType | None
+    ) -> GeometryDict:
         geometry_fields = {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
@@ -288,10 +294,6 @@ class GridManager:
                 allocator=backend,
             ),
         }
-
-        # TODO(msimberg): Don't read the geometry multiple times, set it up once.
-        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
-            geometry_type = base.GeometryType(geometry_type)
 
         if geometry_type == base.GeometryType.TORUS:
             geometry_fields[gridfile.GeometryName.EDGE_NORMAL_X.value] = gtx.as_field(
@@ -423,7 +425,10 @@ class GridManager:
         return self._coordinates
 
     def _construct_grid(
-        self, backend: gtx_typing.Backend | None, with_skip_values: bool
+        self,
+        backend: gtx_typing.Backend | None,
+        with_skip_values: bool,
+        geometry_type: base.GeometryType | None,
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -443,8 +448,6 @@ class GridManager:
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
-            geometry_type = base.GeometryType(geometry_type)
         sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
