@@ -11,6 +11,7 @@ import pytest
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -51,6 +52,7 @@ from ..utils import (
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [

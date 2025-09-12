@@ -136,7 +136,7 @@ class FieldSource(GridProvider, Protocol):
     #      there are fields which need to be computed on a specific backend, which can be different from the
     #      general run backend
     @property
-    def backend(self) -> gtx_typing.Backend: ...
+    def backend(self) -> gtx_typing.Backend | None: ...
 
     def _backend_name(self) -> str:
         return "embedded" if self.backend is None else self.backend.name
@@ -144,7 +144,7 @@ class FieldSource(GridProvider, Protocol):
     @overload
     def get(
         self, field_name: str, type_: Literal[RetrievalType.FIELD] = RetrievalType.FIELD
-    ) -> state_utils.FieldType: ...  # TODO(havogt): FieldType is not strict enough
+    ) -> state_utils.GTXFieldType: ...
 
     @overload
     def get(self, field_name: str, type_: Literal[RetrievalType.DATA_ARRAY]) -> xa.DataArray: ...
@@ -156,7 +156,7 @@ class FieldSource(GridProvider, Protocol):
 
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
-    ) -> state_utils.FieldType | xa.DataArray | model.FieldMetaData:
+    ) -> state_utils.GTXFieldType | xa.DataArray | model.FieldMetaData:
         """
         Get a field or its metadata from the factory.
 
@@ -227,7 +227,7 @@ class CompositeSource(FieldSource):
         return self._vertical_grid
 
     @property
-    def grid(self) -> icon_grid.IconGrid | None:
+    def grid(self) -> icon_grid.IconGrid:
         return self._grid
 
 
@@ -270,7 +270,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
     def __init__(
         self,
         func: gtx_typing.FieldOperator,
-        domain: tuple[gtx.Dimension, ...],
+        domain: dict[gtx.Dimension, tuple[h_grid.Domain, h_grid.Domain]],
         fields: dict[str, str],  # keyword arg to (field_operator, field_name)
         deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
         params: dict[str, state_utils.ScalarType]

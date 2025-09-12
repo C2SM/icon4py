@@ -11,7 +11,7 @@ import os
 import click.testing as click_testing
 import pytest
 
-import icon4py.model.common.type_alias as type_alias
+from icon4py.model.common import type_alias
 from icon4py.model.testing.fixtures.datatest import (
     damping_height,
     data_provider,
@@ -51,7 +51,7 @@ except KeyError:
     from icon4py.model.testing.pytest_hooks import *  # noqa: F403
 
 
-__all__ = [
+__all__ = [  # noqa: RUF022
     # local:
     "cli",
     "test_temp_dir",
@@ -65,8 +65,6 @@ __all__ = [
     "interpolation_savepoint",
     "istep_exit",
     "istep_init",
-    "substep_init",
-    "substep_exit",
     "linit",
     "lowest_layer_thickness",
     "metrics_savepoint",
@@ -82,6 +80,8 @@ __all__ = [
     "step_date_exit",
     "step_date_init",
     "stretch_factor",
+    "substep_exit",
+    "substep_init",
 ]
 
 
