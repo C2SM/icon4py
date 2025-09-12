@@ -79,24 +79,26 @@ class GridShape:
 @dataclasses.dataclass
 class GlobalGridParams:
     grid_shape: Final[GridShape | None] = None
-    _num_cells: int | None = None
-    _mean_cell_area: float | None = None
     radius: float = constants.EARTH_RADIUS
+    num_cells: int
+    mean_cell_area: float
 
-    @classmethod
-    def from_mean_cell_area(
-        cls,
-        mean_cell_area: float,
+    def __init__(
+        self,
+        *,
         grid_shape: GridShape | None = None,
-        num_cells: int | None = None,
         radius: float = constants.EARTH_RADIUS,
-    ):
-        return cls(
-            grid_shape,
-            num_cells,
-            mean_cell_area,
-            radius,
-        )
+        num_cells: int | None = None,
+        mean_cell_area: float | None = None,
+    ) -> None:
+        self.grid_shape = grid_shape
+        self.radius = radius
+
+        if num_cells is not None:
+            self.num_cells = num_cells
+
+        if mean_cell_area is not None:
+            self.mean_cell_area = mean_cell_area
 
     @property
     def geometry_type(self) -> base.GeometryType | None:
@@ -104,17 +106,14 @@ class GlobalGridParams:
 
     @functools.cached_property
     def num_cells(self) -> int:
-        if self._num_cells is None:
-            match self.geometry_type:
-                case base.GeometryType.ICOSAHEDRON:
-                    assert self.grid_shape.subdivision is not None
-                    return compute_icosahedron_num_cells(self.grid_shape.subdivision)
-                case base.GeometryType.TORUS:
-                    raise NotImplementedError("TODO : lookup torus cell number computation")
-                case _:
-                    raise ValueError(f"Unknown geometry type {self.geometry_type}")
-
-        return self._num_cells
+        match self.geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                assert self.grid_shape.subdivision is not None
+                return compute_icosahedron_num_cells(self.grid_shape.subdivision)
+            case base.GeometryType.TORUS:
+                raise NotImplementedError("TODO : lookup torus cell number computation")
+            case _:
+                raise ValueError(f"Unknown geometry type {self.geometry_type}")
 
     @functools.cached_property
     def characteristic_length(self) -> float:
@@ -122,18 +121,15 @@ class GlobalGridParams:
 
     @functools.cached_property
     def mean_cell_area(self) -> float:
-        if self._mean_cell_area is None:
-            match self.geometry_type:
-                case base.GeometryType.ICOSAHEDRON:
-                    return compute_mean_cell_area_for_sphere(self.radius, self.num_cells)
-                case base.GeometryType.TORUS:
-                    raise NotImplementedError(
-                        f"mean_cell_area not implemented for {self.geometry_type}"
-                    )
-                case _:
-                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
-
-        return self._mean_cell_area
+        match self.geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                return compute_mean_cell_area_for_sphere(self.radius, self.num_cells)
+            case base.GeometryType.TORUS:
+                raise NotImplementedError(
+                    f"mean_cell_area not implemented for {self.geometry_type}"
+                )
+            case _:
+                raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
 
 
 def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:

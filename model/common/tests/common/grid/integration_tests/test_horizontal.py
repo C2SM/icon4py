@@ -5,20 +5,32 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import numpy as np
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 from gt4py import next as gtx
 
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.testing import datatest_utils as dt_utils
+from icon4py.model.testing import definitions
+from icon4py.model.testing.fixtures import experiment
+
+from ...fixtures import *  # noqa: F403
 from .. import utils
-from ...fixtures import *  # noqa: F401, F403
+
+
+if TYPE_CHECKING:
+    import numpy as np
+
+    from icon4py.model.testing import serialbox as sb
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_map_icon_start_end_index(experiment, dim, grid_savepoint):
+def test_map_icon_start_end_index(
+    experiment: definitions.Experiment, dim: gtx.Dimension, grid_savepoint: sb.IconGridSavepoint
+) -> None:
     end_indices = grid_savepoint.end_index()
     start_indices = grid_savepoint.start_index()
     start_map, end_map = h_grid.get_start_end_idx_from_icon_arrays(dim, start_indices, end_indices)
@@ -26,7 +38,7 @@ def test_map_icon_start_end_index(experiment, dim, grid_savepoint):
     _assert_domain_map(end_map, end_indices[dim])
 
 
-def _assert_domain_map(index_map: dict[h_grid.Domain, gtx.int32], index_array: np.ndarray):
+def _assert_domain_map(index_map: dict[h_grid.Domain, gtx.int32], index_array: np.ndarray) -> None:  # type: ignore  [name-defined] # noqa: PLR0912
     same_index = False
     for d, index in index_map.items():
         if d.zone == h_grid.Zone.INTERIOR:

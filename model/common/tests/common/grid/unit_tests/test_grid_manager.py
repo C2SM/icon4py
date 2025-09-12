@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
+
 import logging
 import typing
 
@@ -17,20 +18,17 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
     grid_manager as gm,
+    grid_refinement as refin,
     gridfile,
     horizontal as h_grid,
-    grid_refinement as refin,
     vertical as v_grid,
 )
-from icon4py.model.testing import (
-    datatest_utils as dt_utils,
-    test_utils,
-    definitions,
-)
+from icon4py.model.testing import datatest_utils as dt_utils, definitions, test_utils
 
 
 if typing.TYPE_CHECKING:
     import netCDF4
+
     from icon4py.model.testing import serialbox
 
 try:
@@ -43,6 +41,7 @@ from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     processor_props,
     ranked_data_path,
@@ -55,12 +54,6 @@ MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 
 ZERO_BASE = gm.ToZeroBasedIndexTransformation()
-
-
-# TODO(havogt): use everywhere
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
-    return request.param
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -151,7 +144,7 @@ def _reset_invalid_index(index_array: np.ndarray) -> None:
 
     """
     for i in range(0, index_array.shape[0]):
-        uq, index = np.unique(index_array[i, :], return_index=True)
+        _, index = np.unique(index_array[i, :], return_index=True)
         index_array[i, max(index) + 1 :] = gridfile.GridFile.INVALID_INDEX
 
 
@@ -327,7 +320,7 @@ def assert_up_to_order(
     reduced_reference = reference_table[start_index:, :]
     for n in range(reduced_table.shape[0]):
         assert np.all(
-            np.in1d(reduced_table[n, :], reduced_reference[n, :])
+            np.isin(reduced_table[n, :], reduced_reference[n, :])
         ), f"values in row {n+start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
 
 

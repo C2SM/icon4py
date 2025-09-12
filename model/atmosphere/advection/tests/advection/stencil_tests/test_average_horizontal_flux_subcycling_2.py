@@ -11,13 +11,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.average_horizontal_flux_subcycling_2 import (
     average_horizontal_flux_subcycling_2,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import stencil_tests
 
 
 class TestAverageHorizontalFluxSubcycling2(stencil_tests.StencilTest):
