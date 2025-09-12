@@ -151,18 +151,21 @@ warn_unused_ignores = true
 # TODO(): fix gtx.int32 export in gt4py
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
-module = '*.stencil_tests.*'
+module = ['*.stencil_tests.*', '*.unit_tests.*']
 
 [[tool.mypy.overrides]]
 ignore_errors = true
 module = [
-  'icon4py.model.testing.fixtures.datatest',
   'icon4py.model.testing.pytest_hooks',
   'icon4py.model.testing.serialbox',
   'icon4py.tools.py2fgen.wrappers.diffusion_wrapper',
   'icon4py.tools.py2fgen.wrappers.dycore_wrapper',
   'icon4py.tools.py2fgen.wrappers.grid_wrapper'
 ]
+
+[[tool.mypy.overrides]]
+disallow_untyped_defs = false
+module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 
 # -- pytest --
 [tool.pytest]
@@ -206,7 +209,6 @@ docstring-code-format = true
 
 [tool.ruff.lint]
 # -- Rules set to be considered --
-exclude = ["**/tests/**"]
 explicit-preview-rules = true
 ignore = [
   'E501',  # [line-too-long]
@@ -281,11 +283,20 @@ max-complexity = 15
 [tool.ruff.lint.per-file-ignores]
 # Avoid messing up conditions in gt4py stencils
 "**/model/**/stencils/*.py" = ["SIM300"]
-# Ignore spurious errors when explicitly importing fixtures in tests.
+# Ignore spurious errors when explicitly importing fixtures in tests (F401, F811).
 # Check: https://github.com/astral-sh/ruff/issues/10662
-"**/tests/**/*_test.py" = ["F401", "F811"]
-"**/tests/**/fixtures.py" = ["F401", "F811"]
-"**/tests/**/test_*.py" = ["F401", "F811"]
+# TODO(havogt): fix error related to PLR0915, PLR0911, TD, RUF012 and remove ignores below
+"**/tests/**/*_test.py" = ["F401", "F811", "PLR0915", "PLR0911", "TD", "RUF012"]
+"**/tests/**/conftest.py" = ["F401", "F811"]
+"**/tests/**/fixtures.py" = [
+  "F401",
+  "F811",
+  "PLR0915",
+  "PLR0911",
+  "TD",
+  "RUF012"
+]
+"**/tests/**/test_*.py" = ["F401", "F811", "PLR0915", "PLR0911", "TD", "RUF012"]
 
 [tool.ruff.lint.pylint]
 max-branches = 12
@@ -307,7 +318,7 @@ url = "https://test.pypi.org/simple/"
 [tool.uv.sources]
 dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_08_28"}
 # ghex = {git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
-gt4py = {git = "https://github.com/edopao/gt4py", branch = "fix_find_constant_symbols"}
+# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
