@@ -358,14 +358,6 @@ class GridManager:
             gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
         )
 
-        # TODO(msimberg): EDGE_LENGTH requires GridGeometry (not just
-        # GeometryDict). GridGeometry requires the IconGrid.  IconGrid requires
-        # GlobalGridParams.  GlobalGridParams requires EDGE_LENGTH. EDGE_LENGTH
-        # requires GridGeometry.
-        # - Option 1: Only use MEAN_EDGE_LENGTH from grid file.
-        # - Option 2: Fix circular dependency.
-        # - Option 3: Use EDGE_LENGTH from grid file to make it available in
-        #   GeometryDict. This is implemented below. Is the field always there?
         edge_lengths = self.geometry[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
         dual_edge_lengths = self.geometry[gridfile.GeometryName.DUAL_EDGE_LENGTH.value].ndarray
         cell_areas = self.geometry[gridfile.GeometryName.CELL_AREA.value].ndarray
@@ -382,9 +374,6 @@ class GridManager:
             radius=sphere_radius,
             domain_length=domain_length,
             domain_height=domain_height,
-            # TODO(msimberg): The above is given for the grid, not derived from
-            # anything. The below can be derived in the worst case, so keep
-            # separate?
             num_cells=num_cells,
             mean_edge_length=mean_edge_length,
             mean_dual_edge_length=mean_dual_edge_length,
