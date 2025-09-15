@@ -23,7 +23,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     vertical as v_grid,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, definitions, test_utils
+from icon4py.model.testing import definitions, test_utils
 
 
 if typing.TYPE_CHECKING:
@@ -384,6 +384,7 @@ def test_grid_manager_eval_c2e2c2e(
     assert grid.get_connectivity("C2E2C2E").asnumpy().shape == (grid.num_cells, 9)
 
 
+# TODO (halungge): check EXCOAIM APE with new serialized data ( standard grid, start_idx/end_idx arrays
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
@@ -397,13 +398,17 @@ def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
 
     for domain in h_grid.get_domains_for_dim(dim):
-        assert grid.start_index(domain) == serialized_grid.start_index(
-            domain
-        ), f"start index wrong for domain {domain}"
-
-        assert grid.end_index(domain) == serialized_grid.end_index(
-            domain
-        ), f"end index wrong for domain {domain}"
+        if not (experiment == definitions.Experiments.EXCLAIM_APE and domain.dim == dims.EdgeDim):
+            # serialized start indices for EdgeDim are all zero
+            assert grid.start_index(domain) == serialized_grid.start_index(
+                domain
+            ), f"start index wrong for domain {domain}"
+        if not grid.limited_area and domain.zone in [h_grid.Zone.END, h_grid.Zone.INTERIOR]:
+            assert grid.end_index(domain) == grid.size[domain.dim]
+        else:
+            assert grid.end_index(domain) == serialized_grid.end_index(
+                domain
+            ), f"end index wrong for domain {domain}"
 
 
 @pytest.mark.datatest
