@@ -25,7 +25,8 @@ test_model_stencils_aarch64:
 .test_model_datatests:
   stage: test
   variables:
-    SLURM_TIMELIMIT: '01:00:00'
+    NUM_PROCESSES: 8
+    SLURM_TIMELIMIT: '00:45:00'
   script:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
