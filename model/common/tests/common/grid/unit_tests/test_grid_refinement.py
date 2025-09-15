@@ -6,16 +6,22 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 import gt4py.next as gtx
-import pytest
+import gt4py.next.typing as gtx_typing
 import numpy as np
+import pytest
+
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import grid_utils, definitions as test_defs
+from icon4py.model.testing import definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures import backend
 
 from .. import utils
+
+
+_FALLBACK_FAIL = (-10, -10)
 
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
@@ -26,7 +32,12 @@ from .. import utils
         (test_defs.Grids.MCH_OPR_R04B07_DOMAIN01, True),
     ],
 )
-def test_is_local_area_grid_for_grid_files(grid_file, expected, dim, backend):
+def test_is_local_area_grid_for_grid_files(
+    grid_file: test_defs.GridDescription,
+    expected: bool,
+    dim: gtx.Dimension,
+    backend: gtx_typing.Backend | None,
+) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend).grid
     xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     refinement_field = grid.refinement_control[dim]
@@ -82,7 +93,9 @@ vertex_bounds: dict[h_grid.Zone, tuple[int, int]] = {
     "dim, expected",
     [(dims.CellDim, cell_bounds), (dims.EdgeDim, edge_bounds), (dims.VertexDim, vertex_bounds)],
 )
-def test_compute_start_index_for_limited_area_grid(dim, expected):
+def test_compute_start_index_for_limited_area_grid(
+    dim: gtx.Dimension, expected: dict[h_grid.Zone, tuple[int, int]]
+) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(
         test_defs.Grids.MCH_OPR_R04B07_DOMAIN01, 1, True, None
     ).grid
@@ -90,13 +103,13 @@ def test_compute_start_index_for_limited_area_grid(dim, expected):
     start_index, end_index = refinement.compute_domain_bounds(dim, refinement_field, array_ns=np)
 
     for d, v in start_index.items():
-        expected_value = expected.get(d.zone)[0]
+        expected_value = expected.get(d.zone, _FALLBACK_FAIL)[0]
         assert (
             v == expected_value
         ), f"Expected start index {expected_value} for domain = {d} , but got {v}"
 
     for d, v in end_index.items():
-        expected_value = expected.get(d.zone)[1]
+        expected_value = expected.get(d.zone, _FALLBACK_FAIL)[1]
         assert (
             v == expected_value
         ), f"Expected end index {expected_value} for domain = {d} , but got {v}"
@@ -104,7 +117,9 @@ def test_compute_start_index_for_limited_area_grid(dim, expected):
 
 @pytest.mark.parametrize("file", (test_defs.Grids.R02B04_GLOBAL,))
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_compute_domain_bounds_for_global_grid(file, dim):
+def test_compute_domain_bounds_for_global_grid(
+    file: test_defs.GridDescription, dim: gtx.Dimension
+) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(file, 1, True, None).grid
     refinement_fields = grid.refinement_control
     start_index, end_index = refinement.compute_domain_bounds(dim, refinement_fields, array_ns=np)
