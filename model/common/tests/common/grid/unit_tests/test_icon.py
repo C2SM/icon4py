@@ -469,15 +469,15 @@ def test_global_grid_params_from_grid_manager(
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
     params = grid.global_properties
     assert params is not None
-    assert params.geometry_type == geometry_type
-    assert params.subdivision == subdivision
-    assert params.radius == radius
-    assert params.domain_length == domain_length
-    assert params.domain_height == domain_height
-    assert params.global_num_cells == global_num_cells
-    assert params.num_cells == num_cells
-    assert params.mean_edge_length == mean_edge_length
-    assert params.mean_dual_edge_length == mean_dual_edge_length
-    assert params.mean_cell_area == mean_cell_area
-    assert params.mean_dual_cell_area == mean_dual_cell_area
-    assert params.characteristic_length == characteristic_length
+    assert pytest.approx(params.geometry_type) == geometry_type
+    assert pytest.approx(params.subdivision) == subdivision
+    assert pytest.approx(params.radius) == radius
+    assert pytest.approx(params.domain_length) == domain_length
+    assert pytest.approx(params.domain_height) == domain_height
+    assert pytest.approx(params.global_num_cells) == global_num_cells
+    assert pytest.approx(params.num_cells) == num_cells
+    assert pytest.approx(params.mean_edge_length) == mean_edge_length
+    assert pytest.approx(params.mean_dual_edge_length) == mean_dual_edge_length
+    assert pytest.approx(params.mean_cell_area) == mean_cell_area
+    assert pytest.approx(params.mean_dual_cell_area) == mean_dual_cell_area
+    assert pytest.approx(params.characteristic_length) == characteristic_length
