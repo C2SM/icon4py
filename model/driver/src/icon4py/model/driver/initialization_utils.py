@@ -11,8 +11,8 @@ import functools
 import logging
 import pathlib
 
-import netCDF4 as nc4
 import gt4py.next.typing as gtx_typing
+import netCDF4 as nc4
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -366,7 +366,7 @@ def read_geometry_fields(
 
 # TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _serial_data_provider(
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     path: pathlib.Path,
     rank: int,
 ) -> sb.IconSerialDataProvider:
@@ -381,7 +381,7 @@ def _serial_data_provider(
 
 # TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _grid_savepoint(
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     path: pathlib.Path,
     grid_file: pathlib.Path,
     rank: int,
