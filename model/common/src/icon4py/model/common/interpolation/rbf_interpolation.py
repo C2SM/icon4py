@@ -161,7 +161,6 @@ def _distance_pairwise(
             raise ValueError(f"Unsupported geometry type: {geometry_type}")
 
 
-# TODO(msimberg): Rename this to something without "arc". It's arc length only for the icosahedron.
 def _distance_vector_matrix(
     geometry_type: base_grid.GeometryType,
     domain_length: ta.wpfloat,
