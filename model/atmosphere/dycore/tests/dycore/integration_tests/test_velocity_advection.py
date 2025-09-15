@@ -630,7 +630,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
     vertical_cfl = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=backend
-    )  # TODO(edopao,havogt): add 'vertical_cfl' to the savepoint
+    )
     skip_compute_predictor_vertical_advection = savepoint_velocity_init.lvn_only()
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
@@ -784,7 +784,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
     vertical_cfl = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=backend
-    )  # TODO(edopao,havogt): add 'vertical_cfl' to the savepoint
+    )
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
