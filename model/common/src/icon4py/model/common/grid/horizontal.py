@@ -115,23 +115,23 @@ class Zone(enum.Enum):
 
 
     ## CellDim
-    | ICON constant or value                | ICON4py Name               |
-    | from mo_impl_constants.f90            |                            |
-    |:------------------------------------- |:-------------------------- |
-    | `min_rlcell_int-3`, `min_rlcell` (-8) | `END`                      |
-    | `min_rlcell_int-3` (-7)               |                            |
-    | `min_rlcell_int-2`, (-6)              | `HALO_LEVEL_2`             |
-    | `min_rlcell_int-1` (-5)               | `HALO`                     |
-    | `min_rlcell_int`(-4)                  | `LOCAL`                    |
-    | (-3)                                  |                            | unused in icon4py (relevant for nesting)
-    | (-2)                                  |                            | unused in icon4py (relevant for nesting)
-    | (-1)                                  |                            | unused in icon4py (relevant for nesting)
-    | `0`                                   | `INTERIOR`                 |
-    | `1`                                   | `LATERAL_BOUNDARY`         |
-    | `2`                                   | `LATERAL_BOUNDARY_LEVEL_2` |
-    | `3`                                   | `LATERAL_BOUNDARY_LEVEL_3` |
-    | `grf_bdywidth_c` (4)                  | `LATERAL_BOUNDARY_LEVEL_4` |
-    | `grf_bdywith_c +1`,max_rlcell (5)     | `NUDGING`                  |
+    | ICON constant or value                |python | ICON4py Name              |
+    | from mo_impl_constants.f90            |index |                            |
+    |:------------------------------------- |:----:|:-------------------------- |
+    | `min_rlcell_int-3`, `min_rlcell` (-8) | 0    | `END`                      |
+    | `min_rlcell_int-3` (-7)               | 1    |                            |
+    | `min_rlcell_int-2`, (-6)              | 2    |`HALO_LEVEL_2`              |
+    | `min_rlcell_int-1` (-5)               | 3    |`HALO`                      |
+    | `min_rlcell_int`(-4)                  | 4    |`LOCAL`                     |
+    | (-3)                                  | 5    |                            | unused in icon4py (relevant for nesting)
+    | (-2)                                  | 6    |                            | unused in icon4py (relevant for nesting)
+    | (-1)                                  | 7    |                            | unused in icon4py (relevant for nesting)
+    | `0`                                   | 8    |`INTERIOR`                  |
+    | `1`                                   | 9    |`LATERAL_BOUNDARY`          |
+    | `2`                                   |10    | `LATERAL_BOUNDARY_LEVEL_2` |
+    | `3`                                   |11    | `LATERAL_BOUNDARY_LEVEL_3` |
+    | `grf_bdywidth_c` (4)                  |12    | `LATERAL_BOUNDARY_LEVEL_4` |
+    | `grf_bdywith_c +1`,max_rlcell (5)     |13    | `NUDGING`                  |
 
 
     Lateral boundary and nudging are only relevant for LAM runs, halo lines only for distributed domains.
@@ -139,53 +139,53 @@ class Zone(enum.Enum):
 
     ## VertexDim
 
-    | ICON constant or value                  | ICON4Py Name               |
-    | from mo_impl_constants.f90              |                            |
-    |:--------------------------------------- |:-------------------------- |
-    | `min_rlvert` (-7)                       | `END`                      |
-    | `min_rlvert+1`, `min_rlvert_int-2` (-6) | `HALO_LEVEL_2`             |
-    | `min_rlvert_int-1` (-5)                 | `HALO`                     |
-    | `min_rlvert_int` (-4)                   | `LOCAL`                    |
-    | (-3)                                    |                            | unused in icon4py (relevant for nesting)
-    | (-2)                                    |                            | unused in icon4py (relevant for nesting)
-    | (-1)                                    |                            | unused in icon4py (relevant for nesting)
-    | `0`                                     | `INTERIOR`                 |
-    | `1`                                     | `LATERAL_BOUNDARY`         |
-    | `2`                                     | `LATERAL_BOUNDARY_LEVEL_2` |
-    | `3`                                     | `LATERAL_BOUNDARY_LEVEL_3` |
-    | `4`                                     | `LATERAL_BOUNDARY_LEVEL_4` |
-    | `max_rlvert` (5)                        | `NUDGING`                 |
+    | ICON constant or value                  | python | ICON4Py Name               |
+    | from mo_impl_constants.f90              | index  |                            |
+    |:--------------------------------------- |:------|:-------------------------- |
+    | `min_rlvert` (-7)                       |   0   | `END`                      |
+    | `min_rlvert+1`, `min_rlvert_int-2` (-6) |   1   |`HALO_LEVEL_2`              |
+    | `min_rlvert_int-1` (-5)                 |   2   |`HALO`                      |
+    | `min_rlvert_int` (-4)                   |   3   |`LOCAL`                     |
+    | (-3)                                    |   4   |                            | unused in icon4py (relevant for nesting)
+    | (-2)                                    |   5   |                            | unused in icon4py (relevant for nesting)
+    | (-1)                                    |   6   |                            | unused in icon4py (relevant for nesting)
+    | `0`                                     | ` 7   |INTERIOR`                   |
+    | `1`                                     |   8   |`LATERAL_BOUNDARY`          |
+    | `2`                                     |   9   |`LATERAL_BOUNDARY_LEVEL_2`  |
+    | `3`                                     |  10   |`LATERAL_BOUNDARY_LEVEL_3`  |
+    | `4`                                     |  11   |`LATERAL_BOUNDARY_LEVEL_4`  |
+    | `max_rlvert` (5)                        |  12   |`NUDGING`                   |
 
     For the meaning see above.
 
-    ##EdgeDim
+    ## EdgeDim
 
 
-    | ICON constant or value                 | ICON4Py Name               |
-    | from mo_impl_constants.f90             |                            |
-    |:-------------------------------------- |:-------------------------- |
-    | `min_rledge` (-13)                     | `END`                      |
-    | `min_rledge_int-2` (-10)               | `HALO_LEVEL_2`             |
-    | `min_rledge_int-1` (-9)                | `HALO`                     |
-    | `min_rledge_int`   (-8)                | `LOCAL`                    |
-    | (-7)                                   |                            | unused in icon4py (relevant for nesting)
-    | (-6)                                   |                            | unused in icon4py (relevant for nesting)
-    | (-5)                                   |                            | unused in icon4py (relevant for nesting)
-    | (-4)                                   |                            | unused in icon4py (relevant for nesting)
-    | (-3)                                   |                            | unused in icon4py (relevant for nesting)
-    | (-2)                                   |                            | unused in icon4py (relevant for nesting)
-    |(-1)                                    |                            | unused in icon4py (relevant for nesting)
-    | `0`                                    | `INTERIOR`                 |
-    | `1`                                    | `LATERAL_BOUNDARY`         |
-    | `2`                                    | `LATERAL_BOUNDARY_LEVEL_2` |
-    | `3`                                    | `LATERAL_BOUNDARY_LEVEL_3` |
-    | `4`                                    | `LATERAL_BOUNDARY_LEVEL_4` |
-    | `5`                                    | `LATERAL_BOUNDARY_LEVEL_5` |
-    | `6`                                    | `LATERAL_BOUNDARY_LEVEL_6` |
-    | `7`                                    | `LATERAL_BOUNDARY_LEVEL_7` |
-    | `8`                                    | `LATERAL_BOUNDARY_LEVEL_8` |
-    | `grf_bdywidth_e`   (9)                 | `NUDGING`                  |
-    | `grf_bdywidth_e+1`, `max_rledge`  (10) | `NUDGING_LEVEL_2`          |
+    | ICON constant or value                 | python  | ICON4Py Name               |
+    | from mo_impl_constants.f90             | index   |                            |
+    |:-------------------------------------- |:-------|:-------------------------- |
+    | `min_rledge` (-13)                     |   0    |`END`                       |
+    | `min_rledge_int-2` (-10)               |   1    |`HALO_LEVEL_2`              |
+    | `min_rledge_int-1` (-9)                |   2    |`HALO`                      |
+    | `min_rledge_int`   (-8)                |   3    |`LOCAL`                     |
+    | (-7)                                   |   4    |                            | unused in icon4py (relevant for nesting)
+    | (-6)                                   |   5    |                            | unused in icon4py (relevant for nesting)
+    | (-5)                                   |   6    |                            | unused in icon4py (relevant for nesting)
+    | (-4)                                   |   7    |                            | unused in icon4py (relevant for nesting)
+    | (-3)                                   |   8    |                            | unused in icon4py (relevant for nesting)
+    | (-2)                                   |   9    |                            | unused in icon4py (relevant for nesting)
+    |(-1)                                    |  10    |                            | unused in icon4py (relevant for nesting)
+    | `0`                                    |  11    | `INTERIOR`                 |
+    | `1`                                    |  12    | `LATERAL_BOUNDARY`         |
+    | `2`                                    |  13    | `LATERAL_BOUNDARY_LEVEL_2` |
+    | `3`                                    |  14    |`LATERAL_BOUNDARY_LEVEL_3`  |
+    | `4`                                    |  15    |`LATERAL_BOUNDARY_LEVEL_4`  |
+    | `5`                                    |  16    |`LATERAL_BOUNDARY_LEVEL_5`  |
+    | `6`                                    |  17    |`LATERAL_BOUNDARY_LEVEL_6`  |
+    | `7`                                    |  18    | `LATERAL_BOUNDARY_LEVEL_7` |
+    | `8`                                    |  19    | `LATERAL_BOUNDARY_LEVEL_8`|
+    | `grf_bdywidth_e`   (9)                 |  20    | `NUDGING`                  |
+    | `grf_bdywidth_e+1`, `max_rledge`  (10) |  21    | `NUDGING_LEVEL_2`          |
 
 
     """
