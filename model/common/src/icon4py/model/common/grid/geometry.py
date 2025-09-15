@@ -573,6 +573,8 @@ class TorusGridGeometry(GridGeometry):
 
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
+                attrs.EDGE_LENGTH: extra_fields[gridfile.GeometryName.EDGE_LENGTH],
+                attrs.DUAL_EDGE_LENGTH: extra_fields[gridfile.GeometryName.DUAL_EDGE_LENGTH],
                 attrs.EDGE_CELL_DISTANCE: extra_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE],
                 attrs.EDGE_VERTEX_DISTANCE: extra_fields[
                     gridfile.GeometryName.EDGE_VERTEX_DISTANCE
@@ -620,54 +622,12 @@ class TorusGridGeometry(GridGeometry):
         self._register_computed_fields(input_fields_provider)
 
     def _register_computed_fields(self, input_fields_provider):
-        edge_length_provider = factory.ProgramFieldProvider(
-            func=stencils.compute_edge_length_torus,
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                )
-            },
-            fields={
-                "length": attrs.EDGE_LENGTH,
-            },
-            deps={
-                "vertex_x": attrs.VERTEX_X,
-                "vertex_y": attrs.VERTEX_Y,
-            },
-            params={
-                "domain_length": self._grid.global_properties.domain_length,
-                "domain_height": self._grid.global_properties.domain_height,
-            },
-        )
-        self.register_provider(edge_length_provider)
         meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
         inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
         self.register_provider(inverse_edge_length)
 
-        dual_length_provider = factory.ProgramFieldProvider(
-            func=stencils.compute_cell_center_distance_torus,
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                )
-            },
-            fields={
-                "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
-            },
-            deps={
-                "cell_center_x": attrs.CELL_CENTER_X,
-                "cell_center_y": attrs.CELL_CENTER_Y,
-            },
-            params={
-                "domain_length": self._grid.global_properties.domain_length,
-                "domain_height": self._grid.global_properties.domain_height,
-            },
-        )
-        self.register_provider(dual_length_provider)
         inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
         self.register_provider(inverse_dual_edge_length)
 
