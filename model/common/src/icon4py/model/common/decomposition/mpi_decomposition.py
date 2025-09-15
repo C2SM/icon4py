@@ -131,10 +131,11 @@ class MPICommProcessProperties(definitions.ProcessProperties):
 
 @functools.cache
 def _cached_pattern(pattern, domain_descriptor, f):
+    f = f.value
     return pattern(
         make_field_descriptor(
             domain_descriptor,
-            f.value,
+            f,
             arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
         )
     )
