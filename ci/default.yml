@@ -41,11 +41,11 @@ test_tools_datatests_aarch64:
       when: never  # run only in daily CI, to save compute resources
     - if: $COMPONENT == 'common' && $LEVEL == 'integration'
       variables:
-        NUM_PROCESSES: 1
+        NUM_PROCESSES: 2
         SLURM_TIMELIMIT: '00:30:00'
     - if: $BACKEND == 'dace_gpu'
       variables:
-        NUM_PROCESSES: 1
+        NUM_PROCESSES: 4
         SLURM_TIMELIMIT: '00:30:00'
     - if: $BACKEND == 'embedded'
       variables:
