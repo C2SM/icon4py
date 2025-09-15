@@ -267,6 +267,7 @@ def test_get_geofac_grg(
     [
         (definitions.Experiments.MCH_CH_R04B09, 5e-9),
         (definitions.Experiments.EXCLAIM_APE, 1e-11),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-15),
     ],
 )
 @pytest.mark.datatest
@@ -319,6 +320,7 @@ def test_e_flx_avg(
     [
         (definitions.Experiments.MCH_CH_R04B09, 5e-9),
         (definitions.Experiments.EXCLAIM_APE, 1e-11),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 0),
     ],
 )
 @pytest.mark.datatest

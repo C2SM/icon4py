@@ -15,6 +15,7 @@ import icon4py.model.common.metrics.compute_nudgecoeffs as common_metrics
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
+    base,
     geometry,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,
@@ -186,31 +187,59 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(geofac_grdiv)
 
-        cell_average_weight = factory.NumpyFieldsProvider(
-            func=functools.partial(
-                interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
-                array_ns=self._xp,
-            ),
-            fields=(attrs.C_BLN_AVG,),
-            domain=(dims.CellDim, dims.C2E2CODim),
-            deps={
-                "lat": geometry_attrs.CELL_LAT,
-                "lon": geometry_attrs.CELL_LON,
-                "cell_areas": geometry_attrs.CELL_AREA,
-                "cell_owner_mask": "cell_owner_mask",
-            },
-            connectivities={"c2e2c0": dims.C2E2CODim},
-            params={
-                "horizontal_start": self.grid.start_index(
-                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-                ),
-                "horizontal_start_level_3": self.grid.start_index(
-                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
-                ),
-                "divavg_cntrwgt": self._config["divavg_cntrwgt"],
-            },
-        )
-        self.register_provider(cell_average_weight)
+        match self.grid.global_properties.geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                cell_average_weight = factory.NumpyFieldsProvider(
+                    func=functools.partial(
+                        interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
+                        array_ns=self._xp,
+                    ),
+                    fields=(attrs.C_BLN_AVG,),
+                    domain=(dims.CellDim, dims.C2E2CODim),
+                    deps={
+                        "lat": geometry_attrs.CELL_LAT,
+                        "lon": geometry_attrs.CELL_LON,
+                        "cell_areas": geometry_attrs.CELL_AREA,
+                        "cell_owner_mask": "cell_owner_mask",
+                    },
+                    connectivities={"c2e2c0": dims.C2E2CODim},
+                    params={
+                        "horizontal_start": self.grid.start_index(
+                            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                        ),
+                        "horizontal_start_level_3": self.grid.start_index(
+                            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+                        ),
+                        "divavg_cntrwgt": self._config["divavg_cntrwgt"],
+                    },
+                )
+                self.register_provider(cell_average_weight)
+            case base.GeometryType.TORUS:
+                cell_average_weight = factory.NumpyFieldsProvider(
+                    func=functools.partial(
+                        interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight_torus,
+                        array_ns=self._xp,
+                    ),
+                    fields=(attrs.C_BLN_AVG,),
+                    domain=(dims.CellDim, dims.C2E2CODim),
+                    deps={
+                        "cell_areas": geometry_attrs.CELL_AREA,
+                        "cell_owner_mask": "cell_owner_mask",
+                    },
+                    connectivities={"c2e2c0": dims.C2E2CODim},
+                    params={
+                        "horizontal_start": self.grid.start_index(
+                            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                        ),
+                        "horizontal_start_level_3": self.grid.start_index(
+                            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+                        ),
+                        "divavg_cntrwgt": self._config["divavg_cntrwgt"],
+                    },
+                )
+                self.register_provider(cell_average_weight)
+            case _:
+                raise ValueError("TODO")
 
         c_lin_e = factory.NumpyFieldsProvider(
             func=functools.partial(interpolation_fields.compute_c_lin_e, array_ns=self._xp),
@@ -278,20 +307,38 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(e_flx_avg)
 
-        e_bln_c_s = factory.NumpyFieldsProvider(
-            func=functools.partial(interpolation_fields.compute_e_bln_c_s, array_ns=self._xp),
-            fields=(attrs.E_BLN_C_S,),
-            domain=(dims.CellDim, dims.C2EDim),
-            deps={
-                "cells_lat": geometry_attrs.CELL_LAT,
-                "cells_lon": geometry_attrs.CELL_LON,
-                "edges_lat": geometry_attrs.EDGE_LAT,
-                "edges_lon": geometry_attrs.EDGE_LON,
-            },
-            connectivities={"c2e": dims.C2EDim},
-            params={"weighting_factor": self._config["weighting_factor"]},
-        )
-        self.register_provider(e_bln_c_s)
+        match self.grid.global_properties.geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                e_bln_c_s = factory.NumpyFieldsProvider(
+                    func=functools.partial(
+                        interpolation_fields.compute_e_bln_c_s, array_ns=self._xp
+                    ),
+                    fields=(attrs.E_BLN_C_S,),
+                    domain=(dims.CellDim, dims.C2EDim),
+                    deps={
+                        "cells_lat": geometry_attrs.CELL_LAT,
+                        "cells_lon": geometry_attrs.CELL_LON,
+                        "edges_lat": geometry_attrs.EDGE_LAT,
+                        "edges_lon": geometry_attrs.EDGE_LON,
+                    },
+                    connectivities={"c2e": dims.C2EDim},
+                    params={"weighting_factor": self._config["weighting_factor"]},
+                )
+                self.register_provider(e_bln_c_s)
+            case base.GeometryType.TORUS:
+                e_bln_c_s = factory.NumpyFieldsProvider(
+                    func=functools.partial(
+                        interpolation_fields.compute_e_bln_c_s_torus, array_ns=self._xp
+                    ),
+                    fields=(attrs.E_BLN_C_S,),
+                    domain=(dims.CellDim, dims.C2EDim),
+                    deps={},
+                    connectivities={"c2e": dims.C2EDim},
+                    params={},
+                )
+                self.register_provider(e_bln_c_s)
+            case _:
+                raise ValueError("TODO")
 
         pos_on_tplane_e_x_y = factory.NumpyFieldsProvider(
             func=functools.partial(
