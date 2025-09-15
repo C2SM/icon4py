@@ -249,7 +249,8 @@ class GHexMultiNodeExchange:
         # Create field descriptors and perform the exchange
 
         applied_patterns = [
-            _cached_pattern(pattern, domain_descriptor, eve_utils.hashable_by_id(f)) for f in fields
+            _cached_pattern(pattern, domain_descriptor, eve_utils.hashable_by_id(f.ndarray))
+            for f in fields
         ]
         if hasattr(fields[0].array_ns, "cuda"):
             # TODO(havogt): this is a workaround as ghex does not know that it should synchronize
