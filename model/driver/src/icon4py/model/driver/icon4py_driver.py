@@ -9,7 +9,6 @@
 import datetime
 import logging
 import pathlib
-import uuid
 from collections.abc import Callable
 from typing import NamedTuple
 
@@ -340,9 +339,7 @@ def initialize(
     props: decomposition.ProcessProperties,
     serialization_type: driver_init.SerializationType,
     experiment_type: driver_init.ExperimentType,
-    grid_id: uuid.UUID,
-    grid_root,
-    grid_level,
+    grid_file: pathlib.Path,
     backend: gtx_typing.Backend,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
@@ -360,9 +357,8 @@ def initialize(
         props: Processor properties.
         serialization_type: Serialization type.
         experiment_type: Experiment type.
-        grid_id: Grid ID.
-        grid_root: Grid root.
-        grid_level: Grid level.
+        grid_file: Path of the grid.
+        backend: GT4Py backend.
 
     Returns:
         TimeLoop: Time loop object.
@@ -374,24 +370,20 @@ def initialize(
     config = driver_config.read_config(experiment_type=experiment_type, backend=backend)
 
     decomp_info = driver_init.read_decomp_info(
-        file_path,
-        props,
-        backend,
-        serialization_type,
-        grid_id,
-        grid_root,
-        grid_level,
+        path=file_path,
+        grid_file=grid_file,
+        procs_props=props,
+        backend=backend,
+        ser_type=serialization_type,
     )
 
     log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = driver_init.read_icon_grid(
-        file_path,
+    grid = driver_init.read_icon_grid(
+        path=file_path,
+        grid_file=grid_file,
         backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
-        grid_id=grid_id,
-        grid_root=grid_root,
-        grid_level=grid_level,
     )
     log.info(f"reading input fields from '{file_path}'")
     (
@@ -400,14 +392,12 @@ def initialize(
         vertical_geometry,
         c_owner_mask,
     ) = driver_init.read_geometry_fields(
-        file_path,
+        path=file_path,
+        grid_file=grid_file,
         vertical_grid_config=config.vertical_grid_config,
         backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
-        grid_id=grid_id,
-        grid_root=grid_root,
-        grid_level=grid_level,
     )
     (
         diffusion_metric_state,
@@ -416,11 +406,9 @@ def initialize(
         solve_nonhydro_interpolation_state,
         _,
     ) = driver_init.read_static_fields(
-        grid_id,
-        grid_root,
-        grid_level,
-        file_path,
-        backend,
+        path=file_path,
+        grid_file=grid_file,
+        backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -429,7 +417,7 @@ def initialize(
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
     diffusion_granule = diffusion.Diffusion(
-        icon_grid,
+        grid,
         config.diffusion_config,
         diffusion_params,
         vertical_geometry,
@@ -444,7 +432,7 @@ def initialize(
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        grid=icon_grid,
+        grid=grid,
         backend=backend,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
@@ -465,10 +453,10 @@ def initialize(
         prognostic_state_now,
         prognostic_state_next,
     ) = driver_init.read_initial_state(
-        icon_grid,
-        cell_geometry,
-        edge_geometry,
-        file_path,
+        grid=grid,
+        cell_param=cell_geometry,
+        edge_param=edge_geometry,
+        path=file_path,
         backend=backend,
         rank=props.rank,
         experiment_type=experiment_type,
@@ -522,25 +510,14 @@ def initialize(
     "Currently, users can also set it to either jabw or grauss_3d_torus to generate analytic initial condition for the JW and mountain wave tests, respectively (they are placed in abs_path_to_icon4py/model/driver/src/icon4py/model/driver/test_cases/).",
 )
 @click.option(
-    "--grid_root",
-    default=2,
-    show_default=True,
-    help="Grid root division (please refer to Sadourny et al. 1968 or ICON documentation for more information). When torus grid is used, it must be set to 2.",
-)
-@click.option(
-    "--grid_level",
-    default=4,
-    show_default=True,
-    help="Grid refinement level. When torus grid is used, it must be set to 0.",
-)
-@click.option(
-    "--grid_id",
-    default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
-    help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
+    "--grid_file",
+    required=True,
+    help="Path of the grid file.",
 )
 @click.option(
     "--enable_output",
     is_flag=True,
+    default=False,
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
 )
 @click.option(
@@ -561,9 +538,7 @@ def icon4py_driver(
     mpi,
     serialization_type,
     experiment_type,
-    grid_id,
-    grid_root,
-    grid_level,
+    grid_file,
     enable_output,
     enable_profiling,
     icon4py_driver_backend,
@@ -597,7 +572,6 @@ def icon4py_driver(
     backend = model_backends.BACKENDS[icon4py_driver_backend]
 
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
-    grid_id = uuid.UUID(grid_id)
     driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
 
     time_loop: TimeLoop
@@ -608,9 +582,7 @@ def icon4py_driver(
         parallel_props,
         serialization_type,
         experiment_type,
-        grid_id,
-        grid_root,
-        grid_level,
+        pathlib.Path(grid_file),
         backend,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")

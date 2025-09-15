@@ -25,7 +25,7 @@ def mch_ch_r04b09_dsl_icon4pyrun_config(
     Create Icon4pyRunConfig matching MCH_CH_r04b09_dsl.
 
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
-    from the default. Backend is not used because granules are set independently in test_timeloop.py.
+    from the default. Backend is not used because granules are set independently in test_icon4py.py.
     """
     return driver_config.Icon4pyRunConfig(
         dtime=timedelta(seconds=10.0),
@@ -49,7 +49,7 @@ def exclaim_ape_icon4pyrun_config(
     Create Icon4pyRunConfig matching exclaim_ape_R02B04.
 
     Set values to the ones used in the exclaim_ape_R02B04 experiment where they differ
-    from the default. Backend is not used because granules are set independently in test_timeloop.py
+    from the default. Backend is not used because granules are set independently in test_icon4py.py
     """
     return driver_config.Icon4pyRunConfig(
         dtime=timedelta(seconds=2.0),
