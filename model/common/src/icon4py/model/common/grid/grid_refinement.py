@@ -43,7 +43,7 @@ _MAX_BOUNDARY_DISTANCE: Final[dict[gtx.Dimension, int]] = {
 """
 Grid points in the grid refinement fields are labeled with their distance to the lateral boundary.
 The distance is counted in "rows" and distances up to _MAX_BOUNDARY_DISTANCE are computed, elements
-a distances larger than _MAX_BOUNDARY_DISTANCE are labeled as _UNORDERED
+at distances larger than _MAX_BOUNDARY_DISTANCE are labeled as _UNORDERED
 
 **Rows** can be defined like:
 ### CELLS:
