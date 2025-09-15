@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
 import numpy as np
 from gt4py import next as gtx
+from gt4py.eve import utils as eve_utils
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
@@ -133,7 +134,7 @@ def _cached_pattern(pattern, domain_descriptor, f):
     return pattern(
         make_field_descriptor(
             domain_descriptor,
-            f,
+            f.value,
             arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
         )
     )
@@ -242,10 +243,13 @@ class GHexMultiNodeExchange:
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
 
         # Slice the fields based on the dimension
-        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
+        # sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
 
         # Create field descriptors and perform the exchange
-        applied_patterns = [_cached_pattern(pattern, domain_descriptor, f) for f in sliced_fields]
+
+        applied_patterns = [
+            _cached_pattern(pattern, domain_descriptor, eve_utils.hashable_by_id(f)) for f in fields
+        ]
         if hasattr(fields[0].array_ns, "cuda"):
             # TODO(havogt): this is a workaround as ghex does not know that it should synchronize
             # the GPU before the exchange. This is necessary to ensure that all data is ready for the exchange.
