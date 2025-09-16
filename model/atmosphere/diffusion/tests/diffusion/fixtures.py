@@ -7,9 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.testing import serialbox as sb
-
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     damping_height,

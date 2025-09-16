@@ -18,17 +18,11 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import stencil_tests as stencil_tests
+from icon4py.model.testing import stencil_tests
 
-from .test_accumulate_prep_adv_fields import (
-    accumulate_prep_adv_fields_numpy,
-)
-from .test_spatially_average_flux_or_velocity import (
-    spatially_average_flux_or_velocity_numpy,
-)
-from .test_compute_mass_flux import (
-    compute_mass_flux_numpy,
-)
+from .test_accumulate_prep_adv_fields import accumulate_prep_adv_fields_numpy
+from .test_compute_mass_flux import compute_mass_flux_numpy
+from .test_spatially_average_flux_or_velocity import spatially_average_flux_or_velocity_numpy
 
 
 @pytest.mark.embedded_remap_error

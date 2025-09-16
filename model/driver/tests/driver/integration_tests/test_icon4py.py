@@ -5,31 +5,39 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+import click
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     icon4py_configuration,
     icon4py_driver,
+    initialization_utils as driver_init,
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
+from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
-from ..utils import (
-    construct_diffusion_config,
-    construct_icon4pyrun_config,
-    construct_nonhydrostatic_config,
-)
+from ..utils import construct_icon4pyrun_config
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
 
 
 @pytest.mark.embedded_remap_error
@@ -38,7 +46,7 @@ from ..utils import (
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            definitions.Experiments.MCH_CH_R04B09,
             1,
             2,
             1,
@@ -52,7 +60,7 @@ from ..utils import (
             False,
         ),
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            definitions.Experiments.MCH_CH_R04B09,
             1,
             2,
             1,
@@ -66,35 +74,7 @@ from ..utils import (
             True,
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
-            1,
-            2,
-            1,
-            2,
-            "2000-01-01T00:00:00.000",
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-            False,
-            False,
-            False,
-        ),
-        (
-            dt_utils.GLOBAL_EXPERIMENT,
-            1,
-            2,
-            1,
-            2,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:04.000",
-            "2000-01-01T00:00:04.000",
-            "2000-01-01T00:00:04.000",
-            False,
-            False,
-            True,
-        ),
-        (
-            dt_utils.GAUSS3D_EXPERIMENT,
+            definitions.Experiments.GAUSS3D,
             1,
             2,
             1,
@@ -110,38 +90,31 @@ from ..utils import (
     ],
 )
 def test_run_timeloop_single_step(
-    experiment,
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
-    timeloop_date_init,
-    timeloop_date_exit,
-    step_date_init,
-    step_date_exit,
-    timeloop_diffusion_linit_init,
-    timeloop_diffusion_linit_exit,
-    vn_only,
+    experiment: definitions.Experiment,
+    timeloop_date_init: str,
+    timeloop_date_exit: str,
+    timeloop_diffusion_linit_init: bool,
+    vn_only: bool,  # TODO unused?
     *,
-    grid_savepoint,
-    icon_grid,
-    metrics_savepoint,
-    interpolation_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    ndyn_substeps,
-    timeloop_diffusion_savepoint_init,
-    timeloop_diffusion_savepoint_exit,
-    savepoint_velocity_init,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
-    backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    icon_grid: base_grid.Grid,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    lowest_layer_thickness: float,
+    model_top_height: float,
+    stretch_factor: float,
+    damping_height: float,
+    ndyn_substeps: int,
+    timeloop_diffusion_savepoint_init: sb.IconDiffusionInitSavepoint,
+    timeloop_diffusion_savepoint_exit: sb.IconDiffusionExitSavepoint,
+    savepoint_velocity_init: sb.IconVelocityInitSavepoint,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    backend: gtx_typing.Backend,
 ):
-    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+    if experiment == definitions.Experiments.GAUSS3D:
         config = icon4py_configuration.read_config(
-            experiment_type=experiment,
+            experiment_type=driver_init.ExperimentType.GAUSS3D,
             backend=backend,
         )
         diffusion_config = config.diffusion_config
@@ -149,8 +122,10 @@ def test_run_timeloop_single_step(
         icon4pyrun_config = config.run_config
 
     else:
-        diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
-        nonhydro_config = construct_nonhydrostatic_config(experiment)
+        diffusion_config = definitions.construct_diffusion_config(
+            experiment, ndyn_substeps=ndyn_substeps
+        )
+        nonhydro_config = definitions.construct_nonhydrostatic_config(experiment)
         icon4pyrun_config = construct_icon4pyrun_config(
             experiment,
             timeloop_date_init,
@@ -384,4 +359,59 @@ def test_run_timeloop_single_step(
     assert test_utils.dallclose(
         prognostic_states.current.rho.asnumpy(),
         rho_sp.asnumpy(),
+    )
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, experiment_type",
+    [
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            driver_init.ExperimentType.ANY.value,
+        ),
+    ],
+)
+def test_driver(
+    experiment,
+    experiment_type,
+    *,
+    data_provider,
+    ranked_data_path,
+    backend,
+):
+    """
+    This is a only test to check if the icon4py driver runs from serialized data without verifying the end result.
+    The timeloop is verified by test_run_timeloop_single_step above.
+    TODO(anyone): Remove or modify this test when it is ready to run the driver from the grid file without having to initialize static fields from serialized data.
+    """
+    data_path = dt_utils.get_datapath_for_experiment(
+        ranked_base_path=ranked_data_path,
+        experiment=experiment,
+    )
+    gm = grid_utils.get_grid_manager_from_experiment(
+        experiment=experiment,
+        keep_skip_values=True,
+        backend=backend,
+    )
+
+    backend_name = None
+    for key, value in model_backends.BACKENDS.items():
+        if value == backend:
+            backend_name = key
+
+    assert backend_name is not None
+
+    icon4py_driver.icon4py_driver(
+        [
+            str(data_path),
+            "--experiment_type",
+            experiment_type,
+            "--grid_file",
+            str(gm._file_name),
+            "--icon4py_driver_backend",
+            backend_name,
+        ],
+        standalone_mode=False,
     )

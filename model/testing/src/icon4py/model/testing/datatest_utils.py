@@ -19,26 +19,19 @@ from icon4py.model.common.grid import base, icon
 from icon4py.model.testing import definitions, serialbox
 
 
-GLOBAL_EXPERIMENT = definitions.Experiments.EXCLAIM_APE.name
-REGIONAL_EXPERIMENT = definitions.Grids.MCH_CH_R04B09_DSL.name
-# we were using `REGIONAL_EXPERIMENT` for both grid and experiment, therefore we make sure their names match
-assert definitions.Grids.MCH_CH_R04B09_DSL.name == definitions.Experiments.MCH_CH_R04B09.name
-JABW_EXPERIMENT = definitions.Experiments.JW.name
-GAUSS3D_EXPERIMENT = definitions.Experiments.GAUSS3D.name
-WEISMAN_KLEMP_EXPERIMENT = definitions.Experiments.WEISMAN_KLEMP_TORUS.name
-
-
 # TODO(havogt): is this still needed?
 GRID_IDS = {
-    GLOBAL_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
-    REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
-    JABW_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
-    GAUSS3D_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
-    WEISMAN_KLEMP_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
+    definitions.Experiments.EXCLAIM_APE.name: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    definitions.Experiments.MCH_CH_R04B09.name: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
+    definitions.Experiments.JW.name: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    definitions.Experiments.GAUSS3D.name: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
+    definitions.Experiments.WEISMAN_KLEMP_TORUS.name: uuid.UUID(
+        "80ae276e-ec54-11ee-bf58-e36354187f08"
+    ),
 }
 
 
-def guess_grid_shape(experiment: str) -> icon.GridShape:
+def guess_grid_shape(experiment: definitions.Experiment) -> icon.GridShape:
     """Guess the grid type, root, and level from the experiment name.
 
     Reads the level and root parameters from a string in the canonical ICON gridfile format
@@ -47,22 +40,22 @@ def guess_grid_shape(experiment: str) -> icon.GridShape:
         Args: experiment: str: The experiment name.
         Returns: tuple[int, int]: The grid root and level.
     """
-    if "torus" in experiment.lower():
+    if "torus" in experiment.name.lower():
         return icon.GridShape(geometry_type=base.GeometryType.TORUS)
 
     try:
-        root, level = map(int, re.search(r"[Rr](\d+)[Bb](\d+)", experiment).groups())  # type:ignore[union-attr]
+        root, level = map(int, re.search(r"[Rr](\d+)[Bb](\d+)", experiment.name).groups())  # type:ignore[union-attr]
         return icon.GridShape(
             geometry_type=base.GeometryType.ICOSAHEDRON,
             subdivision=icon.GridSubdivision(root=root, level=level),
         )
     except AttributeError as err:
         raise ValueError(
-            f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."
+            f"Could not parse grid_root and grid_level from experiment: {experiment.name} no 'rXbY'pattern."
         ) from err
 
 
-def get_grid_id_for_experiment(experiment: str) -> uuid.UUID:
+def get_grid_id_for_experiment(experiment: definitions.Experiment) -> uuid.UUID:
     """Get the unique id of the grid used in the experiment.
 
     These ids are encoded in the original grid file that was used to run the simulation, but not serialized when generating the test data. So we duplicate the information here.
@@ -70,7 +63,7 @@ def get_grid_id_for_experiment(experiment: str) -> uuid.UUID:
     TODO(halungge): this becomes obsolete once we get the connectivities from the grid files.
     """
     try:
-        return GRID_IDS[experiment]
+        return GRID_IDS[experiment.name]
     except KeyError as err:
         raise ValueError(f"Experiment '{experiment}' has no grid id ") from err
 
