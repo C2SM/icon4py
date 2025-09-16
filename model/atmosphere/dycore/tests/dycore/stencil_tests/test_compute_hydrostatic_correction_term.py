@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest, StandardStaticVariants
+from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 
 def compute_hydrostatic_correction_term_numpy(
@@ -92,7 +92,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = compute_hydrostatic_correction_term
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: None,
+        StandardStaticVariants.NONE: (),
         StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",

@@ -18,7 +18,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest, StandardStaticVariants
+from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 
 @pytest.mark.continuous_benchmarking

@@ -278,7 +278,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         "vertical_cfl",
     )
     STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: None,
+        stencil_tests.StandardStaticVariants.NONE: (),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",

@@ -82,7 +82,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
     STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: None,
+        stencil_tests.StandardStaticVariants.NONE: (),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "limited_area",
             "igradp_method",
@@ -97,7 +97,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             "vertical_start",
             "vertical_end",
             "nflatlev",
-            "nflat_gradp"
+            "nflat_gradp",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "limited_area",
@@ -105,7 +105,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             "vertical_start",
             "vertical_end",
             "nflatlev",
-            "nflat_gradp"
+            "nflat_gradp",
         ),
     }
 

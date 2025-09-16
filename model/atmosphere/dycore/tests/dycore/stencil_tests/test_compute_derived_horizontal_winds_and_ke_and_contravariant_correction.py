@@ -63,7 +63,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         "horizontal_advection_of_w_at_edges_on_half_levels",
     )
     STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: None,
+        stencil_tests.StandardStaticVariants.NONE: (),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
@@ -275,9 +275,15 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         )
 
     # TODO(ricoh): Add True case. Blocked by test failure (issue: #875)
-    @pytest.fixture(params=[{"skip_compute_predictor_vertical_advection": value} for value in [False]])
-    def input_data(self, request, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        skip_compute_predictor_vertical_advection = request.param["skip_compute_predictor_vertical_advection"]
+    @pytest.fixture(
+        params=[{"skip_compute_predictor_vertical_advection": value} for value in [False]]
+    )
+    def input_data(
+        self, request: pytest.FixtureRequest, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        skip_compute_predictor_vertical_advection = request.param[
+            "skip_compute_predictor_vertical_advection"
+        ]
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim
         )

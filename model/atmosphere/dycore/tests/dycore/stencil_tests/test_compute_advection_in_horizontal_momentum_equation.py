@@ -139,7 +139,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
     PROGRAM = compute_advection_in_horizontal_momentum_equation
     OUTPUTS = ("normal_wind_advective_tendency",)
     STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: None,
+        stencil_tests.StandardStaticVariants.NONE: (),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
@@ -151,7 +151,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
             "end_index_of_damping_layer",
             "vertical_start",
             "vertical_end",
-        )
+        ),
     }
 
     @staticmethod
@@ -243,7 +243,9 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         return dict(normal_wind_advective_tendency=normal_wind_advective_tendency)
 
     @pytest.fixture(params=[{"apply_extra_diffusion_on_vn": value} for value in [True, False]])
-    def input_data(self, request, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(
+        self, request: pytest.FixtureRequest, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         normal_wind_advective_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
