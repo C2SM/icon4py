@@ -344,6 +344,7 @@ def test_e_bln_c_s(
     [
         (definitions.Experiments.MCH_CH_R04B09, 5e-9),
         (definitions.Experiments.EXCLAIM_APE, 1e-11),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-13),
     ],
 )
 @pytest.mark.datatest

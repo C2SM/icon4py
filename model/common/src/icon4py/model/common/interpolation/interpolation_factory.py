@@ -340,34 +340,52 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             case _:
                 raise ValueError("TODO")
 
-        pos_on_tplane_e_x_y = factory.NumpyFieldsProvider(
-            func=functools.partial(
-                interpolation_fields.compute_pos_on_tplane_e_x_y, array_ns=self._xp
-            ),
-            fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
-            domain=(dims.EdgeDim, dims.E2CDim),
-            deps={
-                "primal_normal_v1": geometry_attrs.EDGE_NORMAL_U,
-                "primal_normal_v2": geometry_attrs.EDGE_NORMAL_V,
-                "dual_normal_v1": geometry_attrs.EDGE_DUAL_U,
-                "dual_normal_v2": geometry_attrs.EDGE_DUAL_V,
-                "cells_lon": geometry_attrs.CELL_LON,
-                "cells_lat": geometry_attrs.CELL_LAT,
-                "edges_lon": geometry_attrs.EDGE_LON,
-                "edges_lat": geometry_attrs.EDGE_LAT,
-                "vertex_lon": geometry_attrs.VERTEX_LON,
-                "vertex_lat": geometry_attrs.VERTEX_LAT,
-                "owner_mask": "edge_owner_mask",
-            },
-            connectivities={"e2c": dims.E2CDim, "e2v": dims.E2VDim, "e2c2e": dims.E2C2EDim},
-            params={
-                "grid_sphere_radius": constants.EARTH_RADIUS,
-                "horizontal_start": self.grid.start_index(
-                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-                ),
-            },
-        )
-        self.register_provider(pos_on_tplane_e_x_y)
+        match self.grid.global_properties.geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                pos_on_tplane_e_x_y = factory.NumpyFieldsProvider(
+                    func=functools.partial(
+                        interpolation_fields.compute_pos_on_tplane_e_x_y, array_ns=self._xp
+                    ),
+                    fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
+                    domain=(dims.EdgeDim, dims.E2CDim),
+                    deps={
+                        "primal_normal_v1": geometry_attrs.EDGE_NORMAL_U,
+                        "primal_normal_v2": geometry_attrs.EDGE_NORMAL_V,
+                        "dual_normal_v1": geometry_attrs.EDGE_DUAL_U,
+                        "dual_normal_v2": geometry_attrs.EDGE_DUAL_V,
+                        "cells_lon": geometry_attrs.CELL_LON,
+                        "cells_lat": geometry_attrs.CELL_LAT,
+                        "edges_lon": geometry_attrs.EDGE_LON,
+                        "edges_lat": geometry_attrs.EDGE_LAT,
+                        "vertex_lon": geometry_attrs.VERTEX_LON,
+                        "vertex_lat": geometry_attrs.VERTEX_LAT,
+                        "owner_mask": "edge_owner_mask",
+                    },
+                    connectivities={"e2c": dims.E2CDim, "e2v": dims.E2VDim, "e2c2e": dims.E2C2EDim},
+                    params={
+                        "grid_sphere_radius": constants.EARTH_RADIUS,
+                        "horizontal_start": self.grid.start_index(
+                            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                        ),
+                    },
+                )
+                self.register_provider(pos_on_tplane_e_x_y)
+            case base.GeometryType.TORUS:
+                pos_on_tplane_e_x_y = factory.NumpyFieldsProvider(
+                    func=functools.partial(
+                        interpolation_fields.compute_pos_on_tplane_e_x_y_torus, array_ns=self._xp
+                    ),
+                    fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
+                    domain=(dims.EdgeDim, dims.E2CDim),
+                    deps={
+                        "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
+                    },
+                    connectivities={"e2c": dims.E2CDim},
+                    params={},
+                )
+                self.register_provider(pos_on_tplane_e_x_y)
+            case _:
+                raise ValueError("TODO")
 
         cells_aw_verts = factory.NumpyFieldsProvider(
             func=functools.partial(interpolation_fields.compute_cells_aw_verts, array_ns=self._xp),

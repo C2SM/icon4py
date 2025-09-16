@@ -1178,3 +1178,44 @@ def compute_pos_on_tplane_e_x_y(
         )
 
     return pos_on_tplane_e[:, 0:2, 0], pos_on_tplane_e[:, 0:2, 1]
+
+
+def compute_pos_on_tplane_e_x_y_torus(
+    dual_edge_length: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    """
+    Compute pos_on_tplane_e_x_y.
+    get geographical coordinates of edge midpoint
+    get line and block indices of neighbour cells
+    get geographical coordinates of first cell center
+    projection first cell center into local \\lambda-\\Phi-system
+    get geographical coordinates of second cell center
+    projection second cell center into local \\lambda-\\Phi-system
+
+    Args:
+        dual_edge_length: numpy_array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+
+    Returns:
+        pos_on_tplane_e_x: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+        pos_on_tplane_e_y: //
+    """
+    # The implementation makes the simplifying assumptions that:
+    # - The torus grid consists of equilateral triangles, which means that the
+    #   neighboring cell centers must always be at 0.5 * dual_edge_length from
+    #   the edge center (the edge lies symmetrically perpendicular to the primal
+    #   edge).
+    # - The neighboring cell centers are exactly along the primal normal/dual
+    #   tangent direction, which means the x component in the local coordinate
+    #   system is always zero, and the y component is always 0.5 *
+    #   dual_edge_length.
+    # - The first neighbor cell is in the opposite direction of the primal
+    #   normal and the second neighbor is in the direction of the primal normal.
+    half_dual_edge_length = 0.5 * dual_edge_length[0]
+    num_edges = e2c.shape[0]
+    return (
+        array_ns.full([num_edges, 2], [-half_dual_edge_length, half_dual_edge_length]),
+        array_ns.zeros([num_edges, 2]),
+    )
