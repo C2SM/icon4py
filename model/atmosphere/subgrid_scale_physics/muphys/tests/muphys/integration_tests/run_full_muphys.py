@@ -124,7 +124,9 @@ def calc_dz(ksize, z):
     return dz
 
 
-def run_program(args, backend, data):
+def run_program(
+    args, backend, data, t_out, qv_out, qc_out, qi_out, qr_out, qs_out, qg_out, pflx_out
+):
     ksize = data.dz.shape[0]
 
     dz = gtx.as_field(
@@ -205,6 +207,55 @@ def run_program(args, backend, data):
             dims.KDim,
         ),
         np.transpose(data.rho[0, :, :]),
+        allocator=backend,
+    )
+
+    pr_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.zeros((data.ncells, data.nlev)),
+        allocator=backend,
+    )
+    ps_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.zeros((data.ncells, data.nlev)),
+        allocator=backend,
+    )
+    pi_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.zeros((data.ncells, data.nlev)),
+        allocator=backend,
+    )
+    pg_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.zeros((data.ncells, data.nlev)),
+        allocator=backend,
+    )
+    pre_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.zeros((data.ncells, data.nlev)),
+        allocator=backend,
+    )
+    mask_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        data.mask_out,
         allocator=backend,
     )
 
@@ -429,56 +480,8 @@ pflx_out = gtx.as_field(
     data.pflx_out,
     allocator=backend,
 )
-pr_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    np.zeros((data.ncells, data.nlev)),
-    allocator=backend,
-)
-ps_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    np.zeros((data.ncells, data.nlev)),
-    allocator=backend,
-)
-pi_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    np.zeros((data.ncells, data.nlev)),
-    allocator=backend,
-)
-pg_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    np.zeros((data.ncells, data.nlev)),
-    allocator=backend,
-)
-pre_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    np.zeros((data.ncells, data.nlev)),
-    allocator=backend,
-)
-mask_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.mask_out,
-    allocator=backend,
-)
 
-run_program(args, backend, data)
+run_program(args, backend, data, t_out, qv_out, qc_out, qi_out, qr_out, qs_out, qg_out, pflx_out)
 
 write_fields(
     args.output_file,
