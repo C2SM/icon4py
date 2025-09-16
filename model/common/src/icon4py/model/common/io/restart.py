@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 RESTART_FREQUENCY = int(os.environ.get("ICON4PY_RESTART_FREQUENCY", 10000))
 RESTART_DIR = os.path.join(
-    os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output"), "restart"
+    os.environ.get("ICON4PY_OUTPUT_DIR", "undefined_output_runxxx"), "restart"
 )
 
 if not os.path.isdir(RESTART_DIR):

@@ -44,7 +44,7 @@ pil_logger.setLevel(logging.INFO)
 log = logging.getLogger(__name__)
 
 DO_PLOTS = True
-PLOT_IMGS_DIR = os.environ.get("ICON4PY_OUTPUT_DIR", "runxxx_undefined_output")
+PLOT_IMGS_DIR = os.environ.get("ICON4PY_OUTPUT_DIR", "undefined_output_runxxx")
 PLOT_FREQUENCY = int(os.environ.get("ICON4PY_PLOT_FREQUENCY", 1500))
 
 
