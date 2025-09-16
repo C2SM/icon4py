@@ -407,7 +407,6 @@ def write_fields(
     pre_gsp_var[:, :] = pre_gsp
     ncfile.close()
 
-backend = model_backends.BACKENDS["gtfn_gpu"]
 args = get_args()
 backend = model_backends.BACKENDS[args.backend]
 

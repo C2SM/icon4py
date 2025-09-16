@@ -14,6 +14,8 @@ import time
 import gt4py.next as gtx
 import numpy as np
 
+from icon4py.model.common.model_options import setup_program
+
 
 try:
     from netCDF4 import Dataset
@@ -160,13 +162,94 @@ def write_fields(
     pre_gsp_var[:, :] = pre_gsp
     ncfile.close()
 
-backend = model_backends.BACKENDS["dace_gpu"]
 args = get_args()
+backend = model_backends.BACKENDS[args.backend]
 
 set_lib_path(args.ldir)
 sys.setrecursionlimit(10**4)
 
 data = Data(args)
+
+dz = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.dz[:, :]),
+    allocator=backend,
+)
+te = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.t[0, :, :]),
+    allocator=backend,
+)
+p = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.p[0, :, :]),
+    allocator=backend,
+)
+qse = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qs[0, :, :]),
+    allocator=backend,
+)
+qie = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qi[0, :, :]),
+    allocator=backend,
+)
+qge = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qg[0, :, :]),
+    allocator=backend,
+)
+qve = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qv[0, :, :]),
+    allocator=backend,
+)
+qce = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qc[0, :, :]),
+    allocator=backend,
+)
+qre = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qr[0, :, :]),
+    allocator=backend,
+)
+rho = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.rho[0, :, :]),
+    allocator=backend,
+)
 
 t_out = gtx.as_field(
     (
@@ -283,93 +366,32 @@ mask_out = gtx.as_field(
 
 ksize = data.dz.shape[0]
 
+graupel_run_program = setup_program(
+    backend=backend,
+    program=graupel_run,
+    constant_args={},
+    horizontal_sizes={},
+    vertical_sizes={
+        "last_lev": ksize - 1,
+    },
+    offset_provider={"Koff": dims.KDim},
+)
+
 for _x in range(int(args.itime) + 1):
     if _x == 1:  # Only start timing second iteration
         start_time = time.time()
 
-    graupel_run = graupel_run.with_backend(backend)
-    graupel_run(
-        last_lev=ksize - 1,
-        dz=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.dz[:, :]),
-            allocator=backend,
-        ),
-        te=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.t[0, :, :]),
-            allocator=backend,
-        ),
-        p=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.p[0, :, :]),
-            allocator=backend,
-        ),
-        rho=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.rho[0, :, :]),
-            allocator=backend,
-        ),
-        qve=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qv[0, :, :]),
-            allocator=backend,
-        ),
-        qce=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qc[0, :, :]),
-            allocator=backend,
-        ),
-        qre=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qr[0, :, :]),
-            allocator=backend,
-        ),
-        qse=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qs[0, :, :]),
-            allocator=backend,
-        ),
-        qie=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qi[0, :, :]),
-            allocator=backend,
-        ),
-        qge=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qg[0, :, :]),
-            allocator=backend,
-        ),
+    graupel_run_program(
+        dz=dz,
+        te=te,
+        p=p,
+        rho=rho,
+        qve=qve,
+        qce=qce,
+        qre=qre,
+        qse=qse,
+        qie=qie,
+        qge=qge,
         dt=args.dt,
         qnc=args.qnc,
         t_out=t_out,
@@ -385,7 +407,6 @@ for _x in range(int(args.itime) + 1):
         pi=pi_out,
         pg=pg_out,
         pre=pre_out,
-        offset_provider={"Koff": dims.KDim},
     )
     if _x == int(args.itime):  # End timer on last iteration
         end_time = time.time()
