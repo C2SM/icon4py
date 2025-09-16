@@ -49,7 +49,13 @@ def get_args():
         help="output filename",
         default="output.nc",
     )
-    parser.add_argument("backend", help="gt4py backend", default="gtfn_cpu")
+    parser.add_argument(
+        "-b",
+        metavar="backend",
+        dest="backend",
+        help="gt4py backend",
+        default="gtfn_cpu",
+    )
     parser.add_argument("input_file", help="input data file")
     parser.add_argument("itime", help="time-index", nargs="?", default=0)
     parser.add_argument("dt", help="timestep", nargs="?", default=30.0)
