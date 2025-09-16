@@ -464,7 +464,8 @@ def test_tangent_orientation(
     expected = grid_savepoint.tangent_orientation()
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
     assert test_utils.dallclose(
-        manager.geometry_fields[gridfile.GeometryName.TANGENT_ORIENTATION].asnumpy(), expected.asnumpy()
+        manager.geometry_fields[gridfile.GeometryName.TANGENT_ORIENTATION].asnumpy(),
+        expected.asnumpy(),
     )
 
 
@@ -520,7 +521,8 @@ def test_cell_normal_orientation(
     expected = grid_savepoint.edge_orientation()
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
     assert test_utils.dallclose(
-        manager.geometry_fields[gridfile.GeometryName.CELL_NORMAL_ORIENTATION].asnumpy(), expected.asnumpy()
+        manager.geometry_fields[gridfile.GeometryName.CELL_NORMAL_ORIENTATION].asnumpy(),
+        expected.asnumpy(),
     )
 
 
