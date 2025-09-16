@@ -169,6 +169,7 @@ def write_fields(
     pre_gsp_var[:, :] = pre_gsp
     ncfile.close()
 
+
 args = get_args()
 backend = model_backends.BACKENDS[args.backend]
 
@@ -360,14 +361,6 @@ pre_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
-    allocator=backend,
-)
-mask_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.mask_out,
     allocator=backend,
 )
 
