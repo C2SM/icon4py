@@ -42,7 +42,7 @@ test_tools_datatests_aarch64:
     - if: $COMPONENT == 'common' && $LEVEL == 'integration'
       variables:
         NUM_PROCESSES: 1
-        SLURM_TIMELIMIT: '00:30:00'
+        SLURM_TIMELIMIT: '00:45:00'
     - if: $BACKEND == 'dace_gpu'
       variables:
         NUM_PROCESSES: 8

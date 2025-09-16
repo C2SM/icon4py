@@ -14,6 +14,7 @@ import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.metrics.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.metrics.metric_fields import compute_flat_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -48,6 +49,10 @@ def test_compute_zdiff_gradp_dsl(
     interpolation_savepoint: sb.InterpolationSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
+    # TODO(msimberg): fix?
+    if icon_grid.global_properties.geometry_type == base.GeometryType.TORUS:
+        pytest.xfail("zdiff_gradp not available in serialized data")
+
     xp = data_alloc.import_array_ns(backend)
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
 
