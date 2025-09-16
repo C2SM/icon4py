@@ -162,13 +162,13 @@ class TimeLoop:
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(start_time_step_number, self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            log.debug(
-                f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
-            )
-            log.debug(
-                f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
-            )
-            # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
+            #log.debug(
+            #    f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
+            #)
+            #log.debug(
+            #    f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
+            #)
+            ## TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
