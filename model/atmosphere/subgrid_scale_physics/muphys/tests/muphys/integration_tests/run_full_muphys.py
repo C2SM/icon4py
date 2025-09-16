@@ -165,7 +165,7 @@ def write_fields(
     pre_gsp_var[:, :] = pre_gsp
     ncfile.close()
 
-
+backend = model_backends.BACKENDS["gtfn_gpu"]
 args = get_args()
 
 set_lib_path(args.ldir)
@@ -179,6 +179,7 @@ t_out = gtx.as_field(
         dims.KDim,
     ),
     data.t_out,
+    allocator=backend,
 )
 qv_out = gtx.as_field(
     (
@@ -186,6 +187,7 @@ qv_out = gtx.as_field(
         dims.KDim,
     ),
     data.qv_out,
+    allocator=backend,
 )
 qc_out = gtx.as_field(
     (
@@ -193,6 +195,7 @@ qc_out = gtx.as_field(
         dims.KDim,
     ),
     data.qc_out,
+    allocator=backend,
 )
 qr_out = gtx.as_field(
     (
@@ -200,6 +203,7 @@ qr_out = gtx.as_field(
         dims.KDim,
     ),
     data.qr_out,
+    allocator=backend,
 )
 qs_out = gtx.as_field(
     (
@@ -207,6 +211,7 @@ qs_out = gtx.as_field(
         dims.KDim,
     ),
     data.qs_out,
+    allocator=backend,
 )
 qi_out = gtx.as_field(
     (
@@ -214,6 +219,7 @@ qi_out = gtx.as_field(
         dims.KDim,
     ),
     data.qi_out,
+    allocator=backend,
 )
 qg_out = gtx.as_field(
     (
@@ -221,6 +227,7 @@ qg_out = gtx.as_field(
         dims.KDim,
     ),
     data.qg_out,
+    allocator=backend,
 )
 pflx_out = gtx.as_field(
     (
@@ -228,6 +235,7 @@ pflx_out = gtx.as_field(
         dims.KDim,
     ),
     data.pflx_out,
+    allocator=backend,
 )
 pr_out = gtx.as_field(
     (
@@ -235,6 +243,7 @@ pr_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
 )
 ps_out = gtx.as_field(
     (
@@ -242,6 +251,7 @@ ps_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
 )
 pi_out = gtx.as_field(
     (
@@ -249,6 +259,7 @@ pi_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
 )
 pg_out = gtx.as_field(
     (
@@ -256,6 +267,7 @@ pg_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
 )
 pre_out = gtx.as_field(
     (
@@ -263,6 +275,7 @@ pre_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
 )
 mask_out = gtx.as_field(
     (
@@ -270,6 +283,7 @@ mask_out = gtx.as_field(
         dims.KDim,
     ),
     data.mask_out,
+    allocator=backend,
 )
 
 start_time = time.time()
@@ -279,7 +293,7 @@ for _x in range(int(args.itime)+1):
     if _x == 1:      # Only start timing second iteration
         start_time = time.time()
 
-    saturation_adjustment = saturation_adjustment.with_backend(model_backends.BACKENDS["gtfn_cpu"])
+    saturation_adjustment = saturation_adjustment.with_backend(backend)
     saturation_adjustment(
     te=gtx.as_field(
         (
@@ -287,6 +301,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.t[0, :, :]),
+        allocator=backend,
     ),
     qve=gtx.as_field(
         (
@@ -294,6 +309,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qv[0, :, :]),
+        allocator=backend,
     ),
     qce=gtx.as_field(
         (
@@ -301,6 +317,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qc[0, :, :]),
+        allocator=backend,
     ),
     qre=gtx.as_field(
         (
@@ -308,6 +325,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qr[0, :, :]),
+        allocator=backend,
     ),
     qti=gtx.as_field(
         (
@@ -315,6 +333,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qg[0, :, :] + data.qs[0, :, :] + data.qi[0, :, :]),
+        allocator=backend,
     ),  # Total ice
     rho=gtx.as_field(
         (
@@ -322,6 +341,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.rho[0, :, :]),
+        allocator=backend,
     ),
     te_out=t_out,  # Temperature
     qve_out=qv_out,  # Specific humidity
@@ -331,8 +351,8 @@ for _x in range(int(args.itime)+1):
     )
 
     ksize = data.dz.shape[0]
-    k = gtx.as_field((dims.KDim,), np.arange(0, ksize, dtype=np.int32))
-    graupel_run = graupel_run.with_backend(model_backends.BACKENDS["gtfn_cpu"])
+    k = gtx.as_field((dims.KDim,), np.arange(0, ksize, dtype=np.int32), allocator=backend)
+    graupel_run = graupel_run.with_backend(backend)
     graupel_run(
     k=k,
     last_lev=ksize - 1,
@@ -342,6 +362,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.dz[:, :]),
+        allocator=backend,
     ),
     te=gtx.as_field(
         (
@@ -349,6 +370,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.t[0, :, :]),
+        allocator=backend,
     ),
     p=gtx.as_field(
         (
@@ -356,6 +378,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.p[0, :, :]),
+        allocator=backend,
     ),
     rho=gtx.as_field(
         (
@@ -363,6 +386,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.rho[0, :, :]),
+        allocator=backend,
     ),
     qve=gtx.as_field(
         (
@@ -370,6 +394,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qv[0, :, :]),
+        allocator=backend,
     ),
     qce=gtx.as_field(
         (
@@ -377,6 +402,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qc[0, :, :]),
+        allocator=backend,
     ),
     qre=gtx.as_field(
         (
@@ -384,6 +410,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qr[0, :, :]),
+        allocator=backend,
     ),
     qse=gtx.as_field(
         (
@@ -391,6 +418,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qs[0, :, :]),
+        allocator=backend,
     ),
     qie=gtx.as_field(
         (
@@ -398,6 +426,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qi[0, :, :]),
+        allocator=backend,
     ),
     qge=gtx.as_field(
         (
@@ -405,6 +434,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qg[0, :, :]),
+        allocator=backend,
     ),
     dt=args.dt,
     qnc=args.qnc,
@@ -430,7 +460,7 @@ for _x in range(int(args.itime)+1):
     data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
     data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
 
-    saturation_adjustment = saturation_adjustment.with_backend(model_backends.BACKENDS["gtfn_cpu"])
+    saturation_adjustment = saturation_adjustment.with_backend(backend)
     saturation_adjustment(
     te=gtx.as_field(
         (
@@ -438,6 +468,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.t[0, :, :]),
+        allocator=backend,
     ),
     qve=gtx.as_field(
         (
@@ -445,6 +476,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qv[0, :, :]),
+        allocator=backend,
     ),
     qce=gtx.as_field(
         (
@@ -452,6 +484,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qc[0, :, :]),
+        allocator=backend,
     ),
     qre=gtx.as_field(
         (
@@ -459,6 +492,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qr[0, :, :]),
+        allocator=backend,
     ),
     qti=gtx.as_field(
         (
@@ -466,6 +500,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.qg[0, :, :] + data.qs[0, :, :] + data.qi[0, :, :]),
+        allocator=backend,
     ),  # Total ice
     rho=gtx.as_field(
         (
@@ -473,6 +508,7 @@ for _x in range(int(args.itime)+1):
             dims.KDim,
         ),
         np.transpose(data.rho[0, :, :]),
+        allocator=backend,
     ),
     te_out=t_out,  # Temperature
     qve_out=qv_out,  # Specific humidity
