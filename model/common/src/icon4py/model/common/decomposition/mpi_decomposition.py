@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
 import numpy as np
 from gt4py import next as gtx
+from gt4py.eve import utils as eve_utils
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
@@ -128,6 +129,36 @@ class MPICommProcessProperties(definitions.ProcessProperties):
         return self.comm.Get_size()
 
 
+@functools.cache
+def _cached_pattern(pattern, domain_descriptor, a):
+    a = a.value
+    return pattern(
+        make_field_descriptor(
+            domain_descriptor,
+            a,
+            arch=Architecture.CPU if isinstance(a, np.ndarray) else Architecture.GPU,
+        )
+    )
+
+
+@functools.cache
+def _slice_field_based_on_dim(
+    decomposition_info, field: gtx.Field, dim: gtx.Dimension
+) -> data_alloc.NDArray:
+    """
+    Slices the field based on the dimension passed in.
+    """
+    field = field.value
+    if dim == dims.VertexDim:
+        return field.ndarray[: decomposition_info.num_vertices, :]
+    elif dim == dims.EdgeDim:
+        return field.ndarray[: decomposition_info.num_edges, :]
+    elif dim == dims.CellDim:
+        return field.ndarray[: decomposition_info.num_cells, :]
+    else:
+        raise ValueError(f"Unknown dimension {dim}")
+
+
 class GHexMultiNodeExchange:
     max_num_of_fields_to_communicate_dace: Final[int] = (
         10  # maximum number of fields to perform halo exchange on (DaCe-related)
@@ -204,19 +235,6 @@ class GHexMultiNodeExchange:
         )
         return pattern
 
-    def _slice_field_based_on_dim(self, field: gtx.Field, dim: gtx.Dimension) -> data_alloc.NDArray:
-        """
-        Slices the field based on the dimension passed in.
-        """
-        if dim == dims.VertexDim:
-            return field.ndarray[: self._decomposition_info.num_vertices, :]
-        elif dim == dims.EdgeDim:
-            return field.ndarray[: self._decomposition_info.num_edges, :]
-        elif dim == dims.CellDim:
-            return field.ndarray[: self._decomposition_info.num_cells, :]
-        else:
-            raise ValueError(f"Unknown dimension {dim}")
-
     def exchange(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]):
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
@@ -231,18 +249,16 @@ class GHexMultiNodeExchange:
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
 
         # Slice the fields based on the dimension
-        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
+        sliced_arrays = [
+            _slice_field_based_on_dim(self._decomposition_info, eve_utils.hashable_by_id(f), dim)
+            for f in fields
+        ]
 
         # Create field descriptors and perform the exchange
+
         applied_patterns = [
-            pattern(
-                make_field_descriptor(
-                    domain_descriptor,
-                    f,
-                    arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
-                )
-            )
-            for f in sliced_fields
+            _cached_pattern(pattern, domain_descriptor, eve_utils.hashable_by_id(a))
+            for a in sliced_arrays
         ]
         if hasattr(fields[0].array_ns, "cuda"):
             # TODO(havogt): this is a workaround as ghex does not know that it should synchronize

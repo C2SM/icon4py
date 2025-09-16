@@ -16,6 +16,7 @@ from enum import IntEnum
 from typing import Any, Literal, Protocol, overload, runtime_checkable
 
 import numpy as np
+import cupy as cp
 from gt4py.next import Dimension
 
 from icon4py.model.common import utils
@@ -176,6 +177,7 @@ class SingleNodeExchange:
         return SingleNodeResult()
 
     def exchange_and_wait(self, dim: Dimension, *fields: tuple):
+        cp.cuda.runtime.deviceSynchronize()
         return
 
     def my_rank(self):
@@ -198,6 +200,7 @@ class SingleNodeExchange:
         wait = kwargs.get("wait", True)
 
         res = self.exchange(dim, *args)
+        cp.cuda.runtime.deviceSynchronize()
         if wait:
             res.wait()
         else:
@@ -313,7 +316,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 class SingleNodeResult:
     def wait(self):
-        pass
+        cp.cuda.runtime.deviceSynchronize()
 
     def is_ready(self) -> bool:
         return True
