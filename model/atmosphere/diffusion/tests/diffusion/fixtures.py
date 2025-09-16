@@ -40,10 +40,6 @@ from icon4py.model.testing.fixtures.datatest import (
     stretch_factor,
     vwind_offctr,
 )
-from icon4py.model.testing.fixtures.stencil_tests import (
-    metrics_factory_params,
-    vertical_grid_params,
-)
 
 
 @pytest.fixture

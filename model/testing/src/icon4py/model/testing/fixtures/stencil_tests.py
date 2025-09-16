@@ -97,33 +97,3 @@ def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) ->
     return grid
 
 
-@pytest.fixture
-def vertical_grid_params(
-    lowest_layer_thickness: float,
-    model_top_height: float,
-    stretch_factor: float,
-    damping_height: float,
-) -> dict[str, float]:
-    """Group vertical grid configuration parameters into a dictionary."""
-    return {
-        "lowest_layer_thickness": lowest_layer_thickness,
-        "model_top_height": model_top_height,
-        "stretch_factor": stretch_factor,
-        "damping_height": damping_height,
-    }
-
-
-@pytest.fixture
-def metrics_factory_params(
-    rayleigh_coeff: float,
-    exner_expol: float,
-    vwind_offctr: float,
-    rayleigh_type: float,
-) -> dict[str, float]:
-    """Group rayleigh damping configuration parameters into a dictionary."""
-    return {
-        "rayleigh_coeff": rayleigh_coeff,
-        "exner_expol": exner_expol,
-        "vwind_offctr": vwind_offctr,
-        "rayleigh_type": rayleigh_type,
-    }
