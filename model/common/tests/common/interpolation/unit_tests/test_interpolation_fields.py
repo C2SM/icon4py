@@ -13,10 +13,12 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import constants
+from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_lin_e,
     compute_cells_aw_verts,
     compute_e_bln_c_s,
+    compute_e_bln_c_s_torus,
     compute_e_flx_avg,
     compute_geofac_div,
     compute_geofac_grdiv,
@@ -24,7 +26,9 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_geofac_n2s,
     compute_geofac_rot,
     compute_mass_conserving_bilinear_cell_average_weight,
+    compute_mass_conserving_bilinear_cell_average_weight_torus,
     compute_pos_on_tplane_e_x_y,
+    compute_pos_on_tplane_e_x_y_torus,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions
@@ -215,7 +219,11 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, atol",
-    [(definitions.Experiments.MCH_CH_R04B09, 1e-10), (definitions.Experiments.EXCLAIM_APE, 1e-10)],
+    [
+        (definitions.Experiments.MCH_CH_R04B09, 1e-10),
+        (definitions.Experiments.EXCLAIM_APE, 1e-10),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-15),
+    ],
 )
 def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, atol, backend):
     xp = data_alloc.import_array_ns(backend)
@@ -232,18 +240,30 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, a
 
     c2e2c0 = icon_grid.get_connectivity(dims.C2E2CO).ndarray
 
-    c_bln_avg = functools.partial(
-        compute_mass_conserving_bilinear_cell_average_weight, array_ns=xp
-    )(
-        c2e2c0,
-        lat,
-        lon,
-        cell_areas,
-        cell_owner_mask,
-        divavg_cntrwgt,
-        horizontal_start,
-        horizontal_start_p2,
-    )
+    match icon_grid.global_properties.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight(
+                c2e2c0,
+                lat,
+                lon,
+                cell_areas,
+                cell_owner_mask,
+                divavg_cntrwgt,
+                horizontal_start,
+                horizontal_start_p2,
+                array_ns=xp,
+            )
+        case base.GeometryType.TORUS:
+            c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight_torus(
+                c2e2c0,
+                cell_areas,
+                cell_owner_mask,
+                divavg_cntrwgt,
+                horizontal_start,
+                horizontal_start_p2,
+                array_ns=xp,
+            )
+
     assert test_helpers.dallclose(data_alloc.as_numpy(c_bln_avg), c_bln_avg_ref, atol=atol)
 
 
@@ -322,9 +342,14 @@ def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid, b
     edges_lon = grid_savepoint.edges_center_lon().ndarray
     xp = data_alloc.import_array_ns(backend)
 
-    e_bln_c_s = functools.partial(compute_e_bln_c_s, array_ns=xp)(
-        c2e, cells_lat, cells_lon, edges_lat, edges_lon, 0.0
-    )
+    # TODO(msimberg): pass geometry type to compute_pos_on_tplane_e_x_y?
+    match icon_grid.global_properties.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            e_bln_c_s = compute_e_bln_c_s(
+                c2e, cells_lat, cells_lon, edges_lat, edges_lon, 0.0, array_ns=xp
+            )
+        case base.GeometryType.TORUS:
+            e_bln_c_s = compute_e_bln_c_s_torus(c2e, array_ns=xp)
     assert test_helpers.dallclose(
         data_alloc.as_numpy(e_bln_c_s), e_bln_c_s_ref.asnumpy(), atol=1e-6, rtol=1e-7
     )
@@ -337,6 +362,7 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
     pos_on_tplane_e_x_ref = interpolation_savepoint.pos_on_tplane_e_x().asnumpy()
     pos_on_tplane_e_y_ref = interpolation_savepoint.pos_on_tplane_e_y().asnumpy()
     sphere_radius = constants.EARTH_RADIUS
+    dual_edge_length = grid_savepoint.dual_edge_length().ndarray
     primal_normal_v1 = grid_savepoint.primal_normal_v1().ndarray
     primal_normal_v2 = grid_savepoint.primal_normal_v2().ndarray
     dual_normal_v1 = grid_savepoint.dual_normal_v1().ndarray
@@ -352,24 +378,33 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
     e2v = icon_grid.get_connectivity(dims.E2V).ndarray
     e2c2e = icon_grid.get_connectivity(dims.E2C2E).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
-        sphere_radius,
-        primal_normal_v1,
-        primal_normal_v2,
-        dual_normal_v1,
-        dual_normal_v2,
-        cells_lon,
-        cells_lat,
-        edges_lon,
-        edges_lat,
-        verts_lon,
-        verts_lat,
-        owner_mask,
-        e2c,
-        e2v,
-        e2c2e,
-        horizontal_start,
-        array_ns=xp,
-    )
+    # TODO(msimberg): pass geometry type to compute_pos_on_tplane_e_x_y?
+    match icon_grid.global_properties.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
+                sphere_radius,
+                primal_normal_v1,
+                primal_normal_v2,
+                dual_normal_v1,
+                dual_normal_v2,
+                cells_lon,
+                cells_lat,
+                edges_lon,
+                edges_lat,
+                verts_lon,
+                verts_lat,
+                owner_mask,
+                e2c,
+                e2v,
+                e2c2e,
+                horizontal_start,
+                array_ns=xp,
+            )
+        case base.GeometryType.TORUS:
+            pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y_torus(
+                dual_edge_length,
+                e2c,
+                array_ns=xp,
+            )
     assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-6, rtol=1e-7)
     assert test_helpers.dallclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref, atol=1e-6, rtol=1e-7)
