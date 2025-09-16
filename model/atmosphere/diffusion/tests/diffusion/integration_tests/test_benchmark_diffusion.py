@@ -43,7 +43,7 @@ from ..fixtures import *  # noqa: F403
     group="diffusion_benchmark",
 )
 @pytest.mark.parametrize("grid", [definitions.Grids.R02B04_GLOBAL])
-@pytest.mark.continuous.benchmarking
+@pytest.mark.continuous_benchmarking
 def test_run_diffusion_benchmark(
     grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
