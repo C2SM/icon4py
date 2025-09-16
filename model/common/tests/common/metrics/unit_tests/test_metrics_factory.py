@@ -578,12 +578,11 @@ def test_vertical_coordinates_on_half_levels(
 @pytest.mark.level("integration")
 @pytest.mark.datatest
 def test_compute_wgtfac_c(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    icon_grid,
-    experiment,
-    backend,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_backend.Backend | None,
 ):
     factory = _get_metrics_factory(
         backend=backend,

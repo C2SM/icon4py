@@ -6,15 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.initialization import jablonowski_williamson_topography as topography
 from icon4py.model.testing import definitions, test_utils
 
-from ..fixtures import *
+from ..fixtures import *  # noqa: F403
 
 
 if TYPE_CHECKING:
@@ -26,10 +26,10 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_jablonowski_williamson_topography(
-    experiment,
-    backend,
-    grid_savepoint,
-    topography_savepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+    grid_savepoint: sb.IconGridSavepoint,
+    topography_savepoint: sb.TopographySavepoint,
 ):
     cell_center_lat = grid_savepoint.lat(dims.CellDim).asnumpy()
     topo_c = topography.jablonowski_williamson_topography(

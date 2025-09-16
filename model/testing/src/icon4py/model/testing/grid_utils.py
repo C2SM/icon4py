@@ -101,7 +101,7 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
     return full_name
 
 
-def _construct_dummy_decomposition_info(
+def construct_decomposition_info(
     grid: icon.IconGrid,
     backend: gtx_typing.Backend | None = None,
 ) -> decomposition_defs.DecompositionInfo:
@@ -134,7 +134,7 @@ def get_grid_geometry(
             backend=backend,
         )
         grid = gm.grid
-        decomposition_info = _construct_dummy_decomposition_info(grid, backend)
+        decomposition_info = construct_decomposition_info(grid, backend)
         geometry_source = geometry.GridGeometry(
             grid,
             decomposition_info,

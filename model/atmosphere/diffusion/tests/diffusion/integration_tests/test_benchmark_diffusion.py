@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
@@ -16,6 +19,7 @@ if TYPE_CHECKING:
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -29,21 +33,20 @@ from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils
-from icon4py.model.testing.grid_utils import _construct_dummy_decomposition_info
+from icon4py.model.testing.grid_utils import construct_decomposition_info
 
-from ..fixtures import *
+from ..fixtures import *  #noqa: F403
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark(
     group="diffusion_benchmark",
 )
-@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01])
+@pytest.mark.parametrize("grid", [definitions.Grids.R02B04_GLOBAL])
+@pytest.mark.continuous.benchmarking
 def test_run_diffusion_benchmark(
-    grid: Any,
-    vertical_grid_params: dict[str, float],
-    metrics_factory_params: dict[str, Any],
-    backend: Any,
+    grid: definitions.GridDescription,
+    backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
     dtime = 10.0
@@ -69,14 +72,14 @@ def test_run_diffusion_benchmark(
     diffusion_parameters = diffusion.DiffusionParams(config)
 
     grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid, num_levels=80, keep_skip_values=True, backend=backend
+        grid, num_levels=10, keep_skip_values=True, backend=backend
     )
 
     mesh = grid_manager.grid
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
-    decomposition_info = _construct_dummy_decomposition_info(mesh, backend)
+    decomposition_info = construct_decomposition_info(mesh, backend)
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
@@ -129,10 +132,10 @@ def test_run_diffusion_benchmark(
 
     vertical_config = v_grid.VerticalGridConfig(
         mesh.num_levels,
-        lowest_layer_thickness=vertical_grid_params["lowest_layer_thickness"],
-        model_top_height=vertical_grid_params["model_top_height"],
-        stretch_factor=vertical_grid_params["stretch_factor"],
-        rayleigh_damping_height=vertical_grid_params["damping_height"],
+        lowest_layer_thickness=50,
+        model_top_height=23500.0,
+        stretch_factor=1.0,
+        rayleigh_damping_height=1.0,
     )
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
@@ -159,10 +162,10 @@ def test_run_diffusion_benchmark(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=metrics_factory_params["rayleigh_type"],
-        rayleigh_coeff=metrics_factory_params["rayleigh_coeff"],
-        exner_expol=metrics_factory_params["exner_expol"],
-        vwind_offctr=metrics_factory_params["vwind_offctr"],
+        rayleigh_type=RayleighType.KLEMP,
+        rayleigh_coeff=5.0,
+        exner_expol=0.333,
+        vwind_offctr=0.2,
     )
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
@@ -184,7 +187,6 @@ def test_run_diffusion_benchmark(
         zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
         zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
     )
-
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
