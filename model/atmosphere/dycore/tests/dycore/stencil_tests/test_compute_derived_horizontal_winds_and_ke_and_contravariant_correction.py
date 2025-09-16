@@ -69,6 +69,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             "horizontal_end",
             "vertical_start",
             "vertical_end",
+            "nflatlev",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
