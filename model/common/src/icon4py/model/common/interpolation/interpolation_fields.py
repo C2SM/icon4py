@@ -637,8 +637,10 @@ def _compute_uniform_c_bln_avg(
     """
     local_weight = divavg_cntrwgt
     neighbor_weight = (1.0 - divavg_cntrwgt) / 3.0
-    c_bln_avg = array_ns.full((c2e2c.shape[0], c2e2c.shape[1] + 1), neighbor_weight)
-    c_bln_avg[horizontal_start:, 0] = local_weight
+    c_bln_avg = array_ns.full(
+        (c2e2c.shape[0], c2e2c.shape[1] + 1),
+        [local_weight, neighbor_weight, neighbor_weight, neighbor_weight],
+    )
 
     return c_bln_avg
 
