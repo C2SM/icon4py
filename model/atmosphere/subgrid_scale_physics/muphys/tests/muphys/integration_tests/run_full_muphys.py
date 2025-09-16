@@ -199,14 +199,6 @@ def run_program(args, backend, data):
         np.transpose(data.qr[0, :, :]),
         allocator=backend,
     )
-    qti = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qg[0, :, :] + data.qs[0, :, :] + data.qi[0, :, :]),
-        allocator=backend,
-    )  # Total ice
     rho = gtx.as_field(
         (
             dims.CellDim,
@@ -247,7 +239,9 @@ def run_program(args, backend, data):
             qve=qve,
             qce=qce,
             qre=qre,
-            qti=qti,  # Total ice
+            qse=qse,
+            qie=qie,
+            qge=qge,
             rho=rho,
             te_out=t_out,  # Temperature
             qve_out=qv_out,  # Specific humidity
@@ -294,7 +288,9 @@ def run_program(args, backend, data):
             qve=qve,
             qce=qce,
             qre=qre,
-            qti=qti,  # Total ice
+            qse=qse,
+            qie=qie,
+            qge=qge,
             rho=rho,
             te_out=t_out,  # Temperature
             qve_out=qv_out,  # Specific humidity

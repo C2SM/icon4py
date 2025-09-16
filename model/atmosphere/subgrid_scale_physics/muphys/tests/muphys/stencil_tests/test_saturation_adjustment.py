@@ -6,7 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
+
 import numpy as np
 import pytest
 
@@ -15,6 +17,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
+
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
@@ -32,7 +35,9 @@ class TestSaturationAdjustment(StencilTest):
         qve: np.ndarray,
         qce: np.ndarray,
         qre: np.ndarray,
-        qti: np.ndarray,
+        qse: np.ndarray,
+        qie: np.ndarray,
+        qge: np.ndarray,
         rho: np.ndarray,
         **kwargs,
     ) -> dict:
@@ -58,7 +63,13 @@ class TestSaturationAdjustment(StencilTest):
             qre=data_alloc.constant_field(
                 grid, 2.5939378002267028e-004, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
-            qti=data_alloc.constant_field(
+            qse=data_alloc.constant_field(
+                grid, 1.0746937601645517e-005, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            qie=data_alloc.constant_field(
+                grid, 1.0746937601645517e-005, dims.CellDim, dims.KDim, dtype=wpfloat
+            ),
+            qge=data_alloc.constant_field(
                 grid, 1.0746937601645517e-005, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             rho=data_alloc.constant_field(
