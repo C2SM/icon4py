@@ -282,15 +282,13 @@ mask_out = gtx.as_field(
 )
 
 ksize = data.dz.shape[0]
-k = gtx.as_field((dims.KDim,), np.arange(0, ksize, dtype=np.int32), allocator=backend)
 
-for _x in range(int(args.itime)+1):
-    if _x == 1:      # Only start timing second iteration
+for _x in range(int(args.itime) + 1):
+    if _x == 1:  # Only start timing second iteration
         start_time = time.time()
 
     graupel_run = graupel_run.with_backend(backend)
     graupel_run(
-        k=k,
         last_lev=ksize - 1,
         dz=gtx.as_field(
             (
@@ -389,7 +387,7 @@ for _x in range(int(args.itime)+1):
         pre=pre_out,
         offset_provider={"Koff": dims.KDim},
     )
-    if _x == int(args.itime):      # End timer on last iteration
+    if _x == int(args.itime):  # End timer on last iteration
         end_time = time.time()
 
 elapsed_time = end_time - start_time

@@ -216,8 +216,6 @@ def run_program(args, backend, data):
         allocator=backend,
     )
 
-    k = gtx.as_field((dims.KDim,), np.arange(0, ksize, dtype=np.int32), allocator=backend)
-
     saturation_adjustment_program = setup_program(
         backend=backend,
         program=saturation_adjustment,
@@ -258,7 +256,6 @@ def run_program(args, backend, data):
         )
 
         graupel_run_program(
-            k=k,
             dz=dz,
             te=te,
             p=p,
