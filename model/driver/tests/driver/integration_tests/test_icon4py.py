@@ -9,13 +9,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import click
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -25,7 +26,7 @@ from icon4py.model.driver import (
     initialization_utils as driver_init,
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
@@ -68,34 +69,6 @@ if TYPE_CHECKING:
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
-            False,
-            False,
-            True,
-        ),
-        (
-            definitions.Experiments.EXCLAIM_APE,
-            1,
-            2,
-            1,
-            2,
-            "2000-01-01T00:00:00.000",
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-            False,
-            False,
-            False,
-        ),
-        (
-            definitions.Experiments.EXCLAIM_APE,
-            1,
-            2,
-            1,
-            2,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:04.000",
-            "2000-01-01T00:00:04.000",
-            "2000-01-01T00:00:04.000",
             False,
             False,
             True,
@@ -386,4 +359,59 @@ def test_run_timeloop_single_step(
     assert test_utils.dallclose(
         prognostic_states.current.rho.asnumpy(),
         rho_sp.asnumpy(),
+    )
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, experiment_type",
+    [
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            driver_init.ExperimentType.ANY.value,
+        ),
+    ],
+)
+def test_driver(
+    experiment,
+    experiment_type,
+    *,
+    data_provider,
+    ranked_data_path,
+    backend,
+):
+    """
+    This is a only test to check if the icon4py driver runs from serialized data without verifying the end result.
+    The timeloop is verified by test_run_timeloop_single_step above.
+    TODO(anyone): Remove or modify this test when it is ready to run the driver from the grid file without having to initialize static fields from serialized data.
+    """
+    data_path = dt_utils.get_datapath_for_experiment(
+        ranked_base_path=ranked_data_path,
+        experiment=experiment,
+    )
+    gm = grid_utils.get_grid_manager_from_experiment(
+        experiment=experiment,
+        keep_skip_values=True,
+        backend=backend,
+    )
+
+    backend_name = None
+    for key, value in model_backends.BACKENDS.items():
+        if value == backend:
+            backend_name = key
+
+    assert backend_name is not None
+
+    icon4py_driver.icon4py_driver(
+        [
+            str(data_path),
+            "--experiment_type",
+            experiment_type,
+            "--grid_file",
+            str(gm._file_name),
+            "--icon4py_driver_backend",
+            backend_name,
+        ],
+        standalone_mode=False,
     )

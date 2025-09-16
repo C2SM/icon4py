@@ -13,8 +13,7 @@ import logging
 from gt4py.next import backend as gtx_backend, metrics as gtx_metrics
 
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
-from icon4py.model.common import constants
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.driver import initialization_utils as driver_init
 
@@ -74,7 +73,6 @@ def read_config(
         return diffusion.DiffusionConfig(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
-            n_substeps=n_substeps_reduced,
             hdiff_vn=True,
             type_t_diffu=2,
             type_vn_diffu=1,
@@ -82,14 +80,20 @@ def read_config(
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
+            thslp_zdiffu=0.02,
+            thhgtd_zdiffu=125.0,
             velocity_boundary_diffusion_denom=150.0,
-            max_nudging_coefficient=0.075 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
+            max_nudging_coefficient=0.375,
+            n_substeps=n_substeps_reduced,
+            shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
         )
 
     def _mch_ch_r04b09_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
-            ndyn_substeps_var=n_substeps_reduced,
-            max_nudging_coefficient=0.075 * constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO,
+            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
+            iau_wgt_dyn=1.0,
+            fourth_order_divdamp_factor=0.004,
+            max_nudging_coefficient=0.375,
         )
 
     def _jabw_vertical_config():
@@ -126,7 +130,7 @@ def read_config(
             Icon4pyRunConfig(
                 dtime=datetime.timedelta(seconds=10.0),
                 start_date=datetime.datetime(2021, 6, 20, 12, 0, 0),
-                end_date=datetime.datetime(2021, 6, 20, 12, 0, 10),
+                end_date=datetime.datetime(2021, 6, 20, 12, 0, 30),
                 n_substeps=n_substeps_reduced,
                 apply_initial_stabilization=True,
                 backend=backend,
