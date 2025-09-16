@@ -248,6 +248,17 @@ def test_factory_rayleigh_w(
     experiment: definitions.Experiment,
     backend: gtx_backend.Backend | None,
 ) -> None:
+    # TODO(msimberg): Config set incorrectly for weisman klemp. Can we set the
+    # weisman klemp parameters for toruses as defaults? Do we have to ensure the
+    # correct options are set only for weisman klemp? See test_metric_fields.py,
+    # the rayleigh_w field validates there because the test can set the config
+    # parameters for the computation.
+    geometry_type = gridtest_utils.get_grid_geometry(
+        backend, experiment
+    ).grid.global_properties.geometry_type
+    if geometry_type == base.GeometryType.TORUS:
+        pytest.xfail(f"rayleigh_w computed with wrong config parameters for {experiment=}")
+
     field_ref = metrics_savepoint.rayleigh_w()
     factory = _get_metrics_factory(
         backend=backend,
@@ -319,7 +330,7 @@ def test_factory_d2dexdz2_facs_mc(
     ).grid.global_properties.geometry_type
     # TODO(msimberg); fix?
     if geometry_type == base.GeometryType.TORUS:
-        pytest.xfail("d2dexsz2_facs not available in serialized data")
+        pytest.xfail("d2dexdz2_facs not available in serialized data")
 
     field_ref_1 = metrics_savepoint.d2dexdz2_fac1_mc()
     field_ref_2 = metrics_savepoint.d2dexdz2_fac2_mc()
