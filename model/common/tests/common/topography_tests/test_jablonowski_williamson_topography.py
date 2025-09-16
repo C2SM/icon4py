@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.initialization import jablonowski_williamson_topography as topography
 from icon4py.model.testing import definitions, test_utils

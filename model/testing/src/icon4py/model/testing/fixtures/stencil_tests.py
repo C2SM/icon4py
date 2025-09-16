@@ -95,5 +95,3 @@ def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) ->
             ) from e
 
     return grid
-
-

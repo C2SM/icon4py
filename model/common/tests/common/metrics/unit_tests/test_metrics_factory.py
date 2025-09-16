@@ -583,7 +583,7 @@ def test_compute_wgtfac_c(
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
     backend: gtx_backend.Backend | None,
-):
+) -> None:
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
@@ -629,7 +629,7 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
     backend: gtx_backend.Backend | None,
-):
+) -> None:
     field_ref_1 = metrics_savepoint.zd_intcoef()
     field_ref_2 = metrics_savepoint.zd_vertoffset()
     factory = _get_metrics_factory(

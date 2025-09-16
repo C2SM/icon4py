@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -35,7 +35,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils
 from icon4py.model.testing.grid_utils import construct_decomposition_info
 
-from ..fixtures import *  #noqa: F403
+from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.embedded_remap_error
