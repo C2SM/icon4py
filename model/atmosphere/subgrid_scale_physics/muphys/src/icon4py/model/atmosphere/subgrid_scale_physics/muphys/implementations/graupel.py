@@ -365,7 +365,6 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
 
 @gtx.field_operator
 def _precipitation_effects(
-    k: fa.KField[gtx.int32],
     last_lev: gtx.int32,
     kmin_r: fa.CellKField[bool],  # rain minimum level
     kmin_i: fa.CellKField[bool],  # ice minimum level
@@ -437,7 +436,6 @@ def _precipitation_effects(
 
 @gtx.field_operator
 def _graupel_run(
-    k: fa.KField[gtx.int32],
     last_lev: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
@@ -473,7 +471,7 @@ def _graupel_run(
         te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc
     )
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
-        k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt
+        last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt
     )
 
     return t, qv, qc, qr, qs, qi, qg, pflx, pr, ps, pi, pg, pre
@@ -481,7 +479,6 @@ def _graupel_run(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def graupel_run(
-    k: fa.KField[gtx.int32],
     last_lev: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
@@ -510,7 +507,6 @@ def graupel_run(
     pre: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
 ):
     _graupel_run(
-        k,
         last_lev,
         dz,
         te,
