@@ -37,6 +37,7 @@ from icon4py.model.testing.grid_utils import construct_decomposition_info
 
 from ..fixtures import *  # noqa: F403
 
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark(
     group="diffusion_benchmark",
