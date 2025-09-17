@@ -133,7 +133,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
 
     def _register_computed_fields(self) -> None:  # noqa: PLR0915 [too-many-statements]
-        vertical_coordinates_on_half_levels = factory.NumpyFieldProvider(
+        vertical_coordinates_on_half_levels = factory.NumpyDataProvider(
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
                 array_ns=self._xp,
@@ -454,7 +454,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxt_z_full)
 
-        compute_exner_w_implicit_weight_parameter_np = factory.NumpyFieldProvider(
+        compute_exner_w_implicit_weight_parameter_np = factory.NumpyDataProvider(
             func=functools.partial(mf.compute_exner_w_implicit_weight_parameter, array_ns=self._xp),
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},
@@ -574,7 +574,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={"flat_idx": attrs.FLAT_EDGE_INDEX},
         )
         self.register_provider(compute_flat_edge_idx)
-        max_flat_index_provider = factory.NumpyFieldProvider(
+        max_flat_index_provider = factory.NumpyDataProvider(
             func=functools.partial(mf.compute_max_index, array_ns=self._xp),
             domain=(dims.EdgeDim,),
             fields=(attrs.FLAT_IDX_MAX,),
@@ -652,7 +652,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 
-        compute_zdiff_gradp_dsl_np = factory.NumpyFieldProvider(
+        compute_zdiff_gradp_dsl_np = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl, array_ns=self._xp
             ),
@@ -678,7 +678,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_zdiff_gradp_dsl_np)
 
-        coeff_gradekin = factory.NumpyFieldProvider(
+        coeff_gradekin = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_coeff_gradekin.compute_coeff_gradekin, array_ns=self._xp
             ),
@@ -697,7 +697,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(coeff_gradekin)
 
-        compute_wgtfacq_c = factory.NumpyFieldProvider(
+        compute_wgtfacq_c = factory.NumpyDataProvider(
             func=functools.partial(weight_factors.compute_wgtfacq_c_dsl, array_ns=self._xp),
             domain=(dims.CellDim, dims.KDim),
             fields=(attrs.WGTFACQ_C,),
@@ -707,7 +707,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(compute_wgtfacq_c)
 
-        compute_wgtfacq_e = factory.NumpyFieldProvider(
+        compute_wgtfacq_e = factory.NumpyDataProvider(
             func=functools.partial(weight_factors.compute_wgtfacq_e_dsl, array_ns=self._xp),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -763,7 +763,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_weighted_cell_neighbor_sum)
 
-        compute_max_nbhgt = factory.NumpyFieldProvider(
+        compute_max_nbhgt = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_diffusion_metrics.compute_max_nbhgt_array_ns, array_ns=self._xp
             ),
@@ -779,7 +779,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_max_nbhgt)
 
-        compute_diffusion_mask_and_coef = factory.NumpyFieldProvider(
+        compute_diffusion_mask_and_coef = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_diffusion_metrics.compute_diffusion_mask_and_coef, array_ns=self._xp
             ),
@@ -808,7 +808,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(compute_diffusion_mask_and_coef)
 
-        compute_diffusion_intcoef_and_vertoffset = factory.NumpyFieldProvider(
+        compute_diffusion_intcoef_and_vertoffset = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_diffusion_metrics.compute_diffusion_intcoef_and_vertoffset,
                 array_ns=self._xp,

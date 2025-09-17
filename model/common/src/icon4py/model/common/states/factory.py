@@ -562,7 +562,7 @@ class ProgramFieldProvider(FieldProvider):
         return list(self._dependencies.values())
 
 
-class NumpyFieldProvider(FieldProvider):
+class NumpyDataProvider(FieldProvider):
     """
     Computes a field defined by a numpy function.
 

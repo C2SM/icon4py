@@ -305,7 +305,7 @@ def test_compute_scalar_value_from_numpy_provider(
 ) -> None:
     value_ref = np.min(np.min(metrics_savepoint.z_ifc()))
     sample_func = functools.partial(reduce_scalar_min, xp=data_alloc.import_array_ns(backend))
-    provider = factory.NumpyFieldProvider(
+    provider = factory.NumpyDataProvider(
         func=sample_func,
         deps={"ar": "height_coordinate"},
         domain=(),
