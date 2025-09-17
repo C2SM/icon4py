@@ -95,7 +95,7 @@ class FieldProvider(Protocol):
     def __call__(
         self,
         field_name: str,
-        field_src: FieldSource | None,
+        field_src: FieldSource,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
     ) -> state_utils.GTXFieldType | state_utils.ScalarType: ...
@@ -199,10 +199,10 @@ class FieldSource(GridProvider, Protocol):
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
 
-    def _provided_by_source(self, name):
+    def _provided_by_source(self, name)->str:
         return name in self._sources._providers or name in self._sources.metadata
 
-    def register_provider(self, provider: FieldProvider):
+    def register_provider(self, provider: FieldProvider)->None:
         # dependencies must be provider by this field source or registered in sources
         for dependency in provider.dependencies:
             if not (dependency in self._providers or self._provided_by_source(dependency)):
@@ -227,7 +227,7 @@ class CompositeSource(FieldSource):
         return self._metadata
 
     @property
-    def backend(self) -> gtx_typing.Backend:
+    def backend(self) -> gtx_typing.Backend|None:
         return self._backend
 
     @property
@@ -285,7 +285,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
         | None = None,  # keyword arg to (field_operator, field_name)
     ):
         self._func = func
-        self._dims = domain
+        self._dims: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...]= domain
         self._dependencies = deps
         self._output = fields
         self._params = {} if params is None else params

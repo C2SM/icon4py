@@ -29,7 +29,7 @@ class OptionalMetaData(TypedDict, total=False):
     #: we might not have this one for all fields. But it is useful to have it for tractability with ICON
     icon_var_name: str
     # TODO(halungge): dims should probably be required?
-    dims: tuple[gtx.Dimension, ...] | tuple[DimensionNames, ...]
+    dims: Sequence[gtx.Dimension] | Sequence[DimensionNames]
     dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
 
 

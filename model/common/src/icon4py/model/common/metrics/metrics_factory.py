@@ -847,7 +847,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         return self._backend
 
     @property
-    def grid(self) -> base.Grid:
+    def grid(self) -> icon.IconGrid:
         return self._grid
 
     @property
