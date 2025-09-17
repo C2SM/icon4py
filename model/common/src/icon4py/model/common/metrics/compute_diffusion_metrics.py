@@ -202,6 +202,7 @@ def compute_diffusion_intcoef_and_vertoffset(
             )
 
             zd_intcoef_dsl[jc, :, k_range] = z_vintcoeff[jc, :, k_range]
+
             zd_vertoffset_dsl[jc, :, k_range] = (
                 nbidx[jc, :, k_range] - array_ns.tile(array_ns.array(k_range), (3, 1)).T
             )
