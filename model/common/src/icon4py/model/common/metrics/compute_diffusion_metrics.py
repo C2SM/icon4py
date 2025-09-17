@@ -8,6 +8,7 @@
 
 from types import ModuleType
 
+import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -173,7 +174,7 @@ def compute_diffusion_intcoef_and_vertoffset(
     z_mc_off = z_mc[c2e2c]
     nbidx = array_ns.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
     z_vintcoeff = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
-    zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev), dtype=gtx.int32)
     zd_intcoef_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
     k_start, k_end, _ = _compute_k_start_end(
         z_mc=z_mc,
