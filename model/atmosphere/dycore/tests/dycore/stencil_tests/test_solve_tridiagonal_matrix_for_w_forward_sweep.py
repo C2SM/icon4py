@@ -106,7 +106,11 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
         )
         z_q = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        # z_q first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
+        z_q.asnumpy()[:, 0] = 0.0
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        # w first level should always be initialized to zero when solve_tridiagonal_matrix_for_w_forward_sweep is called
+        w.asnumpy()[:, 0] = 0.0
 
         h_start = 0
         h_end = gtx.int32(grid.num_cells)
