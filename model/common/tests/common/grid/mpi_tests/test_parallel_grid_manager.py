@@ -10,6 +10,7 @@ import logging
 import operator
 import pathlib
 from collections.abc import Iterator
+from typing import Any
 
 import numpy as np
 import pytest
@@ -23,17 +24,16 @@ from icon4py.model.common.grid import (
     geometry_attributes,
     grid_manager as gm,
     gridfile,
-    vertical as v_grid,
+    vertical as v_grid, base,
 )
-from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.interpolation_fields import compute_geofac_div
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
     definitions as test_defs,
     grid_utils,
-    test_utils as test_helpers,
+    test_utils as test_helpers, definitions,
 )
+from gt4py.next import typing as gtx_typing
 
 from ...decomposition import utils as decomp_utils
 from .. import utils
@@ -64,7 +64,7 @@ def run_gridmananger_for_multinode(
     return manager
 
 
-def _grid_manager(file: pathlib.Path, vertical_config: v_grid.VerticalGridConfig):
+def _grid_manager(file: pathlib.Path, vertical_config: v_grid.VerticalGridConfig)->gm.GridManager:
     manager = gm.GridManager(str(file), vertical_config)
     return manager
 
@@ -94,8 +94,13 @@ def run_grid_manager_for_singlenode(
 )
 @pytest.mark.parametrize("dim", utils.horizontal_dims())
 def test_start_end_index(
-    caplog, backend, processor_props, grid_file, experiment, dim, icon_grid
-):  # fixture
+    caplog:Any,
+    backend:gtx_typing.Backend|None,
+    processor_props:defs.ProcessProperties,
+    experiment:definitions.Experiment,
+    dim:gtx.Dimension,
+    icon_grid:base.Grid
+)->None:  # fixture
     caplog.set_level(logging.INFO)
     grid_file = experiment.grid
     file = grid_utils.resolve_full_grid_file_name(grid_file)
@@ -123,7 +128,7 @@ def test_start_end_index(
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi(min_size=2)
-def test_grid_manager_validate_decomposer(processor_props):
+def test_grid_manager_validate_decomposer(processor_props:defs.ProcessProperties)->None:
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL.name)
     manager = gm.GridManager(file, vertical_config, gridfile.ToZeroBasedIndexTransformation())
     with pytest.raises(exceptions.InvalidConfigError) as e:
@@ -139,10 +144,10 @@ def test_grid_manager_validate_decomposer(processor_props):
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_fields_distribute_and_gather(processor_props, caplog):
+def test_fields_distribute_and_gather(processor_props:defs.ProcessProperties, caplog:Any)->None:
     caplog.set_level(logging.INFO)
     print(f"myrank - {processor_props.rank}: running with processor_props =  {processor_props}")
-    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL.name)
+    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     single_node = run_grid_manager_for_singlenode(file, vertical_config)
     single_node_grid = single_node.grid
     global_cell_area = single_node.geometry[gridfile.GeometryName.CELL_AREA]
@@ -227,7 +232,7 @@ def assert_gathered_field_against_global(
     dim: gtx.Dimension,
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
-):
+)->None:
     assert (
         local_field.shape[0]
         == decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.ALL).shape[0]
@@ -271,7 +276,7 @@ def assert_gathered_field_against_global(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_halo_neighbor_access_c2e(processor_props):
+def test_halo_neighbor_access_c2e(processor_props:defs.ProcessProperties):
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL.name)
     backend = None
     print(f"running on {processor_props.comm}")
