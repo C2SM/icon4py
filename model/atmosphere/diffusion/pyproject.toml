@@ -65,13 +65,6 @@ version = "{current_version}"
 [[tool.bumpversion.files]]
 filename = "src/icon4py/model/atmosphere/diffusion/__init__.py"
 
-[tool.pytest]
-
-[tool.pytest.ini_options]
-markers = [
-  "benchmark_only: only run benchmark tests"
-]
-
 # --ruff --
 [tool.ruff]
 extend = "../../../pyproject.toml"
