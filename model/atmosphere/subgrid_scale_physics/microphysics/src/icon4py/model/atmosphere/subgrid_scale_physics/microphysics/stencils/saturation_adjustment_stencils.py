@@ -5,11 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Final
-
 import gt4py.next as gtx
+from gt4py.eve import utils as eve_utils
 from gt4py.next import abs, maximum, where  # noqa: A004
 
 import icon4py.model.common.dimension as dims
@@ -26,11 +23,10 @@ from icon4py.model.common import (
 )
 
 
-if TYPE_CHECKING:
-    pass
-
-_phy_const: Final = physics_constants.PhysicsConstants()
-_microphy_const: Final = microphysics_constants.MicrophysicsConstants()
+_phy_const: eve_utils.FrozenNamespace[ta.wpfloat] = physics_constants.PhysicsConstants()
+_microphy_const: eve_utils.FrozenNamespace[ta.wpfloat] = (
+    microphysics_constants.MicrophysicsConstants()
+)
 
 
 @gtx.field_operator

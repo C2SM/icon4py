@@ -5,12 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING, Final
 
 import gt4py.next as gtx
+from gt4py.eve import utils as eve_utils
 from gt4py.next import broadcast, exp, log, maximum, minimum, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import microphysics_constants
@@ -38,15 +36,13 @@ from icon4py.model.common import (
 from icon4py.model.common.type_alias import wpfloat
 
 
-if TYPE_CHECKING:
-    pass
-
-
 # TODO (Chia Rui): The limit has to be manually set to a huge value for a big scan operator. Remove it when neccesary.
 sys.setrecursionlimit(350000)
 
-_phy_const: Final = physics_constants.PhysicsConstants()
-_microphy_const: Final = microphysics_constants.MicrophysicsConstants()
+_phy_const: eve_utils.FrozenNamespace[ta.wpfloat] = physics_constants.PhysicsConstants()
+_microphy_const: eve_utils.FrozenNamespace[ta.wpfloat] = (
+    microphysics_constants.MicrophysicsConstants()
+)
 
 
 @gtx.scan_operator(
@@ -234,27 +230,27 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         _phy_const.lh_vaporise
         if use_constant_latent_heat
         else _phy_const.lh_vaporise
-        + (_microphy_const.cp_v - _phy_const.cpl) * (temperature - _phy_const.tmelt)
+        + (_microphy_const.CP_V - _phy_const.cpl) * (temperature - _phy_const.tmelt)
         - _phy_const.rv * temperature
     )
     lhs = (
         _phy_const.lh_sublimate
         if use_constant_latent_heat
         else _phy_const.lh_sublimate
-        + (_microphy_const.cp_v - _phy_const.cpi) * (temperature - _phy_const.tmelt)
+        + (_microphy_const.CP_V - _phy_const.cpi) * (temperature - _phy_const.tmelt)
         - _phy_const.rv * temperature
     )
 
     # for density correction of fall speeds
-    chlp = log(_microphy_const.ref_air_density / rho)
+    chlp = log(_microphy_const.REF_AIR_DENSITY / rho)
     crho1o2 = exp(chlp / wpfloat("2.0"))
     crhofac_qi = exp(chlp * exponent_for_density_factor_in_ice_sedimentation)
 
     cdtdh = wpfloat("0.5") * dtime / dz
     cscmax = qc / dtime
     cnin = compute_cooper_inp_concentration(temperature)
-    cmi = minimum(rho * qi / cnin, _microphy_const.ice_max_mass)
-    cmi = maximum(_microphy_const.ice_initial_mass, cmi)
+    cmi = minimum(rho * qi / cnin, _microphy_const.ICE_MAX_MASS)
+    cmi = maximum(_microphy_const.ICE_INITIAL_MASS, cmi)
 
     qvsw = sat_pres_water_scalar(temperature) / (rho * _phy_const.rv * temperature)
     qvsi = sat_pres_ice(temperature) / (rho * _phy_const.rv * temperature)
@@ -269,13 +265,13 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     rhoqgv_new_kup = qg_kup * rho_kup * vnew_g
     rhoqiv_new_kup = qi_kup * rho_kup * vnew_i
 
-    if rhoqrv_new_kup <= _microphy_const.qmin:
+    if rhoqrv_new_kup <= _microphy_const.QMIN:
         rhoqrv_new_kup = wpfloat("0.0")
-    if rhoqsv_new_kup <= _microphy_const.qmin:
+    if rhoqsv_new_kup <= _microphy_const.QMIN:
         rhoqsv_new_kup = wpfloat("0.0")
-    if rhoqgv_new_kup <= _microphy_const.qmin:
+    if rhoqgv_new_kup <= _microphy_const.QMIN:
         rhoqgv_new_kup = wpfloat("0.0")
-    if rhoqiv_new_kup <= _microphy_const.qmin:
+    if rhoqiv_new_kup <= _microphy_const.QMIN:
         rhoqiv_new_kup = wpfloat("0.0")
 
     rhoqr_intermediate = rhoqr / cdtdh + rhoqrv_new_kup + rhoqrv_old_kup
@@ -283,10 +279,10 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     rhoqg_intermediate = rhoqg / cdtdh + rhoqgv_new_kup + rhoqgv_old_kup
     rhoqi_intermediate = rhoqi / cdtdh + rhoqiv_new_kup + rhoqiv_old_kup
 
-    rain_exists = True if (rhoqr > _microphy_const.qmin) else False  # noqa: SIM210
-    snow_exists = True if (rhoqs > _microphy_const.qmin) else False  # noqa: SIM210
-    graupel_exists = True if (rhoqg > _microphy_const.qmin) else False  # noqa: SIM210
-    ice_exists = True if (rhoqi > _microphy_const.qmin) else False  # noqa: SIM210
+    rain_exists = True if (rhoqr > _microphy_const.QMIN) else False  # noqa: SIM210
+    snow_exists = True if (rhoqs > _microphy_const.QMIN) else False  # noqa: SIM210
+    graupel_exists = True if (rhoqg > _microphy_const.QMIN) else False  # noqa: SIM210
+    ice_exists = True if (rhoqi > _microphy_const.QMIN) else False  # noqa: SIM210
 
     n0s, snow_sed0, crim, cagg, cbsdep = compute_snow_interception_and_collision_parameters(
         temperature,
@@ -307,9 +303,9 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     if k_lev > 0:
         vnew_s = (
             snow_sed0_kup
-            * exp(_microphy_const.ccswxp * log((qs_kup + qs) * wpfloat("0.5") * rho_kup))
+            * exp(_microphy_const.CCSWXP * log((qs_kup + qs) * wpfloat("0.5") * rho_kup))
             * crho1o2_kup
-            if qs_kup + qs > _microphy_const.qmin
+            if qs_kup + qs > _microphy_const.QMIN
             else wpfloat("0.0")
         )
         vnew_r = (
@@ -319,41 +315,41 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
                 * log((qr_kup + qr) * wpfloat("0.5") * rho_kup)
             )
             * crho1o2_kup
-            if qr_kup + qr > _microphy_const.qmin
+            if qr_kup + qr > _microphy_const.QMIN
             else wpfloat("0.0")
         )
         vnew_g = (
-            _microphy_const.power_law_coeff_for_graupel_mean_fall_speed
+            _microphy_const.POWER_LAW_COEFF_FOR_GRAUPEL_MEAN_FALL_SPEED
             * exp(
-                _microphy_const.power_law_exponent_for_graupel_mean_fall_speed
+                _microphy_const.POWER_LAW_EXPONENT_FOR_GRAUPEL_MEAN_FALL_SPEED
                 * log((qg_kup + qg) * wpfloat("0.5") * rho_kup)
             )
             * crho1o2_kup
-            if qg_kup + qg > _microphy_const.qmin
+            if qg_kup + qg > _microphy_const.QMIN
             else wpfloat("0.0")
         )
         vnew_i = (
             power_law_coeff_for_ice_mean_fall_speed
             * exp(
-                _microphy_const.power_law_exponent_for_ice_mean_fall_speed
+                _microphy_const.POWER_LAW_EXPONENT_FOR_ICE_MEAN_FALL_SPEED
                 * log((qi_kup + qi) * wpfloat("0.5") * rho_kup)
             )
             * crhofac_qi_kup
-            if qi_kup + qi > _microphy_const.qmin
+            if qi_kup + qi > _microphy_const.QMIN
             else wpfloat("0.0")
         )
 
     if snow_exists:
-        terminal_velocity = snow_sed0 * exp(_microphy_const.ccswxp * log(rhoqs)) * crho1o2
+        terminal_velocity = snow_sed0 * exp(_microphy_const.CCSWXP * log(rhoqs)) * crho1o2
         # Prevent terminal fall speed of snow from being zero at the surface level
         if is_surface:
-            terminal_velocity = maximum(terminal_velocity, _microphy_const.minimum_snow_fall_speed)
+            terminal_velocity = maximum(terminal_velocity, _microphy_const.MINIMUM_SNOW_FALL_SPEED)
 
         rhoqsv = rhoqs * terminal_velocity
 
         # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
         if vnew_s == wpfloat("0.0"):
-            vnew_s = terminal_velocity * _microphy_const.ccswxp_ln1o2
+            vnew_s = terminal_velocity * _microphy_const.CCSWXP_LN1O2
 
     else:
         rhoqsv = wpfloat("0.0")
@@ -366,7 +362,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         )
         # Prevent terminal fall speed of snow from being zero at the surface level
         if is_surface:
-            terminal_velocity = maximum(terminal_velocity, _microphy_const.minimum_rain_fall_speed)
+            terminal_velocity = maximum(terminal_velocity, _microphy_const.MINIMUM_RAIN_FALL_SPEED)
 
         rhoqrv = rhoqr * terminal_velocity
 
@@ -379,14 +375,14 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
 
     if graupel_exists:
         terminal_velocity = (
-            _microphy_const.power_law_coeff_for_graupel_mean_fall_speed
-            * exp(_microphy_const.power_law_exponent_for_graupel_mean_fall_speed * log(rhoqg))
+            _microphy_const.POWER_LAW_COEFF_FOR_GRAUPEL_MEAN_FALL_SPEED
+            * exp(_microphy_const.POWER_LAW_EXPONENT_FOR_GRAUPEL_MEAN_FALL_SPEED * log(rhoqg))
             * crho1o2
         )
         # Prevent terminal fall speed of snow from being zero at the surface level
         if is_surface:
             terminal_velocity = maximum(
-                terminal_velocity, _microphy_const.minimum_graupel_fall_speed
+                terminal_velocity, _microphy_const.MINIMUM_GRAUPEL_FALL_SPEED
             )
 
         rhoqgv = rhoqg * terminal_velocity
@@ -401,7 +397,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     if ice_exists:
         terminal_velocity = (
             power_law_coeff_for_ice_mean_fall_speed
-            * exp(_microphy_const.power_law_exponent_for_ice_mean_fall_speed * log(rhoqi))
+            * exp(_microphy_const.POWER_LAW_EXPONENT_FOR_ICE_MEAN_FALL_SPEED * log(rhoqi))
             * crhofac_qi
         )
 
@@ -416,9 +412,9 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
 
     # Prevent terminal fall speeds of precip hydrometeors from being zero at the surface level
     if is_surface:
-        vnew_s = maximum(vnew_s, _microphy_const.minimum_snow_fall_speed)
-        vnew_r = maximum(vnew_r, _microphy_const.minimum_rain_fall_speed)
-        vnew_g = maximum(vnew_g, _microphy_const.minimum_graupel_fall_speed)
+        vnew_s = maximum(vnew_s, _microphy_const.MINIMUM_SNOW_FALL_SPEED)
+        vnew_r = maximum(vnew_r, _microphy_const.MINIMUM_RAIN_FALL_SPEED)
+        vnew_g = maximum(vnew_g, _microphy_const.MINIMUM_GRAUPEL_FALL_SPEED)
 
     # derive the intermediate density of hydrometeors, Eq. 5.21:
     # limit the precipitation flux at this k level such that mixing ratio won't go below zero
@@ -446,11 +442,11 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     #  Section 3: Precomputed coefficients after sedimentation for implicitness
     # ------------------------------------------------------------------------------
 
-    rain_exists = True if (rhoqr > _microphy_const.qmin) else False  # noqa: SIM210
-    snow_exists = True if (rhoqs > _microphy_const.qmin) else False  # noqa: SIM210
-    graupel_exists = True if (rhoqg > _microphy_const.qmin) else False  # noqa: SIM210
-    ice_exists = True if (qi > _microphy_const.qmin) else False  # noqa: SIM210
-    cloud_exists = True if (qc > _microphy_const.qmin) else False  # noqa: SIM210
+    rain_exists = True if (rhoqr > _microphy_const.QMIN) else False  # noqa: SIM210
+    snow_exists = True if (rhoqs > _microphy_const.QMIN) else False  # noqa: SIM210
+    graupel_exists = True if (rhoqg > _microphy_const.QMIN) else False  # noqa: SIM210
+    ice_exists = True if (qi > _microphy_const.QMIN) else False  # noqa: SIM210
+    cloud_exists = True if (qc > _microphy_const.QMIN) else False  # noqa: SIM210
 
     if rain_exists:
         clnrhoqr = log(rhoqr)
@@ -459,12 +455,12 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         )  # GZ: shifting this computation ahead of the IF condition changes results!
         celn7o8qrk = (
             exp(wpfloat("7.0") / wpfloat("8.0") * clnrhoqr)
-            if qi + qc > _microphy_const.qmin
+            if qi + qc > _microphy_const.QMIN
             else wpfloat("0.0")
         )
         celn7o4qrk = (
             exp(wpfloat("7.0") / wpfloat("4.0") * clnrhoqr)
-            if temperature < _microphy_const.threshold_freeze_temperature
+            if temperature < _microphy_const.THRESHOLD_FREEZE_TEMPERATURE
             else wpfloat("0.0")
         )  # FR new
         celn13o8qrk = (
@@ -483,7 +479,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         cssmax = (
             rhoqs_intermediate / rho / dtime
         )  # GZ: shifting this computation ahead of the IF condition changes results#
-        if qi + qc > _microphy_const.qmin:
+        if qi + qc > _microphy_const.QMIN:
             celn3o4qsk = exp(wpfloat("3.0") / wpfloat("4.0") * clnrhoqs)
         else:
             celn3o4qsk = wpfloat("0.0")
@@ -496,8 +492,8 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     if graupel_exists:
         clnrhoqg = log(rhoqg)
         csgmax = rhoqg_intermediate / rho / dtime
-        if qi + qc > _microphy_const.qmin:
-            celnrimexp_g = exp(_microphy_const.graupel_rimexp * clnrhoqg)
+        if qi + qc > _microphy_const.QMIN:
+            celnrimexp_g = exp(_microphy_const.GRAUPEL_RIMEXP * clnrhoqg)
         else:
             celnrimexp_g = wpfloat("0.0")
         celn6qgk = exp(wpfloat("0.6") * clnrhoqg)
@@ -507,13 +503,13 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         celn6qgk = wpfloat("0.0")
 
     if ice_exists | snow_exists:
-        cdvtp = _microphy_const.ccdvtp * exp(wpfloat("1.94") * log(temperature)) / pressure
-        chi = _microphy_const.ccshi1 * cdvtp * rho * qvsi / (temperature * temperature)
+        cdvtp = _microphy_const.CCDVTP * exp(wpfloat("1.94") * log(temperature)) / pressure
+        chi = _microphy_const.CCSHI1 * cdvtp * rho * qvsi / (temperature * temperature)
         chlp = cdvtp / (wpfloat("1.0") + chi)
-        cidep = _microphy_const.ccidep * chlp
+        cidep = _microphy_const.CCIDEP * chlp
 
         if snow_exists:
-            cslam = exp(_microphy_const.ccslxp * log(_microphy_const.ccslam * n0s / rhoqs))
+            cslam = exp(_microphy_const.CCSLXP * log(_microphy_const.CCSLAM * n0s / rhoqs))
             cslam = minimum(cslam, wpfloat("1.0e15"))
             csdep = wpfloat("4.0") * n0s * chlp
         else:
@@ -684,7 +680,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     )
 
     # finalizing transfer rates in clouds and calculate depositional growth reduction
-    if cloud_exists & (temperature > _microphy_const.homogeneous_freeze_temperature):
+    if cloud_exists & (temperature > _microphy_const.HOMOGENEOUS_FREEZE_TEMPERATURE):
         # Check for maximum depletion of cloud water and adjust the
         # transfer rates accordingly
         csum = (
@@ -817,8 +813,8 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         + snow_autoconversion_rate_s2g
     )
 
-    # l_cv (is_isochoric) is removed in icon4py. So, heat_cap_r (reciprocal of heat capacity of dry air) = _microphy_const.rcvd (at constant volume)
-    temperature_tendency = _microphy_const.rcvd * (lhv * (cqct + cqrt) + lhs * (cqit + cqst + cqgt))
+    # l_cv (is_isochoric) is removed in icon4py. So, heat_cap_r (reciprocal of heat capacity of dry air) = _microphy_const.RCVD (at constant volume)
+    temperature_tendency = _microphy_const.RCVD * (lhv * (cqct + cqrt) + lhs * (cqit + cqst + cqgt))
     qi_tendency = maximum((rhoqi_intermediate / rho * cimi - qi) / dtime + cqit * cimi, -qi / dtime)
     qr_tendency = maximum((rhoqr_intermediate / rho * cimr - qr) / dtime + cqrt * cimr, -qr / dtime)
     qs_tendency = maximum((rhoqs_intermediate / rho * cims - qs) / dtime + cqst * cims, -qs / dtime)
@@ -1247,10 +1243,10 @@ def _icon_graupel_flux_above_ground(
     graupel_flux_ = (qg + qg_tendency * dtime) * rho * vnew_g
     ice_flux_ = (qi + qi_tendency * dtime) * rho * vnew_i
 
-    rain_flux_new = where(rain_flux_ <= _microphy_const.qmin, zero, rain_flux_)
-    snow_flux_new = where(snow_flux_ <= _microphy_const.qmin, zero, snow_flux_)
-    graupel_flux_new = where(graupel_flux_ <= _microphy_const.qmin, zero, graupel_flux_)
-    ice_flux_new = where(ice_flux_ <= _microphy_const.qmin, zero, ice_flux_)
+    rain_flux_new = where(rain_flux_ <= _microphy_const.QMIN, zero, rain_flux_)
+    snow_flux_new = where(snow_flux_ <= _microphy_const.QMIN, zero, snow_flux_)
+    graupel_flux_new = where(graupel_flux_ <= _microphy_const.QMIN, zero, graupel_flux_)
+    ice_flux_new = where(ice_flux_ <= _microphy_const.QMIN, zero, ice_flux_)
 
     rain_flux = wpfloat("0.5") * (rain_flux_new + rhoqrv_old_kup)
     snow_flux = wpfloat("0.5") * (snow_flux_new + rhoqsv_old_kup)
