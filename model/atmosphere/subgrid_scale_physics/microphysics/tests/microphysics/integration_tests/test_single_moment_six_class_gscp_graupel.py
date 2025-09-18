@@ -159,15 +159,13 @@ def test_graupel(
         qg_tendency,
     )
 
-    new_temperature = (
-        entry_savepoint.temperature().ndarray[:, :] + temperature_tendency.ndarray * dtime
-    )
-    new_qv = entry_savepoint.qv().ndarray[:, :] + qv_tendency.ndarray * dtime
-    new_qc = entry_savepoint.qc().ndarray[:, :] + qc_tendency.ndarray * dtime
-    new_qr = entry_savepoint.qr().ndarray[:, :] + qr_tendency.ndarray * dtime
-    new_qi = entry_savepoint.qi().ndarray[:, :] + qi_tendency.ndarray * dtime
-    new_qs = entry_savepoint.qs().ndarray[:, :] + qs_tendency.ndarray * dtime
-    new_qg = entry_savepoint.qg().ndarray[:, :] + qg_tendency.ndarray * dtime
+    new_temperature = entry_savepoint.temperature().asnumpy() + temperature_tendency.asnumpy() * dtime
+    new_qv = entry_savepoint.qv().asnumpy() + qv_tendency.asnumpy() * dtime
+    new_qc = entry_savepoint.qc().asnumpy() + qc_tendency.asnumpy() * dtime
+    new_qr = entry_savepoint.qr().asnumpy() + qr_tendency.asnumpy() * dtime
+    new_qi = entry_savepoint.qi().asnumpy() + qi_tendency.asnumpy() * dtime
+    new_qs = entry_savepoint.qs().asnumpy() + qs_tendency.asnumpy() * dtime
+    new_qg = entry_savepoint.qg().asnumpy() + qg_tendency.asnumpy() * dtime
 
     assert test_utils.dallclose(
         new_temperature,

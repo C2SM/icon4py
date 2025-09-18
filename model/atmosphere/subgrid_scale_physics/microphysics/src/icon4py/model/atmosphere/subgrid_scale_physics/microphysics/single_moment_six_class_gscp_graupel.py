@@ -14,7 +14,7 @@ from typing import Final
 
 import gt4py.next as gtx
 from gt4py.eve import utils as eve_utils
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
 from gt4py.next.ffront.fbuiltins import broadcast, exp, log, maximum, minimum, sqrt, where
 
@@ -1131,15 +1131,15 @@ class SingleMomentSixClassIconGraupel:
     def __init__(
         self,
         graupel_config: SingleMomentSixClassIconGraupelConfig,
-        grid: icon_grid.IconGrid | None,
-        metric_state: MetricStateIconGraupel | None,
-        vertical_params: v_grid.VerticalGrid | None,
-        backend: backend.Backend,
+        grid: icon_grid.IconGrid,
+        metric_state: MetricStateIconGraupel,
+        vertical_params: v_grid.VerticalGrid,
+        backend: gtx_backend.Backend | None = None,
     ):
         self.config = graupel_config
         self._initialize_configurable_parameters()
         self._grid = grid
-        self.metric_state = metric_state
+        self._metric_state = metric_state
         self.vertical_params = vertical_params
         self._backend = backend
 
@@ -1250,20 +1250,6 @@ class SingleMomentSixClassIconGraupel:
             power_law_exponent_for_ice_mean_fall_speed_ln1o2,
             power_law_exponent_for_graupel_mean_fall_speed_ln1o2,
         )
-
-    @property
-    def ice_collision_precomputed_coef(self) -> tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat]:
-        return self._ice_collision_precomputed_coef
-
-    @property
-    def rain_precomputed_coef(
-        self,
-    ) -> tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat, ta.wpfloat, ta.wpfloat, ta.wpfloat]:
-        return self._rain_precomputed_coef
-
-    @property
-    def sed_dens_factor_coef(self) -> tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat]:
-        return self._sed_dens_factor_coef
 
     def _initialize_local_fields(self):
         self.rhoqrv_old_kup = data_alloc.zero_field(
@@ -1427,7 +1413,7 @@ class SingleMomentSixClassIconGraupel:
         """
         self._icon_graupel(
             dtime=dtime,
-            dz=self.metric_state.ddqz_z_full,
+            dz=self._metric_state.ddqz_z_full,
             temperature=temperature,
             pressure=pressure,
             rho=rho,
