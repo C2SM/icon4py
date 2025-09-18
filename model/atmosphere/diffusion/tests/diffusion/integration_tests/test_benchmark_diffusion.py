@@ -46,6 +46,7 @@ from ..fixtures import *  # noqa: F403
     "grid", [definitions.Grids.MCH_OPR_R19B08_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
 )
 @pytest.mark.continuous_benchmarking
+@pytest.mark.benchmark_only
 def test_run_diffusion_benchmark(
     grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,

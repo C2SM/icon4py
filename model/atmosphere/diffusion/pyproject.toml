@@ -79,3 +79,8 @@ known-third-party = ['gt4py']
 
 [tool.setuptools.packages]
 find = {namespaces = true, where = ['src']}
+
+[tool.pytest.ini_options]
+markers = [
+    "benchmark_only: only run benchmark tests"
+]
