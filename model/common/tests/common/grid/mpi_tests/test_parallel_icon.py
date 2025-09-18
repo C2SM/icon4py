@@ -15,11 +15,11 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-
-from icon4py.model.testing import parallel_helpers
 from icon4py.model.common.decomposition import definitions as defs, mpi_decomposition
-from ..fixtures import *
+from icon4py.model.testing import parallel_helpers
+
 from .. import utils
+from ..fixtures import *
 
 
 if TYPE_CHECKING:

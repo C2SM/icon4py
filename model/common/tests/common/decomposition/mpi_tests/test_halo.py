@@ -13,14 +13,16 @@ import pytest
 import icon4py.model.common.dimension as dims
 from icon4py.model.common import exceptions
 from icon4py.model.common.decomposition import definitions as defs
-from icon4py.model.testing.fixtures import processor_props
 from icon4py.model.testing import parallel_helpers
+from icon4py.model.testing.fixtures import processor_props
+
 from .. import utils
 
 
 try:
     import mpi4py  # import mpi4py to check for optional mpi dependency
     import mpi4py.MPI
+
     from icon4py.model.common.decomposition import mpi_decomposition
 
     mpi_decomposition.init_mpi()
@@ -30,10 +32,7 @@ except ImportError:
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common.decomposition import halo
-from icon4py.model.common.grid import (
-    base as base_grid,
-    simple,
-)
+from icon4py.model.common.grid import base as base_grid, simple
 from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs
 
 

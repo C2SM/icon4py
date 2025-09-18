@@ -9,39 +9,39 @@ import functools
 import logging
 import operator
 import pathlib
-from typing import Iterator
+from collections.abc import Iterator
 
 import numpy as np
 import pytest
 from gt4py import next as gtx
 
 import icon4py.model.common.grid.gridfile
-from icon4py.model.common.utils import data_allocation as data_alloc
-import icon4py.model.testing.grid_utils as grid_utils
-from icon4py.model.common import exceptions, dimension as dims
-from icon4py.model.common.decomposition import halo, mpi_decomposition, definitions as defs
+from icon4py.model.common import dimension as dims, exceptions
+from icon4py.model.common.decomposition import definitions as defs, halo, mpi_decomposition
 from icon4py.model.common.grid import (
-    grid_manager as gm,
-    vertical as v_grid,
-    gridfile,
     geometry,
     geometry_attributes,
+    grid_manager as gm,
+    gridfile,
+    vertical as v_grid,
 )
-from icon4py.model.common.interpolation import interpolation_factory, interpolation_attributes
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.interpolation_fields import compute_geofac_div
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
-    test_utils as test_helpers,
     definitions as test_defs,
+    grid_utils,
+    test_utils as test_helpers,
 )
 
+from ...decomposition import utils as decomp_utils
 from .. import utils
 from ..fixtures import *
-from ...decomposition import utils as decomp_utils
 
 
 try:
-    import mpi4py  # noqa F401:  import mpi4py to check for optional mpi dependency
+    import mpi4py
 
     mpi_decomposition.init_mpi()
 except ImportError:
@@ -210,7 +210,7 @@ def gather_field(field: np.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
 
     comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
     if comm.rank == 0:
-        log.debug(f"fields gathered:")
+        log.debug("fields gathered:")
         log.debug(f"field sizes {local_sizes}")
         local_first_dim = tuple(size / constant_length for size in local_sizes)
         gathered_field = recv_buffer.reshape((-1, *constant_dims))

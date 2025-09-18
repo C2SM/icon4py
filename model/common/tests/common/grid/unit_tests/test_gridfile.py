@@ -7,8 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims

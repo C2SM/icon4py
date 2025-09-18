@@ -8,15 +8,15 @@
 
 import numpy as np
 import pytest
-from icon4py.model.testing import definitions
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import grid_utils
-from icon4py.model.common import dimension as dims
-from icon4py.model.common import constants
+
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid.geometry_stencils import (
-    compute_edge_length,
     compute_cell_center_arc_distance,
+    compute_edge_length,
 )
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions, grid_utils
+
 from ..fixtures import *
 
 
@@ -74,9 +74,15 @@ def test_compute_dual_edge_length(experiment, grid_file, grid_savepoint, backend
     )
     grid = gm.grid
     coordinates = gm.coordinates[dims.VertexDim]
-    lat = coordinates["lat"]
-    lon = coordinates["lon"]
-    # lat = grid_savepoint.lat(dims.VertexDim)
-    # lon = grid_savepoint.lon(dims.VertexDim)
+    # lat = coordinates["lat"]
+    # lon = coordinates["lon"]
+    lat_vertex = grid_savepoint.lat(dims.VertexDim)
+    lon_vertex = grid_savepoint.lon(dims.VertexDim)
+    lat_edges = grid_savepoint.lat(dims.EdgeDim)
+    lon_edges = grid_savepoint.lon(dims.EdgeDim)
+    radius = constants.EARTH_RADIUS
+
     length = data_alloc.zero_field(grid, dims.EdgeDim)
-    compute_cell_center_arc_distance.with_backend(backend)()
+    compute_cell_center_arc_distance.with_backend(backend)(
+        lat_edges, lon_edges, lat_vertex, lon_vertex, radius, length
+    )

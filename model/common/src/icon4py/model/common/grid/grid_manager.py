@@ -26,7 +26,6 @@ from icon4py.model.common.grid import (
     refinement,
     vertical as v_grid,
 )
-from icon4py.model.common.grid.icon import GridSubdivision
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -435,7 +434,7 @@ class GridManager:
             horizontal_size=distributed_size,
             vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
-            keep_skip_values=with_skip_values
+            keep_skip_values=with_skip_values,
         )
 
         grid = icon.icon_grid(
@@ -454,7 +453,10 @@ class GridManager:
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
         geometry_type = self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY)
-        shape = icon.GridShape(geometry_type=geometry_type, subdivision=icon.GridSubdivision(root=grid_root, level=grid_level))
+        shape = icon.GridShape(
+            geometry_type=geometry_type,
+            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+        )
         global_params = icon.GlobalGridParams(grid_shape=shape)
         return global_params
 

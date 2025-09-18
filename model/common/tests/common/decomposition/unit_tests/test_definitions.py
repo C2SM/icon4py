@@ -14,12 +14,11 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common.decomposition import definitions, halo
 from icon4py.model.common.grid import simple
-
+from icon4py.model.testing.fixtures import processor_props
 
 from .. import utils
 from ..mpi_tests.test_halo import simple_neighbor_tables
 from ..utils import dummy_four_ranks
-from icon4py.model.testing.fixtures import processor_props
 
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)

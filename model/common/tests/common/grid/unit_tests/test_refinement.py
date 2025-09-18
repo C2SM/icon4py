@@ -12,14 +12,14 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common.grid import refinement as refin, horizontal as h_grid
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid, refinement as refin
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures import backend
 
 from .. import utils
-from ..fixtures import *  # noqa: F401, F403
+from ..fixtures import *  # noqa: F403
 
 
 if TYPE_CHECKING:
@@ -78,7 +78,7 @@ def test_valid_refinement_values(dim: gtx.Dimension) -> None:
     [(test_defs.Grids.R02B04_GLOBAL, False), (test_defs.Grids.MCH_CH_R04B09_DSL, True)],
 )
 def test_is_local_area_grid_for_grid_files(
-    grid_descriptor: definitions.GridDescription,
+    grid_descriptor: test_defs.GridDescription,
     expected: bool,
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,

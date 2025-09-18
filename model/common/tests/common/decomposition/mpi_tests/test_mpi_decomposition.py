@@ -6,33 +6,31 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
-import pytest
 import logging
 
-from icon4py.model.common import dimension as dims
+import numpy as np
+import pytest
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import parallel_helpers
-
 from icon4py.model.testing.fixtures.datatest import (
-    experiment,
     backend,
-    download_ser_data,
-    ranked_data_path,
     data_provider,
-    processor_props,
     decomposition_info,
     download_ser_data,
     experiment,
     grid_savepoint,
     icon_grid,
+    processor_props,
     ranked_data_path,
 )
 
+
 try:
     import mpi4py  # import mpi4py to check for optional mpi dependency
+
     from icon4py.model.common.decomposition import mpi_decomposition
 
     mpi_decomposition.init_mpi()

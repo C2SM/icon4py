@@ -13,6 +13,7 @@ from gt4py import next as gtx
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 
+
 """
 TESTDATA using the [SimpleGrid](../../../src/icon4py/model/common/grid/simple.py)
 The distribution maps all of the 18 cells of the simple grid to ranks 0..3
@@ -152,13 +153,9 @@ SECOND_HALO_LINE = {
 
 def assert_same_entries(
     dim: gtx.Dimension, my_owned: np.ndarray, reference: dict[gtx.Dimension, dict], rank: int
-):
+) -> None:
     assert my_owned.size == len(reference[dim][rank])
     assert np.setdiff1d(my_owned, reference[dim][rank], assume_unique=True).size == 0
-
-
-def dummy_four_ranks(rank) -> definitions.ProcessProperties:
-    return DummyProps(rank=rank)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -168,3 +165,7 @@ class DummyProps(definitions.ProcessProperties):
         object.__setattr__(self, "comm", None)
         object.__setattr__(self, "comm_name", "dummy on 4")
         object.__setattr__(self, "comm_size", 4)
+
+
+def dummy_four_ranks(rank: int) -> definitions.ProcessProperties:
+    return DummyProps(rank=rank)

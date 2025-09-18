@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import typing
-from typing import Iterator
+from collections.abc import Iterator
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
