@@ -9,7 +9,7 @@
 import sys
 from typing import Final
 
-from gt4py.next import Field, common, int32, int64
+import gt4py.next as gtx
 
 from icon4py.model.common import type_alias
 
@@ -28,17 +28,24 @@ if dace:
     VertexDim_sym = dace.symbol("VertexDim_sym")
     KDim_sym = dace.symbol("KDim_sym")
 
+    #TODO(pstark): I guess we wouldn't have to care what wpfloat/vpfloat combination is present if with these tuples the mapping from gtx to dace types is correct?
+    # dace_typedict = {
+    #     gtx.float32 : dace.float32,
+    #     gtx.float64 : dace.float64,
+    #     gtx.int32   : dace.int32,
+    #     gtx.int64   : dace.int64,
+    # }
     ICON4PY_PRIMITIVE_DTYPES: Final = (
         type_alias.wpfloat,
         type_alias.vpfloat,
         float,
         bool,
-        int32,
-        int64,
+        gtx.int32,
+        gtx.int64,
         int,
     )
     DACE_PRIMITIVE_DTYPES: Final = (
-        dace.float64,
+        dace.float64 if not type_alias.precision == "single" else dace.float32,
         dace.float64 if type_alias.precision == "double" else dace.float32,
         dace.float64,
         dace.bool,
@@ -50,7 +57,7 @@ if dace:
     def stride_symbol_name_from_field(cls: type, field_name: str, stride: int) -> str:
         return f"{cls.__name__}_{field_name}_s{stride}_sym"
 
-    def gt4py_dim_to_dace_symbol(dim: common.Dimension) -> dace.symbol:
+    def gt4py_dim_to_dace_symbol(dim: gtx.common.Dimension) -> dace.symbol:
         # See dims.global_dimensions.values()
         # TODO(kotsaloscv): generalize this
         if "cell" in dim.value.lower():
@@ -81,7 +88,7 @@ if dace:
             if not hasattr(type_, "__origin__"):
                 continue
             # TODO(kotsaloscv): DaCe Structure with GT4Py Fields. Disregard the rest of the fields.
-            if type_.__origin__ is not Field:
+            if type_.__origin__ is not gtx.Field:
                 continue
 
             dims_ = type_.__args__[0].__args__  # dimensions of the field
