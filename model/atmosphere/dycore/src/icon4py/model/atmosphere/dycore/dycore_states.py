@@ -230,6 +230,7 @@ class MetricStateNonHydro:
     Declared as d_exner_dz_ref_ic in ICON.
     """
     ddqz_z_half: fa.CellKField[float]  # half dims.KDim ?
+    ddqz_z_half_e: fa.EdgeKField[float]  # half dims.KDim ?
     d2dexdz2_fac1_mc: fa.CellKField[float]
     d2dexdz2_fac2_mc: fa.CellKField[float]
     ddxn_z_full: fa.EdgeKField[float]

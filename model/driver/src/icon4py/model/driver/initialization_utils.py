@@ -11,6 +11,7 @@ import logging
 import pathlib
 import uuid
 
+import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
@@ -21,6 +22,7 @@ from icon4py.model.common.decomposition import (
     mpi_decomposition as mpi_decomp,
 )
 from icon4py.model.common.grid import icon as icon_grid, states as grid_states, vertical as v_grid
+from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half_e
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -471,6 +473,24 @@ def read_static_fields(
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
+
+        #xp = data_alloc.import_array_ns(backend)
+        #vwind_impl_wgt_np = 0.5 * xp.ones((grid.num_cells,), dtype=float)
+        #vwind_impl_wgt = gtx.as_field((dims.CellDim,), vwind_impl_wgt_np, allocator=backend)
+
+        xp = data_alloc.import_array_ns(backend)
+        ddqz_z_half_e_np = xp.zeros((grid.num_edges, grid.num_levels+1), dtype=float)
+        ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
+        compute_ddqz_z_half_e.with_backend(backend)(
+            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+            c_lin_e=interpolation_savepoint.c_lin_e(),
+            ddqz_z_half_e=ddqz_z_half_e,
+            horizontal_start=0,
+            horizontal_end=grid.num_edges,
+            vertical_start=0,
+            vertical_end=grid.num_levels+1,
+        )
+
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
@@ -485,6 +505,7 @@ def read_static_fields(
             vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
             ddz_of_reference_exner_at_cells_on_half_levels=metrics_savepoint.d_exner_dz_ref_ic(),
             ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+            ddqz_z_half_e=ddqz_z_half_e,
             reference_theta_at_cells_on_half_levels=metrics_savepoint.theta_ref_ic(),
             d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
             d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
@@ -500,6 +521,7 @@ def read_static_fields(
             wgtfac_e=metrics_savepoint.wgtfac_e(),
             wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid.num_levels),
             vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
+            #vwind_impl_wgt=vwind_impl_wgt,
             horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
             scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
             coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
