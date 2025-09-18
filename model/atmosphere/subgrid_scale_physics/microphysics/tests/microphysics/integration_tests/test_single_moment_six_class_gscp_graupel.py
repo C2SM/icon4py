@@ -5,7 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -25,36 +27,40 @@ from icon4py.model.testing import definitions, test_utils
 from ..fixtures import *  # noqa: F403
 
 
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import icon as icon_grid
+    from icon4py.model.testing import serialbox as sb
+
+
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, model_top_height, damping_height, stretch_factor",
+    "experiment, model_top_height",
     [
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0, 8000.0, 0.85),
+        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0),
     ],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 def test_graupel(
-    experiment,
-    model_top_height,
-    damping_height,
-    stretch_factor,
-    date,
-    data_provider,
-    grid_savepoint,
-    metrics_savepoint,
-    icon_grid,
-    lowest_layer_thickness,
-    backend,
+    experiment: definitions.Experiments,
+    model_top_height: ta.wpfloat,
+    date: str,
+    *,
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    icon_grid: icon_grid.IconGrid,
+    lowest_layer_thickness: ta.wpfloat,
+    backend: gtx_typing.Backend,
 ):
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
     )
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -159,7 +165,9 @@ def test_graupel(
         qg_tendency,
     )
 
-    new_temperature = entry_savepoint.temperature().asnumpy() + temperature_tendency.asnumpy() * dtime
+    new_temperature = (
+        entry_savepoint.temperature().asnumpy() + temperature_tendency.asnumpy() * dtime
+    )
     new_qv = entry_savepoint.qv().asnumpy() + qv_tendency.asnumpy() * dtime
     new_qc = entry_savepoint.qc().asnumpy() + qc_tendency.asnumpy() * dtime
     new_qr = entry_savepoint.qr().asnumpy() + qr_tendency.asnumpy() * dtime

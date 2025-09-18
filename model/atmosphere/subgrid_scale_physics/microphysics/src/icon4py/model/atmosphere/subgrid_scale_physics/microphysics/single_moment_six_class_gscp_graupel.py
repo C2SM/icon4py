@@ -5,17 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+from __future__ import annotations
 
 import dataclasses
 import math
 import sys
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 import gt4py.next as gtx
 from gt4py.eve import utils as eve_utils
-from gt4py.next import backend as gtx_backend
-from gt4py.next.ffront.decorator import field_operator, program, scan_operator
 from gt4py.next.ffront.fbuiltins import broadcast, exp, log, maximum, minimum, sqrt, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import microphysics_constants
@@ -26,9 +24,15 @@ from icon4py.model.common import (
     model_options,
     type_alias as ta,
 )
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 
 
 # TODO (Chia Rui): The limit has to be manually set to a huge value for a big scan operator. Remove it when neccesary.
@@ -1134,7 +1138,7 @@ class SingleMomentSixClassIconGraupel:
         grid: icon_grid.IconGrid,
         metric_state: MetricStateIconGraupel,
         vertical_params: v_grid.VerticalGrid,
-        backend: gtx_backend.Backend | None = None,
+        backend: gtx_typing.Backend | None = None,
     ):
         self.config = graupel_config
         self._initialize_configurable_parameters()
@@ -1581,7 +1585,7 @@ def _icon_graupel_flux_above_ground(
     return rain_flux, snow_flux, graupel_flux, ice_flux, total_flux
 
 
-@program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def icon_graupel_flux_at_ground(
     do_latent_heat_nudging: bool,
     dtime: ta.wpfloat,
@@ -1646,7 +1650,7 @@ def icon_graupel_flux_at_ground(
     )
 
 
-@program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def icon_graupel_flux_above_ground(
     do_latent_heat_nudging: bool,
     dtime: ta.wpfloat,
@@ -1711,7 +1715,7 @@ def icon_graupel_flux_above_ground(
     )
 
 
-@scan_operator(
+@gtx.scan_operator(
     axis=dims.KDim,
     forward=True,
     init=(
@@ -2522,7 +2526,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     )
 
 
-@field_operator
+@gtx.field_operator
 def _icon_graupel(
     ground_level: gtx.int32,
     liquid_autoconversion_option: gtx.int32,
@@ -2658,7 +2662,7 @@ def _icon_graupel(
     )
 
 
-@program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def icon_graupel(
     ground_level: gtx.int32,
     liquid_autoconversion_option: gtx.int32,
