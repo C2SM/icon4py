@@ -100,7 +100,7 @@ class SingleMomentSixClassIconGraupel:
         grid: icon_grid.IconGrid,
         metric_state: MetricStateIconGraupel,
         vertical_params: v_grid.VerticalGrid,
-        backend: gtx_typing.Backend | None = None,
+        backend: gtx_typing.Backend | None,
     ):
         self.config = graupel_config
         self._initialize_configurable_parameters()
