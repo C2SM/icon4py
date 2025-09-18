@@ -227,7 +227,9 @@ def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
         case "stencils":
             pytest_args.extend(["-k", "stencil_tests"])
         case "basic":
-            pytest_args.extend(["--datatest-skip", "-k", "not stencil_tests", "_selection_to_pytest_args"])
+            pytest_args.extend(
+                ["--datatest-skip", "-k", "not stencil_tests", "_selection_to_pytest_args"]
+            )
         case _:
             raise AssertionError(f"Invalid selection: {selection}")
 
