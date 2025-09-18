@@ -112,7 +112,7 @@ class GlobalGridParams:
             if value is not None:
                 return value
             if data is not None:
-                return xp.mean(data)
+                return xp.mean(data).item()
             return None
 
         mean_edge_length = init_mean(mean_edge_length, edge_lengths)
