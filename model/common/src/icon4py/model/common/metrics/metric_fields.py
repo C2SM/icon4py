@@ -112,6 +112,26 @@ def compute_ddqz_z_half(
         },
     )
 
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_ddqz_z_half_e(
+    ddqz_z_half: fa.CellKField[wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+    ddqz_z_half_e: fa.EdgeKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _cell_2_edge_interpolation(
+        in_field=ddqz_z_half,
+        coeff=c_lin_e,
+        out=ddqz_z_half_e,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
 
 @field_operator
 def _compute_ddqz_z_full_and_inverse(
