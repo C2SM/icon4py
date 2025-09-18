@@ -24,8 +24,11 @@ from icon4py.model.testing.fixtures.datatest import (
     data_provider,
     processor_props,
     decomposition_info,
+    download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
+    ranked_data_path,
 )
 
 try:
@@ -73,6 +76,7 @@ def test_decomposition_info_masked(
     owned,
     total,
     caplog,
+    download_ser_data,
     decomposition_info,
     processor_props,
 ):

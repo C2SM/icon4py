@@ -5,8 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import logging
+
+from __future__ import annotations
+
 import re
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -19,17 +22,24 @@ from ..fixtures import *
 from .. import utils
 
 
+if TYPE_CHECKING:
+    import gt4py.next as gtx
+
+    from icon4py.model.common.decomposition import definitions as decomp_defs
+    from icon4py.model.common.grid import base as base_grid
+
+
 try:
-    import mpi4py  # F401:  import mpi4py to check for optional mpi dependency
+    import mpi4py  # type: ignore[import-not-found] # F401:  import mpi4py to check for optional mpi dependency
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_props(processor_props):
+def test_props(processor_props: decomp_defs.ProcessProperties) -> None:
     """dummy test to check whether the MPI initialization and GHEX setup works."""
-    import ghex.context as ghex
+    import ghex.context as ghex  # type: ignore[import-not-found]
 
     assert processor_props.comm
 
@@ -58,8 +68,9 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_distributed_local(processor_props, dim, icon_grid, caplog):
-    caplog.set_level(logging.INFO)
+def test_distributed_local(
+    processor_props: decomp_defs.ProcessProperties, dim: gtx.Dimension, icon_grid: base_grid.Grid
+) -> None:
     parallel_helpers.check_comm_size(processor_props)
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
     print(
@@ -119,7 +130,12 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 @pytest.mark.mpi
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
-def test_distributed_halo(processor_props, dim, zone, level, icon_grid):
+def test_distributed_halo(
+    processor_props: decomp_defs.ProcessProperties,
+    dim: gtx.Dimension,
+    zone: h_grid.Zone,
+    icon_grid: base_grid.Grid,
+) -> None:
     parallel_helpers.check_comm_size(processor_props)
     domain = h_grid.domain(dim)(zone)
     start_index = icon_grid.start_index(domain)

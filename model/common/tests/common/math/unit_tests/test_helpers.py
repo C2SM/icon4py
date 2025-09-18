@@ -8,10 +8,10 @@
 from typing import Any
 
 import gt4py.next as gtx
-import icon4py.model.testing.test_utils
 import numpy as np
 import pytest
 
+import icon4py.model.testing.test_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.math import helpers

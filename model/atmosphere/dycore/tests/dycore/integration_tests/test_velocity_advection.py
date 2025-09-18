@@ -11,10 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore import (
-    dycore_states,
-    velocity_advection as advection,
-)
+from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
     compute_advection_in_horizontal_momentum_equation,
 )
@@ -25,7 +22,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
 )
-from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
     states as grid_states,
@@ -33,7 +30,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
+from icon4py.model.testing import definitions, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -71,8 +68,8 @@ def create_vertical_params(vertical_config, grid_savepoint):
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_savepoint(
@@ -118,8 +115,8 @@ def test_verify_velocity_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
 def test_scale_factors_by_dtime(
@@ -166,9 +163,17 @@ def test_scale_factors_by_dtime(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -313,9 +318,17 @@ def test_velocity_predictor_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -441,8 +454,12 @@ def test_velocity_corrector_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
@@ -571,9 +588,17 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
@@ -603,7 +628,9 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     horizontal_advection_of_w_at_edges_on_half_levels = savepoint_velocity_exit.z_v_grad_w()
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
-    vertical_cfl = savepoint_velocity_init.vcfl_dsl()
+    vertical_cfl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=backend
+    )
     skip_compute_predictor_vertical_advection = savepoint_velocity_init.lvn_only()
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
@@ -715,9 +742,17 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
@@ -747,7 +782,9 @@ def test_compute_advection_in_vertical_momentum_equation(
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
-    vertical_cfl = savepoint_velocity_init.vcfl_dsl()
+    vertical_cfl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=backend
+    )
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
@@ -852,8 +889,12 @@ def test_compute_advection_in_vertical_momentum_equation(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])

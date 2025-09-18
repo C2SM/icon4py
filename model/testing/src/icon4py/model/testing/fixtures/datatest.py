@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(scope="session")
-def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
+def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend | None:
     """
     Fixture to provide a GT4Py backend for the tests.
 
@@ -60,16 +60,19 @@ def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend:
     return backend
 
 
-@pytest.fixture
-def experiment() -> str:  # TODO(havogt): return definitions.Experiments.MCH_CH_R04B09
-    """
-    Default experiment, in most tests this will be overridden.
-    """
-    return dt_utils.REGIONAL_EXPERIMENT
+@pytest.fixture(
+    params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
+    ids=lambda r: r.name,
+)
+def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
+    """Default parametrization for experiments.
+
+    The default parametrization is often overwritten for specific tests."""
+    return request.param
 
 
 @pytest.fixture(scope="session", params=[False])
-def processor_props(request) -> decomposition.ProcessProperties:
+def processor_props(request: pytest.FixtureRequest) -> decomposition.ProcessProperties:
     with_mpi = request.param
     runtype = decomposition.get_runtype(with_mpi=with_mpi)
     return decomposition.get_processor_properties(runtype)
@@ -115,11 +118,11 @@ def _download_ser_data(
 
 @pytest.fixture
 def download_ser_data(
-    request,
+    request: pytest.FixtureRequest,
     processor_props: decomposition.ProcessProperties,
     ranked_data_path: pathlib.Path,
     experiment: str | definitions.Experiment,
-    pytestconfig,
+    pytestconfig: pytest.Config,
 ) -> None:
     """
     Get the binary ICON data from a remote server.
@@ -139,28 +142,22 @@ def download_ser_data(
 
 @pytest.fixture
 def data_provider(
-    download_ser_data,  # downloads data as side-effect
+    download_ser_data: None,  # downloads data as side-effect
     ranked_data_path: pathlib.Path,
-    experiment: str | definitions.Experiment,
+    experiment: definitions.Experiment,
     processor_props: decomposition.ProcessProperties,
     backend: gtx_backend.Backend,
 ) -> serialbox.IconSerialDataProvider:
-    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
-    if isinstance(experiment, str):
-        experiment = dt_utils.experiment_from_name(experiment)
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
 
 
 @pytest.fixture
 def grid_savepoint(
-    data_provider: serialbox.IconSerialDataProvider, experiment: str | definitions.Experiment
+    data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> serialbox.IconGridSavepoint:
-    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
-    if isinstance(experiment, str):
-        experiment = dt_utils.experiment_from_name(experiment)
-    grid_shape = dt_utils.guess_grid_shape(experiment.name)
-    grid_id = dt_utils.get_grid_id_for_experiment(experiment.name)
+    grid_shape = dt_utils.guess_grid_shape(experiment)
+    grid_id = str(dt_utils.get_grid_id_for_experiment(experiment))
     return data_provider.from_savepoint_grid(grid_id, grid_shape)
 
 
@@ -178,27 +175,24 @@ def icon_grid(
 
 @pytest.fixture
 def decomposition_info(
-    data_provider: serialbox.IconSerialDataProvider, experiment: str | definitions.Experiment
+    data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
-    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
-    if isinstance(experiment, str):
-        experiment = dt_utils.experiment_from_name(experiment)
-    grid_shape = dt_utils.guess_grid_shape(experiment.name)
-    grid_id = dt_utils.get_grid_id_for_experiment(experiment.name)
+    grid_shape = dt_utils.guess_grid_shape(experiment)
+    grid_id = str(dt_utils.get_grid_id_for_experiment(experiment))
     return data_provider.from_savepoint_grid(
         grid_id=grid_id, grid_shape=grid_shape
     ).construct_decomposition_info()
 
 
 @pytest.fixture
-def ndyn_substeps(experiment) -> int:
+def ndyn_substeps(experiment: definitions.Experiment) -> int:
     """
     Return number of dynamical substeps.
 
     Serialized data of global and regional experiments uses a reduced number
     (2 instead of the default 5) in order to reduce the amount of data generated.
     """
-    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+    if experiment == definitions.Experiments.GAUSS3D:
         return 5
     else:
         return 2
@@ -235,7 +229,7 @@ def substep_exit() -> int:
 
 
 @pytest.fixture
-def step_date_exit():
+def step_date_exit() -> str:
     """
     Set the step date for the loaded ICON time stamp at the end of module.
 
@@ -245,33 +239,34 @@ def step_date_exit():
 
 
 @pytest.fixture
-def interpolation_savepoint(data_provider):  # F811
+def interpolation_savepoint(
+    data_provider: serialbox.IconSerialDataProvider,
+) -> serialbox.InterpolationSavepoint:
     """Load data from ICON interplation state savepoint."""
     return data_provider.from_interpolation_savepoint()
 
 
 @pytest.fixture
-def metrics_savepoint(data_provider):  # F811
+def metrics_savepoint(data_provider: serialbox.IconSerialDataProvider) -> serialbox.MetricSavepoint:
     """Load data from ICON metric state savepoint."""
     return data_provider.from_metrics_savepoint()
 
 
 @pytest.fixture
-def metrics_nonhydro_savepoint(data_provider) -> serialbox.MetricSavepoint:  # F811
-    """Load data from ICON metric state nonhydro savepoint."""
-    return data_provider.from_metrics_savepoint()
-
-
-@pytest.fixture
-def topography_savepoint(data_provider):  # F811
+def topography_savepoint(
+    data_provider: serialbox.IconSerialDataProvider,
+) -> serialbox.TopographySavepoint:
     """Load data from ICON external parameters savepoint."""
     return data_provider.from_topography_savepoint()
 
 
 @pytest.fixture
 def savepoint_velocity_init(
-    data_provider, step_date_init, istep_init, substep_init
-) -> serialbox.IconVelocityInitSavepoint:  # F811
+    data_provider: serialbox.IconSerialDataProvider,
+    step_date_init: str,
+    istep_init: int,
+    substep_init: int,
+) -> serialbox.IconVelocityInitSavepoint:
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
 
@@ -307,7 +302,10 @@ def savepoint_nonhydro_init(
 
 @pytest.fixture
 def savepoint_dycore_30_to_38_init(
-    data_provider, istep_init, step_date_init, substep_init
+    data_provider: serialbox.IconSerialDataProvider,
+    istep_init: int,
+    step_date_init: str,
+    substep_init: int,
 ) -> serialbox.IconDycoreInit30To38Savepoint:
     """
     Load data from ICON savepoint directly before the first stencil in
@@ -324,8 +322,11 @@ def savepoint_dycore_30_to_38_init(
 
 @pytest.fixture
 def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
-    data_provider, istep_init, step_date_init, substep_init
-):
+    data_provider: serialbox.IconSerialDataProvider,
+    istep_init: int,
+    step_date_init: str,
+    substep_init: int,
+) -> serialbox.NonHydroInitEdgeDiagnosticsUpdateVnSavepoint:
     """
     Load data from ICON savepoint before edge diagnostics computations and update of new vn
     (formally known as stencils 15 to 28) in mo_solve_nonhydro.f90 of solve_nonhydro module.
@@ -342,8 +343,11 @@ def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init(
 
 @pytest.fixture
 def savepoint_vertically_implicit_dycore_solver_init(
-    data_provider, istep_init, step_date_init, substep_init
-):
+    data_provider: serialbox.IconSerialDataProvider,
+    istep_init: int,
+    step_date_init: str,
+    substep_init: int,
+) -> serialbox.NonHydroInitVerticallyImplicitSolverSavepoint:
     """
     Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
 
@@ -358,7 +362,12 @@ def savepoint_vertically_implicit_dycore_solver_init(
 
 
 @pytest.fixture
-def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_exit):  # F811
+def savepoint_velocity_exit(
+    data_provider: serialbox.IconSerialDataProvider,
+    step_date_exit: str,
+    istep_exit: int,
+    substep_exit: int,
+) -> serialbox.IconVelocityExitSavepoint:
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
 
@@ -373,7 +382,12 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_e
 
 
 @pytest.fixture
-def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_exit):
+def savepoint_nonhydro_exit(
+    data_provider: serialbox.IconSerialDataProvider,
+    step_date_exit: str,
+    istep_exit: int,
+    substep_exit: int,
+) -> serialbox.IconNonHydroExitSavepoint:
     """
     Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
     subroutine nh_solve in mo_solve_nonhydro.f90.
@@ -389,7 +403,12 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
 
 
 @pytest.fixture
-def savepoint_dycore_30_to_38_exit(data_provider, istep_exit, step_date_exit, substep_exit):
+def savepoint_dycore_30_to_38_exit(
+    data_provider: serialbox.IconSerialDataProvider,
+    istep_exit: int,
+    step_date_exit: str,
+    substep_exit: int,
+) -> serialbox.IconDycoreExit30To38Savepoint:
     """
     Load data from ICON savepoint directly after the last stencil in
     stencils 30 to 38 in mo_solve_nonhydro.f90 of solve_nonhydro module.
@@ -405,8 +424,11 @@ def savepoint_dycore_30_to_38_exit(data_provider, istep_exit, step_date_exit, su
 
 @pytest.fixture
 def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
-    data_provider, istep_exit, step_date_exit, substep_exit
-):
+    data_provider: serialbox.IconSerialDataProvider,
+    istep_exit: int,
+    step_date_exit: str,
+    substep_exit: int,
+) -> serialbox.NonHydroExitEdgeDiagnosticsUpdateVnSavepoint:
     """
     Load data from ICON savepoint at the end of edge diagnostics computations and update of new vn
     (formally known as stencils 15 to 28) in mo_solve_nonhydro.f90.
@@ -422,7 +444,11 @@ def savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit(
 
 
 @pytest.fixture
-def savepoint_nonhydro_step_final(data_provider, step_date_exit, substep_exit):
+def savepoint_nonhydro_step_final(
+    data_provider: serialbox.IconSerialDataProvider,
+    step_date_exit: str,
+    substep_exit: int,
+) -> serialbox.IconNonHydroFinalSavepoint:
     """
     Load data from ICON savepoint at final exit of subroutine nh_solve in mo_solve_nonhydro.f90.
     (after predictor and corrector and 3 final stencils have run).
@@ -438,10 +464,10 @@ def savepoint_nonhydro_step_final(data_provider, step_date_exit, substep_exit):
 
 @pytest.fixture
 def savepoint_diffusion_init(
-    data_provider,
-    linit,
-    step_date_init,
-):
+    data_provider: serialbox.IconSerialDataProvider,
+    linit: bool,
+    step_date_init: str,
+) -> serialbox.IconDiffusionInitSavepoint:
     """
     Load data from ICON savepoint at start of diffusion module.
 
@@ -455,10 +481,10 @@ def savepoint_diffusion_init(
 
 @pytest.fixture
 def savepoint_diffusion_exit(
-    data_provider,  # imported fixtures data_provider`
-    linit,  # imported fixtures linit`
-    step_date_exit,  # imported fixtures step_date_exit`
-):
+    data_provider: serialbox.IconSerialDataProvider,
+    linit: bool,
+    step_date_exit: str,
+) -> serialbox.IconDiffusionExitSavepoint:
     """
     Load data from ICON savepoint at exist of diffusion module.
 
@@ -470,68 +496,68 @@ def savepoint_diffusion_exit(
 
 
 @pytest.fixture
-def istep_init():
+def istep_init() -> int:
     return 1
 
 
 @pytest.fixture
-def istep_exit():
+def istep_exit() -> int:
     return 1
 
 
 @pytest.fixture
-def lowest_layer_thickness(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+def lowest_layer_thickness(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
         return 20.0
     else:
         return 50.0
 
 
 @pytest.fixture
-def model_top_height(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+def model_top_height(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
         return 23000.0
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == definitions.Experiments.EXCLAIM_APE:
         return 75000.0
     else:
         return 23500.0
 
 
 @pytest.fixture
-def flat_height():
+def flat_height() -> float:
     return 16000.0
 
 
 @pytest.fixture
-def stretch_factor(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+def stretch_factor(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
         return 0.65
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == definitions.Experiments.EXCLAIM_APE:
         return 0.9
     else:
         return 1.0
 
 
 @pytest.fixture
-def damping_height(experiment):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+def damping_height(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
         return 12500.0
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+    elif experiment == definitions.Experiments.EXCLAIM_APE:
         return 50000.0
     else:
         return 45000.0
 
 
 @pytest.fixture
-def htop_moist_proc():
+def htop_moist_proc() -> float:
     return 22500.0
 
 
 @pytest.fixture
-def maximal_layer_thickness():
+def maximal_layer_thickness() -> float:
     return 25000.0
 
 
 @pytest.fixture
-def top_height_limit_for_maximal_layer_thickness():
+def top_height_limit_for_maximal_layer_thickness() -> float:
     return 15000.0

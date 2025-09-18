@@ -151,8 +151,8 @@ class IconGridSavepoint(IconSavepoint):
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
-        self.global_grid_params = icon.GlobalGridParams.from_mean_cell_area(
-            self.mean_cell_area(), grid_shape
+        self.global_grid_params = icon.GlobalGridParams(
+            mean_cell_area=self.mean_cell_area(), grid_shape=grid_shape
         )
 
     def verts_vertex_lat(self):
@@ -1154,7 +1154,7 @@ class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
         return self._get_field("bdy_divdamp", dims.KDim)
 
     def z_hydro_corr(self):
-        return self._get_field("z_hydro_corr", dims.EdgeDim, dims.KDim)
+        return self._get_field("z_hydro_corr", dims.EdgeDim)
 
     def z_graddiv2_vn(self):
         return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
@@ -1560,9 +1560,6 @@ class IconVelocityInitSavepoint(IconSavepoint):
 
     def z_w_con_c_full(self):
         return self._get_field("z_w_con_c_full", dims.CellDim, dims.KDim)
-
-    def vcfl_dsl(self):
-        return self._get_field("vcfl_dsl", dims.CellDim, dims.KDim)
 
 
 class IconVelocityExitSavepoint(IconSavepoint):
