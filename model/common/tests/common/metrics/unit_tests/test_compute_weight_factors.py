@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from model.common.tests.common.grid.utils import horizontal_dims
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.metrics import compute_weight_factors as weight_factors
@@ -55,6 +56,10 @@ def test_compute_wgtfac_c(
         wgtfac_c,
         z_ifc,
         nlev=vertical_end,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=0,
+        vertical_end=vertical_end + 1,
         offset_provider={"Koff": dims.KDim},
     )
 
