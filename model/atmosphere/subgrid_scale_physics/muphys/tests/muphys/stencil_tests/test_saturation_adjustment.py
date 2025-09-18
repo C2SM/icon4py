@@ -64,13 +64,13 @@ class TestSaturationAdjustment(StencilTest):
                 grid, 2.5939378002267028e-004, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             qse=data_alloc.constant_field(
-                grid, 1.0746937601645517e-005, dims.CellDim, dims.KDim, dtype=wpfloat
+                grid, 3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             qie=data_alloc.constant_field(
-                grid, 1.0746937601645517e-005, dims.CellDim, dims.KDim, dtype=wpfloat
+                grid, 3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             qge=data_alloc.constant_field(
-                grid, 1.0746937601645517e-005, dims.CellDim, dims.KDim, dtype=wpfloat
+                grid, 3.582312533881839e-06, dims.CellDim, dims.KDim, dtype=wpfloat
             ),
             rho=data_alloc.constant_field(
                 grid, 1.1371657035251757, dims.CellDim, dims.KDim, dtype=wpfloat
