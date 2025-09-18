@@ -178,36 +178,36 @@ def test_graupel(
 
     assert test_utils.dallclose(
         new_temperature,
-        exit_savepoint.temperature().asnumpy()[:, :],
+        exit_savepoint.temperature().asnumpy(),
     )
     assert test_utils.dallclose(
         new_qv,
-        exit_savepoint.qv().asnumpy()[:, :],
+        exit_savepoint.qv().asnumpy(),
         atol=1.0e-12,
     )
     assert test_utils.dallclose(
         new_qc,
-        exit_savepoint.qc().asnumpy()[:, :],
+        exit_savepoint.qc().asnumpy(),
         atol=1.0e-12,
     )
     assert test_utils.dallclose(
         new_qr,
-        exit_savepoint.qr().asnumpy()[:, :],
+        exit_savepoint.qr().asnumpy(),
         atol=1.0e-12,
     )
     assert test_utils.dallclose(
         new_qi,
-        exit_savepoint.qi().asnumpy()[:, :],
+        exit_savepoint.qi().asnumpy(),
         atol=1.0e-12,
     )
     assert test_utils.dallclose(
         new_qs,
-        exit_savepoint.qs().asnumpy()[:, :],
+        exit_savepoint.qs().asnumpy(),
         atol=1.0e-12,
     )
     assert test_utils.dallclose(
         new_qg,
-        exit_savepoint.qg().asnumpy()[:, :],
+        exit_savepoint.qg().asnumpy(),
         atol=1.0e-12,
     )
 
