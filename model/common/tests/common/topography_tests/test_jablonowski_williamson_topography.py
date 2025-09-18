@@ -34,7 +34,7 @@ def test_jablonowski_williamson_topography(
     grid_savepoint: sb.IconGridSavepoint,
     topography_savepoint: sb.TopographySavepoint,
 ):
-    cell_center_lat = grid_savepoint.lat(dims.CellDim).asnumpy()
+    cell_center_lat = grid_savepoint.lat(dims.CellDim).ndarray
     topo_c = topography.jablonowski_williamson_topography(
         cell_lat=cell_center_lat,
         u0=35.0,
