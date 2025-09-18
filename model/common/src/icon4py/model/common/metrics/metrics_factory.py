@@ -17,7 +17,6 @@ import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
-    base,
     geometry,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,

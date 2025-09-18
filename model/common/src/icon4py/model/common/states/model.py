@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
 import functools
+from collections.abc import Sequence
 from typing import Literal, Protocol, TypeAlias, TypedDict, runtime_checkable
 
 import gt4py._core.definitions as gt_coredefs
