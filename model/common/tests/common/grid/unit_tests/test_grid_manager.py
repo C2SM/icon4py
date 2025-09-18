@@ -9,13 +9,16 @@ from __future__ import annotations
 
 import logging
 import typing
+from collections.abc import Iterator
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
+import icon4py.model.common.grid.gridfile
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition, halo
 from icon4py.model.common.grid import (
     grid_manager as gm,
     gridfile,
@@ -51,10 +54,10 @@ from .. import utils
 
 
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
-R02B04_GLOBAL_NUM_CELLS = 20480
 
 
-ZERO_BASE = gm.ToZeroBasedIndexTransformation()
+ZERO_BASE = icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation()
+vertical = v_grid.VerticalGridConfig(num_levels=80)
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -330,7 +333,9 @@ def test_gridmanager_given_file_not_found_then_abort() -> None:
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:
         manager = gm.GridManager(
-            gm.NoTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
+            fname,
+            v_grid.VerticalGridConfig(num_levels=80),
+            icon4py.model.common.grid.gridfile.NoTransformation(),
         )
         manager(backend=None, keep_skip_values=True)
         assert error.value == 1
@@ -339,7 +344,7 @@ def test_gridmanager_given_file_not_found_then_abort() -> None:
 @pytest.mark.parametrize("size", [100, 1500, 20000])
 @pytest.mark.with_netcdf
 def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
-    trafo = gm.ToZeroBasedIndexTransformation()
+    trafo = gridfile.ToZeroBasedIndexTransformation()
     rng = np.random.default_rng()
     input_field = rng.integers(-1, size, size)
     offset = trafo(input_field)
@@ -350,7 +355,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
 @pytest.mark.parametrize(
     "grid_descriptor, global_num_cells",
     [
-        (definitions.Grids.R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS),
+        (definitions.Grids.R02B04_GLOBAL, definitions.Grids.R02B04_GLOBAL.sizes["cell"]),
         (definitions.Grids.MCH_CH_R04B09_DSL, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
     ],
 )
@@ -556,3 +561,27 @@ def test_edge_vertex_distance(
 def test_limited_area_on_grid(grid_descriptor: definitions.GridDescription, expected: bool) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=None).grid
     assert expected == grid.limited_area
+
+
+@pytest.mark.parametrize(
+    "grid_file",
+    [
+        (definitions.Grids.MCH_CH_R04B09_DSL),
+        (definitions.Grids.R02B04_GLOBAL),
+    ],
+)
+@pytest.mark.parametrize("dim", utils.horizontal_dims())
+def test_decomposition_info_single_node(
+    dim: gtx.Dimension,
+    grid_file: definitions.GridDescription,
+    experiment: definitions.Experiment,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
+    expected = grid_savepoint.construct_decomposition_info()
+    gm = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
+    result = gm.decomposition_info
+    assert np.all(result.local_index(dim) == expected.local_index(dim))
+    assert np.all(result.global_index(dim) == expected.global_index(dim))
+    assert np.all(result.owner_mask(dim) == expected.owner_mask(dim))
+    assert np.all(result.halo_levels(dim) == expected.halo_levels(dim))

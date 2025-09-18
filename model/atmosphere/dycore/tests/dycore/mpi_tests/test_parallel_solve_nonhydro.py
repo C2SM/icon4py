@@ -19,7 +19,7 @@ from icon4py.model.testing import parallel_helpers, test_utils
 from .. import utils
 
 
-@pytest.mark.skip("FIXME: Need updated test data yet")
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init,istep_exit, jstep_exit, step_date_exit",

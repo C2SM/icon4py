@@ -18,12 +18,12 @@ from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
-@pytest.mark.skip("FIXME: Need updated test data yet")
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
 @pytest.mark.parametrize("orchestration", [False, True])
+@pytest.mark.parametrize("processor_props", [True, False], indirect=True)
 def test_parallel_diffusion(
     experiment,
     step_date_init,
@@ -139,6 +139,7 @@ def test_parallel_diffusion(
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True])
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_parallel_diffusion_multiple_steps(
     experiment,
     step_date_init,
