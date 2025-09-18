@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+    microphysics_options as mphys_options,
     single_moment_six_class_gscp_graupel as graupel,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -102,7 +103,7 @@ def test_graupel(
     )
 
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
-        liquid_autoconversion_option=graupel.LiquidAutoConversionType.SEIFERT_BEHENG,
+        liquid_autoconversion_option=mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG,
         ice_stickeff_min=0.075,
         power_law_coeff_for_ice_mean_fall_speed=1.25,
         exponent_for_density_factor_in_ice_sedimentation=0.33,
