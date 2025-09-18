@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
 import typing
 
 import gt4py.next as gtx
@@ -38,26 +37,8 @@ def setup_program(
         - vertical_sizes: vertical domain bounds,
         - offset_provider: GT4Py offset_provider,
     """
-    constant_args = {} if constant_args is None else constant_args
-    variants = {} if variants is None else variants
-    horizontal_sizes = {} if horizontal_sizes is None else horizontal_sizes
-    vertical_sizes = {} if vertical_sizes is None else vertical_sizes
-    offset_provider = {} if offset_provider is None else offset_provider
 
-    bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
-    static_args_program = program.with_backend(backend).compile(
-        **dict_values_to_list(horizontal_sizes),
-        **dict_values_to_list(vertical_sizes),
-        **variants,
-        **dict_values_to_list(bound_static_args),
-        enable_jit=False,
-        offset_provider=offset_provider,
-    )
-    return functools.partial(
-        static_args_program,
-        **constant_args,
-        **variants,
-        **horizontal_sizes,
-        **vertical_sizes,
-        offset_provider=offset_provider,
-    )
+    def noop(*args, **kwargs) -> None:
+        print(f"running {program.__name__}")
+
+    return noop
