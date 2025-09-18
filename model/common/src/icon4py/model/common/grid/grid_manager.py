@@ -361,9 +361,7 @@ class GridManager:
         edge_lengths = self.geometry[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
         dual_edge_lengths = self.geometry[gridfile.GeometryName.DUAL_EDGE_LENGTH.value].ndarray
         cell_areas = self.geometry[gridfile.GeometryName.CELL_AREA.value].ndarray
-        dual_cell_areas = mean_dual_cell_area = xp.mean(
-            self.geometry[gridfile.GeometryName.DUAL_AREA.value].ndarray
-        )
+        dual_cell_areas = self.geometry[gridfile.GeometryName.DUAL_AREA.value].ndarray
 
         global_params = icon.GlobalGridParams.from_fields(
             backend=backend,
