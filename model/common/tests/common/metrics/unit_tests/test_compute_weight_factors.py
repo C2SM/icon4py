@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from model.common.tests.common.grid.utils import horizontal_dims
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.metrics import compute_weight_factors as weight_factors
