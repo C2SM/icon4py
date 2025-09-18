@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_jablonowski_williamson_topography(
     experiment: definitions.Experiment,

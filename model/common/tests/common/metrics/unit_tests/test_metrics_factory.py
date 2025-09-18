@@ -576,6 +576,7 @@ def test_vertical_coordinates_on_half_levels(
 
 
 @pytest.mark.level("integration")
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 def test_compute_wgtfac_c(
     grid_savepoint: serialbox.IconGridSavepoint,
