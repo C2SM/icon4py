@@ -104,9 +104,9 @@ def test_graupel(
 
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
         liquid_autoconversion_option=mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG,
-        ice_stickeff_min=0.075,
+        ice_stickeff_min=0.01,
         power_law_coeff_for_ice_mean_fall_speed=1.25,
-        exponent_for_density_factor_in_ice_sedimentation=0.33,
+        exponent_for_density_factor_in_ice_sedimentation=0.3,
         power_law_coeff_for_snow_fall_speed=20.0,
         rain_mu=0.0,
         rain_n0=1.0,
