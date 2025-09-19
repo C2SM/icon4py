@@ -39,11 +39,9 @@ from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.benchmark(
-    group="diffusion_benchmark",
-)
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
-    "grid", [definitions.Grids.MCH_OPR_R19B08_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
+    "grid", [definitions.Grids.MCH_OPR_R19B08_DOMAIN01, definitions.Grids.R02B04_GLOBAL]
 )
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
@@ -219,10 +217,4 @@ def test_run_diffusion_benchmark(
         orchestration=False,
     )
 
-    benchmark.pedantic(
-        diffusion_granule.run,
-        args=(diagnostic_state, prognostic_state, dtime),
-        rounds=10,
-        warmup_rounds=2,
-        iterations=1,
-    )
+    benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)
