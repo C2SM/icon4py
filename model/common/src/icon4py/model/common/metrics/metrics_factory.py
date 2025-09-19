@@ -81,7 +81,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
         log.debug(f"using array_ns {self._xp} ")
-        vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0]
+        vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0].item()
         self._config = {
             "divdamp_trans_start": 12500.0,
             "divdamp_trans_end": 17500.0,
