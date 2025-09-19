@@ -18,7 +18,7 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
-def customize_backend(backend: model_backends.DeviceType | model_backends.BackendDescription):
+def customize_backend(backend: model_backends.DeviceType | model_backends.BackendDescription) -> gtx_typing.Backend:
     if isinstance(backend, model_backends.DeviceType):
         backend = {"device": backend}
     # TODO(havogt): implement the lookup function as below
