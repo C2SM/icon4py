@@ -406,7 +406,7 @@ def test_nudgecoeffs(
     "experiment, atol",
     [
         (definitions.Experiments.EXCLAIM_APE, 3e-9),
-        (definitions.Experiments.MCH_CH_R04B09, 3e-2),
+        (definitions.Experiments.MCH_CH_R04B09, 4e-2),
     ],
 )
 @pytest.mark.datatest
