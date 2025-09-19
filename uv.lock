@@ -1428,8 +1428,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.9.post6+d4204a23"
-source = { git = "https://github.com/GridTools/gt4py?branch=2266-next-connectivities-need-to-be-updated-in-sdfg-call-args-during-test-execution#d4204a235001d2c3366fd0d04b5d8393cbef0360" }
+version = "1.0.9.post7+2f1c318f"
+source = { git = "https://github.com/GridTools/gt4py?branch=2266-next-connectivities-need-to-be-updated-in-sdfg-call-args-during-test-execution#2f1c318f4f091144cd42081c33501da0d5a33664" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
