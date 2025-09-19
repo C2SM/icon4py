@@ -10,6 +10,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+from devtools import Timer
+import gt4py.next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     microphysics_options as mphys_options,
@@ -44,7 +46,7 @@ if TYPE_CHECKING:
     ],
 )
 @pytest.mark.parametrize(
-    "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
+    "date", ["2008-09-01T02:00:00.000"]
 )
 def test_graupel(
     experiment: definitions.Experiments,
@@ -75,6 +77,12 @@ def test_graupel(
 
     entry_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(date=date)
     exit_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_exit(date=date)
+
+    print()
+    solid = entry_savepoint.qc().ndarray + entry_savepoint.qr().ndarray + entry_savepoint.qi().ndarray + entry_savepoint.qs().ndarray + entry_savepoint.qg().ndarray
+    xp = data_alloc.import_array_ns(solid)
+    solid_count = xp.where(solid > 0.0, True, False)
+    print("DEBUG: ", icon_grid.num_cells, xp.count_nonzero(solid_count))
 
     dtime = entry_savepoint.dtime()
 
@@ -123,59 +131,89 @@ def test_graupel(
 
     qnc = entry_savepoint.qnc()
 
-    temperature_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qv_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qc_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qr_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qi_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qs_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
-    qg_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
-    )
+    timer_first_timestep = Timer("TimeLoop: first time step", dp=6)
+    timer_after_first_timestep = Timer("TimeLoop: after first time step", dp=6)
+    for time_step in range(900):
+        timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
+        temperature_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qv_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qc_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qr_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qi_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qs_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
+        qg_tendency = data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        )
 
-    graupel_microphysics.run(
-        dtime,
-        prognostic_state.rho,
-        diagnostic_state.temperature,
-        diagnostic_state.pressure,
-        tracer_state.qv,
-        tracer_state.qc,
-        tracer_state.qr,
-        tracer_state.qi,
-        tracer_state.qs,
-        tracer_state.qg,
-        qnc,
-        temperature_tendency,
-        qv_tendency,
-        qc_tendency,
-        qr_tendency,
-        qi_tendency,
-        qs_tendency,
-        qg_tendency,
-    )
+        timer.start()
+        graupel_microphysics.run(
+            dtime,
+            prognostic_state.rho,
+            diagnostic_state.temperature,
+            diagnostic_state.pressure,
+            tracer_state.qv,
+            tracer_state.qc,
+            tracer_state.qr,
+            tracer_state.qi,
+            tracer_state.qs,
+            tracer_state.qg,
+            qnc,
+            temperature_tendency,
+            qv_tendency,
+            qc_tendency,
+            qr_tendency,
+            qi_tendency,
+            qs_tendency,
+            qg_tendency,
+        )
+        timer.capture()
 
-    new_temperature = (
-        entry_savepoint.temperature().asnumpy() + temperature_tendency.asnumpy() * dtime
-    )
-    new_qv = entry_savepoint.qv().asnumpy() + qv_tendency.asnumpy() * dtime
-    new_qc = entry_savepoint.qc().asnumpy() + qc_tendency.asnumpy() * dtime
-    new_qr = entry_savepoint.qr().asnumpy() + qr_tendency.asnumpy() * dtime
-    new_qi = entry_savepoint.qi().asnumpy() + qi_tendency.asnumpy() * dtime
-    new_qs = entry_savepoint.qs().asnumpy() + qs_tendency.asnumpy() * dtime
-    new_qg = entry_savepoint.qg().asnumpy() + qg_tendency.asnumpy() * dtime
+        new_qv = entry_savepoint.qv().ndarray + qv_tendency.ndarray * dtime
+        new_qc = entry_savepoint.qc().ndarray + qc_tendency.ndarray * dtime
+        new_qr = entry_savepoint.qr().ndarray + qr_tendency.ndarray * dtime
+        new_qi = entry_savepoint.qi().ndarray + qi_tendency.ndarray * dtime
+        new_qs = entry_savepoint.qs().ndarray + qs_tendency.ndarray * dtime
+        new_qg = entry_savepoint.qg().ndarray + qg_tendency.ndarray * dtime
 
+        new_temperature = (
+            entry_savepoint.temperature().ndarray + temperature_tendency.ndarray * dtime
+        )
+        tracer_state = tracers.TracerState(
+            qv=gtx.as_field((dims.CellDim, dims.KDim), data=new_qv, allocator=backend),
+            qc=gtx.as_field((dims.CellDim, dims.KDim), data=new_qc, allocator=backend),
+            qr=gtx.as_field((dims.CellDim, dims.KDim), data=new_qr, allocator=backend),
+            qi=gtx.as_field((dims.CellDim, dims.KDim), data=new_qi, allocator=backend),
+            qs=gtx.as_field((dims.CellDim, dims.KDim), data=new_qs, allocator=backend),
+            qg=gtx.as_field((dims.CellDim, dims.KDim), data=new_qg, allocator=backend),
+        )
+        diagnostic_state = diagnostics.DiagnosticState(
+            temperature=gtx.as_field((dims.CellDim, dims.KDim), data=new_temperature, allocator=backend),
+            virtual_temperature=None,
+            pressure=entry_savepoint.pressure(),
+            pressure_ifc=None,
+            u=None,
+            v=None,
+        )
+
+
+    timer_first_timestep.summary(True)
+    if time_step > 1:  # in case only one time step was run
+        timer_after_first_timestep.summary(True)
+
+    
+    
     assert test_utils.dallclose(
         new_temperature,
         exit_savepoint.temperature().asnumpy(),
