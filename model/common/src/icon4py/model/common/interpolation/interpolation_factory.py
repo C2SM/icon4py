@@ -11,15 +11,15 @@ import logging
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-import icon4py.model.common.metrics.compute_nudgecoeffs as common_metrics
+import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
+    grid_refinement as refinement,
     horizontal as h_grid,
     icon,
-    refinement,
 )
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
@@ -99,7 +99,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     def _register_computed_fields(self):
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
-            func=common_metrics.compute_nudgecoeffs.with_backend(None),
+            func=nudgecoeffs.compute_nudgecoeffs.with_backend(None),
             domain={
                 dims.EdgeDim: (
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
@@ -111,9 +111,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "refin_ctrl": "refinement_control_at_edges",
             },
             params={
-                "grf_nudge_start_e": refinement.refine_control_value(
-                    dims.EdgeDim, h_grid.Zone.NUDGING
-                ).value,
+                "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
                 "max_nudging_coefficient": self._config["max_nudging_coefficient"],
                 "nudge_efold_width": self._config["nudge_efold_width"],
                 "nudge_zone_width": self._config["nudge_zone_width"],

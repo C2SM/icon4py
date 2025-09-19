@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import contextlib
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -66,39 +66,11 @@ def all_dims() -> Iterator[gtx.Dimension]:
     yield from local_dims()
 
 
-def global_grid_domains(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
-    zones = [
-        h_grid.Zone.END,
-        h_grid.Zone.LOCAL,
-        h_grid.Zone.INTERIOR,
-        h_grid.Zone.HALO,
-        h_grid.Zone.HALO_LEVEL_2,
-    ]
-
-    yield from _domain(dim, zones)
-
-
-def _domain(dim: gtx.Dimension, zones: Sequence[h_grid.Zone]) -> Iterator[h_grid.Domain]:
+def _domain(dim: gtx.Dimension, zones: Iterator[h_grid.Zone]) -> Iterator[h_grid.Domain]:
     domain = h_grid.domain(dim)
     for zone in zones:
         with contextlib.suppress(AssertionError):
             yield domain(zone)
-
-
-def valid_boundary_zones_for_dim(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
-    zones = [
-        h_grid.Zone.LATERAL_BOUNDARY,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7,
-        h_grid.Zone.NUDGING,
-        h_grid.Zone.NUDGING_LEVEL_2,
-    ]
-
-    yield from _domain(dim, zones)
 
 
 def run_grid_manager(
