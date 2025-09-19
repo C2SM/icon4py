@@ -19,6 +19,7 @@ from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
+    grid_refinement as refinement,
     horizontal as h_grid,
     icon,
     vertical as v_grid,
@@ -649,8 +650,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP: attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP},
             params={
-                "grf_nudge_start_e": gtx.int32(h_grid._GRF_NUDGEZONE_START_EDGES),
-                "grf_nudgezone_width": gtx.int32(h_grid._GRF_NUDGEZONE_WIDTH),
+                "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
+                "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),
             },
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
