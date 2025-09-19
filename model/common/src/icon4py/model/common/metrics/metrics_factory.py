@@ -647,7 +647,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP: attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP},
             params={
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),  # type: ignore [attr-defined]
-                "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),    # type: ignore [attr-defined]
+                "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
             },
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)

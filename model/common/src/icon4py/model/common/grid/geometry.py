@@ -101,7 +101,7 @@ class GridGeometry(factory.FieldSource):
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._geometry_type: base.GeometryType = base.GeometryType.ICOSAHEDRON
+        self._geometry_type: base.GeometryType | None = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         log.info(
             f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -555,7 +555,10 @@ class GridGeometry(factory.FieldSource):
         return provider
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__} for geometry_type={self._geometry_type._name_} (grid={self._grid.id!r})"
+        geometry_name = self._geometry_type._name_ if self._geometry_type else ""
+        return (
+            f"{self.__class__.__name__} for geometry_type={geometry_name} (grid={self._grid.id!r})"
+        )
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
@@ -578,10 +581,12 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
     def __init__(
         self,
         field_provider: factory.ProgramFieldProvider,
-        target_dims: tuple[gtx.Dimension, gtx.Dimension],
+        target_dims: Sequence[gtx.Dimension],
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
     ):
+        assert len(target_dims) == 2
+        assert target_dims[1].kind == gtx.DimensionKind.LOCAL
         self._wrapped_provider = field_provider
         self._fields = {name: None for name in fields}
         self._func = functools.partial(as_sparse_field, target_dims)

@@ -292,9 +292,7 @@ def test_composite_field_source_raises_upon_get_unknown_field(
 
 
 def reduce_scalar_min(ar: data_alloc.NDArray, xp: ModuleType) -> gtx.float:
-    while ar.ndim > 0:
-        ar = xp.min(ar)
-    return ar.item()
+    return xp.min(ar).item()
 
 
 @pytest.mark.datatest
@@ -303,7 +301,7 @@ def test_compute_scalar_value_from_numpy_provider(
     metrics_savepoint: serialbox.MetricSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    value_ref = np.min(np.min(metrics_savepoint.z_ifc()))
+    value_ref = np.min(metrics_savepoint.z_ifc())
     sample_func = functools.partial(reduce_scalar_min, xp=data_alloc.import_array_ns(backend))
     provider = factory.NumpyDataProvider(
         func=sample_func,

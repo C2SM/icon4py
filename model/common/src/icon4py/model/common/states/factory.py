@@ -106,9 +106,7 @@ class FieldProvider(Protocol):
     @property
     def fields(
         self,
-    ) -> Mapping[
-        str, state_utils.FieldType | state_utils.ScalarType
-    ]: ...  # TODO(halungge): properly type value type state_utils.FieldType|state_utils.ScalarType?
+    ) -> Mapping[str, state_utils.FieldType | state_utils.ScalarType]: ...
 
     @property
     def func(self) -> Callable: ...
