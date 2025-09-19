@@ -26,7 +26,7 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
     PROGRAM = mo_intp_rbf_rbf_vec_interpol_vertex
     OUTPUTS = ("p_u_out", "p_v_out")
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: None,
+        StandardStaticVariants.NONE: (),
         StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
