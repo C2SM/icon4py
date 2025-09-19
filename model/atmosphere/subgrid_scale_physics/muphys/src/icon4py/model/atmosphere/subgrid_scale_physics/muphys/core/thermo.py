@@ -346,7 +346,9 @@ def _saturation_adjustment(
     qve: fa.CellKField[ta.wpfloat],
     qce: fa.CellKField[ta.wpfloat],
     qre: fa.CellKField[ta.wpfloat],
-    qti: fa.CellKField[ta.wpfloat],
+    qse: fa.CellKField[ta.wpfloat],
+    qie: fa.CellKField[ta.wpfloat],
+    qge: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
@@ -371,6 +373,7 @@ def _saturation_adjustment(
                                - Revised specific vapor content
                                - Mask specifying where qce+qve less than holding capacity
     """
+    qti = qse + qie + qge
     qt = qve + qce + qre + qti
     cvc = t_d.cvd * (1.0 - qt) + t_d.clw * qre + g_ct.ci * qti
     cv = cvc + t_d.cvv * qve + t_d.clw * qce
@@ -405,11 +408,15 @@ def saturation_adjustment(
     qve: fa.CellKField[ta.wpfloat],  # Specific humidity
     qce: fa.CellKField[ta.wpfloat],  # Specific cloud water content
     qre: fa.CellKField[ta.wpfloat],  # Specific rain water
-    qti: fa.CellKField[ta.wpfloat],  # Specific mass of all ice species (total-ice)
+    qse: fa.CellKField[ta.wpfloat],  # Specific snow water
+    qie: fa.CellKField[ta.wpfloat],  # Specific ice water content
+    qge: fa.CellKField[ta.wpfloat],  # Specific graupel water content
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
     te_out: fa.CellKField[ta.wpfloat],  # Temperature
     qve_out: fa.CellKField[ta.wpfloat],  # Specific humidity
     qce_out: fa.CellKField[ta.wpfloat],  # Specific cloud water content
     mask_out: fa.CellKField[bool],  # Specific cloud water content
 ):
-    _saturation_adjustment(te, qve, qce, qre, qti, rho, out=(te_out, qve_out, qce_out, mask_out))
+    _saturation_adjustment(
+        te, qve, qce, qre, qse, qie, qge, rho, out=(te_out, qve_out, qce_out, mask_out)
+    )

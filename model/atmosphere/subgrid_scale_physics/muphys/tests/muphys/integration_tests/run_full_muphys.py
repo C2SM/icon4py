@@ -14,15 +14,25 @@ WORK IN PROGRESS!!!!  Do not try to run this.
 
 import argparse
 import sys
+import time
 
 import gt4py.next as gtx
 import netCDF4
 import numpy as np
 
+from icon4py.model.common.model_options import setup_program
+
+
+try:
+    from netCDF4 import Dataset
+except ImportError:
+    print("Netcdf not installed")
+    sys.exit()
+
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import saturation_adjustment
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel import (
     graupel_run,
 )
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.thermo import saturation_adjustment
 from icon4py.model.common import dimension as dims, model_backends
 
 
@@ -38,6 +48,13 @@ def get_args():
         dest="output_file",
         help="output filename",
         default="output.nc",
+    )
+    parser.add_argument(
+        "-b",
+        metavar="backend",
+        dest="backend",
+        help="gt4py backend",
+        default="gtfn_cpu",
     )
     parser.add_argument("input_file", help="input data file")
     parser.add_argument("itime", help="time-index", nargs="?", default=0)
@@ -107,9 +124,241 @@ def calc_dz(ksize, z):
     return dz
 
 
+def run_program(
+    args, backend, data, t_out, qv_out, qc_out, qi_out, qr_out, qs_out, qg_out, pflx_out
+):
+    ksize = data.dz.shape[0]
+
+    dz = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.transpose(data.dz[:, :]),
+        allocator=backend,
+    )
+    te = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.transpose(data.t[0, :, :]),
+        allocator=backend,
+    )
+    p = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.transpose(data.p[0, :, :]),
+        allocator=backend,
+    )
+    qse = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.transpose(data.qs[0, :, :]),
+        allocator=backend,
+    )
+    qie = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.transpose(data.qi[0, :, :]),
+        allocator=backend,
+    )
+    qge = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.transpose(data.qg[0, :, :]),
+        allocator=backend,
+    )
+    qve = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.transpose(data.qv[0, :, :]),
+        allocator=backend,
+    )
+    qce = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.transpose(data.qc[0, :, :]),
+        allocator=backend,
+    )
+    qre = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.transpose(data.qr[0, :, :]),
+        allocator=backend,
+    )
+    rho = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.transpose(data.rho[0, :, :]),
+        allocator=backend,
+    )
+
+    pr_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.zeros((data.ncells, data.nlev)),
+        allocator=backend,
+    )
+    ps_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.zeros((data.ncells, data.nlev)),
+        allocator=backend,
+    )
+    pi_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.zeros((data.ncells, data.nlev)),
+        allocator=backend,
+    )
+    pg_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.zeros((data.ncells, data.nlev)),
+        allocator=backend,
+    )
+    pre_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        np.zeros((data.ncells, data.nlev)),
+        allocator=backend,
+    )
+    mask_out = gtx.as_field(
+        (
+            dims.CellDim,
+            dims.KDim,
+        ),
+        data.mask_out,
+        allocator=backend,
+    )
+
+    saturation_adjustment_program = setup_program(
+        backend=backend,
+        program=saturation_adjustment,
+        constant_args={},
+        horizontal_sizes={},
+        vertical_sizes={},
+        offset_provider={"Koff": dims.KDim},
+    )
+
+    graupel_run_program = setup_program(
+        backend=backend,
+        program=graupel_run,
+        constant_args={},
+        horizontal_sizes={},
+        vertical_sizes={
+            "last_lev": ksize - 1,
+        },
+        offset_provider={"Koff": dims.KDim},
+    )
+
+    start_time = time.time()
+
+    for _x in range(int(args.itime) + 1):
+        if _x == 1:  # Only start timing second iteration
+            start_time = time.time()
+
+        saturation_adjustment_program(
+            te=te,
+            qve=qve,
+            qce=qce,
+            qre=qre,
+            qse=qse,
+            qie=qie,
+            qge=qge,
+            rho=rho,
+            te_out=t_out,  # Temperature
+            qve_out=qv_out,  # Specific humidity
+            qce_out=qc_out,  # Specific cloud water content
+            mask_out=mask_out,  # Mask of interest
+        )
+
+        graupel_run_program(
+            dz=dz,
+            te=te,
+            p=p,
+            rho=rho,
+            qve=qve,
+            qce=qce,
+            qre=qre,
+            qse=qse,
+            qie=qie,
+            qge=qge,
+            dt=args.dt,
+            qnc=args.qnc,
+            t_out=t_out,
+            qv_out=qv_out,
+            qc_out=qc_out,
+            qr_out=qr_out,
+            qs_out=qs_out,
+            qi_out=qi_out,
+            qg_out=qg_out,
+            pflx=pflx_out,
+            pr=pr_out,
+            ps=ps_out,
+            pi=pi_out,
+            pg=pg_out,
+            pre=pre_out,
+        )
+
+        data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize - 1)].asnumpy())
+        data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize - 1)].asnumpy())
+        data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize - 1)].asnumpy())
+        data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
+        data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
+
+        saturation_adjustment_program(
+            te=te,
+            qve=qve,
+            qce=qce,
+            qre=qre,
+            qse=qse,
+            qie=qie,
+            qge=qge,
+            rho=rho,
+            te_out=t_out,  # Temperature
+            qve_out=qv_out,  # Specific humidity
+            qce_out=qc_out,  # Specific cloud water content
+            mask_out=mask_out,  # Mask of interest
+        )
+
+        if _x == int(args.itime):  # End timer on last iteration
+            end_time = time.time()
+
+    elapsed_time = end_time - start_time
+    print("For", int(args.itime), "iterations it took", elapsed_time, "seconds!")
+
+
 def write_fields(
     output_filename,
-    ncells,
+    ncell,
     nlev,
     t,
     qv,
@@ -125,7 +374,10 @@ def write_fields(
     pflx,
     pre_gsp,
 ):
-    ncfile = netCDF4.Dataset(output_filename, mode="w")
+    ncfile  = Dataset(output_filename, mode="w")
+    ncells  = ncfile.createDimension("ncells", ncell)
+    height  = ncfile.createDimension("height", nlev)
+    height1 = ncfile.createDimension("height1", nlev+1)
     ta_var = ncfile.createVariable("ta", np.double, ("height", "ncells"))
     hus_var = ncfile.createVariable("hus", np.double, ("height", "ncells"))
     clw_var = ncfile.createVariable("clw", np.double, ("height", "ncells"))
@@ -157,6 +409,7 @@ def write_fields(
 
 
 args = get_args()
+backend = model_backends.BACKENDS[args.backend]
 
 set_lib_path(args.ldir)
 sys.setrecursionlimit(10**4)
@@ -169,6 +422,7 @@ t_out = gtx.as_field(
         dims.KDim,
     ),
     data.t_out,
+    allocator=backend,
 )
 qv_out = gtx.as_field(
     (
@@ -176,6 +430,7 @@ qv_out = gtx.as_field(
         dims.KDim,
     ),
     data.qv_out,
+    allocator=backend,
 )
 qc_out = gtx.as_field(
     (
@@ -183,6 +438,7 @@ qc_out = gtx.as_field(
         dims.KDim,
     ),
     data.qc_out,
+    allocator=backend,
 )
 qr_out = gtx.as_field(
     (
@@ -190,6 +446,7 @@ qr_out = gtx.as_field(
         dims.KDim,
     ),
     data.qr_out,
+    allocator=backend,
 )
 qs_out = gtx.as_field(
     (
@@ -197,6 +454,7 @@ qs_out = gtx.as_field(
         dims.KDim,
     ),
     data.qs_out,
+    allocator=backend,
 )
 qi_out = gtx.as_field(
     (
@@ -204,6 +462,7 @@ qi_out = gtx.as_field(
         dims.KDim,
     ),
     data.qi_out,
+    allocator=backend,
 )
 qg_out = gtx.as_field(
     (
@@ -211,6 +470,7 @@ qg_out = gtx.as_field(
         dims.KDim,
     ),
     data.qg_out,
+    allocator=backend,
 )
 pflx_out = gtx.as_field(
     (
@@ -218,249 +478,10 @@ pflx_out = gtx.as_field(
         dims.KDim,
     ),
     data.pflx_out,
-)
-pr_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    np.zeros((data.ncells, data.nlev)),
-)
-ps_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    np.zeros((data.ncells, data.nlev)),
-)
-pi_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    np.zeros((data.ncells, data.nlev)),
-)
-pg_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    np.zeros((data.ncells, data.nlev)),
-)
-pre_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    np.zeros((data.ncells, data.nlev)),
-)
-mask_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.mask_out,
+    allocator=backend,
 )
 
-saturation_adjustment(
-    te=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.t[0, :, :]),
-    ),
-    qve=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qv[0, :, :]),
-    ),
-    qce=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qc[0, :, :]),
-    ),
-    qre=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qr[0, :, :]),
-    ),
-    qti=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qg[0, :, :] + data.qs[0, :, :] + data.qi[0, :, :]),
-    ),  # Total ice
-    rho=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.rho[0, :, :]),
-    ),
-    te_out=t_out,  # Temperature
-    qve_out=qv_out,  # Specific humidity
-    qce_out=qc_out,  # Specific cloud water content
-    mask_out=mask_out,  # Mask of interest
-    offset_provider={"Koff": dims.KDim},
-)
-
-ksize = data.dz.shape[0]
-k = gtx.as_field((dims.KDim,), np.arange(0, ksize, dtype=np.int32))
-graupel_run = graupel_run.with_backend(model_backends.BACKENDS["gtfn_cpu"])
-graupel_run(
-    k=k,
-    last_lev=ksize - 1,
-    dz=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.dz[:, :]),
-    ),
-    te=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.t[0, :, :]),
-    ),
-    p=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.p[0, :, :]),
-    ),
-    rho=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.rho[0, :, :]),
-    ),
-    qve=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qv[0, :, :]),
-    ),
-    qce=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qc[0, :, :]),
-    ),
-    qre=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qr[0, :, :]),
-    ),
-    qse=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qs[0, :, :]),
-    ),
-    qie=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qi[0, :, :]),
-    ),
-    qge=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qg[0, :, :]),
-    ),
-    dt=args.dt,
-    qnc=args.qnc,
-    t_out=t_out,
-    qv_out=qv_out,
-    qc_out=qc_out,
-    qr_out=qr_out,
-    qs_out=qs_out,
-    qi_out=qi_out,
-    qg_out=qg_out,
-    pflx=pflx_out,
-    pr=pr_out,
-    ps=ps_out,
-    pi=pi_out,
-    pg=pg_out,
-    pre=pre_out,
-    offset_provider={"Koff": dims.KDim},
-)
-
-data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize - 1)].asnumpy())
-data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize - 1)].asnumpy())
-data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize - 1)].asnumpy())
-data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
-data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
-
-saturation_adjustment(
-    te=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.t[0, :, :]),
-    ),
-    qve=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qv[0, :, :]),
-    ),
-    qce=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qc[0, :, :]),
-    ),
-    qre=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qr[0, :, :]),
-    ),
-    qti=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qg[0, :, :] + data.qs[0, :, :] + data.qi[0, :, :]),
-    ),  # Total ice
-    rho=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.rho[0, :, :]),
-    ),
-    te_out=t_out,  # Temperature
-    qve_out=qv_out,  # Specific humidity
-    qce_out=qc_out,  # Specific cloud water content
-    mask_out=mask_out,  # Mask of interest
-    offset_provider={"Koff": dims.KDim},
-)
+run_program(args, backend, data, t_out, qv_out, qc_out, qi_out, qr_out, qs_out, qg_out, pflx_out)
 
 write_fields(
     args.output_file,
