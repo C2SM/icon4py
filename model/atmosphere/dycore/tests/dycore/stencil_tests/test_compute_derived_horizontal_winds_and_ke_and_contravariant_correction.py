@@ -48,6 +48,7 @@ def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.nd
     return vn_at_surface
 
 
+@pytest.mark.continuous_benchmarking
 @pytest.mark.embedded_remap_error
 class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection(
     stencil_tests.StencilTest
@@ -61,6 +62,21 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         "contravariant_correction_at_edges_on_model_levels",
         "horizontal_advection_of_w_at_edges_on_half_levels",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "nflatlev",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nflatlev",
+        ),
+    }
 
     @staticmethod
     def _fused_velocity_advection_stencil_1_to_6_numpy(
@@ -258,8 +274,16 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    # TODO(ricoh): Add True case. Blocked by test failure (issue: #875)
+    @pytest.fixture(
+        params=[{"skip_compute_predictor_vertical_advection": value} for value in [False]]
+    )
+    def input_data(
+        self, request: pytest.FixtureRequest, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        skip_compute_predictor_vertical_advection = request.param[
+            "skip_compute_predictor_vertical_advection"
+        ]
         horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim
         )
@@ -287,9 +311,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
         nlev = grid.num_levels
-        nflatlev = 13
-
-        skip_compute_predictor_vertical_advection = False
+        nflatlev = (grid.num_levels * 3) // 10
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
