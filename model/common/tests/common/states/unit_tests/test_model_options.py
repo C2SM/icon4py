@@ -29,7 +29,8 @@ def test_custom_backend_options(backend_factory: typing.Callable, expected_backe
     }
     backend = customize_backend(backend_options)
     backend_name = expected_backend + "_cpu"
-    assert str(model_backends.BACKENDS[backend_name]) == str(backend)
+# TODO: test should be improved to work without string comparison
+assert repr(model_backends.BACKENDS[backend_name]) == repr(backend)
 
 
 def test_custom_backend_device() -> None:
