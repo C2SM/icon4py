@@ -109,7 +109,8 @@ def _compute_pressure_gradient(
     ddqz_z_half: fa.CellKField[ta.vpfloat],
 ) -> fa.CellKField[ta.vpfloat]:
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
+    d_exner_dz_ref_ic_wp = astype(d_exner_dz_ref_ic, wpfloat)
     z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic * (
         exner_pr(Koff[-1]) - exner_pr
-    ) / ddqz_z_half_wp + astype(z_theta_v_pr_ic * d_exner_dz_ref_ic, wpfloat)
+    ) / ddqz_z_half_wp + z_theta_v_pr_ic * d_exner_dz_ref_ic_wp
     return astype(z_th_ddz_exner_c_wp, vpfloat)
