@@ -21,12 +21,12 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition, halo
 from icon4py.model.common.grid import (
     grid_manager as gm,
+    grid_refinement as refin,
     gridfile,
     horizontal as h_grid,
-    refinement as refin,
     vertical as v_grid,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, definitions, test_utils
+from icon4py.model.testing import definitions, test_utils
 
 
 if typing.TYPE_CHECKING:
@@ -99,7 +99,7 @@ def test_grid_manager_refin_ctrl(
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
     assert np.all(
         refin_ctrl_serialized.ndarray
-        == refin.convert_to_unnested_refinement_values(refin_ctrl[dim].ndarray, dim)
+        == refin.convert_to_non_nested_refinement_values(refin_ctrl[dim].ndarray, dim)
     )
 
 
@@ -390,10 +390,11 @@ def test_grid_manager_eval_c2e2c2e(
     assert grid.get_connectivity("C2E2C2E").asnumpy().shape == (grid.num_cells, 9)
 
 
+# TODO (halungge): check EXCOAIM APE with new serialized data ( standard grid, start_idx/end_idx arrays
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_grid_manager_start_end_index(
+def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid_savepoint: serialbox.IconGridSavepoint,
     experiment: definitions.Experiment,
     dim: gtx.Dimension,
@@ -401,32 +402,19 @@ def test_grid_manager_start_end_index(
 ) -> None:
     serialized_grid = grid_savepoint.construct_icon_grid()
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
-    for domain in utils.global_grid_domains(dim):
-        if (
-            dim == dims.EdgeDim
-            and domain.zone == h_grid.Zone.END
-            and experiment.grid == definitions.Grids.R02B04_GLOBAL
-        ):
-            pytest.xfail(
-                "FIXME: start_index in serialized data changed to 0 with unknown consequences, see also icon-exclaim output"
-            )
-        assert grid.start_index(domain) == serialized_grid.start_index(
-            domain
-        ), f"start index wrong for domain {domain}"
-        assert grid.end_index(domain) == serialized_grid.end_index(
-            domain
-        ), f"end index wrong for domain {domain}"
 
-    for domain in utils.valid_boundary_zones_for_dim(dim):
-        if not grid.limited_area:
-            assert grid.start_index(domain) == 0
-            assert grid.end_index(domain) == 0
-        assert grid.start_index(domain) == serialized_grid.start_index(
-            domain
-        ), f"start index wrong for domain {domain}"
-        assert grid.end_index(domain) == serialized_grid.end_index(
-            domain
-        ), f"end index wrong for domain {domain}"
+    for domain in h_grid.get_domains_for_dim(dim):
+        if not (experiment == definitions.Experiments.EXCLAIM_APE and domain.dim == dims.EdgeDim):
+            # serialized start indices for EdgeDim are all zero
+            assert grid.start_index(domain) == serialized_grid.start_index(
+                domain
+            ), f"start index wrong for domain {domain}"
+        if not grid.limited_area and domain.zone in [h_grid.Zone.END, h_grid.Zone.INTERIOR]:
+            assert grid.end_index(domain) == grid.size[domain.dim]
+        else:
+            assert grid.end_index(domain) == serialized_grid.end_index(
+                domain
+            ), f"end index wrong for domain {domain}"
 
 
 @pytest.mark.datatest

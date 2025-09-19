@@ -20,10 +20,10 @@ from icon4py.model.common.decomposition.halo import SingleNodeDecomposer
 from icon4py.model.common.exceptions import InvalidConfigError
 from icon4py.model.common.grid import (
     base,
+    grid_refinement as refinement,
     gridfile,
     horizontal as h_grid,
     icon,
-    refinement,
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -252,7 +252,7 @@ class GridManager:
         Reads the refinement control fields from the grid file.
 
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
-        see [refinement.py](refinement.py)
+        see [grid_refinement.py](grid_refinement.py)
 
         Args:
             backend: Optional backend to use for reading the fields, if not provided the default backend is used.
@@ -441,8 +441,8 @@ class GridManager:
             allocator=backend,
             config=grid_config,
             neighbor_tables=neighbor_tables,
-            start_indices=start_indices,
-            end_indices=end_indices,
+            start_index=start_index,
+            end_index=end_index,
             global_properties=global_params,
             refinement_control=refinement_fields,
         )

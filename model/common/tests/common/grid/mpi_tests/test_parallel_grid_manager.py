@@ -275,11 +275,14 @@ def assert_gathered_field_against_global(
 #    - geofac_div
 #    - geofac_n2s
 
+
 # TODO (halungge): fix non contiguous dimension for embedded
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_halo_neighbor_access_c2e(processor_props: defs.ProcessProperties, backend:gtx_typing.Backend|None):
-#    processor_props = decomp_utils.DummyProps(rank = 1)
+def test_halo_neighbor_access_c2e(
+    processor_props: defs.ProcessProperties, backend: gtx_typing.Backend | None
+):
+    #    processor_props = decomp_utils.DummyProps(rank = 1)
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     print(f"running on {processor_props.comm}")
     single_node = run_grid_manager_for_singlenode(file, vertical_config)
@@ -312,7 +315,7 @@ def test_halo_neighbor_access_c2e(processor_props: defs.ProcessProperties, backe
     print(
         f"rank = {processor_props.rank} : single node computed field reference has size  {reference.asnumpy().shape}"
     )
-    #processor_props.comm.barrier()
+    # processor_props.comm.barrier()
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
         vertical_config=vertical_config,

@@ -12,10 +12,10 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import parallel_helpers
-from icon4py.model.testing.fixtures.datatest import (
+from icon4py.model.testing.fixtures.datatest import (  # import fixtures from test_utils
     backend,
     data_provider,
     decomposition_info,
@@ -132,6 +132,7 @@ def test_decomposition_info_local_index(
     all_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
+
     assert all_indices.shape[0] == my_total
     assert np.array_equal(all_indices, np.arange(0, my_total))
     halo_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.HALO)

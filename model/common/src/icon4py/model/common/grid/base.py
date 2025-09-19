@@ -9,7 +9,7 @@ import dataclasses
 import enum
 import functools
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Sequence
 from types import ModuleType
 
 import gt4py.next as gtx
@@ -99,9 +99,8 @@ class Grid:
     config: GridConfig
     connectivities: gtx_common.OffsetProvider
     geometry_type: GeometryType
-    # only used internally for `start_index` and `end_index` public interface:
-    _start_indices: Mapping[h_grid.Domain, gtx.int32]
-    _end_indices: Mapping[h_grid.Domain, gtx.int32]
+    start_index: Callable[[h_grid.Domain], gtx.int32]
+    end_index: Callable[[h_grid.Domain], gtx.int32]
 
     def __post_init__(self):
         # TODO(havogt): replace `Koff[k]` by `KDim + k` syntax and remove the following line.
@@ -168,31 +167,11 @@ class Grid:
         return connectivity
 
     def get_neighbor_tables(self):
-        return {k:v.ndarray for k, v in self.connectivities.items() if gtx_common.is_neighbor_connectivity(v)}
-
-    def start_index(self, domain: h_grid.Domain) -> gtx.int32:
-        """
-        Use to specify lower end of domains of a field for field_operators.
-
-        For a given dimension, returns the start index of the
-        horizontal region in a field given by the marker.
-        """
-        if domain.is_local:
-            # special treatment because this value is not set properly in the underlying data.
-            return gtx.int32(0)
-        return self._start_indices[domain]
-
-    def end_index(self, domain: h_grid.Domain) -> gtx.int32:
-        """
-        Use to specify upper end of domains of a field for field_operators.
-
-        For a given dimension, returns the end index of the
-        horizontal region in a field given by the marker.
-        """
-        if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
-            # special treatment because this value is not set properly in the underlying data, for a global grid
-            return gtx.int32(self.size[domain.dim])
-        return self._end_indices[domain]
+        return {
+            k: v.ndarray
+            for k, v in self.connectivities.items()
+            if gtx_common.is_neighbor_connectivity(v)
+        }
 
 
 def construct_connectivity(
