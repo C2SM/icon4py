@@ -128,7 +128,7 @@ def test_run_diffusion_benchmark(
     )
 
     topo_c = jablonowski_williamson_topography(
-        cell_lat=cell_geometry.cell_center_lat.asnumpy(),
+        cell_lat=cell_geometry.cell_center_lat.ndarray,
         u0=35.0,
         backend=backend,
     )
