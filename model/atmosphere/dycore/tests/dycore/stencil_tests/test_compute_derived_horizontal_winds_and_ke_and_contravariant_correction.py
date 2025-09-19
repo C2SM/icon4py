@@ -311,7 +311,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
         nlev = grid.num_levels
-        nflatlev = 13
+        nflatlev = (grid.num_levels * 3) // 10
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
