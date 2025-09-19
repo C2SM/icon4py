@@ -25,14 +25,16 @@ from ..fixtures import *  # noqa: F403
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
+    from icon4py.model.common import type_alias as ta
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 
 
+@pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, model_top_height, damping_height, stretch_factor",
-    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0, 8000.0, 0.85)],
+    "experiment, model_top_height",
+    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0)],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
@@ -40,10 +42,9 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("location", ["nwp-gscp-interface", "interface-nwp"])
 def test_saturation_adjustement(
     location: str,
-    model_top_height: float,  # TODO(havogt): unused?
-    damping_height: float,  # TODO(havogt): unused?
-    stretch_factor: float,  # TODO(havogt): unused?
+    model_top_height: ta.wpfloat,
     date: str,
+    *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
@@ -59,7 +60,10 @@ def test_saturation_adjustement(
     )
     dtime = 2.0
 
-    vertical_config = v_grid.VerticalGridConfig(icon_grid.num_levels)
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        model_top_height=model_top_height,
+    )
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
