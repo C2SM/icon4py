@@ -15,25 +15,27 @@ from typing import Any
 import numpy as np
 import pytest
 from gt4py import next as gtx
+from gt4py.next import typing as gtx_typing
 
 import icon4py.model.common.grid.gridfile
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import definitions as defs, halo, mpi_decomposition
 from icon4py.model.common.grid import (
+    base,
     geometry,
     geometry_attributes,
     grid_manager as gm,
     gridfile,
-    vertical as v_grid, base,
+    vertical as v_grid,
 )
 from icon4py.model.common.interpolation.interpolation_fields import compute_geofac_div
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
+    definitions,
     definitions as test_defs,
     grid_utils,
-    test_utils as test_helpers, definitions,
+    test_utils as test_helpers,
 )
-from gt4py.next import typing as gtx_typing
 
 from ...decomposition import utils as decomp_utils
 from .. import utils
@@ -64,7 +66,7 @@ def run_gridmananger_for_multinode(
     return manager
 
 
-def _grid_manager(file: pathlib.Path, vertical_config: v_grid.VerticalGridConfig)->gm.GridManager:
+def _grid_manager(file: pathlib.Path, vertical_config: v_grid.VerticalGridConfig) -> gm.GridManager:
     manager = gm.GridManager(str(file), vertical_config)
     return manager
 
@@ -94,13 +96,13 @@ def run_grid_manager_for_singlenode(
 )
 @pytest.mark.parametrize("dim", utils.horizontal_dims())
 def test_start_end_index(
-    caplog:Any,
-    backend:gtx_typing.Backend|None,
-    processor_props:defs.ProcessProperties,
-    experiment:definitions.Experiment,
-    dim:gtx.Dimension,
-    icon_grid:base.Grid
-)->None:  # fixture
+    caplog: Any,
+    backend: gtx_typing.Backend | None,
+    processor_props: defs.ProcessProperties,
+    experiment: definitions.Experiment,
+    dim: gtx.Dimension,
+    icon_grid: base.Grid,
+) -> None:  # fixture
     caplog.set_level(logging.INFO)
     grid_file = experiment.grid
     file = grid_utils.resolve_full_grid_file_name(grid_file)
@@ -128,8 +130,8 @@ def test_start_end_index(
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi(min_size=2)
-def test_grid_manager_validate_decomposer(processor_props:defs.ProcessProperties)->None:
-    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL.name)
+def test_grid_manager_validate_decomposer(processor_props: defs.ProcessProperties) -> None:
+    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     manager = gm.GridManager(file, vertical_config, gridfile.ToZeroBasedIndexTransformation())
     with pytest.raises(exceptions.InvalidConfigError) as e:
         manager(
@@ -144,7 +146,7 @@ def test_grid_manager_validate_decomposer(processor_props:defs.ProcessProperties
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_fields_distribute_and_gather(processor_props:defs.ProcessProperties, caplog:Any)->None:
+def test_fields_distribute_and_gather(processor_props: defs.ProcessProperties, caplog: Any) -> None:
     caplog.set_level(logging.INFO)
     print(f"myrank - {processor_props.rank}: running with processor_props =  {processor_props}")
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
@@ -232,7 +234,7 @@ def assert_gathered_field_against_global(
     dim: gtx.Dimension,
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
-)->None:
+) -> None:
     assert (
         local_field.shape[0]
         == decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.ALL).shape[0]
@@ -273,12 +275,12 @@ def assert_gathered_field_against_global(
 #    - geofac_div
 #    - geofac_n2s
 
-
+# TODO (halungge): fix non contiguous dimension for embedded
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_halo_neighbor_access_c2e(processor_props:defs.ProcessProperties):
-    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL.name)
-    backend = None
+def test_halo_neighbor_access_c2e(processor_props: defs.ProcessProperties, backend:gtx_typing.Backend|None):
+#    processor_props = decomp_utils.DummyProps(rank = 1)
+    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     print(f"running on {processor_props.comm}")
     single_node = run_grid_manager_for_singlenode(file, vertical_config)
     single_node_grid = single_node.grid
@@ -300,7 +302,7 @@ def test_halo_neighbor_access_c2e(processor_props:defs.ProcessProperties):
     single_node_edge_orientation = single_node_geometry.get(
         geometry_attributes.CELL_NORMAL_ORIENTATION
     )
-    compute_geofac_div.with_backend(backend)(
+    compute_geofac_div.with_backend(None)(
         primal_edge_length=single_node_edge_length,
         area=single_node_cell_area,
         edge_orientation=single_node_edge_orientation,
@@ -310,7 +312,7 @@ def test_halo_neighbor_access_c2e(processor_props:defs.ProcessProperties):
     print(
         f"rank = {processor_props.rank} : single node computed field reference has size  {reference.asnumpy().shape}"
     )
-    processor_props.comm.barrier()
+    #processor_props.comm.barrier()
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
         vertical_config=vertical_config,
@@ -341,7 +343,7 @@ def test_halo_neighbor_access_c2e(processor_props:defs.ProcessProperties):
 
     # ### geofac_div = primal_edge_length(C2E) * edge_orientation / area
     geofac_div = data_alloc.zero_field(distributed_grid, dims.CellDim, dims.C2EDim)
-    compute_geofac_div.with_backend(backend)(
+    compute_geofac_div.with_backend(None)(
         primal_edge_length=edge_length,
         area=cell_area,
         edge_orientation=edge_orientation,
@@ -382,8 +384,8 @@ def test_local_connectivities(
         test_defs.Grids.R02B04_GLOBAL, keep_skip_values=True, backend=None
     ).grid
     partitioner = halo.SimpleMetisDecomposer()
-    face_face_connectivity = grid.connectivities[dims.C2E2CDim.value].ndarray  # type: ignore[union-attr]
-    neighbor_tables = {k: v.ndarray for k, v in grid.connectivities.items()}
+    face_face_connectivity = grid.get_connectivity(dims.C2E2C).ndarray  # type: ignore[union-attr]
+    neighbor_tables = grid.get_neighbor_tables()
     labels = partitioner(face_face_connectivity, num_partitions=processor_props.comm_size)
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=neighbor_tables,
@@ -394,7 +396,7 @@ def test_local_connectivities(
     decomposition_info = halo_generator(labels)
 
     connectivity = gm.construct_local_connectivity(
-        field_offset, decomposition_info, connectivity=grid.connectivities[field_offset].ndarray
+        field_offset, decomposition_info, connectivity=grid.get_connectivity(field_offset).ndarray
     )
     # there is an neighbor list for each index of the target dimension on the node
     assert (

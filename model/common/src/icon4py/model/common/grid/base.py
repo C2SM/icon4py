@@ -167,6 +167,9 @@ class Grid:
         assert gtx_common.is_neighbor_table(connectivity)
         return connectivity
 
+    def get_neighbor_tables(self):
+        return {k:v.ndarray for k, v in self.connectivities.items() if gtx_common.is_neighbor_connectivity(v)}
+
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
         Use to specify lower end of domains of a field for field_operators.

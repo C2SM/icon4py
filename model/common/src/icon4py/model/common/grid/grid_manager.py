@@ -225,10 +225,9 @@ class GridManager:
             ),
             gridfile.GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
                 (dims.CellDim, dims.C2EDim),
-                self._reader.int_variable(
+                self._reader.variable(
                     gridfile.GeometryName.CELL_NORMAL_ORIENTATION,
                     transpose=True,
-                    apply_transformation=False,
                     indices=my_cell_indices,
                 ),
                 allocator=backend,
