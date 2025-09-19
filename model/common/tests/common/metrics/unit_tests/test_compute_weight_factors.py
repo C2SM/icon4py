@@ -55,6 +55,10 @@ def test_compute_wgtfac_c(
         wgtfac_c,
         z_ifc,
         nlev=vertical_end,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=0,
+        vertical_end=vertical_end + 1,
         offset_provider={"Koff": dims.KDim},
     )
 
