@@ -11,8 +11,8 @@ import functools
 import logging
 import pathlib
 
+import gt4py.next.typing as gtx_typing
 import netCDF4 as nc4
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -61,7 +61,7 @@ class ExperimentType(str, enum.Enum):
 def read_icon_grid(
     path: pathlib.Path,
     grid_file: pathlib.Path,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> icon_grid.IconGrid:
@@ -90,7 +90,7 @@ def read_icon_grid(
 def model_initialization_serialbox(
     grid: icon_grid.IconGrid,
     path: pathlib.Path,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     rank: int = 0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
@@ -232,7 +232,7 @@ def read_initial_state(
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
@@ -326,7 +326,7 @@ def read_geometry_fields(
     path: pathlib.Path,
     grid_file: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
@@ -366,7 +366,7 @@ def read_geometry_fields(
 
 # TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _serial_data_provider(
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     path: pathlib.Path,
     rank: int,
 ) -> sb.IconSerialDataProvider:
@@ -381,7 +381,7 @@ def _serial_data_provider(
 
 # TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _grid_savepoint(
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     path: pathlib.Path,
     grid_file: pathlib.Path,
     rank: int,
@@ -398,7 +398,7 @@ def read_decomp_info(
     path: pathlib.Path,
     grid_file: pathlib.Path,
     procs_props: decomposition.ProcessProperties,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     ser_type=SerializationType.SB,
 ) -> decomposition.DecompositionInfo:
     if ser_type == SerializationType.SB:
@@ -415,7 +415,7 @@ def read_decomp_info(
 def read_static_fields(
     path: pathlib.Path,
     grid_file: pathlib.Path,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[

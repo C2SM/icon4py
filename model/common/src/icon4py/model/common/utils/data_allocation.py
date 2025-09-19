@@ -12,10 +12,11 @@ import logging as log
 from types import ModuleType
 from typing import TYPE_CHECKING, TypeAlias
 
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import numpy.typing as npt
 from gt4py import next as gtx
-from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.utils import device_utils
@@ -34,7 +35,7 @@ NDArray: TypeAlias = np.ndarray | xp.ndarray
 NDArrayInterface: TypeAlias = np.ndarray | xp.ndarray | gtx.Field
 
 
-def backend_name(backend: gtx_backend.Backend | None) -> str:
+def backend_name(backend: gtx_typing.Backend | None) -> str:
     return "embedded" if backend is None else backend.name
 
 
@@ -69,7 +70,7 @@ def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) 
 
 def as_field(
     field: gtx.Field,
-    backend: gtx_backend.Backend | None = None,
+    backend: gtx_typing.Backend | None = None,
     embedded_on_host: bool = False,
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
@@ -113,7 +114,7 @@ def random_mask(
     *dims: gtx.Dimension,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
-    backend: gtx_backend.Backend | None = None,
+    backend: gtx_typing.Backend | None = None,
 ) -> gtx.Field:
     rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
@@ -166,7 +167,7 @@ def index_field(
     dim: gtx.Dimension,
     extend: dict[gtx.Dimension, int] | None = None,
     dtype=gtx.int32,
-    backend: gtx_backend.Backend | None = None,
+    backend: gtx_typing.Backend | None = None,
 ) -> gtx.Field:
     xp = import_array_ns(backend)
     shapex = _shape(grid, dim, extend=extend)[0]

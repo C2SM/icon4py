@@ -13,7 +13,6 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
-import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import dimension as dims

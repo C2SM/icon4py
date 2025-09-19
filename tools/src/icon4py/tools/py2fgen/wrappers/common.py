@@ -15,10 +15,10 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Final, TypeAlias
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
@@ -56,7 +56,7 @@ class BackendIntEnum(eve.IntEnum):
     _DACE_GPU = 22
 
 
-_BACKEND_MAP: dict[BackendIntEnum, gtx_backend.Backend | None] = {
+_BACKEND_MAP: dict[BackendIntEnum, gtx_typing.Backend | None] = {
     BackendIntEnum._GTFN_CPU: model_backends.BACKENDS["gtfn_cpu"],
     BackendIntEnum._GTFN_GPU: model_backends.BACKENDS["gtfn_gpu"],
 }
@@ -67,7 +67,7 @@ with contextlib.suppress(NotImplementedError):  # dace backends might not be ava
     }
 
 
-def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backend:
+def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_typing.Backend:
     default_cpu = BackendIntEnum._GTFN_CPU
     default_gpu = BackendIntEnum._GTFN_GPU
     if selector == BackendIntEnum.DEFAULT:
@@ -96,7 +96,7 @@ def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backen
 
 
 def cached_dummy_field_factory(
-    allocator: gtx_backend.Backend,
+    allocator: gtx_typing.Backend,
 ) -> Callable[[str, gtx.Domain, gt4py_definitions.DType], gtx.Field]:
     # curried to exclude non-hashable backend from cache
     @functools.lru_cache(maxsize=20)
@@ -154,7 +154,7 @@ def construct_icon_grid(
     vertical_size: int,
     limited_area: bool,
     mean_cell_area: gtx.float64,  # type:ignore[name-defined]  # TODO(): fix type hint
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
 ) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
