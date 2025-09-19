@@ -349,7 +349,7 @@ class GridManager:
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
 
-	# TODO(msimberg): Compute these in GridGeometry once FieldProviders can produce scalars.
+        # TODO(msimberg): Compute these in GridGeometry once FieldProviders can produce scalars.
         # This will also allow easier handling once grids are distributed.
         mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
         mean_dual_edge_length = self._reader.try_attribute(
