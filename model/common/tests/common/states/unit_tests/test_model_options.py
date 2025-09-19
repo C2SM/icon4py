@@ -89,4 +89,5 @@ def test_setup_program_dace_gpu(backend_params: typing.Any, expected_backend: st
         ),
         offset_provider={},
     )
-    assert str(partial_program) == str(expected_partial)
+     # TODO: test should be improved to work without string comparison
+    assert repr(partial_program) == repr(expected_partial)
