@@ -7,20 +7,22 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import pathlib
 
-import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
     grid_manager as gm,
-    icon,
+    gridfile,
     vertical as v_grid,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import config, data_handling, definitions, locking
+
+
+REGIONAL_GRIDFILE = "grid.nc"
+
+GLOBAL_GRIDFILE = "icon_grid_0013_R02B04_R.nc"
 
 
 grid_geometries: dict[str, geometry.GridGeometry] = {}
@@ -52,7 +54,7 @@ def get_grid_manager_from_identifier(
 
 
 def get_grid_manager(
-    grid_file: pathlib.Path,
+    filename: pathlib.Path,
     num_levels: int,
     keep_skip_values: bool,
     backend: gtx_typing.Backend | None,
@@ -61,15 +63,15 @@ def get_grid_manager(
     Construct a GridManager instance for an ICON grid file.
 
     Args:
-        grid_file: full path to the file
+        filename: full path to the file
         num_levels: number of vertical levels, needed for IconGrid construction but independent from grid file
         keep_skip_values: whether to keep skip values
         backend: the gt4py Backend we are running on
     """
     manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(),
-        grid_file,
+        filename,
         v_grid.VerticalGridConfig(num_levels=num_levels),
+        gridfile.ToZeroBasedIndexTransformation(),
     )
     manager(backend=backend, keep_skip_values=keep_skip_values)
     return manager
@@ -104,24 +106,7 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
 def get_grid_geometry(
     backend: gtx_typing.Backend | None, experiment: definitions.Experiment
 ) -> geometry.GridGeometry:
-    on_gpu = device_utils.is_cupy_device(backend)
-    xp = data_alloc.array_ns(on_gpu)
     register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
-
-    def _construct_dummy_decomposition_info(
-        grid: icon.IconGrid,
-    ) -> decomposition_defs.DecompositionInfo:
-        def _add_dimension(dim: gtx.Dimension) -> None:
-            indices = data_alloc.index_field(grid, dim, backend=backend)
-            owner_mask = xp.ones((grid.size[dim],), dtype=bool)
-            decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
-
-        decomposition_info = decomposition_defs.DecompositionInfo(klevels=grid.num_levels)
-        _add_dimension(dims.EdgeDim)
-        _add_dimension(dims.VertexDim)
-        _add_dimension(dims.CellDim)
-
-        return decomposition_info
 
     def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = get_grid_manager_from_identifier(
@@ -131,9 +116,8 @@ def get_grid_geometry(
             backend=backend,
         )
         grid = gm.grid
-        decomposition_info = _construct_dummy_decomposition_info(grid)
         geometry_source = geometry.GridGeometry(
-            grid, decomposition_info, backend, gm.coordinates, gm.geometry, geometry_attrs.attrs
+            grid, gm.decomposition_info, backend, gm.coordinates, gm.geometry, geometry_attrs.attrs
         )
         return geometry_source
 

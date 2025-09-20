@@ -12,8 +12,8 @@ from typing import Final
 import numpy as np
 from gt4py import next as gtx
 
+import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -34,8 +34,8 @@ functionality needed for single grid ordering and decomposition.
 """
 _log = logging.getLogger(__name__)
 
-
-_MAX_BOUNDARY_DISTANCE: Final[dict[gtx.Dimension, int]] = {
+# TODO(halungge): get these from grid file cell_grf, edge_grf, vertex_grf
+_MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
     dims.CellDim: 14,
     dims.EdgeDim: 28,
     dims.VertexDim: 14,

@@ -447,41 +447,36 @@ class IconGridSavepoint(IconSavepoint):
                 )
 
     def owner_mask(self, dim: gtx.Dimension):
-        field_name = "owner_mask"
-        mask = self._read_field_for_dim(field_name, self._read_bool, dim)
-        return mask
+        mask = self._read_field_for_dim("owner_mask", self._read_bool, dim)
+        return np.squeeze(mask)
 
     def global_index(self, dim: gtx.Dimension):
-        field_name = "glb_index"
-        return self._read_field_for_dim(field_name, self._read_int32_shift1, dim)
+        return self._read_field_for_dim("glb_index", self._read_int32_shift1, dim)
 
     def decomp_domain(self, dim):
-        field_name = "decomp_domain"
-        return self._read_field_for_dim(field_name, self._read_int32, dim)
+        return self._read_field_for_dim("decomp_domain", self._read_int32, dim)
 
     def construct_decomposition_info(self):
         return (
             decomposition.DecompositionInfo(
                 klevels=self.num(dims.KDim),
-                num_cells=self.num(dims.CellDim),
-                num_edges=self.num(dims.EdgeDim),
-                num_vertices=self.num(dims.VertexDim),
             )
-            .with_dimension(*self._get_decomp_fields(dims.CellDim))
-            .with_dimension(*self._get_decomp_fields(dims.EdgeDim))
-            .with_dimension(*self._get_decomp_fields(dims.VertexDim))
+            .set_dimension(*self._get_decomposition_fields(dims.CellDim))
+            .set_dimension(*self._get_decomposition_fields(dims.EdgeDim))
+            .set_dimension(*self._get_decomposition_fields(dims.VertexDim))
         )
 
-    def _get_decomp_fields(self, dim: gtx.Dimension):
+    def _get_decomposition_fields(self, dim: gtx.Dimension):
         global_index = self.global_index(dim)
         mask = self.owner_mask(dim)[0 : self.num(dim)]
-        return dim, global_index, mask
+        halo_levels = self.decomp_domain(dim)[0 : self.num(dim)]
+        return dim, global_index, mask, halo_levels
 
     def construct_icon_grid(
         self, backend: gtx_backend.Backend | None = None, keep_skip_values: bool = True
     ) -> icon.IconGrid:
         config = base.GridConfig(
-            horizontal_config=base.HorizontalGridSize(
+            horizontal_size=base.HorizontalGridSize(
                 num_vertices=self.num(dims.VertexDim),
                 num_cells=self.num(dims.CellDim),
                 num_edges=self.num(dims.EdgeDim),

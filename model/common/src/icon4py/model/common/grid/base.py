@@ -44,10 +44,13 @@ class HorizontalGridSize:
     num_edges: int
     num_cells: int
 
+    def __repr__(self):
+        return f"{self.__class__} (<num_cells = {self.num_cells}>, <num_edges={self.num_edges}>, <num_verts = {self.num_vertices})"
+
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class GridConfig:
-    horizontal_config: HorizontalGridSize
+    horizontal_size: HorizontalGridSize
     # TODO(halungge): Decouple the vertical from horizontal grid.
     vertical_size: int
     limited_area: bool = True
@@ -62,15 +65,15 @@ class GridConfig:
 
     @property
     def num_vertices(self):
-        return self.horizontal_config.num_vertices
+        return self.horizontal_size.num_vertices
 
     @property
     def num_edges(self):
-        return self.horizontal_config.num_edges
+        return self.horizontal_size.num_edges
 
     @property
     def num_cells(self):
-        return self.horizontal_config.num_cells
+        return self.horizontal_size.num_cells
 
 
 @dataclasses.dataclass(frozen=True)
@@ -162,6 +165,13 @@ class Grid:
         connectivity = self.connectivities[offset]
         assert gtx_common.is_neighbor_table(connectivity)
         return connectivity
+
+    def get_neighbor_tables(self):
+        return {
+            k: v.ndarray
+            for k, v in self.connectivities.items()
+            if gtx_common.is_neighbor_connectivity(v)
+        }
 
 
 def construct_connectivity(
