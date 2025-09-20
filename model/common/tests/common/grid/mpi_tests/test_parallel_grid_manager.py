@@ -26,6 +26,7 @@ from icon4py.model.common.grid import (
     geometry_attributes,
     grid_manager as gm,
     gridfile,
+    horizontal as h_grid,
     vertical as v_grid,
 )
 from icon4py.model.common.interpolation.interpolation_fields import compute_geofac_div
@@ -84,14 +85,14 @@ def run_grid_manager_for_singlenode(
     return manager
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail("fix test, add data for APE")
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "experiment",
     [
         (test_defs.Experiments.EXCLAIM_APE),
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT)
+        # (test_defs.Experiments.MCH_CH_R04B09)
     ],
 )
 @pytest.mark.parametrize("dim", utils.horizontal_dims())
@@ -113,17 +114,15 @@ def test_start_end_index(
         v_grid.VerticalGridConfig(1),
         icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
     )
-    single_node_grid = gm.GridManager(
-        file,
-        v_grid.VerticalGridConfig(1),
-        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
-    ).grid
+    manager(backend, keep_skip_values=True, decomposer=partitioner, run_properties=processor_props)
+    grid = manager.grid
 
-    for domain in utils.global_grid_domains(dim):
-        assert icon_grid.start_index(domain) == single_node_grid.start_index(
+    domains = (h_grid.domain(dim)(z) for z in h_grid.VERTEX_AND_CELL_ZONES)
+    for domain in domains:
+        assert icon_grid.start_index(domain) == grid.start_index(
             domain
         ), f"start index wrong for domain {domain}"
-        assert icon_grid.end_index(domain) == single_node_grid.end_index(
+        assert icon_grid.end_index(domain) == grid.end_index(
             domain
         ), f"end index wrong for domain {domain}"
 
@@ -315,7 +314,6 @@ def test_halo_neighbor_access_c2e(
     print(
         f"rank = {processor_props.rank} : single node computed field reference has size  {reference.asnumpy().shape}"
     )
-    # processor_props.comm.barrier()
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
         vertical_config=vertical_config,
@@ -344,7 +342,6 @@ def test_halo_neighbor_access_c2e(
     cell_area = distributed_geometry.get(geometry_attributes.CELL_AREA)
     edge_orientation = distributed_geometry.get(geometry_attributes.CELL_NORMAL_ORIENTATION)
 
-    # ### geofac_div = primal_edge_length(C2E) * edge_orientation / area
     geofac_div = data_alloc.zero_field(distributed_grid, dims.CellDim, dims.C2EDim)
     compute_geofac_div.with_backend(None)(
         primal_edge_length=edge_length,
@@ -363,15 +360,8 @@ def test_halo_neighbor_access_c2e(
     )
 
     print(f"rank = {processor_props.rank} - DONE")
-    # 1. read grid and distribue - GridManager
-
-    # 2. get geometry fields (from GridManger) primal_edge_length, edge_orientation, area (local read)
-    # 3. compute geofac_div = primal_edge_length * edge_orientation / area
-    # 4. gather geofac_div
-    # 5 compare (possible reorder
 
 
-# TODO move to mpi_tests folder
 @pytest.mark.mpi
 @pytest.mark.parametrize(
     "field_offset",

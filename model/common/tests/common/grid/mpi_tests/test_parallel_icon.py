@@ -135,6 +135,7 @@ def test_distributed_halo(
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
+    level: int,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     domain = h_grid.domain(dim)(zone)

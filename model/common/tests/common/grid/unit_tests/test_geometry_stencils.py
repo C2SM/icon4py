@@ -31,8 +31,6 @@ from ..fixtures import *
 )
 def test_edge_length(experiment, grid_file, grid_savepoint, backend):
     keep = True
-    # grid = grid_savepoint.construct_icon_grid(backend, keep_skip_values=keep)
-
     gm = grid_utils.get_grid_manager_from_identifier(
         grid_file, keep_skip_values=keep, num_levels=1, backend=backend
     )
@@ -40,8 +38,6 @@ def test_edge_length(experiment, grid_file, grid_savepoint, backend):
     coordinates = gm.coordinates[dims.VertexDim]
     lat = coordinates["lat"]
     lon = coordinates["lon"]
-    # lat = grid_savepoint.lat(dims.VertexDim)
-    # lon = grid_savepoint.lon(dims.VertexDim)
     length = data_alloc.zero_field(grid, dims.EdgeDim)
     compute_edge_length.with_backend(backend)(
         vertex_lat=lat,
@@ -54,35 +50,3 @@ def test_edge_length(experiment, grid_file, grid_savepoint, backend):
     )
 
     assert np.allclose(length.asnumpy(), grid_savepoint.primal_edge_length().asnumpy())
-
-
-@pytest.mark.level("unit")
-@pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, grid_file",
-    (
-        (definitions.Experiments.MCH_CH_R04B09.name, definitions.Grids.MCH_CH_R04B09_DSL.name),
-        (definitions.Experiments.EXCLAIM_APE.name, definitions.Grids.R02B04_GLOBAL.name),
-    ),
-)
-def test_compute_dual_edge_length(experiment, grid_file, grid_savepoint, backend):
-    keep = True
-    # grid = grid_savepoint.construct_icon_grid(backend, keep_skip_values=keep)
-
-    gm = grid_utils.get_grid_manager_from_identifier(
-        grid_file, keep_skip_values=keep, num_levels=1, backend=backend
-    )
-    grid = gm.grid
-    coordinates = gm.coordinates[dims.VertexDim]
-    # lat = coordinates["lat"]
-    # lon = coordinates["lon"]
-    lat_vertex = grid_savepoint.lat(dims.VertexDim)
-    lon_vertex = grid_savepoint.lon(dims.VertexDim)
-    lat_edges = grid_savepoint.lat(dims.EdgeDim)
-    lon_edges = grid_savepoint.lon(dims.EdgeDim)
-    radius = constants.EARTH_RADIUS
-
-    length = data_alloc.zero_field(grid, dims.EdgeDim)
-    compute_cell_center_arc_distance.with_backend(backend)(
-        lat_edges, lon_edges, lat_vertex, lon_vertex, radius, length
-    )
