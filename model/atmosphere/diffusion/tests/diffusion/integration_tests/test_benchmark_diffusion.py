@@ -128,7 +128,7 @@ def test_run_diffusion_benchmark(
     )
 
     topo_c = jablonowski_williamson_topography(
-        cell_lat=cell_geometry.cell_center_lat.ndarray,
+        cell_lat=cell_geometry.cell_center_lat.asnumpy(),
         u0=35.0,
         backend=backend,
     )
@@ -199,7 +199,7 @@ def test_run_diffusion_benchmark(
     )
 
     prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, low=0.0),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim),
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
