@@ -7,24 +7,24 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import typing
+
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
-from icon4py.model.common import field_type_aliases as fa
-
-from icon4py.model.common import model_backends
+from icon4py.model.common import field_type_aliases as fa, model_backends
 from icon4py.model.common.model_options import customize_backend, setup_program
 
 
-@gtx.field_operator
-def field_op_return_field(field: fa.KField[float], factor: float) -> fa.KField[float]:
+@gtx.field_operator  # type: ignore[call-overload]
+def field_op_return_field(field: fa.CellKField[float], factor: float) -> fa.CellKField[float]:
     return field + factor
 
-@gtx.program
-def program_return_field(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
-    field_op_return_field(field, factor, out=scaled_field)
+
+@gtx.program  # type: ignore[call-overload]
+def program_return_field(field: fa.CellKField[float], factor: float):  # type: ignore[no-untyped-def]
+    field_op_return_field(field, factor, out=field)
+
 
 @pytest.mark.parametrize(
     "backend_factory, expected_backend",
@@ -40,7 +40,7 @@ def test_custom_backend_options(backend_factory: typing.Callable, expected_backe
     }
     backend = customize_backend(backend_options)
     backend_name = expected_backend + "_cpu"
-    # TODO: test should be improved to work without string comparison
+    # TODO(havogt): test should be improved to work without string comparison
     assert repr(model_backends.BACKENDS[backend_name]) == repr(backend)
 
 
@@ -48,7 +48,7 @@ def test_custom_backend_device() -> None:
     device = model_backends.CPU
     backend = customize_backend(device)
     default_backend = "gtfn_cpu"
-    # TODO: test should be improved to work without string comparison
+    # TODO(havogt): test should be improved to work without string comparison
     assert repr(model_backends.BACKENDS[default_backend]) == repr(backend)
 
 
@@ -68,16 +68,16 @@ def test_setup_program_defaults(
     | model_backends.BackendDescription
     | None,
 ) -> None:
-    partial_program = setup_program(backend=backend, program=scale_k)
+    partial_program = setup_program(backend=backend, program=program_return_field)
     backend = model_backends.BACKENDS["gtfn_cpu"]
     expected_partial = functools.partial(
-        scale_k.with_backend(backend).compile(
+        program_return_field.with_backend(backend).compile(
             enable_jit=False,
             offset_provider={},
         ),
         offset_provider={},
     )
-    # TODO: test should be improved to work without string comparison
+    # TODO(havogt): test should be improved to work without string comparison
     assert repr(partial_program) == repr(expected_partial)
 
 
@@ -104,14 +104,14 @@ def test_setup_program_specify_inputs(
     | None,
     expected_backend: str,
 ) -> None:
-    partial_program = setup_program(backend=backend_params, program=scale_k)
+    partial_program = setup_program(backend=backend_params, program=program_return_field)
     backend = model_backends.BACKENDS[expected_backend]
     expected_partial = functools.partial(
-        scale_k.with_backend(backend).compile(
+        program_return_field.with_backend(backend).compile(
             enable_jit=False,
             offset_provider={},
         ),
         offset_provider={},
     )
-    # TODO: test should be improved to work without string comparison
+    # TODO(havogt): test should be improved to work without string comparison
     assert repr(partial_program) == repr(expected_partial)

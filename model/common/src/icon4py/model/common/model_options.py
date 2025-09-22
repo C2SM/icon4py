@@ -13,6 +13,7 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import model_backends
 
+
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
