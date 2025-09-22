@@ -489,6 +489,7 @@ def read_static_fields(
             horizontal_end=grid.num_edges,
             vertical_start=0,
             vertical_end=grid.num_levels+1,
+            offset_provider=grid.offset_providers,
         )
 
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
@@ -516,6 +517,7 @@ def read_static_fields(
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
             pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
             pg_exdist=metrics_savepoint.pg_exdist(),
+            ddqz_z_full=metrics_savepoint.ddqz_z_full(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
             wgtfac_e=metrics_savepoint.wgtfac_e(),

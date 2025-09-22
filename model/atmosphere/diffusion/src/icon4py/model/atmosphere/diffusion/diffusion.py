@@ -11,8 +11,9 @@ import enum
 import functools
 import logging
 import math
-import sys
+import sys, os
 from typing import Final, Optional
+import numpy as np
 
 import gt4py.next as gtx
 import icon4py.model.common.grid.states as grid_states
@@ -21,6 +22,7 @@ from gt4py.next import int32
 import icon4py.model.common.states.prognostic_state as prognostics
 from gt4py.next import backend as gtx_backend
 
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
@@ -30,6 +32,10 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
     apply_diffusion_to_vn,
+)
+from icon4py.model.atmosphere.diffusion.stencils.vertical_wind_diffusion import (
+    apply_vertical_diffusion_to_vn,
+    apply_vertical_diffusion_to_w,
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
@@ -189,6 +195,9 @@ class DiffusionConfig:
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
+
+        #: If True, apply vertical diffusion to wind field
+        self.apply_zdiffusion_wind: bool = True
 
         #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f89
         self.thslp_zdiffu = thslp_zdiffu
@@ -365,6 +374,7 @@ class Diffusion:
         params: DiffusionParams,
         vertical_grid: v_grid.VerticalGrid,
         metric_state: diffusion_states.DiffusionMetricState,
+        metric_state_nh: dycore_states.MetricStateNonHydro,
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
@@ -381,6 +391,7 @@ class Diffusion:
         self._grid = grid
         self._vertical_grid = vertical_grid
         self._metric_state = metric_state
+        self._metric_state_nh = metric_state_nh
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
@@ -423,6 +434,16 @@ class Diffusion:
         )
         self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(self._backend).compile(
             limited_area=[self._grid.limited_area],
+            vertical_start=[0],
+            vertical_end=[self._grid.num_levels],
+            offset_provider=self._grid.offset_providers,
+        )
+        self.apply_vertical_diffusion_to_vn = apply_vertical_diffusion_to_vn.with_backend(self._backend).compile(
+            vertical_start=[0],
+            vertical_end=[self._grid.num_levels],
+            offset_provider=self._grid.offset_providers,
+        )
+        self.apply_vertical_diffusion_to_w = apply_vertical_diffusion_to_w.with_backend(self._backend).compile(
             vertical_start=[0],
             vertical_end=[self._grid.num_levels],
             offset_provider=self._grid.offset_providers,
@@ -862,6 +883,41 @@ class Diffusion:
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
+        if self.config.apply_zdiffusion_wind:
+            #dcoeff = float(os.environ.get("ICON4PY_DCOEFF", 0.0015))
+            try:
+                dcoeff = float(
+                    "0." + os.environ.get("SLURM_JOB_NAME").split("_")[-1][5:]
+                )
+            except:
+                dcoeff = 0.0015
+            log.info(f" Using vertical diffusion coeff for wind: {dcoeff} ")
+            self.apply_vertical_diffusion_to_vn(
+                vn=prognostic_state.vn,
+                ddqz_z_half_e=self._metric_state_nh.ddqz_z_half_e,
+                ddqz_z_full_e=self._metric_state_nh.ddqz_z_full_e,
+                coeff=dcoeff,
+                horizontal_start=self._edge_start_lateral_boundary_level_5,
+                horizontal_end=self._cell_end_halo,
+                vertical_start=1,
+                vertical_end=self._grid.num_levels-1,
+                offset_provider=self._grid.offset_providers,
+            )
+            self.apply_vertical_diffusion_to_w(
+                w=prognostic_state.w,
+                ddqz_z_half=self._metric_state_nh.ddqz_z_half,
+                ddqz_z_full=self._metric_state_nh.ddqz_z_full,
+                coeff=dcoeff,
+                horizontal_start=self._horizontal_start_index_w_diffusion,
+                horizontal_end=self._cell_end_halo,
+                vertical_start=1,
+                vertical_end=self._grid.num_levels,
+                offset_provider=self._grid.offset_providers,
+            )
+            #log.info( f" DIFFUSION VN: {np.abs(prognostic_state.vn.asnumpy()).max():.15e}, {np.abs(prognostic_state.vn.asnumpy()).min():.15e}" )
+            #log.info( f" DIFFUSION W:  {np.abs(prognostic_state.w.asnumpy()).max():.15e}, {np.abs(prognostic_state.w.asnumpy()).min():.15e}" )
+
+
         #---> IBM
         # NOTE: this only works as long as Magdalena's copying is there, otherwise need to find another solution
         self._ibm.set_bcs_diffw(prognostic_state.w, self.w_tmp)

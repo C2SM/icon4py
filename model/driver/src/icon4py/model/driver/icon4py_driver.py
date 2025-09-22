@@ -460,6 +460,7 @@ def initialize(
         diffusion_params,
         vertical_geometry,
         diffusion_metric_state,
+        solve_nonhydro_metric_state,
         diffusion_interpolation_state,
         edge_geometry,
         cell_geometry,
