@@ -372,6 +372,11 @@ def domain(dim: gtx.Dimension) -> Callable[[Zone], Domain]:
     return _domain
 
 
+vertex_domain = domain(dims.VertexDim)
+edge_domain = domain(dims.EdgeDim)
+cell_domain = domain(dims.CellDim)
+
+
 def _validate(dim: gtx.Dimension, marker: Zone) -> bool:
     return marker in _get_zones_for_dim(dim)
 
