@@ -79,8 +79,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
         log.debug(f"using array_ns {self._xp} ")
-        vct_a = self._vertical_grid.vct_a
-        vct_a_1 = vct_a.asnumpy()[0]
+        vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0].item()
         self._config = {
             "divdamp_trans_start": 12500.0,
             "divdamp_trans_end": 17500.0,
@@ -114,36 +113,33 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             factory.PrecomputedFieldProvider(
                 {
                     "topography": topography,
-                    "vct_a": vct_a,
+                    "vct_a": self._vertical_grid.interface_physical_height,
+                    "c_refin_ctrl": c_refin_ctrl,
+                    "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
                     "c_owner_mask": c_owner_mask,
                     "k_lev": k_index,
                     "e_lev": e_lev,
-                    "c_refin_ctrl": c_refin_ctrl,
-                    "e_refin_ctrl": e_refin_ctrl,
                 }
             )
         )
         self._register_computed_fields()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__} on (grid={self._grid!r}) providing fields f{self.metadata.keys()}"
 
     @property
     def _sources(self) -> factory.FieldSource:
         return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
 
-    def _register_computed_fields(self):  # noqa: PLR0915 [too-many-statements]
-        vertical_coordinates_on_half_levels = factory.NumpyFieldsProvider(
+    def _register_computed_fields(self) -> None:  # noqa: PLR0915 [too-many-statements]
+        vertical_coordinates_on_half_levels = factory.NumpyDataProvider(
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
                 array_ns=self._xp,
             ),
             fields=(attrs.CELL_HEIGHT_ON_HALF_LEVEL,),
-            domain={
-                dims.CellDim: (0, cell_domain(h_grid.Zone.END)),
-                dims.KDim: (vertical_domain(v_grid.Zone.TOP), vertical_domain(v_grid.Zone.BOTTOM)),
-            },
+            domain=(dims.CellDim, dims.KDim),
             deps={
                 "vct_a": "vct_a",
                 "topography": "topography",
@@ -458,7 +454,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxt_z_full)
 
-        compute_exner_w_implicit_weight_parameter_np = factory.NumpyFieldsProvider(
+        compute_exner_w_implicit_weight_parameter_np = factory.NumpyDataProvider(
             func=functools.partial(mf.compute_exner_w_implicit_weight_parameter, array_ns=self._xp),
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},
@@ -578,7 +574,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={"flat_idx": attrs.FLAT_EDGE_INDEX},
         )
         self.register_provider(compute_flat_edge_idx)
-        max_flat_index_provider = factory.NumpyFieldsProvider(
+        max_flat_index_provider = factory.NumpyDataProvider(
             func=functools.partial(mf.compute_max_index, array_ns=self._xp),
             domain=(dims.EdgeDim,),
             fields=(attrs.FLAT_IDX_MAX,),
@@ -650,13 +646,13 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP: attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP},
             params={
-                "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
-                "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),
+                "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),  # type: ignore [attr-defined]
+                "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
             },
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 
-        compute_zdiff_gradp_dsl_np = factory.NumpyFieldsProvider(
+        compute_zdiff_gradp_dsl_np = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl, array_ns=self._xp
             ),
@@ -682,7 +678,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_zdiff_gradp_dsl_np)
 
-        coeff_gradekin = factory.NumpyFieldsProvider(
+        coeff_gradekin = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_coeff_gradekin.compute_coeff_gradekin, array_ns=self._xp
             ),
@@ -701,7 +697,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(coeff_gradekin)
 
-        compute_wgtfacq_c = factory.NumpyFieldsProvider(
+        compute_wgtfacq_c = factory.NumpyDataProvider(
             func=functools.partial(weight_factors.compute_wgtfacq_c_dsl, array_ns=self._xp),
             domain=(dims.CellDim, dims.KDim),
             fields=(attrs.WGTFACQ_C,),
@@ -711,7 +707,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(compute_wgtfacq_c)
 
-        compute_wgtfacq_e = factory.NumpyFieldsProvider(
+        compute_wgtfacq_e = factory.NumpyDataProvider(
             func=functools.partial(weight_factors.compute_wgtfacq_e_dsl, array_ns=self._xp),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -767,7 +763,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_weighted_cell_neighbor_sum)
 
-        compute_max_nbhgt = factory.NumpyFieldsProvider(
+        compute_max_nbhgt = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_diffusion_metrics.compute_max_nbhgt_array_ns, array_ns=self._xp
             ),
@@ -783,7 +779,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_max_nbhgt)
 
-        compute_diffusion_mask_and_coef = factory.NumpyFieldsProvider(
+        compute_diffusion_mask_and_coef = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_diffusion_metrics.compute_diffusion_mask_and_coef, array_ns=self._xp
             ),
@@ -812,7 +808,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(compute_diffusion_mask_and_coef)
 
-        compute_diffusion_intcoef_and_vertoffset = factory.NumpyFieldsProvider(
+        compute_diffusion_intcoef_and_vertoffset = factory.NumpyDataProvider(
             func=functools.partial(
                 compute_diffusion_metrics.compute_diffusion_intcoef_and_vertoffset,
                 array_ns=self._xp,
@@ -847,13 +843,13 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_backend.Backend:
+    def backend(self) -> gtx_backend.Backend | None:
         return self._backend
 
     @property
-    def grid(self):
+    def grid(self) -> icon.IconGrid:
         return self._grid
 
     @property
-    def vertical_grid(self):
+    def vertical_grid(self) -> v_grid.VerticalGrid:
         return self._vertical_grid
