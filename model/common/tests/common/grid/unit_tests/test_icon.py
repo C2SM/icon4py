@@ -310,13 +310,13 @@ def test_global_grid_params(
             icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_shape.subdivision  # type: ignore[arg-type, union-attr]
         )
     if geometry_type == base.GeometryType.TORUS:
-	    assert params.radius is None
-	    assert params.domain_length == 42.0
-	    assert params.domain_height == 100.5
+        assert params.radius is None
+        assert params.domain_length == 42.0
+        assert params.domain_height == 100.5
     else:
-	    assert pytest.approx(params.radius) == constants.EARTH_RADIUS
-	    assert params.domain_length is None
-	    assert params.domain_height is None
+        assert pytest.approx(params.radius) == constants.EARTH_RADIUS
+        assert params.domain_length is None
+        assert params.domain_height is None
     assert params.global_num_cells == expected_global_num_cells
     assert params.num_cells == expected_num_cells
     assert pytest.approx(params.mean_edge_length) == 13.0
@@ -329,10 +329,8 @@ def test_global_grid_params(
 
 @pytest.mark.parametrize(
     "geometry_type",
-    [ base.GeometryType.ICOSAHEDRON, base.GeometryType.TORUS ],
+    [base.GeometryType.ICOSAHEDRON, base.GeometryType.TORUS],
 )
-
-
 def test_global_grid_params_from_fields(
     geometry_type: base.GeometryType,
     backend: gtx_typing.Backend,
@@ -341,8 +339,9 @@ def test_global_grid_params_from_fields(
 
     # Means provided directly (higher priority than calculating from fields)
     params = icon.GlobalGridParams.from_fields(
-        grid_shape=icon.GridShape(geometry_type=geometry_type,
-            subdivision=icon.GridSubdivision(root=2, level=2)),
+        grid_shape=icon.GridShape(
+            geometry_type=geometry_type, subdivision=icon.GridSubdivision(root=2, level=2)
+        ),
         mean_edge_length=13.0,
         mean_dual_edge_length=14.0,
         mean_cell_area=15.0,
@@ -360,8 +359,9 @@ def test_global_grid_params_from_fields(
 
     # Means computed from fields
     params = icon.GlobalGridParams.from_fields(
-        grid_shape=icon.GridShape(geometry_type=geometry_type,
-            subdivision=icon.GridSubdivision(root=2, level=2)),
+        grid_shape=icon.GridShape(
+            geometry_type=geometry_type, subdivision=icon.GridSubdivision(root=2, level=2)
+        ),
         edge_lengths=xp.asarray([1.0, 2.0]),
         dual_edge_lengths=xp.asarray([2.0, 3.0]),
         cell_areas=xp.asarray([3.0, 4.0]),
