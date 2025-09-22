@@ -73,7 +73,7 @@ def test_run_diffusion_benchmark(
     diffusion_parameters = diffusion.DiffusionParams(config)
 
     grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid, num_levels=10, keep_skip_values=True, backend=backend
+        grid, num_levels=80, keep_skip_values=True, backend=backend
     )
 
     mesh = grid_manager.grid

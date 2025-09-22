@@ -6,15 +6,20 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import logging
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 import pytest
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+import icon4py.model.common.dimension as dims
 from icon4py.model.common.decomposition import definitions
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import (
     dycore_states,
-    dycore_utils,
     solve_nonhydro as solve_nh,
 )
 from icon4py.model.common.interpolation import (
@@ -28,33 +33,11 @@ from icon4py.model.common.metrics import (
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import (
-    datatest_utils as dt_utils,
-    test_utils,
-)
+from icon4py.model.testing import grid_utils
 from icon4py.model.common.grid import geometry as grid_geometry
 from icon4py.model.common.grid import geometry_attributes as geometry_meta
 from .. import utils
 from ..fixtures import *  # noqa: F403
-
-def construct_dummy_decomposition_info(grid, backend) -> definitions.DecompositionInfo:
-    """A public helper function to construct a dummy decomposition info object for test cases
-    refactored from grid_utils.py"""
-
-    on_gpu = device_utils.is_cupy_device(backend)
-    xp = data_alloc.array_ns(on_gpu)
-
-    def _add_dimension(dim: gtx.Dimension):
-        indices = data_alloc.index_field(grid, dim, backend=backend)
-        owner_mask = xp.ones((grid.size[dim],), dtype=bool)
-        decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
-
-    decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
-    _add_dimension(dims.EdgeDim)
-    _add_dimension(dims.VertexDim)
-    _add_dimension(dims.CellDim)
-
-    return decomposition_info
 
 # TODO (Yilu): there is the duplication of the vertical_grid_params with the diffusion, probobaly we can move it to other places
 @pytest.fixture
@@ -88,50 +71,25 @@ def metrics_factory_params(
     }
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.datatest
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
-    "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
+    "grid", [definitions.Grids.MCH_CH_R04B09]
 )
-@pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit",
-    [
-        (
-            dt_utils.REGIONAL_EXPERIMENT,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-        ),
-        (
-            dt_utils.GLOBAL_EXPERIMENT,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-        ),
-    ],
-)
+@pytest.mark.continuous_benchmarking
+@pytest.mark.benchmark_only
 def test_run_solve_nonhydro_benchmark(
-    grid_manager,
+    grid: definitions.GridDescription,
     vertical_grid_params,
     metrics_factory_params,
-    istep_init,
     substep_init,
-    istep_exit,
-    substep_exit,
     at_initial_timestep,
     *,
-    step_date_init,
-    step_date_exit,
-    experiment,
     ndyn_substeps,
     grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    caplog,
-    backend,
+    backend: Any,
 ):
-    caplog.set_level(logging.WARN)
 
-    grid = grid_manager.grid
 
-    # TODO(Yilu): config (do we need to specify the config according to different config?)
     config = solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
         divdamp_order=24,
@@ -141,6 +99,10 @@ def test_run_solve_nonhydro_benchmark(
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
+
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid, num_levels=80, keep_skip_values=True, backend=backend
+    )
 
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
