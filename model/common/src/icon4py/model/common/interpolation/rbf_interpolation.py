@@ -227,7 +227,7 @@ def _compute_rbf_interpolation_coeffs(
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
-):
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     rbf_offset_shape_full = rbf_offset.shape
     rbf_offset = rbf_offset[horizontal_start:]
     num_elements = rbf_offset.shape[0]
@@ -346,7 +346,7 @@ def _compute_rbf_interpolation_coeffs(
             rbf_vec_coeff_np[j][i + horizontal_start, valid_neighbors] = sla.cho_solve(
                 z_diag_np, rhs_np[j][i, valid_neighbors]
             )
-    rbf_vec_coeff = [array_ns.asarray(x) for x in rbf_vec_coeff_np]
+    rbf_vec_coeff = tuple([array_ns.asarray(x) for x in rbf_vec_coeff_np])
 
     # Normalize coefficients
     for j in range(num_zonal_meridional_components):
