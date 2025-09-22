@@ -314,22 +314,20 @@ def snow_lambda(
 @gtx.field_operator
 def _snow_number(
     t: fa.CellKField[ta.wpfloat],
-    rho: fa.CellKField[ta.wpfloat],
-    qs: fa.CellKField[ta.wpfloat],
+    rho_s: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
     Compute the snow number
 
     Args:
         t:            Temperature
-        rho:          Ambient air density
-        qs:           Snow specific mass
+        rho_s:        Snow specific density
 
     Result:           Snow number
     """
     TMIN = t_d.tmelt - 40.0
     TMAX = t_d.tmelt
-    QSMIN = 2.0e-6
+    RHO_S_MN = 2.0e-7
     XA1 = -1.65e0
     XA2 = 5.45e-2
     XA3 = 3.27e-4
@@ -349,90 +347,150 @@ def _snow_number(
     tc = maximum(minimum(t, TMAX), TMIN) - t_d.tmelt
     alf = power(10.0, (XA1 + tc * (XA2 + tc * XA3)))
     bet = XB1 + tc * (XB2 + tc * XB3)
-    n0s = N0S3 * power(((qs + QSMIN) * rho / g_ct.ams), (4.0 - 3.0 * bet)) / (alf * alf * alf)
+    n0s = N0S3 * power(( maximum(rho_s,RHO_S_MN) / g_ct.ams), (4.0 - 3.0 * bet)) / (alf * alf * alf)
     y = exp(N0S2 * tc)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
-    return where(qs > g_ct.qmin, minimum(n0smx, maximum(n0smn, n0s)), N0S0)
+    return where(rho_s > g_ct.qmin, minimum(n0smx, maximum(n0smn, n0s)), N0S0)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def snow_number(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    rho: fa.CellKField[ta.wpfloat],  # Ambient air density
-    qs: fa.CellKField[ta.wpfloat],  # Snow specific mass
+    t: fa.CellKField[ta.wpfloat],       # Temperature
+    rho_x: fa.CellKField[ta.wpfloat],   # Hydrometeor density
+    rho_s: fa.CellKField[ta.wpfloat],   # Snow specific density
     number: fa.CellKField[ta.wpfloat],  # output
 ):
-    _snow_number(t, rho, qs, out=number)
+    _snow_number(t, rho_s, out=number)
 
 
 @gtx.field_operator
-def _vel_scale_factor_ice(
-    xrho: fa.CellKField[ta.wpfloat],
+def _vm_ice(
+    rho_x: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
     Compute the velocity scaling factor of ice
 
     Args:
-        xrho:              sqrt(rho_00/rho)
+        rho_x:            hydrometeor density
+        rho:              air density
 
-    Result:                velocity scaling factor of ice
+    Result:               maximum velocity
     """
-    B_I = 0.66666666666666667
-    return power(xrho, B_I)
+    RHO_MX = 6.97604e-03
+    RHO_MN = 3.26216e-08
+    A_I_1 = 0.80
+    A_I_2 = 0.160
+    B_I = 0.33333333333333333
+    x = minimum(RHO_MX,maximum(RHO_MN,rho_x))
 
+    return A_I_1 * power(x, A_I_2) * power(rho_00/rho, B_I)
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def vm_ice(
+    rho_x: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    vm: fa.CellKField[ta.wpfloat],  # output
+):
+    _vm_ice(rho_x, rho, t, out=vm)
 
 @gtx.field_operator
-def _vel_scale_factor_snow(
-    xrho: fa.CellKField[ta.wpfloat],
+def _vm_snow(
+    rho_x: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
     t: fa.CellKField[ta.wpfloat],
-    qs: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Compute the velocity scaling factor of snow
+    Compute the velocity scaling factor of ice
 
     Args:
-        xrho:              sqrt(rho_00/rho)
-        rho:               Density of condensate
-        t:                 Temperature
-        qs:                Specific mass
+        rho_x:            hydrometeor density
+        rho:              air density
+        t:                temperature
 
-    Result:                Velocity scaling factor of snow
+    Result:               maximum velocity
     """
-    B_S = -0.16666666666666667
-    return xrho * power(_snow_number(t, rho, qs), B_S)
+    RHO_MX = 6.97604e-03
+    RHO_MN = 3.26216e-08
+    A_S_1 = 115.6
+    A_S_2 = 0.16666666666666666
+    B_S   = -0.16666666666666666
+    x     = minimum(RHO_MX,maximum(RHO_MN,rho_x))
 
+    return A_S_1 * power(x, A_S_2) * sqrt(rho_00/rho) * power(_snow_number(t,x),B_S)
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def vm_snow(
+    rho_x: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    t: fa.CellKField[ta.wpfloat],
+    vm: fa.CellKField[ta.wpfloat],  # output
+):
+    _vm_snow(rho_x, rho, t, out=vm)
 
 @gtx.field_operator
-def _vel_scale_factor_default(
-    xrho: fa.CellKField[ta.wpfloat],
+def _vm_rain(
+    rho_x: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Compute the default velocity scaling factor
+    Compute the velocity scaling factor of ice
 
     Args:
-        xrho:              sqrt(rho_00/rho)
+        rho_x:            hydrometeor density
+        rho:              air density
 
-    Result:                default velocity scaling factor
+    Result:               maximum velocity
     """
-    return xrho
+    RHO_MX = 6.97604e-03
+    RHO_MN = 3.26216e-08
 
+    A_R_1 = -5.91051e-01
+    A_R_2 = -5.37440e+00
+    A_R_3 = -1.00459e+00
+    A_R_4 = -6.44895e-02
+    A_R_5 = -1.40361e-03
+    x     = log(minimum(RHO_MX,maximum(RHO_MN,rho_x)))
+
+    return vm = A_R_1 + x*(A_R_2 + x*(A_R_3 + x*(A_R_4 + x*A_R_5))) * SQRT(rho_00/rho)
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def vel_scale_factor_ice(
-    xrho: fa.CellKField[ta.wpfloat],  # sqrt(rho_00/rho)
-    scale_factor: fa.CellKField[ta.wpfloat],  # output
+def vm_rain(
+    rho_x: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    vm: fa.CellKField[ta.wpfloat],  # output
 ):
-    _vel_scale_factor_ice(xrho, out=scale_factor)
+    _vm_rain(rho_x, rho, out=vm)
 
+@gtx.field_operator
+def _vm_graupel(
+    rho_x: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the velocity scaling factor of ice
+
+    Args:
+        rho_x:            hydrometeor density
+        rho:              air density
+        t:                temperature
+
+    Result:               maximum velocity
+    """
+    RHO_MX = 6.97604e-03
+    RHO_MN = 3.26216e-08
+
+    A_G_1 = 12.24
+    A_G_2 = 0.217
+    x     = minimum(RHO_MX,maximum(RHO_MN,rho_x))
+
+    return vm = A_G_1 * power(x, A_G_2) * SQRT(rho_00/rho)
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def vel_scale_factor_snow(
-    xrho: fa.CellKField[ta.wpfloat],  # sqrt(rho_00/rho)
-    rho: fa.CellKField[ta.wpfloat],  # Density of condensate
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    qs: fa.CellKField[ta.wpfloat],  # Specific mass
-    scale_factor: fa.CellKField[ta.wpfloat],  # output
-):
-    _vel_scale_factor_snow(xrho, rho, t, qs, out=scale_factor)
+def vm_graupel(
+    rho_x: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    vm: fa.CellKField[ta.wpfloat],  # output
+):nn
+    _vm_graupel(rho_x, rho, out=vm)

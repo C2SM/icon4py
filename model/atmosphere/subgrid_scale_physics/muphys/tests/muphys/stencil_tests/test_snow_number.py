@@ -20,14 +20,13 @@ class TestSnowNumber(StencilTest):
     OUTPUTS = ("number",)
 
     @staticmethod
-    def reference(grid, t: np.ndarray, rho: np.ndarray, qs: np.ndarray, **kwargs) -> dict:
+    def reference(grid, t: np.ndarray, rho_s: np.ndarray, **kwargs) -> dict:
         return dict(number=np.full(t.shape, 3813750.0))
 
     @pytest.fixture
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 276.302, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho=data_alloc.constant_field(grid, 1.17797, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs=data_alloc.constant_field(grid, 8.28451e-4, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho_s=data_alloc.constant_field(grid, 0.00097589042447, dims.CellDim, dims.KDim, dtype=wpfloat),
             number=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
         )
