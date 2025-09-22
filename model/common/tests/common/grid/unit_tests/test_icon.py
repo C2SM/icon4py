@@ -18,6 +18,7 @@ import pytest
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, gridfile, horizontal as h_grid, icon
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
@@ -224,7 +225,6 @@ def _sphere_area(radius: float) -> float:
     return 4.0 * math.pi * radius**2.0
 
 
-# TODO(msimberg): Test construction from fields.
 @pytest.mark.parametrize(
     "geometry_type,grid_root,grid_level,global_num_cells,num_cells,mean_cell_area,expected_global_num_cells,expected_num_cells,expected_mean_cell_area",
     [
@@ -325,6 +325,53 @@ def test_global_grid_params(
     assert params.mean_dual_cell_area is None
     if expected_mean_cell_area is not None:
         assert pytest.approx(params.characteristic_length) == math.sqrt(expected_mean_cell_area)
+
+
+@pytest.mark.parametrize(
+    "geometry_type",
+    [ base.GeometryType.ICOSAHEDRON, base.GeometryType.TORUS ],
+)
+
+
+def test_global_grid_params_from_fields(
+    geometry_type: base.GeometryType,
+    backend: gtx_typing.Backend,
+) -> None:
+    xp = data_alloc.import_array_ns(backend)
+
+    # Means provided directly (higher priority than calculating from fields)
+    params = icon.GlobalGridParams.from_fields(
+        grid_shape=icon.GridShape(geometry_type=geometry_type,
+            subdivision=icon.GridSubdivision(root=2, level=2)),
+        mean_edge_length=13.0,
+        mean_dual_edge_length=14.0,
+        mean_cell_area=15.0,
+        mean_dual_cell_area=16.0,
+        edge_lengths=xp.asarray([1.0, 2.0]),
+        dual_edge_lengths=xp.asarray([2.0, 3.0]),
+        cell_areas=xp.asarray([3.0, 4.0]),
+        dual_cell_areas=xp.asarray([4.0, 5.0]),
+        backend=backend,
+    )
+    assert pytest.approx(params.mean_edge_length) == 13.0
+    assert pytest.approx(params.mean_dual_edge_length) == 14.0
+    assert pytest.approx(params.mean_cell_area) == 15.0
+    assert pytest.approx(params.mean_dual_cell_area) == 16.0
+
+    # Means computed from fields
+    params = icon.GlobalGridParams.from_fields(
+        grid_shape=icon.GridShape(geometry_type=geometry_type,
+            subdivision=icon.GridSubdivision(root=2, level=2)),
+        edge_lengths=xp.asarray([1.0, 2.0]),
+        dual_edge_lengths=xp.asarray([2.0, 3.0]),
+        cell_areas=xp.asarray([3.0, 4.0]),
+        dual_cell_areas=xp.asarray([4.0, 5.0]),
+        backend=backend,
+    )
+    assert pytest.approx(params.mean_edge_length) == 1.5
+    assert pytest.approx(params.mean_dual_edge_length) == 2.5
+    assert pytest.approx(params.mean_cell_area) == 3.5
+    assert pytest.approx(params.mean_dual_cell_area) == 4.5
 
 
 @pytest.mark.parametrize(
