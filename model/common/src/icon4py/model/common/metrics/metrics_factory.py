@@ -106,12 +106,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         c_owner_mask = gtx.as_field(
             (dims.CellDim,), self._decomposition_info.owner_mask(dims.CellDim)
         )
-        c_refin_ctrl = gtx.as_field(
-            (dims.CellDim,), self._grid.refinement_control[dims.CellDim].ndarray
-        )
-        e_refin_ctrl = gtx.as_field(
-            (dims.EdgeDim,), self._grid.refinement_control[dims.EdgeDim].ndarray
-        )
+        c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
+
+        e_refin_ctrl = self._grid.refinement_control[dims.EdgeDim]
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {

@@ -558,31 +558,31 @@ def maximal_layer_thickness() -> float:
 
 
 @pytest.fixture
-def rayleigh_coeff(experiment):
-    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+def rayleigh_coeff(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
         return 0.1
     else:
         return 5.0
 
 
 @pytest.fixture
-def exner_expol(experiment):
-    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+def exner_expol(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
         return 0.3333333333333
     else:
         return 0.333
 
 
 @pytest.fixture
-def vwind_offctr():
-    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+def vwind_offctr(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
         return 0.15
     else:
         return 0.2
 
 
 @pytest.fixture
-def rayleigh_type():
+def rayleigh_type() -> int:
     return RayleighType.KLEMP
 
 

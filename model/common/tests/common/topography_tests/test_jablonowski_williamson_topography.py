@@ -6,54 +6,37 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import pytest
-from icon4py.model.common.initialization.jablonowski_williamson_topography import (
-    jablonowski_williamson_topography,
-)
+from __future__ import annotations
 
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
-from icon4py.model.testing import test_utils
-from icon4py.model.common.grid import geometry as grid_geometry
-import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common.grid import geometry_attributes as geometry_meta
-from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decomposition_info
-from ..fixtures import *
-from icon4py.model.testing import definitions
+from typing import TYPE_CHECKING
+
+import pytest
+
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.initialization import jablonowski_williamson_topography as topography
+from icon4py.model.testing import definitions, test_utils
+
+from ..fixtures import *  # noqa: F403
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    import icon4py.model.testing.serialbox as sb
 
 
 @pytest.mark.datatest
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_jablonowski_williamson_topography(
-    experiment,
-    backend,
-    topography_savepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+    grid_savepoint: sb.IconGridSavepoint,
+    topography_savepoint: sb.TopographySavepoint,
 ):
-    grid_manager = grid_utils.get_grid_manager_from_experiment(
-        experiment,
-        keep_skip_values=True,
-        backend=backend,
-    )
-    mesh = grid_manager.grid
-    coordinates = grid_manager.coordinates
-    geometry_input_fields = grid_manager.geometry_fields
-
-    geometry_field_source = grid_geometry.GridGeometry(
-        grid=mesh,
-        decomposition_info=construct_dummy_decomposition_info(mesh, backend),
-        backend=backend,
-        coordinates=coordinates,
-        extra_fields=geometry_input_fields,
-        metadata=geometry_meta.attrs,
-    )
-
-    cell_geometry = grid_states.CellParams(
-        cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
-        cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
-        area=geometry_field_source.get(geometry_meta.CELL_AREA),
-    )
-
-    topo_c = jablonowski_williamson_topography(
-        cell_lat=cell_geometry.cell_center_lat.asnumpy(),
+    cell_center_lat = grid_savepoint.lat(dims.CellDim).ndarray
+    topo_c = topography.jablonowski_williamson_topography(
+        cell_lat=cell_center_lat,
         u0=35.0,
         backend=backend,
     )

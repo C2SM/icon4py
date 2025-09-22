@@ -5,42 +5,49 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import pytest
-from typing import Any, Dict
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
-from icon4py.model.atmosphere.diffusion import diffusion
+import pytest
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
 import icon4py.model.common.dimension as dims
-from icon4py.model.common.grid import geometry as grid_geometry
-from icon4py.model.common.grid import geometry_attributes as geometry_meta
-from icon4py.model.common.grid import vertical as v_grid
 import icon4py.model.common.grid.states as grid_states
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
+from icon4py.model.common.constants import RayleighType
+from icon4py.model.common.grid import (
+    geometry as grid_geometry,
+    geometry_attributes as geometry_meta,
+    vertical as v_grid,
+)
 from icon4py.model.common.initialization.jablonowski_williamson_topography import (
     jablonowski_williamson_topography,
 )
-from icon4py.model.common.interpolation import interpolation_attributes
-from icon4py.model.common.interpolation import interpolation_factory
-from icon4py.model.common.metrics import metrics_attributes
-from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.fixtures.stencil_tests import construct_dummy_decomposition_info
-from icon4py.model.testing import definitions
-from icon4py.model.testing import grid_utils
-from ..fixtures import *
+from icon4py.model.testing import definitions, grid_utils
+from icon4py.model.testing.grid_utils import construct_decomposition_info
+
+from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.benchmark(
-    group="diffusion_benchmark",
+@pytest.mark.benchmark
+@pytest.mark.parametrize(
+    "grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
 )
-@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01])
+@pytest.mark.continuous_benchmarking
+@pytest.mark.benchmark_only
 def test_run_diffusion_benchmark(
-    grid: Any,
-    vertical_grid_params: Dict[str, float],
-    metrics_factory_params: Dict[str, Any],
-    backend: Any,
+    grid: definitions.GridDescription,
+    backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
     dtime = 10.0
@@ -66,14 +73,14 @@ def test_run_diffusion_benchmark(
     diffusion_parameters = diffusion.DiffusionParams(config)
 
     grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid, num_levels=80, keep_skip_values=True, backend=backend
+        grid, num_levels=10, keep_skip_values=True, backend=backend
     )
 
     mesh = grid_manager.grid
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
-    decomposition_info = construct_dummy_decomposition_info(mesh, backend)
+    decomposition_info = construct_decomposition_info(mesh, backend)
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
@@ -119,17 +126,17 @@ def test_run_diffusion_benchmark(
     )
 
     topo_c = jablonowski_williamson_topography(
-        cell_lat=cell_geometry.cell_center_lat.asnumpy(),
+        cell_lat=cell_geometry.cell_center_lat.ndarray,
         u0=35.0,
         backend=backend,
     )
 
     vertical_config = v_grid.VerticalGridConfig(
         mesh.num_levels,
-        lowest_layer_thickness=vertical_grid_params["lowest_layer_thickness"],
-        model_top_height=vertical_grid_params["model_top_height"],
-        stretch_factor=vertical_grid_params["stretch_factor"],
-        rayleigh_damping_height=vertical_grid_params["damping_height"],
+        lowest_layer_thickness=50,
+        model_top_height=23500.0,
+        stretch_factor=1.0,
+        rayleigh_damping_height=1.0,
     )
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
@@ -156,10 +163,10 @@ def test_run_diffusion_benchmark(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=metrics_factory_params["rayleigh_type"],
-        rayleigh_coeff=metrics_factory_params["rayleigh_coeff"],
-        exner_expol=metrics_factory_params["exner_expol"],
-        vwind_offctr=metrics_factory_params["vwind_offctr"],
+        rayleigh_type=RayleighType.KLEMP,
+        rayleigh_coeff=5.0,
+        exner_expol=0.333,
+        vwind_offctr=0.2,
     )
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
@@ -181,21 +188,22 @@ def test_run_diffusion_benchmark(
         zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
         zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
     )
-
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
-        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
-        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
-        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
+        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
     )
 
     prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, low=0.0),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
+        w=data_alloc.random_field(
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, backend=backend
+        ),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
+        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
     )
 
     diffusion_granule = diffusion.Diffusion(
@@ -211,10 +219,4 @@ def test_run_diffusion_benchmark(
         orchestration=False,
     )
 
-    benchmark.pedantic(
-        diffusion_granule.run,
-        args=(diagnostic_state, prognostic_state, dtime),
-        rounds=10,
-        warmup_rounds=2,
-        iterations=1,
-    )
+    benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)

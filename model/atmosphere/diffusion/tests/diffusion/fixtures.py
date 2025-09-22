@@ -10,15 +10,13 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.testing import serialbox as sb
-
-from icon4py.model.testing.fixtures.stencil_tests import vertical_grid_params
-from icon4py.model.testing.fixtures.stencil_tests import metrics_factory_params
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     damping_height,
     data_provider,
     decomposition_info,
     download_ser_data,
+    exner_expol,
     experiment,
     flat_height,
     grid_savepoint,
@@ -28,20 +26,18 @@ from icon4py.model.testing.fixtures.datatest import (
     linit,
     maximal_layer_thickness,
     metrics_savepoint,
-    lowest_layer_thickness,
-    rayleigh_coeff,
-    exner_expol,
-    vwind_offctr,
-    rayleigh_type,
     model_top_height,
     ndyn_substeps,
     processor_props,
     ranked_data_path,
+    rayleigh_coeff,
+    rayleigh_type,
     savepoint_diffusion_exit,
     savepoint_diffusion_init,
     step_date_exit,
     step_date_init,
     stretch_factor,
+    vwind_offctr,
 )
 
 
