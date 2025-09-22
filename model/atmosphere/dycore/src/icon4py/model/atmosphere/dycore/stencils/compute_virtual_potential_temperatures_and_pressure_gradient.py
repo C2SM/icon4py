@@ -103,14 +103,13 @@ def _compute_virtual_potential_temperatures(
 def _compute_pressure_gradient(
     vwind_expl_wgt: fa.CellField[ta.wpfloat],
     theta_v_ic: fa.CellKField[ta.wpfloat],
-    z_theta_v_pr_ic: fa.CellKField[ta.wpfloat],
+    z_theta_v_pr_ic: fa.CellKField[ta.vpfloat],
     exner_pr: fa.CellKField[ta.wpfloat],
     d_exner_dz_ref_ic: fa.CellKField[ta.vpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
 ) -> fa.CellKField[ta.vpfloat]:
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
-    d_exner_dz_ref_ic_wp = astype(d_exner_dz_ref_ic, wpfloat)
     z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic * (
         exner_pr(Koff[-1]) - exner_pr
-    ) / ddqz_z_half_wp + z_theta_v_pr_ic * d_exner_dz_ref_ic_wp
+    ) / ddqz_z_half_wp + astype(z_theta_v_pr_ic * d_exner_dz_ref_ic, wpfloat)
     return astype(z_th_ddz_exner_c_wp, vpfloat)
