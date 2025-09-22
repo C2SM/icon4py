@@ -177,24 +177,6 @@ class GridGeometry(factory.FieldSource):
         self._register_computed_fields()
 
     def _register_computed_fields(self) -> None:
-        edge_length_provider = factory.ProgramFieldProvider(
-            func=stencils.compute_edge_length,
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                )
-            },
-            fields={
-                "length": attrs.EDGE_LENGTH,
-            },
-            deps={
-                "vertex_lat": attrs.VERTEX_LAT,
-                "vertex_lon": attrs.VERTEX_LON,
-            },
-            params={"radius": self._grid.global_properties.radius},
-        )
-        self.register_provider(edge_length_provider)
         meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
