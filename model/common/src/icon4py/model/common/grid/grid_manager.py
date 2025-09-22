@@ -311,7 +311,9 @@ class GridManager:
         )
 
         edge_lengths = self.geometry_fields[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
-        dual_edge_lengths = self.geometry_fields[gridfile.GeometryName.DUAL_EDGE_LENGTH.value].ndarray
+        dual_edge_lengths = self.geometry_fields[
+            gridfile.GeometryName.DUAL_EDGE_LENGTH.value
+        ].ndarray
         cell_areas = self.geometry_fields[gridfile.GeometryName.CELL_AREA.value].ndarray
         dual_cell_areas = self.geometry_fields[gridfile.GeometryName.DUAL_AREA.value].ndarray
 
