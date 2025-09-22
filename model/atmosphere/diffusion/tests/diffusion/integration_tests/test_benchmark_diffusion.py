@@ -197,7 +197,9 @@ def test_run_diffusion_benchmark(
     )
 
     prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, backend=backend),
+        w=data_alloc.random_field(
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, backend=backend
+        ),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
