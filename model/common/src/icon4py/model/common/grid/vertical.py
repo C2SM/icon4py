@@ -84,40 +84,40 @@ class VerticalGridConfig:
     #: Number of full levels.
     num_levels: int
     #: Defined as max_lay_thckn in ICON namelist mo_sleve_nml. Maximum thickness of grid cells below top_height_limit_for_maximal_layer_thickness.
-    maximal_layer_thickness: Final[float] = 25000.0
+    maximal_layer_thickness: Final[ta.wpfloat] = 25000.0
     #: Defined as htop_thcknlimit in ICON namelist mo_sleve_nml. Height below which thickness of grid cells must not exceed maximal_layer_thickness.
-    top_height_limit_for_maximal_layer_thickness: Final[float] = 15000.0
+    top_height_limit_for_maximal_layer_thickness: Final[ta.wpfloat] = 15000.0
     #: Defined as min_lay_thckn in ICON namelist mo_sleve_nml. Thickness of lowest level grid cells.
-    lowest_layer_thickness: Final[float] = 50.0
-    #: Model top height.
-    model_top_height: Final[float] = 23500.0
+    lowest_layer_thickness: Final[ta.wpfloat] = 50.0
+    #: Model top height in ICON namelist mo_sleve_nml.
+    model_top_height: Final[ta.wpfloat] = 23500.0
     #: Defined in ICON namelist mo_sleve_nml. Height above which coordinate surfaces are flat
-    flat_height: Final[float] = 16000.0
+    flat_height: Final[ta.wpfloat] = 16000.0
     #: Defined as stretch_fac in ICON namelist mo_sleve_nml. Scaling factor for stretching/squeezing the model layer distribution.
-    stretch_factor: Final[float] = 1.0
+    stretch_factor: Final[ta.wpfloat] = 1.0
     #: Defined as damp_height in ICON namelist nonhydrostatic_nml. Height [m] at which Rayleigh damping of vertical wind starts.
-    rayleigh_damping_height: Final[float] = 45000.0
+    rayleigh_damping_height: Final[ta.wpfloat] = 45000.0
     #: Defined in ICON namelist nonhydrostatic_nml. Height [m] above which moist physics and advection of cloud and precipitation variables are turned off.
-    htop_moist_proc: Final[float] = 22500.0
+    htop_moist_proc: Final[ta.wpfloat] = 22500.0
     #: file name containing vct_a and vct_b table
     file_path: pathlib.Path | None = None
 
     # Parameters for setting up the decay function of the topographic signal for
     # SLEVE. Default values from mo_sleve_nml.
     #: Decay scale for large-scale topography component
-    SLEVE_decay_scale_1: Final[float] = 4000.0
+    SLEVE_decay_scale_1: Final[ta.wpfloat] = 4000.0
     #: Decay scale for small-scale topography component
-    SLEVE_decay_scale_2: Final[float] = 2500.0
+    SLEVE_decay_scale_2: Final[ta.wpfloat] = 2500.0
     #: Exponent for decay function
-    SLEVE_decay_exponent: Final[float] = 1.2
+    SLEVE_decay_exponent: Final[ta.wpfloat] = 1.2
     #: minimum absolute layer thickness 1 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_1: Final[float] = 100.0
+    SLEVE_minimum_layer_thickness_1: Final[ta.wpfloat] = 100.0
     #: minimum absolute layer thickness 2 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_2: Final[float] = 500.0
+    SLEVE_minimum_layer_thickness_2: Final[ta.wpfloat] = 500.0
     #: minimum relative layer thickness for nominal thicknesses <= SLEVE_minimum_layer_thickness_1
-    SLEVE_minimum_relative_layer_thickness_1: Final[float] = 1.0 / 3.0
+    SLEVE_minimum_relative_layer_thickness_1: Final[ta.wpfloat] = 1.0 / 3.0
     #: minimum relative layer thickness for a nominal thickness of SLEVE_minimum_layer_thickness_2
-    SLEVE_minimum_relative_layer_thickness_2: Final[float] = 0.5
+    SLEVE_minimum_relative_layer_thickness_2: Final[ta.wpfloat] = 0.5
 
 
 @dataclasses.dataclass(frozen=True)
@@ -132,10 +132,10 @@ class VerticalGrid:
     """
 
     config: VerticalGridConfig
-    vct_a: dataclasses.InitVar[fa.KField[float]]
-    vct_b: dataclasses.InitVar[fa.KField[float]]
-    _vct_a: fa.KField[float] = dataclasses.field(init=False)
-    _vct_b: fa.KField[float] = dataclasses.field(init=False)
+    vct_a: dataclasses.InitVar[fa.KField[ta.wpfloat]]
+    vct_b: dataclasses.InitVar[fa.KField[ta.wpfloat]]
+    _vct_a: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
+    _vct_b: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
@@ -223,7 +223,7 @@ class VerticalGrid:
         return self.size(domain.dim)
 
     @property
-    def interface_physical_height(self) -> fa.KField[float]:
+    def interface_physical_height(self) -> fa.KField[ta.wpfloat]:
         return self._vct_a
 
     @functools.cached_property
@@ -265,14 +265,16 @@ class VerticalGrid:
 
     @classmethod
     def _determine_start_level_of_moist_physics(
-        cls, vct_a: np.ndarray, top_moist_threshold: float, nshift_total: int = 0
+        cls, vct_a: np.ndarray, top_moist_threshold: ta.wpfloat, nshift_total: int = 0
     ) -> gtx.int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
         return gtx.int32(np.min(np.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
-    def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float) -> gtx.int32:
+    def _determine_damping_height_index(
+        cls, vct_a: np.ndarray, damping_height: ta.wpfloat
+    ) -> gtx.int32:
         assert damping_height >= 0.0, "Damping height must be positive."
         return (
             0
@@ -282,7 +284,7 @@ class VerticalGrid:
 
     @classmethod
     def _determine_end_index_of_flat_layers(
-        cls, vct_a: np.ndarray, flat_height: float
+        cls, vct_a: np.ndarray, flat_height: ta.wpfloat
     ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
         return (
@@ -313,16 +315,16 @@ def _read_vct_a_and_vct_b_from_file(
     Returns:  one dimensional vct_a and vct_b arrays.
     """
     num_levels_plus_one = num_levels + 1
-    vct_a = np.zeros(num_levels_plus_one, dtype=float)
-    vct_b = np.zeros(num_levels_plus_one, dtype=float)
+    vct_a = np.zeros(num_levels_plus_one, dtype=ta.wpfloat)
+    vct_b = np.zeros(num_levels_plus_one, dtype=ta.wpfloat)
     try:
         with file_path.open() as vertical_grid_file:
             # skip the first line that contains titles
             vertical_grid_file.readline()
             for k in range(num_levels_plus_one):
                 grid_content = vertical_grid_file.readline().split()
-                vct_a[k] = float(grid_content[1])
-                vct_b[k] = float(grid_content[2])
+                vct_a[k] = ta.wpfloat(grid_content[1])
+                vct_b[k] = ta.wpfloat(grid_content[2])
     except OSError as err:
         raise FileNotFoundError(
             f"Vertical coord table file {file_path} could not be read."
@@ -389,8 +391,8 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
             2.0
             / math.pi
             * np.arccos(
-                float(vertical_config.num_levels - 1) ** vertical_config.stretch_factor
-                / float(vertical_config.num_levels) ** vertical_config.stretch_factor
+                ta.wpfloat(vertical_config.num_levels - 1) ** vertical_config.stretch_factor
+                / ta.wpfloat(vertical_config.num_levels) ** vertical_config.stretch_factor
             )
         )
 
@@ -400,9 +402,9 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
                 2.0
                 / math.pi
                 * np.arccos(
-                    np.arange(vertical_config.num_levels + 1, dtype=float)
+                    np.arange(vertical_config.num_levels + 1, dtype=ta.wpfloat)
                     ** vertical_config.stretch_factor
-                    / float(vertical_config.num_levels) ** vertical_config.stretch_factor
+                    / ta.wpfloat(vertical_config.num_levels) ** vertical_config.stretch_factor
                 )
             )
             ** vct_a_exponential_factor
@@ -417,7 +419,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
             lowest_level_exceeding_limit = np.max(
                 np.where(layer_thickness > vertical_config.maximal_layer_thickness)
             )
-            modified_vct_a = np.zeros(num_levels_plus_one, dtype=float)
+            modified_vct_a = np.zeros(num_levels_plus_one, dtype=ta.wpfloat)
             lowest_level_unmodified_thickness = 0
             shifted_levels = 0
             for k in range(vertical_config.num_levels - 1, -1, -1):
@@ -443,13 +445,13 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
                 else (
                     vct_a[0]
                     - modified_vct_a[lowest_level_unmodified_thickness]
-                    - float(lowest_level_unmodified_thickness)
+                    - ta.wpfloat(lowest_level_unmodified_thickness)
                     * vertical_config.maximal_layer_thickness
                 )
                 / (
                     modified_vct_a[0]
                     - modified_vct_a[lowest_level_unmodified_thickness]
-                    - float(lowest_level_unmodified_thickness)
+                    - ta.wpfloat(lowest_level_unmodified_thickness)
                     * vertical_config.maximal_layer_thickness
                 )
             )
@@ -509,8 +511,11 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
     else:
         vct_a = (
             vertical_config.model_top_height
-            * (float(vertical_config.num_levels) - np.arange(num_levels_plus_one, dtype=float))
-            / float(vertical_config.num_levels)
+            * (
+                ta.wpfloat(vertical_config.num_levels)
+                - np.arange(num_levels_plus_one, dtype=ta.wpfloat)
+            )
+            / ta.wpfloat(vertical_config.num_levels)
         )
     vct_b = np.exp(-vct_a / 5000.0)
 
@@ -594,7 +599,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
         c2e2co=c2e2co,
     )
 
-    vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1), dtype=float)
+    vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
     vertical_coordinate[:, num_levels] = topography
 
     # Small-scale topography (i.e. full topo - smooth topo)

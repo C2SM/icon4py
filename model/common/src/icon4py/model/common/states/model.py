@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
 import functools
+from collections.abc import Sequence
 from typing import Literal, Protocol, TypeAlias, TypedDict, runtime_checkable
 
 import gt4py._core.definitions as gt_coredefs
@@ -19,7 +20,6 @@ import icon4py.model.common.type_alias as ta
 
 """Contains type definitions used for the model`s state representation."""
 DimensionNames: TypeAlias = Literal["cell", "edge", "vertex"]
-DimensionT: TypeAlias = gtx.Dimension | DimensionNames
 BufferT: TypeAlias = np_t.ArrayLike | gtx.Field
 DTypeT: TypeAlias = ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
 
@@ -30,7 +30,7 @@ class OptionalMetaData(TypedDict, total=False):
     #: we might not have this one for all fields. But it is useful to have it for tractability with ICON
     icon_var_name: str
     # TODO(halungge): dims should probably be required?
-    dims: tuple[DimensionT, ...]
+    dims: Sequence[gtx.Dimension]
     dtype: ta.wpfloat | ta.vpfloat | gtx.int32 | gtx.int64 | gtx.float32 | gtx.float64
 
 
