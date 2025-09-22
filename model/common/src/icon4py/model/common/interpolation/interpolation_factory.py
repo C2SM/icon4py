@@ -11,16 +11,16 @@ import logging
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
-import icon4py.model.common.metrics.compute_nudgecoeffs as common_metrics
+import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     base,
     geometry,
     geometry_attributes as geometry_attrs,
+    grid_refinement as refinement,
     horizontal as h_grid,
     icon,
-    refinement,
 )
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
@@ -93,16 +93,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self._register_computed_fields()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__} on (grid={self._grid!r}) providing fields f{self.metadata.keys()}"
 
     @property
     def _sources(self) -> factory.FieldSource:
         return factory.CompositeSource(self, (self._geometry,))
 
-    def _register_computed_fields(self):
+    def _register_computed_fields(self) -> None:
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
-            func=common_metrics.compute_nudgecoeffs.with_backend(None),
+            func=nudgecoeffs.compute_nudgecoeffs.with_backend(None),
             domain={
                 dims.EdgeDim: (
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
@@ -114,9 +114,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "refin_ctrl": "refinement_control_at_edges",
             },
             params={
-                "grf_nudge_start_e": refinement.refine_control_value(
-                    dims.EdgeDim, h_grid.Zone.NUDGING
-                ).value,
+                "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
                 "max_nudging_coefficient": self._config["max_nudging_coefficient"],
                 "nudge_efold_width": self._config["nudge_efold_width"],
                 "nudge_zone_width": self._config["nudge_zone_width"],
@@ -151,7 +149,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(geofac_rot)
 
-        geofac_n2s = factory.NumpyFieldsProvider(
+        geofac_n2s = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_geofac_n2s, array_ns=self._xp),
             fields=(attrs.GEOFAC_N2S,),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -168,7 +166,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(geofac_n2s)
 
-        geofac_grdiv = factory.NumpyFieldsProvider(
+        geofac_grdiv = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_geofac_grdiv, array_ns=self._xp),
             fields=(attrs.GEOFAC_GRDIV,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
@@ -189,7 +187,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         match self.grid.global_properties.geometry_type:
             case base.GeometryType.ICOSAHEDRON:
-                cell_average_weight = factory.NumpyFieldsProvider(
+                cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
                         array_ns=self._xp,
@@ -215,7 +213,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 )
                 self.register_provider(cell_average_weight)
             case base.GeometryType.TORUS:
-                cell_average_weight = factory.NumpyFieldsProvider(
+                cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight_torus,
                         array_ns=self._xp,
@@ -241,7 +239,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             case _:
                 raise ValueError("TODO")
 
-        c_lin_e = factory.NumpyFieldsProvider(
+        c_lin_e = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_c_lin_e, array_ns=self._xp),
             fields=(attrs.C_LIN_E,),
             domain=(dims.EdgeDim, dims.E2CDim),
@@ -258,7 +256,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(c_lin_e)
 
-        geofac_grg = factory.NumpyFieldsProvider(
+        geofac_grg = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_geofac_grg, array_ns=self._xp),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -278,7 +276,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(geofac_grg)
 
-        e_flx_avg = factory.NumpyFieldsProvider(
+        e_flx_avg = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_e_flx_avg, array_ns=self._xp),
             fields=(attrs.E_FLX_AVG,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
@@ -309,7 +307,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         match self.grid.global_properties.geometry_type:
             case base.GeometryType.ICOSAHEDRON:
-                e_bln_c_s = factory.NumpyFieldsProvider(
+                e_bln_c_s = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_e_bln_c_s, array_ns=self._xp
                     ),
@@ -326,7 +324,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 )
                 self.register_provider(e_bln_c_s)
             case base.GeometryType.TORUS:
-                e_bln_c_s = factory.NumpyFieldsProvider(
+                e_bln_c_s = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_e_bln_c_s_torus, array_ns=self._xp
                     ),
@@ -342,7 +340,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         match self.grid.global_properties.geometry_type:
             case base.GeometryType.ICOSAHEDRON:
-                pos_on_tplane_e_x_y = factory.NumpyFieldsProvider(
+                pos_on_tplane_e_x_y = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_pos_on_tplane_e_x_y, array_ns=self._xp
                     ),
@@ -371,7 +369,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 )
                 self.register_provider(pos_on_tplane_e_x_y)
             case base.GeometryType.TORUS:
-                pos_on_tplane_e_x_y = factory.NumpyFieldsProvider(
+                pos_on_tplane_e_x_y = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_pos_on_tplane_e_x_y_torus, array_ns=self._xp
                     ),
@@ -387,7 +385,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             case _:
                 raise ValueError("TODO")
 
-        cells_aw_verts = factory.NumpyFieldsProvider(
+        cells_aw_verts = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_cells_aw_verts, array_ns=self._xp),
             fields=(attrs.CELL_AW_VERTS,),
             domain=(dims.VertexDim, dims.V2CDim),
@@ -410,7 +408,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(cells_aw_verts)
 
-        rbf_vec_coeff_c = factory.NumpyFieldsProvider(
+        rbf_vec_coeff_c = factory.NumpyDataProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_cell, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
             domain=(dims.CellDim, dims.C2E2C2EDim),
@@ -445,7 +443,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(rbf_vec_coeff_c)
 
-        rbf_vec_coeff_e = factory.NumpyFieldsProvider(
+        rbf_vec_coeff_e = factory.NumpyDataProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_E,),
             domain=(dims.CellDim, dims.E2C2EDim),
@@ -479,7 +477,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(rbf_vec_coeff_e)
 
-        rbf_vec_coeff_v = factory.NumpyFieldsProvider(
+        rbf_vec_coeff_v = factory.NumpyDataProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_vertex, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
             domain=(dims.VertexDim, dims.V2EDim),
@@ -519,13 +517,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_backend.Backend:
+    def backend(self) -> gtx_backend.Backend | None:
         return self._backend
 
     @property
-    def grid(self):
+    def grid(self) -> icon.IconGrid:
         return self._grid
 
     @property
-    def vertical_grid(self):
+    def vertical_grid(self) -> None:
         return None

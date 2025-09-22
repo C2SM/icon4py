@@ -8,7 +8,7 @@
 import dataclasses
 import logging
 import math
-from collections.abc import Mapping
+from collections.abc import Callable
 from typing import Final, TypeVar
 
 import gt4py.next as gtx
@@ -112,7 +112,7 @@ class GlobalGridParams:
             if value is not None:
                 return value
             if data is not None:
-                return xp.mean(data)
+                return xp.mean(data).item()
             return None
 
         mean_edge_length = init_mean(mean_edge_length, edge_lengths)
@@ -250,8 +250,8 @@ def icon_grid(
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
-    start_indices: Mapping[h_grid.Domain, gtx.int32],
-    end_indices: Mapping[h_grid.Domain, gtx.int32],
+    start_index: Callable[[h_grid.Domain], gtx.int32],
+    end_index: Callable[[h_grid.Domain], gtx.int32],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
@@ -272,8 +272,43 @@ def icon_grid(
         config=config,
         connectivities=connectivities,
         geometry_type=global_properties.geometry_type,
-        _start_indices=start_indices,
-        _end_indices=end_indices,
+        start_index=start_index,
+        end_index=end_index,
         global_properties=global_properties,
         refinement_control=refinement_control or {},
     )
+
+
+def get_start_and_end_index(
+    constructor: Callable[
+        [gtx.Dimension], tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]
+    ],
+) -> tuple[Callable[[h_grid.Domain], gtx.int32], Callable[[h_grid.Domain], gtx.int32]]:
+    """
+    Return start_index and end_index functions to be passed to the Grid constructor.
+
+    This function defines a version of `start_index` and `end_index` that looks up the indeces in an internal map from [Domain](horizontal.py::Domain) -> gtx.int32
+    It takes the constructor function of this map as input.
+
+    Args:
+        constructor: function that takes a dimension as argument and constructs  a lookup table
+        dict[Domain, gtx.int32] for all domains for a given dimension
+
+    Returns:
+        tuple of functions `start_index` and `end_index` to be passed to the [Grid](./base.py::Grid)
+
+    """
+    start_indices = {}
+    end_indices = {}
+    for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
+        start_map, end_map = constructor(dim)
+        start_indices.update(start_map)
+        end_indices.update(end_map)
+
+    def start_index(domain: h_grid.Domain) -> gtx.int32:
+        return start_indices[domain]
+
+    def end_index(domain: h_grid.Domain) -> gtx.int32:
+        return end_indices[domain]
+
+    return start_index, end_index

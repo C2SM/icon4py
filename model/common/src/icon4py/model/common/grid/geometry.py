@@ -8,7 +8,7 @@
 import functools
 import logging
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, Literal, TypeAlias, TypeVar
+from typing import Any
 
 from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
@@ -33,8 +33,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
-
-InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
 
 log = logging.getLogger(__name__)
 
@@ -82,6 +80,8 @@ class GridGeometry(factory.FieldSource):
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
         backend: gtx_backend.Backend | None,
+        coordinates: gm.CoordinateDict,
+        extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
     ):
         """
@@ -100,13 +100,13 @@ class GridGeometry(factory.FieldSource):
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
+        self._geometry_type: base.GeometryType | None = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         log.info(
             f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
 
-    def _inverse_field_provider(self, field_name: str):
+    def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
@@ -123,8 +123,11 @@ class GridGeometry(factory.FieldSource):
         )
         return provider
 
-    def __repr__(self):
-        return f"{self.__class__.__name__} for geometry_type={self._geometry_type._name_} (grid={self._grid.id!r})"
+    def __repr__(self) -> str:
+        geometry_name = self._geometry_type._name_ if self._geometry_type else ""
+        return (
+            f"{self.__class__.__name__} for geometry_type={geometry_name} (grid={self._grid.id!r})"
+        )
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
@@ -135,14 +138,15 @@ class GridGeometry(factory.FieldSource):
         return self._backend
 
     @property
-    def grid(self):
+    def grid(self) -> icon.IconGrid:
         return self._grid
 
     @property
-    def vertical_grid(self):
+    def vertical_grid(self) -> None:
         return None
 
 
+# TODO(): self type
 class IcosahedronGridGeometry(GridGeometry):
     def __init__(
         self,
@@ -150,7 +154,7 @@ class IcosahedronGridGeometry(GridGeometry):
         decomposition_info: definitions.DecompositionInfo,
         backend: gtx_backend.Backend | None,
         coordinates: gm.CoordinateDict,
-        extra_fields: dict[InputGeometryFieldType, gtx.Field],
+        extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
     ):
         super().__init__(grid, decomposition_info, backend, metadata)
@@ -180,8 +184,8 @@ class IcosahedronGridGeometry(GridGeometry):
             "latitude_of_edge_cell_neighbor_1": edge_orientation1_lat,
             "longitude_of_edge_cell_neighbor_1": edge_orientation1_lon,
         }
-        coodinate_provider = factory.PrecomputedFieldProvider(coordinates_)
-        self.register_provider(coodinate_provider)
+        coordinate_provider = factory.PrecomputedFieldProvider(coordinates_)
+        self.register_provider(coordinate_provider)
 
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
@@ -222,14 +226,6 @@ class IcosahedronGridGeometry(GridGeometry):
             }
         )
         self.register_provider(input_fields_provider)
-        self._register_computed_fields()
-
-    def _register_computed_fields(self):
-        meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
-        name = meta["standard_name"]
-        self._attrs.update({name: meta})
-        inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
-        self.register_provider(inverse_edge_length)
 
         inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
         self.register_provider(inverse_dual_edge_length)
@@ -493,7 +489,12 @@ class IcosahedronGridGeometry(GridGeometry):
         self.register_provider(tangent_cell_wrapper)
         cartesian_vertices = factory.EmbeddedFieldOperatorProvider(
             func=math_helpers.geographical_to_cartesian_on_vertices.with_backend(self.backend),
-            domain=(dims.VertexDim,),
+            domain={
+                dims.VertexDim: (
+                    h_grid.vertex_domain(h_grid.Zone.LOCAL),
+                    h_grid.vertex_domain(h_grid.Zone.END),
+                )
+            },
             fields={
                 attrs.VERTEX_X: attrs.VERTEX_X,
                 attrs.VERTEX_Y: attrs.VERTEX_Y,
@@ -507,7 +508,12 @@ class IcosahedronGridGeometry(GridGeometry):
         self.register_provider(cartesian_vertices)
         cartesian_edge_centers = factory.EmbeddedFieldOperatorProvider(
             func=math_helpers.geographical_to_cartesian_on_edges.with_backend(self.backend),
-            domain=(dims.EdgeDim,),
+            domain={
+                dims.EdgeDim: (
+                    h_grid.edge_domain(h_grid.Zone.LOCAL),
+                    h_grid.edge_domain(h_grid.Zone.END),
+                )
+            },
             fields={
                 attrs.EDGE_CENTER_X: attrs.EDGE_CENTER_X,
                 attrs.EDGE_CENTER_Y: attrs.EDGE_CENTER_Y,
@@ -521,7 +527,12 @@ class IcosahedronGridGeometry(GridGeometry):
         self.register_provider(cartesian_edge_centers)
         cartesian_cell_centers = factory.EmbeddedFieldOperatorProvider(
             func=math_helpers.geographical_to_cartesian_on_cells.with_backend(self.backend),
-            domain=(dims.CellDim,),
+            domain={
+                dims.CellDim: (
+                    h_grid.cell_domain(h_grid.Zone.LOCAL),
+                    h_grid.cell_domain(h_grid.Zone.END),
+                )
+            },
             fields={
                 attrs.CELL_CENTER_X: attrs.CELL_CENTER_X,
                 attrs.CELL_CENTER_Y: attrs.CELL_CENTER_Y,
@@ -542,7 +553,7 @@ class TorusGridGeometry(GridGeometry):
         decomposition_info: definitions.DecompositionInfo,
         backend: gtx_backend.Backend | None,
         coordinates: gm.CoordinateDict,
-        extra_fields: dict[InputGeometryFieldType, gtx.Field],
+        extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
     ):
         super().__init__(grid, decomposition_info, backend, metadata)
@@ -621,7 +632,13 @@ class TorusGridGeometry(GridGeometry):
         self.register_provider(input_fields_provider)
         self._register_computed_fields(input_fields_provider)
 
-    def _register_computed_fields(self, input_fields_provider):
+    def _register_computed_fields(
+        self, input_fields_provider: factory.PrecomputedFieldProvider
+    ) -> None:
+        meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
+        name = meta["standard_name"]
+        self._attrs.update({name: meta})
+        inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
         meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
@@ -752,18 +769,16 @@ class TorusGridGeometry(GridGeometry):
         self.register_provider(tangent_cell_wrapper)
 
 
-HorizontalD = TypeVar("HorizontalD", bound=gtx.Dimension)
-SparseD = TypeVar("SparseD", bound=gtx.Dimension)
-
-
 class SparseFieldProviderWrapper(factory.FieldProvider):
     def __init__(
         self,
         field_provider: factory.FieldProvider,
-        target_dims: tuple[HorizontalD, SparseD],
+        target_dims: Sequence[gtx.Dimension],
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
     ):
+        assert len(target_dims) == 2
+        assert target_dims[1].kind == gtx.DimensionKind.LOCAL
         self._wrapped_provider = field_provider
         self._fields = {name: None for name in fields}
         self._func = functools.partial(as_sparse_field, target_dims)
@@ -774,11 +789,10 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         field_name: str,
         field_src: factory.FieldSource | None,
         backend: gtx_backend.Backend | None,
-        grid: factory.GridProvider | None,
-    ):
+        grid: factory.GridProvider,
+    ) -> state_utils.GTXFieldType | None:
         if not self._fields.get(field_name):
             # get the fields from the wrapped provider
-
             input_fields = []
             for p in self._pairs:
                 t = tuple([self._wrapped_provider(name, field_src, backend, grid) for name in p])
@@ -801,10 +815,10 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
 
 
 def as_sparse_field(
-    target_dims: tuple[HorizontalD, SparseD],
-    data: Sequence[tuple[gtx.Field[gtx.Dims[HorizontalD], state_utils.ScalarType], ...]],
+    target_dims: tuple[gtx.Dimension, gtx.Dimension],
+    data: Sequence[tuple[gtx.Field[gtx.Dims[gtx.Dimension], state_utils.ScalarType], ...]],
     backend: gtx_backend.Backend | None = None,
-):
+) -> Sequence[state_utils.GTXFieldType]:
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
     assert target_dims[1].kind == gtx.DimensionKind.LOCAL
