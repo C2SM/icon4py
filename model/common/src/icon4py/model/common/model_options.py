@@ -13,12 +13,13 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import model_backends
 
-
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
-def customize_backend(backend: model_backends.DeviceType | model_backends.BackendDescription) -> gtx_typing.Backend:
+def customize_backend(
+    backend: model_backends.DeviceType | model_backends.BackendDescription,
+) -> gtx_typing.Backend:
     if isinstance(backend, model_backends.DeviceType):
         backend = {"device": backend}
     # TODO(havogt): implement the lookup function as below
@@ -62,7 +63,7 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    if isinstance(backend, (gtx.DeviceType, model_backends.BackendDescription)):
+    if isinstance(backend, (gtx.DeviceType, dict)):
         backend = customize_backend(backend)
 
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
@@ -77,7 +78,6 @@ def setup_program(
     return functools.partial(
         static_args_program,
         **constant_args,
-        **variants,
         **horizontal_sizes,
         **vertical_sizes,
         offset_provider=offset_provider,
