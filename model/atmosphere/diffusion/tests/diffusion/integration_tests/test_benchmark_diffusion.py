@@ -41,7 +41,7 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
-    "grid", [definitions.Grids.MCH_OPR_R19B08_DOMAIN01, definitions.Grids.R02B04_GLOBAL]
+    "grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
 )
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
@@ -126,7 +126,7 @@ def test_run_diffusion_benchmark(
     )
 
     topo_c = jablonowski_williamson_topography(
-        cell_lat=cell_geometry.cell_center_lat.asnumpy(),
+        cell_lat=cell_geometry.cell_center_lat.ndarray,
         u0=35.0,
         backend=backend,
     )
@@ -197,7 +197,7 @@ def test_run_diffusion_benchmark(
     )
 
     prognostic_state = prognostics.PrognosticState(
-        w=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, low=0.0),
+        w=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim),
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim),
