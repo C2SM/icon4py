@@ -15,6 +15,7 @@ import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
+from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import (
     config,
@@ -554,6 +555,35 @@ def htop_moist_proc() -> float:
 @pytest.fixture
 def maximal_layer_thickness() -> float:
     return 25000.0
+
+
+@pytest.fixture
+def rayleigh_coeff(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
+        return 0.1
+    else:
+        return 5.0
+
+
+@pytest.fixture
+def exner_expol(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
+        return 0.3333333333333
+    else:
+        return 0.333
+
+
+@pytest.fixture
+def vwind_offctr(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
+        return 0.15
+    else:
+        return 0.2
+
+
+@pytest.fixture
+def rayleigh_type() -> int:
+    return RayleighType.KLEMP
 
 
 @pytest.fixture

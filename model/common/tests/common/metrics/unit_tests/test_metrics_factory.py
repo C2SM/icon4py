@@ -123,8 +123,6 @@ def _get_metrics_factory(
             interpolation_source=interpolation_field_source,
             backend=backend,
             metadata=attrs.attrs,
-            e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim),
-            c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),
             rayleigh_type=rayleigh_type,
             rayleigh_coeff=rayleigh_coeff,
             exner_expol=exner_expol,
@@ -578,7 +576,28 @@ def test_vertical_coordinates_on_half_levels(
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-def test_factory_compute_diffusion_metrics(
+def test_compute_wgtfac_c(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_backend.Backend | None,
+) -> None:
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+    )
+    field = factory.get(attrs.WGTFAC_C)
+    field_ref = metrics_savepoint.wgtfac_c()
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+def test_factory_compute_diffusion_mask_and_coef(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
@@ -587,8 +606,6 @@ def test_factory_compute_diffusion_metrics(
 ) -> None:
     field_ref_1 = metrics_savepoint.mask_hdiff()
     field_ref_2 = metrics_savepoint.zd_diffcoef()
-    field_ref_3 = metrics_savepoint.zd_intcoef()
-    field_ref_4 = metrics_savepoint.zd_vertoffset()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
@@ -597,9 +614,30 @@ def test_factory_compute_diffusion_metrics(
     )
     field_1 = factory.get(attrs.MASK_HDIFF)
     field_2 = factory.get(attrs.ZD_DIFFCOEF_DSL)
-    field_3 = factory.get(attrs.ZD_INTCOEF_DSL)
-    field_4 = factory.get(attrs.ZD_VERTOFFSET_DSL)
+
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-10)
-    assert test_helpers.dallclose(field_ref_3.asnumpy(), field_3.asnumpy(), atol=1.0e-8)
-    assert test_helpers.dallclose(field_ref_4.asnumpy(), field_4.asnumpy())
+
+
+@pytest.mark.level("integration")
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+def test_factory_compute_diffusion_intcoeff_and_vertoffset(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_backend.Backend | None,
+) -> None:
+    field_ref_1 = metrics_savepoint.zd_intcoef()
+    field_ref_2 = metrics_savepoint.zd_vertoffset()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+    )
+    field_1 = factory.get(attrs.ZD_INTCOEF_DSL)
+    field_2 = factory.get(attrs.ZD_VERTOFFSET_DSL)
+    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
