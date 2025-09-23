@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
@@ -23,7 +23,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    model_backends,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon as icon_grid,
@@ -44,15 +49,18 @@ class VelocityAdvection:
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
     ):
         self.grid: icon_grid.IconGrid = grid
-        self._backend = backend
         self.metric_state: dycore_states.MetricStateNonHydro = metric_state
         self.interpolation_state: dycore_states.InterpolationState = interpolation_state
         self.vertical_params = vertical_params
         self.edge_params = edge_params
         self.c_owner_mask = owner_mask
+        self._backend = backend
 
         self.cfl_w_limit: float = 0.65
         self.scalfac_exdiff: float = 0.05

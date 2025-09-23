@@ -10,7 +10,7 @@ import abc
 import logging
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_courant_number import (
@@ -99,7 +99,7 @@ class BoundaryConditions(abc.ABC):
 class NoFluxCondition(BoundaryConditions):
     """Class that sets the upper and lower boundary fluxes to zero."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
         self._backend = backend
@@ -180,7 +180,7 @@ class VerticalLimiter(abc.ABC):
 class NoLimiter(VerticalLimiter):
     """Class that implements no vertical parabola limiter."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
         self._backend = backend
@@ -248,7 +248,7 @@ class NoLimiter(VerticalLimiter):
 class SemiMonotonicLimiter(VerticalLimiter):
     """Class that implements a semi-monotonic vertical parabola limiter."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
         self._backend = backend
@@ -380,7 +380,7 @@ class VerticalAdvection(abc.ABC):
 class NoAdvection(VerticalAdvection):
     """Class that implements disabled vertical advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         log.debug("vertical advection class init - start")
 
         # input arguments
@@ -512,7 +512,7 @@ class FirstOrderUpwind(FiniteVolume):
         boundary_conditions: BoundaryConditions,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         log.debug("vertical advection class init - start")
 
@@ -653,7 +653,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         vertical_limiter: VerticalLimiter,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         log.debug("vertical advection class init - start")
 
