@@ -50,6 +50,7 @@ EXNER_EXFAC: Final[str] = "exner_exfac"
 WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
 FLAT_IDX_MAX: Final[str] = "flat_idx_max"
+NFLAT_GRADP: Final[str] = "nflat_gradp"
 PG_EDGEIDX_DSL: Final[str] = "edge_mask_for_pressure_gradient_extrapolation"
 PG_EDGEDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
 MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
@@ -79,6 +80,13 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="flat_idx",
+        dtype=gtx.int32,
+    ),
+    NFLAT_GRADP: dict(
+        standard_name=NFLAT_GRADP,
+        long_name="number of flat edges for gradp calculation",
+        units="",
+        icon_var_name="nflat_gradp",
         dtype=gtx.int32,
     ),
     Z_MC: dict(

@@ -644,6 +644,18 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(max_flat_index_provider)
+
+        nflat_gradp_provider = factory.NumpyDataProvider(
+            func= functools.partial(mf.compute_nflat_gradp, array_ns=self._xp),
+            domain=(dims.EdgeDim,),
+            deps={
+                "flat_idx": attrs.FLAT_EDGE_INDEX,
+                "e_owner_mask": "e_owner_mask",
+            },
+            fields=(attrs.NFLAT_GRADP, ),
+        )
+        self.register_provider(nflat_gradp_provider)
+
         pressure_gradient_fields = factory.ProgramFieldProvider(
             func=mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(
                 self._backend

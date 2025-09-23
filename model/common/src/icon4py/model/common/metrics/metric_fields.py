@@ -606,6 +606,18 @@ def compute_max_index(
     max_idx = array_ns.amax(flat_idx, axis=1)
     return max_idx
 
+def compute_nflat_gradp(
+    flat_idx: data_alloc.NDArray, e_owner_mask:data_alloc.NDArray, array_ns: ModuleType = np
+) -> int:
+    """
+    compute the nflat_gradp value as the minimum value of the flat_idx array.
+    """
+    nflat_gradp = where(
+        e_owner_mask,
+        array_ns.min(flat_idx),
+        85,
+    )
+    return nflat_gradp
 
 @gtx.field_operator
 def _compute_downward_extrapolation_distance(

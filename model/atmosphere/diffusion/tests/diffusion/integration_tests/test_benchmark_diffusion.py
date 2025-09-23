@@ -45,7 +45,7 @@ from ..fixtures import *  # noqa: F403
 )
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-def test_run_diffusion_benchmark(
+def test_diffusion_benchmark(
     grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
     benchmark: Any,

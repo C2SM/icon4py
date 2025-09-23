@@ -77,7 +77,7 @@ def metrics_factory_params(
 )
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-def test_run_solve_nonhydro_benchmark(
+def test_solve_nonhydro_benchmark(
     grid: definitions.GridDescription,
     vertical_grid_params,
     metrics_factory_params,
