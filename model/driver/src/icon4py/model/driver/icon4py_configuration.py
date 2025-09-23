@@ -173,10 +173,17 @@ def read_config(
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
-        return diffusion.DiffusionConfig()
+        return diffusion.DiffusionConfig(
+            #hdiff_w = False,
+            #hdiff_vn = False,
+            #hdiff_temp = False,
+            #zdiffu_t = False,
+        )
 
     def _gauss3d_nonhydro_config(n_substeps: int):
         return solve_nh.NonHydrostaticConfig(
+            #rhotheta_offctr = 0.0, #-0.1,
+            #veladv_offctr = 0.0, #0.25
             igradp_method=3,
         )
 
