@@ -29,7 +29,7 @@ def is_cupy_device(
     return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)
 
 
-def is_BackendDescriptor(
+def is_backend_descriptor(
     backend: gtx_typing.Backend
     | model_backends.DeviceType
     | model_backends.BackendDescriptor
