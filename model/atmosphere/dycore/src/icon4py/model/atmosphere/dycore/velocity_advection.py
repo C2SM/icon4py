@@ -51,7 +51,7 @@ class VelocityAdvection:
         owner_mask: fa.CellField[bool],
         backend: gtx_typing.Backend
         | model_backends.DeviceType
-        | model_backends.BackendDescription
+        | model_backends.BackendDescriptor
         | None,
     ):
         self.grid: icon_grid.IconGrid = grid

@@ -65,7 +65,7 @@ def test_custom_backend_device() -> None:
 def test_setup_program_defaults(
     backend: gtx_typing.Backend
     | model_backends.DeviceType
-    | model_backends.BackendDescription
+    | model_backends.BackendDescriptor
     | None,
 ) -> None:
     partial_program = setup_program(backend=backend, program=program_return_field)
@@ -100,18 +100,23 @@ def test_setup_program_defaults(
 def test_setup_program_specify_inputs(
     backend_params: gtx_typing.Backend
     | model_backends.DeviceType
-    | model_backends.BackendDescription
+    | model_backends.BackendDescriptor
     | None,
     expected_backend: str,
 ) -> None:
     partial_program = setup_program(backend=backend_params, program=program_return_field)
     backend = model_backends.BACKENDS[expected_backend]
-    expected_partial = functools.partial(
-        program_return_field.with_backend(backend).compile(
-            enable_jit=False,
+    if backend is None:
+        expected_partial = functools.partial(
+            program_return_field.with_backend(backend), offset_provider={}
+        )
+    else:
+        expected_partial = functools.partial(
+            program_return_field.with_backend(backend).compile(
+                enable_jit=False,
+                offset_provider={},
+            ),
             offset_provider={},
-        ),
-        offset_provider={},
-    )
+        )
     # TODO(havogt): test should be improved to work without string comparison
     assert repr(partial_program) == repr(expected_partial)

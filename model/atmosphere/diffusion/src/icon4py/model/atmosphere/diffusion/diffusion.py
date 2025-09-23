@@ -365,7 +365,7 @@ class Diffusion:
         cell_params: grid_states.CellParams,
         backend: gtx_typing.Backend
         | model_backends.DeviceType
-        | model_backends.BackendDescription
+        | model_backends.BackendDescriptor
         | None,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
