@@ -138,6 +138,8 @@ class GridGeometry(factory.FieldSource):
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
                 # TODO(halungge): rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
+                attrs.EDGE_LENGTH: extra_fields[gridfile.GeometryName.EDGE_LENGTH],
+                attrs.DUAL_EDGE_LENGTH: extra_fields[gridfile.GeometryName.DUAL_EDGE_LENGTH],
                 attrs.EDGE_CELL_DISTANCE: extra_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE],
                 attrs.EDGE_VERTEX_DISTANCE: extra_fields[
                     gridfile.GeometryName.EDGE_VERTEX_DISTANCE
@@ -175,50 +177,12 @@ class GridGeometry(factory.FieldSource):
         self._register_computed_fields()
 
     def _register_computed_fields(self) -> None:
-        edge_length_provider = factory.ProgramFieldProvider(
-            func=stencils.compute_edge_length,
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                )
-            },
-            fields={
-                "length": attrs.EDGE_LENGTH,
-            },
-            deps={
-                "vertex_lat": attrs.VERTEX_LAT,
-                "vertex_lon": attrs.VERTEX_LON,
-            },
-            params={"radius": self._grid.global_properties.radius},
-        )
-        self.register_provider(edge_length_provider)
         meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
         inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
         self.register_provider(inverse_edge_length)
 
-        dual_length_provider = factory.ProgramFieldProvider(
-            func=stencils.compute_cell_center_arc_distance,
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                )
-            },
-            fields={
-                "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
-            },
-            deps={
-                "edge_neighbor_0_lat": "latitude_of_edge_cell_neighbor_0",
-                "edge_neighbor_0_lon": "longitude_of_edge_cell_neighbor_0",
-                "edge_neighbor_1_lat": "latitude_of_edge_cell_neighbor_1",
-                "edge_neighbor_1_lon": "longitude_of_edge_cell_neighbor_1",
-            },
-            params={"radius": self._grid.global_properties.radius},
-        )
-        self.register_provider(dual_length_provider)
         inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
         self.register_provider(inverse_dual_edge_length)
 

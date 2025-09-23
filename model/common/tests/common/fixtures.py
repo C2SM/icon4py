@@ -39,6 +39,7 @@ from icon4py.model.testing.fixtures.datatest import (
     step_date_exit,
     step_date_init,
     stretch_factor,
+    stretch_factor,
 )
 
 
