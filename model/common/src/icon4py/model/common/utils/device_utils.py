@@ -8,13 +8,11 @@
 
 import functools
 from collections.abc import Callable
-from typing import Any, TypeGuard
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.allocators as gtx_allocators
 import gt4py.next.typing as gtx_typing
-
-from icon4py.model.common import model_backends
 
 
 try:
@@ -27,17 +25,6 @@ def is_cupy_device(
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
 ) -> bool:
     return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)
-
-
-def is_backend_descriptor(
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
-) -> TypeGuard[model_backends.BackendDescriptor]:
-    if isinstance(backend, dict):
-        return all(isinstance(key, str) for key in backend)
-    return False
 
 
 def sync(backend: gtx_typing.Backend | None = None) -> None:

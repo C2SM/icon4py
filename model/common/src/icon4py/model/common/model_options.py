@@ -12,7 +12,6 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import model_backends
-from icon4py.model.common.utils.device_utils import is_backend_descriptor
 
 
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
@@ -65,7 +64,7 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    if isinstance(backend, gtx.DeviceType) or is_backend_descriptor(backend):
+    if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
         backend = customize_backend(backend)
 
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
