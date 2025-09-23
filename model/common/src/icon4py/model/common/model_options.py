@@ -65,7 +65,7 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    if isinstance(backend, (gtx.DeviceType)) or is_BackendDescriptor(backend):
+    if isinstance(backend, gtx.DeviceType) or is_backend_descriptor(backend):
         backend = customize_backend(backend)
 
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
