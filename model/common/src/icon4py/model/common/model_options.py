@@ -12,7 +12,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import model_backends
-from icon4py.model.common.utils.device_utils import is_BackendDescriptor
+from icon4py.model.common.utils.device_utils import is_backend_descriptor
 
 
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
