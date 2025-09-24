@@ -521,9 +521,10 @@ def initialize(
 )
 @click.option(
     "--enable_profiling",
-    is_flag=True,
-    default=False,
-    help="Enable detailed profiling with GT4Py metrics.",
+    is_flag=False,
+    flag_value="gt4py_metrics.json",
+    default="",
+    help="Enable detailed profiling with GT4Py metrics. Can be a flag (--enable_profiling) or provide a filename (--enable_profiling='gt4py_metrics.json').",
 )
 @click.option(
     "--icon4py_driver_backend",
@@ -601,7 +602,7 @@ def icon4py_driver(
         ds.prep_advection_prognostic,
         dp.second_order_divdamp_factor,
         do_prep_adv=False,
-        profiling=driver_config.ProfilingConfig() if enable_profiling else None,
+        profiling=driver_config.ProfilingConfig(gt4py_metrics_output_file=enable_profiling) if enable_profiling else None,        
     )
 
     log.info("time loop:  DONE")
