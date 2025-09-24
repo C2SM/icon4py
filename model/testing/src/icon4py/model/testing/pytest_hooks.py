@@ -36,9 +36,11 @@ def pytest_configure(config):
         "level(name): marks test as unit or integration tests, mostly applicable where both are available",
     )
 
-    # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
+    # Check if the --enable-mixed-precision / --enable-single-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):
         os.environ["FLOAT_PRECISION"] = "mixed"
+    elif config.getoption("--enable-single-precision"):
+        os.environ["FLOAT_PRECISION"] = "single"
 
     # Handle datatest options: --datatest-only  and --datatest-skip
     if m_option := config.getoption("-m", []):
@@ -88,6 +90,14 @@ def pytest_addoption(parser: pytest.Parser):
             "--enable-mixed-precision",
             action="store_true",
             help="Switch unit tests from double to mixed-precision",
+            default=False,
+        )
+
+    with contextlib.suppress(ValueError):
+        parser.addoption(
+            "--enable-single-precision",
+            action="store_true",
+            help="Switch unit tests from double / mixed to single-precision",
             default=False,
         )
 
