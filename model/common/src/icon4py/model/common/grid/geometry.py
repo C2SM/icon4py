@@ -224,6 +224,16 @@ class IcosahedronGridGeometry(GridGeometry):
             }
         )
         self.register_provider(input_fields_provider)
+        self._register_computed_fields(input_fields_provider)
+
+    def _register_computed_fields(
+        self, input_fields_provider: factory.PrecomputedFieldProvider
+    ) -> None:
+        meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
+        name = meta["standard_name"]
+        self._attrs.update({name: meta})
+        inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
+        self.register_provider(inverse_edge_length)
 
         inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
         self.register_provider(inverse_dual_edge_length)
@@ -633,10 +643,6 @@ class TorusGridGeometry(GridGeometry):
     def _register_computed_fields(
         self, input_fields_provider: factory.PrecomputedFieldProvider
     ) -> None:
-        meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
-        name = meta["standard_name"]
-        self._attrs.update({name: meta})
-        inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
         meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
