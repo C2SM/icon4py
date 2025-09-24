@@ -117,6 +117,8 @@ def _dot_product(
     return array_ns.matmul(v1, v2_tilde)
 
 
+# TODO(msimberg): Rename again. This is arc length on a unit sphere for
+# icosahedral grids and real distance for torus grids.
 def _distance_pairwise(
     geometry_type: base_grid.GeometryType,
     domain_length: ta.wpfloat,
