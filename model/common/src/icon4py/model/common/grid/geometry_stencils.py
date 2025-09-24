@@ -433,14 +433,7 @@ def distance_of_far_edges_in_diamond_torus(
         distance between the "far" vertices in the diamond.
 
     """
-    # TODO(msimberg): Badbad. This is for the INV_VERT_VERT_LENGTH field for
-    # toruses. The EARTH_RADIUS scaling factor is there in icon-exclaim, but
-    # doesn't make sense physically. Is this field even used for toruses? Better
-    # remove it if not needed.
-    # cf.
-    # https://github.com/C2SM/icon-exclaim/blob/2a5147f3c2364fbec723a969d5f66e35fe1fa5b2/src/shr_horizontal/mo_intp_coeffs.f90#L1733-L1737,
-    # grid_sphere_radius unconditionally multiplied on the arc_length.
-    return 6.371229e6 * distance_on_edges_torus(
+    return distance_on_edges_torus(
         vertex_x(E2C2V[2]),
         vertex_x(E2C2V[3]),
         vertex_y(E2C2V[2]),

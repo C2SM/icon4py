@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import (
     base,
     geometry,
@@ -196,9 +196,13 @@ def test_compute_inverse_vertex_vertex_length(
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
 
-    expected = grid_savepoint.inv_vert_vert_length()
-    result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH)
-    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
+    expected = grid_savepoint.inv_vert_vert_length().asnumpy()
+    result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH).asnumpy()
+    if grid_geometry.grid.geometry_type == base.GeometryType.TORUS:
+        # TODO(msimberg): icon fortran multiplies sphere radius in even for
+        # torus grids. Fix upstream.
+        result = result / constants.EARTH_RADIUS
+    assert test_utils.dallclose(result, expected, rtol=rtol)
 
 
 @pytest.mark.datatest
