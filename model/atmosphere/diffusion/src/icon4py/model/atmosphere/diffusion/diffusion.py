@@ -42,7 +42,12 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    field_type_aliases as fa,
+    model_backends,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
@@ -358,7 +363,10 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: gtx_typing.Backend | None,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):

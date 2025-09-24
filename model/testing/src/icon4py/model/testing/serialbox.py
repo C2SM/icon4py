@@ -10,9 +10,9 @@ import logging
 from typing import Final, Literal, TypeAlias
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import serialbox
-from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
@@ -47,7 +47,7 @@ class IconSavepoint:
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         size: dict,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         self.savepoint = sp
         self.serializer = ser
@@ -147,7 +147,7 @@ class IconGridSavepoint(IconSavepoint):
         grid_id: str,
         size: dict,
         grid_shape: icon.GridShape,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
@@ -478,7 +478,7 @@ class IconGridSavepoint(IconSavepoint):
         return dim, global_index, mask
 
     def construct_icon_grid(
-        self, backend: gtx_backend.Backend | None = None, keep_skip_values: bool = True
+        self, backend: gtx_typing.Backend | None = None, keep_skip_values: bool = True
     ) -> icon.IconGrid:
         config = base.GridConfig(
             horizontal_config=base.HorizontalGridSize(
@@ -1791,7 +1791,7 @@ class TopographySavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         fname_prefix,
         path=".",
         do_print=False,

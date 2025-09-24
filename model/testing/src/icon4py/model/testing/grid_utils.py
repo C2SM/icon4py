@@ -102,27 +102,30 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
     return full_name
 
 
+def construct_decomposition_info(
+    grid: icon.IconGrid,
+    backend: gtx_typing.Backend | None = None,
+) -> decomposition_defs.DecompositionInfo:
+    on_gpu = device_utils.is_cupy_device(backend)
+    xp = data_alloc.array_ns(on_gpu)
+
+    def _add_dimension(dim: gtx.Dimension) -> None:
+        indices = data_alloc.index_field(grid, dim, backend=backend)
+        owner_mask = xp.ones((grid.size[dim],), dtype=bool)
+        decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
+
+    decomposition_info = decomposition_defs.DecompositionInfo(klevels=grid.num_levels)
+    _add_dimension(dims.EdgeDim)
+    _add_dimension(dims.VertexDim)
+    _add_dimension(dims.CellDim)
+
+    return decomposition_info
+
+
 def get_grid_geometry(
     backend: gtx_typing.Backend | None, experiment: definitions.Experiment
 ) -> geometry.GridGeometry:
-    on_gpu = device_utils.is_cupy_device(backend)
-    xp = data_alloc.array_ns(on_gpu)
     register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
-
-    def _construct_dummy_decomposition_info(
-        grid: icon.IconGrid,
-    ) -> decomposition_defs.DecompositionInfo:
-        def _add_dimension(dim: gtx.Dimension) -> None:
-            indices = data_alloc.index_field(grid, dim, backend=backend)
-            owner_mask = xp.ones((grid.size[dim],), dtype=bool)
-            decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
-
-        decomposition_info = decomposition_defs.DecompositionInfo(klevels=grid.num_levels)
-        _add_dimension(dims.EdgeDim)
-        _add_dimension(dims.VertexDim)
-        _add_dimension(dims.CellDim)
-
-        return decomposition_info
 
     def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = get_grid_manager_from_identifier(
@@ -132,7 +135,7 @@ def get_grid_geometry(
             backend=backend,
         )
         grid = gm.grid
-        decomposition_info = _construct_dummy_decomposition_info(grid)
+        decomposition_info = construct_decomposition_info(grid, backend)
         match gm.grid.global_properties.geometry_type:
             case base.GeometryType.ICOSAHEDRON:
                 return geometry.IcosahedronGridGeometry(
@@ -140,7 +143,7 @@ def get_grid_geometry(
                     decomposition_info,
                     backend,
                     gm.coordinates,
-                    gm.geometry,
+                    gm.geometry_fields,
                     geometry_attrs.attrs,
                 )
             case base.GeometryType.TORUS:
@@ -149,7 +152,7 @@ def get_grid_geometry(
                     decomposition_info,
                     backend,
                     gm.coordinates,
-                    gm.geometry,
+                    gm.geometry_fields,
                     geometry_attrs.attrs,
                 )
             case _:

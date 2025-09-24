@@ -9,7 +9,7 @@ import functools
 import logging
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
@@ -44,7 +44,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
     ):
         self._backend = backend
@@ -517,7 +517,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_backend.Backend | None:
+    def backend(self) -> gtx_typing.Backend | None:
         return self._backend
 
     @property
