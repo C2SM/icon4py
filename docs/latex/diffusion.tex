@@ -1,0 +1,128 @@
+%=======================================================================================================================
+\clearpage
+\subsection{Diffusion}
+\label{sub:diffusion}
+%=======================================================================================================================
+
+%-------------------------------------------------------------------------------
+\paragraph{e2v interpolation}
+
+\begin{align}
+    & \windu{}{\v}{} = \sum_{\offProv{v2e}} \Wrbf_1 \vn{}{\e}{} \\
+    & \windv{}{\v}{} = \sum_{\offProv{v2e}} \Wrbf_2 \vn{}{\e}{}
+\end{align}
+
+
+%-------------------------------------------------------------------------------
+\paragraph{Smagorinsky coefficient}
+
+% Intermediate steps
+% \begin{align}
+%   & \dvttang = - \left( \windu{}{\v 0}{} \orientationtangx{\v 0} + \windv{}{\v 0}{} \orientationtangy{\v 0} \right)
+%                + \left( \windu{}{\v 1}{} \orientationtangx{\v 1} + \windv{}{\v 1}{} \orientationtangy{\v 1} \right) \\
+%   & \dvtnorm = - \left( \windu{}{\v 2}{} \orientationtangx{\v 2} + \windv{}{\v 2}{} \orientationtangy{\v 2} \right)
+%                + \left( \windu{}{\v 3}{} \orientationtangx{\v 3} + \windv{}{\v 3}{} \orientationtangy{\v 3} \right)
+% \end{align}
+%
+% \begin{align}
+%   & \khsmagone = - \left( \windu{}{\v 0}{} \orientationnormx{\v 0} + \windv{}{\v 0}{} \orientationnormy{\v 0} \right)
+%                  + \left( \windu{}{\v 1}{} \orientationnormx{\v 1} + \windv{}{\v 1}{} \orientationnormy{\v 1} \right) \\
+%   & \khsmagone = \frac{\khsmagone\ \orientationtang{\e}}{\Ledge} + \frac{\dvtnorm}{\Lvertvert} \\
+%   %
+%   & \khsmagtwo = - \left( \windu{}{\v 2}{} \orientationnormx{\v 2} + \windv{}{\v 2}{} \orientationnormy{\v 2} \right)
+%                  + \left( \windu{}{\v 3}{} \orientationnormx{\v 3} + \windv{}{\v 3}{} \orientationnormy{\v 3} \right) \\
+%   & \khsmagtwo = \frac{\khsmagtwo}{\Lvertvert} - \frac{\dvttang\ \orientationtang{\e}}{\Ledge} \\
+%   %
+%   & \Khsmag{}{ec}{} = \Khsmag{}{\e}{} = \diffmultfacsmag \sqrt{ \khsmagtwo^2 + \khsmagone^2 } \\
+%   & \Khsmag{\n}{\e}{\k} = \min{\left(\smaglimit, \max{\left(0, \Khsmag{}{\e}{} - \smagoffset \right)} \right)}
+% \end{align}
+
+\begin{equation}
+  \begin{aligned}
+    & \Khsmag{\n}{\e}{\k} &&= \min{\left(\smaglimit, \max{\left(0, \diffmultfacsmag \sqrt{ * } - \smagoffset \right)} \right)} \\
+    & * &&= \left(
+            \frac{
+                - \left( \windu{}{\v 2}{} \orientationnormx{\v 2} + \windv{}{\v 2}{} \orientationnormy{\v 2} \right)
+                + \left( \windu{}{\v 3}{} \orientationnormx{\v 3} + \windv{}{\v 3}{} \orientationnormy{\v 3} \right)
+            }{\Lvertvert}
+            - \frac{\left(
+                - \left( \windu{}{\v 0}{} \orientationtangx{\v 0} + \windv{}{\v 0}{} \orientationtangy{\v 0} \right)
+                + \left( \windu{}{\v 1}{} \orientationtangx{\v 1} + \windv{}{\v 1}{} \orientationtangy{\v 1} \right)
+            \right)\orientationtang{\e}}{\Ledge}
+        \right)^2 \\
+    &   &&+ \left(
+            \frac{\left(
+                - \left( \windu{}{\v 0}{} \orientationnormx{\v 0} + \windv{}{\v 0}{} \orientationnormy{\v 0} \right)
+                + \left( \windu{}{\v 1}{} \orientationnormx{\v 1} + \windv{}{\v 1}{} \orientationnormy{\v 1} \right)
+            \right)\orientationtang{\e}}{\Ledge}
+            + \frac{
+                - \left( \windu{}{\v 2}{} \orientationtangx{\v 2} + \windv{}{\v 2}{} \orientationtangy{\v 2} \right)
+                + \left( \windu{}{\v 3}{} \orientationtangx{\v 3} + \windv{}{\v 3}{} \orientationtangy{\v 3} \right)
+            }{\Lvertvert}
+        \right)^2
+  \end{aligned}
+\end{equation}
+
+%-------------------------------------------------------------------------------
+\paragraph{Nabla 2}
+
+\begin{equation}
+  \vnlapl{\n}{\e}{\k} = 4 \left[
+      \frac{
+          \windu{}{\v 0}{} \orientationnormx{\v 0} + \windv{}{\v 0}{} \orientationnormy{\v 0}
+        + \windu{}{\v 1}{} \orientationnormx{\v 1} + \windv{}{\v 1}{} \orientationnormy{\v 1}
+        - 2 \vn{}{\e}{}
+      }{\Ledge^2}
+      + \frac{
+          \windu{}{\v 2}{} \orientationnormx{\v 2} + \windv{}{\v 2}{} \orientationnormy{\v 2}
+        + \windu{}{\v 3}{} \orientationnormx{\v 3} + \windv{}{\v 3}{} \orientationnormy{\v 3}
+        - 2 \vn{}{\e}{}
+      }{\Lvertvert^2}
+    \right]
+\end{equation}
+
+\begin{equation}
+  \wlapl{}{\c}{\k-1/2} = \sum_{\offProv{c2e2co}} \Whor \w{}{\c}{\k-1/2}
+\end{equation}
+
+\begin{align}
+    %& \temparray{\n}{\e}{\k} = \Khsmag{\n}{\e}{\k} \Cgrad \Gradn_{\offProv{e2c}} \vpotempprime{\n}{\c}{\k} \\
+    %& \vpotempprimelapl{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \temparray{\n}{\e}{\k}\\
+    & \vpotempprimelapl{\n}{\c}{\k} = \sum_{\offProv{c2e}} \left( \Whor \Khsmag{}{\e}{\k} \Cgrad \Gradn_{\offProv{e2c}} \vpotempprime{\n}{\c}{\k} \right)
+\end{align}
+
+
+%-------------------------------------------------------------------------------
+\paragraph{e2v interpolation}
+
+\begin{align}
+  & \vnlapl{}{\v^x}{} = \sum_{\offProv{v2e}} \Wrbf_1 \vnlapl{}{\e}{} \\
+  & \vnlapl{}{\v^y}{} = \sum_{\offProv{v2e}} \Wrbf_2 \vnlapl{}{\e}{}
+\end{align}
+
+%-------------------------------------------------------------------------------
+\paragraph{Nabla 4}
+
+\begin{align}
+  & \nabvtang = \vnlapl{}{\v^x 0}{} \orientationnormx{\v 0} + \vnlapl{}{\v^y 0}{} \orientationnormy{\v 0}
+              + \vnlapl{}{\v^x 1}{} \orientationnormx{\v 1} + \vnlapl{}{\v^y 1}{} \orientationnormy{\v 1}
+  \\
+  & \nabvnorm = \vnlapl{}{\v^x 2}{} \orientationnormx{\v 2} + \vnlapl{}{\v^y 2}{} \orientationnormy{\v 2}
+              + \vnlapl{}{\v^x 3}{} \orientationnormx{\v 3} + \vnlapl{}{\v^y 3}{} \orientationnormy{\v 3}
+  \\
+  & \vnlapllapl{\n}{\e}{\k} = 4 \left[
+            \frac{ \nabvnorm - 2 \vnlapl{\n}{\e}{\k} }{\Lvertvert^2}
+          + \frac{ \nabvtang - 2 \vnlapl{\n}{\e}{\k} }{\Ledge^2}
+      \right]
+\end{align}
+
+
+%-------------------------------------------------------------------------------
+\paragraph{Final updates}
+
+\begin{align}
+  & \vn{d}{\e}{\k} = \vn{\n}{\e}{\k} + \edgearea \left( \Khsmag{}{\e}{\k} \vnlapl{\n}{\e}{\k} - \diffmultfacvn \edgearea \vnlapllapl{\n}{\e}{\k} \right) \\
+  & \w{d}{\c}{\k-1/2} = \w{\n}{\c}{\k-1/2} - \diffmultfacw \cellarea^2 \sum_{\offProv{c2e2co}} \Whor \wlapl{}{\c}{\k-1/2} \\
+  & \vpotemp{d}{\c}{\k} = \vpotemp{\n}{\c}{\k} + \cellarea \vpotempprimelapl{\n}{\c}{\k} \\
+  & \exner{d}{\c}{\k} = \exner{\n}{\c}{\k} \left( 1 + \frac{\Rd}{\cvd} \left( \frac{\vpotemp{d}{\c}{\k}}{\vpotemp{\n}{\c}{\k}} -1 \right) \right)
+\end{align}
