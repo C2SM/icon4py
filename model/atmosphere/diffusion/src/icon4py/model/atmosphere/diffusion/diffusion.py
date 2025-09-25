@@ -19,6 +19,8 @@ import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
+from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.atmosphere.dycore.ibm import diffu_set_bcs_uv_vertices, diffu_reset_w
 from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
@@ -30,6 +32,10 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
     apply_diffusion_to_theta_and_exner,
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
+from icon4py.model.atmosphere.diffusion.stencils.vertical_wind_diffusion import (
+    apply_vertical_diffusion_to_vn,
+    apply_vertical_diffusion_to_w,
+)
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
@@ -125,6 +131,8 @@ class DiffusionConfig:
         smagorinski_scaling_factor: float = 0.015,
         n_substeps: int = 5,
         zdiffu_t: bool = True,
+        zdiffu_wind: bool = True,
+        zdiffu_wind_multfac: float = 0.0005,
         thslp_zdiffu: float = 0.025,
         thhgtd_zdiffu: float = 200.0,
         velocity_boundary_diffusion_denom: float = 200.0,
@@ -179,6 +187,12 @@ class DiffusionConfig:
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
+
+        #: If True, apply vertical diffusion to wind field
+        self.apply_zdiffusion_wind: bool = zdiffu_wind
+
+        #: Coefficient for vertical diffusion of wind field
+        self.zdiffu_wind_multfac: float = zdiffu_wind_multfac
 
         #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f90
         self.thslp_zdiffu = thslp_zdiffu
@@ -360,6 +374,7 @@ class Diffusion:
         params: DiffusionParams,
         vertical_grid: v_grid.VerticalGrid,
         metric_state: diffusion_states.DiffusionMetricState,
+        metric_state_nh: dycore_states.MetricStateNonHydro,
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
@@ -369,6 +384,7 @@ class Diffusion:
         | None,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
+        ibm = None,
     ):
         self._backend = backend
         self._orchestration = orchestration
@@ -378,6 +394,7 @@ class Diffusion:
         self._grid = grid
         self._vertical_grid = vertical_grid
         self._metric_state = metric_state
+        self._metric_state_nh = metric_state_nh
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
@@ -403,6 +420,8 @@ class Diffusion:
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
         self._determine_horizontal_domains()
+
+        self.zdiffu_wind_multfac: float = config.zdiffu_wind_multfac
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
             backend=self._backend,
@@ -476,6 +495,58 @@ class Diffusion:
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
+        self.ibm_diffu_set_bcs_uv_vertices = setup_program(
+            backend=self._backend,
+            program=diffu_set_bcs_uv_vertices,
+            constant_args={},
+            horizontal_sizes={
+                "horizontal_start": self._vertex_start_lateral_boundary_level_2,
+                "horizontal_end": self._vertex_end_local,
+            },
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
+            offset_provider=self._grid.connectivities,
+        )
+        self.ibm_diffu_reset_w = setup_program(
+            backend=self._backend,
+            program=diffu_reset_w,
+            constant_args={},
+            horizontal_sizes={
+                "horizontal_start": self._horizontal_start_index_w_diffusion,
+                "horizontal_end": self._cell_end_halo,
+            },
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels+1},
+            offset_provider=self._grid.connectivities,
+        )
+        self.apply_vertical_diffusion_to_vn = setup_program(
+            backend=self._backend,
+            program=apply_vertical_diffusion_to_vn,
+            constant_args={
+                "multfac": self.zdiffu_wind_multfac,
+                "ddqz_z_half_e": self._metric_state_nh.ddqz_z_half_e,
+                "ddqz_z_full_e": self._metric_state_nh.ddqz_z_full_e,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._edge_start_lateral_boundary_level_5,
+                "horizontal_end": self._edge_end_local,
+                "ddqz_z_half": self._metric_state_nh.ddqz_z_half,
+                "ddqz_z_full": self._metric_state_nh.ddqz_z_full,
+            },
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
+            offset_provider=self._grid.connectivities,
+        )
+        self.apply_vertical_diffusion_to_w = setup_program(
+            backend=self._backend,
+            program=apply_vertical_diffusion_to_w,
+            constant_args={
+                "multfac": self.zdiffu_wind_multfac,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._horizontal_start_index_w_diffusion,
+                "horizontal_end": self._cell_end_halo,
+            },
+            vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
+            offset_provider=self._grid.connectivities,
+        )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = setup_program(
             backend=self._backend,
             program=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
@@ -537,6 +608,7 @@ class Diffusion:
                 "area": self._cell_params.area,
                 "apply_zdiffusion_t": self.config.apply_zdiffusion_t,
                 "rd_o_cvd": self.rd_o_cvd,
+                "ibm_nabla2theta_mask": self.ibm.masks.full_edge_mask,
             },
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
@@ -594,6 +666,10 @@ class Diffusion:
         # TODO(edopao): we should call gtx.common.offset_provider_to_type()
         #   but this requires some changes in gt4py domain inference.
         self.compile_time_connectivities = self._grid.connectivities
+
+        #---> IBM
+        self.ibm = ibm
+        #<--- IBM
 
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
@@ -778,6 +854,12 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of vn - end")
 
+        self.ibm_diffu_set_bcs_uv_vertices(
+            mask=self.ibm.masks.full_vertex_mask,
+            u_vert=self.u_vert,
+            v_vert=self.v_vert,
+        )
+
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
         self.calculate_nabla2_and_smag_coefficients_for_vn(
             diff_multfac_smag=self.diff_multfac_smag,
@@ -873,6 +955,14 @@ class Diffusion:
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
+
+        if self.config.apply_zdiffusion_wind:
+            self.apply_vertical_diffusion_to_vn(vn=prognostic_state.vn)
+            self.apply_vertical_diffusion_to_w(w=prognostic_state.w)
+
+        # NOTE: this only works as long as halungge's copying is there a few
+        # lines above, otherwise need to find another solution
+        self.ibm_diffu_reset_w(w=prognostic_state.w, w_old=self.w_tmp)
 
         if self.config.apply_to_temperature:
             log.debug(

@@ -12,6 +12,7 @@ import pathlib
 from collections.abc import Callable
 from typing import NamedTuple
 
+import os
 import click
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -20,7 +21,7 @@ from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import (
@@ -413,20 +414,31 @@ def initialize(
         ser_type=serialization_type,
     )
 
+    savepoint_path = os.environ.get("ICON4PY_SAVEPOINT_PATH", "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data")
+    grid_file_path = os.environ.get("ICON4PY_GRID_FILE_PATH", "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc")
+    ibm_inst = ibm.ImmersedBoundaryMethod(
+        grid=grid,
+        savepoint_path=savepoint_path,
+        grid_file_path=grid_file_path,
+        backend = backend,
+        )
+
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
     diffusion_granule = diffusion.Diffusion(
-        grid,
-        config.diffusion_config,
-        diffusion_params,
-        vertical_geometry,
-        diffusion_metric_state,
-        diffusion_interpolation_state,
-        edge_geometry,
-        cell_geometry,
-        exchange=exchange,
+        grid=grid,
+        config=config.diffusion_config,
+        params=diffusion_params,
+        vertical_grid=vertical_geometry,
+        metric_state=diffusion_metric_state,
+        metric_state_nh=solve_nonhydro_metric_state,
+        interpolation_state=diffusion_interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
         backend=backend,
+        exchange=exchange,
+        ibm=ibm_inst,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)

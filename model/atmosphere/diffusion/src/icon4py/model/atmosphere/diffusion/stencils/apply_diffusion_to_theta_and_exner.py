@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
+from icon4py.model.atmosphere.dycore.ibm import _set_bcs_edges as ibm_set_bcs_edges
+
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     _calculate_nabla2_for_z,
 )
@@ -39,8 +41,17 @@ def _apply_diffusion_to_theta_and_exner(
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
     apply_zdiffusion_t: bool,
+    ibm_nabla2theta_mask: fa.EdgeKField[bool],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
+
+    # Here I can only import field operators, not programs, so I'll import this
+    # directly even though the name may not be the best.
+    # Set to zero the edge-2-cell gradient computed above (the naming doesn't
+    # seem very correct) such that the nabla2(theta_v) computation below does
+    # not pick up values from inside obstacles
+    z_nabla2_e = ibm_set_bcs_edges(ibm_nabla2theta_mask, 0.0, z_nabla2_e)
+
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
     z_temp = (
         _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
@@ -77,6 +88,7 @@ def apply_diffusion_to_theta_and_exner(
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
     apply_zdiffusion_t: bool,
+    ibm_nabla2theta_mask: fa.EdgeKField[bool],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -97,6 +109,7 @@ def apply_diffusion_to_theta_and_exner(
         exner,
         rd_o_cvd,
         apply_zdiffusion_t,
+        ibm_nabla2theta_mask,
         out=(theta_v, exner),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

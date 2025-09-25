@@ -1,0 +1,19 @@
+{
+    "include": [
+        "model"
+    ],
+    "executionEnvironments": [
+        {
+            "root": "./",
+            "extraPaths": [
+                "./model/atmosphere/advection/src",
+                "./model/atmosphere/diffusion/src",
+                "./model/atmosphere/dycore/src",
+                "./model/atmosphere/subgrid_scale_physics/microphysics/src",
+                "./model/common/src",
+                "./model/driver/src",
+                "./model/testing/src",
+            ]
+        }
+    ]
+}
