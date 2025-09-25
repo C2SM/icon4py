@@ -306,7 +306,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"exner_ref_mc": attrs.EXNER_REF_MC, "theta_ref_mc": attrs.THETA_REF_MC, "rho_ref_mc": attrs.RHO_REF_MC},
+            fields={
+                "exner_ref_mc": attrs.EXNER_REF_MC,
+                "theta_ref_mc": attrs.THETA_REF_MC,
+                "rho_ref_mc": attrs.RHO_REF_MC,
+            },
             params={
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
@@ -322,10 +326,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         compute_theta_rho_ref_me = factory.ProgramFieldProvider(
             func=mf.compute_theta_rho_ref_me.with_backend(self._backend),
-            deps={
-                "z_mc": attrs.Z_MC,
-                "c_lin_e": interpolation_attributes.C_LIN_E
-            },
+            deps={"z_mc": attrs.Z_MC, "c_lin_e": interpolation_attributes.C_LIN_E},
             domain={
                 dims.EdgeDim: (
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
@@ -336,7 +337,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"rho_ref_me": attrs.RHO_REF_ME, "theta_ref_me": attrs.THETA_REF_ME,},
+            fields={
+                "rho_ref_me": attrs.RHO_REF_ME,
+                "theta_ref_me": attrs.THETA_REF_ME,
+            },
             params={
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
@@ -365,7 +369,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_half_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"theta_ref_ic": attrs.THETA_REF_IC, "d_exner_dz_ref_ic": attrs.D_EXNER_DZ_REF_IC},
+            fields={
+                "theta_ref_ic": attrs.THETA_REF_IC,
+                "d_exner_dz_ref_ic": attrs.D_EXNER_DZ_REF_IC,
+            },
             params={
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
@@ -640,8 +647,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(mf.compute_max_index, array_ns=self._xp),
             domain={
                 dims.EdgeDim: (
-                edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                edge_domain(h_grid.Zone.END),
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    edge_domain(h_grid.Zone.END),
                 ),
             },
             fields=(attrs.FLAT_IDX_MAX,),
@@ -652,14 +659,16 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(max_flat_index_provider)
 
         nflat_gradp_provider = factory.NumpyDataProvider(
-            func= functools.partial(mf.compute_nflat_gradp, array_ns=self._xp),
+            func=functools.partial(mf.compute_nflat_gradp, array_ns=self._xp),
             domain=(),
             deps={
                 "max_idx": attrs.FLAT_IDX_MAX,
                 "e_owner_mask": "e_owner_mask",
             },
             params={
-                "lateral_boundary_level": self._grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
+                "lateral_boundary_level": self._grid.start_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                ),
             },
             fields=(attrs.NFLAT_GRADP,),
         )
@@ -748,7 +757,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             domain=(dims.EdgeDim, dims.E2CDim, dims.KDim),
             fields=(
                 attrs.ZDIFF_GRADP,
-                attrs.VERTOFFSET_GRADP,),
+                attrs.VERTOFFSET_GRADP,
+            ),
             params={
                 "nlev": self._grid.num_levels,
                 "horizontal_start": self._grid.start_index(

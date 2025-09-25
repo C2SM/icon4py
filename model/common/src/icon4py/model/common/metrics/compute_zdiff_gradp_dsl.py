@@ -36,13 +36,12 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
         array_ns.expand_dims(z_me, axis=1)[horizontal_start:, :, :]
         - z_mc[e2c][horizontal_start:, :, :]
     )
-    vertidx_gradp = (
-        array_ns.expand_dims(array_ns.expand_dims(jk_field, axis=0).repeat(2, axis=0), axis=0).repeat(nedges, axis=0)
-
-    )
-    vertoffset_gradp = (
-        array_ns.expand_dims(array_ns.expand_dims(jk_field, axis=0).repeat(2, axis=0), axis=0).repeat(nedges, axis=0)
-    )
+    vertidx_gradp = array_ns.expand_dims(
+        array_ns.expand_dims(jk_field, axis=0).repeat(2, axis=0), axis=0
+    ).repeat(nedges, axis=0)
+    vertoffset_gradp = array_ns.expand_dims(
+        array_ns.expand_dims(jk_field, axis=0).repeat(2, axis=0), axis=0
+    ).repeat(nedges, axis=0)
     """
     First part for loop implementation with gt4py code
 
@@ -96,7 +95,6 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
                     zdiff_gradp[je, 1, jk] = z_me[je, jk] - z_mc[e2c[je, 1], jk1]
                     jk_start = jk1
                     break
-
 
     for je in range(horizontal_start_1, nedges):
         jk_start = int(flat_idx[je])

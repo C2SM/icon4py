@@ -7,7 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import gt4py.next.typing as gtx_typing
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import dimension as dims
@@ -131,6 +135,7 @@ def _get_metrics_factory(
         metrics_factories[registry_name] = factory
     return factory
 
+
 @pytest.mark.level("integration")
 @pytest.mark.datatest
 def test_factory_nflat_gradp(
@@ -138,7 +143,7 @@ def test_factory_nflat_gradp(
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ) -> None:
     value_ref = grid_savepoint.nflat_gradp()
     factory = _get_metrics_factory(
@@ -533,6 +538,7 @@ def test_factory_zdiff_gradp(
     field_2 = factory.get(attrs.VERTOFFSET_GRADP)
     assert test_helpers.dallclose(zdiff_gradp_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
     assert test_helpers.dallclose(vertoffset_gradp_ref.asnumpy(), field_2.asnumpy(), atol=1.0e-5)
+
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest

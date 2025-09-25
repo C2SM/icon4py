@@ -571,17 +571,17 @@ def compute_wgtfac_e(
         },
     )
 
+
 def compute_flat_edge_idx(
     e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     k_lev: data_alloc.NDArray,
-    array_ns: ModuleType = np
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     k_lev_minus1 = k_lev[:-1]
     coeff_ = np.expand_dims(c_lin_e, axis=-1)
-    nlev = z_mc.shape[1]
     z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
     z_ifc_e_0 = z_ifc[e2c[:, 0], :-1]
     z_ifc_e_k_0 = z_ifc[e2c[:, 0], 1:]
@@ -595,6 +595,7 @@ def compute_flat_edge_idx(
     )
     return flat_edge_index
 
+
 def compute_max_index(
     flat_idx: data_alloc.NDArray, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
@@ -606,8 +607,12 @@ def compute_max_index(
     max_idx = array_ns.amax(flat_idx, axis=1)
     return max_idx
 
+
 def compute_nflat_gradp(
-    max_idx: data_alloc.NDArray, e_owner_mask:data_alloc.NDArray, lateral_boundary_level:int, array_ns: ModuleType = np
+    max_idx: data_alloc.NDArray,
+    e_owner_mask: data_alloc.NDArray,
+    lateral_boundary_level: int,
+    array_ns: ModuleType = np,
 ) -> int:
     """
     compute the nflat_gradp value as the minimum value of the flat_idx array.
@@ -620,6 +625,7 @@ def compute_nflat_gradp(
     )
     nflat_gradp = int(array_ns.min(mask_array))
     return nflat_gradp
+
 
 @gtx.field_operator
 def _compute_downward_extrapolation_distance(
@@ -1024,6 +1030,7 @@ def _compute_theta_exner_rho_ref_mc(
     theta_ref_mc = z_temp / exner_ref_mc
     return exner_ref_mc, theta_ref_mc, rho_ref_mc
 
+
 @gtx.field_operator
 def _compute_theta_rho_ref_me(
     z_mc: fa.CellKField[wpfloat],
@@ -1036,7 +1043,7 @@ def _compute_theta_rho_ref_me(
     p0sl_bg: wpfloat,
     rd_o_cpd: wpfloat,
     p0ref: wpfloat,
-)-> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
+) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     z_aux1 = p0sl_bg * exp(
         -grav
@@ -1050,6 +1057,7 @@ def _compute_theta_rho_ref_me(
     exner_ref_me = (z_aux1 / p0ref) ** rd_o_cpd
     theta_ref_me = z_temp / exner_ref_me
     return rho_ref_me, theta_ref_me
+
 
 @gtx.field_operator
 def _compute_theta_d_exner_dz_ref_ic(
@@ -1073,9 +1081,8 @@ def _compute_theta_d_exner_dz_ref_ic(
     )
     z_help = (z_aux1 / p0ref) ** rd_o_cpd
     z_temp = (t0sl_bg - del_t_bg) + del_t_bg * exp(-z_ifc / h_scal_bg)
-    z_aux2 = z_aux1 / (rd * z_temp)
     theta_ref_ic = z_temp / z_help
-    d_exner_dz_ref_ic = - grav/cpd/theta_ref_ic
+    d_exner_dz_ref_ic = -grav / cpd / theta_ref_ic
     return theta_ref_ic, d_exner_dz_ref_ic
 
 
@@ -1116,6 +1123,7 @@ def compute_theta_exner_rho_ref_mc(
         },
     )
 
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_theta_rho_ref_me(
     z_mc: fa.CellKField[wpfloat],
@@ -1137,7 +1145,7 @@ def compute_theta_rho_ref_me(
 ):
     _compute_theta_rho_ref_me(
         z_mc=z_mc,
-        c_lin_e = c_lin_e,
+        c_lin_e=c_lin_e,
         t0sl_bg=t0sl_bg,
         del_t_bg=del_t_bg,
         h_scal_bg=h_scal_bg,
@@ -1152,6 +1160,7 @@ def compute_theta_rho_ref_me(
             dims.KDim: (vertical_start, vertical_end),
         },
     )
+
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_theta_d_exner_dz_ref_ic(
@@ -1178,7 +1187,7 @@ def compute_theta_d_exner_dz_ref_ic(
         del_t_bg=del_t_bg,
         h_scal_bg=h_scal_bg,
         grav=grav,
-        cpd = cpd,
+        cpd=cpd,
         rd=rd,
         p0sl_bg=p0sl_bg,
         rd_o_cpd=rd_o_cpd,

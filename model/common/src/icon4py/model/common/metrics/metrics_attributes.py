@@ -370,8 +370,8 @@ attrs: dict[str, model.FieldMetaData] = {
         dtype=ta.wpfloat,
     ),
     VERTOFFSET_GRADP: dict(
-    standard_name=VERTOFFSET_GRADP,
-    long_name="vertoffset_gradp",
+        standard_name=VERTOFFSET_GRADP,
+        long_name="vertoffset_gradp",
         units="",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="vertoffset_gradp",

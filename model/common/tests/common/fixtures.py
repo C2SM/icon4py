@@ -11,8 +11,6 @@ from collections.abc import Generator
 
 import pytest
 
-from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
-
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     damping_height,
@@ -24,7 +22,6 @@ from icon4py.model.testing.fixtures.datatest import (
     grid_savepoint,
     htop_moist_proc,
     icon_grid,
-    topography_savepoint,
     interpolation_savepoint,
     linit,
     lowest_layer_thickness,
@@ -39,7 +36,7 @@ from icon4py.model.testing.fixtures.datatest import (
     step_date_exit,
     step_date_init,
     stretch_factor,
-    stretch_factor,
+    topography_savepoint,
 )
 
 
