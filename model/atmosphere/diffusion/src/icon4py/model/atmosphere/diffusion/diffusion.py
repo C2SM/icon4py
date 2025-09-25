@@ -374,7 +374,6 @@ class Diffusion:
         params: DiffusionParams,
         vertical_grid: v_grid.VerticalGrid,
         metric_state: diffusion_states.DiffusionMetricState,
-        metric_state_nh: dycore_states.MetricStateNonHydro,
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
@@ -394,7 +393,6 @@ class Diffusion:
         self._grid = grid
         self._vertical_grid = vertical_grid
         self._metric_state = metric_state
-        self._metric_state_nh = metric_state_nh
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
@@ -522,14 +520,14 @@ class Diffusion:
             program=apply_vertical_diffusion_to_vn,
             constant_args={
                 "multfac": self.zdiffu_wind_multfac,
-                "ddqz_z_half_e": self._metric_state_nh.ddqz_z_half_e,
-                "ddqz_z_full_e": self._metric_state_nh.ddqz_z_full_e,
+                "ddqz_z_half_e": self._metric_state.ddqz_z_half_e,
+                "ddqz_z_full_e": self._metric_state.ddqz_z_full_e,
             },
             horizontal_sizes={
                 "horizontal_start": self._edge_start_lateral_boundary_level_5,
                 "horizontal_end": self._edge_end_local,
-                "ddqz_z_half": self._metric_state_nh.ddqz_z_half,
-                "ddqz_z_full": self._metric_state_nh.ddqz_z_full,
+                "ddqz_z_half": self._metric_state.ddqz_z_half,
+                "ddqz_z_full": self._metric_state.ddqz_z_full,
             },
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,

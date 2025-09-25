@@ -11,13 +11,16 @@ from typing import TYPE_CHECKING
 
 import click
 import pytest
+import gt4py.next as gtx
 
+from icon4py.model.atmosphere.diffusion import diffusion_states
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half_e
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
@@ -137,11 +140,43 @@ def test_run_timeloop_single_step(
 
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    grg = interpolation_savepoint.geofac_grg()
 
-    diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
-        interpolation_savepoint
+    diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=interpolation_savepoint.geofac_div(),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=grg[0],
+        geofac_grg_y=grg[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-    diffusion_metric_state = driver_sb.construct_metric_state_for_diffusion(metrics_savepoint)
+    xp = data_alloc.import_array_ns(backend)
+    ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KHalfDim)), dtype=float)
+    ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
+    compute_ddqz_z_half_e.with_backend(backend=backend)(
+        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+        c_lin_e=interpolation_savepoint.c_lin_e(),
+        ddqz_z_half_e=ddqz_z_half_e,
+        horizontal_start=0,
+        horizontal_end=grid_savepoint.num(dims.EdgeDim),
+        vertical_start=0,
+        vertical_end=grid_savepoint.num(dims.KHalfDim),
+        offset_provider={},
+    )
+    diffusion_metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+        ddqz_z_full=metrics_savepoint.ddqz_z_full(),
+        ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
+        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+        ddqz_z_half_e=ddqz_z_half_e,
+    )
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -176,7 +211,6 @@ def test_run_timeloop_single_step(
 
     linit = sp.get_metadata("linit").get("linit")
 
-    grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         c_intp=interpolation_savepoint.c_intp(),
@@ -245,8 +279,11 @@ def test_run_timeloop_single_step(
         backend=backend,
     )
 
-    diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
-        timeloop_diffusion_savepoint_init,
+    diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=timeloop_diffusion_savepoint_init.hdef_ic(),
+        div_ic=timeloop_diffusion_savepoint_init.div_ic(),
+        dwdx=timeloop_diffusion_savepoint_init.dwdx(),
+        dwdy=timeloop_diffusion_savepoint_init.dwdy(),
     )
 
     prep_adv = dycore_states.PrepAdvection(

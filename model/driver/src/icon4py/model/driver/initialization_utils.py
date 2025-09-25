@@ -13,6 +13,7 @@ import pathlib
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from icon4py.model.atmosphere import diffusion
 import netCDF4 as nc4
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
@@ -128,9 +129,13 @@ def model_initialization_serialbox(
         istep=1, date=SIMULATION_START_DATE, substep=1
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
-        diffusion_init_savepoint,
+    diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=diffusion_init_savepoint.hdef_ic(),
+        div_ic=diffusion_init_savepoint.div_ic(),
+        dwdx=diffusion_init_savepoint.dwdx(),
+        dwdy=diffusion_init_savepoint.dwdy(),
     )
+
     solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=solve_nonhydro_init_savepoint.theta_v_ic(),
@@ -444,15 +449,21 @@ def read_static_fields(
     """
     if ser_type == SerializationType.SB:
         data_provider = _serial_data_provider(backend, path, rank)
-
-        diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
-            data_provider.from_interpolation_savepoint()
-        )
-        diffusion_metric_state = driver_sb.construct_metric_state_for_diffusion(
-            data_provider.from_metrics_savepoint()
-        )
         interpolation_savepoint = data_provider.from_interpolation_savepoint()
+        metrics_savepoint = data_provider.from_metrics_savepoint()
+        grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
         grg = interpolation_savepoint.geofac_grg()
+
+        diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
+            e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
+            rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+            rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+            geofac_div=interpolation_savepoint.geofac_div(),
+            geofac_n2s=interpolation_savepoint.geofac_n2s(),
+            geofac_grg_x=grg[0],
+            geofac_grg_y=grg[1],
+            nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+        )
         solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
             c_lin_e=interpolation_savepoint.c_lin_e(),
             c_intp=interpolation_savepoint.c_intp(),
@@ -471,8 +482,6 @@ def read_static_fields(
             geofac_grg_y=grg[1],
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
-        metrics_savepoint = data_provider.from_metrics_savepoint()
-        grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
 
         xp = data_alloc.import_array_ns(backend)
         ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KHalfDim)), dtype=float)
@@ -487,6 +496,18 @@ def read_static_fields(
             vertical_end=grid_savepoint.num(dims.KHalfDim),
             offset_provider={},
         )
+        diffusion_metric_state = diffusion_states.DiffusionMetricState(
+            mask_hdiff=metrics_savepoint.mask_hdiff(),
+            theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+            wgtfac_c=metrics_savepoint.wgtfac_c(),
+            zd_intcoef=metrics_savepoint.zd_intcoef(),
+            zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+            zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+            ddqz_z_full=metrics_savepoint.ddqz_z_full(),
+            ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
+            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+            ddqz_z_half_e=ddqz_z_half_e,
+        )
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
@@ -500,7 +521,6 @@ def read_static_fields(
             reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
             exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
             ddz_of_reference_exner_at_cells_on_half_levels=metrics_savepoint.d_exner_dz_ref_ic(),
-            ddqz_z_half_e=ddqz_z_half_e,
             ddqz_z_half=metrics_savepoint.ddqz_z_half(),
             reference_theta_at_cells_on_half_levels=metrics_savepoint.theta_ref_ic(),
             d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
@@ -513,7 +533,6 @@ def read_static_fields(
             nflat_gradp=grid_savepoint.nflat_gradp(),
             pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
             pg_exdist=metrics_savepoint.pg_exdist(),
-            ddqz_z_full=metrics_savepoint.ddqz_z_full(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
             wgtfac_e=metrics_savepoint.wgtfac_e(),

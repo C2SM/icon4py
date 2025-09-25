@@ -432,7 +432,6 @@ def initialize(
         params=diffusion_params,
         vertical_grid=vertical_geometry,
         metric_state=diffusion_metric_state,
-        metric_state_nh=solve_nonhydro_metric_state,
         interpolation_state=diffusion_interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
