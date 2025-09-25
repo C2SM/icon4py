@@ -571,29 +571,29 @@ def compute_wgtfac_e(
         },
     )
 
-def compute_flat_idx(
+def compute_flat_edge_idx(
+    e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     k_lev: data_alloc.NDArray,
     array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
-    connectivities: dict[gtx.Dimension, np.ndarray]
-    e2c = connectivities[dims.E2CDim]
+    k_lev_minus1 = k_lev[:-1]
     coeff_ = np.expand_dims(c_lin_e, axis=-1)
+    nlev = z_mc.shape[1]
     z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
-    z_ifc_e_0 = z_ifc(E2C[0])
-    z_ifc_e_k_0 = z_ifc_e_0(Koff[1])
-    z_ifc_e_1 = z_ifc(E2C[1])
-    z_ifc_e_k_1 = z_ifc_e_1(Koff[1])
-    flat_idx = array_ns.where(
+    z_ifc_e_0 = z_ifc[e2c[:, 0], :-1]
+    z_ifc_e_k_0 = z_ifc[e2c[:, 0], 1:]
+    z_ifc_e_1 = z_ifc[e2c[:, 1], :-1]
+    z_ifc_e_k_1 = z_ifc[e2c[:, 1], 1:]
+    k_lev_minus1_expand = array_ns.expand_dims(k_lev_minus1, axis=0).repeat(z_me.shape[0], axis=0)
+    flat_edge_index = array_ns.where(
         (z_me <= z_ifc_e_0) & (z_me >= z_ifc_e_k_0) & (z_me <= z_ifc_e_1) & (z_me >= z_ifc_e_k_1),
-        k_lev,
+        k_lev_minus1_expand,
         0,
     )
-    return flat_idx
-
-
+    return flat_edge_index
 
 def compute_max_index(
     flat_idx: data_alloc.NDArray, array_ns: ModuleType = np
@@ -607,16 +607,18 @@ def compute_max_index(
     return max_idx
 
 def compute_nflat_gradp(
-    flat_idx: data_alloc.NDArray, e_owner_mask:data_alloc.NDArray, array_ns: ModuleType = np
+    max_idx: data_alloc.NDArray, e_owner_mask:data_alloc.NDArray, lateral_boundary_level:int, array_ns: ModuleType = np
 ) -> int:
     """
     compute the nflat_gradp value as the minimum value of the flat_idx array.
     """
-    nflat_gradp = where(
-        e_owner_mask,
-        array_ns.min(flat_idx),
-        85,
+    boundary_mask = np.arange(max_idx.shape[0]) >= lateral_boundary_level
+    mask_array = array_ns.where(
+        e_owner_mask & boundary_mask,
+        max_idx,
+        65,
     )
+    nflat_gradp = int(array_ns.min(mask_array))
     return nflat_gradp
 
 @gtx.field_operator

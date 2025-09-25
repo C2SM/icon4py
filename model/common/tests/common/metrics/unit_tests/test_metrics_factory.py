@@ -133,6 +133,25 @@ def _get_metrics_factory(
         metrics_factories[registry_name] = factory
     return factory
 
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+def test_factory_nflat_gradp(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_backend.Backend | None,
+) -> None:
+    value_ref = grid_savepoint.nflat_gradp()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+    )
+    value = factory.get(attrs.NFLAT_GRADP)
+    assert value_ref == value
+
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest

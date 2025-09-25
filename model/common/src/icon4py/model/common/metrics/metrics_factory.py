@@ -614,30 +614,36 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_wgtfac_e)
 
-        compute_flat_edge_idx = factory.NumpyFieldsProvider(
-            func=mf.compute_flat_idx.with_backend(self._backend, array_ns =self._xp),
+        compute_flat_edge_idx = factory.NumpyDataProvider(
+            func=functools.partial(mf.compute_flat_edge_idx, array_ns=self._xp),
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
                 "k_lev": "k_lev",
             },
+            connectivities={"e2c": dims.E2CDim},
             domain={
                 dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.LOCAL),
-                    edge_domain(h_grid.Zone.LOCAL),
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    edge_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
                     vertical_domain(v_grid.Zone.TOP),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"flat_idx": attrs.FLAT_EDGE_INDEX},
+            fields={"flat_edge_index": attrs.FLAT_EDGE_INDEX},
         )
         self.register_provider(compute_flat_edge_idx)
         max_flat_index_provider = factory.NumpyDataProvider(
             func=functools.partial(mf.compute_max_index, array_ns=self._xp),
-            domain=(dims.EdgeDim,),
+            domain={
+                dims.EdgeDim: (
+                edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                edge_domain(h_grid.Zone.END),
+                ),
+            },
             fields=(attrs.FLAT_IDX_MAX,),
             deps={
                 "flat_idx": attrs.FLAT_EDGE_INDEX,
@@ -647,12 +653,15 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         nflat_gradp_provider = factory.NumpyDataProvider(
             func= functools.partial(mf.compute_nflat_gradp, array_ns=self._xp),
-            domain=(dims.EdgeDim,),
+            domain=(),
             deps={
-                "flat_idx": attrs.FLAT_EDGE_INDEX,
+                "max_idx": attrs.FLAT_IDX_MAX,
                 "e_owner_mask": "e_owner_mask",
             },
-            fields=(attrs.NFLAT_GRADP, ),
+            params={
+                "lateral_boundary_level": self._grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
+            },
+            fields=(attrs.NFLAT_GRADP,),
         )
         self.register_provider(nflat_gradp_provider)
 
