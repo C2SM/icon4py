@@ -11,6 +11,7 @@ import functools
 import logging
 import pathlib
 
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import netCDF4 as nc4
 
@@ -27,6 +28,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
+from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half_e
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -471,6 +473,20 @@ def read_static_fields(
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
         grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
+
+        xp = data_alloc.import_array_ns(backend)
+        ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KHalfDim)), dtype=float)
+        ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
+        compute_ddqz_z_half_e.with_backend(backend=backend)(
+            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+            c_lin_e=interpolation_savepoint.c_lin_e(),
+            ddqz_z_half_e=ddqz_z_half_e,
+            horizontal_start=0,
+            horizontal_end=grid_savepoint.num(dims.EdgeDim),
+            vertical_start=0,
+            vertical_end=grid_savepoint.num(dims.KHalfDim),
+            offset_provider={},
+        )
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
@@ -484,6 +500,7 @@ def read_static_fields(
             reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
             exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
             ddz_of_reference_exner_at_cells_on_half_levels=metrics_savepoint.d_exner_dz_ref_ic(),
+            ddqz_z_half_e=ddqz_z_half_e,
             ddqz_z_half=metrics_savepoint.ddqz_z_half(),
             reference_theta_at_cells_on_half_levels=metrics_savepoint.theta_ref_ic(),
             d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
@@ -496,6 +513,7 @@ def read_static_fields(
             nflat_gradp=grid_savepoint.nflat_gradp(),
             pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
             pg_exdist=metrics_savepoint.pg_exdist(),
+            ddqz_z_full=metrics_savepoint.ddqz_z_full(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
             wgtfac_e=metrics_savepoint.wgtfac_e(),

@@ -199,6 +199,24 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddqz_z_half)
 
+        ddqz_half_on_edges = factory.ProgramFieldProvider(
+            func=cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(self._backend),
+            deps={"in_field": attrs.DDQZ_Z_HALF, "coeff": interpolation_attributes.C_LIN_E},
+            domain={
+                dims.EdgeDim: (
+                    edge_domain(h_grid.Zone.LOCAL),
+                    edge_domain(h_grid.Zone.END),
+                ),
+                dims.KHalfDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={"out_field": attrs.DDQZ_Z_HALF_E},
+        )
+        self.register_provider(ddqz_half_on_edges)
+
+
         ddqz_z_full_and_inverse = factory.ProgramFieldProvider(
             func=mf.compute_ddqz_z_full_and_inverse.with_backend(self._backend),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
