@@ -13,7 +13,6 @@ import pathlib
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from icon4py.model.atmosphere import diffusion
 import netCDF4 as nc4
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
@@ -35,7 +34,6 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import serialbox_helpers as driver_sb
 from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
 from icon4py.model.testing import serialbox as sb
 
