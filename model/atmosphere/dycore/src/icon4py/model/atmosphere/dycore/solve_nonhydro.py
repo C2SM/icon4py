@@ -1358,6 +1358,7 @@ class SolveNonhydro:
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
             rayleigh_damping_factor=self.rayleigh_damping_factor,
+            ibm_w_matrix_mask=self._ibm_masks.half_cell_mask,
             dtime=dtime,
             at_first_substep=at_first_substep,
         )

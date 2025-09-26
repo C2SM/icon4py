@@ -383,7 +383,7 @@ class Diffusion:
         | None,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
-        ibm = None,
+        ibm_masks = None,
     ):
         self._backend = backend
         self._orchestration = orchestration
@@ -666,7 +666,7 @@ class Diffusion:
         self.compile_time_connectivities = self._grid.connectivities
 
         #---> IBM
-        self.ibm = ibm
+        self.ibm = ibm_masks
         #<--- IBM
 
     def _allocate_temporary_fields(self):

@@ -129,6 +129,34 @@ def set_bcs_green_gauss_gradient(
     )
     return grad_x, grad_y
 
+@gtx.field_operator
+def set_bcs_w_matrix(
+    mask: fa.CellKField[bool],
+    theta_v_at_cells_on_half_levels: fa.CellKField[float],
+    w_explicit_term: fa.CellKField[float],
+):
+    # Set $theta_v_{k+1/2} = 0$ as a 'hack' for setting $\gamma_{k+1/2} = 0$
+    # in the tridiagonal solver. This results in:
+    #  $a_{k+1/2} = 0$
+    #  $b_{k+1/2} = 1$
+    #  $c_{k+1/2} = 0$
+    #  $d_{k+1/2} = z_w_expl_{k+1/2}$
+    # and works since theta_v_ic is not used anymore after this point, nor are
+    # a, b, and c. Only alfa and beta are used in the equation for exner, but
+    # those are not affected by this hack.
+    theta_v_at_cells_on_half_levels = _set_bcs_cells(
+        mask=mask,
+        dir_value=0.0,
+        field=theta_v_at_cells_on_half_levels,
+    )
+    # Then set the Dirichlet value for $w$ by modifying the right hand side.
+    w_explicit_term = _set_bcs_cells(
+        mask=mask,
+        dir_value=DIRICHLET_VALUE_W,
+        field=w_explicit_term,
+    )
+    return theta_v_at_cells_on_half_levels, w_explicit_term
+
 
 # ==============================================================================
 # Programs
@@ -532,38 +560,6 @@ class ImmersedBoundaryMethodMasks:
 
     # --------------------------------------------------------------------------
     # non-hydro and advection part
-
-    def set_bcs_w_matrix(
-        self,
-        theta_v_ic: fa.CellKField[float],
-        z_w_expl: fa.CellKField[float],
-    ):
-        if not self.DO_IBM:
-            return
-        # Set $theta_v_{k+1/2} = 0$ as a 'hack' for setting $\gamma_{k+1/2} = 0$
-        # in the tridiagonal solver. This results in:
-        #  $a_{k+1/2} = 0$
-        #  $b_{k+1/2} = 1$
-        #  $c_{k+1/2} = 0$
-        #  $d_{k+1/2} = z_w_expl_{k+1/2}$
-        # and should work as theta_v_ic is not used anymore after this point,
-        # nor are a, b, and c. Only alfa and beta are used in the equation for
-        # exner, but those are not affected by this hack.
-        _set_bcs_cells(
-            mask=self.half_cell_mask,
-            dir_value=0.0,
-            field=theta_v_ic,
-            out=theta_v_ic,
-            offset_provider={},
-        )
-        # Then set the Dirichlet value for $w$.
-        _set_bcs_cells(
-            mask=self.half_cell_mask,
-            dir_value=self._dirichlet_value_w,
-            field=z_w_expl,
-            out=z_w_expl,
-            offset_provider={},
-        )
 
     def set_bcs_gradh_w(
         self,
