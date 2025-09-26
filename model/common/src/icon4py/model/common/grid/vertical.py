@@ -224,7 +224,7 @@ class VerticalGrid:
 
     @property
     def interface_physical_height(self) -> fa.KField[ta.wpfloat]:
-        return self._vct_a
+        return gtx.astype(self._vct_a, ta.wpfloat)
 
     @functools.cached_property
     def kstart_moist(self) -> gtx.int32:

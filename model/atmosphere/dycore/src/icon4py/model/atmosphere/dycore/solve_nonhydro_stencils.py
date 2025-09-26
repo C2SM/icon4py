@@ -26,13 +26,12 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
-
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_test_fields(
-    z_rho_e: fa.EdgeKField[float],
-    z_theta_v_e: fa.EdgeKField[float],
-    z_dwdz_dd: fa.CellKField[float],
-    z_graddiv_vn: fa.EdgeKField[float],
+    z_rho_e: fa.EdgeKField[wpfloat],
+    z_theta_v_e: fa.EdgeKField[wpfloat],
+    z_dwdz_dd: fa.CellKField[wpfloat],
+    z_graddiv_vn: fa.EdgeKField[wpfloat],
     edges_start: gtx.int32,
     edges_end: gtx.int32,
     cells_start: gtx.int32,

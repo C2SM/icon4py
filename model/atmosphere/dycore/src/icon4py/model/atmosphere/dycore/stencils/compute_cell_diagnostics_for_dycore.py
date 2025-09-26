@@ -35,20 +35,20 @@ from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_th
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_kdim_field_with_zero_wp,
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
+    _init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
     _init_two_cell_kdim_fields_with_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
 )
 from icon4py.model.common.math.derivative import _compute_first_vertical_derivative_at_cells
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
@@ -56,23 +56,23 @@ horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
 
 @gtx.field_operator
 def _compute_perturbed_quantities_and_interpolation(
-    current_rho: fa.CellKField[ta.wpfloat],
-    reference_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    current_theta_v: fa.CellKField[ta.wpfloat],
-    reference_theta_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    wgtfac_c: fa.CellKField[ta.vpfloat],
-    exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
-    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
-    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    current_rho: fa.CellKField[wpfloat],
+    reference_rho_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    perturbed_rho_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
+    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
     limited_area: bool,
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
@@ -83,15 +83,15 @@ def _compute_perturbed_quantities_and_interpolation(
     end_cell_halo: gtx.int32,
     end_cell_halo_level_2: gtx.int32,
 ) -> tuple[
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[vpfloat],
 ]:
     (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = (
         concat_where(
@@ -157,7 +157,7 @@ def _compute_perturbed_quantities_and_interpolation(
 
     perturbed_theta_v_at_cells_on_half_levels = concat_where(
         dims.KDim == 0,
-        broadcast(0.0, (dims.CellDim, dims.KDim)),
+        broadcast(vpfloat(0.0), (dims.CellDim, dims.KDim)),
         perturbed_theta_v_at_cells_on_half_levels,
     )
 
@@ -190,19 +190,19 @@ def _compute_perturbed_quantities_and_interpolation(
 
 @gtx.field_operator
 def _surface_computations(
-    wgtfacq_c: fa.CellKField[ta.wpfloat],
-    exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
+    exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
     igradp_method: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
     end_cell_halo: gtx.int32,
 ) -> tuple[
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
     temporal_extrapolation_of_perturbed_exner = concat_where(
         (start_cell_lateral_boundary_level_3 <= dims.CellDim) & (dims.CellDim < end_cell_halo),
-        _init_cell_kdim_field_with_zero_wp(),
+        _init_cell_kdim_field_with_zero_vp(),
         temporal_extrapolation_of_perturbed_exner,
     )
 
@@ -304,33 +304,33 @@ def _set_theta_v_and_exner_on_surface_level(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_perturbed_quantities_and_interpolation(
-    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
-    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
-    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
-    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
-    exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    current_rho: fa.CellKField[ta.wpfloat],
-    reference_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    current_theta_v: fa.CellKField[ta.wpfloat],
-    reference_theta_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    reference_theta_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    wgtfacq_c: fa.CellKField[ta.vpfloat],
-    wgtfac_c: fa.CellKField[ta.vpfloat],
-    exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
-    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    time_extrapolation_parameter_for_exner: fa.CellKField[ta.vpfloat],
-    current_exner: fa.CellKField[ta.wpfloat],
-    reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    inv_ddqz_z_full: fa.CellKField[ta.wpfloat],
-    d2dexdz2_fac1_mc: fa.CellKField[ta.vpfloat],
-    d2dexdz2_fac2_mc: fa.CellKField[ta.vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
+    exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    perturbed_rho_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    current_rho: fa.CellKField[wpfloat],
+    reference_rho_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    reference_theta_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
+    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    time_extrapolation_parameter_for_exner: fa.CellKField[vpfloat],
+    current_exner: fa.CellKField[wpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
+    d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
     limited_area: bool,
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
@@ -522,26 +522,26 @@ def compute_perturbed_quantities_and_interpolation(
 
 @gtx.field_operator
 def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
-    w: fa.CellKField[ta.wpfloat],
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    current_rho: fa.CellKField[ta.wpfloat],
-    next_rho: fa.CellKField[ta.wpfloat],
-    current_theta_v: fa.CellKField[ta.wpfloat],
-    next_theta_v: fa.CellKField[ta.wpfloat],
-    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
-    reference_theta_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
-    wgtfac_c: fa.CellKField[ta.vpfloat],
-    exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
-    dtime: ta.wpfloat,
-    rhotheta_explicit_weight_parameter: ta.wpfloat,
-    rhotheta_implicit_weight_parameter: ta.wpfloat,
+    w: fa.CellKField[wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    current_rho: fa.CellKField[wpfloat],
+    next_rho: fa.CellKField[wpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
+    next_theta_v: fa.CellKField[wpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
+    dtime: wpfloat,
+    rhotheta_explicit_weight_parameter: wpfloat,
+    rhotheta_implicit_weight_parameter: wpfloat,
 ) -> tuple[
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.vpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[vpfloat],
 ]:
     (
         contravariant_correction_at_cells_on_half_levels_wp,
@@ -632,25 +632,25 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_accele
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
-    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    w: fa.CellKField[ta.wpfloat],
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    current_rho: fa.CellKField[ta.wpfloat],
-    next_rho: fa.CellKField[ta.wpfloat],
-    current_theta_v: fa.CellKField[ta.wpfloat],
-    next_theta_v: fa.CellKField[ta.wpfloat],
-    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
-    reference_theta_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
-    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    ddqz_z_half: fa.CellKField[ta.vpfloat],
-    wgtfac_c: fa.CellKField[ta.vpfloat],
-    exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat],
-    dtime: ta.wpfloat,
-    rhotheta_explicit_weight_parameter: ta.wpfloat,
-    rhotheta_implicit_weight_parameter: ta.wpfloat,
+    rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    current_rho: fa.CellKField[wpfloat],
+    next_rho: fa.CellKField[wpfloat],
+    current_theta_v: fa.CellKField[wpfloat],
+    next_theta_v: fa.CellKField[wpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[wpfloat],
+    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
+    dtime: wpfloat,
+    rhotheta_explicit_weight_parameter: wpfloat,
+    rhotheta_implicit_weight_parameter: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
