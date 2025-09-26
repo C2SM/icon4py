@@ -438,7 +438,7 @@ def initialize(
 
     savepoint_path = os.environ.get("ICON4PY_SAVEPOINT_PATH", "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data")
     grid_file_path = os.environ.get("ICON4PY_GRID_FILE_PATH", "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc")
-    ibm_inst = ibm.ImmersedBoundaryMethod(
+    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         grid=grid,
         savepoint_path=savepoint_path,
         grid_file_path=grid_file_path,
@@ -465,7 +465,7 @@ def initialize(
         cell_params=cell_geometry,
         backend=backend,
         exchange=exchange,
-        ibm=ibm_inst,
+        ibm_masks=ibm_masks,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
@@ -481,7 +481,7 @@ def initialize(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
-        ibm=ibm_inst,
+        ibm_masks=ibm_masks,
         channel=channel_inst,
     )
 

@@ -819,21 +819,6 @@ class SolveNonhydro:
         self.p_test_run = True
 
         self._ibm_masks = ibm_masks
-        self._ibm_set_bcs_dvndz = setup_program(
-            backend=self._backend,
-            program=ibm.set_bcs_dvndz,
-            constant_args={
-                "mask": self._ibm_masks.half_edge_mask,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._start_edge_lateral_boundary,
-                "horizontal_end": self._end_edge_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": self._grid.num_levels,
-            },
-        )
         self._ibm_set_dirichlet_value_edges = setup_program(
             backend=self._backend,
             program=ibm.set_dirichlet_value_edges,
@@ -856,6 +841,21 @@ class SolveNonhydro:
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": self._grid.num_levels+1,
+            },
+        )
+        self._ibm_set_bcs_dvndz = setup_program(
+            backend=self._backend,
+            program=ibm.set_bcs_dvndz,
+            constant_args={
+                "mask": self._ibm_masks.half_edge_mask,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_lateral_boundary,
+                "horizontal_end": self._end_edge_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self._grid.num_levels,
             },
         )
 

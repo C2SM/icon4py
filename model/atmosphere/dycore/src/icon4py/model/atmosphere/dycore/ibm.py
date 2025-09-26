@@ -10,15 +10,13 @@ import logging
 from typing import Final
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import xarray as xr
-from gt4py.next import backend as gtx_backend
 from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
-from icon4py.model.common.grid import (
-    icon as icon_grid,
-)
+from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb
 
@@ -30,6 +28,8 @@ Immersed boundary method module
 
 log = logging.getLogger(__name__)
 
+DO_IBM: Final[bool] = True
+
 DIRICHLET_VALUE_VN: Final[float] = 0.0
 DIRICHLET_VALUE_W: Final[float] = 0.0
 DIRICHLET_VALUE_RHO: Final[float] = -999.0
@@ -40,6 +40,7 @@ DIRICHLET_VALUE_DIFFU_UV_VERT: Final[float] = 0.0
 
 # ==============================================================================
 # Field operators
+
 
 @gtx.field_operator
 def _set_bcs_cells(
@@ -112,6 +113,7 @@ def _set_bcs_dvndz(
 # ------------------------------------------------------------------------------
 # Solve non_hydro
 
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def set_dirichlet_value_edges(
     mask: fa.EdgeKField[bool],
@@ -132,6 +134,7 @@ def set_dirichlet_value_edges(
             dims.KDim: (vertical_start, vertical_end),
         },
     )
+
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def set_dirichlet_value_cells(
@@ -252,9 +255,9 @@ def diffu_set_bcs_uv_vertices(
     )
 
 
-class ImmersedBoundaryMethod:
+class ImmersedBoundaryMethodMasks:
     """
-    Main class for the immersed boundary method.
+    Container for the immersed boundary method masks.
     """
 
     def __init__(
@@ -262,13 +265,11 @@ class ImmersedBoundaryMethod:
         grid: icon_grid.IconGrid,
         savepoint_path: str,
         grid_file_path: str,
-        backend: gtx_backend.Backend = gtx.gtfn_cpu,
+        backend: gtx_typing.Backend,
     ):
         """
-        Initialize the immersed boundary method.
+        Initialize the immersed boundary method masks.
         """
-        self.DO_IBM = DO_IBM
-        self.DEBUG_LEVEL = DEBUG_LEVEL
 
         self._make_masks(
             grid=grid,
@@ -277,7 +278,6 @@ class ImmersedBoundaryMethod:
             backend=backend,
         )
 
-
         log.info("IBM initialized")
 
     def _make_masks(
@@ -285,7 +285,7 @@ class ImmersedBoundaryMethod:
         grid: icon_grid.IconGrid,
         savepoint_path: str,
         grid_file_path: str,
-        backend: gtx_backend.Backend,
+        backend: gtx_typing.Backend,
     ) -> None:
         """
         Create masks for the immersed boundary method.
@@ -299,8 +299,8 @@ class ImmersedBoundaryMethod:
         full_vertex_mask_np = xp.zeros((grid.num_vertices, grid.num_levels), dtype=bool)
         neigh_full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
 
-        if self.DO_IBM:
-            # fill masks, otherwise False everywhere
+        if DO_IBM:
+            # Fill masks, otherwise False everywhere
             # half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
             # half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
             half_cell_mask_np = self._mask_blocks(
@@ -380,7 +380,7 @@ class ImmersedBoundaryMethod:
         self,
         grid_file_path: str,
         savepoint_path: str,
-        backend: gtx_backend.Backend,
+        backend: gtx_typing.Backend,
         half_cell_mask_np: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
         """
@@ -420,7 +420,7 @@ class ImmersedBoundaryMethod:
         self,
         grid_file_path: str,
         savepoint_path: str,
-        backend: gtx_backend.Backend,
+        backend: gtx_typing.Backend,
         half_cell_mask_np: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
         """
@@ -472,15 +472,15 @@ class ImmersedBoundaryMethod:
         # Channel
         match savepoint_path.split("/")[-2]:
             case "exclaim_channel_950x350x100_5m_nlev20":
-                blocks = [ [150, 200, 150, 199, 50] ]
+                blocks = [[150, 200, 150, 199, 50]]
             case "exclaim_channel_950x350x100_2.5m_nlev40":
-                blocks = [ [150, 200, 149, 200, 50] ]
+                blocks = [[150, 200, 149, 200, 50]]
             case "exclaim_channel_950x350x100_1.5m_nlev64":
-                blocks = [ [150, 200, 150, 199, 50] ]
+                blocks = [[150, 200, 150, 199, 50]]
             case "exclaim_channel_950x350x100_1.25m_nlev80":
-                blocks = [ [150, 200, 150, 199, 50] ]
+                blocks = [[150, 200, 150, 199, 50]]
             case "exclaim_channel_950x350x100_1m_nlev100":
-                blocks = [ [150, 200, 150, 199, 50] ]
+                blocks = [[150, 200, 150, 199, 50]]
 
         grid_file = xr.open_dataset(grid_file_path)
         data_provider = sb.IconSerialDataProvider(
