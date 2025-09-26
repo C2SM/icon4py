@@ -106,6 +106,25 @@ def _set_bcs_dvndz(
     # vn_on_half_levels = where(mask, 0.0, vn_on_half_levels)
     return vn_on_half_levels
 
+@gtx.field_operator
+def set_bcs_green_gauss_gradient(
+    mask: fa.CellKField[bool],
+    grad_x: fa.CellKField[float],
+    grad_y: fa.CellKField[float],
+):
+    # Zero the gradients in masked cells (and their neighbours).
+    grad_x = _set_bcs_cells(
+        mask=mask,
+        dir_value=0.0,
+        field=grad_x,
+    )
+    grad_y = _set_bcs_cells(
+        mask=mask,
+        dir_value=0.0,
+        field=grad_y,
+    )
+    return grad_x, grad_y
+
 
 # ==============================================================================
 # Programs
@@ -554,29 +573,6 @@ class ImmersedBoundaryMethodMasks:
             dir_value=0,
             field=flux,
             out=flux,
-            offset_provider={},
-        )
-
-    def set_bcs_green_gauss_gradient(
-        self,
-        grad_x: fa.CellKField[float],
-        grad_y: fa.CellKField[float],
-    ):
-        if not self.DO_IBM:
-            return
-        # Zero the gradients in masked cells and their neighbors.
-        _set_bcs_cells(
-            mask=self.neigh_full_cell_mask,
-            dir_value=0.0,
-            field=grad_x,
-            out=grad_x,
-            offset_provider={},
-        )
-        _set_bcs_cells(
-            mask=self.neigh_full_cell_mask,
-            dir_value=0.0,
-            field=grad_y,
-            out=grad_y,
             offset_provider={},
         )
 
