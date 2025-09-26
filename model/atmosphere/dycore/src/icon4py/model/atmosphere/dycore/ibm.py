@@ -129,6 +129,7 @@ def set_bcs_green_gauss_gradient(
     )
     return grad_x, grad_y
 
+
 @gtx.field_operator
 def set_bcs_w_matrix(
     mask: fa.CellKField[bool],
@@ -162,7 +163,7 @@ def set_bcs_w_matrix(
 # Programs
 
 # ------------------------------------------------------------------------------
-# Solve non_hydro
+# Solve non_hydro and advection
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -232,6 +233,27 @@ def set_bcs_dvndz(
         vn=vn,
         vn_on_half_levels=vn_on_half_levels,
         out=vn_on_half_levels,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def set_bcs_vn_gradh_w(
+    mask: fa.EdgeKField[bool],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[float],
+):
+    # Set the horizontal advection of w to zero at the vertical surfaces.
+    # Technically, it would be enough to set vh to zero, but vh is computed
+    # from vn and vt, and vt is computed via RBF interpolation, so setting
+    # the BCs on the end term is a safer approach.
+    _set_bcs_edges(
+        mask=mask,
+        dir_value=0.0,
+        field=horizontal_advection_of_w_at_edges_on_half_levels,
+        out=horizontal_advection_of_w_at_edges_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -560,21 +582,6 @@ class ImmersedBoundaryMethodMasks:
 
     # --------------------------------------------------------------------------
     # non-hydro and advection part
-
-    def set_bcs_gradh_w(
-        self,
-        horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[float],
-    ):
-        if not self.DO_IBM:
-            return
-        # Set the horizontal advection of w to zero at the vertical surfaces
-        _set_bcs_edges(
-            mask=self.half_edge_mask,
-            dir_value=0,
-            field=horizontal_advection_of_w_at_edges_on_half_levels,
-            out=horizontal_advection_of_w_at_edges_on_half_levels,
-            offset_provider={},
-        )
 
     # --------------------------------------------------------------------------
     # diffusion part

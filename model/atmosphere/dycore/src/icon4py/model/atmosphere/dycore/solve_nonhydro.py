@@ -17,7 +17,7 @@ import gt4py.next.typing as gtx_typing
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils
+from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils, ibm
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
@@ -64,7 +64,6 @@ from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.atmosphere.dycore import ibm
 
 
 log = logging.getLogger(__name__)
@@ -382,6 +381,7 @@ class SolveNonhydro:
         self._determine_local_domains()
 
         self._ibm_masks = ibm_masks
+        self._channel = channel
 
         self._compute_theta_and_exner = setup_program(
             backend=self._backend,
@@ -861,8 +861,6 @@ class SolveNonhydro:
                 "vertical_end": self._grid.num_levels,
             },
         )
-
-        self._channel = channel
 
     def _allocate_local_fields(self):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
