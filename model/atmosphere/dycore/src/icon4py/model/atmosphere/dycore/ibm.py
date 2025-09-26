@@ -30,10 +30,13 @@ Immersed boundary method module
 
 log = logging.getLogger(__name__)
 
-DO_IBM: Final[bool] = True
-DEBUG_LEVEL: Final[int] = 2
+DIRICHLET_VALUE_VN: Final[float] = 0.0
+DIRICHLET_VALUE_W: Final[float] = 0.0
+DIRICHLET_VALUE_RHO: Final[float] = -999.0
+DIRICHLET_VALUE_EXNER: Final[float] = -999.0
+DIRICHLET_VALUE_THETA_V: Final[float] = -999.0
 
-DIR_VALUE_DIFFU_UV_VERT: Final[float] = 0.0
+DIRICHLET_VALUE_DIFFU_UV_VERT: Final[float] = 0.0
 
 # ==============================================================================
 # Field operators
@@ -110,6 +113,49 @@ def _set_bcs_dvndz(
 # Solve non_hydro
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def set_dirichlet_value_edges(
+    mask: fa.EdgeKField[bool],
+    dir_value: float,
+    field: fa.EdgeKField[float],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _set_bcs_edges(
+        mask=mask,
+        dir_value=dir_value,
+        field=field,
+        out=field,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def set_dirichlet_value_cells(
+    mask: fa.CellKField[bool],
+    dir_value: float,
+    field: fa.CellKField[float],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _set_bcs_cells(
+        mask=mask,
+        dir_value=dir_value,
+        field=field,
+        out=field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def set_bcs_dvndz(
     mask: fa.EdgeKField[bool],
     vn: fa.EdgeKField[float],
@@ -134,7 +180,7 @@ def set_bcs_dvndz(
         out=vn_on_half_levels,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -186,7 +232,7 @@ def diffu_set_bcs_uv_vertices(
     # in diffusion, to be used for computing nabla2(hori_wind).
     _set_bcs_vertices(
         mask=mask,
-        dir_value=DIR_VALUE_DIFFU_UV_VERT,
+        dir_value=DIRICHLET_VALUE_DIFFU_UV_VERT,
         field=u_vert,
         out=u_vert,
         domain={
@@ -196,7 +242,7 @@ def diffu_set_bcs_uv_vertices(
     )
     _set_bcs_vertices(
         mask=mask,
-        dir_value=DIR_VALUE_DIFFU_UV_VERT,
+        dir_value=DIRICHLET_VALUE_DIFFU_UV_VERT,
         field=v_vert,
         out=v_vert,
         domain={
@@ -231,11 +277,6 @@ class ImmersedBoundaryMethod:
             backend=backend,
         )
 
-        self._dirichlet_value_vn = 0.0
-        self._dirichlet_value_w = 0.0
-        self._dirichlet_value_rho = -999.0
-        self._dirichlet_value_exner = -999.0
-        self._dirichlet_value_theta_v = -999.0
 
         log.info("IBM initialized")
 
@@ -465,79 +506,6 @@ class ImmersedBoundaryMethod:
                     half_cell_mask_np[:, k],
                 )
         return half_cell_mask_np
-
-    # --------------------------------------------------------------------------
-    # dirichlet values part
-
-    def set_dirichlet_value_vn(
-        self,
-        vn: fa.EdgeKField[float],
-    ):
-        if not self.DO_IBM:
-            return
-        _set_bcs_edges(
-            mask=self.full_edge_mask,
-            dir_value=self._dirichlet_value_vn,
-            field=vn,
-            out=vn,
-            offset_provider={},
-        )
-
-    def set_dirichlet_value_w(
-        self,
-        w: fa.CellKField[float],
-    ):
-        if not self.DO_IBM:
-            return
-        _set_bcs_cells(
-            mask=self.half_cell_mask,
-            dir_value=self._dirichlet_value_w,
-            field=w,
-            out=w,
-            offset_provider={},
-        )
-
-    def set_dirichlet_value_rho(
-        self,
-        rho: fa.CellKField[float],
-    ):
-        if not self.DO_IBM:
-            return
-        _set_bcs_cells(
-            mask=self.full_cell_mask,
-            dir_value=self._dirichlet_value_rho,
-            field=rho,
-            out=rho,
-            offset_provider={},
-        )
-
-    def set_dirichlet_value_exner(
-        self,
-        exner: fa.CellKField[float],
-    ):
-        if not self.DO_IBM:
-            return
-        _set_bcs_cells(
-            mask=self.full_cell_mask,
-            dir_value=self._dirichlet_value_exner,
-            field=exner,
-            out=exner,
-            offset_provider={},
-        )
-
-    def set_dirichlet_value_theta_v(
-        self,
-        theta_v: fa.CellKField[float],
-    ):
-        if not self.DO_IBM:
-            return
-        _set_bcs_cells(
-            mask=self.full_cell_mask,
-            dir_value=self._dirichlet_value_theta_v,
-            field=theta_v,
-            out=theta_v,
-            offset_provider={},
-        )
 
     # --------------------------------------------------------------------------
     # non-hydro and advection part
