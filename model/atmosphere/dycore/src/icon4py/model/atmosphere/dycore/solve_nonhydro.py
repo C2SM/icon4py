@@ -840,7 +840,7 @@ class SolveNonhydro:
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
-                "vertical_end": self._grid.num_levels+1,
+                "vertical_end": self._grid.num_levels + 1,
             },
         )
         self._ibm_set_bcs_dvndz = setup_program(
@@ -858,7 +858,6 @@ class SolveNonhydro:
                 "vertical_end": self._grid.num_levels,
             },
         )
-
 
         self._channel = channel
 
@@ -1096,12 +1095,33 @@ class SolveNonhydro:
                 prognostic_states.current.exner,
                 prognostic_states.current.theta_v,
             ) = self._channel.set_initial_conditions()
+
             log.info(" ***IBM fixing initial conditions")
-            self._ibm_set_dirichlet_value_edges(mask=self._ibm_masks.full_edge_mask, dir_value=ibm.DIRICHLET_VALUE_VN, field=prognostic_states.current.vn)
-            self._ibm_set_dirichlet_value_cells(mask=self._ibm_masks.half_cell_mask, dir_value=ibm.DIRICHLET_VALUE_W, field=prognostic_states.current.w)
-            self._ibm_set_dirichlet_value_cells(mask=self._ibm_masks.full_cell_mask, dir_value=ibm.DIRICHLET_VALUE_W, field=prognostic_states.current.rho)
-            self._ibm_set_dirichlet_value_cells(mask=self._ibm_masks.full_cell_mask, dir_value=ibm.DIRICHLET_VALUE_W, field=prognostic_states.current.exner)
-            self._ibm_set_dirichlet_value_cells(mask=self._ibm_masks.full_cell_mask, dir_value=ibm.DIRICHLET_VALUE_W, field=prognostic_states.current.theta_v)
+            self._ibm_set_dirichlet_value_edges(
+                mask=self._ibm_masks.full_edge_mask,
+                dir_value=ibm.DIRICHLET_VALUE_VN,
+                field=prognostic_states.current.vn,
+            )
+            self._ibm_set_dirichlet_value_cells(
+                mask=self._ibm_masks.half_cell_mask,
+                dir_value=ibm.DIRICHLET_VALUE_W,
+                field=prognostic_states.current.w,
+            )
+            self._ibm_set_dirichlet_value_cells(
+                mask=self._ibm_masks.full_cell_mask,
+                dir_value=ibm.DIRICHLET_VALUE_RHO,
+                field=prognostic_states.current.rho,
+            )
+            self._ibm_set_dirichlet_value_cells(
+                mask=self._ibm_masks.full_cell_mask,
+                dir_value=ibm.DIRICHLET_VALUE_EXNER,
+                field=prognostic_states.current.exner,
+            )
+            self._ibm_set_dirichlet_value_cells(
+                mask=self._ibm_masks.full_cell_mask,
+                dir_value=ibm.DIRICHLET_VALUE_THETA_V,
+                field=prognostic_states.current.theta_v,
+            )
             plots.pickle_data(prognostic_states.current, "initial_condition_ibm")
 
         self.run_predictor_step(
@@ -1266,6 +1286,12 @@ class SolveNonhydro:
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
             grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
             dtime=dtime,
+        )
+
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_VN,
+            field=prognostic_states.current.vn,
         )
 
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
