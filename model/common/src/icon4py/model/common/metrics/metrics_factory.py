@@ -608,7 +608,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "c_lin_e": interpolation_attributes.C_LIN_E,
             },
             domain={
-                dims.CellDim: (
+                dims.EdgeDim: (
                     edge_domain(h_grid.Zone.LOCAL),
                     edge_domain(h_grid.Zone.LOCAL),
                 ),
