@@ -381,6 +381,8 @@ class SolveNonhydro:
         self._cell_params = cell_geometry
         self._determine_local_domains()
 
+        self._ibm_masks = ibm_masks
+
         self._compute_theta_and_exner = setup_program(
             backend=self._backend,
             program=compute_theta_and_exner,
@@ -590,6 +592,7 @@ class SolveNonhydro:
                 "is_iau_active": self._config.is_iau_active,
                 "rayleigh_type": self._config.rayleigh_type,
                 "divdamp_type": self._config.divdamp_type,
+                "ibm_w_matrix_mask": self._ibm_masks.half_cell_mask,
             },
             variants={
                 "at_first_substep": [False, True],
@@ -624,6 +627,7 @@ class SolveNonhydro:
                 "iau_wgt_dyn": self._config.iau_wgt_dyn,
                 "is_iau_active": self._config.is_iau_active,
                 "rayleigh_type": self._config.rayleigh_type,
+                "ibm_w_matrix_mask": self._ibm_masks.half_cell_mask,
             },
             variants={
                 "at_first_substep": [False, True],
@@ -808,7 +812,7 @@ class SolveNonhydro:
             edge_geometry,
             owner_mask,
             backend=self._backend,
-            ibm_masks=ibm_masks,
+            ibm_masks=self._ibm_masks,
         )
         self._allocate_local_fields()
 
@@ -818,7 +822,6 @@ class SolveNonhydro:
 
         self.p_test_run = True
 
-        self._ibm_masks = ibm_masks
         self._ibm_set_dirichlet_value_edges = setup_program(
             backend=self._backend,
             program=ibm.set_dirichlet_value_edges,
@@ -1291,7 +1294,7 @@ class SolveNonhydro:
         self._ibm_set_dirichlet_value_edges(
             mask=self._ibm_masks.full_edge_mask,
             dir_value=ibm.DIRICHLET_VALUE_VN,
-            field=prognostic_states.current.vn,
+            field=prognostic_states.next.vn,
         )
 
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
@@ -1316,6 +1319,8 @@ class SolveNonhydro:
 
         # Set boundary conditions on d(vn)/dz by modifying the values of vn on
         # half levels.
+        # NOTE: 1. vn_on_half_levels is actually not used after being computed here?
+        # NOTE: 2. vn_on_half_levels is already computed in velocity_advection (where it is actually used)
         self._ibm_set_bcs_dvndz(
             vn=prognostic_states.next.vn, vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels
         )
@@ -1358,7 +1363,6 @@ class SolveNonhydro:
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
             rayleigh_damping_factor=self.rayleigh_damping_factor,
-            ibm_w_matrix_mask=self._ibm_masks.half_cell_mask,
             dtime=dtime,
             at_first_substep=at_first_substep,
         )
@@ -1498,6 +1502,12 @@ class SolveNonhydro:
             apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
         )
 
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_VN,
+            field=prognostic_states.next.vn,
+        )
+
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
 
@@ -1513,6 +1523,21 @@ class SolveNonhydro:
             prepare_advection=lprep_adv,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
+        )
+
+        # Set to zero the fluxes through edges of vertical surfaces of the IBM
+        # region.
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_FLUXES,
+            field=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+        )
+        # Set to zero the fluxes through edges of vertical surfaces of the IBM
+        # region.
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_FLUXES,
+            field=self.theta_v_flux_at_edges_on_model_levels,
         )
 
         self._vertically_implicit_solver_at_corrector_step(
