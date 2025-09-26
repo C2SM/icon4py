@@ -100,11 +100,18 @@ def _set_bcs_dvndz(
     vn: fa.EdgeKField[float],
     vn_on_half_levels: fa.EdgeKField[float],
 ) -> fa.EdgeKField[float]:
+    # Set boundary conditions on d(vn)/dz by modifying the values of vn on half
+    # levels.
+    #
     # Neumann
     vn_on_half_levels = where(mask, vn(Koff[-1]), vn_on_half_levels)
+    #
     # Dirichlet
     # vn_on_half_levels = where(mask, 0.0, vn_on_half_levels)
+    #
+    # Log-law?
     return vn_on_half_levels
+
 
 @gtx.field_operator
 def set_bcs_green_gauss_gradient(
@@ -112,7 +119,8 @@ def set_bcs_green_gauss_gradient(
     grad_x: fa.CellKField[float],
     grad_y: fa.CellKField[float],
 ):
-    # Zero the gradients in masked cells (and their neighbours).
+    # Zero the gradients in masked cells (and their neighbours), used for the
+    # MIURA scheme.
     grad_x = _set_bcs_cells(
         mask=mask,
         dir_value=0.0,

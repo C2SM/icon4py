@@ -1314,6 +1314,10 @@ class SolveNonhydro:
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
         )
 
+        self._ibm_set_bcs_dvndz(
+            vn=prognostic_states.next.vn, vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels
+        )
+
         self._vertically_implicit_solver_at_predictor_step(
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             next_w=prognostic_states.next.w,
