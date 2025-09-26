@@ -41,7 +41,6 @@ from icon4py.model.testing.grid_utils import construct_decomposition_info
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
-
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
 @pytest.mark.parametrize("grid", [definitions.Grids.MCH_CH_R04B09_DSL])
@@ -49,13 +48,12 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.benchmark_only
 def test_solve_nonhydro_benchmark(
     grid: definitions.GridDescription,
-    substep_init,  # TODO
-    at_initial_timestep,  # TODO
     backend: gtx_typing.Backend | None,
 ) -> None:
     dtime = 10.0
     lprep_adv = True
     ndyn_substeps = 5
+    at_initial_timestep = True
 
     config = solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
@@ -313,7 +311,7 @@ def test_solve_nonhydro_benchmark(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=DecompositionInfo.owner_mask(dim=dims.EdgeDim), # TODO(Yilu) to fix
+        owner_mask=data_alloc.zero_field(mesh, dims.EdgeDim, backend=backend),
         backend=backend,
     )
 
@@ -339,15 +337,20 @@ def test_solve_nonhydro_benchmark(
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
     second_order_divdamp_factor = 0.0
-    solve_nonhydro.time_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        prep_adv=prep_adv,
-        second_order_divdamp_factor=second_order_divdamp_factor,
-        dtime=dtime,
-        ndyn_substeps_var=ndyn_substeps,
-        at_initial_timestep=at_initial_timestep,
-        lprep_adv=lprep_adv,
-        at_first_substep=substep_init == 1,
-        at_last_substep=substep_init == ndyn_substeps,
-    )
+
+    for i_substep in range(ndyn_substeps):
+        at_first_substep = i_substep == 0
+        at_last_substep = i_substep == ndyn_substeps - 1
+
+        solve_nonhydro.time_step(
+            diagnostic_state_nh=diagnostic_state_nh,
+            prognostic_states=prognostic_states,
+            prep_adv=prep_adv,
+            second_order_divdamp_factor=second_order_divdamp_factor, # TODO (Yilu)
+            dtime=dtime,
+            ndyn_substeps_var=ndyn_substeps,
+            at_initial_timestep=at_initial_timestep, # TODO (Yilu)
+            lprep_adv=lprep_adv,
+            at_first_substep=at_first_substep,
+            at_last_substep=at_last_substep,
+        )

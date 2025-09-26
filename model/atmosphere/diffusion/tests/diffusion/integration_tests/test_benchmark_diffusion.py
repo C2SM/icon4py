@@ -41,7 +41,7 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
-    "grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
+    "grid", [definitions.Grids.MCH_CH_R04B09_DSL]
 )
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only

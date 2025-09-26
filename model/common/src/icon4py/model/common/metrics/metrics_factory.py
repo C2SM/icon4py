@@ -604,7 +604,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_wgtfac_e = factory.ProgramFieldProvider(
             func=mf.compute_wgtfac_e.with_backend(self._backend),
             deps={
-                attrs.WGTFAC_C: attrs.WGTFAC_C,
+                "wgtfac_c": attrs.WGTFAC_C,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
             },
             domain={
@@ -617,7 +617,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_half_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={attrs.WGTFAC_E: attrs.WGTFAC_E},
+            fields={"wgtfac_e": attrs.WGTFAC_E},
         )
         self.register_provider(compute_wgtfac_e)
 
