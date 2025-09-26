@@ -1314,8 +1314,24 @@ class SolveNonhydro:
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
         )
 
+        # Set boundary conditions on d(vn)/dz by modifying the values of vn on
+        # half levels.
         self._ibm_set_bcs_dvndz(
             vn=prognostic_states.next.vn, vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels
+        )
+        # Set to zero the fluxes through edges of vertical surfaces of the IBM
+        # region.
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_FLUXES,
+            field=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+        )
+        # Set to zero the fluxes through edges of vertical surfaces of the IBM
+        # region.
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_FLUXES,
+            field=self.theta_v_flux_at_edges_on_model_levels,
         )
 
         self._vertically_implicit_solver_at_predictor_step(

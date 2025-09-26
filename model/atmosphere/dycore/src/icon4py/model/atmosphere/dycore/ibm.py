@@ -36,6 +36,7 @@ DIRICHLET_VALUE_RHO: Final[float] = -999.0
 DIRICHLET_VALUE_EXNER: Final[float] = -999.0
 DIRICHLET_VALUE_THETA_V: Final[float] = -999.0
 
+DIRICHLET_VALUE_FLUXES: Final[float] = 0.0
 DIRICHLET_VALUE_DIFFU_UV_VERT: Final[float] = 0.0
 
 # ==============================================================================
@@ -100,15 +101,10 @@ def _set_bcs_dvndz(
     vn: fa.EdgeKField[float],
     vn_on_half_levels: fa.EdgeKField[float],
 ) -> fa.EdgeKField[float]:
-    # Set boundary conditions on d(vn)/dz by modifying the values of vn on half
-    # levels.
-    #
     # Neumann
     vn_on_half_levels = where(mask, vn(Koff[-1]), vn_on_half_levels)
-    #
     # Dirichlet
     # vn_on_half_levels = where(mask, 0.0, vn_on_half_levels)
-    #
     # Log-law?
     return vn_on_half_levels
 
@@ -566,21 +562,6 @@ class ImmersedBoundaryMethodMasks:
             dir_value=self._dirichlet_value_w,
             field=z_w_expl,
             out=z_w_expl,
-            offset_provider={},
-        )
-
-    def set_bcs_flux(
-        self,
-        flux: fa.EdgeKField[float],
-    ):
-        if not self.DO_IBM:
-            return
-        # Set the flux to zero at the boundaries.
-        _set_bcs_edges(
-            mask=self.full_edge_mask,
-            dir_value=0,
-            field=flux,
-            out=flux,
             offset_provider={},
         )
 
