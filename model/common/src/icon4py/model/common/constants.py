@@ -11,8 +11,8 @@ from typing import Final
 
 from gt4py.eve import utils as eve_utils
 
-from icon4py.model.common.type_alias import wpfloat
-
+from icon4py.model.common.type_alias import wpfloat, vpfloat
+from numpy import finfo as float_info
 
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
 #: see https://glossary.ametsoc.org/wiki/Gas_constant.
@@ -74,7 +74,7 @@ LATENT_HEAT_FOR_FUSION: Final[wpfloat] = (
 WATER_TRIPLE_POINT_TEMPERATURE: Final[wpfloat] = wpfloat(273.16)
 
 #: RV/RD - 1, tvmpc1 in ICON.
-RV_O_RD_MINUS_1: Final[wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
+RV_O_RD_MINUS_1: Final[wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - wpfloat(1.0)
 TVMPC1: Final[wpfloat] = RV_O_RD_MINUS_1
 
 #: Av. gravitational acceleration [m/s^2]
@@ -112,11 +112,12 @@ HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE = wpfloat(10000.0)
 _H_SCAL_BG: Final[wpfloat] = HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
 
 # Math constants
-DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
+WP_EPS = float_info(wpfloat).eps  # EPSILON(1._wp)
+VP_EPS = float_info(vpfloat).eps
 
 # Implementation constants
 #: default dynamics to physics time step ratio
-DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[float] = 5.0
+DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO: Final[wpfloat] = wpfloat(5.0)
 
 
 class PhysicsConstants(eve_utils.FrozenNamespace[wpfloat]):
@@ -147,7 +148,7 @@ class PhysicsConstants(eve_utils.FrozenNamespace[wpfloat]):
     grav_o_cpd = GRAV_O_CPD
     grav_o_rd = GRAV_O_RD
     p0ref = REFERENCE_PRESSURE
-    eps = DBL_EPS
+    eps = WP_EPS
 
 
 class RayleighType(eve_utils.FrozenNamespace[int]):
