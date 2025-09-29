@@ -405,9 +405,9 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             for afs, als, la in itertools.product(*([(True, False)] * 3))
         ],
         ids=lambda p: (
-            f"at_first_substep={p['at_first_substep']},"
-            f"at_last_substep={p['at_last_substep']},"
-            f"lprep_adv={p['lprep_adv']}"
+            f"at_first_substep[{p['at_first_substep']}]__"
+            f"at_last_substep[{p['at_last_substep']}]__"
+            f"lprep_adv[{p['lprep_adv']}]"
         ),
     )
     def input_data(
