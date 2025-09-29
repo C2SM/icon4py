@@ -8,9 +8,9 @@
 import gt4py.next as gtx
 from gt4py.next import broadcast, maximum, minimum
 
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, Koff
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator

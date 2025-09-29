@@ -48,9 +48,9 @@ from icon4py.model.atmosphere.dycore.stencils.update_dynamical_exner_time_increm
 from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
     _update_mass_volume_flux,
 )
-
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
 
 dycore_consts: Final = constants.PhysicsConstants()
 rayleigh_damping_options: Final = constants.RayleighType()

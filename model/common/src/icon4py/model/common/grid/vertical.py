@@ -18,10 +18,10 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.common.type_alias import wpfloat
 import icon4py.model.common.states.metadata as data
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
 from icon4py.model.common.grid import topography as topo
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -58,9 +58,9 @@ class Domain:
     def _validate(self):
         assert self.dim.kind == gtx.DimensionKind.VERTICAL
         if self.marker == Zone.TOP:
-            assert (
-                self.offset >= 0
-            ), f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+            assert self.offset >= 0, (
+                f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+            )
 
 
 def domain(dim: gtx.Dimension):
@@ -180,7 +180,7 @@ class VerticalGrid:
         array_value = [
             f"   0   {vct_a_array[0]:12.3f}",
             *(
-                f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}"
+                f"{k + 1:4d}   {vct_a_array[k + 1]:12.3f} {dvct[k]:12.3f}"
                 for k in range(vct_a_array.shape[0] - 1)
             ),
         ]
@@ -214,9 +214,9 @@ class VerticalGrid:
                 raise exceptions.IconGridError(f"not a valid vertical zone: {domain.marker}")
 
         index += domain.offset
-        assert (
-            0 <= index <= self._bottom_level(domain)
-        ), f"vertical index {index} outside of grid levels for {domain.dim}"
+        assert 0 <= index <= self._bottom_level(domain), (
+            f"vertical index {index} outside of grid levels for {domain.dim}"
+        )
         return gtx.int32(index)
 
     def _bottom_level(self, domain: Domain) -> int:
@@ -511,10 +511,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
     else:
         vct_a = (
             vertical_config.model_top_height
-            * (
-                wpfloat(vertical_config.num_levels)
-                - np.arange(num_levels_plus_one, dtype=wpfloat)
-            )
+            * (wpfloat(vertical_config.num_levels) - np.arange(num_levels_plus_one, dtype=wpfloat))
             / wpfloat(vertical_config.num_levels)
         )
     vct_b = np.exp(-vct_a / 5000.0)

@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# ruff: noqa: ERA001, B008
 
 import dataclasses
 import logging
@@ -1080,7 +1079,6 @@ class SolveNonhydro:
             theta_v_new=prognostic_states.next.theta_v,
         )
 
-    # flake8: noqa: C901
     def run_predictor_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,

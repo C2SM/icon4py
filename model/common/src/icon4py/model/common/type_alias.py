@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
-from typing import Literal, TypeAlias
+from typing import Literal
 
 import gt4py.next as gtx
 
