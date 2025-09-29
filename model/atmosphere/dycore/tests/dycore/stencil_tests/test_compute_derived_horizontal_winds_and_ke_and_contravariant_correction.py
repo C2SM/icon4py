@@ -276,7 +276,8 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
 
     # TODO(ricoh): Add True case. Blocked by test failure (issue: #875)
     @pytest.fixture(
-        params=[{"skip_compute_predictor_vertical_advection": value} for value in [False]]
+        params=[{"skip_compute_predictor_vertical_advection": value} for value in [False]],
+        ids=lambda param: f"skip_compute_predictor_vertical_advection={param['skip_compute_predictor_vertical_advection']}",
     )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid

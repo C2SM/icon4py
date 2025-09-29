@@ -186,6 +186,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
                 [True, False],
             )
         ],
+        ids=lambda param: f"limited_area={param['limited_area']},divdamp_order={param['divdamp_order']},is_iau_active={param['is_iau_active']}",
     )
     def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

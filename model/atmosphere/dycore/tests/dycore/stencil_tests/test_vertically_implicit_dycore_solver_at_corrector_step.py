@@ -403,7 +403,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         params=[
             {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la}
             for afs, als, la in itertools.product(*([(True, False)] * 3))
-        ]
+        ],
+        ids=lambda p: (
+            f"at_first_substep={p['at_first_substep']},"
+            f"at_last_substep={p['at_last_substep']},"
+            f"lprep_adv={p['lprep_adv']}"
+        ),
     )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid
