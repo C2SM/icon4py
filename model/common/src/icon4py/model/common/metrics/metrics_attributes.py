@@ -17,7 +17,6 @@ from icon4py.model.common.states import model
 # TODO(): revise names with domain scientists
 
 Z_MC: Final[str] = "height"
-FLAT_EDGE_INDEX: Final[str] = "flat_edge_index"
 DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels"
 DDQZ_Z_FULL: Final[str] = "functional_determinant_of_metrics_on_full_levels"
 DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on_edges"
@@ -74,14 +73,6 @@ CELL_HEIGHT_ON_HALF_LEVEL: Final[str] = "vertical_coordinates_on_half_levels"
 
 
 attrs: dict[str, model.FieldMetaData] = {
-    FLAT_EDGE_INDEX: dict(
-        standard_name=FLAT_EDGE_INDEX,
-        long_name="indices of flat edges",
-        units="",
-        dims=(dims.EdgeDim, dims.KDim),
-        icon_var_name="flat_idx",
-        dtype=gtx.int32,
-    ),
     NFLAT_GRADP: dict(
         standard_name=NFLAT_GRADP,
         long_name="number of flat edges for gradp calculation",
