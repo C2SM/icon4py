@@ -11,7 +11,7 @@ import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.advection import (
@@ -159,7 +159,7 @@ class NoAdvection(Advection):
     def __init__(
         self,
         grid: icon_grid.IconGrid,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):
         log.debug("advection class init - start")
@@ -215,7 +215,7 @@ class GodunovSplittingAdvection(Advection):
         vertical_advection: advection_vertical.VerticalAdvection,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         exchange: decomposition.ExchangeRuntime | None = None,
         even_timestep: bool = False,
     ):
@@ -381,7 +381,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     metric_state: advection_states.AdvectionMetricState,
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime | None = None,
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
     exchange = exchange or decomposition.SingleNodeExchange()
@@ -465,7 +465,7 @@ def convert_config_to_advection(
     metric_state: advection_states.AdvectionMetricState,
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     exchange: decomposition.ExchangeRuntime | None = None,
     even_timestep: bool = False,
 ) -> Advection:

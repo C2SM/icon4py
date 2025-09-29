@@ -23,8 +23,8 @@ from collections.abc import Callable
 from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
-from gt4py.next import backend as gtx_backend
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
@@ -42,7 +42,7 @@ logger = setup_logger(__name__)
 @dataclasses.dataclass
 class SolveNonhydroGranule:
     solve_nh: solve_nonhydro.SolveNonhydro
-    backend: gtx_backend.Backend
+    backend: gtx_typing.Backend
     dummy_field_factory: Callable
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 

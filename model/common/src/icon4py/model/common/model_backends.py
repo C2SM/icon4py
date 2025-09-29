@@ -5,16 +5,16 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-from typing import Final
+import typing
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next.program_processors.runners.gtfn import GTFNBackendFactory
 
 from icon4py.model.common import dimension as dims
 
 
-DEFAULT_BACKEND: Final = "embedded"
+DEFAULT_BACKEND: typing.Final = "embedded"
 
 BACKENDS: dict[str, gtx_typing.Backend | None] = {
     "embedded": None,
@@ -23,11 +23,28 @@ BACKENDS: dict[str, gtx_typing.Backend | None] = {
     "gtfn_gpu": gtx.gtfn_gpu,
 }
 
+# DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
+DeviceType: typing.TypeAlias = gtx.DeviceType
+CPU = DeviceType.CPU
+GPU = gtx.CUPY_DEVICE_TYPE
+
+BackendDescriptor: typing.TypeAlias = dict[str, typing.Any]
+
+
+def is_backend_descriptor(
+    backend: gtx_typing.Backend | DeviceType | BackendDescriptor | None,
+) -> typing.TypeGuard[BackendDescriptor]:
+    if isinstance(backend, dict):
+        return all(isinstance(key, str) for key in backend)
+    return False
+
 
 try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
-    def make_custom_dace_backend(on_gpu: bool) -> gtx_typing.Backend:
+    def make_custom_dace_backend(
+        device: DeviceType, auto_optimize: bool = True, cached: bool = True, **_
+    ) -> gtx_typing.Backend:
         """Customize the dace backend with the following configuration.
 
         async_sdfg_call:
@@ -54,9 +71,10 @@ try:
         Returns:
             A dace backend with custom configuration for the target device.
         """
+        on_gpu = device == GPU
         return make_dace_backend(
-            auto_optimize=True,
-            cached=True,
+            auto_optimize=auto_optimize,
+            cached=cached,
             gpu=on_gpu,
             async_sdfg_call=True,
             blocking_dim=dims.KDim,
@@ -68,12 +86,21 @@ try:
 
     BACKENDS.update(
         {
-            "dace_cpu": make_custom_dace_backend(on_gpu=False),
-            "dace_gpu": make_custom_dace_backend(on_gpu=True),
+            "dace_cpu": make_custom_dace_backend(device=CPU),
+            "dace_gpu": make_custom_dace_backend(device=GPU),
         }
     )
 
 except ImportError:
     # dace module not installed, thus the dace backends are not available
-    def make_custom_dace_backend(gpu: bool) -> gtx_typing.Backend:
+    def make_custom_dace_backend(device: str, **options) -> gtx_typing.Backend:
         raise NotImplementedError("Depends on dace module, which is not installed.")
+
+
+def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gtx_typing.Backend:
+    on_gpu = device == GPU
+    return GTFNBackendFactory(
+        gpu=on_gpu,
+        cached=cached,
+        otf_workflow__cached_translation=cached,
+    )

@@ -10,7 +10,7 @@ import logging
 import math
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
@@ -58,10 +58,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         geometry_source: geometry.GridGeometry,
         topography: gtx.Field,
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
-        e_refin_ctrl: gtx.Field,
-        c_refin_ctrl: gtx.Field,
         rayleigh_type: int,
         rayleigh_coeff: float,
         exner_expol: float,
@@ -108,7 +106,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         c_owner_mask = gtx.as_field(
             (dims.CellDim,), self._decomposition_info.owner_mask(dims.CellDim)
         )
+        c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
 
+        e_refin_ctrl = self._grid.refinement_control[dims.EdgeDim]
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
@@ -524,9 +524,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
-                dims.KDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
+                dims.KHalfDim: (
+                    vertical_half_domain(v_grid.Zone.TOP),
+                    vertical_half_domain(v_grid.Zone.BOTTOM),
                 ),
             },
             fields={attrs.WGTFAC_C: attrs.WGTFAC_C},
@@ -843,7 +843,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_backend.Backend | None:
+    def backend(self) -> gtx_typing.Backend | None:
         return self._backend
 
     @property
