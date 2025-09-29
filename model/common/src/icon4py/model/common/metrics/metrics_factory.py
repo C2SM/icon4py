@@ -621,8 +621,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_wgtfac_e)
 
-        compute_flat_edge_idx = factory.NumpyDataProvider(
-            func=functools.partial(mf.compute_flat_edge_idx, array_ns=self._xp),
+        max_flat_index_provider = factory.NumpyDataProvider(
+            func=functools.partial(mf.compute_flat_max_idx, array_ns=self._xp),
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
@@ -635,34 +635,17 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     edge_domain(h_grid.Zone.END),
                 ),
-                dims.KDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
-                ),
             },
-            fields={"flat_edge_index": attrs.FLAT_EDGE_INDEX},
-        )
-        self.register_provider(compute_flat_edge_idx)
-        max_flat_index_provider = factory.NumpyDataProvider(
-            func=functools.partial(mf.compute_max_index, array_ns=self._xp),
-            domain={
-                dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    edge_domain(h_grid.Zone.END),
-                ),
-            },
-            fields=(attrs.FLAT_IDX_MAX,),
-            deps={
-                "flat_idx": attrs.FLAT_EDGE_INDEX,
-            },
+            fields={"flat_idx_max": attrs.FLAT_IDX_MAX},
         )
         self.register_provider(max_flat_index_provider)
+
 
         nflat_gradp_provider = factory.NumpyDataProvider(
             func=functools.partial(mf.compute_nflat_gradp, array_ns=self._xp),
             domain=(),
             deps={
-                "max_idx": attrs.FLAT_IDX_MAX,
+                "flat_idx_max": attrs.FLAT_IDX_MAX,
                 "e_owner_mask": "e_owner_mask",
             },
             params={

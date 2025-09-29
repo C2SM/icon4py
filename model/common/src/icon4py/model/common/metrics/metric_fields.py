@@ -572,7 +572,7 @@ def compute_wgtfac_e(
     )
 
 
-def compute_flat_edge_idx(
+def compute_flat_max_idx(
     e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
@@ -593,23 +593,12 @@ def compute_flat_edge_idx(
         k_lev_minus1_expand,
         0,
     )
-    return flat_edge_index
-
-
-def compute_max_index(
-    flat_idx: data_alloc.NDArray, array_ns: ModuleType = np
-) -> data_alloc.NDArray:
-    """
-    Reduces a 2d array to a 1d array by taking the maximum value along axis 1.
-
-    Usage example in ICON: to compute the max index of flat levels along a horizontal dimension.
-    """
-    max_idx = array_ns.amax(flat_idx, axis=1)
-    return max_idx
+    flat_idx_max = array_ns.amax(flat_edge_index, axis=1)
+    return flat_idx_max
 
 
 def compute_nflat_gradp(
-    max_idx: data_alloc.NDArray,
+    flat_idx_max: data_alloc.NDArray,
     e_owner_mask: data_alloc.NDArray,
     lateral_boundary_level: int,
     array_ns: ModuleType = np,
@@ -617,10 +606,10 @@ def compute_nflat_gradp(
     """
     compute the nflat_gradp value as the minimum value of the flat_idx array.
     """
-    boundary_mask = np.arange(max_idx.shape[0]) >= lateral_boundary_level
+    boundary_mask = np.arange(flat_idx_max.shape[0]) >= lateral_boundary_level
     mask_array = array_ns.where(
         e_owner_mask & boundary_mask,
-        max_idx,
+        flat_idx_max,
         65,
     )
     nflat_gradp = int(array_ns.min(mask_array))
