@@ -10,14 +10,14 @@ import dataclasses
 import enum
 import functools
 import logging
-import math
-import sys
 from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+# TODO(pstark): switch back to gtx.sqrt once gt4py can return gtx.float32 in gtx.sqrt
+from numpy import sqrt
+
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
@@ -56,10 +56,9 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.orchestration import decorator as dace_orchestration
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-#TODO(pstark): switch back to gtx.sqrt once gt4py can return gtx.float32 in gtx.sqrt
-from numpy import sqrt
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -199,11 +198,15 @@ class DiffusionConfig:
 
         #: Denominator for temperature boundary diffusion
         #: Called 'denom_diffu_t' in mo_gridref_nml.f90
-        self.temperature_boundary_diffusion_denominator: wpfloat = wpfloat(temperature_boundary_diffusion_denom)
+        self.temperature_boundary_diffusion_denominator: wpfloat = wpfloat(
+            temperature_boundary_diffusion_denom
+        )
 
         #: Denominator for velocity boundary diffusion
         #: Called 'denom_diffu_v' in mo_gridref_nml.f90
-        self.velocity_boundary_diffusion_denominator: wpfloat = wpfloat(velocity_boundary_diffusion_denom)
+        self.velocity_boundary_diffusion_denominator: wpfloat = wpfloat(
+            velocity_boundary_diffusion_denom
+        )
 
         # parameters from namelist: mo_interpol_nml.f90
 
@@ -289,14 +292,22 @@ class DiffusionParams:
         object.__setattr__(
             self,
             "K2",
-            (wpfloat(1.0) / (config.hdiff_efdt_ratio * wpfloat(8.0)) if config.hdiff_efdt_ratio > wpfloat(0.0) else wpfloat(0.0)),
+            (
+                wpfloat(1.0) / (config.hdiff_efdt_ratio * wpfloat(8.0))
+                if config.hdiff_efdt_ratio > wpfloat(0.0)
+                else wpfloat(0.0)
+            ),
         )
         object.__setattr__(self, "K4", self.K2 / wpfloat(8.0))
         object.__setattr__(self, "K6", self.K2 / wpfloat(64.0))
         object.__setattr__(
             self,
             "K4W",
-            (wpfloat(1.0) / (config.hdiff_w_efdt_ratio * wpfloat(36.0)) if config.hdiff_w_efdt_ratio > wpfloat(0.0) else wpfloat(0.0)),
+            (
+                wpfloat(1.0) / (config.hdiff_w_efdt_ratio * wpfloat(36.0))
+                if config.hdiff_w_efdt_ratio > wpfloat(0.0)
+                else wpfloat(0.0)
+            ),
         )
 
         (
@@ -386,20 +397,30 @@ class Diffusion:
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
             self._exchange
         )  # wait on a communication handle
-        self.rd_o_cvd: vpfloat = gtx.astype(constants.GAS_CONSTANT_DRY_AIR / (
-            constants.CPD - constants.GAS_CONSTANT_DRY_AIR
-        ), vpfloat)
+        self.rd_o_cvd: vpfloat = gtx.astype(
+            constants.GAS_CONSTANT_DRY_AIR / (constants.CPD - constants.GAS_CONSTANT_DRY_AIR),
+            vpfloat,
+        )
         #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
         self.thresh_tdiff: wpfloat = wpfloat(-5.0)
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
         self.nudgezone_diff: vpfloat = gtx.astype(
-            wpfloat(0.04) / (config.max_nudging_coefficient + constants.WP_EPS), vpfloat)
-        self.bdy_diff: wpfloat = wpfloat(0.015) / (config.max_nudging_coefficient + constants.WP_EPS)
-        self.fac_bdydiff_v: wpfloat = sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
-        
-        self.smag_offset: vpfloat = gtx.astype(wpfloat(0.25) * params.K4 * config.substep_as_float, vpfloat)
-        self.diff_multfac_w: wpfloat = gtx.astype(min(wpfloat(1.0) / wpfloat(48.0), params.K4W * config.substep_as_float), wpfloat)
+            wpfloat(0.04) / (config.max_nudging_coefficient + constants.WP_EPS), vpfloat
+        )
+        self.bdy_diff: wpfloat = wpfloat(0.015) / (
+            config.max_nudging_coefficient + constants.WP_EPS
+        )
+        self.fac_bdydiff_v: wpfloat = (
+            sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
+        )
+
+        self.smag_offset: vpfloat = gtx.astype(
+            wpfloat(0.25) * params.K4 * config.substep_as_float, vpfloat
+        )
+        self.diff_multfac_w: wpfloat = gtx.astype(
+            min(wpfloat(1.0) / wpfloat(48.0), params.K4W * config.substep_as_float), wpfloat
+        )
         self._determine_horizontal_domains()
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
@@ -571,7 +592,7 @@ class Diffusion:
             self.enh_smag_fac,
             offset_provider={"Koff": dims.KDim},
         )
-        
+
         setup_program(
             backend=self._backend,
             program=diffusion_utils.init_nabla2_factor_in_upper_damping_zone,
