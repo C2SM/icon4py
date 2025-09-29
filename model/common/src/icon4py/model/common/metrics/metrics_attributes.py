@@ -375,7 +375,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="vertoffset_gradp",
-        dtype=ta.wpfloat,
+        dtype=gtx.int32,
     ),
     COEFF_GRADEKIN: dict(
         standard_name=COEFF_GRADEKIN,

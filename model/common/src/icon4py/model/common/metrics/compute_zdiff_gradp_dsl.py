@@ -25,7 +25,7 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
     horizontal_start: gtx.int32,
     horizontal_start_1: gtx.int32,
     array_ns: ModuleType = np,
-) -> data_alloc.NDArray:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     nedges = e2c.shape[0]
     z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
     z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
@@ -126,4 +126,4 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
     vertoffset_gradp = vertidx_gradp - vertoffset_gradp
     vertoffset_gradp[:horizontal_start_1, :, :] = 0.0
 
-    return zdiff_gradp, vertoffset_gradp
+    return zdiff_gradp, vertoffset_gradp.astype(gtx.int32)

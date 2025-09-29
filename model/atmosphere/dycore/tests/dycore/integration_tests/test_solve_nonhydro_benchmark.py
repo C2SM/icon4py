@@ -43,7 +43,7 @@ from ..fixtures import *  # noqa: F403
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
-@pytest.mark.parametrize("grid", [definitions.Grids.MCH_CH_R04B09_DSL])
+@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01])
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 def test_solve_nonhydro_benchmark(
@@ -52,8 +52,9 @@ def test_solve_nonhydro_benchmark(
 ) -> None:
     dtime = 10.0
     lprep_adv = True
-    ndyn_substeps = 5
+    ndyn_substeps = 2 # TODO (Yilu): change back to 5, 2 is for debugging
     at_initial_timestep = True
+    second_order_divdamp_factor = 0.0
 
     config = solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
@@ -286,7 +287,7 @@ def test_solve_nonhydro_benchmark(
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend),
             data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        ),  # TODO (Yilu)
+        ),
         tangential_wind=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
         vn_on_half_levels=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
         contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
@@ -311,7 +312,7 @@ def test_solve_nonhydro_benchmark(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=data_alloc.zero_field(mesh, dims.EdgeDim, backend=backend),
+        owner_mask=data_alloc.random_field(mesh, dims.CellDim, dtype = bool, backend=backend),
         backend=backend,
     )
 
@@ -336,8 +337,6 @@ def test_solve_nonhydro_benchmark(
 
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
-    second_order_divdamp_factor = 0.0
-
     for i_substep in range(ndyn_substeps):
         at_first_substep = i_substep == 0
         at_last_substep = i_substep == ndyn_substeps - 1
@@ -346,10 +345,10 @@ def test_solve_nonhydro_benchmark(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
             prep_adv=prep_adv,
-            second_order_divdamp_factor=second_order_divdamp_factor, # TODO (Yilu)
+            second_order_divdamp_factor=second_order_divdamp_factor,
             dtime=dtime,
             ndyn_substeps_var=ndyn_substeps,
-            at_initial_timestep=at_initial_timestep, # TODO (Yilu)
+            at_initial_timestep=at_initial_timestep,
             lprep_adv=lprep_adv,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
