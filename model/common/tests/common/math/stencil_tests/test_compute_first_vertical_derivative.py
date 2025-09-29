@@ -17,7 +17,7 @@ from icon4py.model.common.math.derivative import compute_first_vertical_derivati
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_first_vertical_derivative_numpy(

@@ -9,13 +9,14 @@
 import datetime
 import logging
 import pathlib
-import uuid
-from typing import Callable, NamedTuple
+from collections.abc import Callable
+from typing import NamedTuple
 
 import click
+import gt4py.next.typing as gtx_typing
 import numpy as np
 from devtools import Timer
-from gt4py.next import backend as gtx_backend, config as gtx_config, metrics as gtx_metrics
+from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
@@ -105,7 +106,7 @@ class TimeLoop:
         return self._substep_timestep
 
     def _full_name(self, func: Callable):
-        return ":".join((self.__class__.__name__, func.__name__))
+        return f"{self.__class__.__name__}:{func.__name__}"
 
     def time_integration(
         self,
@@ -124,11 +125,11 @@ class TimeLoop:
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
         )
 
-        # TODO (Chia Rui): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
+        # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
 
-        # TODO (Chia Rui): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
+        # TODO(OngChia): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
-        # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
+        # TODO(OngChia): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
         if (
             self.diffusion.config.apply_to_horizontal_wind
@@ -160,7 +161,7 @@ class TimeLoop:
                 log.debug(
                     f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
                 )
-                # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
+                # TODO(OngChia): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
@@ -180,11 +181,11 @@ class TimeLoop:
 
             self._is_first_step_in_simulation = False
 
-            # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
+            # TODO(OngChia): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
-            # TODO (Chia Rui): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
+            # TODO(OngChia): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
-            # TODO (Chia Rui): simple IO enough for JW test
+            # TODO(OngChia): simple IO enough for JW test
 
         timer_first_timestep.summary(True)
         if self.n_time_steps > 1:  # in case only one time step was run
@@ -202,7 +203,7 @@ class TimeLoop:
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): Add update_spinup_damping here to compute second_order_divdamp_factor
+        # TODO(OngChia): Add update_spinup_damping here to compute second_order_divdamp_factor
 
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
@@ -221,7 +222,7 @@ class TimeLoop:
 
         prognostic_states.swap()
 
-    # TODO (Chia Rui): add tracer advection here
+    # TODO(OngChia): add tracer advection here
 
     def _update_time_levels_for_velocity_tendencies(
         self,
@@ -270,9 +271,9 @@ class TimeLoop:
         second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): compute airmass for prognostic_state here
+        # TODO(OngChia): compute airmass for prognostic_state here
 
-        for dyn_substep in range(self._n_substeps_var):
+        for dyn_substep in range(self.n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
@@ -290,6 +291,7 @@ class TimeLoop:
                 prep_adv=prep_adv,
                 second_order_divdamp_factor=second_order_divdamp_factor,
                 dtime=self._substep_timestep,
+                ndyn_substeps_var=self.n_substeps_var,
                 at_initial_timestep=self._is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
@@ -299,7 +301,7 @@ class TimeLoop:
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
 
-        # TODO (Chia Rui): compute airmass for prognostic_state here
+        # TODO(OngChia): compute airmass for prognostic_state here
 
 
 class DriverStates(NamedTuple):
@@ -337,10 +339,8 @@ def initialize(
     props: decomposition.ProcessProperties,
     serialization_type: driver_init.SerializationType,
     experiment_type: driver_init.ExperimentType,
-    grid_id: uuid.UUID,
-    grid_root,
-    grid_level,
-    backend: gtx_backend.Backend,
+    grid_file: pathlib.Path,
+    backend: gtx_typing.Backend,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
     Initialize the driver run.
@@ -357,9 +357,8 @@ def initialize(
         props: Processor properties.
         serialization_type: Serialization type.
         experiment_type: Experiment type.
-        grid_id: Grid ID.
-        grid_root: Grid root.
-        grid_level: Grid level.
+        grid_file: Path of the grid.
+        backend: GT4Py backend.
 
     Returns:
         TimeLoop: Time loop object.
@@ -371,24 +370,20 @@ def initialize(
     config = driver_config.read_config(experiment_type=experiment_type, backend=backend)
 
     decomp_info = driver_init.read_decomp_info(
-        file_path,
-        props,
-        backend,
-        serialization_type,
-        grid_id,
-        grid_root,
-        grid_level,
+        path=file_path,
+        grid_file=grid_file,
+        procs_props=props,
+        backend=backend,
+        ser_type=serialization_type,
     )
 
     log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = driver_init.read_icon_grid(
-        file_path,
+    grid = driver_init.read_icon_grid(
+        path=file_path,
+        grid_file=grid_file,
         backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
-        grid_id=grid_id,
-        grid_root=grid_root,
-        grid_level=grid_level,
     )
     log.info(f"reading input fields from '{file_path}'")
     (
@@ -397,14 +392,12 @@ def initialize(
         vertical_geometry,
         c_owner_mask,
     ) = driver_init.read_geometry_fields(
-        file_path,
+        path=file_path,
+        grid_file=grid_file,
         vertical_grid_config=config.vertical_grid_config,
         backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
-        grid_id=grid_id,
-        grid_root=grid_root,
-        grid_level=grid_level,
     )
     (
         diffusion_metric_state,
@@ -413,9 +406,9 @@ def initialize(
         solve_nonhydro_interpolation_state,
         _,
     ) = driver_init.read_static_fields(
-        icon_grid,
-        file_path,
-        backend,
+        path=file_path,
+        grid_file=grid_file,
+        backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -424,7 +417,7 @@ def initialize(
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
     diffusion_granule = diffusion.Diffusion(
-        icon_grid,
+        grid,
         config.diffusion_config,
         diffusion_params,
         vertical_geometry,
@@ -439,7 +432,7 @@ def initialize(
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        grid=icon_grid,
+        grid=grid,
         backend=backend,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
@@ -460,10 +453,10 @@ def initialize(
         prognostic_state_now,
         prognostic_state_next,
     ) = driver_init.read_initial_state(
-        icon_grid,
-        cell_geometry,
-        edge_geometry,
-        file_path,
+        grid=grid,
+        cell_param=cell_geometry,
+        edge_param=edge_geometry,
+        path=file_path,
         backend=backend,
         rank=props.rank,
         experiment_type=experiment_type,
@@ -517,25 +510,14 @@ def initialize(
     "Currently, users can also set it to either jabw or grauss_3d_torus to generate analytic initial condition for the JW and mountain wave tests, respectively (they are placed in abs_path_to_icon4py/model/driver/src/icon4py/model/driver/test_cases/).",
 )
 @click.option(
-    "--grid_root",
-    default=2,
-    show_default=True,
-    help="Grid root division (please refer to Sadourny et al. 1968 or ICON documentation for more information). When torus grid is used, it must be set to 2.",
-)
-@click.option(
-    "--grid_level",
-    default=4,
-    show_default=True,
-    help="Grid refinement level. When torus grid is used, it must be set to 0.",
-)
-@click.option(
-    "--grid_id",
-    default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
-    help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
+    "--grid_file",
+    required=True,
+    help="Path of the grid file.",
 )
 @click.option(
     "--enable_output",
     is_flag=True,
+    default=False,
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
 )
 @click.option(
@@ -556,9 +538,7 @@ def icon4py_driver(
     mpi,
     serialization_type,
     experiment_type,
-    grid_id,
-    grid_root,
-    grid_level,
+    grid_file,
     enable_output,
     enable_profiling,
     icon4py_driver_backend,
@@ -587,12 +567,11 @@ def icon4py_driver(
     if icon4py_driver_backend not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {icon4py_driver_backend}. \n"
-            f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS.keys()])}"
+            f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS])}"
         )
     backend = model_backends.BACKENDS[icon4py_driver_backend]
 
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
-    grid_id = uuid.UUID(grid_id)
     driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
 
     time_loop: TimeLoop
@@ -603,9 +582,7 @@ def icon4py_driver(
         parallel_props,
         serialization_type,
         experiment_type,
-        grid_id,
-        grid_root,
-        grid_level,
+        pathlib.Path(grid_file),
         backend,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")

@@ -8,9 +8,7 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program, scan_operator
-from gt4py.next.ffront.fbuiltins import exp, sqrt
+from gt4py.next import exp, sqrt
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -23,7 +21,7 @@ from icon4py.model.common import (
 physics_constants: Final = phy_const.PhysicsConstants()
 
 
-@scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
+@gtx.scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
 def _scan_pressure(
     state: tuple[ta.wpfloat, ta.wpfloat, bool],
     ddqz_z_full: ta.wpfloat,
@@ -43,7 +41,7 @@ def _scan_pressure(
     return pressure, pressure_interface, False
 
 
-@field_operator
+@gtx.field_operator
 def _diagnose_pressure(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
@@ -64,7 +62,7 @@ def _diagnose_pressure(
     return pressure, pressure_ifc
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def diagnose_pressure(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],

@@ -6,7 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import TYPE_CHECKING, Any, Callable, Mapping, TypeAlias
+from collections.abc import Callable, Mapping
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 import cffi
 import numpy as np
@@ -94,7 +95,7 @@ else:
     ArrayInfo: TypeAlias = tuple[Any, tuple[int, ...], bool, bool]
 
 if TYPE_CHECKING:
-    import cupy as cp  # type: ignore
+    import cupy as cp  # type: ignore[import-not-found]
 
     NDArray: TypeAlias = cp.ndarray | np.ndarray
 else:

@@ -8,9 +8,7 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
@@ -20,7 +18,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 dycore_consts: Final = constants.PhysicsConstants()
 
 
-@field_operator
+@gtx.field_operator
 def _compute_results_for_thermodynamic_variables(
     z_rho_expl: fa.CellKField[wpfloat],
     vwind_impl_wgt: fa.CellField[wpfloat],
@@ -62,7 +60,7 @@ def _compute_results_for_thermodynamic_variables(
     return rho_new_wp, exner_new_wp, theta_v_new_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_results_for_thermodynamic_variables(
     z_rho_expl: fa.CellKField[wpfloat],
     vwind_impl_wgt: fa.CellField[wpfloat],

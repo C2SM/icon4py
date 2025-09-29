@@ -8,9 +8,7 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import exp, log
+from gt4py.next import exp, log
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -24,7 +22,7 @@ from icon4py.model.common.dimension import Koff
 physics_constants: Final = phy_const.PhysicsConstants()
 
 
-@field_operator
+@gtx.field_operator
 def _diagnose_surface_pressure(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
@@ -42,7 +40,7 @@ def _diagnose_surface_pressure(
     return surface_pressure
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def diagnose_surface_pressure(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],

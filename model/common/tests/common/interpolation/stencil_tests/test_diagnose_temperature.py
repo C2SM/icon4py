@@ -17,10 +17,10 @@ from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature 
 )
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
-class TestDiagnoseTemperature(helpers.StencilTest):
+class TestDiagnoseTemperature(stencil_tests.StencilTest):
     PROGRAM = diagnose_virtual_temperature_and_temperature
     OUTPUTS = ("virtual_temperature", "temperature")
 

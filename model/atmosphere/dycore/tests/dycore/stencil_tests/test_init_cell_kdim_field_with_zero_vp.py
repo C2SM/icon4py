@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def init_cell_kdim_field_with_zero_vp_numpy(field_with_zero_vp: np.ndarray) -> np.ndarray:

@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, random_mask
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy(

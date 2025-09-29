@@ -42,7 +42,7 @@ from icon4py.model.testing.fixtures import (
 )
 
 
-# TODO (Chia Rui): Reuse those pytest fixtures for diffusion test instead of creating here
+# TODO(OngChia): Reuse those pytest fixtures for diffusion test instead of creating here
 @pytest.fixture
 def r04b09_diffusion_config(ndyn_substeps) -> diffusion.DiffusionConfig:
     """

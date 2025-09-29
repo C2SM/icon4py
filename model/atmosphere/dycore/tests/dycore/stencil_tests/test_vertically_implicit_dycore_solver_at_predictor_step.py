@@ -10,37 +10,28 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
     vertically_implicit_solver_at_predictor_step,
 )
-from icon4py.model.common import (
-    constants,
-    dimension as dims,
-    model_options,
-    type_alias as ta,
-)
+from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 from .test_add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation_numpy,
 )
-from .test_apply_rayleigh_damping_mechanism import (
-    apply_rayleigh_damping_mechanism_numpy,
-)
-from .test_compute_contravariant_correction_of_w import (
-    compute_contravariant_correction_of_w_numpy,
-)
+from .test_apply_rayleigh_damping_mechanism import apply_rayleigh_damping_mechanism_numpy
+from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy
 from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
     compute_contravariant_correction_of_w_for_lower_boundary_numpy,
 )
-from .test_compute_dwdz_for_divergence_damping import (
-    compute_dwdz_for_divergence_damping_numpy,
+from .test_compute_divergence_of_fluxes_of_rho_and_theta import (
+    compute_divergence_of_fluxes_of_rho_and_theta_numpy,
 )
+from .test_compute_dwdz_for_divergence_damping import compute_dwdz_for_divergence_damping_numpy
 from .test_compute_explicit_part_for_rho_and_exner import (
     compute_explicit_part_for_rho_and_exner_numpy,
 )
@@ -50,9 +41,7 @@ from .test_compute_explicit_vertical_wind_speed_and_vertical_wind_times_density 
 from .test_compute_results_for_thermodynamic_variables import (
     compute_results_for_thermodynamic_variables_numpy,
 )
-from .test_compute_solver_coefficients_matrix import (
-    compute_solver_coefficients_matrix_numpy,
-)
+from .test_compute_solver_coefficients_matrix import compute_solver_coefficients_matrix_numpy
 from .test_set_lower_boundary_condition_for_w_and_contravariant_correction import (
     set_lower_boundary_condition_for_w_and_contravariant_correction_numpy,
 )
@@ -64,52 +53,23 @@ from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
 )
 
 
-def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
-    connectivities: dict[gtx.Dimension, np.ndarray],
-    geofac_div: np.ndarray,
-    mass_flux_at_edges_on_model_levels: np.ndarray,
-    theta_v_flux_at_edges_on_model_levels: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
-    c2e = connectivities[dims.C2EDim]
-    c2ce = helpers.as_1d_connectivity(c2e)
-    geofac_div = np.expand_dims(geofac_div, axis=-1)
-
-    divergence_of_mass_wp = np.sum(
-        geofac_div[c2ce] * mass_flux_at_edges_on_model_levels[c2e], axis=1
-    )
-    divergence_of_theta_v_wp = np.sum(
-        geofac_div[c2ce] * theta_v_flux_at_edges_on_model_levels[c2e], axis=1
-    )
-    return (divergence_of_mass_wp, divergence_of_theta_v_wp)
-
-
-class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
+@pytest.mark.uses_concat_where
+class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_predictor_step
     OUTPUTS = (
-        "vertical_mass_flux_at_cells_on_half_levels",
-        "tridiagonal_beta_coeff_at_cells_on_model_levels",
-        "tridiagonal_alpha_coeff_at_cells_on_half_levels",
         "next_w",
-        "rho_explicit_term",
-        "exner_explicit_term",
         "next_rho",
         "next_exner",
         "next_theta_v",
         "dwdz_at_cells_on_model_levels",
         "exner_dynamical_increment",
     )
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
-        vertical_mass_flux_at_cells_on_half_levels: np.ndarray,
-        tridiagonal_beta_coeff_at_cells_on_model_levels: np.ndarray,
-        tridiagonal_alpha_coeff_at_cells_on_half_levels: np.ndarray,
         next_w: np.ndarray,
-        rho_explicit_term: np.ndarray,
-        exner_explicit_term: np.ndarray,
         next_rho: np.ndarray,
         next_exner: np.ndarray,
         next_theta_v: np.ndarray,
@@ -160,6 +120,19 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = np.arange(exner_dynamical_increment.shape[1])
 
+        rng = np.random.default_rng()
+        vertical_mass_flux_at_cells_on_half_levels = rng.random(
+            (end_cell_index_local, vert_idx.size + 1)
+        )
+        tridiagonal_beta_coeff_at_cells_on_model_levels = rng.random(
+            (end_cell_index_local, vert_idx.size)
+        )
+        tridiagonal_alpha_coeff_at_cells_on_half_levels = rng.random(
+            (end_cell_index_local, vert_idx.size + 1)
+        )
+        rho_explicit_term = rng.random(next_rho.shape)
+        exner_explicit_term = rng.random(next_exner.shape)
+
         contravariant_correction_at_cells_on_half_levels[:, :-1] = np.where(
             (start_cell_index_lateral_lvl3 <= horz_idx)
             & (horz_idx < end_cell_index_halo_lvl1)
@@ -204,7 +177,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         (w_explicit_term, vertical_mass_flux_at_cells_on_half_levels[:, :n_lev]) = np.where(
             (start_cell_index_nudging <= horz_idx)
             & (horz_idx < end_cell_index_local)
-            & (vert_idx >= int32(1)),
+            & (vert_idx >= gtx.int32(1)),
             compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
                 connectivities=connectivities,
                 w_nnow=current_w[:, :n_lev],
@@ -326,7 +299,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == model_options.RayleighType.KLEMP:
+        if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (start_cell_index_nudging <= horz_idx)
                 & (horz_idx < end_cell_index_local)
@@ -385,12 +358,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
             )
 
         return dict(
-            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
-            tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
-            tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
             next_w=next_w,
-            rho_explicit_term=rho_explicit_term,
-            exner_explicit_term=exner_explicit_term,
             next_rho=next_rho,
             next_exner=next_exner,
             next_theta_v=next_theta_v,
@@ -400,7 +368,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        geofac_div = data_alloc.random_field(grid, dims.CEDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim
@@ -410,9 +378,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         )
         pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
-        )
-        vertical_mass_flux_at_cells_on_half_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
         rho_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=1.0e-5
@@ -444,19 +409,13 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
         reference_exner_at_cells_on_model_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-5
         )
-        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, low=1.0e-5, high=0.99999)
+        e_bln_c_s = data_alloc.random_field(
+            grid, dims.CellDim, dims.C2EDim, low=1.0e-5, high=0.99999
+        )
         wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5, high=0.99999)
         wgtfacq_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-5, high=0.99999)
 
-        tridiagonal_beta_coeff_at_cells_on_model_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim
-        )
-        tridiagonal_alpha_coeff_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
-        )
         next_w = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        rho_explicit_term = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
-        exner_explicit_term = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
         next_rho = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
         next_exner = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
         next_theta_v = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
@@ -483,12 +442,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(helpers.StencilTest):
 
         return dict(
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
-            vertical_mass_flux_at_cells_on_half_levels=vertical_mass_flux_at_cells_on_half_levels,
-            tridiagonal_beta_coeff_at_cells_on_model_levels=tridiagonal_beta_coeff_at_cells_on_model_levels,
-            tridiagonal_alpha_coeff_at_cells_on_half_levels=tridiagonal_alpha_coeff_at_cells_on_half_levels,
             next_w=next_w,
-            rho_explicit_term=rho_explicit_term,
-            exner_explicit_term=exner_explicit_term,
             next_rho=next_rho,
             next_exner=next_exner,
             next_theta_v=next_theta_v,

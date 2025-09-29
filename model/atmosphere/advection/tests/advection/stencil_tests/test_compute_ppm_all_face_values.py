@@ -11,19 +11,19 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_ppm_all_face_values import (
     compute_ppm_all_face_values,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import stencil_tests
 
 
-class TestComputePpmAllFaceValues(helpers.StencilTest):
+@pytest.mark.uses_concat_where
+class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_all_face_values
     OUTPUTS = ("p_face",)
-    MARKERS = (pytest.mark.uses_concat_where,)
 
     @staticmethod
     def reference(
@@ -37,7 +37,7 @@ class TestComputePpmAllFaceValues(helpers.StencilTest):
         elevp1: gtx.int32,
         **kwargs: Any,
     ) -> dict:
-        p_face_a = p_face_in
+        p_face_a = p_face_in.copy()
         p_face_a[:, 1:] = p_cc[:, 1:] * (
             1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])
         ) + (p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])) * (
@@ -57,7 +57,7 @@ class TestComputePpmAllFaceValues(helpers.StencilTest):
         p_face = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         slev = gtx.int32(1)
         slevp1 = gtx.int32(2)
-        elev = grid.num_edges - 2
+        elev = grid.num_levels - 2
         elevp1 = gtx.int32(elev + 1)
 
         return dict(

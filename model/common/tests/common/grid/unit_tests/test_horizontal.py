@@ -5,8 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import logging
+from __future__ import annotations
 
+import logging
+from typing import TYPE_CHECKING
+
+import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -15,27 +19,29 @@ import icon4py.model.common.grid.horizontal as h_grid
 from .. import utils
 
 
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    import gt4py.next as gtx
+
 log = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("dim", utils.non_horizontal_dims())
-def test_domain_raises_for_non_horizontal_dim(dim):
+def test_domain_raises_for_non_horizontal_dim(dim: gtx.Dimension) -> None:
     with pytest.raises(AssertionError) as e:
         h_grid.domain(dim)
     e.match("horizontal dimensions")
 
 
-def zones():
-    for zone in h_grid.Zone.__members__.values():
-        yield zone
+def zones() -> Iterator[h_grid.Zone]:
+    yield from h_grid.Zone.__members__.values()
 
 
 @pytest.mark.parametrize("dim", utils.horizontal_dims())
 @pytest.mark.parametrize("zone", zones())
-def test_domain_raises_for_invalid_zones(dim, zone, caplog):
-    caplog.set_level(logging.DEBUG)
-    log.debug(f"dim={dim}, zone={zone},")
-    if dim == dims.CellDim or dim == dims.VertexDim:
+def test_domain_raises_for_invalid_zones(dim: gtx.Dimension, zone: h_grid.Zone) -> None:
+    if dim in (dims.CellDim, dims.VertexDim):
         if zone in (
             h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5,
             h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6,
@@ -43,24 +49,11 @@ def test_domain_raises_for_invalid_zones(dim, zone, caplog):
         ):
             with pytest.raises(AssertionError) as e:
                 h_grid.domain(dim)(zone)
-            e.match("not a valid zone")
-
-
-@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_zone_and_domain_index(dim, caplog):
-    """test mostly used for documentation purposes"""
-    caplog.set_level(logging.INFO)
-    for zone in zones():
-        try:
-            domain = h_grid.domain(dim)(zone)
-            log.info(f"dim={dim}: zone={zone:16}: index={domain():3}")
-            assert domain() <= h_grid._BOUNDS[dim][1]
-        except AssertionError:
-            log.info(f"dim={dim}: zone={zone:16}: invalid")
+            e.match("Invalid zone")
 
 
 @pytest.mark.parametrize("zone", zones())
-def test_halo_zones(zone):
+def test_halo_zones(zone: h_grid.Zone) -> None:
     if zone in (h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2):
         assert zone.is_halo()
     else:

@@ -19,7 +19,7 @@ from icon4py.model.common.grid import geometry_attributes
         geometry_attributes.EDGE_LENGTH,
     ),
 )
-def test_data_for_inverse(name):
+def test_data_for_inverse(name: str) -> None:
     metadata = geometry_attributes.attrs[name]
     metadata_of_inverse = geometry_attributes.metadata_for_inverse(metadata)
     assert "inverse_of" in metadata_of_inverse["standard_name"]

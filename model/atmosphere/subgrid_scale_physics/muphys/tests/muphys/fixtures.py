@@ -5,10 +5,3 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-
-from icon4py.model.testing.fixtures.datatest import (
-    backend,
-    connectivities_as_numpy,
-    grid,
-)

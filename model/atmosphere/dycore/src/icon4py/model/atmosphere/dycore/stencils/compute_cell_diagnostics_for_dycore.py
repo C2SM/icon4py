@@ -22,11 +22,8 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import program
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator
-from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import astype, bool, broadcast, maximum  # noqa: A004
+from gt4py.next import astype, bool, broadcast, maximum  # noqa: A004
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDiscretizationType
 from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
@@ -57,7 +54,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
 
 
-@field_operator
+@gtx.field_operator
 def _compute_perturbed_quantities_and_interpolation(
     current_rho: fa.CellKField[ta.wpfloat],
     reference_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
@@ -191,7 +188,7 @@ def _compute_perturbed_quantities_and_interpolation(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _surface_computations(
     wgtfacq_c: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
@@ -227,7 +224,7 @@ def _surface_computations(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_first_and_second_vertical_derivative_of_exner(
     exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
@@ -280,7 +277,7 @@ def _compute_first_and_second_vertical_derivative_of_exner(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _set_theta_v_and_exner_on_surface_level(
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
@@ -305,7 +302,7 @@ def _set_theta_v_and_exner_on_surface_level(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_perturbed_quantities_and_interpolation(
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
@@ -523,7 +520,7 @@ def compute_perturbed_quantities_and_interpolation(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
     w: fa.CellKField[ta.wpfloat],
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
@@ -633,7 +630,7 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_accele
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],

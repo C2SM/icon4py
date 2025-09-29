@@ -11,16 +11,16 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.apply_interpolated_tracer_time_tendency import (
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import stencil_tests
 
 
-class TestApplyInterpolatedTracerTimeTendency(helpers.StencilTest):
+class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
     PROGRAM = apply_interpolated_tracer_time_tendency
     OUTPUTS = ("p_tracer_new",)
 

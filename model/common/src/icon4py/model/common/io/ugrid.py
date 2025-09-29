@@ -8,7 +8,7 @@
 import contextlib
 import logging
 import pathlib
-from typing import Final, Union
+from typing import Final
 
 import gt4py.next as gtx
 import uxarray
@@ -48,7 +48,7 @@ def extract_horizontal_coordinates(
     """
     Extract the coordinates from the ICON grid file.
 
-    TODO (@halungge) does it  work for decomposed grids?
+    TODO(halungge) does it  work for decomposed grids?
     """
     return dict(
         cell=(ds["clat"], ds["clon"]),
@@ -82,7 +82,7 @@ def ugrid_attributes(dim: gtx.Dimension) -> dict:
 def extract_bounds(ds: xa.Dataset) -> dict[str, tuple[xa.DataArray, xa.DataArray]]:
     """
     Extract the bounds from the ICON grid file.
-    TODO (@halungge) does it  work for decomposed grids?
+    TODO(halungge) does it  work for decomposed grids?
     """
     return dict(
         cell=(ds["clat_vertices"], ds["clon_vertices"]),
@@ -118,7 +118,7 @@ class IconUGridPatcher:
             "end_idx_v",
         )
         self.index_lists = self.connectivities + self.horizontal_domain_borders
-        # TODO (magdalena) do not exist on local grid (grid.nc of mch_ch_r04b09_dsl)
+        # TODO(halungge): do not exist on local grid (grid.nc of mch_ch_r04b09_dsl)
         #  what do they contain?
         # "edge_index",
         # "vertex_index",
@@ -145,7 +145,7 @@ class IconUGridPatcher:
                 face_face_connectivity="neighbor_cell_index",
                 edge_face_connectivity="adjacent_cell_of_edge",
                 node_dimension="vertex",
-                # TODO (@halungge) do we need the boundary_node_connectivity ?
+                # TODO(halungge): do we need the boundary_node_connectivity ?
             ),
         )
 
@@ -183,7 +183,7 @@ class IconUGridPatcher:
         The ICON grid file contains some fields of order (sparse_dimension, horizontal_dimension)
         and others the other way around. We transpose them to have all the same ordering.
 
-        TODO (@halungge) should eventually be supported by UXarray.
+        TODO(halungge) should eventually be supported by UXarray.
         """
         for name in self.connectivities:
             shp = ds[name].shape
@@ -220,8 +220,8 @@ class IconUGridWriter:
 
     def __init__(
         self,
-        original_filename: Union[pathlib.Path, str],
-        output_path: Union[pathlib.Path, str],
+        original_filename: pathlib.Path | str,
+        output_path: pathlib.Path | str,
     ):
         self.original_filename = pathlib.Path(original_filename)
         self.output_path = pathlib.Path(output_path)
@@ -242,7 +242,7 @@ def dump_ugrid_file(
 
 
 @contextlib.contextmanager
-def load_data_file(filename: Union[pathlib.Path | str]) -> xa.Dataset:
+def load_data_file(filename: pathlib.Path | str) -> xa.Dataset:
     ds = xa.open_dataset(filename)
     try:
         yield ds

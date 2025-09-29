@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
@@ -36,10 +36,10 @@ def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
     return z_gradh_exner
 
 
+@pytest.mark.skip_value_error
 class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates
     OUTPUTS = ("z_gradh_exner",)
-    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(

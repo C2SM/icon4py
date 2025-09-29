@@ -5,38 +5,42 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# type: ignore
 
+
+import contextlib
 import functools
 import logging
+from collections.abc import Callable, Iterable
 from types import ModuleType
-from typing import Callable, Iterable, TypeAlias, Union
+from typing import TYPE_CHECKING, Final, TypeAlias
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
-from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
-from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
-from icon4py.model.common.grid import base, icon
+from icon4py.model.common.grid import base, horizontal as h_grid, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-try:
-    import cupy as cp
+if TYPE_CHECKING:
+    xp: Final = np
+else:
+    try:
+        import cupy as cp
 
-    xp = cp
-except ImportError:
-    cp = None
-    xp = np
+        xp = cp
+    except ImportError:
+        cp = None
+        xp = np
 
 
-NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
+NDArray: TypeAlias = np.ndarray | xp.ndarray
 
-# TODO(havogt) import needed to register MultNodeRun in get_processor_properties, does the pattern make sense?
+# TODO(havogt): import needed to register MultNodeRun in get_processor_properties, does the pattern make sense?
 assert hasattr(mpi_decomposition, "get_multinode_properties")
 
 log = logging.getLogger(__name__)
@@ -52,27 +56,22 @@ class BackendIntEnum(eve.IntEnum):
     _DACE_GPU = 22
 
 
-_BACKEND_MAP = {
-    BackendIntEnum._GTFN_CPU: run_gtfn_cached,
-    BackendIntEnum._GTFN_GPU: run_gtfn_gpu_cached,
+_BACKEND_MAP: dict[BackendIntEnum, gtx_typing.Backend | None] = {
+    BackendIntEnum._GTFN_CPU: model_backends.BACKENDS["gtfn_cpu"],
+    BackendIntEnum._GTFN_GPU: model_backends.BACKENDS["gtfn_gpu"],
 }
-try:
+with contextlib.suppress(NotImplementedError):  # dace backends might not be available
     _BACKEND_MAP |= {
-        BackendIntEnum._DACE_CPU: model_backends.make_custom_dace_backend(gpu=False),
-        BackendIntEnum._DACE_GPU: model_backends.make_custom_dace_backend(gpu=True),
+        BackendIntEnum._DACE_CPU: model_backends.BACKENDS.get("dace_cpu"),
+        BackendIntEnum._DACE_GPU: model_backends.BACKENDS.get("dace_gpu"),
     }
-except NotImplementedError:
-    pass  # dace backends not available
 
 
-def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backend:
+def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_typing.Backend:
     default_cpu = BackendIntEnum._GTFN_CPU
     default_gpu = BackendIntEnum._GTFN_GPU
     if selector == BackendIntEnum.DEFAULT:
-        if on_gpu:
-            selector = BackendIntEnum.DEFAULT_GPU
-        else:
-            selector = BackendIntEnum.DEFAULT_CPU
+        selector = BackendIntEnum.DEFAULT_GPU if on_gpu else BackendIntEnum.DEFAULT_CPU
     if selector == BackendIntEnum.DEFAULT_CPU:
         selector = default_cpu
     elif selector == BackendIntEnum.DEFAULT_GPU:
@@ -90,18 +89,20 @@ def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backen
     if not on_gpu and selector in (BackendIntEnum._DACE_GPU, BackendIntEnum._GTFN_GPU):
         raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=False")
 
-    assert selector in _BACKEND_MAP
-    return _BACKEND_MAP[selector]
+    backend = _BACKEND_MAP.get(selector)
+    assert backend is not None
+
+    return backend
 
 
 def cached_dummy_field_factory(
-    allocator: gtx_backend.Backend,
+    allocator: gtx_typing.Backend,
 ) -> Callable[[str, gtx.Domain, gt4py_definitions.DType], gtx.Field]:
     # curried to exclude non-hashable backend from cache
     @functools.lru_cache(maxsize=20)
     def impl(_name: str, domain: gtx.Domain, dtype: gt4py_definitions.DType) -> gtx.Field:
         # _name is used to differentiate between different dummy fields
-        return gtx.zeros(domain, dtype=dtype, allocator=allocator)
+        return gtx.zeros(domain, dtype=dtype, allocator=allocator)  # type:ignore[arg-type]  # TODO(): fix type hint
 
     return impl
 
@@ -130,22 +131,6 @@ def get_nproma(tables: Iterable[NDArray]) -> int:
     return nproma
 
 
-def _nproma_1d_sparse_connectivity_constructor(
-    nproma: int,
-    offset: gtx.FieldOffset,
-    shape2d: tuple[int, int],
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
-) -> data_alloc.NDArray:
-    arr = np.arange(nproma * shape2d[1], dtype=gtx.int32).reshape((nproma, shape2d[1]))
-    arr = arr[: shape2d[0], :]  # shrink to the actual size of the grid
-    return gtx.as_connectivity(
-        domain=offset.target,
-        codomain=offset.source,
-        data=arr,
-        allocator=allocator,
-    )
-
-
 def construct_icon_grid(
     cell_starts: np.ndarray,
     cell_ends: np.ndarray,
@@ -168,8 +153,8 @@ def construct_icon_grid(
     num_edges: int,
     vertical_size: int,
     limited_area: bool,
-    mean_cell_area: gtx.float64,
-    backend: gtx_backend.Backend,
+    mean_cell_area: gtx.float64,  # type:ignore[name-defined]  # TODO(): fix type hint
+    backend: gtx_typing.Backend,
 ) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
@@ -180,14 +165,14 @@ def construct_icon_grid(
     log.debug("Offsetting Fortran connectivitity arrays by 1")
 
     xp = data_alloc.import_array_ns(backend)
-
-    cells_start_index = adjust_fortran_indices(cell_starts)
-    vertex_start_index = adjust_fortran_indices(vertex_starts)
-    edge_start_index = adjust_fortran_indices(edge_starts)
-
-    cells_end_index = cell_ends
-    vertex_end_index = vertex_ends
-    edge_end_index = edge_ends
+    # TODO (halungge): icon has 0 values in these arrays in some places possibly where they don't use them in case
+    #  they are accessed the `adjust_fortran_indices` might lead to crashes
+    start_indices = {
+        dims.CellDim: adjust_fortran_indices(cell_starts),
+        dims.EdgeDim: adjust_fortran_indices(edge_starts),
+        dims.VertexDim: adjust_fortran_indices(vertex_starts),
+    }
+    end_indices = {dims.CellDim: cell_ends, dims.EdgeDim: edge_ends, dims.VertexDim: vertex_ends}
 
     c2e = adjust_fortran_indices(c2e)
     c2v = adjust_fortran_indices(c2v)
@@ -230,36 +215,25 @@ def construct_icon_grid(
         dims.V2C: v2c,
     }
 
-    # extract nproma before shrinking the connectivities
-    nproma = get_nproma(neighbor_tables.values())
-
     neighbor_tables = shrink_to_dimension(
         sizes={dims.EdgeDim: num_edges, dims.VertexDim: num_vertices, dims.CellDim: num_cells},
         tables=neighbor_tables,
     )
-
-    start_indices = {
-        dims.CellDim: cells_start_index,
-        dims.EdgeDim: edge_start_index,
-        dims.VertexDim: vertex_start_index,
-    }
-    end_indices = {
-        dims.CellDim: cells_end_index,
-        dims.EdgeDim: edge_end_index,
-        dims.VertexDim: vertex_end_index,
-    }
+    domain_bounds_constructor = functools.partial(
+        h_grid.get_start_end_idx_from_icon_arrays,
+        start_indices=start_indices,
+        end_indices=end_indices,
+    )
+    start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
     return icon.icon_grid(
         id_=grid_id,
         allocator=backend,
         config=config,
         neighbor_tables=neighbor_tables,
-        start_indices=start_indices,
-        end_indices=end_indices,
-        global_properties=icon.GlobalGridParams.from_mean_cell_area(mean_cell_area),
-        sparse_1d_connectivity_constructor=functools.partial(
-            _nproma_1d_sparse_connectivity_constructor, nproma
-        ),
+        start_index=start_index,
+        end_index=end_index,
+        global_properties=icon.GlobalGridParams(mean_cell_area=mean_cell_area),
     )
 
 

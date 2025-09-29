@@ -10,12 +10,13 @@ from __future__ import annotations
 
 import logging as log
 from types import ModuleType
-from typing import TYPE_CHECKING, Optional, TypeAlias, Union
+from typing import TYPE_CHECKING, TypeAlias
 
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import numpy.typing as npt
 from gt4py import next as gtx
-from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.utils import device_utils
@@ -30,11 +31,11 @@ try:
 except ImportError:
     import numpy as xp
 
-NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
-NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
+NDArray: TypeAlias = np.ndarray | xp.ndarray
+NDArrayInterface: TypeAlias = np.ndarray | xp.ndarray | gtx.Field
 
 
-def backend_name(backend: gtx_backend.Backend | None) -> str:
+def backend_name(backend: gtx_typing.Backend | None) -> str:
     return "embedded" if backend is None else backend.name
 
 
@@ -69,7 +70,7 @@ def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) 
 
 def as_field(
     field: gtx.Field,
-    backend: Optional[gtx_backend.Backend] = None,
+    backend: gtx_typing.Backend | None = None,
     embedded_on_host: bool = False,
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
@@ -77,34 +78,13 @@ def as_field(
     return gtx.as_field(field.domain, data=data, allocator=backend)
 
 
-def flatten_first_two_dims(
-    *dims: gtx.Dimension, field: gtx.Field | NDArray, backend: Optional[gtx_backend.Backend] = None
-) -> gtx.Field:
-    """Convert a n-D sparse field or ndarray to a (n-1)-D flattened (Felix-style) sparse field."""
-    buffer = field.ndarray if isinstance(field, gtx.Field) else field
-    old_shape = buffer.shape
-    assert len(old_shape) >= 2
-    flattened_size = old_shape[0] * old_shape[1]
-    flattened_shape = (flattened_size,)
-    new_shape = flattened_shape + old_shape[2:]
-    return gtx.as_field(dims, buffer.reshape(new_shape), allocator=backend)
-
-
-def unflatten_first_two_dims(field: gtx.Field | NDArray) -> NDArray:
-    """Convert a (n-1)-D flattened (Felix-style) sparse field or ndarray to a n-D sparse NDArray."""
-    buffer = field.ndarray if isinstance(field, gtx.Field) else field
-    old_shape = buffer.shape
-    new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
-    return buffer.reshape(new_shape)
-
-
 def random_field(
     grid,
     *dims,
     low: float = -1.0,
     high: float = 1.0,
-    dtype: Optional[npt.DTypeLike] = None,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
+    dtype: npt.DTypeLike | None = None,
+    extend: dict[gtx.Dimension, int] | None = None,
     backend=None,
 ) -> gtx.Field:
     arr = np.random.default_rng().uniform(
@@ -115,12 +95,26 @@ def random_field(
     return gtx.as_field(dims, arr, allocator=backend)
 
 
+def random_sign(
+    grid,
+    *dims,
+    dtype: npt.DTypeLike | None = None,
+    extend: dict[gtx.Dimension, int] | None = None,
+    backend=None,
+) -> gtx.Field:
+    """Generate a random field with values -1 or 1."""
+    arr = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dims, extend=extend))
+    if dtype:
+        arr = arr.astype(dtype)
+    return gtx.as_field(dims, arr, allocator=backend)
+
+
 def random_mask(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    dtype: Optional[npt.DTypeLike] = None,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
-    backend: Optional[gtx_backend.Backend] = None,
+    dtype: npt.DTypeLike | None = None,
+    extend: dict[gtx.Dimension, int] | None = None,
+    backend: gtx_typing.Backend | None = None,
 ) -> gtx.Field:
     rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
@@ -138,7 +132,7 @@ def zero_field(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
+    extend: dict[gtx.Dimension, int] | None = None,
     backend=None,
 ) -> gtx.Field:
     field_domain = {dim: (0, stop) for dim, stop in zip(dims, _shape(grid, *dims, extend=extend))}
@@ -162,7 +156,7 @@ def constant_field(
 def _shape(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
+    extend: dict[gtx.Dimension, int] | None = None,
 ) -> tuple[int, ...]:
     extend = extend or {}
     return tuple(grid.size[dim] + extend.get(dim, 0) for dim in dims)
@@ -171,9 +165,9 @@ def _shape(
 def index_field(
     grid: grid_base.Grid,
     dim: gtx.Dimension,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
+    extend: dict[gtx.Dimension, int] | None = None,
     dtype=gtx.int32,
-    backend: Optional[gtx_backend.Backend] = None,
+    backend: gtx_typing.Backend | None = None,
 ) -> gtx.Field:
     xp = import_array_ns(backend)
     shapex = _shape(grid, dim, extend=extend)[0]

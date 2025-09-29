@@ -9,8 +9,8 @@
 import functools
 import types
 import typing
-from collections.abc import Sequence
-from typing import Any, Callable, Optional, Union
+from collections.abc import Callable, Sequence
+from typing import Any, Union
 
 import cffi
 from gt4py import next as gtx
@@ -57,7 +57,7 @@ def _get_gt4py_type(type_hint: Any) -> tuple[ts.TypeSpec, bool] | None:
 
 # TODO(egparedes): possibly use `TypeForm` for the annotation parameter,
 # once https://peps.python.org/pep-0747/ is approved.
-def field_annotation_descriptor_hook(annotation: Any) -> Optional[py2fgen.ParamDescriptor]:
+def field_annotation_descriptor_hook(annotation: Any) -> py2fgen.ParamDescriptor | None:
     """
     Translates GT4Py types to 'ParamDescriptor's.
 
@@ -86,8 +86,8 @@ def _as_field(dims: Sequence[gtx.Dimension], scalar_kind: ts.ScalarKind) -> Call
     # in case the cache lookup is still performance relevant, we can replace it by a custom swap cache
     # (only for substitution mode where we know we have exactly 2 entries)
     # or by even marking fields as constant over the whole program run and immediately return on second call
-    @functools.lru_cache(maxsize=None)
-    def impl(array_info: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> Optional[gtx.Field]:
+    @functools.cache
+    def impl(array_info: py2fgen.ArrayInfo, *, ffi: cffi.FFI) -> gtx.Field | None:
         arr = py2fgen.as_array(ffi, array_info, scalar_kind)
         if arr is None:
             return None

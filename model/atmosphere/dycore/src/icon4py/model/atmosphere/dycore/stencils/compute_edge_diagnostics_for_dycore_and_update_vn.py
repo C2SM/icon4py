@@ -6,14 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import broadcast
+from gt4py.eve import utils as eve_utils
+from gt4py.next import broadcast
+from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
 )
@@ -63,8 +61,7 @@ from icon4py.model.common import (
 from icon4py.model.common.type_alias import wpfloat
 
 
-horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType()
-dycore_consts: Final = constants.PhysicsConstants()
+dycore_consts: eve_utils.FrozenNamespace[ta.wpfloat] = constants.PhysicsConstants()
 
 
 @gtx.field_operator
@@ -90,8 +87,8 @@ def _compute_horizontal_pressure_gradient(
     hydrostatic_correction_on_lowest_level: fa.EdgeField[ta.wpfloat],
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    ikoffset: gtx.Field[[dims.ECDim, dims.KDim], gtx.int32],
-    zdiff_gradp: gtx.Field[[dims.ECDim, dims.KDim], ta.vpfloat],
+    ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
@@ -150,16 +147,16 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     grf_tend_vn: fa.EdgeKField[ta.wpfloat],
     geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-    pos_on_tplane_e_x: gtx.Field[[dims.ECDim], ta.wpfloat],
-    pos_on_tplane_e_y: gtx.Field[[dims.ECDim], ta.wpfloat],
-    primal_normal_cell_x: gtx.Field[[dims.ECDim], ta.wpfloat],
-    dual_normal_cell_x: gtx.Field[[dims.ECDim], ta.wpfloat],
-    primal_normal_cell_y: gtx.Field[[dims.ECDim], ta.wpfloat],
-    dual_normal_cell_y: gtx.Field[[dims.ECDim], ta.wpfloat],
+    pos_on_tplane_e_x: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    pos_on_tplane_e_y: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_x: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_x: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_y: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_y: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    ikoffset: gtx.Field[[dims.ECDim, dims.KDim], gtx.int32],
-    zdiff_gradp: gtx.Field[[dims.ECDim, dims.KDim], ta.vpfloat],
+    ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
@@ -361,7 +358,7 @@ def _apply_divergence_damping_and_update_vn(
     return next_vn
 
 
-@gtx.program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -383,16 +380,16 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     grf_tend_vn: fa.EdgeKField[ta.wpfloat],
     geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-    pos_on_tplane_e_x: gtx.Field[[dims.ECDim], ta.wpfloat],
-    pos_on_tplane_e_y: gtx.Field[[dims.ECDim], ta.wpfloat],
-    primal_normal_cell_x: gtx.Field[[dims.ECDim], ta.wpfloat],
-    dual_normal_cell_x: gtx.Field[[dims.ECDim], ta.wpfloat],
-    primal_normal_cell_y: gtx.Field[[dims.ECDim], ta.wpfloat],
-    dual_normal_cell_y: gtx.Field[[dims.ECDim], ta.wpfloat],
+    pos_on_tplane_e_x: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    pos_on_tplane_e_y: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_x: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_x: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_y: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    dual_normal_cell_y: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ddxn_z_full: fa.EdgeKField[ta.vpfloat],
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
-    ikoffset: gtx.Field[[dims.ECDim, dims.KDim], gtx.int32],
-    zdiff_gradp: gtx.Field[[dims.ECDim, dims.KDim], ta.vpfloat],
+    ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
@@ -527,7 +524,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     )
 
 
-@gtx.program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_divergence_damping_and_update_vn(
     horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.vpfloat],
     next_vn: fa.EdgeKField[ta.wpfloat],

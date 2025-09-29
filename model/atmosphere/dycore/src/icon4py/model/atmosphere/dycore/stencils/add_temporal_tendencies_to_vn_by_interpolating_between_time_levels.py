@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
     vn_nnow: fa.EdgeKField[wpfloat],
     ddt_vn_apc_ntl1: fa.EdgeKField[vpfloat],
@@ -41,7 +39,7 @@ def _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
     return vn_nnew_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
     vn_nnow: fa.EdgeKField[wpfloat],
     ddt_vn_apc_ntl1: fa.EdgeKField[vpfloat],

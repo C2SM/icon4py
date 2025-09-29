@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import exp, log, where
+from gt4py.next import exp, log, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_theta_and_exner(
     bdy_halo_c: fa.CellField[bool],
     rho: fa.CellKField[wpfloat],
@@ -29,7 +27,7 @@ def _compute_theta_and_exner(
     return theta_v_wp, exner_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_theta_and_exner(
     bdy_halo_c: fa.CellField[bool],
     rho: fa.CellKField[wpfloat],

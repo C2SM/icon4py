@@ -6,8 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges import (
     _interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges,
@@ -18,7 +16,7 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-@field_operator
+@gtx.field_operator
 def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: fa.EdgeKField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
@@ -36,7 +34,7 @@ def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: fa.EdgeKField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],

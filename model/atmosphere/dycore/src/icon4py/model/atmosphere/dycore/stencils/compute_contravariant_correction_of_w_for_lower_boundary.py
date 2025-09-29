@@ -6,18 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
+from gt4py.next import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, Koff
+from icon4py.model.common.dimension import C2E, C2EDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_contravariant_correction_of_w_for_lower_boundary(
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
@@ -28,9 +26,9 @@ def _compute_contravariant_correction_of_w_for_lower_boundary(
     z_w_concorr_me_offset_2 = z_w_concorr_me_wp(Koff[-2])
     z_w_concorr_me_offset_3 = z_w_concorr_me_wp(Koff[-3])
 
-    z_w_concorr_mc_m1 = neighbor_sum(e_bln_c_s(C2CE) * z_w_concorr_me_offset_1(C2E), axis=C2EDim)
-    z_w_concorr_mc_m2 = neighbor_sum(e_bln_c_s(C2CE) * z_w_concorr_me_offset_2(C2E), axis=C2EDim)
-    z_w_concorr_mc_m3 = neighbor_sum(e_bln_c_s(C2CE) * z_w_concorr_me_offset_3(C2E), axis=C2EDim)
+    z_w_concorr_mc_m1 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_1(C2E), axis=C2EDim)
+    z_w_concorr_mc_m2 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_2(C2E), axis=C2EDim)
+    z_w_concorr_mc_m3 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_3(C2E), axis=C2EDim)
 
     z_w_concorr_mc_m1_vp = astype(z_w_concorr_mc_m1, vpfloat)
     z_w_concorr_mc_m2_vp = astype(z_w_concorr_mc_m2, vpfloat)
@@ -44,9 +42,9 @@ def _compute_contravariant_correction_of_w_for_lower_boundary(
     return w_concorr_c_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_contravariant_correction_of_w_for_lower_boundary(
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
     w_concorr_c: fa.CellKField[vpfloat],

@@ -6,16 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype
+import gt4py.next as gtx
+from gt4py.next import astype
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _calculate_diagnostics_for_turbulence(
     div: fa.CellKField[vpfloat],
     kh_c: fa.CellKField[vpfloat],
@@ -32,7 +31,7 @@ def _calculate_diagnostics_for_turbulence(
     return astype((div_ic_wp, hdef_ic_wp), vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def calculate_diagnostics_for_turbulence(
     div: fa.CellKField[vpfloat],
     kh_c: fa.CellKField[vpfloat],

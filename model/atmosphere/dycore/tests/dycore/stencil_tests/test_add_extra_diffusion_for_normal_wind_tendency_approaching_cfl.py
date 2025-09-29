@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
@@ -97,10 +97,10 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
     return ddt_vn_apc
 
 
+@pytest.mark.embedded_remap_error
 class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
     PROGRAM = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl
     OUTPUTS = ("ddt_vn_apc",)
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:

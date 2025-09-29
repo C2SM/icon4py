@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
@@ -18,15 +21,10 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_temperature,
 )
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.interpolation.stencils import (
-    edge_2_cell_vector_rbf_interpolation as rbf,
-)
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    tracer_state as tracers,
-)
+from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
+from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_state as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -40,19 +38,18 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
+
+
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        dt_utils.JABW_EXPERIMENT,
-    ],
-)
+@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_diagnose_temperature(
-    experiment,
-    data_provider,
-    icon_grid,
-    backend,
-):
+    data_provider: sb.IconSerialDataProvider, icon_grid: base_grid.Grid, backend: gtx_typing.Backend
+) -> None:
     diagnostic_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
     temperature_ref = diagnostic_reference_savepoint.temperature().asnumpy()
     virtual_temperature_ref = diagnostic_reference_savepoint.virtual_temperature().asnumpy()
@@ -93,30 +90,24 @@ def test_diagnose_temperature(
     )
 
     # only temperature is tested because there is no moisture in the JW test. i.e. temperature = virtual_temperature
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         temperature.asnumpy(),
         temperature_ref,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         virtual_temperature.asnumpy(),
         virtual_temperature_ref,
     )
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        dt_utils.JABW_EXPERIMENT,
-    ],
-)
+@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_diagnose_meridional_and_zonal_winds(
-    experiment,
-    data_provider,
-    interpolation_savepoint,
-    icon_grid,
-    backend,
-):
+    data_provider: sb.IconSerialDataProvider,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     prognostics_init_savepoint = data_provider.from_savepoint_prognostics_initial()
     vn = prognostics_init_savepoint.vn_now()
     rbv_vec_coeff_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
@@ -150,12 +141,12 @@ def test_diagnose_meridional_and_zonal_winds(
         },
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         u.asnumpy(),
         u_ref,
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         v.asnumpy(),
         v_ref,
         atol=1.0e-13,
@@ -163,15 +154,13 @@ def test_diagnose_meridional_and_zonal_winds(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        dt_utils.JABW_EXPERIMENT,
-    ],
-)
+@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_diagnose_surface_pressure(
-    experiment, data_provider, icon_grid, backend, metrics_savepoint
-):
+    data_provider: sb.IconSerialDataProvider,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+    metrics_savepoint: sb.MetricSavepoint,
+) -> None:
     initial_diagnostic_savepoint = data_provider.from_savepoint_diagnostics_initial()
     surface_pressure_ref = initial_diagnostic_savepoint.pressure_sfc().asnumpy()
     initial_prognostic_savepoint = data_provider.from_savepoint_prognostics_initial()
@@ -197,20 +186,20 @@ def test_diagnose_surface_pressure(
         offset_provider={"Koff": dims.KDim},
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         surface_pressure.asnumpy()[:, icon_grid.num_levels],
         surface_pressure_ref,
     )
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        dt_utils.JABW_EXPERIMENT,
-    ],
-)
-def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metrics_savepoint):
+@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+def test_diagnose_pressure(
+    data_provider: sb.IconSerialDataProvider,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+    metrics_savepoint: sb.MetricSavepoint,
+) -> None:
     ddqz_z_full = metrics_savepoint.ddqz_z_full()
 
     diagnostics_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
@@ -244,9 +233,9 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
         offset_provider={},
     )
 
-    assert helpers.dallclose(pressure_ifc_ref, pressure_ifc.asnumpy())
+    assert test_utils.dallclose(pressure_ifc_ref, pressure_ifc.asnumpy())
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         pressure_ref,
         pressure.asnumpy(),
     )
@@ -254,9 +243,7 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
 
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor",
-    [
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85),
-    ],
+    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0, 8000.0, 0.85)],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
@@ -264,18 +251,17 @@ def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metric
 @pytest.mark.parametrize("location", [("interface-nwp")])
 @pytest.mark.datatest
 def test_diagnostic_update_after_saturation_adjustement(
-    experiment,
-    location,
-    model_top_height,
-    damping_height,
-    stretch_factor,
-    date,
-    data_provider,
-    grid_savepoint,
-    metrics_savepoint,
-    icon_grid,
-    backend,
-):
+    location: str,
+    date: str,
+    model_top_height: float,  # TODO(havogt): unused?
+    damping_height: float,  # TODO(havogt): unused?
+    stretch_factor: float,  # TODO(havogt): unused?
+    data_provider: sb.IconSerialDataProvider,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     satad_init = data_provider.from_savepoint_satad_init(location=location, date=date)
     satad_exit = data_provider.from_savepoint_satad_exit(location=location, date=date)
 
@@ -286,7 +272,6 @@ def test_diagnostic_update_after_saturation_adjustement(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     virtual_temperature_tendency = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, backend=backend
@@ -378,22 +363,22 @@ def test_diagnostic_update_after_saturation_adjustement(
         offset_provider={},
     )
 
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         updated_virtual_temperature,
         satad_exit.virtual_temperature().asnumpy(),
         atol=1.0e-13,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         updated_exner,
         satad_exit.exner().asnumpy(),
         atol=1.0e-13,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.pressure.asnumpy(),
         satad_exit.pressure().asnumpy(),
         atol=1.0e-13,
     )
-    assert helpers.dallclose(
+    assert test_utils.dallclose(
         diagnostic_state.pressure_ifc.asnumpy(),
         satad_exit.pressure_ifc().asnumpy(),
         atol=1.0e-13,

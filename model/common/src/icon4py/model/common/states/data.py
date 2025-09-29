@@ -8,7 +8,7 @@
 
 from typing import Final
 
-import icon4py.model.common.states.model as model
+from icon4py.model.common.states import model
 
 
 """Static metadata for common fields in the model."""

@@ -7,8 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import serialbox as sb
 
 
@@ -27,10 +25,10 @@ def construct_interpolation_state_for_diffusion(
 ) -> diffus_states.DiffusionInterpolationState:
     grg = savepoint.geofac_grg()
     return diffus_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.e_bln_c_s()),
+        e_bln_c_s=savepoint.e_bln_c_s(),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.geofac_div()),
+        geofac_div=savepoint.geofac_div(),
         geofac_n2s=savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],

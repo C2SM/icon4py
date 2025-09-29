@@ -18,7 +18,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_to_cell_center impo
     interpolate_to_cell_center,
 )
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
 def interpolate_to_cell_center_numpy(
@@ -29,16 +29,15 @@ def interpolate_to_cell_center_numpy(
 ) -> np.ndarray:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     c2e = connectivities[dims.C2EDim]
-    c2ce = helpers.as_1d_connectivity(c2e)
 
     interpolation = np.sum(
-        interpolant[c2e] * e_bln_c_s[c2ce],
+        interpolant[c2e] * e_bln_c_s,
         axis=1,
     )
     return interpolation
 
 
-class TestInterpolateToCellCenter(helpers.StencilTest):
+class TestInterpolateToCellCenter(stencil_tests.StencilTest):
     PROGRAM = interpolate_to_cell_center
     OUTPUTS = ("interpolation",)
 
@@ -55,7 +54,7 @@ class TestInterpolateToCellCenter(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolant = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
         interpolation = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(

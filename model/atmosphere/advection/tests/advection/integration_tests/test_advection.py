@@ -11,12 +11,12 @@ import pytest
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
     experiment,
-    grid,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -52,6 +52,7 @@ from ..utils import (
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [
@@ -111,7 +112,7 @@ def test_advection_run_single_step(
     advection_init_savepoint,
     advection_exit_savepoint,
 ):
-    # TODO (Chia Rui): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
+    # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
     if (
         even_timestep
         and horizontal_advection_type == advection.HorizontalAdvectionType.NO_ADVECTION

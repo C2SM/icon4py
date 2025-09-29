@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import neighbor_sum
+from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim
 
 
-@field_operator
+@gtx.field_operator
 def _edge_2_cell_vector_rbf_interpolation(
     p_e_in: fa.EdgeKField[ta.wpfloat],
     ptr_coeff_1: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],
@@ -26,7 +24,7 @@ def _edge_2_cell_vector_rbf_interpolation(
 
     The theory is described in Narcowich and Ward (Math Comp. 1994) and Bonaventura and Baudisch (Mox Report n. 75).
     It takes edge based variables as input and combines them into three dimensional cartesian vectors at each cell center.
-    TODO (Chia Rui): This stencil actually just use the c2e2c2e connectivity and the corresponding coefficients to compute cell-center value without knowledge of how the coefficients are computed. A better name is perferred.
+    TODO(OngChia): This stencil actually just use the c2e2c2e connectivity and the corresponding coefficients to compute cell-center value without knowledge of how the coefficients are computed. A better name is perferred.
 
     Args:
         p_e_in: Input values at edge center.
@@ -40,7 +38,7 @@ def _edge_2_cell_vector_rbf_interpolation(
     return p_u_out, p_v_out
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def edge_2_cell_vector_rbf_interpolation(
     p_e_in: fa.EdgeKField[ta.wpfloat],
     ptr_coeff_1: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],

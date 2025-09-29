@@ -9,7 +9,7 @@ from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
-import pytest as pytest
+import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
     init_two_cell_kdim_fields_with_zero_vp,
@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 class TestInitTwoCellKdimFieldsWithZeroVp(StencilTest):

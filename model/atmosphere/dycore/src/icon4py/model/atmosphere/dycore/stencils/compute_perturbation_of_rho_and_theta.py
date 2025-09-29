@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_perturbation_of_rho_and_theta(
     rho: fa.CellKField[wpfloat],
     rho_ref_mc: fa.CellKField[vpfloat],
@@ -29,7 +27,7 @@ def _compute_perturbation_of_rho_and_theta(
     return astype((z_rth_pr_1_wp, z_rth_pr_2_wp), vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_perturbation_of_rho_and_theta(
     rho: fa.CellKField[wpfloat],
     rho_ref_mc: fa.CellKField[vpfloat],

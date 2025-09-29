@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.type_alias as ta
-import icon4py.model.testing.helpers as test_helpers
+import icon4py.model.testing.stencil_tests as test_helpers
 from icon4py.model.atmosphere.dycore.dycore_states import DivergenceDampingOrder
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     apply_divergence_damping_and_update_vn,
@@ -24,11 +24,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 divergence_damp_order = DivergenceDampingOrder()
 
 
+@pytest.mark.embedded_remap_error
 class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
     PROGRAM = apply_divergence_damping_and_update_vn
     OUTPUTS = ("next_vn",)
-
-    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

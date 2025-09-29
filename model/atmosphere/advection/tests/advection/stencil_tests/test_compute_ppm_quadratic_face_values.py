@@ -11,21 +11,21 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_values import (
     compute_ppm_quadratic_face_values,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import stencil_tests
 
 
 outslice = (slice(None), slice(1, None))
 
 
-class TestComputePpmQuadraticFaceValues(helpers.StencilTest):
+class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_quadratic_face_values
-    OUTPUTS = (helpers.Output("p_face", refslice=outslice, gtslice=outslice),)
+    OUTPUTS = (stencil_tests.Output("p_face", refslice=outslice, gtslice=outslice),)
 
     @staticmethod
     def reference(

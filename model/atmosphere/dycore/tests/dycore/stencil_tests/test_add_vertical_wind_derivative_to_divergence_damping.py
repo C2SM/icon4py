@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers
+from icon4py.model.testing import stencil_tests
 
 
 def add_vertical_wind_derivative_to_divergence_damping_numpy(
@@ -43,10 +43,10 @@ def add_vertical_wind_derivative_to_divergence_damping_numpy(
     return z_graddiv_vn
 
 
-class TestAddVerticalWindDerivativeToDivergenceDamping(helpers.StencilTest):
+@pytest.mark.skip_value_error
+class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest):
     PROGRAM = add_vertical_wind_derivative_to_divergence_damping
     OUTPUTS = ("z_graddiv_vn",)
-    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(

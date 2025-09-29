@@ -12,8 +12,8 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import Koff
 
 
-# TODO (dastrm): move this highly generic stencil to common
-# TODO (dastrm): this stencil has no test
+# TODO(dastrm): move this highly generic stencil to common
+# TODO(dastrm): this stencil has no test
 
 
 @gtx.field_operator

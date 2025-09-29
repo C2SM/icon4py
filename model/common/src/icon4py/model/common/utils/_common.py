@@ -12,12 +12,11 @@ from __future__ import annotations
 import abc
 import copy
 import functools
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from typing import (
     ClassVar,
     Concatenate,
     Final,
-    Generator,
     Generic,
     ParamSpec,
     Protocol,
