@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 import gt4py.next as gtx
 import pytest
 
+from icon4py.model.atmosphere.dycore.dycore_states import DivergenceDampingOrder
 from icon4py.model.common.constants import RayleighType
 
 
@@ -41,6 +42,7 @@ from icon4py.model.testing.grid_utils import construct_decomposition_info
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
 @pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01])
@@ -49,16 +51,17 @@ from ..fixtures import *  # noqa: F403
 def test_solve_nonhydro_benchmark(
     grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
+    benchmark: Any,
 ) -> None:
-    dtime = 10.0
+    dtime = 1.0  # TODO (Yilu): change back to 10.0, 1.0 is for debugging
     lprep_adv = True
-    ndyn_substeps = 2 # TODO (Yilu): change back to 5, 2 is for debugging
+    ndyn_substeps = 1  # TODO (Yilu): change back to 5, 2 is for debugging
     at_initial_timestep = True
     second_order_divdamp_factor = 0.0
 
     config = solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
-        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
+        divdamp_order=DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coefficient=0.375,
@@ -312,7 +315,7 @@ def test_solve_nonhydro_benchmark(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=data_alloc.random_field(mesh, dims.CellDim, dtype = bool, backend=backend),
+        owner_mask=data_alloc.random_field(mesh, dims.CellDim, dtype=bool, backend=backend),
         backend=backend,
     )
 
@@ -341,15 +344,16 @@ def test_solve_nonhydro_benchmark(
         at_first_substep = i_substep == 0
         at_last_substep = i_substep == ndyn_substeps - 1
 
-        solve_nonhydro.time_step(
-            diagnostic_state_nh=diagnostic_state_nh,
-            prognostic_states=prognostic_states,
-            prep_adv=prep_adv,
-            second_order_divdamp_factor=second_order_divdamp_factor,
-            dtime=dtime,
-            ndyn_substeps_var=ndyn_substeps,
-            at_initial_timestep=at_initial_timestep,
-            lprep_adv=lprep_adv,
-            at_first_substep=at_first_substep,
-            at_last_substep=at_last_substep,
+        benchmark(
+            solve_nonhydro.time_step,
+            diagnostic_state_nh,
+            prognostic_states,
+            prep_adv,
+            second_order_divdamp_factor,
+            dtime,
+            ndyn_substeps,
+            at_initial_timestep,
+            lprep_adv,
+            at_first_substep,
+            at_last_substep,
         )
