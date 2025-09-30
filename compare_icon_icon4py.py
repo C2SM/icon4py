@@ -1,8 +1,30 @@
-import json
-import pathlib
-from collections import defaultdict
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
+import json
+import re
+
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+
+
+gt4py_data_key = "compute"
+fortran_data_key = "value"
+
+experiment = "mch_icon-ch1_medium_stencils"
+output_file = "bench_blueline_stencil_compute"
+input_openacc = "bencher_mch_icon-ch1_medium_stencils_OPENACC_v3.json"
+input_gt4py = {
+    "gtfn_gpu": "gtfn_gt4py_timers_compute.json",
+    "dace_gpu 2025-09-25": "dace_gt4py_timers_compute_20250925.json",
+    "dace_gpu 2025-09-26": "dace_gt4py_timers_compute_20250926.json",
+}
 
 
 fortran_to_icon4py = {
@@ -44,51 +66,70 @@ fortran_to_icon4py = {
 }
 
 
-def load_bencher_log(path: pathlib.Path) -> dict:
-    with open(path, "r") as f:
-        return json.load(f)
+def load_bencher_log(filename: str, t_meas_key: str, experiment: str) -> dict:
+    data = {}
+    with open(filename) as f:
+        d = json.load(f)
+        # assert experiment in d
+        for stencil, meas in d.items():
+            if stencil in fortran_to_icon4py:
+                icon4py_stencil = fortran_to_icon4py[stencil]
+                t = meas["latency"][t_meas_key]
+                data[icon4py_stencil] = t / 1000.0
+            else:
+                print(f"skipping openacc meas for {stencil}")
+    return data
 
 
-def load_gt4py_timers(path: pathlib.Path) -> dict:
-    with open(path, "r") as f:
+def load_gt4py_timers(filename: str) -> dict:
+    with open(filename) as f:
         data = json.load(f)
     return data
 
 
-def main():
-    fortran_data = load_bencher_log(
-        pathlib.Path("bencher_mch_icon-ch1_medium_stencils_3275369_OPENACC.json")  # TODO
-    )
-    gt4py_data = load_gt4py_timers("gt4py_timers.json")  # TODO
-    backend = "[run_gtfn_gpu_cached]"
-    gt4py_data_key = "compute"
-    print(gt4py_data.keys())
-    results = defaultdict(dict)
-    notfound = set()
-    for fortran_name, icon4py_name in fortran_to_icon4py.items():
-        if fortran_name in fortran_data["mch_icon-ch1_medium_stencils"]:
-            fortran_values = fortran_data["mch_icon-ch1_medium_stencils"][fortran_name]
-            icon4py_name = icon4py_name + backend
-            if icon4py_name not in gt4py_data:
-                notfound.add(icon4py_name)
-            else:
-                data = np.asarray(gt4py_data[icon4py_name][gt4py_data_key])
-                mean = np.mean(data)
-                min = np.min(data)
-                max = np.max(data)
-                # std = np.std(data)
-                # results[fortran_name]["acc"] = fortran_values[""]
-                print(f"{fortran_name:100} {min:10.6f} {mean:10.6f} {max:10.6f}")
-                print(
-                    f"{(fortran_name + '[acc]'):100} {fortran_values['lower_value']:10.6f} {fortran_values['value']:10.6f} {fortran_values['upper_value']:10.6f}"
-                )
-                print("----------------")
+columns = ["openacc"]
+data = {
+    stencil: [t]
+    for stencil, t in load_bencher_log(input_openacc, fortran_data_key, experiment).items()
+}
+data_err = {stencil: [0.0] for stencil, _ in data.items()}
 
-    # print("Remaining keys:")
-    # print(list(fortran_data["mch_icon-ch1_medium_stencils"].keys()))
-    print("Not found in gt4py data:")
-    print(notfound)
+# regex to remove the backend from the stencil name
+re_stencil = re.compile("(\S+)\[.+\]")
 
+for backend, filename in input_gt4py.items():
+    columns.append(f"{backend}_{gt4py_data_key}")
+    d = load_gt4py_timers(filename)
+    for name, meas in d.items():
+        m = re_stencil.match(name)
+        assert m
+        stencil = m[1]
+        if stencil in data:
+            # note that we drop the first measurement
+            t = meas[gt4py_data_key][1:]
+            data[stencil].append(np.median(t))
+            data_err[stencil].append(np.std(t))
+        else:
+            print(f"skipping gt4py meas for {stencil}")
 
-if __name__ == "__main__":
-    main()
+# keep only stencils that exists both in openacc and gt4py report
+data = {k: v for k, v in data.items() if len(v) == len(columns)}
+data_err = {k: v for k, v in data_err.items() if len(v) == len(columns)}
+
+df = pd.DataFrame.from_dict(data, orient="index", columns=columns)
+err = pd.DataFrame.from_dict(data_err, orient="index", columns=columns)
+print(df)
+
+# create a horizontal bar plot
+ax = df.plot.barh(
+    y=columns,
+    # yerr=err,
+    capsize=2,  # length of the little caps on the errorbars
+    legend=True,
+    figsize=(16, 10),
+)
+plt.title("Average stencil compute time [s] on mch_icon-ch1_medium (1GPU A100)")
+plt.tight_layout()
+plt.savefig(output_file)
+
+print(f"Plot figure saved to {output_file}.png")
