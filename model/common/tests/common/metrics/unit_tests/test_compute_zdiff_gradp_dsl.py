@@ -76,7 +76,6 @@ def test_compute_zdiff_gradp_dsl(
         array_ns=xp,
     )
 
-
     zdiff_gradp_full_field, vertoffset_gradp_full_field = compute_zdiff_gradp_dsl(
         e2c=icon_grid.get_connectivity("E2C").ndarray,
         z_mc=z_mc.ndarray,

@@ -19,6 +19,7 @@ from icon4py.model.common.constants import RayleighType
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
+    from gt4py.next.typing import NDArrayObject
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh

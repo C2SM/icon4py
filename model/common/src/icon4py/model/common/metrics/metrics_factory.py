@@ -640,7 +640,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(max_flat_index_provider)
 
-
         nflat_gradp_provider = factory.NumpyDataProvider(
             func=functools.partial(mf.compute_nflat_gradp, array_ns=self._xp),
             domain=(),
