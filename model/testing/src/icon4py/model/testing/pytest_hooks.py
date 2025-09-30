@@ -161,3 +161,56 @@ def pytest_benchmark_update_json(output_json):
 
     for bench in output_json["benchmarks"]:
         bench["fullname"] = _name_from_fullname(bench["fullname"])
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """
+    Gather GT4Py timer metrics from benchmark fixture and add them to the test report.
+    """
+    outcome = yield
+    report = outcome.get_result()
+    if call.when == "call":
+        benchmark = item.funcargs.get("benchmark", None)
+        if benchmark and hasattr(benchmark, "extra_info"):
+            info = benchmark.extra_info.get("gtx_metrics", None)
+            if info:
+                filtered_benchmark_name = benchmark.name.split("test_Test")[-1]
+                # Combine the benchmark name in a readable form with the gtx_metrics data
+                report.sections.append(("benchmark-extra", tuple([filtered_benchmark_name, info])))
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    """
+    Add a custom section to the terminal summary with GT4Py timer metrics from benchmarks.
+    """
+    # Gather gtx_metrics
+    benchmark_gtx_metrics = []
+    for outcome in ("passed", "failed", "skipped"):
+        all_reports = terminalreporter.stats.get(outcome, [])
+        for report in all_reports:
+            for secname, info in getattr(report, "sections", []):
+                if secname == "benchmark-extra":
+                    benchmark_gtx_metrics.append(info)
+    # Calculate the maximum length of benchmark names for formatting
+    max_name_len = 0
+    for benchmark_name, _ in benchmark_gtx_metrics:
+        max_name_len = max(len(benchmark_name), max_name_len)
+    # Print the GT4Py timer report table
+    if benchmark_gtx_metrics:
+        terminalreporter.ensure_newline()
+        header = (
+            f"{'Benchmark Name':<{max_name_len}} | {'Mean (s)':>10} | {'Std Dev':>10} | {'Runs':>4}"
+        )
+        title = " GT4Py Timer Report "
+        sep_len = max(0, len(header) - len(title))
+        left = sep_len // 2
+        right = sep_len - left
+        terminalreporter.line("-" * left + title + "-" * right, bold=True, blue=True)
+        terminalreporter.line(header)
+        terminalreporter.line("-" * len(header), blue=True)
+        for benchmark_name, gtx_metrics in benchmark_gtx_metrics:
+            terminalreporter.line(
+                f"{benchmark_name:<{max_name_len}} | {gtx_metrics.mean:>10.8f} | {gtx_metrics.std:>10.8f} | {len(gtx_metrics.samples):>4}"
+            )
+        terminalreporter.line("-" * len(header), blue=True)

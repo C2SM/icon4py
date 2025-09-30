@@ -16,7 +16,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py import eve
-from gt4py.next import backend as gtx_backend, constructors, typing as gtx_typing
+from gt4py.next import (
+    backend as gtx_backend,
+    config as gtx_config,
+    constructors,
+    metrics as gtx_metrics,
+    typing as gtx_typing,
+)
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
@@ -98,6 +104,15 @@ def test_and_benchmark(
             **_properly_allocated_input_data,
             offset_provider=grid.connectivities,
         )
+        # Collect GT4Py runtime metrics if enabled
+        if gtx_config.COLLECT_METRICS_LEVEL > 0:
+            assert (
+                len(gtx_metrics.program_metrics.data.keys()) == 1
+            ), "Expected exactly one entry in gtx_metrics"
+            benchmark.extra_info["gtx_metrics"] = gtx_metrics.program_metrics.data[
+                next(iter(gtx_metrics.program_metrics.data))
+            ]["compute"]
+            gtx_metrics.program_metrics.clear()
 
 
 class StencilTest:
