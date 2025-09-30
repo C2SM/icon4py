@@ -110,7 +110,7 @@ def _set_bcs_dvndz(
 
 
 @gtx.field_operator
-def set_bcs_green_gauss_gradient(
+def _set_bcs_green_gauss_gradient(
     mask: fa.CellKField[bool],
     grad_x: fa.CellKField[float],
     grad_y: fa.CellKField[float],
@@ -131,7 +131,7 @@ def set_bcs_green_gauss_gradient(
 
 
 @gtx.field_operator
-def set_bcs_w_matrix(
+def _set_bcs_w_matrix(
     mask: fa.CellKField[bool],
     theta_v_at_cells_on_half_levels: fa.CellKField[float],
     w_explicit_term: fa.CellKField[float],
@@ -153,7 +153,7 @@ def set_bcs_w_matrix(
     # Then set the Dirichlet value for $w$ by modifying the right hand side.
     w_explicit_term = _set_bcs_cells(
         mask=mask,
-        dir_value=DIRICHLET_VALUE_W,
+        dir_value=0.0,
         field=w_explicit_term,
     )
     return theta_v_at_cells_on_half_levels, w_explicit_term
@@ -312,7 +312,7 @@ def diffu_set_bcs_uv_vertices(
     # in diffusion, to be used for computing nabla2(hori_wind).
     _set_bcs_vertices(
         mask=mask,
-        dir_value=DIRICHLET_VALUE_DIFFU_UV_VERT,
+        dir_value=0.0,
         field=u_vert,
         out=u_vert,
         domain={
@@ -322,7 +322,7 @@ def diffu_set_bcs_uv_vertices(
     )
     _set_bcs_vertices(
         mask=mask,
-        dir_value=DIRICHLET_VALUE_DIFFU_UV_VERT,
+        dir_value=0.0,
         field=v_vert,
         out=v_vert,
         domain={

@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.dycore.ibm import _set_bcs_dvndz as ibm_set_bcs_dvndz
+from icon4py.model.atmosphere.dycore.ibm import _set_bcs_dvndz
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
@@ -79,7 +79,7 @@ def _compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     )
     vn_on_half_levels = _interpolate_to_half_levels(wgtfac_e, vn)
 
-    vn_on_half_levels = ibm_set_bcs_dvndz(
+    vn_on_half_levels = _set_bcs_dvndz(
         mask=ibm_dvndz_mask, vn=vn, vn_on_half_levels=vn_on_half_levels
     )
 

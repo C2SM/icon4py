@@ -12,7 +12,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.dycore.ibm import set_bcs_w_matrix as ibm_set_bcs_w_matrix
+from icon4py.model.atmosphere.dycore.ibm import _set_bcs_w_matrix
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     _add_analysis_increments_from_data_assimilation,
 )
@@ -331,7 +331,7 @@ def _vertically_implicit_solver_at_predictor_step(
             iau_wgt_dyn=iau_wgt_dyn,
         )
 
-    (theta_v_at_cells_on_half_levels, w_explicit_term) = ibm_set_bcs_w_matrix(
+    (theta_v_at_cells_on_half_levels, w_explicit_term) = _set_bcs_w_matrix(
         mask=ibm_w_matrix_mask,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         w_explicit_term=w_explicit_term,
@@ -655,7 +655,7 @@ def _vertically_implicit_solver_at_corrector_step(
             iau_wgt_dyn=iau_wgt_dyn,
         )
 
-    (theta_v_at_cells_on_half_levels, w_explicit_term) = ibm_set_bcs_w_matrix(
+    (theta_v_at_cells_on_half_levels, w_explicit_term) = _set_bcs_w_matrix(
         mask=ibm_w_matrix_mask,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         w_explicit_term=w_explicit_term,

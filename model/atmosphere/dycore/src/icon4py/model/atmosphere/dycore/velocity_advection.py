@@ -227,7 +227,7 @@ class VelocityAdvection:
         )
         self._end_vertex_halo = self.grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-        self._start_edge_lateral_boundary = self._grid.start_index(
+        self._start_edge_lateral_boundary = self.grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
         )
         self._start_edge_lateral_boundary_level_5 = self.grid.start_index(

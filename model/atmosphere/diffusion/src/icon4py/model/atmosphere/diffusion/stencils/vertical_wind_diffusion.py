@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import gt4py.next as gtx
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
@@ -18,12 +19,12 @@ def _apply_vertical_diffusion_to_vn(
     vn: fa.EdgeKField[wpfloat],
     ddqz_z_half_e: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
-    coeff: wpfloat,
+    multfac: wpfloat,
 ) -> fa.EdgeKField[wpfloat]:
     d2vndz2 = (
         (vn(Koff[-1]) - vn) / ddqz_z_half_e - (vn - vn(Koff[1])) / ddqz_z_half_e(Koff[1])
     ) / ddqz_z_full_e
-    vn = vn + coeff * d2vndz2
+    vn = vn + multfac * d2vndz2
     return vn
 
 
@@ -32,12 +33,12 @@ def _apply_vertical_diffusion_to_w(
     w: fa.CellKField[wpfloat],
     ddqz_z_half: fa.CellKField[vpfloat],
     ddqz_z_full: fa.CellKField[vpfloat],
-    coeff: wpfloat,
+    multfac: wpfloat,
 ) -> fa.CellKField[wpfloat]:
     d2wdz2 = (
         (w(Koff[-1]) - w) / ddqz_z_full(Koff[-1]) - (w - w(Koff[1])) / ddqz_z_full
     ) / ddqz_z_half
-    w = w + coeff * d2wdz2
+    w = w + multfac * d2wdz2
     return w
 
 
@@ -46,17 +47,17 @@ def apply_vertical_diffusion_to_vn(
     vn: fa.EdgeKField[wpfloat],
     ddqz_z_half_e: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
-    coeff: wpfloat,
+    multfac: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
     _apply_vertical_diffusion_to_vn(
-        vn,
-        ddqz_z_half_e,
-        ddqz_z_full_e,
-        coeff,
+        vn=vn,
+        ddqz_z_half_e=ddqz_z_half_e,
+        ddqz_z_full_e=ddqz_z_full_e,
+        multfac=multfac,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -70,17 +71,17 @@ def apply_vertical_diffusion_to_w(
     w: fa.CellKField[wpfloat],
     ddqz_z_half: fa.CellKField[vpfloat],
     ddqz_z_full: fa.CellKField[vpfloat],
-    coeff: wpfloat,
+    multfac: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
     _apply_vertical_diffusion_to_w(
-        w,
-        ddqz_z_half,
-        ddqz_z_full,
-        coeff,
+        w=w,
+        ddqz_z_half=ddqz_z_half,
+        ddqz_z_full=ddqz_z_full,
+        multfac=multfac,
         out=w,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

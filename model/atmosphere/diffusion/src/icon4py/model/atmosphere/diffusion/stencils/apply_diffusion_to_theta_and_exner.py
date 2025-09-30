@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.dycore.ibm import _set_bcs_edges as ibm_set_bcs_edges
+from icon4py.model.atmosphere.dycore.ibm import _set_bcs_edges
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     _calculate_nabla2_for_z,
@@ -50,7 +50,7 @@ def _apply_diffusion_to_theta_and_exner(
     # Set to zero the edge-2-cell gradient computed above (the naming doesn't
     # seem very correct) such that the nabla2(theta_v) computation below does
     # not pick up values from inside obstacles
-    z_nabla2_e = ibm_set_bcs_edges(ibm_nabla2theta_mask, 0.0, z_nabla2_e)
+    z_nabla2_e = _set_bcs_edges(ibm_nabla2theta_mask, 0.0, z_nabla2_e)
 
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
     z_temp = (

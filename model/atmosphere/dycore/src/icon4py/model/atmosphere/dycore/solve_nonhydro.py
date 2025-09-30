@@ -476,6 +476,7 @@ class SolveNonhydro:
                 "ipeidx_dsl": self._metric_state_nonhydro.pg_edgeidx_dsl,
                 "pg_exdist": self._metric_state_nonhydro.pg_exdist,
                 "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
+                "ibm_green_gauss_gradient_mask": self._ibm_masks.neigh_full_cell_mask,
                 "iau_wgt_dyn": self._config.iau_wgt_dyn,
                 "is_iau_active": self._config.is_iau_active,
                 "limited_area": self._grid.limited_area,
@@ -860,6 +861,7 @@ class SolveNonhydro:
                 "vertical_start": gtx.int32(0),
                 "vertical_end": self._grid.num_levels,
             },
+            offset_provider={"Koff": dims.KDim},
         )
 
     def _allocate_local_fields(self):
@@ -1320,7 +1322,7 @@ class SolveNonhydro:
         # NOTE: 1. vn_on_half_levels is actually not used after being computed here?
         # NOTE: 2. vn_on_half_levels is already computed in velocity_advection (where it is actually used)
         self._ibm_set_bcs_dvndz(
-            vn=prognostic_states.next.vn, vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels
+            vn=prognostic_states.next.vn, vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels,
         )
         # Set to zero the fluxes through edges of vertical surfaces of the IBM
         # region.

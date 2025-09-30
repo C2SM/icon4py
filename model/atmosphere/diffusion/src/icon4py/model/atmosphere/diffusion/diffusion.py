@@ -377,13 +377,13 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
+        ibm_masks,
         backend: gtx_typing.Backend
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
         | None,
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
-        ibm_masks = None,
     ):
         self._backend = backend
         self._orchestration = orchestration
@@ -396,6 +396,8 @@ class Diffusion:
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
+
+        self._ibm_masks = ibm_masks
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
             self._exchange
@@ -496,7 +498,9 @@ class Diffusion:
         self.ibm_diffu_set_bcs_uv_vertices = setup_program(
             backend=self._backend,
             program=diffu_set_bcs_uv_vertices,
-            constant_args={},
+            constant_args={
+                "mask": self._ibm_masks.full_vertex_mask,
+            },
             horizontal_sizes={
                 "horizontal_start": self._vertex_start_lateral_boundary_level_2,
                 "horizontal_end": self._vertex_end_local,
@@ -507,7 +511,9 @@ class Diffusion:
         self.ibm_diffu_reset_w = setup_program(
             backend=self._backend,
             program=diffu_reset_w,
-            constant_args={},
+            constant_args={
+                "mask": self._ibm_masks.half_cell_mask,
+            },
             horizontal_sizes={
                 "horizontal_start": self._horizontal_start_index_w_diffusion,
                 "horizontal_end": self._cell_end_halo,
@@ -526,8 +532,6 @@ class Diffusion:
             horizontal_sizes={
                 "horizontal_start": self._edge_start_lateral_boundary_level_5,
                 "horizontal_end": self._edge_end_local,
-                "ddqz_z_half": self._metric_state.ddqz_z_half,
-                "ddqz_z_full": self._metric_state.ddqz_z_full,
             },
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
@@ -537,6 +541,8 @@ class Diffusion:
             program=apply_vertical_diffusion_to_w,
             constant_args={
                 "multfac": self.zdiffu_wind_multfac,
+                "ddqz_z_half": self._metric_state.ddqz_z_half,
+                "ddqz_z_full": self._metric_state.ddqz_z_full,
             },
             horizontal_sizes={
                 "horizontal_start": self._horizontal_start_index_w_diffusion,
@@ -606,7 +612,7 @@ class Diffusion:
                 "area": self._cell_params.area,
                 "apply_zdiffusion_t": self.config.apply_zdiffusion_t,
                 "rd_o_cvd": self.rd_o_cvd,
-                "ibm_nabla2theta_mask": self.ibm.masks.full_edge_mask,
+                "ibm_nabla2theta_mask": self._ibm_masks.full_edge_mask,
             },
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
@@ -664,10 +670,6 @@ class Diffusion:
         # TODO(edopao): we should call gtx.common.offset_provider_to_type()
         #   but this requires some changes in gt4py domain inference.
         self.compile_time_connectivities = self._grid.connectivities
-
-        #---> IBM
-        self.ibm = ibm_masks
-        #<--- IBM
 
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
@@ -853,7 +855,6 @@ class Diffusion:
         log.debug("communication rbf extrapolation of vn - end")
 
         self.ibm_diffu_set_bcs_uv_vertices(
-            mask=self.ibm.masks.full_vertex_mask,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
         )
