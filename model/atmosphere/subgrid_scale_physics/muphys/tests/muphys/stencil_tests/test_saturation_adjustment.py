@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 # @pytest.mark.embedded_only
 class TestSaturationAdjustment(StencilTest):
     PROGRAM = saturation_adjustment
-    OUTPUTS = ("te_out", "qve_out", "qce_out", "mask_out")
+    OUTPUTS = ("te_out", "qve_out", "qce_out")
 
     @staticmethod
     def reference(
@@ -45,7 +45,6 @@ class TestSaturationAdjustment(StencilTest):
             te_out=np.full(te.shape, 273.91226488486984),
             qve_out=np.full(te.shape, 4.4903852062454690e-003),
             qce_out=np.full(te.shape, 9.5724552280369163e-007),
-            mask_out=np.full(te.shape, False),
         )
 
     @pytest.fixture
@@ -78,5 +77,4 @@ class TestSaturationAdjustment(StencilTest):
             te_out=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
             qve_out=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
             qce_out=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),
-            mask_out=data_alloc.constant_field(grid, True, dims.CellDim, dims.KDim, dtype=bool),
         )

@@ -354,7 +354,6 @@ def _saturation_adjustment(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[bool],
 ]:
     """
     Compute the saturation adjustment which revises internal energy and water contents
@@ -395,11 +394,11 @@ def _saturation_adjustment(
 
     # Is it possible to unify the where for all three outputs??
     mask = qve + qce <= qx_hold
-    te = where((qve + qce <= qx_hold), Tx_hold, Tx)
-    qce = where((qve + qce <= qx_hold), 0.0, maximum(qve + qce - qx, 0.0))
-    qve = where((qve + qce <= qx_hold), qve + qce, qx)
+    te = where(mask, Tx_hold, Tx)
+    qce = where(mask, 0.0, maximum(qve + qce - qx, 0.0))
+    qve = where(mask, qve + qce, qx)
 
-    return te, qve, qce, mask
+    return te, qve, qce
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -415,8 +414,7 @@ def saturation_adjustment(
     te_out: fa.CellKField[ta.wpfloat],  # Temperature
     qve_out: fa.CellKField[ta.wpfloat],  # Specific humidity
     qce_out: fa.CellKField[ta.wpfloat],  # Specific cloud water content
-    mask_out: fa.CellKField[bool],  # Specific cloud water content
 ):
     _saturation_adjustment(
-        te, qve, qce, qre, qse, qie, qge, rho, out=(te_out, qve_out, qce_out, mask_out)
+        te, qve, qce, qre, qse, qie, qge, rho, out=(te_out, qve_out, qce_out)
     )
