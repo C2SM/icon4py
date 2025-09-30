@@ -7,20 +7,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""
-This is the full muphys implementation for a single muphys call
-WORK IN PROGRESS!!!!  Do not try to run this.
-"""
-
 import argparse
 import sys
 import time
 
 import gt4py.next as gtx
-import netCDF4
 import numpy as np
 
 from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.utils import device_utils
 
 
 try:
@@ -28,6 +23,7 @@ try:
 except ImportError:
     print("Netcdf not installed")
     sys.exit()
+
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.muphys import (
     muphys_run,
@@ -76,7 +72,7 @@ def get_args():
 
 class Data:
     def __init__(self, args):
-        nc = netCDF4.Dataset(args.input_file)
+        nc = Dataset(args.input_file)
         # intent(in) variables:
         try:
             self.ncells = len(nc.dimensions["cell"])
@@ -96,7 +92,7 @@ class Data:
         self.qs = nc.variables["qs"][:, :].astype(np.float64)  # inout
         self.qg = nc.variables["qg"][:, :].astype(np.float64)  # inout
         # intent(out) variables:
-        self.te_out = np.zeros((self.ncells, self.nlev), np.float64)
+        self.t_out = np.zeros((self.ncells, self.nlev), np.float64)
         self.qv_out = np.zeros((self.ncells, self.nlev), np.float64)
         self.qc_out = np.zeros((self.ncells, self.nlev), np.float64)
         self.qi_out = np.zeros((self.ncells, self.nlev), np.float64)
@@ -123,190 +119,6 @@ def calc_dz(ksize, z):
     return dz
 
 
-def run_program(
-    args, backend, data, te_out, qv_out, qc_out, qi_out, qr_out, qs_out, qg_out, pflx_out
-):
-    ksize = data.dz.shape[0]
-
-    dz = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.dz[:, :]),
-        allocator=backend,
-    )
-    te = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.t[0, :, :]),
-        allocator=backend,
-    )
-    p = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.p[0, :, :]),
-        allocator=backend,
-    )
-    qse = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qs[0, :, :]),
-        allocator=backend,
-    )
-    qie = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qi[0, :, :]),
-        allocator=backend,
-    )
-    qge = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qg[0, :, :]),
-        allocator=backend,
-    )
-    qve = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qv[0, :, :]),
-        allocator=backend,
-    )
-    qce = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qc[0, :, :]),
-        allocator=backend,
-    )
-    qre = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qr[0, :, :]),
-        allocator=backend,
-    )
-    rho = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.rho[0, :, :]),
-        allocator=backend,
-    )
-
-    pr_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.zeros((data.ncells, data.nlev)),
-        allocator=backend,
-    )
-    ps_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.zeros((data.ncells, data.nlev)),
-        allocator=backend,
-    )
-    pi_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.zeros((data.ncells, data.nlev)),
-        allocator=backend,
-    )
-    pg_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.zeros((data.ncells, data.nlev)),
-        allocator=backend,
-    )
-    pre_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.zeros((data.ncells, data.nlev)),
-        allocator=backend,
-    )
-
-    muphys_run_program = setup_program(
-        backend=backend,
-        program=muphys_run,
-        constant_args={},
-        horizontal_sizes={},
-        vertical_sizes={
-            "last_lev": ksize - 1,
-        },
-        offset_provider={"Koff": dims.KDim},
-    )
-
-    start_time = time.time()
-
-    for _x in range(int(args.itime) + 1):
-        if _x == 1:  # Only start timing second iteration
-            start_time = time.time()
-
-        muphys_run_program(
-            dz=dz,
-            te=te,
-            p=p,
-            rho=rho,
-            qve=qve,
-            qce=qce,
-            qre=qre,
-            qse=qse,
-            qie=qie,
-            qge=qge,
-            dt=args.dt,
-            qnc=args.qnc,
-            te_out=te_out,
-            qv_out=qv_out,
-            qc_out=qc_out,
-            qr_out=qr_out,
-            qs_out=qs_out,
-            qi_out=qi_out,
-            qg_out=qg_out,
-            pflx=pflx_out,
-            pr=pr_out,
-            ps=ps_out,
-            pi=pi_out,
-            pg=pg_out,
-            pre=pre_out,
-        )
-
-        if _x == int(args.itime):  # End timer on last iteration
-            end_time = time.time()
-
-    elapsed_time = end_time - start_time
-    print("For", int(args.itime), "iterations it took", elapsed_time, "seconds!")
-    data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize - 1)].asnumpy())
-    data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize - 1)].asnumpy())
-    data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize - 1)].asnumpy())
-    data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
-    data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
-
-
 def write_fields(
     output_filename,
     ncell,
@@ -329,13 +141,13 @@ def write_fields(
     ncells  = ncfile.createDimension("ncells", ncell)
     height  = ncfile.createDimension("height", nlev)
     height1 = ncfile.createDimension("height1", nlev+1)
-    ta_var = ncfile.createVariable("ta", np.double, ("height", "ncells"))
+    ta_var  = ncfile.createVariable("ta", np.double, ("height", "ncells"))
     hus_var = ncfile.createVariable("hus", np.double, ("height", "ncells"))
     clw_var = ncfile.createVariable("clw", np.double, ("height", "ncells"))
     cli_var = ncfile.createVariable("cli", np.double, ("height", "ncells"))
-    qr_var = ncfile.createVariable("qr", np.double, ("height", "ncells"))
-    qs_var = ncfile.createVariable("qs", np.double, ("height", "ncells"))
-    qg_var = ncfile.createVariable("qg", np.double, ("height", "ncells"))
+    qr_var  = ncfile.createVariable("qr", np.double, ("height", "ncells"))
+    qs_var  = ncfile.createVariable("qs", np.double, ("height", "ncells"))
+    qg_var  = ncfile.createVariable("qg", np.double, ("height", "ncells"))
     pflx_var = ncfile.createVariable("pflx", np.double, ("height", "ncells"))
     prr_gsp_var = ncfile.createVariable("prr_gsp", np.double, ("height1", "ncells"))
     prs_gsp_var = ncfile.createVariable("prs_gsp", np.double, ("height1", "ncells"))
@@ -367,12 +179,93 @@ sys.setrecursionlimit(10**4)
 
 data = Data(args)
 
-te_out = gtx.as_field(
+dz = gtx.as_field(
     (
         dims.CellDim,
         dims.KDim,
     ),
-    data.te_out,
+    np.transpose(data.dz[:, :]),
+    allocator=backend,
+)
+te = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.t[0, :, :]),
+    allocator=backend,
+)
+p = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.p[0, :, :]),
+    allocator=backend,
+)
+qse = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qs[0, :, :]),
+    allocator=backend,
+)
+qie = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qi[0, :, :]),
+    allocator=backend,
+)
+qge = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qg[0, :, :]),
+    allocator=backend,
+)
+qve = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qv[0, :, :]),
+    allocator=backend,
+)
+qce = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qc[0, :, :]),
+    allocator=backend,
+)
+qre = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qr[0, :, :]),
+    allocator=backend,
+)
+rho = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.rho[0, :, :]),
+    allocator=backend,
+)
+
+t_out = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    data.t_out,
     allocator=backend,
 )
 qv_out = gtx.as_field(
@@ -431,14 +324,110 @@ pflx_out = gtx.as_field(
     data.pflx_out,
     allocator=backend,
 )
+pr_out = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
+)
+ps_out = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
+)
+pi_out = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
+)
+pg_out = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
+)
+pre_out = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
+)
 
-run_program(args, backend, data, te_out, qv_out, qc_out, qi_out, qr_out, qs_out, qg_out, pflx_out)
+ksize = data.dz.shape[0]
+
+muphys_run_program = setup_program(
+    backend=backend,
+    program=muphys_run,
+    constant_args={},
+    horizontal_sizes={},
+    vertical_sizes={
+        "last_lev": ksize - 1,
+    },
+    offset_provider={"Koff": dims.KDim},
+)
+
+for _x in range(int(args.itime) + 1):
+    if _x == 1:  # Only start timing second iteration
+        device_utils.sync(backend)
+        start_time = time.time()
+
+    muphys_run_program(
+        dz=dz,
+        te=te,
+        p=p,
+        rho=rho,
+        qve=qve,
+        qce=qce,
+        qre=qre,
+        qse=qse,
+        qie=qie,
+        qge=qge,
+        dt=args.dt,
+        qnc=args.qnc,
+        t_out=t_out,
+        qv_out=qv_out,
+        qc_out=qc_out,
+        qr_out=qr_out,
+        qs_out=qs_out,
+        qi_out=qi_out,
+        qg_out=qg_out,
+        pflx=pflx_out,
+        pr=pr_out,
+        ps=ps_out,
+        pi=pi_out,
+        pg=pg_out,
+        pre=pre_out,
+    )
+    if _x == int(args.itime):  # End timer on last iteration
+        device_utils.sync(backend)
+        end_time = time.time()
+
+elapsed_time = end_time - start_time
+print("For", int(args.itime), "iterations it took", elapsed_time, "seconds!")
+
+data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize - 1)].asnumpy())
+data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize - 1)].asnumpy())
+data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize - 1)].asnumpy())
+data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
+data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
 
 write_fields(
     args.output_file,
     data.ncells,
     data.nlev,
-    t=np.transpose(te_out.asnumpy()),
+    t=np.transpose(t_out.asnumpy()),
     qv=np.transpose(qv_out.asnumpy()),
     qc=np.transpose(qc_out.asnumpy()),
     qi=np.transpose(qi_out.asnumpy()),

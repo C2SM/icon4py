@@ -52,7 +52,7 @@ def _muphys_run(
 
     te, qve, qce = _saturation_adjustment(te, qve, qce, qre, qse, qie, qge, rho)
 
-    te_out, qv_out, qc_out, qr_out, qs_out, qi_out, qg_out, pflx_out, pr_out, ps_out, pi_out, pg_out, pre_out = _graupel_run(dz, te, p, rho, qve, qce, qre, qse, qie, qge, args.dt, args.qnc)
+    te_out, qv_out, qc_out, qr_out, qs_out, qi_out, qg_out, pflx_out, pr_out, ps_out, pi_out, pg_out, pre_out = _graupel_run(dz, te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc)
 
     te_out, qv_out, qc_out = _saturation_adjustment(te_out, qv_out, qc_out, qr_out, qs_out, qi_out, qg_out, rho)
 
