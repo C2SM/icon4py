@@ -15,7 +15,7 @@ import pytest
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
-from icon4py.model.common.metrics.metric_fields import compute_flat_edge_idx
+from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions
 from icon4py.model.testing.fixtures.datatest import (
@@ -67,7 +67,7 @@ def test_compute_zdiff_gradp_dsl(
     horizontal_start_edge = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     start_nudging = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
 
-    flat_idx = compute_flat_edge_idx(
+    flat_idx_np = compute_flat_max_idx(
         e2c=icon_grid.get_connectivity("E2C").ndarray,
         z_mc=z_mc.ndarray,
         c_lin_e=c_lin_e.ndarray,
@@ -76,7 +76,6 @@ def test_compute_zdiff_gradp_dsl(
         array_ns=xp,
     )
 
-    flat_idx_np = xp.amax(flat_idx, axis=1)
 
     zdiff_gradp_full_field, vertoffset_gradp_full_field = compute_zdiff_gradp_dsl(
         e2c=icon_grid.get_connectivity("E2C").ndarray,
