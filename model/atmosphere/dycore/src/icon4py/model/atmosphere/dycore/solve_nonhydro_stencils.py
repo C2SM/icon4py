@@ -23,8 +23,13 @@ from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperat
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     _init_cell_kdim_field_with_zero_wp,
 )
+from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
+    _update_density_exner_wind,
+)
+from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_test_fields(
@@ -103,3 +108,46 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
     )
 
     return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def stencils_61_62(
+    rho_now: fa.CellKField[float],
+    grf_tend_rho: fa.CellKField[float],
+    theta_v_now: fa.CellKField[float],
+    grf_tend_thv: fa.CellKField[float],
+    w_now: fa.CellKField[float],
+    grf_tend_w: fa.CellKField[float],
+    rho_new: fa.CellKField[float],
+    exner_new: fa.CellKField[float],
+    w_new: fa.CellKField[float],
+    dtime: float,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _update_density_exner_wind(
+        rho_now,
+        grf_tend_rho,
+        theta_v_now,
+        grf_tend_thv,
+        w_now,
+        grf_tend_w,
+        dtime,
+        out=(rho_new, exner_new, w_new),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+    _update_wind(
+        w_now,
+        grf_tend_w,
+        dtime,
+        out=w_new,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
+        },
+    )
