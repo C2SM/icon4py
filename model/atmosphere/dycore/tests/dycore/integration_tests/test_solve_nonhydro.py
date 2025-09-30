@@ -91,7 +91,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     )(
         fourth_order_divdamp_scaling_coeff,
         config.max_nudging_coefficient,
-        constants.DBL_EPS,
+        constants.WP_EPS,
         out=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
         offset_provider={},
     )

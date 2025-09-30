@@ -127,7 +127,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
             p_mflx_tracer_h=p_mflx_tracer_h,
             r_m=self._r_m,
             p_dtime=dtime,
-            dbl_eps=constants.DBL_EPS,
+            wp_eps=constants.WP_EPS,
             horizontal_start=self._start_cell_lateral_boundary_level_2,  # originally i_rlstart_c = get_startrow_c(startrow_e=5) = 2
             horizontal_end=self._end_cell_local,
             vertical_start=0,
