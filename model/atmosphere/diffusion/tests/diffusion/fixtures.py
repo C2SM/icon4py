@@ -24,6 +24,7 @@ from icon4py.model.testing.fixtures.datatest import (
     icon_grid,
     interpolation_savepoint,
     linit,
+    lowest_layer_thickness,
     maximal_layer_thickness,
     metrics_savepoint,
     model_top_height,
