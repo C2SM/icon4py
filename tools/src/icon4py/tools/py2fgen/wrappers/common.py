@@ -166,6 +166,8 @@ def construct_icon_grid(
 
     xp = data_alloc.import_array_ns(backend)
     start_indices = {
+        # TODO(halungge): ICON Fortran has 0 values in these arrays in some places possibly where they don't use them.
+        # We should investigate where we access these values.
         dims.CellDim: np.maximum(0, adjust_fortran_indices(cell_starts)),
         dims.EdgeDim: np.maximum(0, adjust_fortran_indices(edge_starts)),
         dims.VertexDim: np.maximum(0, adjust_fortran_indices(vertex_starts)),
