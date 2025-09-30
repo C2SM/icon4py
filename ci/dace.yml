@@ -15,7 +15,7 @@ include:
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
-        BACKEND: [dace_cpu, dace_gpu]
+        BACKEND: [dace_cpu_nocache, dace_gpu_nocache]
         GRID: [simple, icon_regional]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
@@ -32,7 +32,7 @@ include:
   parallel:
     matrix:
       - COMPONENT: [common]
-        BACKEND: [dace_cpu, dace_gpu]
+        BACKEND: [dace_cpu_nocache, dace_gpu_nocache]
         LEVEL: [integration]
   rules:
     - if: $COMPONENT == 'common' && $LEVEL == 'integration'
