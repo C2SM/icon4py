@@ -45,14 +45,12 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
 )
 from icon4py.model.atmosphere.dycore.stencils.update_theta_v import update_theta_v
 from icon4py.model.atmosphere.dycore.velocity_advection import VelocityAdvection
-
 from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
 )
-from icon4py.model.common.type_alias import wpfloat, vpfloat
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base as grid_def,
@@ -63,6 +61,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -323,11 +322,15 @@ class NonHydrostaticParams:
         #: Weighting coefficients for velocity advection if tendency averaging is used
         #: The off-centering specified here turned out to be beneficial to numerical
         #: stability in extreme situations
-        self.advection_explicit_weight_parameter: Final[wpfloat] = wpfloat(0.5) - config.veladv_offctr
+        self.advection_explicit_weight_parameter: Final[wpfloat] = (
+            wpfloat(0.5) - config.veladv_offctr
+        )
         """
         Declared as wgt_nnow_vel in ICON.
         """
-        self.advection_implicit_weight_parameter: Final[wpfloat] = wpfloat(0.5) + config.veladv_offctr
+        self.advection_implicit_weight_parameter: Final[wpfloat] = (
+            wpfloat(0.5) + config.veladv_offctr
+        )
         """
         Declared as wgt_nnew_vel in ICON.
         """
@@ -335,7 +338,9 @@ class NonHydrostaticParams:
         #: Weighting coefficients for rho and theta at interface levels in the corrector step
         #: This empirically determined weighting minimizes the vertical wind off-centering
         #: needed for numerical stability of vertical sound wave propagation
-        self.rhotheta_implicit_weight_parameter: Final[wpfloat] = wpfloat(0.5) + config.rhotheta_offctr
+        self.rhotheta_implicit_weight_parameter: Final[wpfloat] = (
+            wpfloat(0.5) + config.rhotheta_offctr
+        )
         """
         Declared as wgt_nnew_rth in ICON.
         """
@@ -1288,7 +1293,7 @@ class SolveNonhydro:
             self._grid.global_properties.mean_cell_area,
             second_order_divdamp_factor,
             self._config.max_nudging_coefficient,
-            constants.DBL_EPS,
+            constants.WP_EPS,
             out=(
                 self.fourth_order_divdamp_scaling_coeff,
                 self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
