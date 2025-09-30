@@ -15,6 +15,7 @@ import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.utils import device_utils
 
 
 try:
@@ -379,6 +380,7 @@ graupel_run_program = setup_program(
 
 for _x in range(int(args.itime) + 1):
     if _x == 1:  # Only start timing second iteration
+        device_utils.sync(backend)
         start_time = time.time()
 
     graupel_run_program(
@@ -409,6 +411,7 @@ for _x in range(int(args.itime) + 1):
         pre=pre_out,
     )
     if _x == int(args.itime):  # End timer on last iteration
+        device_utils.sync(backend)
         end_time = time.time()
 
 elapsed_time = end_time - start_time

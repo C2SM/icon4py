@@ -328,12 +328,6 @@ def run_program(
             pre=pre_out,
         )
 
-        data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize - 1)].asnumpy())
-        data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize - 1)].asnumpy())
-        data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize - 1)].asnumpy())
-        data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
-        data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
-
         saturation_adjustment_program(
             te=te,
             qve=qve,
@@ -354,6 +348,11 @@ def run_program(
 
     elapsed_time = end_time - start_time
     print("For", int(args.itime), "iterations it took", elapsed_time, "seconds!")
+    data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize - 1)].asnumpy())
+    data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize - 1)].asnumpy())
+    data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize - 1)].asnumpy())
+    data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
+    data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
 
 
 def write_fields(
