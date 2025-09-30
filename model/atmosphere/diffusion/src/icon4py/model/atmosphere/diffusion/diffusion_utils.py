@@ -11,56 +11,57 @@ from gt4py.next import broadcast, minimum
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 
 
 @gtx.field_operator
-def _identity_c_k(field: fa.CellKField[float]) -> fa.CellKField[float]:
+def _identity_c_k(field: fa.CellKField[wpfloat]) -> fa.CellKField[wpfloat]:
     return field
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def copy_field(old_f: fa.CellKField[float], new_f: fa.CellKField[float]):
+def copy_field(old_f: fa.CellKField[wpfloat], new_f: fa.CellKField[wpfloat]):
     _identity_c_k(old_f, out=new_f)
 
 
 @gtx.field_operator
-def _identity_e_k(field: fa.EdgeKField[float]) -> fa.EdgeKField[float]:
+def _identity_e_k(field: fa.EdgeKField[wpfloat]) -> fa.EdgeKField[wpfloat]:
     return field
 
 
 @gtx.field_operator
-def _scale_k(field: fa.KField[float], factor: float) -> fa.KField[float]:
+def _scale_k(field: fa.KField[wpfloat], factor: wpfloat) -> fa.KField[wpfloat]:
     return field * factor
 
 
 @gtx.program
-def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
+def scale_k(field: fa.KField[wpfloat], factor: wpfloat, scaled_field: fa.KField[wpfloat]):
     _scale_k(field, factor, out=scaled_field)
 
 
 @gtx.field_operator
-def _setup_smag_limit(diff_multfac_vn: fa.KField[float]) -> fa.KField[float]:
-    return 0.125 - 4.0 * diff_multfac_vn
+def _setup_smag_limit(diff_multfac_vn: fa.KField[wpfloat]) -> fa.KField[wpfloat]:
+    return wpfloat("0.125") - wpfloat("4.0") * diff_multfac_vn
 
 
 @gtx.field_operator
-def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float) -> fa.KField[float]:
-    con = 1.0 / 128.0
-    dyn = k4 * dyn_substeps / 3.0
+def _setup_runtime_diff_multfac_vn(k4: wpfloat, dyn_substeps: wpfloat) -> fa.KField[wpfloat]:
+    con = wpfloat("1.0") / wpfloat("128.0")
+    dyn = k4 * dyn_substeps / wpfloat("3.0")
     return broadcast(minimum(con, dyn), (KDim,))
 
 
 @gtx.field_operator
-def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> fa.KField[float]:
-    return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
+def _setup_initial_diff_multfac_vn(k4: wpfloat, hdiff_efdt_ratio: wpfloat) -> fa.KField[wpfloat]:
+    return broadcast(k4 / wpfloat(wpfloat("3.0")) * hdiff_efdt_ratio, (KDim,))
 
 
 @gtx.field_operator
 def _setup_fields_for_initial_step(
-    k4: float, hdiff_efdt_ratio: float
-) -> tuple[fa.KField[float], fa.KField[float]]:
+    k4: wpfloat, hdiff_efdt_ratio: wpfloat
+) -> tuple[fa.KField[wpfloat], fa.KField[wpfloat]]:
     diff_multfac_vn = _setup_initial_diff_multfac_vn(k4, hdiff_efdt_ratio)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
     return diff_multfac_vn, smag_limit
@@ -68,28 +69,28 @@ def _setup_fields_for_initial_step(
 
 @gtx.program
 def setup_fields_for_initial_step(
-    k4: float,
-    hdiff_efdt_ratio: float,
-    diff_multfac_vn: fa.KField[float],
-    smag_limit: fa.KField[float],
+    k4: wpfloat,
+    hdiff_efdt_ratio: wpfloat,
+    diff_multfac_vn: fa.KField[wpfloat],
+    smag_limit: fa.KField[wpfloat],
 ):
     _setup_fields_for_initial_step(k4, hdiff_efdt_ratio, out=(diff_multfac_vn, smag_limit))
 
 
 @gtx.field_operator
 def _init_diffusion_local_fields_for_regular_timestemp(
-    k4: float,
-    dyn_substeps: float,
-    hdiff_smag_fac: float,
-    hdiff_smag_fac2: float,
-    hdiff_smag_fac3: float,
-    hdiff_smag_fac4: float,
-    hdiff_smag_z: float,
-    hdiff_smag_z2: float,
-    hdiff_smag_z3: float,
-    hdiff_smag_z4: float,
-    vect_a: fa.KField[float],
-) -> tuple[fa.KField[float], fa.KField[float], fa.KField[float]]:
+    k4: wpfloat,
+    dyn_substeps: wpfloat,
+    hdiff_smag_fac: wpfloat,
+    hdiff_smag_fac2: wpfloat,
+    hdiff_smag_fac3: wpfloat,
+    hdiff_smag_fac4: wpfloat,
+    hdiff_smag_z: wpfloat,
+    hdiff_smag_z2: wpfloat,
+    hdiff_smag_z3: wpfloat,
+    hdiff_smag_z4: wpfloat,
+    vect_a: fa.KField[wpfloat],
+) -> tuple[fa.KField[wpfloat], fa.KField[wpfloat], fa.KField[wpfloat]]:
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
     enh_smag_fac = _en_smag_fac_for_zero_nshift(
@@ -109,23 +110,23 @@ def _init_diffusion_local_fields_for_regular_timestemp(
         enh_smag_fac,
     )
 
-
+#TODO(pstark): type these!!
 @gtx.program
 def init_diffusion_local_fields_for_regular_timestep(
-    k4: float,
-    dyn_substeps: float,
-    hdiff_smag_fac: float,
-    hdiff_smag_fac2: float,
-    hdiff_smag_fac3: float,
-    hdiff_smag_fac4: float,
-    hdiff_smag_z: float,
-    hdiff_smag_z2: float,
-    hdiff_smag_z3: float,
-    hdiff_smag_z4: float,
-    vect_a: fa.KField[float],
-    diff_multfac_vn: fa.KField[float],
-    smag_limit: fa.KField[float],
-    enh_smag_fac: fa.KField[float],
+    k4: wpfloat,
+    dyn_substeps: wpfloat,
+    hdiff_smag_fac: wpfloat,
+    hdiff_smag_fac2: wpfloat,
+    hdiff_smag_fac3: wpfloat,
+    hdiff_smag_fac4: wpfloat,
+    hdiff_smag_z: wpfloat,
+    hdiff_smag_z2: wpfloat,
+    hdiff_smag_z3: wpfloat,
+    hdiff_smag_z4: wpfloat,
+    vect_a: fa.KField[wpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
+    smag_limit: fa.KField[wpfloat],
+    enh_smag_fac: fa.KField[wpfloat],
 ):
     _init_diffusion_local_fields_for_regular_timestemp(
         k4,
@@ -149,31 +150,31 @@ def init_diffusion_local_fields_for_regular_timestep(
 
 @gtx.field_operator
 def _init_nabla2_factor_in_upper_damping_zone(
-    physical_heights: fa.KField[float],
+    physical_heights: fa.KField[wpfloat],
     end_index_of_damping_layer: gtx.int32,
     nshift: gtx.int32,
-    heights_nrd_shift: float,
-    heights_1: float,
-) -> fa.KField[float]:
+    heights_nrd_shift: wpfloat,
+    heights_1: wpfloat,
+) -> fa.KField[wpfloat]:
     height_sliced = concat_where(
         ((1 + nshift) <= dims.KDim) & (dims.KDim < (nshift + end_index_of_damping_layer + 1)),
         physical_heights,
-        0.0,
+        wpfloat("0.0"),
     )
     diff_multfac_n2w = (
-        1.0 / 12.0 * ((height_sliced - heights_nrd_shift) / (heights_1 - heights_nrd_shift)) ** 4
+        wpfloat("1.0") / wpfloat("12.0") * ((height_sliced - heights_nrd_shift) / (heights_1 - heights_nrd_shift)) ** wpfloat("4")
     )
     return diff_multfac_n2w
 
 
 @gtx.program
 def init_nabla2_factor_in_upper_damping_zone(
-    physical_heights: fa.KField[float],
-    diff_multfac_n2w: fa.KField[float],
+    physical_heights: fa.KField[wpfloat],
+    diff_multfac_n2w: fa.KField[wpfloat],
     end_index_of_damping_layer: gtx.int32,
     nshift: gtx.int32,
-    heights_nrd_shift: float,
-    heights_1: float,
+    heights_nrd_shift: wpfloat,
+    heights_1: wpfloat,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
