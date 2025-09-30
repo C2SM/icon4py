@@ -244,6 +244,10 @@ def set_bcs_dvndz(
 def set_bcs_vn_gradh_w(
     mask: fa.EdgeKField[bool],
     horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[float],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     # Set the horizontal advection of w to zero at the vertical surfaces.
     # Technically, it would be enough to set vh to zero, but vh is computed
@@ -384,7 +388,8 @@ class ImmersedBoundaryMethodMasks:
 
             log.info(f"IBM: nr. of masked cells: {xp.sum(full_cell_mask_np)}")
 
-            c2e = grid.connectivities[dims.C2EDim]
+            #c2e = grid.connectivities[dims.C2EDim]
+            c2e = grid.connectivities["C2E"]
             for k in range(grid.num_levels + 1):
                 half_edge_mask_np[xp.unique(c2e[xp.where(half_cell_mask_np[:, k])[0]]), k] = True
             full_edge_mask_np = half_edge_mask_np[:, :-1]

@@ -62,7 +62,7 @@ def _compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
-    ibm_dvndz_mask: fa.EdgeField[bool],
+    ibm_dvndz_mask: fa.EdgeKField[bool],
     skip_compute_predictor_vertical_advection: bool,
     nflatlev: gtx.int32,
 ) -> tuple[
@@ -139,7 +139,7 @@ def compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
-    ibm_dvndz_mask: fa.EdgeField[bool],
+    ibm_dvndz_mask: fa.EdgeKField[bool],
     skip_compute_predictor_vertical_advection: bool,
     nflatlev: gtx.int32,
     horizontal_start: gtx.int32,

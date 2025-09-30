@@ -434,6 +434,7 @@ def initialize(
         backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
+        grid=grid,
     )
 
     savepoint_path = os.environ.get("ICON4PY_SAVEPOINT_PATH", "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data")

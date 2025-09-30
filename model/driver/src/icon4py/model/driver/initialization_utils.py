@@ -344,8 +344,8 @@ def read_geometry_fields(
     Read fields containing grid properties.
 
     Args:
-        path: path to the serialized input data
         grid_file: path of the grid
+        path: path to the serialized input data
         vertical_grid_config: Vertical grid configuration
         backend: GT4py backend
         rank: mpi rank of the current compute node
@@ -420,6 +420,7 @@ def read_decomp_info(
 def read_static_fields(
     path: pathlib.Path,
     grid_file: pathlib.Path,
+    grid: icon_grid.IconGrid,
     backend: gtx_typing.Backend,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
@@ -482,7 +483,7 @@ def read_static_fields(
         )
 
         xp = data_alloc.import_array_ns(backend)
-        ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KHalfDim)), dtype=float)
+        ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KDim)+1), dtype=float)
         ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
         compute_ddqz_z_half_e.with_backend(backend=backend)(
             ddqz_z_half=metrics_savepoint.ddqz_z_half(),
@@ -491,8 +492,8 @@ def read_static_fields(
             horizontal_start=0,
             horizontal_end=grid_savepoint.num(dims.EdgeDim),
             vertical_start=0,
-            vertical_end=grid_savepoint.num(dims.KHalfDim),
-            offset_provider={},
+            vertical_end=grid_savepoint.num(dims.KDim)+1,
+            offset_provider=grid.connectivities,
         )
         diffusion_metric_state = diffusion_states.DiffusionMetricState(
             mask_hdiff=metrics_savepoint.mask_hdiff(),
