@@ -15,8 +15,8 @@ from types import ModuleType
 from typing import Final
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
-from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.states.metadata as data
 import icon4py.model.common.type_alias as ta
@@ -295,7 +295,7 @@ class VerticalGrid:
 
 
 def _read_vct_a_and_vct_b_from_file(
-    file_path: pathlib.Path, num_levels: int, backend: gtx_backend.Backend | None
+    file_path: pathlib.Path, num_levels: int, backend: gtx_typing.Backend | None
 ) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
@@ -341,7 +341,7 @@ def _read_vct_a_and_vct_b_from_file(
 
 
 def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
-    vertical_config: VerticalGridConfig, backend: gtx_backend.Backend | None
+    vertical_config: VerticalGridConfig, backend: gtx_typing.Backend | None
 ) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
@@ -530,7 +530,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
 
 
 def get_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, backend: gtx_backend.Backend | None
+    vertical_config: VerticalGridConfig, backend: gtx_typing.Backend | None
 ) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.
@@ -729,7 +729,9 @@ def _check_flatness_of_flat_level(
     array_ns: ModuleType = np,
 ) -> None:
     # Check if level nflatlev is still flat
-    if not array_ns.all(vertical_coordinate[:, nflatlev - 1] == vct_a[nflatlev - 1]):
+    if not array_ns.all(
+        vertical_coordinate[:, max(0, nflatlev - 1)] == vct_a[max(0, nflatlev - 1)]
+    ):
         raise exceptions.InvalidComputationError("Level nflatlev is not flat")
 
 

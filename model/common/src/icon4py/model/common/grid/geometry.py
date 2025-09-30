@@ -10,8 +10,8 @@ import logging
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
+import gt4py.next.typing as gtx_typing
 from gt4py import next as gtx
-from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.math.helpers as math_helpers
 from icon4py.model.common import (
@@ -79,7 +79,7 @@ class GridGeometry(factory.FieldSource):
         self,
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
@@ -138,6 +138,8 @@ class GridGeometry(factory.FieldSource):
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
                 # TODO(halungge): rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
+                attrs.EDGE_LENGTH: extra_fields[gridfile.GeometryName.EDGE_LENGTH],
+                attrs.DUAL_EDGE_LENGTH: extra_fields[gridfile.GeometryName.DUAL_EDGE_LENGTH],
                 attrs.EDGE_CELL_DISTANCE: extra_fields[gridfile.GeometryName.EDGE_CELL_DISTANCE],
                 attrs.EDGE_VERTEX_DISTANCE: extra_fields[
                     gridfile.GeometryName.EDGE_VERTEX_DISTANCE
@@ -175,50 +177,12 @@ class GridGeometry(factory.FieldSource):
         self._register_computed_fields()
 
     def _register_computed_fields(self) -> None:
-        edge_length_provider = factory.ProgramFieldProvider(
-            func=stencils.compute_edge_length,
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                )
-            },
-            fields={
-                "length": attrs.EDGE_LENGTH,
-            },
-            deps={
-                "vertex_lat": attrs.VERTEX_LAT,
-                "vertex_lon": attrs.VERTEX_LON,
-            },
-            params={"radius": self._grid.global_properties.radius},
-        )
-        self.register_provider(edge_length_provider)
         meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
         inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
         self.register_provider(inverse_edge_length)
 
-        dual_length_provider = factory.ProgramFieldProvider(
-            func=stencils.compute_cell_center_arc_distance,
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                )
-            },
-            fields={
-                "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
-            },
-            deps={
-                "edge_neighbor_0_lat": "latitude_of_edge_cell_neighbor_0",
-                "edge_neighbor_0_lon": "longitude_of_edge_cell_neighbor_0",
-                "edge_neighbor_1_lat": "latitude_of_edge_cell_neighbor_1",
-                "edge_neighbor_1_lon": "longitude_of_edge_cell_neighbor_1",
-            },
-            params={"radius": self._grid.global_properties.radius},
-        )
-        self.register_provider(dual_length_provider)
         inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
         self.register_provider(inverse_dual_edge_length)
 
@@ -565,7 +529,7 @@ class GridGeometry(factory.FieldSource):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_backend.Backend | None:
+    def backend(self) -> gtx_typing.Backend | None:
         return self._backend
 
     @property
@@ -596,7 +560,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         self,
         field_name: str,
         field_src: factory.FieldSource | None,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         grid: factory.GridProvider,
     ) -> state_utils.GTXFieldType | None:
         if not self._fields.get(field_name):
@@ -625,7 +589,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
 def as_sparse_field(
     target_dims: tuple[gtx.Dimension, gtx.Dimension],
     data: Sequence[tuple[gtx.Field[gtx.Dims[gtx.Dimension], state_utils.ScalarType], ...]],
-    backend: gtx_backend.Backend | None = None,
+    backend: gtx_typing.Backend | None = None,
 ) -> Sequence[state_utils.GTXFieldType]:
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
@@ -648,7 +612,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],

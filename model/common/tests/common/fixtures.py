@@ -13,11 +13,26 @@ import pytest
 
 from icon4py.model.testing.fixtures.datatest import (
     backend,
+    damping_height,
     data_provider,
+    decomposition_info,
     download_ser_data,
+    experiment,
+    flat_height,
     grid_savepoint,
+    htop_moist_proc,
+    icon_grid,
+    interpolation_savepoint,
+    linit,
+    lowest_layer_thickness,
+    maximal_layer_thickness,
+    metrics_savepoint,
+    model_top_height,
+    ndyn_substeps,
     processor_props,
     ranked_data_path,
+    stretch_factor,
+    topography_savepoint,
 )
 
 
