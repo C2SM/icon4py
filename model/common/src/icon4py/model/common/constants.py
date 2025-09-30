@@ -6,13 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import sys
 from typing import Final
 
 from gt4py.eve import utils as eve_utils
-
-from icon4py.model.common.type_alias import wpfloat, vpfloat
 from numpy import finfo as float_info
+
+from icon4py.model.common.type_alias import vpfloat, wpfloat
+
 
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
 #: see https://glossary.ametsoc.org/wiki/Gas_constant.
@@ -66,9 +66,7 @@ LATENT_HEAT_FOR_VAPORISATION: Final[wpfloat] = wpfloat(2.5008e6)
 LATENT_HEAT_FOR_SUBLIMATION: Final[wpfloat] = wpfloat(2.8345e6)
 
 #: Latent heat of fusion for water [J/kg]. Originally expressed as alf in ICON.
-LATENT_HEAT_FOR_FUSION: Final[wpfloat] = (
-    LATENT_HEAT_FOR_SUBLIMATION - LATENT_HEAT_FOR_VAPORISATION
-)
+LATENT_HEAT_FOR_FUSION: Final[wpfloat] = LATENT_HEAT_FOR_SUBLIMATION - LATENT_HEAT_FOR_VAPORISATION
 
 #: Triple point of water at 611hPa [K]
 WATER_TRIPLE_POINT_TEMPERATURE: Final[wpfloat] = wpfloat(273.16)
