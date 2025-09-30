@@ -46,7 +46,7 @@ from ..fixtures import *  # noqa: F403
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
-@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01])
+@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01, definitions.Grids.R02B07_GLOBAL])
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 def test_solve_nonhydro_benchmark(
@@ -54,9 +54,9 @@ def test_solve_nonhydro_benchmark(
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-    dtime = 1.0  # TODO (Yilu): change back to 10.0, 1.0 is for debugging
+    dtime = 1.0
     lprep_adv = True
-    ndyn_substeps = 1  # TODO (Yilu): change back to 5, 2 is for debugging
+    ndyn_substeps = 5
     at_initial_timestep = True
     second_order_divdamp_factor = 0.0
 
