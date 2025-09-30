@@ -139,7 +139,7 @@ def test_calculate_divdamp_fields(backend: gtx_typing.Backend) -> None:
         mean_cell_area,
         second_order_divdamp_factor,
         max_nudging_coefficient,
-        constants.DBL_EPS,
+        constants.WP_EPS,
         out=(
             fourth_order_divdamp_scaling_coeff,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary,
