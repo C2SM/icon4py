@@ -416,6 +416,5 @@ def solve_nh_run(
     # dump gt4py timers
     if gtx_config.COLLECT_METRICS_LEVEL > 0:
         gtx_metrics.dump_json("gt4py_timers.json")
-        logger.info(gtx_metrics.dumps())
 
     max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl  # pass back to Fortran
