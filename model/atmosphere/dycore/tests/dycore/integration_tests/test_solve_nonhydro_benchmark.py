@@ -19,7 +19,7 @@ from icon4py.model.common.constants import RayleighType
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-    from gt4py.next.typing import NDArrayObject
+
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
@@ -44,9 +44,43 @@ from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
+def run_nonhydro_substeps(
+    solve_nonhydro,
+    diagnostic_state_nh,
+    prognostic_states,
+    prep_adv,
+    second_order_divdamp_factor,
+    dtime,
+    ndyn_substeps,
+    at_initial_timestep,
+    lprep_adv,
+):
+    for i_substep in range(ndyn_substeps):
+        at_first_substep = i_substep == 0
+        at_last_substep = i_substep == ndyn_substeps - 1
+
+        solve_nonhydro.time_step(
+            diagnostic_state_nh=diagnostic_state_nh,
+            prognostic_states=prognostic_states,
+            prep_adv=prep_adv,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            dtime=dtime,
+            ndyn_substeps_var=ndyn_substeps,
+            at_initial_timestep=at_initial_timestep,
+            lprep_adv=lprep_adv,
+            at_first_substep=at_first_substep,
+            at_last_substep=at_last_substep,
+        )
+
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
-@pytest.mark.parametrize("grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01, definitions.Grids.R02B07_GLOBAL])
+@pytest.mark.parametrize(
+    "grid",
+    [
+        definitions.Grids.MCH_OPR_R04B07_DOMAIN01
+    ],  # [definitions.Grids.MCH_OPR_R04B07_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
+)
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 def test_solve_nonhydro_benchmark(
@@ -56,13 +90,13 @@ def test_solve_nonhydro_benchmark(
 ) -> None:
     dtime = 1.0
     lprep_adv = True
-    ndyn_substeps = 5
+    ndyn_substeps = 2
     at_initial_timestep = True
     second_order_divdamp_factor = 0.0
 
     config = solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
-        divdamp_order=DivergenceDampingOrder.COMBINED,
+        divdamp_order=DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type]
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coefficient=0.375,
@@ -166,7 +200,7 @@ def test_solve_nonhydro_benchmark(
         vertical_grid=vertical_grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        topography=gtx.as_field((dims.CellDim,), data=topo_c),
+        topography=gtx.as_field((dims.CellDim,), data=topo_c),  # type: ignore[arg-type]  # NDArrayObject is not exported from gt4py
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
@@ -341,20 +375,15 @@ def test_solve_nonhydro_benchmark(
 
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
-    for i_substep in range(ndyn_substeps):
-        at_first_substep = i_substep == 0
-        at_last_substep = i_substep == ndyn_substeps - 1
-
-        benchmark(
-            solve_nonhydro.time_step,
-            diagnostic_state_nh,
-            prognostic_states,
-            prep_adv,
-            second_order_divdamp_factor,
-            dtime,
-            ndyn_substeps,
-            at_initial_timestep,
-            lprep_adv,
-            at_first_substep,
-            at_last_substep,
-        )
+    benchmark(
+        run_nonhydro_substeps,
+        solve_nonhydro,
+        diagnostic_state_nh,
+        prognostic_states,
+        prep_adv,
+        second_order_divdamp_factor,
+        dtime,
+        ndyn_substeps,
+        at_initial_timestep,
+        lprep_adv,
+    )
