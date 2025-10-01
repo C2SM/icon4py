@@ -82,21 +82,23 @@ def test_and_benchmark(
     grid: base.Grid,
     _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
     _configured_program: Callable[..., None],
+    request: pytest.FixtureRequest,
 ) -> None:
-    reference_outputs = self.reference(
-        _ConnectivityConceptFixer(
-            grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-        ),
-        **{
-            k: v.asnumpy() if isinstance(v, gtx.Field) else v
-            for k, v in _properly_allocated_input_data.items()
-        },
-    )
+    if not request.config.getoption("benchmark_only"):
+        reference_outputs = self.reference(
+            _ConnectivityConceptFixer(
+                grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+            ),
+            **{
+                k: v.asnumpy() if isinstance(v, gtx.Field) else v
+                for k, v in _properly_allocated_input_data.items()
+            },
+        )
 
-    _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
-    self._verify_stencil_test(
-        input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
-    )
+        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
+        self._verify_stencil_test(
+            input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
+        )
 
     if benchmark is not None and benchmark.enabled:
         benchmark(
