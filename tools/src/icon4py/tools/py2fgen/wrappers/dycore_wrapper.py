@@ -413,7 +413,7 @@ def solve_nh_run(
         at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
     )
 
-    # dump gt4py timers
+    # TODO(havogt): create separate bindings for writing the timers
     if gtx_config.COLLECT_METRICS_LEVEL > 0:
         gtx_metrics.dump_json("gt4py_timers.json")
 
