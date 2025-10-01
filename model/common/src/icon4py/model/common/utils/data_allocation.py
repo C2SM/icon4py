@@ -70,7 +70,7 @@ def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) 
 
 def as_field(
     field: gtx.Field,
-    allocator: gtx_typing.Backend | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
     embedded_on_host: bool = False,
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
@@ -79,13 +79,13 @@ def as_field(
 
 
 def random_field(
-    grid,
-    *dims,
+    grid: grid_base.Grid,
+    *dims: gtx.Dimension,
     low: float = -1.0,
     high: float = 1.0,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
-    allocator=None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     arr = np.random.default_rng().uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
@@ -96,11 +96,11 @@ def random_field(
 
 
 def random_sign(
-    grid,
-    *dims,
+    grid: grid_base.Grid,
+    *dims: gtx.Dimension,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
-    allocator=None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     """Generate a random field with values -1 or 1."""
     arr = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dims, extend=extend))
@@ -133,7 +133,7 @@ def zero_field(
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
     extend: dict[gtx.Dimension, int] | None = None,
-    allocator=None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     field_domain = {dim: (0, stop) for dim, stop in zip(dims, _shape(grid, *dims, extend=extend))}
     return gtx.constructors.zeros(field_domain, dtype=dtype, allocator=allocator)
@@ -144,7 +144,7 @@ def constant_field(
     value: float,
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
-    allocator=None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
@@ -167,7 +167,7 @@ def index_field(
     dim: gtx.Dimension,
     extend: dict[gtx.Dimension, int] | None = None,
     dtype=gtx.int32,
-    allocator: gtx_typing.Backend | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     xp = import_array_ns(allocator)
     shapex = _shape(grid, dim, extend=extend)[0]
