@@ -500,6 +500,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         owner_mask: np.ndarray,
         nflatlev: int,
         end_index_of_damping_layer: int,
+        skip_compute_predictor_vertical_advection: bool,
         **kwargs: Any,
     ) -> dict:
         nlev = kwargs["vertical_end"]
@@ -539,29 +540,29 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             nlev,
             end_index_of_damping_layer,
         )
-
-        vertical_wind_advective_tendency = (
-            compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
-                connectivities,
-                vertical_wind_advective_tendency,
-                w,
-                horizontal_advection_of_w_at_edges_on_half_levels,
-                contravariant_corrected_w_at_cells_on_half_levels,
-                cfl_clipping,
-                coeff1_dwdz,
-                coeff2_dwdz,
-                e_bln_c_s,
-                ddqz_z_half,
-                area,
-                geofac_n2s,
-                owner_mask,
-                scalfac_exdiff,
-                cfl_w_limit,
-                dtime,
-                nlev,
-                end_index_of_damping_layer,
+        if not skip_compute_predictor_vertical_advection:
+            vertical_wind_advective_tendency = (
+                compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
+                    connectivities,
+                    vertical_wind_advective_tendency,
+                    w,
+                    horizontal_advection_of_w_at_edges_on_half_levels,
+                    contravariant_corrected_w_at_cells_on_half_levels,
+                    cfl_clipping,
+                    coeff1_dwdz,
+                    coeff2_dwdz,
+                    e_bln_c_s,
+                    ddqz_z_half,
+                    area,
+                    geofac_n2s,
+                    owner_mask,
+                    scalfac_exdiff,
+                    cfl_w_limit,
+                    dtime,
+                    nlev,
+                    end_index_of_damping_layer,
+                )
             )
-        )
 
         contravariant_corrected_w_at_cells_on_model_levels = (
             interpolate_contravariant_vertical_velocity_to_full_levels_numpy(
@@ -601,8 +602,12 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             vertical_cfl=vertical_cfl_ret,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @pytest.fixture(
+        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]]
+    )
+    def input_data(
+        self, grid: base.Grid, request: pytest.FixtureRequest
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )
@@ -634,7 +639,9 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         dtime = 2.0
         cfl_w_limit = 0.65 / dtime
 
-        skip_compute_predictor_vertical_advection = False
+        skip_compute_predictor_vertical_advection = request.param[
+            "skip_compute_predictor_vertical_advection"
+        ]
 
         nflatlev = 3
         end_index_of_damping_layer = 5
