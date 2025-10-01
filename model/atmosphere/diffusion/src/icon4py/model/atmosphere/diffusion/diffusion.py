@@ -406,7 +406,7 @@ class Diffusion:
         self._determine_horizontal_domains()
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=mo_intp_rbf_rbf_vec_interpol_vertex,
             constant_args={
                 "ptr_coeff_1": self._interpolation_state.rbf_coeff_1,
@@ -911,7 +911,7 @@ class Diffusion:
     def orchestration_uid(self) -> str:
         """Unique id based on the runtime state of the Diffusion object. It is used for caching in DaCe Orchestration."""
         members_to_disregard = [
-            "_backend",
+            "_allocator",
             "_exchange",
             "_grid",
             "compile_time_connectivities",
