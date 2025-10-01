@@ -87,9 +87,7 @@ try:
     BACKENDS.update(
         {
             "dace_cpu": make_custom_dace_backend(device=CPU),
-            "dace_cpu_nocache": make_custom_dace_backend(device=CPU, cached=False),
             "dace_gpu": make_custom_dace_backend(device=GPU),
-            "dace_gpu_nocache": make_custom_dace_backend(device=GPU, cached=False),
         }
     )
 
