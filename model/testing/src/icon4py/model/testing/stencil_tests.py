@@ -101,11 +101,16 @@ def test_and_benchmark(
         )
 
     if benchmark is not None and benchmark.enabled:
+        # Clean up GT4Py metrics from previous runs
+        if gtx_config.COLLECT_METRICS_LEVEL > 0:
+            gtx_metrics.program_metrics.clear()
+
         benchmark(
             _configured_program,
             **_properly_allocated_input_data,
             offset_provider=grid.connectivities,
         )
+
         # Collect GT4Py runtime metrics if enabled
         if gtx_config.COLLECT_METRICS_LEVEL > 0:
             assert (
@@ -114,7 +119,6 @@ def test_and_benchmark(
             benchmark.extra_info["gtx_metrics"] = gtx_metrics.program_metrics.data[
                 next(iter(gtx_metrics.program_metrics.data))
             ]["compute"]
-            gtx_metrics.program_metrics.clear()
 
 
 class StencilTest:
