@@ -19,11 +19,10 @@ fortran_data_key = "value"
 
 experiment = "mch_icon-ch1_medium_stencils"
 output_file = "bench_blueline_stencil_compute"
-input_openacc = "bencher_mch_icon-ch1_medium_stencils_OPENACC_v3.json"
+input_openacc = "/Users/epaone/repo/icon4py/scripts/bencher=exp.mch_icon-ch1_medium_stencils=0.362198=ACC.json"
 input_gt4py = {
-    "gtfn_gpu": "gtfn_gt4py_timers_compute.json",
-    "dace_gpu 2025-09-25": "dace_gt4py_timers_compute_20250925.json",
-    "dace_gpu 2025-09-26": "dace_gt4py_timers_compute_20250926.json",
+    # "gtfn_gpu": "/Users/epaone/repo/icon4py/scripts/gtfn_gt4py_timers_compute.json",
+    "dace_gpu": "/Users/epaone/repo/icon4py/scripts/gt4py_dace_timers_202051001.json",
 }
 
 
@@ -132,4 +131,5 @@ plt.title("Average stencil compute time [s] on mch_icon-ch1_medium (1GPU A100)")
 plt.tight_layout()
 plt.savefig(output_file)
 
+print("")
 print(f"Plot figure saved to {output_file}.png")
