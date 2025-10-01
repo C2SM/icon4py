@@ -34,8 +34,8 @@ include:
   rules:
     - if: $COMPONENT == 'common' && $LEVEL == 'integration'
       variables:
-        NUM_PROCESSES: 4
-        SLURM_TIMELIMIT: '01:00:00'
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '01:30:00'
     - when: on_success
       variables:
         NUM_PROCESSES: 8
