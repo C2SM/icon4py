@@ -561,7 +561,7 @@ class Diffusion:
             offset_provider={"Koff": dims.KDim},
         )
 
-        self._allocate_local_fields()
+        self._allocate_local_fields(model_backends.get_allocator(backend))
 
         self.init_diffusion_local_fields_for_regular_timestep(
             params.K4,
@@ -596,9 +596,7 @@ class Diffusion:
         #   but this requires some changes in gt4py domain inference.
         self.compile_time_connectivities = self._grid.connectivities
 
-    def _allocate_local_fields(
-        self, allocator: gtx_allocators.FieldBufferAllocationUtil | None = None
-    ):
+    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)

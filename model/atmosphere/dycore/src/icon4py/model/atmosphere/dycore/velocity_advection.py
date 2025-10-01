@@ -179,9 +179,7 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-    def _allocate_local_fields(
-        self, allocator: gtx_allocators.FieldBufferAllocationUtil | None = None
-    ):
+    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self._horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
             self.grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
