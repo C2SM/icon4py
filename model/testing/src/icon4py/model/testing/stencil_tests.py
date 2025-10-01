@@ -17,7 +17,6 @@ import numpy as np
 import pytest
 from gt4py import eve
 from gt4py.next import (
-    backend as gtx_backend,
     config as gtx_config,
     constructors,
     metrics as gtx_metrics,
@@ -84,7 +83,8 @@ def test_and_benchmark(
     _configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
-    if not request.config.getoption("benchmark_only"):
+    benchmark_only = request.config.getoption("benchmark_only")
+    if not benchmark_only:
         reference_outputs = self.reference(
             _ConnectivityConceptFixer(
                 grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
@@ -101,6 +101,9 @@ def test_and_benchmark(
         )
 
     if benchmark is not None and benchmark.enabled:
+        warmup_enabled = request.config.getoption("benchmark_warmup")
+        if warmup_enabled:
+            print("[WARNING] Benchmark warmup enabled, GT4Py timers include warmup iterations.")
         # Clean up GT4Py metrics from previous runs
         if gtx_config.COLLECT_METRICS_LEVEL > 0:
             gtx_metrics.program_metrics.clear()
@@ -116,9 +119,17 @@ def test_and_benchmark(
             assert (
                 len(gtx_metrics.program_metrics.data.keys()) == 1
             ), "Expected exactly one entry in gtx_metrics"
-            benchmark.extra_info["gtx_metrics"] = gtx_metrics.program_metrics.data[
-                next(iter(gtx_metrics.program_metrics.data))
-            ]["compute"]
+            # Store GT4Py metrics in benchmark.extra_info
+            metrics_data = gtx_metrics.program_metrics.data
+            key = next(iter(metrics_data))
+            compute_samples = metrics_data[key]["compute"].samples
+            # emprically exclude first few iterations as warmup
+            initial_program_iterations_to_skip = 2
+            print(f"GT4Py compute time samples: {compute_samples}")
+            # Exclude first sample unless running in benchmark_only mode
+            benchmark.extra_info["gtx_metrics"] = compute_samples[
+                initial_program_iterations_to_skip:
+            ]
 
 
 class StencilTest:

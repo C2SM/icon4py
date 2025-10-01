@@ -199,9 +199,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     # Print the GT4Py timer report table
     if benchmark_gtx_metrics:
         terminalreporter.ensure_newline()
-        header = (
-            f"{'Benchmark Name':<{max_name_len}} | {'Mean (s)':>10} | {'Std Dev':>10} | {'Runs':>4}"
-        )
+        header = f"{'Benchmark Name':<{max_name_len}} | {'Mean (s)':>10} | {'Median (s)':>10} | {'Std Dev':>10} | {'Runs':>4}"
         title = " GT4Py Timer Report "
         sep_len = max(0, len(header) - len(title))
         left = sep_len // 2
@@ -209,8 +207,10 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         terminalreporter.line("-" * left + title + "-" * right, bold=True, blue=True)
         terminalreporter.line(header)
         terminalreporter.line("-" * len(header), blue=True)
+        import numpy as np
+
         for benchmark_name, gtx_metrics in benchmark_gtx_metrics:
             terminalreporter.line(
-                f"{benchmark_name:<{max_name_len}} | {gtx_metrics.mean:>10.8f} | {gtx_metrics.std:>10.8f} | {len(gtx_metrics.samples):>4}"
+                f"{benchmark_name:<{max_name_len}} | {np.mean(gtx_metrics):>10.8f} | {np.median(gtx_metrics):>10.8f} | {np.std(gtx_metrics):>10.8f} | {len(gtx_metrics):>4}"
             )
         terminalreporter.line("-" * len(header), blue=True)
