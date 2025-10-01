@@ -394,7 +394,10 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             exner_dynamical_increment=exner_dynamical_increment,
         )
 
-    @pytest.fixture(params=[{"at_first_substep": value} for value in [True, False]])
+    @pytest.fixture(
+        params=[{"at_first_substep": value} for value in [True, False]],
+        ids=lambda param: f"at_first_substep[{param['at_first_substep']}]",
+    )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:

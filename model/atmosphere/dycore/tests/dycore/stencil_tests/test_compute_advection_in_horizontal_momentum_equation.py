@@ -242,7 +242,10 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
 
         return dict(normal_wind_advective_tendency=normal_wind_advective_tendency)
 
-    @pytest.fixture(params=[{"apply_extra_diffusion_on_vn": value} for value in [True, False]])
+    @pytest.fixture(
+        params=[{"apply_extra_diffusion_on_vn": value} for value in [True, False]],
+        ids=lambda param: f"apply_extra_diffusion_on_vn[{param['apply_extra_diffusion_on_vn']}]",
+    )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
