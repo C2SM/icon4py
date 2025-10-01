@@ -304,10 +304,8 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             "skip_compute_predictor_vertical_advection"
         ]
 
-        edge_domain = h_grid.domain(dims.EdgeDim)
-        # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
-        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
-        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+        horizontal_start = 0
+        horizontal_end = grid.num_edges
         vertical_start = 0
         vertical_end = nlev + 1
 
