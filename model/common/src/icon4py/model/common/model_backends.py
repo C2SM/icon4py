@@ -9,6 +9,7 @@ import typing
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 from gt4py.next.program_processors.runners.gtfn import GTFNBackendFactory
 
 from icon4py.model.common import dimension as dims
@@ -37,6 +38,18 @@ def is_backend_descriptor(
     if isinstance(backend, dict):
         return all(isinstance(key, str) for key in backend)
     return False
+
+
+def get_allocator(
+    backend: gtx_typing.Backend | DeviceType | BackendDescriptor | None,
+) -> gtx_typing.Backend | None:
+    if backend is None or isinstance(backend, gtx_backend.Backend):
+        return backend
+    if is_backend_descriptor(backend):
+        backend = backend["device"]
+    if isinstance(backend, DeviceType):
+        return gtx_allocators.device_allocators[backend]
+    raise ValueError(f"Cannot get allocator from {backend}")
 
 
 try:
