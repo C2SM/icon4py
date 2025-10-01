@@ -372,7 +372,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         rbf_vec_coeff_e = factory.NumpyDataProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_E,),
-            domain=(dims.CellDim, dims.E2C2EDim),
+            domain=(dims.EdgeDim, dims.E2C2EDim),
             deps={
                 "edge_lat": geometry_attrs.EDGE_LAT,
                 "edge_lon": geometry_attrs.EDGE_LON,
