@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+import logging
 import typing
 
 import gt4py.next as gtx
@@ -14,18 +15,29 @@ import gt4py.next.typing as gtx_typing
 from icon4py.model.common import model_backends
 
 
+log = logging.getLogger(__name__)
+
+
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
+def get_options(
+    program_name: str, **backend_description: typing.Any
+) -> model_backends.BackendDescriptor:
+    if program_name.startswith("vertically_implicit"):
+        backend_description["backend_factory"] = model_backends.make_custom_gtfn_backend
+    return backend_description
+
+
 def customize_backend(
+    program_name: str,
     backend: model_backends.DeviceType | model_backends.BackendDescriptor,
 ) -> gtx_typing.Backend:
     if isinstance(backend, model_backends.DeviceType):
         backend = {"device": backend}
-    # TODO(havogt): implement the lookup function as below
-    # options = get_options(program_name, arch, **backend) # noqa: ERA001
-    backend_func = backend.get("backend_factory", model_backends.make_custom_gtfn_backend)
+    backend = get_options(program_name, **backend)
+    backend_func = backend.get("backend_factory", model_backends.make_custom_dace_backend)
     device = backend.get("device", model_backends.DeviceType.CPU)
     custom_backend = backend_func(
         device=device,
@@ -65,7 +77,10 @@ def setup_program(
     offset_provider = {} if offset_provider is None else offset_provider
 
     if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
-        backend = customize_backend(backend)
+        backend = customize_backend(program.__name__, backend)
+
+    backend_name = backend.name if backend is not None else "embedded"
+    log.info(f"Configured '{backend_name}' backend for {program.__name__}.")
 
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend)
