@@ -23,7 +23,6 @@ from collections.abc import Callable
 from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
-import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
@@ -43,7 +42,6 @@ logger = setup_logger(__name__)
 @dataclasses.dataclass
 class SolveNonhydroGranule:
     solve_nh: solve_nonhydro.SolveNonhydro
-    backend: gtx_typing.Backend | model_backends.DeviceType
     dummy_field_factory: Callable
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
@@ -268,7 +266,6 @@ def solve_nh_init(
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
-        backend=actual_backend,
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(
             model_backends.get_allocator(actual_backend)
         ),

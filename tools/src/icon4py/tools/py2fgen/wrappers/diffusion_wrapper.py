@@ -22,7 +22,6 @@ import pstats
 from collections.abc import Callable
 
 import gt4py.next as gtx
-import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.atmosphere.diffusion.diffusion import (
@@ -50,7 +49,6 @@ logger = setup_logger(__name__)
 @dataclasses.dataclass
 class DiffusionGranule:
     diffusion: Diffusion
-    backend: gtx_typing.Backend | model_backends.DeviceType
     dummy_field_factory: Callable
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
@@ -214,7 +212,6 @@ def diffusion_init(
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
-        backend=actual_backend,
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(
             model_backends.get_allocator(actual_backend)
         ),
