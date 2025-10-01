@@ -11,7 +11,7 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -244,6 +244,17 @@ def test_factory_rayleigh_w(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
+    # TODO(msimberg): Config set incorrectly for weisman klemp. Can we set the
+    # weisman klemp parameters for toruses as defaults? Do we have to ensure the
+    # correct options are set only for weisman klemp? See test_metric_fields.py,
+    # the rayleigh_w field validates there because the test can set the config
+    # parameters for the computation.
+    geometry_type = gridtest_utils.get_grid_geometry(
+        backend, experiment
+    ).grid.global_properties.geometry_type
+    if geometry_type == base.GeometryType.TORUS:
+        pytest.xfail(f"rayleigh_w computed with wrong config parameters for {experiment=}")
+
     field_ref = metrics_savepoint.rayleigh_w()
     factory = _get_metrics_factory(
         backend=backend,
@@ -310,6 +321,13 @@ def test_factory_d2dexdz2_facs_mc(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
+    geometry_type = gridtest_utils.get_grid_geometry(
+        backend, experiment
+    ).grid.global_properties.geometry_type
+    # TODO(msimberg); fix?
+    if geometry_type == base.GeometryType.TORUS:
+        pytest.xfail("d2dexdz2_facs not available in serialized data")
+
     field_ref_1 = metrics_savepoint.d2dexdz2_fac1_mc()
     field_ref_2 = metrics_savepoint.d2dexdz2_fac2_mc()
     factory = _get_metrics_factory(
@@ -502,6 +520,13 @@ def test_factory_zdiff_gradp(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
+    geometry_type = gridtest_utils.get_grid_geometry(
+        backend, experiment
+    ).grid.global_properties.geometry_type
+    # TODO(msimberg): fix?
+    if geometry_type == base.GeometryType.TORUS:
+        pytest.xfail("zdiff_gradp not available in serialized data")
+
     field_ref = metrics_savepoint.zdiff_gradp()
     factory = _get_metrics_factory(
         backend=backend,

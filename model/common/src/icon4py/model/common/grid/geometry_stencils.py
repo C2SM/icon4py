@@ -17,6 +17,7 @@ from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
 from icon4py.model.common.math.helpers import (
     arc_length_on_edges,
     cross_product_on_edges,
+    distance_on_edges_torus,
     geographical_to_cartesian_on_edges,
     geographical_to_cartesian_on_vertices,
     normalize_cartesian_vector_on_edges,
@@ -411,6 +412,38 @@ def arc_distance_of_far_edges_in_diamond(
 
 
 @gtx.field_operator
+def distance_of_far_edges_in_diamond_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Compute the distance between the "far" vertices of an edge.
+
+    See arc_distance_of_far_edges_in_diamond for details.
+
+    Args:
+        vertex_x: x coordinate of vertices
+        vertex_y: y coordinate of vertices
+        domain_length: length of the domain
+        domain_height: height of the domain
+
+    Returns:
+        distance between the "far" vertices in the diamond.
+
+    """
+    return distance_on_edges_torus(
+        vertex_x(E2C2V[2]),
+        vertex_x(E2C2V[3]),
+        vertex_y(E2C2V[2]),
+        vertex_y(E2C2V[3]),
+        domain_length,
+        domain_height,
+    )
+
+
+@gtx.field_operator
 def edge_length(
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
@@ -497,6 +530,26 @@ def compute_arc_distance_of_far_edges_in_diamond(
         vertex_lat,
         vertex_lon,
         radius,
+        out=far_vertex_distance,
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_distance_of_far_edges_in_diamond_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+    far_vertex_distance: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    distance_of_far_edges_in_diamond_torus(
+        vertex_x,
+        vertex_y,
+        domain_length,
+        domain_height,
         out=far_vertex_distance,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
