@@ -36,7 +36,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
@@ -50,7 +50,7 @@ logger = setup_logger(__name__)
 @dataclasses.dataclass
 class DiffusionGranule:
     diffusion: Diffusion
-    backend: gtx_typing.Backend
+    backend: gtx_typing.Backend | model_backends.DeviceType
     dummy_field_factory: Callable
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
@@ -117,10 +117,10 @@ def diffusion_init(
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
-    logger.info(f"{on_gpu=}")
-    logger.info(
-        f"Using Backend {wrapper_common.BackendIntEnum(backend).name} ({actual_backend.name})"
+    backend_name = (
+        actual_backend.name if hasattr(actual_backend, "name") else actual_backend.__name__
     )
+    logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
     # Diffusion parameters
     config = DiffusionConfig(
@@ -215,7 +215,9 @@ def diffusion_init(
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
         backend=actual_backend,
-        dummy_field_factory=wrapper_common.cached_dummy_field_factory(actual_backend),
+        dummy_field_factory=wrapper_common.cached_dummy_field_factory(
+            model_backends.get_allocator(actual_backend)
+        ),
     )
 
 
