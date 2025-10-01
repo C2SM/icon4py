@@ -420,7 +420,6 @@ def read_decomp_info(
 def read_static_fields(
     path: pathlib.Path,
     grid_file: pathlib.Path,
-    grid: icon_grid.IconGrid,
     backend: gtx_typing.Backend,
     rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
@@ -482,6 +481,7 @@ def read_static_fields(
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
 
+        icon_grid = grid_savepoint.construct_icon_grid(backend=backend)
         xp = data_alloc.import_array_ns(backend)
         ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KDim)+1), dtype=float)
         ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
@@ -493,7 +493,7 @@ def read_static_fields(
             horizontal_end=grid_savepoint.num(dims.EdgeDim),
             vertical_start=0,
             vertical_end=grid_savepoint.num(dims.KDim)+1,
-            offset_provider=grid.connectivities,
+            offset_provider=icon_grid.connectivities,
         )
         diffusion_metric_state = diffusion_states.DiffusionMetricState(
             mask_hdiff=metrics_savepoint.mask_hdiff(),
