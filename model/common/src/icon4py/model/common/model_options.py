@@ -22,10 +22,34 @@ def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
+gtfn_programs = {
+    "mo_intp_rbf_rbf_vec_interpol_vertex",
+    "calculate_diagnostic_quantities_for_turbulence",
+    "apply_diffusion_to_vn",
+    "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence",
+    "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools",
+    "apply_diffusion_to_theta_and_exner",
+    "compute_advection_in_horizontal_momentum_equation",
+    "compute_rayleigh_damping_factor",
+    "compute_perturbed_quantities_and_interpolation",
+    "compute_hydrostatic_correction_term",
+    "vertically_implicit_solver_at_predictor_step",
+    "stencils_61_62",
+    "compute_dwdz_for_divergence_damping",
+    "calculate_divdamp_fields",
+    "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection",
+    "vertically_implicit_solver_at_corrector_step",
+    "init_cell_kdim_field_with_zero_wp",
+    "update_mass_flux_weighted",
+    "compute_theta_and_exner",
+    "compute_exner_from_rhotheta",
+}
+
+
 def get_options(
     program_name: str, **backend_description: typing.Any
 ) -> model_backends.BackendDescriptor:
-    if program_name.startswith("vertically_implicit"):
+    if program_name in gtfn_programs:
         backend_description["backend_factory"] = model_backends.make_custom_gtfn_backend
     return backend_description
 
