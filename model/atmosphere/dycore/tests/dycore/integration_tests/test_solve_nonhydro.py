@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.dycore.stencils import (
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 
@@ -1279,7 +1280,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     rhotheta_implicit_weight_parameter = sp_init.wgt_nnew_rth()
 
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend, dtype=vpfloat
     )
     pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, backend=backend
