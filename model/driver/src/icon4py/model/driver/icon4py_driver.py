@@ -12,6 +12,7 @@ import pathlib
 from collections.abc import Callable
 from typing import NamedTuple
 
+import os
 import click
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -20,9 +21,10 @@ from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.io import restart, plots
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -32,6 +34,7 @@ from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
 )
+from icon4py.model.driver.testcases import channel
 
 
 log = logging.getLogger(__name__)
@@ -66,6 +69,8 @@ class TimeLoop:
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
 
+        self._restart = restart.RestartManager()
+
     def re_init(self):
         self._simulation_date = self.run_config.start_date
         self._is_first_step_in_simulation = True
@@ -86,8 +91,8 @@ class TimeLoop:
     def _is_first_substep(step_nr: int):
         return step_nr == 0
 
-    def _next_simulation_date(self):
-        self._simulation_date += self.run_config.dtime
+    def _next_simulation_date(self, multiplier: int = 1):
+        self._simulation_date += multiplier * self.run_config.dtime
 
     @property
     def n_substeps_var(self):
@@ -131,6 +136,15 @@ class TimeLoop:
 
         # TODO(OngChia): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
+        #---> Restart
+        start_time_step_number = 0
+        restart_time_step_number = self._restart.restore_from_restart(prognostic_states, solve_nonhydro_diagnostic_state, self.solve_nonhydro._backend)
+        if restart_time_step_number is not None:
+            start_time_step_number = restart_time_step_number + 1
+            self._is_first_step_in_simulation = False
+            self._next_simulation_date(multiplier=start_time_step_number)
+        #<--- Restart
+
         if (
             self.diffusion.config.apply_to_horizontal_wind
             and self.run_config.apply_initial_stabilization
@@ -147,7 +161,7 @@ class TimeLoop:
         )
         timer_first_timestep = Timer("TimeLoop: first time step", dp=6)
         timer_after_first_timestep = Timer("TimeLoop: after first time step", dp=6)
-        for time_step in range(self._n_time_steps):
+        for time_step in range(start_time_step_number, self._n_time_steps):
             timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
             if profiling is not None:
                 if not profiling.skip_first_timestep or time_step > 0:
@@ -178,6 +192,15 @@ class TimeLoop:
             )
             device_utils.sync(self.run_config.backend)
             timer.capture()
+
+            #---> Plots
+            if (time_step+1) % plots.PLOT_FREQUENCY == 0:
+                plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:09d}")
+            #<--- Plots
+            #---> Restart
+            if (time_step+1) % self._restart.RESTART_FREQUENCY == 0:
+                self._restart.write_restart(prognostic_states, solve_nonhydro_diagnostic_state, time_step)
+            #<--- Restart
 
             self._is_first_step_in_simulation = False
 
@@ -413,20 +436,36 @@ def initialize(
         ser_type=serialization_type,
     )
 
+    savepoint_path = os.environ.get("ICON4PY_SAVEPOINT_PATH", "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data")
+    grid_file_path = os.environ.get("ICON4PY_GRID_FILE_PATH", "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc")
+    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
+        grid=grid,
+        savepoint_path=savepoint_path,
+        grid_file_path=grid_file_path,
+        backend=backend,
+    )
+    channel_inst = channel.ChannelFlow(
+        grid=grid,
+        savepoint_path=savepoint_path,
+        grid_file_path=grid_file_path,
+        backend=backend,
+    )
+
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
     diffusion_granule = diffusion.Diffusion(
-        grid,
-        config.diffusion_config,
-        diffusion_params,
-        vertical_geometry,
-        diffusion_metric_state,
-        diffusion_interpolation_state,
-        edge_geometry,
-        cell_geometry,
-        exchange=exchange,
+        grid=grid,
+        config=config.diffusion_config,
+        params=diffusion_params,
+        vertical_grid=vertical_geometry,
+        metric_state=diffusion_metric_state,
+        interpolation_state=diffusion_interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
         backend=backend,
+        exchange=exchange,
+        ibm_masks=ibm_masks,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
@@ -442,6 +481,8 @@ def initialize(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
+        ibm_masks=ibm_masks,
+        channel=channel_inst,
     )
 
     (

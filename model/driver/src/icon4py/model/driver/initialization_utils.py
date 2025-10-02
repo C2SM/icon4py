@@ -11,6 +11,7 @@ import functools
 import logging
 import pathlib
 
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import netCDF4 as nc4
 
@@ -27,12 +28,12 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
+from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half_e
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import serialbox_helpers as driver_sb
 from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
 from icon4py.model.testing import serialbox as sb
 
@@ -126,9 +127,13 @@ def model_initialization_serialbox(
         istep=1, date=SIMULATION_START_DATE, substep=1
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
-        diffusion_init_savepoint,
+    diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=diffusion_init_savepoint.hdef_ic(),
+        div_ic=diffusion_init_savepoint.div_ic(),
+        dwdx=diffusion_init_savepoint.dwdx(),
+        dwdy=diffusion_init_savepoint.dwdy(),
     )
+
     solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=solve_nonhydro_init_savepoint.theta_v_ic(),
@@ -339,8 +344,8 @@ def read_geometry_fields(
     Read fields containing grid properties.
 
     Args:
-        path: path to the serialized input data
         grid_file: path of the grid
+        path: path to the serialized input data
         vertical_grid_config: Vertical grid configuration
         backend: GT4py backend
         rank: mpi rank of the current compute node
@@ -442,15 +447,21 @@ def read_static_fields(
     """
     if ser_type == SerializationType.SB:
         data_provider = _serial_data_provider(backend, path, rank)
-
-        diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
-            data_provider.from_interpolation_savepoint()
-        )
-        diffusion_metric_state = driver_sb.construct_metric_state_for_diffusion(
-            data_provider.from_metrics_savepoint()
-        )
         interpolation_savepoint = data_provider.from_interpolation_savepoint()
+        metrics_savepoint = data_provider.from_metrics_savepoint()
+        grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
         grg = interpolation_savepoint.geofac_grg()
+
+        diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
+            e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
+            rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+            rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+            geofac_div=interpolation_savepoint.geofac_div(),
+            geofac_n2s=interpolation_savepoint.geofac_n2s(),
+            geofac_grg_x=grg[0],
+            geofac_grg_y=grg[1],
+            nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+        )
         solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
             c_lin_e=interpolation_savepoint.c_lin_e(),
             c_intp=interpolation_savepoint.c_intp(),
@@ -469,8 +480,33 @@ def read_static_fields(
             geofac_grg_y=grg[1],
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
-        metrics_savepoint = data_provider.from_metrics_savepoint()
-        grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
+
+        icon_grid = grid_savepoint.construct_icon_grid(backend=backend)
+        xp = data_alloc.import_array_ns(backend)
+        ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KDim)+1), dtype=float)
+        ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
+        compute_ddqz_z_half_e.with_backend(backend=backend)(
+            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+            c_lin_e=interpolation_savepoint.c_lin_e(),
+            ddqz_z_half_e=ddqz_z_half_e,
+            horizontal_start=0,
+            horizontal_end=grid_savepoint.num(dims.EdgeDim),
+            vertical_start=0,
+            vertical_end=grid_savepoint.num(dims.KDim)+1,
+            offset_provider=icon_grid.connectivities,
+        )
+        diffusion_metric_state = diffusion_states.DiffusionMetricState(
+            mask_hdiff=metrics_savepoint.mask_hdiff(),
+            theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+            wgtfac_c=metrics_savepoint.wgtfac_c(),
+            zd_intcoef=metrics_savepoint.zd_intcoef(),
+            zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+            zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+            ddqz_z_full=metrics_savepoint.ddqz_z_full(),
+            ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
+            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+            ddqz_z_half_e=ddqz_z_half_e,
+        )
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
