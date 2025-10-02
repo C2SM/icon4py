@@ -31,10 +31,14 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing.test_utils import vp_eps, wp_eps
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
+
+atol_2eps = 2 * vp_eps  # for double ≈ 4.44e-16, for single ≈ 2.38e-7
+rtol_8eps = 8 * vp_eps  # for double ≈ 1.78e-15, for single ≈ 9.54e-7
 
 log = logging.getLogger(__name__)
 
@@ -47,8 +51,8 @@ def _compare_cfl(
     horizontal_end: int,
     vertical_start: int,
     vertical_end: int,
-    rtol: float = 1e-15,
-    atol: float = 1e-15,
+    rtol: float = rtol_8eps,
+    atol: float = atol_2eps,
 ) -> None:
     cfl_clipping_mask = np.where(np.abs(vertical_cfl) > 0.0, True, False)
     assert (
@@ -849,17 +853,11 @@ def test_compute_advection_in_vertical_momentum_equation(
         },
     )
 
-    rtol = 1.0e-15
-    atol = 1.0e-15
-    if ta.precision in ["single"]:
-        rtol = 1e-6  # 1e-5
-        atol = 2e-7
-
     assert test_utils.dallclose(
         icon_result_z_w_con_c_full.asnumpy(),
         contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
-        rtol=rtol,
-        atol=rtol,
+        rtol=rtol_8eps,
+        atol=atol_2eps,
     )
 
     start_idx = start_cell_nudging_for_vertical_wind_advective_tendency
@@ -867,7 +865,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     fortran_res = icon_result_ddt_w_adv[start_idx:end_idx, :].asnumpy()
     icon4py_res = vertical_wind_advective_tendency[start_idx:end_idx, :].asnumpy()
 
-    assert test_utils.dallclose(fortran_res, icon4py_res, rtol=rtol, atol=atol)
+    assert test_utils.dallclose(fortran_res, icon4py_res, rtol=rtol_8eps, atol=atol_2eps)
 
     # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
@@ -878,8 +876,6 @@ def test_compute_advection_in_vertical_momentum_equation(
         horizontal_end,
         max(2, end_index_of_damping_layer - 2),
         icon_grid.num_levels - 3,
-        rtol=rtol,
-        atol=atol,
     )
 
 
@@ -981,19 +977,9 @@ def test_compute_advection_in_horizontal_momentum_equation(
         },
     )
 
-    rtol = 1.0e-15
-    atol = 1.0e-15
-    if ta.precision in ["single"]:
-        if experiment == definitions.Experiments.MCH_CH_R04B09:
-            rtol = 1e-6
-            atol = 2e-7
-        else:
-            rtol = 1e-6
-            atol = 1e-8
-
     assert test_utils.dallclose(
         icon_result_ddt_vn_apc.asnumpy(),
         normal_wind_advective_tendency.asnumpy(),
-        rtol=rtol,
-        atol=atol,
+        rtol=rtol_8eps,
+        atol=atol_2eps,
     )
