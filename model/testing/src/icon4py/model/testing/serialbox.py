@@ -116,6 +116,15 @@ class IconSavepoint:
         metadata = self.savepoint.metainfo.to_dict()
         return {n: metadata[n] for n in names if n in metadata}
 
+    def dtime(self, dtype=wpfloat):
+        metadata = self.savepoint.metainfo.to_dict()
+        try:
+            return dtype(metadata["dtime"])
+        except KeyError as e:
+            raise RuntimeError(
+                "Invalid call to dtime() for a static savepoint. No time information in metadata."
+            ) from e
+
     def _read_int32_shift1(self, name: str):
         """
         Read a start indices field.

@@ -142,7 +142,7 @@ def test_scale_factors_by_dtime(
     damping_height,
     backend,
 ):
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_velocity_init.dtime()
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
     vertical_config = v_grid.VerticalGridConfig(
@@ -207,7 +207,7 @@ def test_velocity_predictor_step(
     caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = init_savepoint.dtime()
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=0.0,
@@ -362,7 +362,7 @@ def test_velocity_corrector_step(
 ):
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = init_savepoint.dtime()
 
     assert not vn_only
 
@@ -651,7 +651,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
 
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
-    dtime = gtx.astype(savepoint_velocity_init.get_metadata("dtime").get("dtime"), ta.wpfloat)
+    dtime = savepoint_velocity_init.dtime()
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging_for_vertical_wind_advective_tendency = icon_grid.start_index(
         cell_domain(h_grid.Zone.NUDGING)
@@ -804,7 +804,7 @@ def test_compute_advection_in_vertical_momentum_equation(
 
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
-    dtime = gtx.astype(savepoint_velocity_init.get_metadata("dtime").get("dtime"), ta.wpfloat)
+    dtime = savepoint_velocity_init.dtime()
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging_for_vertical_wind_advective_tendency = icon_grid.start_index(
         cell_domain(h_grid.Zone.NUDGING)
@@ -931,7 +931,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    dtime = gtx.astype(savepoint_velocity_init.get_metadata("dtime").get("dtime"), ta.wpfloat)
+    dtime = savepoint_velocity_init.dtime()
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
     icon_result_ddt_vn_apc = savepoint_velocity_exit.ddt_vn_apc_pc(istep_exit - 1)

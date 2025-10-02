@@ -191,7 +191,7 @@ def test_nonhydro_predictor_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = sp.get_metadata("dtime").get("dtime")
+    dtime = sp.dtime()
 
     diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
 
@@ -520,7 +520,7 @@ def test_nonhydro_corrector_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = init_savepoint.get_metadata("dtime").get("dtime")
+    dtime = init_savepoint.dtime()
     lprep_adv = init_savepoint.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=init_savepoint.vn_traj(),
@@ -730,7 +730,7 @@ def test_run_solve_nonhydro_single_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = sp.get_metadata("dtime").get("dtime")
+    dtime = sp.dtime()
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
@@ -858,7 +858,7 @@ def test_run_solve_nonhydro_multi_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = sp.get_metadata("dtime").get("dtime")
+    dtime = sp.dtime()
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
@@ -1265,7 +1265,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     sp_ref = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
     sp_exit = savepoint_nonhydro_exit
 
-    dtime = sp_init.get_metadata("dtime").get("dtime")
+    dtime = sp_init.dtime()
     current_rho = sp_init.rho_now()
     next_rho = sp_init.rho_new()
 
@@ -1533,7 +1533,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
         ipeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
         pg_exdist=metrics_savepoint.pg_exdist(),
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
@@ -1685,7 +1685,7 @@ def test_apply_divergence_damping_and_update_vn(
         geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
         advection_explicit_weight_parameter=savepoint_nonhydro_init.wgt_nnow_vel(),
         advection_implicit_weight_parameter=savepoint_nonhydro_init.wgt_nnew_vel(),
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
@@ -2152,7 +2152,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
         iau_wgt_dyn=iau_wgt_dyn,
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         is_iau_active=is_iau_active,
         rayleigh_type=config.rayleigh_type,
         divdamp_type=divdamp_type,
@@ -2359,7 +2359,7 @@ def test_vertically_implicit_solver_at_corrector_step(
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=float(ndyn_substeps),
         iau_wgt_dyn=iau_wgt_dyn,
-        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        dtime=savepoint_nonhydro_init.dtime(),
         is_iau_active=is_iau_active,
         rayleigh_type=config.rayleigh_type,
         at_first_substep=at_first_substep,
