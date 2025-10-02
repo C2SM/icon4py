@@ -62,8 +62,8 @@ class VelocityAdvection:
         self.c_owner_mask = owner_mask
         self._backend = backend
 
-        self.cfl_w_limit: float = 0.65
-        self.scalfac_exdiff: float = 0.05
+        self.cfl_w_limit: ta.vpfloat = ta.vpfloat(0.65)
+        self.scalfac_exdiff: ta.wpfloat = ta.wpfloat(0.05)
         self._allocate_local_fields()
         self._determine_local_domains()
 
@@ -289,7 +289,7 @@ class VelocityAdvection:
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = float(
+        max_vertical_cfl = ta.vpfloat(
             self.vertical_cfl.array_ns.max(
                 self.vertical_cfl.ndarray[
                     self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
@@ -312,9 +312,11 @@ class VelocityAdvection:
         )
 
     def _scale_factors_by_dtime(self, dtime):
-        scaled_cfl_w_limit = self.cfl_w_limit / dtime
-        scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
-        return scaled_cfl_w_limit, scalfac_exdiff
+        scaled_cfl_w_limit = gtx.astype(self.cfl_w_limit, ta.wpfloat) / dtime
+        scalfac_exdiff = self.scalfac_exdiff / (
+            dtime * (ta.wpfloat(0.85) - scaled_cfl_w_limit * dtime)
+        )
+        return gtx.astype(scaled_cfl_w_limit, ta.vpfloat), scalfac_exdiff
 
     def run_corrector_step(
         self,
@@ -356,7 +358,7 @@ class VelocityAdvection:
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = float(
+        max_vertical_cfl = ta.vpfloat(
             self.vertical_cfl.array_ns.max(
                 self.vertical_cfl.ndarray[
                     self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :

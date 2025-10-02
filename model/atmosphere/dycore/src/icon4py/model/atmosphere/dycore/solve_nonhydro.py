@@ -421,9 +421,7 @@ class SolveNonhydro:
         self._update_theta_v = setup_program(
             backend=self._backend,
             program=update_theta_v,
-            constant_args={
-                "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
-            },
+            constant_args={"mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c},
             horizontal_sizes={
                 "horizontal_start": self._start_cell_halo,
                 "horizontal_end": self._end_cell_end,
@@ -593,9 +591,7 @@ class SolveNonhydro:
                 "rayleigh_type": self._config.rayleigh_type,
                 "divdamp_type": self._config.divdamp_type,
             },
-            variants={
-                "at_first_substep": [False, True],
-            },
+            variants={"at_first_substep": [False, True]},
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,
                 "end_cell_index_local": self._end_cell_local,
@@ -648,9 +644,7 @@ class SolveNonhydro:
         self._compute_dwdz_for_divergence_damping = setup_program(
             backend=self._backend,
             program=compute_dwdz_for_divergence_damping,
-            constant_args={
-                "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
-            },
+            constant_args={"inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full},
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary,
                 "horizontal_end": self._end_cell_lateral_boundary_level_4,
@@ -693,9 +687,7 @@ class SolveNonhydro:
         self._compute_rayleigh_damping_factor = setup_program(
             backend=self._backend,
             program=dycore_utils.compute_rayleigh_damping_factor,
-            constant_args={
-                "rayleigh_w": self._metric_state_nonhydro.rayleigh_w,
-            },
+            constant_args={"rayleigh_w": self._metric_state_nonhydro.rayleigh_w},
         )
 
         self._compute_perturbed_quantities_and_interpolation = setup_program(
@@ -814,7 +806,7 @@ class SolveNonhydro:
         self._allocate_local_fields()
 
         self._en_smag_fac_for_zero_nshift(
-            enh_smag_fac=self.interpolated_fourth_order_divdamp_factor,
+            enh_smag_fac=self.interpolated_fourth_order_divdamp_factor
         )
 
         self.p_test_run = True
@@ -1010,8 +1002,8 @@ class SolveNonhydro:
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        second_order_divdamp_factor: float,
-        dtime: float,
+        second_order_divdamp_factor: wpfloat,
+        dtime: wpfloat,
         ndyn_substeps_var: int,
         at_initial_timestep: bool,
         lprep_adv: bool,
@@ -1094,7 +1086,7 @@ class SolveNonhydro:
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
-        dtime: float,
+        dtime: wpfloat,
         at_initial_timestep: bool,
         at_first_substep: bool,
     ):
@@ -1264,9 +1256,9 @@ class SolveNonhydro:
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
-        second_order_divdamp_factor: float,
+        second_order_divdamp_factor: wpfloat,
         prep_adv: dycore_states.PrepAdvection,
-        dtime: float,
+        dtime: wpfloat,
         ndyn_substeps_var: int,
         lprep_adv: bool,
         at_first_substep: bool,
@@ -1277,14 +1269,15 @@ class SolveNonhydro:
             f"second_order_divdamp_factor = {second_order_divdamp_factor}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
         )
 
+        ndyn_substeps_var_wp = wpfloat(ndyn_substeps_var)
         # Inverse value of ndyn_substeps for tracer advection precomputations
-        r_nsubsteps = 1.0 / ndyn_substeps_var
+        r_nsubsteps = wpfloat(1.0) / ndyn_substeps_var_wp
 
         # scaling factor for second-order divergence damping: second_order_divdamp_factor_from_sfc_to_divdamp_z*delta_x**2
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
-        second_order_divdamp_scaling_coeff = (
-            second_order_divdamp_factor * self._grid.global_properties.mean_cell_area
+        second_order_divdamp_scaling_coeff = wpfloat(second_order_divdamp_factor) * wpfloat(
+            self._grid.global_properties.mean_cell_area
         )
 
         dycore_utils._calculate_divdamp_fields(
@@ -1408,7 +1401,7 @@ class SolveNonhydro:
             rayleigh_damping_factor=self.rayleigh_damping_factor,
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
-            ndyn_substeps_var=float(ndyn_substeps_var),
+            ndyn_substeps_var=ndyn_substeps_var_wp,
             dtime=dtime,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
@@ -1420,7 +1413,7 @@ class SolveNonhydro:
                     "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
                 )
                 self._init_cell_kdim_field_with_zero_wp(
-                    field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels
                 )
             log.debug(" corrector: start stencil 65")
             self._update_mass_flux_weighted(
