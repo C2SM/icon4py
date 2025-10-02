@@ -693,6 +693,16 @@ class SolveNonhydro:
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
         )
+        self._calculate_divdamp_fields = setup_program(
+            backend=self._backend,
+            program=dycore_utils.calculate_divdamp_fields,
+            constant_args={
+                "divdamp_order": gtx.int32(self._config.divdamp_order),
+                "mean_cell_area": self._grid.global_properties.mean_cell_area,
+                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "dbl_eps": constants.DBL_EPS,
+            },
+        )
         self._compute_rayleigh_damping_factor = setup_program(
             backend=self._backend,
             program=dycore_utils.compute_rayleigh_damping_factor,
@@ -1426,17 +1436,11 @@ class SolveNonhydro:
             second_order_divdamp_factor * self._grid.global_properties.mean_cell_area
         )
 
-        dycore_utils._calculate_divdamp_fields(
-            self.interpolated_fourth_order_divdamp_factor,
-            gtx.int32(self._config.divdamp_order),
-            self._grid.global_properties.mean_cell_area,
-            second_order_divdamp_factor,
-            self._config.max_nudging_coefficient,
-            constants.DBL_EPS,
-            out=(
-                self.fourth_order_divdamp_scaling_coeff,
-                self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            ),
+        self._calculate_divdamp_fields(
+            interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
+            fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
+            reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+            second_order_divdamp_factor=second_order_divdamp_scaling_coeff,
         )
 
         log.debug("corrector run velocity advection")
