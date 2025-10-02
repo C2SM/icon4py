@@ -47,6 +47,8 @@ def _compare_cfl(
     horizontal_end: int,
     vertical_start: int,
     vertical_end: int,
+    rtol: float = 1e-15,
+    atol: float = 1e-15,
 ) -> None:
     cfl_clipping_mask = np.where(np.abs(vertical_cfl) > 0.0, True, False)
     assert (
@@ -54,7 +56,10 @@ def _compare_cfl(
         == icon_result_cfl_clipping[horizontal_start:horizontal_end, vertical_start:vertical_end]
     ).all()
 
-    assert vertical_cfl[horizontal_start:horizontal_end, :].max() == icon_result_max_vcfl_dyn
+    assert (
+        np.abs(vertical_cfl[horizontal_start:horizontal_end, :].max() - icon_result_max_vcfl_dyn)
+        <= atol + rtol * icon_result_max_vcfl_dyn
+    )
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
@@ -642,7 +647,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
 
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = gtx.astype(savepoint_velocity_init.get_metadata("dtime").get("dtime"), ta.wpfloat)
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging_for_vertical_wind_advective_tendency = icon_grid.start_index(
         cell_domain(h_grid.Zone.NUDGING)
@@ -795,7 +800,7 @@ def test_compute_advection_in_vertical_momentum_equation(
 
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = gtx.astype(savepoint_velocity_init.get_metadata("dtime").get("dtime"), ta.wpfloat)
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging_for_vertical_wind_advective_tendency = icon_grid.start_index(
         cell_domain(h_grid.Zone.NUDGING)
@@ -844,24 +849,25 @@ def test_compute_advection_in_vertical_momentum_equation(
         },
     )
 
+    rtol = 1.0e-15
+    atol = 1.0e-15
+    if ta.precision in ["single"]:
+        rtol = 1e-6  # 1e-5
+        atol = 2e-7
+
     assert test_utils.dallclose(
         icon_result_z_w_con_c_full.asnumpy(),
         contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
-        rtol=1.0e-15,
-        atol=1.0e-15,
+        rtol=rtol,
+        atol=rtol,
     )
-    assert test_utils.dallclose(
-        icon_result_ddt_w_adv.asnumpy()[
-            start_cell_nudging_for_vertical_wind_advective_tendency:end_cell_local_for_vertical_wind_advective_tendency,
-            :,
-        ],
-        vertical_wind_advective_tendency.asnumpy()[
-            start_cell_nudging_for_vertical_wind_advective_tendency:end_cell_local_for_vertical_wind_advective_tendency,
-            :,
-        ],
-        rtol=1.0e-15,
-        atol=1.0e-15,
-    )
+
+    start_idx = start_cell_nudging_for_vertical_wind_advective_tendency
+    end_idx = end_cell_local_for_vertical_wind_advective_tendency
+    fortran_res = icon_result_ddt_w_adv[start_idx:end_idx, :].asnumpy()
+    icon4py_res = vertical_wind_advective_tendency[start_idx:end_idx, :].asnumpy()
+
+    assert test_utils.dallclose(fortran_res, icon4py_res, rtol=rtol, atol=atol)
 
     # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
@@ -872,6 +878,8 @@ def test_compute_advection_in_vertical_momentum_equation(
         horizontal_end,
         max(2, end_index_of_damping_layer - 2),
         icon_grid.num_levels - 3,
+        rtol=rtol,
+        atol=atol,
     )
 
 
@@ -927,7 +935,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    dtime = gtx.astype(savepoint_velocity_init.get_metadata("dtime").get("dtime"), ta.wpfloat)
     end_index_of_damping_layer = grid_savepoint.nrdmax()
 
     icon_result_ddt_vn_apc = savepoint_velocity_exit.ddt_vn_apc_pc(istep_exit - 1)
@@ -973,9 +981,19 @@ def test_compute_advection_in_horizontal_momentum_equation(
         },
     )
 
+    rtol = 1.0e-15
+    atol = 1.0e-15
+    if ta.precision in ["single"]:
+        if experiment == definitions.Experiments.MCH_CH_R04B09:
+            rtol = 1e-6
+            atol = 2e-7
+        else:
+            rtol = 1e-6
+            atol = 1e-8
+
     assert test_utils.dallclose(
         icon_result_ddt_vn_apc.asnumpy(),
         normal_wind_advective_tendency.asnumpy(),
-        rtol=1.0e-15,
-        atol=1.0e-15,
+        rtol=rtol,
+        atol=atol,
     )
