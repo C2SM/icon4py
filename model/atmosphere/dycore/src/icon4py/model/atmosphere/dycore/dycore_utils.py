@@ -14,12 +14,12 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
-def _scale_k(field: fa.KField[float], factor: float) -> fa.KField[float]:
+def _scale_k(field: fa.KField[wpfloat], factor: wpfloat) -> fa.KField[wpfloat]:
     return field * factor
 
 
 @gtx.program
-def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
+def scale_k(field: fa.KField[wpfloat], factor: wpfloat, scaled_field: fa.KField[wpfloat]):
     _scale_k(field, factor, out=scaled_field)
 
 
@@ -40,22 +40,27 @@ def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
 
 @gtx.field_operator
 def _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
-    fourth_order_divdamp_scaling_coeff: fa.KField[float],
-    max_nudging_coefficient: float,
-    dbl_eps: float,
-) -> fa.KField[float]:
-    return 0.75 / (max_nudging_coefficient + dbl_eps) * abs(fourth_order_divdamp_scaling_coeff)
+    fourth_order_divdamp_scaling_coeff: fa.KField[wpfloat],
+    max_nudging_coefficient: wpfloat,
+    wp_eps: wpfloat,
+) -> fa.KField[wpfloat]:
+    return (
+        wpfloat(0.75) / (max_nudging_coefficient + wp_eps) * abs(fourth_order_divdamp_scaling_coeff)
+    )
 
 
 @gtx.field_operator
 def _calculate_fourth_order_divdamp_scaling_coeff(
-    interpolated_fourth_order_divdamp_factor: fa.KField[float],
+    interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
     divdamp_order: gtx.int32,
-    mean_cell_area: float,
-    second_order_divdamp_factor: float,
-) -> fa.KField[float]:
+    mean_cell_area: wpfloat,
+    second_order_divdamp_factor: wpfloat,
+) -> fa.KField[wpfloat]:
     interpolated_fourth_order_divdamp_factor = (
-        maximum(0.0, interpolated_fourth_order_divdamp_factor - 0.25 * second_order_divdamp_factor)
+        maximum(
+            wpfloat(0.0),
+            interpolated_fourth_order_divdamp_factor - wpfloat(0.25) * second_order_divdamp_factor,
+        )
         if divdamp_order == 24
         else interpolated_fourth_order_divdamp_factor
     )
@@ -64,13 +69,13 @@ def _calculate_fourth_order_divdamp_scaling_coeff(
 
 @gtx.field_operator
 def _calculate_divdamp_fields(
-    interpolated_fourth_order_divdamp_factor: fa.KField[float],
+    interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
     divdamp_order: gtx.int32,
-    mean_cell_area: float,
-    second_order_divdamp_factor: float,
-    max_nudging_coefficient: float,
-    dbl_eps: float,
-) -> tuple[fa.KField[float], fa.KField[float]]:
+    mean_cell_area: wpfloat,
+    second_order_divdamp_factor: wpfloat,
+    max_nudging_coefficient: wpfloat,
+    wp_eps: wpfloat,
+) -> tuple[fa.KField[wpfloat], fa.KField[wpfloat]]:
     fourth_order_divdamp_scaling_coeff = _calculate_fourth_order_divdamp_scaling_coeff(
         interpolated_fourth_order_divdamp_factor,
         divdamp_order,
@@ -79,7 +84,7 @@ def _calculate_divdamp_fields(
     )
     reduced_fourth_order_divdamp_coeff_at_nest_boundary = (
         _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
-            fourth_order_divdamp_scaling_coeff, max_nudging_coefficient, dbl_eps
+            fourth_order_divdamp_scaling_coeff, max_nudging_coefficient, wp_eps
         )
     )
     return (fourth_order_divdamp_scaling_coeff, reduced_fourth_order_divdamp_coeff_at_nest_boundary)
@@ -87,13 +92,13 @@ def _calculate_divdamp_fields(
 
 @gtx.field_operator
 def _compute_rayleigh_damping_factor(
-    rayleigh_w: fa.KField[float], dtime: float
-) -> fa.KField[float]:
-    return 1.0 / (1.0 + dtime * rayleigh_w)
+    rayleigh_w: fa.KField[wpfloat], dtime: wpfloat
+) -> fa.KField[wpfloat]:
+    return wpfloat(1.0) / (wpfloat(1.0) + dtime * rayleigh_w)
 
 
 @gtx.program
 def compute_rayleigh_damping_factor(
-    rayleigh_w: fa.KField[float], dtime: float, rayleigh_damping_factor: fa.KField[float]
+    rayleigh_w: fa.KField[wpfloat], dtime: wpfloat, rayleigh_damping_factor: fa.KField[wpfloat]
 ):
     _compute_rayleigh_damping_factor(rayleigh_w, dtime, out=rayleigh_damping_factor)
