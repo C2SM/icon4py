@@ -43,12 +43,12 @@ from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zer
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
     _interpolate_cell_field_to_half_levels_vp,
 )
 from icon4py.model.common.math.derivative import _compute_first_vertical_derivative_at_cells
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
@@ -637,13 +637,13 @@ def interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceler
     theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
     pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    contravariant_correction_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     current_rho: fa.CellKField[wpfloat],
     next_rho: fa.CellKField[wpfloat],
     current_theta_v: fa.CellKField[wpfloat],
     next_theta_v: fa.CellKField[wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
-    reference_theta_at_cells_on_model_levels: fa.CellKField[wpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
     ddqz_z_half: fa.CellKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
