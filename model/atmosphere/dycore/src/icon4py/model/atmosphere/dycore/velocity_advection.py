@@ -190,12 +190,12 @@ class VelocityAdvection:
                 "mask": self._ibm_masks.half_edge_mask,
             },
             horizontal_sizes={
-                "horizontal_start": self._start_edge_lateral_boundary,
+                "horizontal_start": self._start_edge_nudging_level_2,
                 "horizontal_end": self._end_edge_local,
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
-                "vertical_end": self.grid.num_levels+1,
+                "vertical_end": self.grid.num_levels,
             },
         )
 
@@ -227,9 +227,6 @@ class VelocityAdvection:
         )
         self._end_vertex_halo = self.grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-        self._start_edge_lateral_boundary = self.grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
-        )
         self._start_edge_lateral_boundary_level_5 = self.grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
