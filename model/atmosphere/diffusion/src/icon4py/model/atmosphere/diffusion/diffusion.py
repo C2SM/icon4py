@@ -533,7 +533,7 @@ class Diffusion:
                 "horizontal_start": self._edge_start_lateral_boundary_level_5,
                 "horizontal_end": self._edge_end_local,
             },
-            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
+            vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels-1},
             offset_provider=self._grid.connectivities,
         )
         self.apply_vertical_diffusion_to_w = setup_program(
