@@ -64,11 +64,11 @@ def customize_backend(
     if isinstance(backend, model_backends.DeviceType):
         backend = {"device": backend}
     backend = get_options(program_name, **backend)
-    backend_func = backend.get("backend_factory", model_backends.make_custom_dace_backend)
-    device = backend.get("device", model_backends.DeviceType.CPU)
-    custom_backend = backend_func(
-        device=device,
-    )
+    backend_factory = backend.pop("backend_factory", model_backends.make_custom_dace_backend)
+    backend["device"] = backend.get("device", model_backends.DeviceType.CPU)  # set default device
+    custom_backend = backend_factory(**backend)
+    backend_name = custom_backend.name if custom_backend is not None else "embedded"
+    log.info(f"Using custom backend '{backend_name}' for '{program_name}' with options: {backend}.")
     return custom_backend
 
 
@@ -105,9 +105,9 @@ def setup_program(
 
     if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
         backend = customize_backend(program.__name__, backend)
-
-    backend_name = backend.name if backend is not None else "embedded"
-    log.info(f"Configured '{backend_name}' backend for {program.__name__}.")
+    else:
+        backend_name = backend.name if backend is not None else "embedded"
+        log.info(f"Using non-custom backend '{backend_name}' for '{program.__name__}'.")
 
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend)
