@@ -92,7 +92,8 @@ class ChannelFlow:
             path=savepoint_path,
         )
         grid_savepoint = data_provider.from_savepoint_grid(
-            "some_grid_uuid", icon_grid.GridShape(geometry_type=base.GeometryType.TORUS)
+            grid_id="some_grid_uuid",
+            grid_shape=icon_grid.GridShape(geometry_type=base.GeometryType.TORUS),
         )
 
         self.channel_y, self.channel_U = self.load_channel_data()
