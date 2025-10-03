@@ -8,6 +8,7 @@
 
 import json
 import logging
+import os
 import pathlib
 import re
 
@@ -20,7 +21,7 @@ target = "1-rank GH200"
 
 gt4py_data_key = "compute"
 openacc_backend = "openacc"
-output_file = "bench_blueline_stencil_compute"
+output_filename = "bench_blueline_stencil_compute"
 
 file_prefix = pathlib.Path(__file__).parent
 openacc_input = file_prefix / "bencher=exp.mch_icon-ch1_medium_stencils=0.362198=ACC.json"
@@ -298,8 +299,12 @@ ax.set_yticklabels(stencil_names, rotation=0)
 
 ax.legend(loc="upper right")
 
-plt.tight_layout()
-plt.savefig(output_file)
+# Save the plot to a file
+output_dir = os.path.join(os.getcwd(), "plots")
+os.makedirs(output_dir, exist_ok=True)
+output_file = os.path.join(output_dir, f"{output_filename}.png")
+plt.savefig(output_file, bbox_inches="tight")
+plt.close()
 
 print("")
 print(f"Plot figure saved to {output_file}")
