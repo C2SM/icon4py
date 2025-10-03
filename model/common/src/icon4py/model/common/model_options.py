@@ -51,6 +51,9 @@ def get_options(
 ) -> model_backends.BackendDescriptor:
     if program_name in gtfn_programs:
         backend_description["backend_factory"] = model_backends.make_custom_gtfn_backend
+    if program_name == "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn":
+        backend_description["backend_factory"] = model_backends.make_custom_gtfn_backend
+        backend_description["fuse_all_fieldops"] = True
     return backend_description
 
 
