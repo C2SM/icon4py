@@ -7,129 +7,299 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import json
+import logging
+import pathlib
 import re
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
+
+experiment = "mch_icon-ch1_medium"
+target = "1-rank GH200"
 
 gt4py_data_key = "compute"
-fortran_data_key = "value"
-
-experiment = "mch_icon-ch1_medium_stencils"
+openacc_backend = "openacc"
 output_file = "bench_blueline_stencil_compute"
-input_openacc = "/Users/epaone/repo/icon4py/scripts/bencher=exp.mch_icon-ch1_medium_stencils=0.362198=ACC.json"
-input_gt4py = {
-    # "gtfn_gpu": "/Users/epaone/repo/icon4py/scripts/gtfn_gt4py_timers_compute.json",
-    "dace_gpu": "/Users/epaone/repo/icon4py/scripts/gt4py_dace_timers_202051001.json",
+
+file_prefix = pathlib.Path(__file__).parent
+openacc_input = file_prefix / "bencher=exp.mch_icon-ch1_medium_stencils=0.362198=ACC.json"
+gt4py_input = {
+    "gtfn_gpu": file_prefix / "gt4py_gtfn_timers_202051001.json",
+    "dace_gpu": file_prefix / "gt4py_dace_timers_202051002.json",
 }
-
-
+# Mapping from fortran stencil metric to gt4py stencils. The mapped value is a list,
+# because one stencil in Fortran could correspond to multiple stencils in ICON4Py,
+# if they are not fused in a combined stencil.
 fortran_to_icon4py = {
+    # -- total
+    # -- integrate_nh
+    # -- nh_solve
     # -- nh_solve.veltend
-    "compute_derived_horizontal_winds_and_ke_and_contravariant_correction": "compute_derived_horizontal_winds_and_ke_and_contravariant_correction",
-    # "compute_derived_horizontal_winds_and_ke_and_contravariant_correction_skip": "compute_derived_horizontal_winds_and_ke_and_contravariant_correction",
-    "compute_contravariant_correction_and_advection_in_vertical_momentum_equation": "compute_contravariant_correction_and_advection_in_vertical_momentum_equation",
-    # "compute_contravariant_correction_and_advection_in_vertical_momentum_equation_ski": "compute_contravariant_correction_and_advection_in_vertical_momentum_equation",
-    "compute_advection_in_vertical_momentum_equation": "compute_advection_in_vertical_momentum_equation",
-    "compute_advection_in_horizontal_momentum_equation": "compute_advection_in_horizontal_momentum_equation",
+    "compute_derived_horizontal_winds_and_ke_and_contravariant_correction": [
+        "compute_derived_horizontal_winds_and_ke_and_contravariant_correction"
+    ],
+    # -- compute_derived_horizontal_winds_and_ke_and_contravariant_correction_skip
+    "compute_contravariant_correction_and_advection_in_vertical_momentum_equation": [
+        "compute_contravariant_correction_and_advection_in_vertical_momentum_equation"
+    ],
+    # -- compute_contravariant_correction_and_advection_in_vertical_momentum_equation_ski
+    "compute_advection_in_vertical_momentum_equation": [
+        "compute_advection_in_vertical_momentum_equation"
+    ],
+    "compute_advection_in_horizontal_momentum_equation": [
+        "compute_advection_in_horizontal_momentum_equation"
+    ],
     # -- nh_solve.cellcomp
-    "compute_perturbed_quantities_and_interpolation": "compute_perturbed_quantities_and_interpolation",
-    "interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleratio": "interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration",
+    "compute_perturbed_quantities_and_interpolation": [
+        "compute_perturbed_quantities_and_interpolation"
+    ],
+    # -- interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleratio
     # -- nh_solve.edgecomp
-    "compute_horizontal_velocity_quantities_and_fluxes": "compute_horizontal_velocity_quantities_and_fluxes",
-    "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection": "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection",
-    # "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first": "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection",
+    "compute_horizontal_velocity_quantities_and_fluxes": [
+        "compute_horizontal_velocity_quantities_and_fluxes"
+    ],
+    "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection": [
+        "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection"
+    ],
+    # -- compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first
     # -- nh_solve.vnupd
-    "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn": "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn",
-    "apply_divergence_damping_and_update_vn": "apply_divergence_damping_and_update_vn",
+    "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn": [
+        "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
+    ],
+    "apply_divergence_damping_and_update_vn": ["apply_divergence_damping_and_update_vn"],
     # -- nh_solve.vimpl
-    "compute_dwdz_and_boundary_update_rho_theta_w": "compute_dwdz_and_boundary_update_rho_theta_w",
-    "update_mass_flux_weighted": "update_mass_flux_weighted",
-    # "update_mass_flux_weighted_first": "update_mass_flux_weighted",
-    # -- not categorized
-    "vertically_implicit_solver_at_predictor_step": "vertically_implicit_solver_at_predictor_step",
-    # "vertically_implicit_solver_at_predictor_step_first": "vertically_implicit_solver_at_predictor_step",
-    "vertically_implicit_solver_at_corrector_step": "vertically_implicit_solver_at_corrector_step",
-    # "vertically_implicit_solver_at_corrector_step_first": "vertically_implicit_solver_at_corrector_step",
-    # "vertically_implicit_solver_at_corrector_step_last": "vertically_implicit_solver_at_corrector_step",
-    "rbf_vector_interpolation_of_u_v_vert_before_nabla2": "rbf_vector_interpolation_of_u_v_vert_before_nabla2",
-    "calculate_nabla2_and_smag_coefficients_for_vn": "calculate_nabla2_and_smag_coefficients_for_vn",
-    "calculate_diagnostic_quantities_for_turbulence": "calculate_diagnostic_quantities_for_turbulence",
-    "rbf_vector_interpolation_of_u_v_vert_before_nabla4": "rbf_vector_interpolation_of_u_v_vert_before_nabla4",
-    "apply_diffusion_to_vn": "apply_diffusion_to_vn",
-    "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence": "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence",
-    "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools": "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools",
-    "apply_diffusion_to_theta_and_exner": "apply_diffusion_to_theta_and_exner",
+    # -- compute_dwdz_and_boundary_update_rho_theta_w
+    "update_mass_flux_weighted": ["update_mass_flux_weighted"],
+    # -- update_mass_flux_weighted_first
+    # -- nh_solve.exch
+    "boundary_halo_cleanup": [
+        "compute_exner_from_rhotheta",
+        "compute_theta_and_exner",
+        "update_theta_v",
+    ],
+    # -- nh_hdiff_initial_run
+    # -- nh_hdiff
+    # -- transport
+    # -- adv_horiz
+    # -- adv_hflx
+    # -- back_traj
+    # -- adv_vert
+    # -- adv_vflx
+    # -- action
+    # -- global_sum
+    # -- wrt_output
+    # -- wait_for_async_io
+    "vertically_implicit_solver_at_predictor_step": [
+        "vertically_implicit_solver_at_predictor_step"
+    ],
+    # -- vertically_implicit_solver_at_predictor_step_first
+    "vertically_implicit_solver_at_corrector_step": [
+        "vertically_implicit_solver_at_corrector_step"
+    ],
+    # -- vertically_implicit_solver_at_corrector_step_first
+    # -- vertically_implicit_solver_at_corrector_step_last
+    # -- rbf_vector_interpolation_of_u_v_vert_before_nabla2
+    "calculate_nabla2_and_smag_coefficients_for_vn": [
+        "calculate_nabla2_and_smag_coefficients_for_vn"
+    ],
+    "calculate_diagnostic_quantities_for_turbulence": [
+        "calculate_diagnostic_quantities_for_turbulence"
+    ],
+    # -- rbf_vector_interpolation_of_u_v_vert_before_nabla4
+    "apply_diffusion_to_vn": ["apply_diffusion_to_vn"],
+    "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence": [
+        "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence"
+    ],
+    "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools": [
+        "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools"
+    ],
+    "apply_diffusion_to_theta_and_exner": ["apply_diffusion_to_theta_and_exner"],
+    # -- physics
+    # -- nwp_radiation
+    # -- preradiaton
+    # -- phys_acc_sync
+    # -- ordglb_sum
+    # -- satad
+    # -- phys_u_v
+    # -- nwp_turbulence
+    # -- nwp_turbtrans
+    # -- nwp_turbdiff
+    # -- nwp_surface
+    # -- nwp_microphysics
+    # -- rediag_prog_vars
+    # -- sso
+    # -- cloud_cover
+    # -- radheat
+    # -- nh_diagnostics
+    # -- diagnose_pres_temp
+    # -- model_init
+    # -- compute_domain_decomp
+    # -- compute_intp_coeffs
+    # -- init_ext_data
+    # -- init_icon
+    # -- init_latbc
+    # -- init_nwp_phy
+    # -- upper_atmosphere
+    # -- upatmo_construction
+    # -- upatmo_destruction
+    # -- write_restart
+    # -- write_restart_io
+    # -- write_restart_communication
+    # -- optional_diagnostics_atmosphere
+}
+# The mapping below allows to add the time spent in different variants to the time spent in the main stencil.
+# Note that this just a workaround until GT4Py can report metrics for each variant.
+fortran_combined_metrics = {
+    "compute_derived_horizontal_winds_and_ke_and_contravariant_correction_skip": "compute_derived_horizontal_winds_and_ke_and_contravariant_correction",
+    "compute_contravariant_correction_and_advection_in_vertical_momentum_equation_ski": "compute_contravariant_correction_and_advection_in_vertical_momentum_equation",
+    "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first": "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection",
+    "vertically_implicit_solver_at_predictor_step_first": "vertically_implicit_solver_at_predictor_step",
+    "vertically_implicit_solver_at_corrector_step_first": "vertically_implicit_solver_at_corrector_step",
+    "vertically_implicit_solver_at_corrector_step_last": "vertically_implicit_solver_at_corrector_step",
 }
 
+icon4py_stencils_ = []
+for v in fortran_to_icon4py.values():
+    icon4py_stencils_.extend(v)
+mapped_icon4py_stencils = set(icon4py_stencils_)
+assert len(icon4py_stencils_) == len(mapped_icon4py_stencils)
 
-def load_bencher_log(filename: str, t_meas_key: str, experiment: str) -> dict:
-    data = {}
-    with open(filename) as f:
-        d = json.load(f)
-        # assert experiment in d
-        for stencil, meas in d.items():
-            if stencil in fortran_to_icon4py:
-                icon4py_stencil = fortran_to_icon4py[stencil]
-                t = meas["latency"][t_meas_key]
-                data[icon4py_stencil] = t / 1000.0
-            else:
-                print(f"skipping openacc meas for {stencil}")
-    return data
-
-
-def load_gt4py_timers(filename: str) -> dict:
-    with open(filename) as f:
-        data = json.load(f)
-    return data
-
-
-columns = ["openacc"]
-data = {
-    stencil: [t]
-    for stencil, t in load_bencher_log(input_openacc, fortran_data_key, experiment).items()
-}
-data_err = {stencil: [0.0] for stencil, _ in data.items()}
+log = logging.getLogger(__name__)
 
 # regex to remove the backend from the stencil name
 re_stencil = re.compile("(\S+)\[.+\]")
 
-for backend, filename in input_gt4py.items():
-    columns.append(f"{backend}_{gt4py_data_key}")
-    d = load_gt4py_timers(filename)
-    for name, meas in d.items():
-        m = re_stencil.match(name)
-        assert m
-        stencil = m[1]
-        if stencil in data:
-            # note that we drop the first measurement
-            t = meas[gt4py_data_key][1:]
-            data[stencil].append(np.median(t))
-            data_err[stencil].append(np.std(t))
+
+def load_openacc_log(filename: pathlib.Path) -> dict:
+    with filename.open("r") as f:
+        j = json.load(f)
+    data = {}
+    count = {}
+    for stencil, meas in j.items():
+        # TODO(edopao): retrieve the total time
+        t = meas["latency"]["value"] / 1000.0  # milliseconds to seconds
+        # TODO(edopao): retrieve the number of calls
+        ncalls = 0
+        if stencil in fortran_to_icon4py:
+            data[stencil] = t
+            count[stencil] = ncalls
+        elif stencil in fortran_combined_metrics:
+            main_stencil = fortran_combined_metrics[stencil]
+            assert main_stencil in data  # main stencil should be processed first
+            data[main_stencil] += t
+            count[main_stencil] += ncalls
         else:
-            print(f"skipping gt4py meas for {stencil}")
+            log.warning(f"skipping openacc meas for {stencil}")
+    return data, count
 
-# keep only stencils that exists both in openacc and gt4py report
-data = {k: v for k, v in data.items() if len(v) == len(columns)}
-data_err = {k: v for k, v in data_err.items() if len(v) == len(columns)}
 
-df = pd.DataFrame.from_dict(data, orient="index", columns=columns)
-err = pd.DataFrame.from_dict(data_err, orient="index", columns=columns)
-print(df)
+def load_gt4py_timers(filename: pathlib.Path) -> dict:
+    with filename.open("r") as f:
+        j = json.load(f)
 
-# create a horizontal bar plot
-ax = df.plot.barh(
-    y=columns,
-    # yerr=err,
-    capsize=2,  # length of the little caps on the errorbars
-    legend=True,
-    figsize=(16, 10),
-)
-plt.title("Average stencil compute time [s] on mch_icon-ch1_medium (1GPU A100)")
+    jj = {}
+    for k, v in j.items():
+        # remove the backend form the stencil name
+        m = re_stencil.match(k)
+        assert m is not None
+        stencil = m[1]
+        if stencil in mapped_icon4py_stencils:
+            jj[stencil] = v[gt4py_data_key]
+        else:
+            log.warning(f"skipping gt4py meas for {stencil}")
+
+    data = {}
+    for stencil, icon4py_val in fortran_to_icon4py.items():
+        assert isinstance(icon4py_val, list)
+        assert len(icon4py_val) > 0
+        if len(icon4py_val) == 1:
+            s = icon4py_val[0]
+            metric_data = jj[s]
+        else:
+            combined_stencil_data = zip(
+                *[jj[s] for s in icon4py_val],
+                strict=True,
+            )
+            metric_data = [np.sum(v) for v in combined_stencil_data]
+        # We replace the first measurement with the median value.
+        metric_data[0] = np.median(metric_data)
+        data[stencil] = metric_data
+    return data
+
+
+openacc_meas, openacc_count = load_openacc_log(openacc_input)
+
+# sort stencil names in descendent order of openacc total time
+stencil_names = [v[0] for v in sorted(openacc_meas.items(), key=lambda x: x[1], reverse=True)]
+
+backends = [openacc_backend]
+data = {openacc_backend: [openacc_meas[stencil] for stencil in stencil_names]}
+for backend, filename in gt4py_input.items():
+    backends.append(backend)
+    gt4py_meas = load_gt4py_timers(filename)
+    values = []
+    for stencil in stencil_names:
+        tvalues = gt4py_meas[stencil]
+        if len(tvalues) != openacc_count[stencil]:
+            # TODO(edopao): enable exception
+            # raise ValueError(
+            #     f"Mismatch number of calls on {stencil} openacc={openacc_count[stencil]} gt4py={len(tvalues)}."
+            # )
+            pass
+        values.append(np.sum(tvalues))
+    data[backend] = values
+
+
+# Combine all bar plots in a single plot
+fig, ax = plt.subplots(figsize=(20, 12))
+fig.subplots_adjust(left=0.3, right=0.98)
+bar_width = 0.5
+spacing = 1.0  # Additional spacing between stencil names
+index = np.arange(len(stencil_names)) * (bar_width * len(backends) + spacing)
+
+# Define base RGB colors for different backends
+base_colors = [
+    (0.1, 0.2, 0.5),  # Example RGB color 1
+    (0.2, 0.6, 0.3),  # Example RGB color 2
+    (0.8, 0.4, 0.1),  # Example RGB color 3
+    (0.5, 0.1, 0.7),  # Example RGB color 4
+    (0.3, 0.3, 0.3),  # Example RGB color 5
+]
+
+if len(base_colors) < len(backends):
+    raise ValueError("Not enough base colors defined for the different backends.")
+
+for i, backend in enumerate(backends):
+    color = base_colors[i]
+    values = data[backend]
+    ax.barh(index + i * bar_width, values, bar_width, label=backend, color=color)
+    if i > 0:  # Only annotate bars for gt4py backends
+        ratios = [
+            val / openacc_meas[stencil]
+            for stencil, val in zip(stencil_names, values, strict=True)
+        ]
+        for k, (val, ratio) in enumerate(zip(values, ratios)):
+            ax.text(
+                val + 0.05,  # Position slightly above the bar
+                index[k] + (i - 0.5) * bar_width,
+                f"{ratio:.2f}",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+                rotation=0,
+            )
+
+ax.set_title(f"Backend comparison on {experiment} ({target})")
+ax.set_xlabel("Total compute time [s]")
+ax.set_ylabel("Stencil name")
+ax.set_yticks(index + (len(backends) * bar_width) / 2 - bar_width / 2)
+ax.set_yticklabels(stencil_names, rotation=0)
+
+ax.legend(loc="upper right")
+
 plt.tight_layout()
 plt.savefig(output_file)
 
 print("")
-print(f"Plot figure saved to {output_file}.png")
+print(f"Plot figure saved to {output_file}")
