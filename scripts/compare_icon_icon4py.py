@@ -8,7 +8,6 @@
 
 import json
 import logging
-import os
 import pathlib
 import re
 
@@ -19,7 +18,7 @@ import numpy as np
 experiment = "mch_icon-ch1_medium"
 target = "1-rank GH200"
 
-gt4py_data_key = "compute"
+gt4py_metric = "compute"
 openacc_backend = "openacc"
 output_filename = "bench_blueline_stencil_compute"
 
@@ -168,9 +167,6 @@ assert len(icon4py_stencils_) == len(mapped_icon4py_stencils)
 
 log = logging.getLogger(__name__)
 
-# regex to remove the backend from the stencil name
-re_stencil = re.compile("(\S+)\[.+\]")
-
 
 def load_openacc_log(filename: pathlib.Path) -> dict:
     with filename.open("r") as f:
@@ -199,6 +195,9 @@ def load_gt4py_timers(filename: pathlib.Path) -> dict:
     with filename.open("r") as f:
         j = json.load(f)
 
+    # regex to remove the backend from the stencil name
+    re_stencil = re.compile("(\S+)\[.+\]")
+
     jj = {}
     for k, v in j.items():
         # remove the backend form the stencil name
@@ -206,7 +205,7 @@ def load_gt4py_timers(filename: pathlib.Path) -> dict:
         assert m is not None
         stencil = m[1]
         if stencil in mapped_icon4py_stencils:
-            jj[stencil] = v[gt4py_data_key]
+            jj[stencil] = v[gt4py_metric]
         else:
             log.warning(f"skipping gt4py meas for {stencil}")
 
@@ -277,8 +276,7 @@ for i, backend in enumerate(backends):
     ax.barh(index + i * bar_width, values, bar_width, label=backend, color=color)
     if i > 0:  # Only annotate bars for gt4py backends
         ratios = [
-            val / openacc_meas[stencil]
-            for stencil, val in zip(stencil_names, values, strict=True)
+            val / openacc_meas[stencil] for stencil, val in zip(stencil_names, values, strict=True)
         ]
         for k, (val, ratio) in enumerate(zip(values, ratios)):
             ax.text(
@@ -300,9 +298,9 @@ ax.set_yticklabels(stencil_names, rotation=0)
 ax.legend(loc="upper right")
 
 # Save the plot to a file
-output_dir = os.path.join(os.getcwd(), "plots")
-os.makedirs(output_dir, exist_ok=True)
-output_file = os.path.join(output_dir, f"{output_filename}.png")
+output_dir = pathlib.Path.cwd() / "plots"
+output_dir.mkdir(exist_ok=True)
+output_file = output_dir / f"{output_filename}.png"
 plt.savefig(output_file, bbox_inches="tight")
 plt.close()
 
