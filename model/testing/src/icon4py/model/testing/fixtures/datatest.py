@@ -65,7 +65,7 @@ def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
     params=[
         definitions.Experiments.MCH_CH_R04B09,
         definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.WEISMAN_KLEMP_TORUS,
+        definitions.Experiments.GAUSS3D,
     ],
     ids=lambda r: r.name,
 )

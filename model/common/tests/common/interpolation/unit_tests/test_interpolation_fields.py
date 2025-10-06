@@ -222,7 +222,7 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-10),
         (definitions.Experiments.EXCLAIM_APE, 1e-10),
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-15),
+        (definitions.Experiments.GAUSS3D, 1e-15),
     ],
 )
 def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, atol, backend):

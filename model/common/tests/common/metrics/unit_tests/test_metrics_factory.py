@@ -323,12 +323,8 @@ def test_factory_d2dexdz2_facs_mc(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    geometry_type = gridtest_utils.get_grid_geometry(
-        backend, experiment
-    ).grid.global_properties.geometry_type
-    # TODO(msimberg); fix?
-    if geometry_type == base.GeometryType.TORUS:
-        pytest.xfail("d2dexdz2_facs not available in serialized data")
+    if experiment == definitions.Experiments.WEISMAN_KLEMP_TORUS:
+        pytest.xfail(f"field not serialized for experiment {experiment=}")
 
     field_ref_1 = metrics_savepoint.d2dexdz2_fac1_mc()
     field_ref_2 = metrics_savepoint.d2dexdz2_fac2_mc()
@@ -522,12 +518,8 @@ def test_factory_zdiff_gradp(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    geometry_type = gridtest_utils.get_grid_geometry(
-        backend, experiment
-    ).grid.global_properties.geometry_type
-    # TODO(msimberg): fix?
-    if geometry_type == base.GeometryType.TORUS:
-        pytest.xfail("zdiff_gradp not available in serialized data")
+    if experiment == definitions.Experiments.WEISMAN_KLEMP_TORUS:
+        pytest.xfail(f"field not serialized for experiment {experiment=}")
 
     field_ref = metrics_savepoint.zdiff_gradp()
     factory = _get_metrics_factory(

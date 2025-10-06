@@ -58,7 +58,7 @@ def test_geometry_raises_for_unknown_field(
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-7),
         (definitions.Experiments.EXCLAIM_APE, 3e-12),
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-13),
+        (definitions.Experiments.GAUSS3D, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -92,7 +92,7 @@ def test_coriolis_parameter(
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-9),
         (definitions.Experiments.EXCLAIM_APE, 1e-12),
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-13),
+        (definitions.Experiments.GAUSS3D, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -113,7 +113,7 @@ def test_compute_edge_length(
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-9),
         (definitions.Experiments.EXCLAIM_APE, 1e-12),
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-13),
+        (definitions.Experiments.GAUSS3D, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -135,7 +135,7 @@ def test_compute_inverse_edge_length(
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-7),
         (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-13),
+        (definitions.Experiments.GAUSS3D, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -157,7 +157,7 @@ def test_compute_dual_edge_length(
     [
         (definitions.Experiments.MCH_CH_R04B09, 5e-9),
         (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-13),
+        (definitions.Experiments.GAUSS3D, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -184,7 +184,7 @@ def test_compute_inverse_dual_edge_length(
     [
         (definitions.Experiments.MCH_CH_R04B09, 5e-10),
         (definitions.Experiments.EXCLAIM_APE, 1e-12),
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-14),
+        (definitions.Experiments.GAUSS3D, 1e-14),
     ],
 )
 @pytest.mark.datatest

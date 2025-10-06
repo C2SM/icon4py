@@ -149,7 +149,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     [
         (definitions.Experiments.EXCLAIM_APE, 3e-9),
         (definitions.Experiments.MCH_CH_R04B09, 3e-2),
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-15),
+        (definitions.Experiments.GAUSS3D, 1e-15),
     ],
 )
 def test_rbf_interpolation_coeffs_cell(
@@ -227,7 +227,7 @@ def test_rbf_interpolation_coeffs_cell(
     [
         (definitions.Experiments.EXCLAIM_APE, 3e-10),
         (definitions.Experiments.MCH_CH_R04B09, 3e-3),
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 1e-15),
+        (definitions.Experiments.GAUSS3D, 1e-15),
     ],
 )
 def test_rbf_interpolation_coeffs_vertex(
@@ -305,7 +305,7 @@ def test_rbf_interpolation_coeffs_vertex(
     [
         (definitions.Experiments.EXCLAIM_APE, 8e-14),
         (definitions.Experiments.MCH_CH_R04B09, 2e-9),
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 0),
+        (definitions.Experiments.GAUSS3D, 0),
     ],
 )
 def test_rbf_interpolation_coeffs_edge(
