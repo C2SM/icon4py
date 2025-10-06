@@ -14,8 +14,6 @@ import pathlib
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Final, Literal
 
-import pytest
-
 from icon4py.model.testing import config
 
 
@@ -218,9 +216,29 @@ def construct_diffusion_config(
             hdiff_temp=True,
             n_substeps=ndyn_substeps,
         )
-    # TODO(msimberg): fix?
-    elif experiment == Experiments.WEISMAN_KLEMP_TORUS:
-        pytest.skip(f"DiffusionConfig for experiment {experiment.name} not implemented, skipping.")
+    elif experiment == Experiments.GAUSS3D:
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,  # TODO(msimberg): check
+            hdiff_w=True,
+            hdiff_vn=True,
+            hdiff_temp=True,
+            type_vn_diffu=1,
+            smag_3d=False,
+            type_t_diffu=2,
+            hdiff_efdt_ratio=36.0,
+            hdiff_w_efdt_ratio=15.0,
+            smagorinski_scaling_factor=0.015,
+            n_substeps=ndyn_substeps,
+            zdiffu_t=True,
+            thslp_zdiffu=0.025,
+            thhgtd_zdiffu=200.0,
+            velocity_boundary_diffusion_denom=200.0,  # TODO(msimberg): check
+            temperature_boundary_diffusion_denom=135.0,  # TODO(msimberg): check
+            max_nudging_coefficient=0.375,  # TODO(msimberg): check
+            nudging_decay_rate=2.0,  # TODO(msimberg): check
+            shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,  # TODO(msimberg): check
+            ltkeshs=True,  # TODO(msimberg): check
+        )
     else:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."
