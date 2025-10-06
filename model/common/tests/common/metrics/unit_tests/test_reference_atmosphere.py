@@ -15,7 +15,7 @@ import pytest
 import icon4py.model.common.type_alias as ta
 import icon4py.model.testing.test_utils as stencil_tests
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import base, horizontal
+from icon4py.model.common.grid import horizontal
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
 )
