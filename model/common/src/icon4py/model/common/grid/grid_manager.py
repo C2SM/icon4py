@@ -299,6 +299,7 @@ class GridManager:
             ),
         }
 
+        # TODO(msimberg): compute from coordinates?
         if geometry_type == base.GeometryType.TORUS:
             geometry_fields[gridfile.GeometryName.EDGE_NORMAL_X.value] = gtx.as_field(
                 (dims.EdgeDim,),
