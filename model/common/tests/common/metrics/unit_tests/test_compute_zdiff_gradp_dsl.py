@@ -49,10 +49,6 @@ def test_compute_zdiff_gradp_dsl(
     interpolation_savepoint: sb.InterpolationSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    # TODO(msimberg): fix?
-    if icon_grid.global_properties.geometry_type == base.GeometryType.TORUS:
-        pytest.xfail("zdiff_gradp not available in serialized data")
-
     xp = data_alloc.import_array_ns(backend)
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
 

@@ -216,10 +216,6 @@ def test_compute_d2dexdz2_fac_mc(
     metrics_savepoint: sb.MetricSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    # TODO(msimberg); fix?
-    if icon_grid.global_properties.geometry_type == base.GeometryType.TORUS:
-        pytest.xfail("d2dexdz2_facs not available in serialized data")
-
     z_mc = metrics_savepoint.z_mc()
     d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()
     d2dexdz2_fac2_mc_ref = metrics_savepoint.d2dexdz2_fac2_mc()
