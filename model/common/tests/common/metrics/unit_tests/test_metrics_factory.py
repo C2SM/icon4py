@@ -42,7 +42,13 @@ def metrics_config(experiment: definitions.Experiment) -> tuple:
     rayleigh_coeff = 5.0
     lowest_layer_thickness = 50.0
     exner_expol = 0.333
-    vwind_offctr = 0.2
+    match experiment:
+        case definitions.Experiments.MCH_CH_R04B09:
+            vwind_offctr = 0.2
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            vwind_offctr = 0.2
+        case _:
+            vwind_offctr = 0.15
     rayleigh_type = 2
     model_top_height = 23500.0
     stretch_factor = 1.0
@@ -60,6 +66,13 @@ def metrics_config(experiment: definitions.Experiment) -> tuple:
             rayleigh_coeff = 0.1
             exner_expol = 0.3333333333333
             vwind_offctr = 0.15
+        case definitions.Experiments.GAUSS3D:
+            rayleigh_coeff = 0.1
+            damping_height = 45000.0
+            exner_expol = 1.0 / 3.0
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            rayleigh_coeff = 0.75
+            damping_height = 8000.0
 
     return (
         lowest_layer_thickness,
@@ -244,17 +257,6 @@ def test_factory_rayleigh_w(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    # TODO(msimberg): Config set incorrectly for weisman klemp. Can we set the
-    # weisman klemp parameters for toruses as defaults? Do we have to ensure the
-    # correct options are set only for weisman klemp? See test_metric_fields.py,
-    # the rayleigh_w field validates there because the test can set the config
-    # parameters for the computation.
-    geometry_type = gridtest_utils.get_grid_geometry(
-        backend, experiment
-    ).grid.global_properties.geometry_type
-    if geometry_type == base.GeometryType.TORUS:
-        pytest.xfail(f"rayleigh_w computed with wrong config parameters for {experiment=}")
-
     field_ref = metrics_savepoint.rayleigh_w()
     factory = _get_metrics_factory(
         backend=backend,

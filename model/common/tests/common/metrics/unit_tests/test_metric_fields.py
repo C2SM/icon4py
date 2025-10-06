@@ -150,6 +150,9 @@ def test_compute_rayleigh_w(
         case definitions.Experiments.EXCLAIM_APE:
             rayleigh_coeff = 0.1
             damping_height = 50000.0
+        case definitions.Experiments.GAUSS3D:
+            rayleigh_coeff = 0.1
+            damping_height = 45000.0
         case definitions.Experiments.WEISMAN_KLEMP_TORUS:
             rayleigh_coeff = 0.75
             damping_height = 8000.0
@@ -245,7 +248,7 @@ def test_compute_exner_exfac(
         case definitions.Experiments.WEISMAN_KLEMP_TORUS:
             exner_expol = 0.333
         case _:
-            exner_expol = 0.3333333333333
+            exner_expol = 1.0 / 3.0
 
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
