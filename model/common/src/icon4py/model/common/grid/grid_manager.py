@@ -5,23 +5,23 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 import logging
 import pathlib
 from types import ModuleType
 from typing import Literal, Protocol, TypeAlias
 
 import gt4py.next as gtx
-import gt4py.next.backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base,
+    grid_refinement as refinement,
     gridfile,
-    horizontal as h_grid,
     icon,
-    refinement,
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -64,6 +64,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
 
 
 CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+# TODO (halungge): use a TypeDict for that
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
 
@@ -116,15 +117,15 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: gtx_backend.Backend | None, keep_skip_values: bool):
+    def __call__(self, backend: gtx_typing.Backend | None, keep_skip_values: bool):
         if not self._reader:
             self.open()
+        self._geometry = self._read_geometry_fields(backend)
         self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
         self._coordinates = self._read_coordinates(backend)
-        self._geometry = self._read_geometry_fields(backend)
         self.close()
 
-    def _read_coordinates(self, backend: gtx_backend.Backend | None) -> CoordinateDict:
+    def _read_coordinates(self, backend: gtx_typing.Backend | None) -> CoordinateDict:
         return {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -170,7 +171,7 @@ class GridManager:
             },
         }
 
-    def _read_geometry_fields(self, backend: gtx_backend.Backend | None):
+    def _read_geometry_fields(self, backend: gtx_typing.Backend | None):
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
@@ -183,6 +184,16 @@ class GridManager:
             gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.GeometryName.DUAL_AREA),
+                allocator=backend,
+            ),
+            gridfile.GeometryName.EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_LENGTH),
+                allocator=backend,
+            ),
+            gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH),
                 allocator=backend,
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
@@ -220,13 +231,13 @@ class GridManager:
     def _read_grid_refinement_fields(
         self,
         decomposition_info: decomposition.DecompositionInfo | None = None,
-        backend: gtx_backend.Backend | None = None,
+        backend: gtx_typing.Backend | None = None,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
 
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
-        see [refinement.py](refinement.py)
+        see [grid_refinement.py](grid_refinement.py)
 
         Args:
             decomposition_info: Optional decomposition information, if not provided the grid is assumed to be a single node run.
@@ -249,63 +260,12 @@ class GridManager:
         }
         return refinement_control_fields
 
-    def _read_start_end_indices(
-        self,
-    ) -> tuple[dict[gtx.Dimension, data_alloc.NDArray], dict[gtx.Dimension, data_alloc.NDArray]]:
-        """ "
-        Read the start/end indices from the grid file.
-
-        This should be used for a single node run. In the case of a multi node distributed run the  start and end indices need to be reconstructed from the decomposed grid.
-        """
-        _CHILD_DOM = 0
-        grid_refinement_dimensions = {
-            dims.CellDim: gridfile.DimensionName.CELL_GRF,
-            dims.EdgeDim: gridfile.DimensionName.EDGE_GRF,
-            dims.VertexDim: gridfile.DimensionName.VERTEX_GRF,
-        }
-        max_refinement_control_values = {
-            dim: self._reader.dimension(name) for dim, name in grid_refinement_dimensions.items()
-        }
-        start_index_names = {
-            dims.CellDim: gridfile.GridRefinementName.START_INDEX_CELLS,
-            dims.EdgeDim: gridfile.GridRefinementName.START_INDEX_EDGES,
-            dims.VertexDim: gridfile.GridRefinementName.START_INDEX_VERTICES,
-        }
-
-        start_indices = {
-            dim: self._get_index_field(name, transpose=False, apply_offset=True)[_CHILD_DOM]
-            for dim, name in start_index_names.items()
-        }
-        for dim in grid_refinement_dimensions:
-            assert start_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
-
-        end_index_names = {
-            dims.CellDim: gridfile.GridRefinementName.END_INDEX_CELLS,
-            dims.EdgeDim: gridfile.GridRefinementName.END_INDEX_EDGES,
-            dims.VertexDim: gridfile.GridRefinementName.END_INDEX_VERTICES,
-        }
-        end_indices = {
-            dim: self._get_index_field(name, transpose=False, apply_offset=False)[_CHILD_DOM]
-            for dim, name in end_index_names.items()
-        }
-        for dim in grid_refinement_dimensions:
-            assert start_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
-            assert end_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
-
-        return start_indices, end_indices
-
     @property
     def grid(self) -> icon.IconGrid:
         return self._grid
 
     @property
-    def geometry(self) -> GeometryDict:
+    def geometry_fields(self) -> GeometryDict:
         return self._geometry
 
     @property
@@ -313,7 +273,7 @@ class GridManager:
         return self._coordinates
 
     def _construct_grid(
-        self, backend: gtx_backend.Backend | None, with_skip_values: bool
+        self, backend: gtx_typing.Backend | None, with_skip_values: bool
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -333,7 +293,49 @@ class GridManager:
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        global_params = icon.GlobalGridParams(root=grid_root, level=grid_level)
+        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
+            geometry_type = base.GeometryType(geometry_type)
+        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
+        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
+        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
+
+        # TODO(msimberg): Compute these in GridGeometry once FieldProviders can produce scalars.
+        # This will also allow easier handling once grids are distributed.
+        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
+        mean_dual_edge_length = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
+        )
+        mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
+        mean_dual_cell_area = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
+        )
+
+        edge_lengths = self.geometry_fields[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
+        dual_edge_lengths = self.geometry_fields[
+            gridfile.GeometryName.DUAL_EDGE_LENGTH.value
+        ].ndarray
+        cell_areas = self.geometry_fields[gridfile.GeometryName.CELL_AREA.value].ndarray
+        dual_cell_areas = self.geometry_fields[gridfile.GeometryName.DUAL_AREA.value].ndarray
+
+        global_params = icon.GlobalGridParams.from_fields(
+            backend=backend,
+            grid_shape=icon.GridShape(
+                geometry_type=geometry_type,
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            ),
+            radius=sphere_radius,
+            domain_length=domain_length,
+            domain_height=domain_height,
+            num_cells=num_cells,
+            mean_edge_length=mean_edge_length,
+            mean_dual_edge_length=mean_dual_edge_length,
+            mean_cell_area=mean_cell_area,
+            mean_dual_cell_area=mean_dual_cell_area,
+            edge_lengths=edge_lengths,
+            dual_edge_lengths=dual_edge_lengths,
+            cell_areas=cell_areas,
+            dual_cell_areas=dual_cell_areas,
+        )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
@@ -355,26 +357,18 @@ class GridManager:
             dims.V2E2V: xp.asarray(self._get_index_field(gridfile.ConnectivityName.V2E2V)),
         }
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
-
-        start, end = self._read_start_end_indices()
-        start_indices = {
-            k: v
-            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-            for k, v in h_grid.map_icon_domain_bounds(dim, start[dim]).items()
-        }
-        end_indices = {
-            k: v
-            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-            for k, v in h_grid.map_icon_domain_bounds(dim, end[dim]).items()
-        }
+        domain_bounds_constructor = functools.partial(
+            refinement.compute_domain_bounds, refinement_fields=refinement_fields, array_ns=xp
+        )
+        start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
         return icon.icon_grid(
             id_=uuid_,
             allocator=backend,
             config=config,
             neighbor_tables=neighbor_tables,
-            start_indices=start_indices,
-            end_indices=end_indices,
+            start_index=start_index,
+            end_index=end_index,
             global_properties=global_params,
             refinement_control=refinement_fields,
         )

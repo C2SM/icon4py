@@ -19,7 +19,7 @@ from icon4py.model.testing import parallel_helpers, test_utils
 from .. import utils
 
 
-@pytest.skip("FIXME: Need updated test data yet", allow_module_level=True)
+@pytest.mark.skip("FIXME: Need updated test data yet")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init,istep_exit, jstep_exit, step_date_exit",
@@ -75,7 +75,7 @@ def test_run_solve_nonhydro_single_step(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = utils.construct_solve_nh_config(experiment)
+    config = definitions.construct_nonhydrostatic_config(experiment)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = nh.NonHydrostaticParams(config)
@@ -101,7 +101,7 @@ def test_run_solve_nonhydro_single_step(
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
         ),
     )
 
@@ -136,7 +136,7 @@ def test_run_solve_nonhydro_single_step(
     )
     second_order_divdamp_factor = sp.divdamp_fac_o2()
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()

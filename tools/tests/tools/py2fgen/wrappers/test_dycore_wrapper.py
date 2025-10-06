@@ -11,25 +11,19 @@ from unittest import mock
 
 import cffi
 import gt4py.next as gtx
-import pytest
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims, constants, utils as common_utils
+from icon4py.model.common import constants, dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import (
-    datatest_utils as dt_utils,
-    test_utils as testing_test_utils,
-)
+from icon4py.model.testing import definitions, test_utils as testing_test_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
-from icon4py.tools.py2fgen.wrappers import (
-    common as wrapper_common,
-    dycore_wrapper,
-)
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common, dycore_wrapper
 
 from . import utils
 from .test_grid_init import grid_init
@@ -259,7 +253,7 @@ def solve_nh_init(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            definitions.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
@@ -301,7 +295,6 @@ def test_dycore_wrapper_granule_inputs(
     itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-    ndyn_substeps = ndyn_substeps
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
@@ -521,6 +514,7 @@ def test_dycore_wrapper_granule_inputs(
         reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
+        nflat_gradp=grid_savepoint.nflat_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
         pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
         pg_exdist=metrics_savepoint.pg_exdist(),
@@ -546,9 +540,8 @@ def test_dycore_wrapper_granule_inputs(
         config=expected_vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
-    expected_config = utils.construct_solve_nh_config(experiment)
+    expected_config = definitions.construct_nonhydrostatic_config(experiment)
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
@@ -705,7 +698,7 @@ def test_dycore_wrapper_granule_inputs(
         )
 
         # Check input arguments to SolveNonhydro.init
-        captured_args, captured_kwargs = mock_init.call_args
+        _, captured_kwargs = mock_init.call_args
 
         # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
         try:
@@ -810,7 +803,7 @@ def test_dycore_wrapper_granule_inputs(
         )
 
         # Check input arguments to SolveNonhydro.time_step
-        captured_args, captured_kwargs = mock_init.call_args
+        _, captured_kwargs = mock_init.call_args
 
         result, error_message = utils.compare_objects(
             captured_kwargs["diagnostic_state_nh"], expected_diagnostic_state_nh
@@ -860,7 +853,7 @@ def test_dycore_wrapper_granule_inputs(
     "experiment,step_date_init, step_date_exit",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            definitions.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
@@ -1039,7 +1032,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, vn_only, at_initial_timestep",
     [
@@ -1141,7 +1134,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     for i_substep in range(1, ndyn_substeps + 1):
         if not (at_initial_timestep and i_substep == 1):
             ddt_w_adv_ntl1, ddt_w_adv_ntl2 = ddt_w_adv_ntl2, ddt_w_adv_ntl1
-        if not i_substep == 1:
+        if i_substep != 1:
             ddt_vn_apc_ntl1, ddt_vn_apc_ntl2 = ddt_vn_apc_ntl2, ddt_vn_apc_ntl1
 
         dycore_wrapper.solve_nh_run(

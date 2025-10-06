@@ -9,27 +9,41 @@ import functools
 import typing
 
 import gt4py.next as gtx
-from gt4py._core.definitions import (
-    Scalar,
-    is_scalar_type,  # TODO(havogt): Should this function be public API?
-)
-from gt4py.next import Field, backend
-from gt4py.next.common import OffsetProvider
-from gt4py.next.ffront.decorator import Program
+import gt4py.next.typing as gtx_typing
+
+from icon4py.model.common import model_backends
 
 
 def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
+def customize_backend(
+    backend: model_backends.DeviceType | model_backends.BackendDescriptor,
+) -> gtx_typing.Backend:
+    if isinstance(backend, model_backends.DeviceType):
+        backend = {"device": backend}
+    # TODO(havogt): implement the lookup function as below
+    # options = get_options(program_name, arch, **backend) # noqa: ERA001
+    backend_func = backend.get("backend_factory", model_backends.make_custom_gtfn_backend)
+    device = backend.get("device", model_backends.DeviceType.CPU)
+    custom_backend = backend_func(
+        device=device,
+    )
+    return custom_backend
+
+
 def setup_program(
-    backend: backend.Backend,
-    program: Program,
-    constant_args: dict[str, Field | Scalar] | None = None,
-    variants: dict[str, list[Scalar]] | None = None,
+    program: gtx_typing.Program,
+    backend: gtx_typing.Backend
+    | model_backends.DeviceType
+    | model_backends.BackendDescriptor
+    | None,
+    constant_args: dict[str, gtx.Field | gtx_typing.Scalar] | None = None,
+    variants: dict[str, list[gtx_typing.Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
     vertical_sizes: dict[str, gtx.int32] | None = None,
-    offset_provider: OffsetProvider | None = None,
+    offset_provider: gtx_typing.OffsetProvider | None = None,
 ) -> typing.Callable[..., None]:
     """
     This function processes arguments to the GT4Py program. It
@@ -50,19 +64,24 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    bound_static_args = {k: v for k, v in constant_args.items() if is_scalar_type(v)}
-    static_args_program = program.with_backend(backend).compile(
-        **dict_values_to_list(horizontal_sizes),
-        **dict_values_to_list(vertical_sizes),
-        **variants,
-        **dict_values_to_list(bound_static_args),
-        enable_jit=False,
-        offset_provider=offset_provider,
-    )
+    if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
+        backend = customize_backend(backend)
+
+    bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
+    static_args_program = program.with_backend(backend)
+    if backend is not None:
+        static_args_program.compile(
+            **dict_values_to_list(horizontal_sizes),
+            **dict_values_to_list(vertical_sizes),
+            **variants,
+            **dict_values_to_list(bound_static_args),
+            enable_jit=False,
+            offset_provider=offset_provider,
+        )
+
     return functools.partial(
         static_args_program,
         **constant_args,
-        **variants,
         **horizontal_sizes,
         **vertical_sizes,
         offset_provider=offset_provider,

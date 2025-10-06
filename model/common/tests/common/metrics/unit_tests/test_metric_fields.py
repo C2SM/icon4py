@@ -5,20 +5,24 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 import math
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import horizontal
+from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils as testing_helpers
+from icon4py.model.testing import definitions, test_utils as testing_helpers
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -28,6 +32,12 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
+
 cell_domain = horizontal.domain(dims.CellDim)
 edge_domain = horizontal.domain(dims.EdgeDim)
 vertex_domain = horizontal.domain(dims.VertexDim)
@@ -36,15 +46,18 @@ vertex_domain = horizontal.domain(dims.VertexDim)
 @pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_ddq_z_half(icon_grid, metrics_savepoint, experiment, backend):
+def test_compute_ddq_z_half(
+    icon_grid: base_grid.Grid,
+    metrics_savepoint: sb.MetricSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
 
     nlevp1 = icon_grid.num_levels + 1
     z_mc = metrics_savepoint.z_mc()
     ddqz_z_half = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
 
     mf.compute_ddqz_z_half.with_backend(backend=backend)(
@@ -64,12 +77,15 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, experiment, backend):
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, experiment, backend):
+def test_compute_ddqz_z_full_and_inverse(
+    icon_grid: base_grid.Grid,
+    metrics_savepoint: sb.MetricSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
-    ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    inv_ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    inv_ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
 
     mf.compute_ddqz_z_full_and_inverse.with_backend(backend)(
         z_ifc=z_ifc,
@@ -87,12 +103,14 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, experimen
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_scaling_factor_for_3d_divdamp(
-    icon_grid, metrics_savepoint, grid_savepoint, experiment, backend
-):
+    icon_grid: base_grid.Grid,
+    metrics_savepoint: sb.MetricSavepoint,
+    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
-    scaling_factor_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
+    scaling_factor_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.KDim, allocator=backend)
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     divdamp_type = 3
@@ -115,16 +133,21 @@ def test_compute_scaling_factor_for_3d_divdamp(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
-def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savepoint, backend):
+def test_compute_rayleigh_w(
+    icon_grid: base_grid.Grid,
+    experiment: definitions.Experiments,
+    metrics_savepoint: sb.MetricSavepoint,
+    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
     rayleigh_w_full = data_alloc.zero_field(
-        icon_grid, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     rayleigh_type = 2
-    rayleigh_coeff = 0.1 if experiment == dt_utils.GLOBAL_EXPERIMENT else 5.0
-    damping_height = 50000.0 if experiment == dt_utils.GLOBAL_EXPERIMENT else 12500.0
+    rayleigh_coeff = 0.1 if experiment == definitions.Experiments.EXCLAIM_APE else 5.0
+    damping_height = 50000.0 if experiment == definitions.Experiments.EXCLAIM_APE else 12500.0
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
@@ -143,17 +166,18 @@ def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savep
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, experiment, backend):
+def test_compute_coeff_dwdz(
+    icon_grid: base_grid.Grid, metrics_savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend
+) -> None:
     coeff1_dwdz_ref = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz_ref = metrics_savepoint.coeff2_dwdz()
 
-    coeff1_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    coeff1_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),
         1 / metrics_savepoint.inv_ddqz_z_full().asnumpy(),
-        allocator=backend,
+        allocator=backend,  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
     )
 
     mf.compute_coeff_dwdz.with_backend(backend=backend)(
@@ -174,12 +198,11 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, experi
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_exner_w_explicit_weight_parameter(
-    icon_grid, metrics_savepoint, experiment, backend
-):
+    icon_grid: base_grid.Grid, metrics_savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend
+) -> None:
     exner_w_explicit_weight_parameter_full = data_alloc.zero_field(
-        icon_grid, dims.CellDim, backend=backend
+        icon_grid, dims.CellDim, allocator=backend
     )
     vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
     exner_w_implicit_weight_parameter = metrics_savepoint.vwind_impl_wgt()
@@ -200,11 +223,16 @@ def test_compute_exner_w_explicit_weight_parameter(
 @pytest.mark.level("unit")
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):
+def test_compute_exner_exfac(
+    grid_savepoint: sb.IconGridSavepoint,
+    icon_grid: base_grid.Grid,
+    metrics_savepoint: sb.MetricSavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend,
+) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    exner_expol = 0.333 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.3333333333333
-    exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    exner_expol = 0.333 if experiment == definitions.Experiments.MCH_CH_R04B09 else 0.3333333333333
+    exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     mf.compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
@@ -224,19 +252,23 @@ def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_save
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.GLOBAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT])
 def test_compute_exner_w_implicit_weight_parameter(
-    icon_grid, experiment, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
-):
+    icon_grid: base_grid.Grid,
+    grid_savepoint: sb.IconGridSavepoint,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend,
+) -> None:
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     z_ddxn_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     z_ddxt_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
@@ -282,7 +314,7 @@ def test_compute_exner_w_implicit_weight_parameter(
     )
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
-    vwind_offctr = 0.2 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.15
+    vwind_offctr = 0.2 if experiment == definitions.Experiments.MCH_CH_R04B09 else 0.15
     xp = data_alloc.import_array_ns(backend)
     exner_w_implicit_weight_parameter = mf.compute_exner_w_implicit_weight_parameter(
         c2e=icon_grid.get_connectivity(dims.C2E).ndarray,
@@ -303,12 +335,14 @@ def test_compute_exner_w_implicit_weight_parameter(
 
 # TODO(halungge): add test in test_metric_factory.py?
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_wgtfac_e(
-    metrics_savepoint, interpolation_savepoint, icon_grid, experiment, backend
-):
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     wgtfac_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     wgtfac_e_ref = metrics_savepoint.wgtfac_e()
     mf.compute_wgtfac_e.with_backend(backend)(
@@ -326,12 +360,14 @@ def test_compute_wgtfac_e(
 
 @pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
-@pytest.mark.skip_value_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
-    metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, experiment, backend
-):
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     xp = data_alloc.import_array_ns(backend)
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
@@ -340,18 +376,18 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     z_mc = metrics_savepoint.z_mc()
     z_ifc = metrics_savepoint.z_ifc()
     c_lin_e = interpolation_savepoint.c_lin_e()
-    topography = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
+    topography = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
 
-    k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend)
-    edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, backend=backend)
+    k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, allocator=backend)
+    edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, allocator=backend)
 
     flat_idx = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=backend
     )
     edge_mask = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, allocator=backend
     )
-    ex_distance = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
+    ex_distance = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
@@ -375,7 +411,10 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         },
     )
     flat_idx_max = gtx.as_field(
-        (dims.EdgeDim,), xp.max(flat_idx.asnumpy(), axis=1), dtype=gtx.int32, allocator=backend
+        (dims.EdgeDim,),
+        xp.max(flat_idx.asnumpy(), axis=1),
+        dtype=gtx.int32,
+        allocator=backend,  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
     )
 
     mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
@@ -392,7 +431,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         horizontal_end_distance=icon_grid.num_edges,
         horizontal_start=start_edge_nudging_2,
         horizontal_end=icon_grid.num_edges,
-        vertical_start=int(0),
+        vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C": icon_grid.get_connectivity("E2C"),
@@ -405,12 +444,14 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_mask_prog_halo_c(
-    metrics_savepoint, icon_grid, grid_savepoint, experiment, backend
-):
+    metrics_savepoint: sb.MetricSavepoint,
+    icon_grid: base_grid.Grid,
+    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     mask_prog_halo_c_full = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dtype=bool, backend=backend
+        icon_grid, dims.CellDim, dtype=bool, allocator=backend
     )
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
@@ -429,9 +470,13 @@ def test_compute_mask_prog_halo_c(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, experiment, backend):
-    bdy_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, backend=backend)
+def test_compute_bdy_halo_c(
+    metrics_savepoint: sb.MetricSavepoint,
+    icon_grid: base_grid.Grid,
+    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
+    bdy_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, allocator=backend)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
@@ -450,19 +495,23 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, experi
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_horizontal_mask_for_3d_divdamp(
-    metrics_savepoint, icon_grid, grid_savepoint, experiment, backend
-):
-    horizontal_mask_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.EdgeDim, backend=backend)
+    metrics_savepoint: sb.MetricSavepoint,
+    icon_grid: base_grid.Grid,
+    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
+    horizontal_mask_for_3d_divdamp = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, allocator=backend
+    )
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
     mf.compute_horizontal_mask_for_3d_divdamp.with_backend(backend)(
         e_refin_ctrl=e_refin_ctrl,
         horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,
-        grf_nudge_start_e=gtx.int32(horizontal._GRF_NUDGEZONE_START_EDGES),
-        grf_nudgezone_width=gtx.int32(horizontal._GRF_NUDGEZONE_WIDTH),
+        grf_nudge_start_e=gtx.int32(refinement.get_nudging_refinement_value(dims.EdgeDim)),
+        grf_nudgezone_width=gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),
         horizontal_start=horizontal_start,
         horizontal_end=icon_grid.num_edges,
         offset_provider={},
@@ -475,10 +524,13 @@ def test_compute_horizontal_mask_for_3d_divdamp(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, experiment, backend):
-    exner_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    theta_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+def test_compute_theta_exner_ref_mc(
+    metrics_savepoint: sb.MetricSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
+    exner_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    theta_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     t0sl_bg = constants.SEA_LEVEL_TEMPERATURE
     del_t_bg = constants.DELTA_TEMPERATURE
     h_scal_bg = constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
@@ -503,9 +555,9 @@ def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, experiment, ba
         p0sl_bg=p0sl_bg,
         rd_o_cpd=rd_o_cpd,
         p0ref=p0ref,
-        horizontal_start=int(0),
+        horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=int(0),
+        vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={},
     )

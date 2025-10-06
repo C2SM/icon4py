@@ -23,11 +23,8 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.dycore_states import (
-    HorizontalPressureDiscretizationType,
-)
+from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDiscretizationType
 from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_dycore import (
     compute_perturbed_quantities_and_interpolation,
 )
@@ -40,24 +37,18 @@ from icon4py.model.testing import stencil_tests
 from .test_compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner_numpy,
 )
-from .test_compute_perturbation_of_rho_and_theta import (
-    compute_perturbation_of_rho_and_theta_numpy,
-)
+from .test_compute_perturbation_of_rho_and_theta import compute_perturbation_of_rho_and_theta_numpy
 from .test_compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers import (
     compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy,
 )
 from .test_compute_virtual_potential_temperatures_and_pressure_gradient import (
     compute_virtual_potential_temperatures_and_pressure_gradient_numpy,
 )
-from .test_extrapolate_temporally_exner_pressure import (
-    extrapolate_temporally_exner_pressure_numpy,
-)
+from .test_extrapolate_temporally_exner_pressure import extrapolate_temporally_exner_pressure_numpy
 from .test_interpolate_cell_field_to_half_levels_vp import (
     interpolate_cell_field_to_half_levels_vp_numpy,
 )
-from .test_interpolate_to_surface import (
-    interpolate_to_surface_numpy,
-)
+from .test_interpolate_to_surface import interpolate_to_surface_numpy
 from .test_set_theta_v_prime_ic_at_lower_boundary import (
     set_theta_v_prime_ic_at_lower_boundary_numpy,
 )
@@ -215,7 +206,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
-            & (vert_idx[: surface_level - 1] == int32(0)),
+            & (vert_idx[: surface_level - 1] == gtx.int32(0)),
             compute_perturbation_of_rho_and_theta_numpy(
                 rho=current_rho,
                 rho_ref_mc=reference_rho_at_cells_on_model_levels,
@@ -235,7 +226,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
-            & (vert_idx[: surface_level - 1] >= int32(1)),
+            & (vert_idx[: surface_level - 1] >= gtx.int32(1)),
             compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers_numpy(
                 wgtfac_c=wgtfac_c[:, : surface_level - 1],
                 rho=current_rho,
@@ -257,7 +248,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
-            & (vert_idx[: surface_level - 1] >= int32(1)),
+            & (vert_idx[: surface_level - 1] >= gtx.int32(1)),
             compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
                 connectivities=connectivities,
                 wgtfac_c=wgtfac_c[:, : surface_level - 1],

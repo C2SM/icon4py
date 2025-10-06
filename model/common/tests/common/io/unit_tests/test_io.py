@@ -16,12 +16,11 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 import uxarray as ux
-import xarray as xa
 
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base, simple, vertical as v_grid
-from icon4py.model.common.io import ugrid, utils
+from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.io import ugrid
 from icon4py.model.common.io.io import (
     FieldGroupIOConfig,
     FieldGroupMonitor,
@@ -31,8 +30,7 @@ from icon4py.model.common.io.io import (
     to_delta,
 )
 from icon4py.model.common.states import data
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils, grid_utils
+from icon4py.model.testing import datatest_utils, definitions, grid_utils
 
 from ...fixtures import test_path
 from .. import utils as test_io_utils
@@ -81,7 +79,7 @@ def test_generate_name(name, expected):
     assert expected == generate_name(name, counter)
 
 
-def is_valid_uxgrid(file: Union[pathlib.Path, str]) -> bool:
+def is_valid_uxgrid(file: pathlib.Path | str) -> bool:
     import uxarray as ux
 
     grid = ux.open_grid(file)
@@ -148,7 +146,7 @@ def test_io_monitor_write_ugrid_file(test_path):
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
     grid = grid_utils.get_grid_manager_from_experiment(
-        datatest_utils.GLOBAL_EXPERIMENT, keep_skip_values=True, backend=backend
+        definitions.Experiments.EXCLAIM_APE, keep_skip_values=True, backend=backend
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
@@ -200,7 +198,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     grid = grid_utils.get_grid_manager_from_experiment(
-        datatest_utils.GLOBAL_EXPERIMENT, True, backend
+        definitions.Experiments.EXCLAIM_APE, True, backend
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
@@ -301,7 +299,7 @@ def test_fieldgroup_monitor_no_output_on_not_matching_time(test_path):
 
 def test_fieldgroup_monitor_output_time_initialized_from_config(test_path):
     configured_start_time = "2024-01-01T00:00:00"
-    config, group_monitor = create_field_group_monitor(
+    _, group_monitor = create_field_group_monitor(
         test_path, test_io_utils.simple_grid, configured_start_time
     )
     assert group_monitor.next_output_time == dt.datetime.fromisoformat(configured_start_time)
@@ -310,7 +308,7 @@ def test_fieldgroup_monitor_output_time_initialized_from_config(test_path):
 def test_fieldgroup_monitor_no_output_before_start_time(test_path):
     configured_start_time = "2024-01-01T00:00:00"
     start_time = dt.datetime.fromisoformat(configured_start_time)
-    config, group_monitor = create_field_group_monitor(
+    _, group_monitor = create_field_group_monitor(
         test_path, test_io_utils.simple_grid, configured_start_time
     )
     step_time = dt.datetime.fromisoformat("2023-12-12T00:12:00")

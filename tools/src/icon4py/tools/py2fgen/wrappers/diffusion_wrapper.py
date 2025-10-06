@@ -23,7 +23,6 @@ from collections.abc import Callable
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
@@ -36,7 +35,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
@@ -50,7 +49,6 @@ logger = setup_logger(__name__)
 @dataclasses.dataclass
 class DiffusionGranule:
     diffusion: Diffusion
-    backend: gtx_backend.Backend
     dummy_field_factory: Callable
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
@@ -88,7 +86,6 @@ def diffusion_init(
     zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.float64] | None,
     ndyn_substeps: gtx.int32,
     rayleigh_damping_height: gtx.float64,
-    nflat_gradp: gtx.int32,
     diffusion_type: gtx.int32,
     hdiff_w: bool,
     hdiff_vn: bool,
@@ -118,10 +115,10 @@ def diffusion_init(
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
-    logger.info(f"{on_gpu=}")
-    logger.info(
-        f"Using Backend {wrapper_common.BackendIntEnum(backend).name} ({actual_backend.name})"
+    backend_name = (
+        actual_backend.name if hasattr(actual_backend, "name") else actual_backend.__name__
     )
+    logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
     # Diffusion parameters
     config = DiffusionConfig(
@@ -159,7 +156,6 @@ def diffusion_init(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-        _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
     nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
@@ -216,8 +212,9 @@ def diffusion_init(
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
-        backend=actual_backend,
-        dummy_field_factory=wrapper_common.cached_dummy_field_factory(actual_backend),
+        dummy_field_factory=wrapper_common.cached_dummy_field_factory(
+            model_backends.get_allocator(actual_backend)
+        ),
     )
 
 

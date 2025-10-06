@@ -7,11 +7,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import enum
+import functools
 import logging
 import pathlib
-import uuid
 
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
+import netCDF4 as nc4
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -20,7 +21,12 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.grid import icon as icon_grid, states as grid_states, vertical as v_grid
+from icon4py.model.common.grid import (
+    base,
+    icon as icon_grid,
+    states as grid_states,
+    vertical as v_grid,
+)
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -30,11 +36,6 @@ from icon4py.model.driver import serialbox_helpers as driver_sb
 from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
 from icon4py.model.testing import serialbox as sb
 
-
-# TODO(egparedes): Read these hardcoded constants from grid file
-GRID_LEVEL = 4
-GRID_ROOT = 2
-GLOBAL_GRID_ID = uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba")
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 INITIALIZATION_ERROR_MSG = "The requested experiment type is not implemented."
@@ -59,37 +60,29 @@ class ExperimentType(str, enum.Enum):
 
 def read_icon_grid(
     path: pathlib.Path,
-    backend: gtx_backend.Backend,
-    rank=0,
+    grid_file: pathlib.Path,
+    backend: gtx_typing.Backend,
+    rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
-    grid_id=GLOBAL_GRID_ID,
-    grid_root=GRID_ROOT,
-    grid_level=GRID_LEVEL,
 ) -> icon_grid.IconGrid:
     """
     Read icon grid.
 
     Args:
         path: path where to find the input data
+        grid_file: path of the grid
+        backend: GT4Py backend
         rank: mpi rank of the current compute node
         ser_type: type of input data. Currently only 'sb (serialbox)' is supported. It reads from ppser serialized test data
-        grid_id: id (uuid) of the horizontal grid
-        grid_root: global grid root division number
-        grid_level: global grid refinement number
     Returns:  IconGrid parsed from a given input type.
     """
     if ser_type == SerializationType.SB:
-        return (
-            sb.IconSerialDataProvider(
-                backend=backend,
-                fname_prefix="icon_pydycore",
-                path=str(path.absolute()),
-                do_print=False,
-                mpi_rank=rank,
-            )
-            .from_savepoint_grid(grid_id, grid_root, grid_level)
-            .construct_icon_grid(backend=backend)
-        )
+        return _grid_savepoint(
+            backend=backend,
+            path=path,
+            grid_file=grid_file,
+            rank=rank,
+        ).construct_icon_grid(backend=backend)
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
@@ -97,8 +90,8 @@ def read_icon_grid(
 def model_initialization_serialbox(
     grid: icon_grid.IconGrid,
     path: pathlib.Path,
-    backend: gtx_backend.Backend,
-    rank=0,
+    backend: gtx_typing.Backend,
+    rank: int = 0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
     dycore_states.DiagnosticStateNonHydro,
@@ -115,6 +108,7 @@ def model_initialization_serialbox(
     Args:
         grid: IconGrid
         path: path where to find the input data
+        backend: GT4Py backend
         rank: mpi rank of the current compute node
     Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
         PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
@@ -148,19 +142,21 @@ def model_initialization_serialbox(
         normal_wind_tendency_due_to_slow_physics_process=solve_nonhydro_init_savepoint.ddt_vn_phy(),
         grf_tend_vn=solve_nonhydro_init_savepoint.grf_tend_vn(),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            velocity_init_savepoint.ddt_vn_apc_pc(0),
             velocity_init_savepoint.ddt_vn_apc_pc(1),
-            velocity_init_savepoint.ddt_vn_apc_pc(2),
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+            velocity_init_savepoint.ddt_w_adv_pc(0),
             velocity_init_savepoint.ddt_w_adv_pc(1),
-            velocity_init_savepoint.ddt_w_adv_pc(2),
         ),
         tangential_wind=velocity_init_savepoint.vt(),
         vn_on_half_levels=velocity_init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=velocity_init_savepoint.w_concorr_c(),
-        rho_iau_increment=solve_nonhydro_init_savepoint.rho_incr(),
-        normal_wind_iau_increment=solve_nonhydro_init_savepoint.vn_incr(),
-        exner_iau_increment=solve_nonhydro_init_savepoint.exner_incr(),
+        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
+        normal_wind_iau_increment=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, allocator=backend
+        ),
+        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
         exner_dynamical_increment=solve_nonhydro_init_savepoint.exner_dyn_incr(),
     )
 
@@ -169,34 +165,34 @@ def model_initialization_serialbox(
             grid,
             dims.CellDim,
             dims.KDim,
-            backend=backend,
+            allocator=backend,
         ),
         pressure_ifc=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         ),
         temperature=data_alloc.zero_field(
             grid,
             dims.CellDim,
             dims.KDim,
-            backend=backend,
+            allocator=backend,
         ),
         virtual_temperature=data_alloc.zero_field(
             grid,
             dims.CellDim,
             dims.KDim,
-            backend=backend,
+            allocator=backend,
         ),
         u=data_alloc.zero_field(
             grid,
             dims.CellDim,
             dims.KDim,
-            backend=backend,
+            allocator=backend,
         ),
         v=data_alloc.zero_field(
             grid,
             dims.CellDim,
             dims.KDim,
-            backend=backend,
+            allocator=backend,
         ),
     )
 
@@ -216,7 +212,7 @@ def model_initialization_serialbox(
             grid,
             dims.CellDim,
             dims.KDim,
-            backend=backend,
+            allocator=backend,
         ),
     )
 
@@ -236,7 +232,7 @@ def read_initial_state(
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
@@ -328,13 +324,11 @@ def read_initial_state(
 
 def read_geometry_fields(
     path: pathlib.Path,
+    grid_file: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
-    backend: gtx_backend.Backend,
-    rank=0,
+    backend: gtx_typing.Backend,
+    rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
-    grid_id=GLOBAL_GRID_ID,
-    grid_root=GRID_ROOT,
-    grid_level=GRID_LEVEL,
 ) -> tuple[
     grid_states.EdgeParams,
     grid_states.CellParams,
@@ -346,18 +340,17 @@ def read_geometry_fields(
 
     Args:
         path: path to the serialized input data
+        grid_file: path of the grid
         vertical_grid_config: Vertical grid configuration
+        backend: GT4py backend
         rank: mpi rank of the current compute node
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
-        grid_id: id (uuid) of the horizontal grid
-        grid_root: global grid root division number
-        grid_level: global grid refinement number
 
     Returns: a tuple containing fields describing edges, cells, vertical properties of the model
         the data is originally obtained from the grid file (horizontal fields) or some special input files.
     """
     if ser_type == SerializationType.SB:
-        sp = _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level)
+        sp = _grid_savepoint(backend, path, grid_file, rank)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, backend)
@@ -365,7 +358,6 @@ def read_geometry_fields(
             config=vertical_grid_config,
             vct_a=vct_a,
             vct_b=vct_b,
-            _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
         )
         return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()
     else:
@@ -373,7 +365,11 @@ def read_geometry_fields(
 
 
 # TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
-def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
+def _serial_data_provider(
+    backend: gtx_typing.Backend,
+    path: pathlib.Path,
+    rank: int,
+) -> sb.IconSerialDataProvider:
     return sb.IconSerialDataProvider(
         backend=backend,
         fname_prefix="icon_pydycore",
@@ -384,35 +380,43 @@ def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
 
 
 # TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
-def _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
+def _grid_savepoint(
+    backend: gtx_typing.Backend,
+    path: pathlib.Path,
+    grid_file: pathlib.Path,
+    rank: int,
+) -> sb.IconGridSavepoint:
+    global_grid_params, grid_uuid = _create_grid_global_params(grid_file)
     sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
-        grid_id, grid_root, grid_level
+        grid_uuid,
+        global_grid_params.grid_shape,
     )
     return sp
 
 
 def read_decomp_info(
     path: pathlib.Path,
+    grid_file: pathlib.Path,
     procs_props: decomposition.ProcessProperties,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
     ser_type=SerializationType.SB,
-    grid_id=GLOBAL_GRID_ID,
-    grid_root=GRID_ROOT,
-    grid_level=GRID_LEVEL,
 ) -> decomposition.DecompositionInfo:
     if ser_type == SerializationType.SB:
         return _grid_savepoint(
-            backend, path, procs_props.rank, grid_id, grid_root, grid_level
+            backend,
+            path,
+            grid_file,
+            procs_props.rank,
         ).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
 def read_static_fields(
-    grid: icon_grid.IconGrid,
     path: pathlib.Path,
-    backend: gtx_backend.Backend,
-    rank=0,
+    grid_file: pathlib.Path,
+    backend: gtx_typing.Backend,
+    rank: int = 0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
     diffusion_states.DiffusionMetricState,
@@ -425,8 +429,9 @@ def read_static_fields(
     Read fields for metric and interpolation state.
 
      Args:
-        grid: IconGrid
         path: path to the serialized input data
+        grid_file: path of the grid
+        backend: GT4Py backend
         rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
@@ -465,6 +470,7 @@ def read_static_fields(
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
+        grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
@@ -487,12 +493,13 @@ def read_static_fields(
             ddxn_z_full=metrics_savepoint.ddxn_z_full(),
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
+            nflat_gradp=grid_savepoint.nflat_gradp(),
             pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
             pg_exdist=metrics_savepoint.pg_exdist(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
             wgtfac_e=metrics_savepoint.wgtfac_e(),
-            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid.num_levels),
+            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid_savepoint.num(dims.KDim)),
             exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
             horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
             scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
@@ -532,15 +539,19 @@ def configure_logging(
     Args:
         run_path: path to the output folder where the logfile should be stored
         experiment_name: name of the simulation
+        enable_output: enable output logging messages above debug level
+        processor_procs: ProcessProperties
 
     """
+    if not enable_output:
+        return
     run_dir = (
         pathlib.Path(run_path).absolute() if run_path else pathlib.Path(__file__).absolute().parent
     )
     run_dir.mkdir(exist_ok=True)
     logfile = run_dir.joinpath(f"dummy_dycore_driver_{experiment_name}.log")
     logfile.touch(exist_ok=True)
-    logging_level = logging.DEBUG if enable_output else logging.CRITICAL
+    logging_level = logging.DEBUG
     logging.basicConfig(
         level=logging_level,
         format="%(asctime)s %(filename)-20s (%(lineno)-4d) : %(funcName)-20s:  %(levelname)-8s %(message)s",
@@ -556,3 +567,38 @@ def configure_logging(
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging_level)
     logging.getLogger("").addHandler(console_handler)
+
+
+@functools.cache
+def _create_grid_global_params(
+    grid_file: pathlib.Path,
+) -> tuple[icon_grid.GlobalGridParams, str]:
+    """
+    Create global grid params and its uuid.
+
+    Args:
+        grid_file: path of the grid file
+
+    Returns:
+        global_grid_params: GlobalGridParams
+        grid_uuid: id (uuid) of the horizontal grid
+    """
+    grid = nc4.Dataset(grid_file, "r", format="NETCDF4")
+    grid_root = grid.getncattr("grid_root")
+    grid_level = grid.getncattr("grid_level")
+    grid_uuid = grid.getncattr("uuidOfHGrid")
+    try:
+        grid_geometry_type = base.GeometryType(grid.getncattr("grid_geometry"))
+    except AttributeError:
+        log.warning(
+            "Global attribute grid_geometry is not found in the grid. Icosahedral grid is assumed."
+        )
+        grid_geometry_type = base.GeometryType.ICOSAHEDRON
+    grid.close()
+    global_grid_params = icon_grid.GlobalGridParams(
+        grid_shape=icon_grid.GridShape(
+            geometry_type=grid_geometry_type,
+            subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
+        ),
+    )
+    return global_grid_params, grid_uuid

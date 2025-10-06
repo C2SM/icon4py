@@ -12,10 +12,9 @@ from icon4py.model.atmosphere.diffusion import diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.fixtures import backend
 
 from ..utils import diff_multfac_vn_numpy, smag_limit_numpy
-
-from icon4py.model.testing.fixtures import backend
 
 
 # TODO(havogt): apply StencilTest structure, however this needs to be executed with CartesianGrid,
@@ -28,8 +27,8 @@ def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
 
 def test_scale_k(backend):
     grid = simple_grid.simple_grid(backend=backend)
-    field = data_alloc.random_field(grid, dims.KDim, backend=backend)
-    scaled_field = data_alloc.zero_field(grid, dims.KDim, backend=backend)
+    field = data_alloc.random_field(grid, dims.KDim, allocator=backend)
+    scaled_field = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     factor = 2.0
     diffusion_utils.scale_k.with_backend(backend)(field, factor, scaled_field, offset_provider={})
     assert np.allclose(factor * field.asnumpy(), scaled_field.asnumpy())
@@ -37,8 +36,8 @@ def test_scale_k(backend):
 
 def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
     grid = simple_grid.simple_grid(backend=backend)
-    diff_multfac_vn_init = data_alloc.zero_field(grid, dims.KDim, backend=backend)
-    smag_limit_init = data_alloc.zero_field(grid, dims.KDim, backend=backend)
+    diff_multfac_vn_init = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
+    smag_limit_init = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     k4 = 1.0
     efdt_ratio = 24.0
     shape = diff_multfac_vn_init.asnumpy().shape
@@ -58,8 +57,8 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
 
 def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
     grid = simple_grid.simple_grid(backend=backend)
-    diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim, backend=backend)
-    smag_limit = data_alloc.zero_field(grid, dims.KDim, backend=backend)
+    diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
+    smag_limit = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     k4 = 1.0
     substeps = 5.0
     efdt_ratio = 24.0
@@ -81,8 +80,8 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
 
 def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
     grid = simple_grid.simple_grid(backend=backend)
-    diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim, backend=backend)
-    smag_limit = data_alloc.zero_field(grid, dims.KDim, backend=backend)
+    diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
+    smag_limit = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     k4 = 0.003
     substeps = 1.0
 

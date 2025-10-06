@@ -5,22 +5,18 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import logging
-from typing import Optional
+from __future__ import annotations
 
+import gt4py.next.typing as gtx_typing
 import pytest
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.metrics import (
-    metrics_attributes as attrs,
-    metrics_factory,
-)
+from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    datatest_utils as dt_utils,
+    definitions,
     grid_utils as gridtest_utils,
     serialbox,
     test_utils as test_helpers,
@@ -29,6 +25,7 @@ from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
@@ -38,10 +35,10 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
-metrics_factories = {}
+metrics_factories: dict[str, metrics_factory.MetricsFieldsFactory] = {}
 
 
-def metrics_config(experiment: str) -> tuple:
+def metrics_config(experiment: definitions.Experiment) -> tuple:
     rayleigh_coeff = 5.0
     lowest_layer_thickness = 50.0
     exner_expol = 0.333
@@ -51,12 +48,12 @@ def metrics_config(experiment: str) -> tuple:
     stretch_factor = 1.0
     damping_height = 45000.0
     match experiment:
-        case dt_utils.REGIONAL_EXPERIMENT:
+        case definitions.Experiments.MCH_CH_R04B09:
             lowest_layer_thickness = 20.0
             model_top_height = 23000.0
             stretch_factor = 0.65
             damping_height = 12500.0
-        case dt_utils.GLOBAL_EXPERIMENT:
+        case definitions.Experiments.EXCLAIM_APE:
             model_top_height = 75000.0
             stretch_factor = 0.9
             damping_height = 50000.0
@@ -77,21 +74,18 @@ def metrics_config(experiment: str) -> tuple:
 
 
 def _get_metrics_factory(
-    backend: Optional[gtx_backend.Backend],
-    experiment: str,
-    grid_file: str,
-    icon_grid,
+    backend: gtx_typing.Backend | None,
+    experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    metrics_savepoint: serialbox.MetricSavepoint,
 ) -> metrics_factory.MetricsFieldsFactory:
-    registry_name = "_".join((experiment, data_alloc.backend_name(backend)))
+    registry_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = metrics_factories.get(registry_name)
 
     topography = topography_savepoint.topo_c()
 
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+        geometry = gridtest_utils.get_grid_geometry(backend, experiment)
         (
             lowest_layer_thickness,
             model_top_height,
@@ -129,8 +123,6 @@ def _get_metrics_factory(
             interpolation_source=interpolation_field_source,
             backend=backend,
             metadata=attrs.attrs,
-            e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim),
-            c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),
             rayleigh_type=rayleigh_type,
             rayleigh_coeff=rayleigh_coeff,
             exner_expol=exner_expol,
@@ -141,31 +133,19 @@ def _get_metrics_factory(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_z_mc(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.z_mc()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.Z_MC)
@@ -173,32 +153,20 @@ def test_factory_z_mc(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_ddqz_z_and_inverse(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     inverse_field_ref = metrics_savepoint.inv_ddqz_z_full()
     field_ref = metrics_savepoint.ddqz_z_full()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     inverse_field = factory.get(attrs.INV_DDQZ_Z_FULL)
@@ -207,31 +175,19 @@ def test_factory_ddqz_z_and_inverse(
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-7)
 
 
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_ddqz_full_e(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.DDQZ_Z_FULL_E)
@@ -239,32 +195,20 @@ def test_factory_ddqz_full_e(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 @pytest.mark.uses_concat_where
 def test_factory_ddqz_z_half(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.ddqz_z_half()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.DDQZ_Z_HALF)
@@ -272,31 +216,19 @@ def test_factory_ddqz_z_half(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_scaling_factor_for_3d_divdamp(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.scalfac_dd3d()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.SCALING_FACTOR_FOR_3D_DIVDAMP)
@@ -304,31 +236,19 @@ def test_factory_scaling_factor_for_3d_divdamp(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_rayleigh_w(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.rayleigh_w()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.RAYLEIGH_W)
@@ -336,32 +256,20 @@ def test_factory_rayleigh_w(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_coeffs_dwdz(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref_1 = metrics_savepoint.coeff1_dwdz()
     field_ref_2 = metrics_savepoint.coeff2_dwdz()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field_1 = factory.get(attrs.COEFF1_DWDZ)
@@ -371,32 +279,20 @@ def test_factory_coeffs_dwdz(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_ref_mc(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref_1 = metrics_savepoint.theta_ref_mc()
     field_ref_2 = metrics_savepoint.exner_ref_mc()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field_1 = factory.get(attrs.THETA_REF_MC)
@@ -406,32 +302,20 @@ def test_factory_ref_mc(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_d2dexdz2_facs_mc(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref_1 = metrics_savepoint.d2dexdz2_fac1_mc()
     field_ref_2 = metrics_savepoint.d2dexdz2_fac2_mc()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field_1 = factory.get(attrs.D2DEXDZ2_FAC1_MC)
@@ -440,31 +324,19 @@ def test_factory_d2dexdz2_facs_mc(
     assert test_helpers.dallclose(field_2.asnumpy(), field_ref_2.asnumpy(), atol=1e-12)
 
 
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_ddxn_z_full(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.ddxn_z_full()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.DDXN_Z_FULL)
@@ -472,69 +344,40 @@ def test_factory_ddxn_z_full(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_ddxt_z_full(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-    caplog,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.ddxt_z_full().asnumpy()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.DDXT_Z_FULL)
-    caplog.set_level(logging.DEBUG)
     # TODO(halungge): these are the np.allclose default values: single precision
     assert test_helpers.dallclose(field.asnumpy(), field_ref, rtol=1.0e-5, atol=1.0e-8)
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (
-            dt_utils.REGIONAL_EXPERIMENT,
-            dt_utils.REGIONAL_EXPERIMENT,
-        ),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_exner_w_implicit_weight_parameter(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.vwind_impl_wgt()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER)
@@ -542,34 +385,19 @@ def test_factory_exner_w_implicit_weight_parameter(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (
-            dt_utils.REGIONAL_EXPERIMENT,
-            dt_utils.REGIONAL_EXPERIMENT,
-        ),  # TODO(): check vwind_offctr value for regional
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_exner_w_explicit_weight_parameter(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.vwind_expl_wgt()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER)
@@ -578,31 +406,19 @@ def test_factory_exner_w_explicit_weight_parameter(
 
 @pytest.mark.level("integration")
 @pytest.mark.uses_concat_where
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_exner_exfac(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.exner_exfac()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.EXNER_EXFAC)
@@ -611,32 +427,20 @@ def test_factory_exner_exfac(
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_pressure_gradient_fields(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_1_ref = metrics_savepoint.pg_exdist()
     field_2_ref = metrics_savepoint.pg_edgeidx_dsl()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field_1 = factory.get(attrs.PG_EDGEDIST_DSL)
@@ -645,32 +449,20 @@ def test_factory_pressure_gradient_fields(
     assert test_helpers.dallclose(field_2_ref.asnumpy(), field_2.asnumpy())
 
 
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_mask_bdy_prog_halo_c(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref_1 = metrics_savepoint.mask_prog_halo_c()
     field_ref_2 = metrics_savepoint.bdy_halo_c()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field_1 = factory.get(attrs.MASK_PROG_HALO_C)
@@ -680,31 +472,19 @@ def test_factory_mask_bdy_prog_halo_c(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_horizontal_mask_for_3d_divdamp(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.hmask_dd3d()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP)
@@ -714,31 +494,19 @@ def test_factory_horizontal_mask_for_3d_divdamp(
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
 @pytest.mark.cpu_only  # TODO(halungge): slow on GPU due to vwind_impl_wgt computation)
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_zdiff_gradp(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.zdiff_gradp()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.ZDIFF_GRADP)
@@ -746,31 +514,19 @@ def test_factory_zdiff_gradp(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_coeff_gradekin(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = metrics_savepoint.coeff_gradekin()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.COEFF_GRADEKIN)
@@ -778,30 +534,18 @@ def test_factory_coeff_gradekin(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_factory_wgtfacq_e(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.WGTFACQ_E)
@@ -810,30 +554,18 @@ def test_factory_wgtfacq_e(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
 def test_vertical_coordinates_on_half_levels(
-    grid_savepoint,
-    metrics_savepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.CELL_HEIGHT_ON_HALF_LEVEL)
@@ -843,40 +575,69 @@ def test_vertical_coordinates_on_half_levels(
 
 @pytest.mark.level("integration")
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-    ],
-)
 @pytest.mark.datatest
-def test_factory_compute_diffusion_metrics(
-    grid_savepoint,
+def test_compute_wgtfac_c(
+    grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
-    topography_savepoint,
-    grid_file,
-    icon_grid,
-    experiment,
-    backend,
-):
-    field_ref_1 = metrics_savepoint.mask_hdiff()
-    field_ref_2 = metrics_savepoint.zd_diffcoef()
-    field_ref_3 = metrics_savepoint.zd_intcoef()
-    field_ref_4 = metrics_savepoint.zd_vertoffset()
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
-        grid_file=grid_file,
-        icon_grid=icon_grid,
         grid_savepoint=grid_savepoint,
-        metrics_savepoint=metrics_savepoint,
+        topography_savepoint=topography_savepoint,
+    )
+    field = factory.get(attrs.WGTFAC_C)
+    field_ref = metrics_savepoint.wgtfac_c()
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
+
+
+@pytest.mark.level("integration")
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+def test_factory_compute_diffusion_mask_and_coef(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    field_ref_1 = metrics_savepoint.mask_hdiff()
+    field_ref_2 = metrics_savepoint.zd_diffcoef()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
     )
     field_1 = factory.get(attrs.MASK_HDIFF)
     field_2 = factory.get(attrs.ZD_DIFFCOEF_DSL)
-    field_3 = factory.get(attrs.ZD_INTCOEF_DSL)
-    field_4 = factory.get(attrs.ZD_VERTOFFSET_DSL)
+
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-10)
-    assert test_helpers.dallclose(field_ref_3.asnumpy(), field_3.asnumpy(), atol=1.0e-8)
-    assert test_helpers.dallclose(field_ref_4.asnumpy(), field_4.asnumpy())
+
+
+@pytest.mark.level("integration")
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+def test_factory_compute_diffusion_intcoeff_and_vertoffset(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    field_ref_1 = metrics_savepoint.zd_intcoef()
+    field_ref_2 = metrics_savepoint.zd_vertoffset()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+    )
+    field_1 = factory.get(attrs.ZD_INTCOEF_DSL)
+    field_2 = factory.get(attrs.ZD_VERTOFFSET_DSL)
+    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())

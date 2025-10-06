@@ -9,11 +9,11 @@
 import pathlib
 from typing import Final
 
+import gt4py.next.typing as gtx_typing
 import pytest
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
-from icon4py.model.testing import datatest_utils as dt_utils, grid_utils
+from icon4py.model.testing import definitions, grid_utils
 
 
 DEFAULT_GRID: Final[str] = "simple"
@@ -32,26 +32,26 @@ def _get_grid_from_preset(
     grid_preset: str,
     *,
     num_levels: int = DEFAULT_NUM_LEVELS,
-    backend: gtx_backend.Backend | None = None,
+    backend: gtx_typing.Backend | None = None,
 ) -> base_grid.Grid:
     match grid_preset:
         case "icon_regional":
             return grid_utils.get_grid_manager_from_identifier(
-                dt_utils.REGIONAL_EXPERIMENT,
+                definitions.Grids.MCH_CH_R04B09_DSL,
                 num_levels=num_levels,
                 keep_skip_values=False,
                 backend=backend,
             ).grid
         case "icon_global":
             return grid_utils.get_grid_manager_from_identifier(
-                dt_utils.R02B04_GLOBAL,
+                definitions.Grids.R02B04_GLOBAL,
                 num_levels=num_levels,
                 keep_skip_values=False,
                 backend=backend,
             ).grid
         case "icon_benchmark":
             return grid_utils.get_grid_manager_from_identifier(
-                dt_utils.REGIONAL_BENCHMARK,
+                definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
                 num_levels=80,  # default benchmark size in ICON Fortran
                 keep_skip_values=False,
                 backend=backend,
@@ -61,7 +61,7 @@ def _get_grid_from_preset(
 
 
 @pytest.fixture(scope="session")
-def grid(request: pytest.FixtureRequest, backend: gtx_backend.Backend | None) -> base_grid.Grid:
+def grid(request: pytest.FixtureRequest, backend: gtx_typing.Backend | None) -> base_grid.Grid:
     """
     Fixture for providing a grid instance.
 
