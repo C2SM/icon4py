@@ -81,7 +81,7 @@ class GridGeometry(factory.FieldSource):
         decomposition_info: definitions.DecompositionInfo,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
-    ):
+    ) -> None:
         """
         Args:
             grid: IconGrid the grid topology
@@ -144,7 +144,6 @@ class GridGeometry(factory.FieldSource):
         return None
 
 
-# TODO(): self type
 class IcosahedronGridGeometry(GridGeometry):
     def __init__(
         self,
@@ -154,7 +153,7 @@ class IcosahedronGridGeometry(GridGeometry):
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
-    ):
+    ) -> None:
         super().__init__(grid, decomposition_info, backend, metadata)
 
         (
@@ -563,7 +562,7 @@ class TorusGridGeometry(GridGeometry):
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
-    ):
+    ) -> None:
         super().__init__(grid, decomposition_info, backend, metadata)
 
         log.info(
