@@ -323,9 +323,6 @@ def test_factory_d2dexdz2_facs_mc(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    if experiment == definitions.Experiments.WEISMAN_KLEMP_TORUS:
-        pytest.xfail(f"field not serialized for experiment {experiment=}")
-
     field_ref_1 = metrics_savepoint.d2dexdz2_fac1_mc()
     field_ref_2 = metrics_savepoint.d2dexdz2_fac2_mc()
     factory = _get_metrics_factory(
@@ -518,9 +515,6 @@ def test_factory_zdiff_gradp(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    if experiment == definitions.Experiments.WEISMAN_KLEMP_TORUS:
-        pytest.xfail(f"field not serialized for experiment {experiment=}")
-
     field_ref = metrics_savepoint.zdiff_gradp()
     factory = _get_metrics_factory(
         backend=backend,
