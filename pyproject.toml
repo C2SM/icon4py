@@ -134,7 +134,7 @@ disallow_incomplete_defs = true
 disallow_untyped_defs = true
 explicit_package_bases = true
 files = [
-    # TODO(egparedes): activate for all sources and tests
+  # TODO(egparedes): activate for all sources and tests
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',

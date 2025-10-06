@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 try:
-    import cupy as xp
+    import cupy as xp  # type: ignore[import-not-found]
 except ImportError:
     import numpy as xp
 
@@ -125,13 +125,13 @@ def random_mask(
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)
+    return gtx.as_field(domain=dims, data=arr, allocator=allocator)
 
 
 def zero_field(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    dtype=ta.wpfloat,
+    dtype: npt.DTypeLike = ta.wpfloat,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
@@ -143,8 +143,8 @@ def constant_field(
     grid: grid_base.Grid,
     value: float,
     *dims: gtx.Dimension,
-    dtype=ta.wpfloat,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    dtype: npt.DTypeLike = ta.wpfloat,
+    allocator: gtx_typing.Backend | None = None,
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
@@ -166,7 +166,7 @@ def index_field(
     grid: grid_base.Grid,
     dim: gtx.Dimension,
     extend: dict[gtx.Dimension, int] | None = None,
-    dtype=gtx.int32,
+    dtype: npt.DTypeLike = gtx.int32,  # type: ignore [attr-defined]
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     xp = import_array_ns(allocator)

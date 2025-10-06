@@ -8,7 +8,7 @@
 
 import functools
 from collections.abc import Callable
-from typing import Any, ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeGuard, TypeVar
 
 import gt4py.next as gtx
 import gt4py.next.allocators as gtx_allocators
@@ -16,12 +16,14 @@ import gt4py.next.typing as gtx_typing
 
 
 try:
-    import cupy as cp
+    import cupy as cp  # type: ignore[import-not-found]
 except ImportError:
     cp = None
 
 
-def is_cupy_device(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> bool:
+def is_cupy_device(
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
+) -> TypeGuard[gtx_allocators.FieldBufferAllocationUtil]:
     if allocator is None:
         return False
     return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)
@@ -49,7 +51,7 @@ def synchronized_function(
     """
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> _R:
         result = func(*args, **kwargs)
         sync(backend=backend)
         return result
