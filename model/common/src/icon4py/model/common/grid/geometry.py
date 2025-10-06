@@ -553,6 +553,9 @@ class IcosahedronGridGeometry(GridGeometry):
         self.register_provider(cartesian_cell_centers)
 
 
+# TODO(msimberg): Don't do separate class but just initialize differently? Then
+# caller doesn't have to know which one it is. IconGrid knows anyway which type
+# it is. Or add factory method.
 class TorusGridGeometry(GridGeometry):
     def __init__(
         self,
@@ -624,6 +627,7 @@ class TorusGridGeometry(GridGeometry):
                     allocator=self._backend,
                     dtype=bool,
                 ),
+                # TODO(msimberg): Compute for torus.
                 attrs.EDGE_NORMAL_X: extra_fields[gridfile.GeometryName.EDGE_NORMAL_X],
                 attrs.EDGE_NORMAL_Y: extra_fields[gridfile.GeometryName.EDGE_NORMAL_Y],
                 attrs.EDGE_NORMAL_Z: extra_fields[gridfile.GeometryName.EDGE_NORMAL_Z],
