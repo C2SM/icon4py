@@ -55,7 +55,7 @@ def test_grid_file_vertex_cell_edge_dimensions(
     experiment: definitions.Experiment, grid_savepoint: serialbox.IconGridSavepoint
 ) -> None:
     file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
-    parser = gridfile.GridFile(str(file))
+    parser = gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation())
     try:
         parser.open()
         assert parser.dimension(gridfile.DimensionName.CELL_NAME) == grid_savepoint.num(
@@ -75,7 +75,7 @@ def test_grid_file_vertex_cell_edge_dimensions(
 
 @pytest.mark.parametrize("filename", (definitions.Grids.R02B04_GLOBAL,))
 @pytest.mark.parametrize("apply_transformation", (True, False))
-def test_int_variable(filename, apply_transformation):
+def test_int_variable(filename, apply_transformation) -> None:
     file = gridtest_utils.resolve_full_grid_file_name(filename)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         edge_dim = parser.dimension(gridfile.DimensionName.EDGE_NAME)
@@ -106,7 +106,7 @@ def index_selection() -> Iterable[list[int]]:
     index_selection(),
 )
 @pytest.mark.parametrize("filename", (definitions.Grids.R02B04_GLOBAL,))
-def test_index_read_for_1d_fields(filename, selection):
+def test_index_read_for_1d_fields(filename: definitions.GridDescription, selection: list) -> None:
     file = gridtest_utils.resolve_full_grid_file_name(filename)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         selection = np.asarray(selection) if len(selection) > 0 else None
@@ -125,7 +125,12 @@ def test_index_read_for_1d_fields(filename, selection):
     (gridfile.ConnectivityName.V2E, gridfile.ConnectivityName.V2C, gridfile.ConnectivityName.E2V),
 )
 @pytest.mark.parametrize("apply_offset", (True, False))
-def test_index_read_for_2d_connectivity(filename, selection, field, apply_offset):
+def test_index_read_for_2d_connectivity(
+    filename: definitions.GridDescription,
+    selection: list,
+    field: gridfile.FieldName,
+    apply_offset: bool,
+) -> None:
     file = gridtest_utils.resolve_full_grid_file_name(filename)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         selection = np.asarray(selection) if len(selection) > 0 else None

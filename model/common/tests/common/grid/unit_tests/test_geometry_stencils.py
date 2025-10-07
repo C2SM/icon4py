@@ -10,27 +10,18 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid.geometry_stencils import (
-    compute_cell_center_arc_distance,
-    compute_edge_length,
-)
+from icon4py.model.common.grid.geometry_stencils import compute_edge_length
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, grid_utils
+from icon4py.model.testing import grid_utils
 
 from ..fixtures import *
 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, grid_file",
-    (
-        (definitions.Experiments.MCH_CH_R04B09.name, definitions.Grids.MCH_CH_R04B09_DSL.name),
-        (definitions.Experiments.EXCLAIM_APE.name, definitions.Grids.R02B04_GLOBAL.name),
-    ),
-)
-def test_edge_length(experiment, grid_file, grid_savepoint, backend):
+def test_edge_length(experiment, grid_savepoint, backend) -> None:
     keep = True
+    grid_file = experiment.grid
     gm = grid_utils.get_grid_manager_from_identifier(
         grid_file, keep_skip_values=keep, num_levels=1, backend=backend
     )

@@ -547,22 +547,15 @@ def test_limited_area_on_grid(grid_descriptor: definitions.GridDescription, expe
     assert expected == grid.limited_area
 
 
-@pytest.mark.parametrize(
-    "grid_file",
-    [
-        (definitions.Grids.MCH_CH_R04B09_DSL),
-        (definitions.Grids.R02B04_GLOBAL),
-    ],
-)
 @pytest.mark.parametrize("dim", utils.horizontal_dims())
 def test_decomposition_info_single_node(
     dim: gtx.Dimension,
-    grid_file: definitions.GridDescription,
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = grid_savepoint.construct_decomposition_info()
+    grid_file = experiment.grid
     gm = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     result = gm.decomposition_info
     assert np.all(result.local_index(dim) == expected.local_index(dim))

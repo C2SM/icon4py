@@ -9,7 +9,7 @@ import functools
 import logging
 import pathlib
 from types import ModuleType
-from typing import Literal, Protocol, TypeAlias
+from typing import Literal, TypeAlias
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -101,13 +101,20 @@ class GridManager:
         decomposer: halo.Decomposer = _single_node_decomposer,
         run_properties=_single_process_props,
     ):
-        if not run_properties.single_node() and isinstance(decomposer, SingleNodeDecomposer):
+        if not run_properties.single_node() and isinstance(decomposer, halo.SingleNodeDecomposer):
             raise InvalidConfigError("Need a Decomposer for multi node run")
 
         if not self._reader:
             self.open()
-        self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
+
+        self._construct_decomposed_grid(
+            backend=backend,
+            with_skip_values=keep_skip_values,
+            decomposer=decomposer,
+            run_properties=run_properties,
+        )
         self._coordinates = self._read_coordinates(backend)
+        self._geometry = self._read_geometry_fields(backend)
         self._geometry = self._read_geometry_fields(backend)
 
         self.close()
@@ -368,9 +375,10 @@ class GridManager:
         """
         xp = data_alloc.import_array_ns(backend)
         ## FULL GRID PROPERTIES
-        global_params = self._construct_global_params()
+
         cell_refinement = self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         global_size = self._read_full_grid_size()
+        global_params = self._construct_global_params(backend, global_size)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
@@ -438,15 +446,50 @@ class GridManager:
         )
         self._grid = grid
 
-    def _construct_global_params(self):
+    def _construct_global_params(
+        self, backend: gtx_typing.Backend, global_size: base.HorizontalGridSize
+    ):
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        geometry_type = self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY)
+        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
+            geometry_type = base.GeometryType(geometry_type)
+        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
+        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
+        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
+        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
+        mean_dual_edge_length = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
+        )
+        mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
+        mean_dual_cell_area = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
+        )
+        # TODO (@halungge): Fix this: reads the global fields...
+        edge_lengths = self._reader.variable(gridfile.GeometryName.EDGE_LENGTH)
+        dual_edge_lengths = self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH)
+        cell_areas = self._reader.variable(gridfile.GeometryName.CELL_AREA.value)
+        dual_cell_areas = self._reader.variable(gridfile.GeometryName.DUAL_AREA)
         shape = icon.GridShape(
             geometry_type=geometry_type,
             subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
         )
-        global_params = icon.GlobalGridParams(grid_shape=shape)
+        global_params = icon.GlobalGridParams.from_fields(
+            backend=backend,
+            grid_shape=shape,
+            radius=sphere_radius,
+            domain_length=domain_length,
+            domain_height=domain_height,
+            num_cells=global_size.num_cells,
+            mean_edge_length=mean_edge_length,
+            mean_dual_edge_length=mean_dual_edge_length,
+            mean_cell_area=mean_cell_area,
+            mean_dual_cell_area=mean_dual_cell_area,
+            edge_lengths=edge_lengths,
+            dual_edge_lengths=dual_edge_lengths,
+            cell_areas=cell_areas,
+            dual_cell_areas=dual_cell_areas,
+        )
+
         return global_params
 
     def _get_index_field(

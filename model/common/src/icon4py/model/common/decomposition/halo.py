@@ -140,7 +140,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         ]
         for d in relevant_dimension:
             assert (
-                d.value in self._connectivities.keys()
+                d.value in self._connectivities
             ), f"Table for {d} is missing from the neighbor table array."
 
     def _connectivity(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:

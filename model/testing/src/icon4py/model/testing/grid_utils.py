@@ -13,7 +13,7 @@ from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
     grid_manager as gm,
-    icon,
+    gridfile,
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -112,7 +112,12 @@ def get_grid_geometry(
         )
         grid = gm.grid
         geometry_source = geometry.GridGeometry(
-            grid, gm.decomposition_info, backend, gm.coordinates, gm.geometry_fields, geometry_attrs.attrs
+            grid,
+            gm.decomposition_info,
+            backend,
+            gm.coordinates,
+            gm.geometry_fields,
+            geometry_attrs.attrs,
         )
         return geometry_source
 

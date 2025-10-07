@@ -151,7 +151,7 @@ def test_fields_distribute_and_gather(processor_props: defs.ProcessProperties, c
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     single_node = run_grid_manager_for_singlenode(file, vertical_config)
     single_node_grid = single_node.grid
-    global_cell_area = single_node.geometry[gridfile.GeometryName.CELL_AREA]
+    global_cell_area = single_node.geometry_fields[gridfile.GeometryName.CELL_AREA]
     global_edge_lat = single_node.coordinates[dims.EdgeDim]["lat"]
     global_vertex_lon = single_node.coordinates[dims.VertexDim]["lon"]
 
@@ -163,7 +163,7 @@ def test_fields_distribute_and_gather(processor_props: defs.ProcessProperties, c
     )
     decomposition_info = multinode.decomposition_info
 
-    local_cell_area = multinode.geometry[gridfile.GeometryName.CELL_AREA]
+    local_cell_area = multinode.geometry_fields[gridfile.GeometryName.CELL_AREA]
     local_edge_lat = multinode.coordinates[dims.EdgeDim]["lat"]
     local_vertex_lon = multinode.coordinates[dims.VertexDim]["lon"]
     print(
@@ -291,7 +291,7 @@ def test_halo_neighbor_access_c2e(
         grid=single_node_grid,
         coordinates=single_node.coordinates,
         decomposition_info=single_node.decomposition_info,
-        extra_fields=single_node.geometry,
+        extra_fields=single_node.geometry_fields,
         metadata=geometry_attributes.attrs,
     )
 
@@ -321,7 +321,7 @@ def test_halo_neighbor_access_c2e(
         decomposer=halo.SimpleMetisDecomposer(),
     )
     distributed_grid = multinode_grid_manager.grid
-    extra_geometry_fields = multinode_grid_manager.geometry
+    extra_geometry_fields = multinode_grid_manager.geometry_fields
     decomposition_info = multinode_grid_manager.decomposition_info
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
@@ -377,7 +377,7 @@ def test_local_connectivities(
         test_defs.Grids.R02B04_GLOBAL, keep_skip_values=True, backend=None
     ).grid
     partitioner = halo.SimpleMetisDecomposer()
-    face_face_connectivity = grid.get_connectivity(dims.C2E2C).ndarray  # type: ignore[union-attr]
+    face_face_connectivity = grid.get_connectivity(dims.C2E2C).ndarray
     neighbor_tables = grid.get_neighbor_tables()
     labels = partitioner(face_face_connectivity, num_partitions=processor_props.comm_size)
     halo_generator = halo.IconLikeHaloConstructor(
