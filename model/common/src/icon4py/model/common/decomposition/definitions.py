@@ -23,7 +23,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import dace
+    import dace # type: ignore [import-not-found]
 
     from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
 except ImportError:
@@ -44,7 +44,7 @@ class ProcessProperties(Protocol):
 
 @dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):
-    def __init__(self):
+    def __init__(self) -> None:
         object.__setattr__(self, "comm", None)
         object.__setattr__(self, "rank", 0)
         object.__setattr__(self, "comm_name", "")
@@ -60,7 +60,7 @@ class DomainDescriptorIdGenerator:
         self._roundtrips = parallel_props.rank
         self._base = self._roundtrips * self._comm_size
 
-    def __call__(self):
+    def __call__(self) -> int:
         next_id = self._base + self._counter
         if self._counter + 1 >= self._comm_size:
             self._roundtrips = self._roundtrips + self._comm_size
@@ -80,7 +80,7 @@ class DecompositionInfo:
     @utils.chainable
     def with_dimension(
         self, dim: Dimension, global_index: data_alloc.NDArray, owner_mask: data_alloc.NDArray
-    ):
+    ) -> None:
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
 
@@ -91,15 +91,15 @@ class DecompositionInfo:
         num_edges: int | None = None,
         num_vertices: int | None = None,
     ):
-        self._global_index = {}
+        self._global_index: dict = {}
         self._klevels = klevels
-        self._owner_mask = {}
+        self._owner_mask: dict = {}
         self._num_vertices = num_vertices
         self._num_cells = num_cells
         self._num_edges = num_edges
 
     @property
-    def klevels(self):
+    def klevels(self) -> int:
         return self._klevels
 
     @property
@@ -127,7 +127,7 @@ class DecompositionInfo:
                 mask = self._owner_mask[dim]
                 return index[mask]
 
-    def _to_local_index(self, dim):
+    def _to_local_index(self, dim: Dimension):
         data = self._global_index[dim]
         assert data.ndim == 1
         if isinstance(data, np.ndarray):
@@ -163,7 +163,7 @@ class ExchangeResult(Protocol):
 class ExchangeRuntime(Protocol):
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult: ...
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple): ...
+    def exchange_and_wait(self, dim: Dimension, *fields: tuple) -> Any: ...
 
     def get_size(self): ...
 
@@ -175,7 +175,7 @@ class SingleNodeExchange:
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: Dimension, *fields: tuple) -> None:
         return
 
     def my_rank(self):
@@ -184,7 +184,7 @@ class SingleNodeExchange:
     def get_size(self):
         return 1
 
-    def __call__(self, *args, **kwargs) -> ExchangeResult | None:
+    def __call__(self, *args: Any, **kwargs: dict[str, Any]) -> ExchangeResult | None:
         """Perform a halo exchange operation.
 
         Args:
@@ -197,6 +197,7 @@ class SingleNodeExchange:
         dim = kwargs.get("dim")
         wait = kwargs.get("wait", True)
 
+        assert isinstance(dim, Dimension)
         res = self.exchange(dim, *args)
         if wait:
             res.wait()
@@ -206,7 +207,7 @@ class SingleNodeExchange:
     if dace:
         # Implementation of DaCe SDFGConvertible interface
         # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
             sdfg = DummyNestedSDFG().__sdfg__()
             sdfg.name = "_halo_exchange_"
             return sdfg
@@ -219,7 +220,7 @@ class SingleNodeExchange:
 
     else:
 
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
             raise NotImplementedError(
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
@@ -312,7 +313,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 
 class SingleNodeResult:
-    def wait(self):
+    def wait(self) -> None:
         pass
 
     def is_ready(self) -> bool:

@@ -153,6 +153,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/states',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
   '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
