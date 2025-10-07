@@ -368,7 +368,7 @@ def test_cartesian_centers_edge(
     match grid.geometry_type:
         case base.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
-            norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
+            norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, allocator=backend)
             math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
         case base.GeometryType.TORUS:
@@ -395,7 +395,7 @@ def test_cartesian_centers_cell(
     match grid.geometry_type:
         case base.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
-            norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
+            norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, allocator=backend)
             math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
         case base.GeometryType.TORUS:
@@ -420,7 +420,7 @@ def test_vertex(backend: gtx_typing.Backend, experiment: definitions.Experiment)
     match grid.geometry_type:
         case base.GeometryType.ICOSAHEDRON:
             # those are coordinates on the unit sphere: hence norm should be 1
-            norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, backend=backend)
+            norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, allocator=backend)
             math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
         case base.GeometryType.TORUS:

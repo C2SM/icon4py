@@ -97,9 +97,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         }
 
         k_index = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=self._backend
         )
-        e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, backend=self._backend)
+        e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._backend)
         e_owner_mask = gtx.as_field(
             (dims.EdgeDim,), self._decomposition_info.owner_mask(dims.EdgeDim)
         )

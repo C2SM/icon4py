@@ -53,17 +53,17 @@ def test_validate_divdamp_fields_against_savepoint_values(
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
-        backend=backend,
+        allocator=backend,
     )
     fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
-        backend=backend,
+        allocator=backend,
     )
     reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
-        backend=backend,
+        allocator=backend,
     )
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
@@ -526,7 +526,7 @@ def test_nonhydro_corrector_step(
         mass_flx_me=init_savepoint.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=init_savepoint.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
         ),
     )
 
@@ -736,7 +736,7 @@ def test_run_solve_nonhydro_single_step(
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
         ),
     )
 
@@ -864,7 +864,7 @@ def test_run_solve_nonhydro_multi_step(
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
         ),
     )
 
@@ -1060,28 +1060,28 @@ def test_compute_perturbed_quantities_and_interpolation(
 
     # local fields
     perturbed_rho_at_cells_on_model_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
     perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
     exner_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
     d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
 
     limited_area = icon_grid.limited_area
@@ -1279,10 +1279,10 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     rhotheta_implicit_weight_parameter = sp_init.wgt_nnew_rth()
 
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -1437,7 +1437,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     perturbed_rho_at_cells_on_model_levels = sp_stencil_init.z_rth_pr(0)
     perturbed_theta_v_at_cells_on_model_levels = sp_stencil_init.z_rth_pr(1)
     hydrostatic_correction = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
     )
     temporal_extrapolation_of_perturbed_exner = sp_stencil_init.z_exner_ex_pr()
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (

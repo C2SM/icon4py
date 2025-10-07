@@ -714,8 +714,8 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     expected_smag_limit = savepoint.smag_limit()
     exptected_smag_offset = savepoint.smag_offset()
 
-    diff_multfac_vn = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
-    smag_limit = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
+    diff_multfac_vn = data_alloc.zero_field(icon_grid, dims.KDim, allocator=backend)
+    smag_limit = data_alloc.zero_field(icon_grid, dims.KDim, allocator=backend)
     diffusion_utils.setup_fields_for_initial_step.with_backend(backend)(
         params.K4,
         config.hdiff_efdt_ratio,
