@@ -16,11 +16,12 @@ import numpy as np
 
 
 experiment = "mch_icon-ch1_medium"
-target = "1-rank GH200"
+target = "GH200 1-rank"
 
 openacc_backend = "openacc"
 output_filename = "bench_blueline_stencil_compute"
 
+# the default 'file_prefix' assumes that the json files are in the script folder
 file_prefix = pathlib.Path(__file__).parent
 openacc_input = file_prefix / "bencher=exp.mch_icon-ch1_medium_stencils=0.373574=ACC.json"
 gt4py_input = {
@@ -213,15 +214,17 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> dict:
         assert isinstance(icon4py_val, list)
         assert len(icon4py_val) > 0
         if len(icon4py_val) == 1:
+            # 1-to-1 mapping from fortran to gt4py stencil
             s = icon4py_val[0]
             metric_data = jj[s]
         else:
+            # multiple gt4py stencils are summed into the same fortran stencil
             combined_stencil_data = zip(
                 *[jj[s] for s in icon4py_val],
                 strict=True,
             )
             metric_data = [np.sum(v) for v in combined_stencil_data]
-        # We replace the first measurement with the median value.
+        # we replace the first measurement with the median value
         metric_data[0] = np.median(metric_data)
         data[stencil] = metric_data
     return data
@@ -229,17 +232,15 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> dict:
 
 openacc_meas, openacc_count = load_openacc_log(openacc_input)
 
-# sort stencil names in descendent order of openacc total time
+# Sort stencil names in descendent order of openacc total time.
 stencil_names = [v[0] for v in sorted(openacc_meas.items(), key=lambda x: x[1], reverse=True)]
 
 backends = [openacc_backend]
 data = {openacc_backend: [openacc_meas[stencil] for stencil in stencil_names]}
 for backend, filename in gt4py_input.items():
     for metric in gt4py_metrics:
-        if len(gt4py_metrics) > 1:
-            name = f"{backend}_{metric}"
-        else:
-            name = backend
+        # create a unique name for the combination of backend and metric
+        name = f"{backend}_{metric}" if len(gt4py_metrics) > 1 else backend
         backends.append(name)
         gt4py_meas = load_gt4py_timers(filename, metric)
         values = []
