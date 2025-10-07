@@ -234,13 +234,13 @@ class Pair(Generic[T]):
 
 
 class PredictorCorrectorPair(Pair[T]):
-    predictor: T = Pair.first
-    corrector: T = Pair.second
+    predictor = Pair.first
+    corrector = Pair.second
 
 
 class TimeStepPair(Pair[T]):
-    current: T = Pair.frozen_first
-    next: T = Pair.second
+    current = Pair.frozen_first
+    next = Pair.second
 
 
 P = ParamSpec("P")

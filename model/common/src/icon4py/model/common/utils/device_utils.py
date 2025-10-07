@@ -26,7 +26,7 @@ def is_cupy_device(
 ) -> TypeGuard[gtx_allocators.FieldBufferAllocationUtil]:
     if allocator is None:
         return False
-    return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)
+    return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)  # type: ignore [type-var]
 
 
 def sync(backend: gtx_typing.Backend | None = None) -> None:
