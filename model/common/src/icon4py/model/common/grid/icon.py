@@ -6,11 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
-import functools
 import logging
 import math
 from collections.abc import Callable
-from typing import Final
+from typing import Final, TypeVar
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
@@ -76,60 +75,104 @@ class GridShape:
         self.subdivision = subdivision
 
 
-@dataclasses.dataclass
+_T = TypeVar("_T")
+
+
+@dataclasses.dataclass(kw_only=True, frozen=True)
 class GlobalGridParams:
     grid_shape: Final[GridShape | None] = None
     radius: float = constants.EARTH_RADIUS
-    num_cells: int
-    mean_cell_area: float
+    domain_length: float | None = None
+    domain_height: float | None = None
+    global_num_cells: int | None = None
+    num_cells: int | None = None
+    mean_edge_length: float | None = None
+    mean_dual_edge_length: float | None = None
+    mean_cell_area: float | None = None
+    mean_dual_cell_area: float | None = None
+    characteristic_length: float | None = None
 
-    def __init__(
-        self,
-        *,
-        grid_shape: GridShape | None = None,
-        radius: float = constants.EARTH_RADIUS,
-        num_cells: int | None = None,
+    @classmethod
+    def from_fields(
+        cls: type[_T],
+        backend: gtx.typing.Backend | None,
+        mean_edge_length: float | None = None,
+        edge_lengths: data_alloc.NDArray | None = None,
+        mean_dual_edge_length: float | None = None,
+        dual_edge_lengths: data_alloc.NDArray | None = None,
         mean_cell_area: float | None = None,
-    ) -> None:
-        self.grid_shape = grid_shape
-        self.radius = radius
+        cell_areas: data_alloc.NDArray | None = None,
+        mean_dual_cell_area: float | None = None,
+        dual_cell_areas: data_alloc.NDArray | None = None,
+        **kwargs,
+    ) -> _T:
+        xp = data_alloc.import_array_ns(backend)
 
-        if num_cells is not None:
-            self.num_cells = num_cells
+        def init_mean(value: float | None, data: data_alloc.NDArray | None) -> float | None:
+            if value is not None:
+                return value
+            if data is not None:
+                return xp.mean(data).item()
+            return None
 
-        if mean_cell_area is not None:
-            self.mean_cell_area = mean_cell_area
+        mean_edge_length = init_mean(mean_edge_length, edge_lengths)
+        mean_dual_edge_length = init_mean(mean_dual_edge_length, dual_edge_lengths)
+        mean_cell_area = init_mean(mean_cell_area, cell_areas)
+        mean_dual_cell_area = init_mean(mean_dual_cell_area, dual_cell_areas)
+
+        return cls(
+            mean_edge_length=mean_edge_length,
+            mean_dual_edge_length=mean_dual_edge_length,
+            mean_cell_area=mean_cell_area,
+            mean_dual_cell_area=mean_dual_cell_area,
+            **kwargs,
+        )
+
+    def __post_init__(self) -> None:
+        if self.geometry_type is not None:
+            match self.geometry_type:
+                case base.GeometryType.ICOSAHEDRON:
+                    object.__setattr__(self, "domain_length", None)
+                    object.__setattr__(self, "domain_height", None)
+                    if self.radius is None:
+                        object.__setattr__(self, "radius", constants.EARTH_RADIUS)
+                case base.GeometryType.TORUS:
+                    object.__setattr__(self, "radius", None)
+                case _:
+                    ...
+
+        if self.global_num_cells is None and self.geometry_type is base.GeometryType.ICOSAHEDRON:
+            object.__setattr__(
+                self,
+                "global_num_cells",
+                compute_icosahedron_num_cells(self.grid_shape.subdivision),
+            )
+
+        if self.num_cells is None and self.global_num_cells is not None:
+            object.__setattr__(self, "num_cells", self.global_num_cells)
+
+        if (
+            self.mean_cell_area is None
+            and self.radius is not None
+            and self.global_num_cells is not None
+            and self.geometry_type is base.GeometryType.ICOSAHEDRON
+        ):
+            object.__setattr__(
+                self,
+                "mean_cell_area",
+                compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells),
+            )
+
+        if self.characteristic_length is None and self.mean_cell_area is not None:
+            object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
 
     @property
     def geometry_type(self) -> base.GeometryType | None:
         return self.grid_shape.geometry_type if self.grid_shape else None
 
-    @functools.cached_property
-    def num_cells(self) -> int:
-        match self.geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                assert self.grid_shape.subdivision is not None
-                return compute_icosahedron_num_cells(self.grid_shape.subdivision)
-            case base.GeometryType.TORUS:
-                raise NotImplementedError("TODO : lookup torus cell number computation")
-            case _:
-                raise ValueError(f"Unknown geometry type {self.geometry_type}")
-
-    @functools.cached_property
-    def characteristic_length(self) -> float:
-        return math.sqrt(self.mean_cell_area)
-
-    @functools.cached_property
-    def mean_cell_area(self) -> float:
-        match self.geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                return compute_mean_cell_area_for_sphere(self.radius, self.num_cells)
-            case base.GeometryType.TORUS:
-                raise NotImplementedError(
-                    f"mean_cell_area not implemented for {self.geometry_type}"
-                )
-            case _:
-                raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+    @property
+    def subdivision(self) -> GridSubdivision | None:
+        return self.grid_shape.subdivision if self.grid_shape else None
 
 
 def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:

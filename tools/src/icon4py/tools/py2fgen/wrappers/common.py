@@ -15,10 +15,11 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Final, TypeAlias
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
-from gt4py.next import backend as gtx_backend
+from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
@@ -56,7 +57,7 @@ class BackendIntEnum(eve.IntEnum):
     _DACE_GPU = 22
 
 
-_BACKEND_MAP: dict[BackendIntEnum, gtx_backend.Backend | None] = {
+_BACKEND_MAP: dict[BackendIntEnum, gtx_typing.Backend | None] = {
     BackendIntEnum._GTFN_CPU: model_backends.BACKENDS["gtfn_cpu"],
     BackendIntEnum._GTFN_GPU: model_backends.BACKENDS["gtfn_gpu"],
 }
@@ -67,15 +68,26 @@ with contextlib.suppress(NotImplementedError):  # dace backends might not be ava
     }
 
 
-def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backend:
-    default_cpu = BackendIntEnum._GTFN_CPU
-    default_gpu = BackendIntEnum._GTFN_GPU
-    if selector == BackendIntEnum.DEFAULT:
-        selector = BackendIntEnum.DEFAULT_GPU if on_gpu else BackendIntEnum.DEFAULT_CPU
+def select_backend(
+    selector: BackendIntEnum, on_gpu: bool
+) -> gtx_typing.Backend | model_backends.DeviceType:
     if selector == BackendIntEnum.DEFAULT_CPU:
-        selector = default_cpu
-    elif selector == BackendIntEnum.DEFAULT_GPU:
-        selector = default_gpu
+        if on_gpu:
+            raise ValueError(
+                f"Inconsistent backend selection: {selector.name} and on_gpu={on_gpu}."
+            )
+        return model_backends.CPU
+    if selector == BackendIntEnum.DEFAULT_GPU:
+        if not on_gpu:
+            raise ValueError(
+                f"Inconsistent backend selection: {selector.name} and on_gpu={on_gpu}."
+            )
+        assert isinstance(model_backends.GPU, model_backends.DeviceType)
+        return model_backends.GPU
+    if selector == BackendIntEnum.DEFAULT:
+        device_type = model_backends.GPU if on_gpu else model_backends.CPU
+        assert isinstance(device_type, model_backends.DeviceType)
+        return device_type
 
     if selector not in (
         BackendIntEnum._GTFN_CPU,
@@ -96,7 +108,7 @@ def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backen
 
 
 def cached_dummy_field_factory(
-    allocator: gtx_backend.Backend,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
 ) -> Callable[[str, gtx.Domain, gt4py_definitions.DType], gtx.Field]:
     # curried to exclude non-hashable backend from cache
     @functools.lru_cache(maxsize=20)
@@ -154,7 +166,7 @@ def construct_icon_grid(
     vertical_size: int,
     limited_area: bool,
     mean_cell_area: gtx.float64,  # type:ignore[name-defined]  # TODO(): fix type hint
-    backend: gtx_backend.Backend,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
 ) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
@@ -164,13 +176,13 @@ def construct_icon_grid(
 
     log.debug("Offsetting Fortran connectivitity arrays by 1")
 
-    xp = data_alloc.import_array_ns(backend)
-    # TODO (halungge): icon has 0 values in these arrays in some places possibly where they don't use them in case
-    #  they are accessed the `adjust_fortran_indices` might lead to crashes
+    xp = data_alloc.import_array_ns(allocator)
     start_indices = {
-        dims.CellDim: adjust_fortran_indices(cell_starts),
-        dims.EdgeDim: adjust_fortran_indices(edge_starts),
-        dims.VertexDim: adjust_fortran_indices(vertex_starts),
+        # TODO(halungge): ICON Fortran has 0 values in these arrays in some places possibly where they don't use them.
+        # We should investigate where we access these values.
+        dims.CellDim: np.maximum(0, adjust_fortran_indices(cell_starts)),
+        dims.EdgeDim: np.maximum(0, adjust_fortran_indices(edge_starts)),
+        dims.VertexDim: np.maximum(0, adjust_fortran_indices(vertex_starts)),
     }
     end_indices = {dims.CellDim: cell_ends, dims.EdgeDim: edge_ends, dims.VertexDim: vertex_ends}
 
@@ -228,7 +240,7 @@ def construct_icon_grid(
 
     return icon.icon_grid(
         id_=grid_id,
-        allocator=backend,
+        allocator=allocator,
         config=config,
         neighbor_tables=neighbor_tables,
         start_index=start_index,

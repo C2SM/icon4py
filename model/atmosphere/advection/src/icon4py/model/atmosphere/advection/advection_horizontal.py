@@ -9,7 +9,7 @@
 import logging
 from abc import ABC, abstractmethod
 
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.advection import advection_states
@@ -70,7 +70,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
         self,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._grid = grid
@@ -94,7 +94,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
 
         # limiter fields
         self._r_m = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
 
         # stencils
@@ -183,7 +183,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self,
         grid: icon_grid.IconGrid,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         horizontal_limiter: HorizontalFluxLimiter | None = None,
     ):
         self._grid = grid
@@ -207,13 +207,13 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
 
         # reconstruction fields
         self._p_coeff_1 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
         self._p_coeff_2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
         self._p_coeff_3 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
 
         # stencils
@@ -319,7 +319,7 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         log.debug("horizontal advection class init - start")
 
         # input arguments
@@ -431,7 +431,7 @@ class SemiLagrangian(FiniteVolume):
         metric_state: advection_states.AdvectionMetricState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):
         log.debug("horizontal advection class init - start")
@@ -464,13 +464,13 @@ class SemiLagrangian(FiniteVolume):
 
         # backtrajectory fields
         self._z_real_vt = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=self._backend
         )
         self._p_distv_bary_1 = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=self._backend
         )
         self._p_distv_bary_2 = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=self._backend
         )
 
         # stencils

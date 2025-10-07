@@ -183,7 +183,8 @@ markers = [
   "cpu_only",
   "infinite_concat_where",
   "gtfn_too_slow",
-  "continuous_benchmarking"
+  "continuous_benchmarking",
+  "benchmark_only: benchmark only tests without verification"
 ]
 # add all namespace packages to pythonpath to make them available for pytest
 pythonpath = [
@@ -316,7 +317,7 @@ name = "test.pypi"
 url = "https://test.pypi.org/simple/"
 
 [tool.uv.sources]
-dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_08_28"}
+dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_09_25"}
 # ghex = {git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}

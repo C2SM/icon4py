@@ -10,9 +10,9 @@ import logging
 from typing import Final, Literal, TypeAlias
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import serialbox
-from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
@@ -47,7 +47,7 @@ class IconSavepoint:
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         size: dict,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         self.savepoint = sp
         self.serializer = ser
@@ -147,7 +147,7 @@ class IconGridSavepoint(IconSavepoint):
         grid_id: str,
         size: dict,
         grid_shape: icon.GridShape,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
@@ -473,7 +473,7 @@ class IconGridSavepoint(IconSavepoint):
         return dim, global_index, mask, halo_levels
 
     def construct_icon_grid(
-        self, backend: gtx_backend.Backend | None = None, keep_skip_values: bool = True
+        self, backend: gtx_typing.Backend | None = None, keep_skip_values: bool = True
     ) -> icon.IconGrid:
         config = base.GridConfig(
             horizontal_size=base.HorizontalGridSize(
@@ -1723,7 +1723,7 @@ class IconGraupelSavepoint(IconSavepoint):
         return self.tracer(QG)
 
     def qnc(self):
-        return self._get_field("qnc", dims.CellDim, dims.KDim)
+        return self._get_field("qnc", dims.CellDim)
 
     def dtime(self):
         return self.serializer.read("dtime", self.savepoint)[0]
@@ -1786,7 +1786,7 @@ class TopographySavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         fname_prefix,
         path=".",
         do_print=False,
@@ -2047,13 +2047,15 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelSavepoint:
-        savepoint = self.serializer.savepoint["microphysics-init"].date[date].as_savepoint()
+        # TODO (Chia Rui): fix typo microphy[s]ics
+        savepoint = self.serializer.savepoint["microphyics-init"].date[date].as_savepoint()
         return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelSavepoint:
-        savepoint = self.serializer.savepoint["microphysics-exit"].date[date].as_savepoint()
+        # TODO (Chia Rui): fix typo microphy[s]ics
+        savepoint = self.serializer.savepoint["microphyics-exit"].date[date].as_savepoint()
         return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )

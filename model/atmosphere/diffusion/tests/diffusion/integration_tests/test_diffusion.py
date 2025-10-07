@@ -13,7 +13,6 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
-import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import dimension as dims
@@ -672,8 +671,8 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     expected_smag_limit = savepoint.smag_limit()
     exptected_smag_offset = savepoint.smag_offset()
 
-    diff_multfac_vn = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
-    smag_limit = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
+    diff_multfac_vn = data_alloc.zero_field(icon_grid, dims.KDim, allocator=backend)
+    smag_limit = data_alloc.zero_field(icon_grid, dims.KDim, allocator=backend)
     diffusion_utils.setup_fields_for_initial_step.with_backend(backend)(
         params.K4,
         config.hdiff_efdt_ratio,

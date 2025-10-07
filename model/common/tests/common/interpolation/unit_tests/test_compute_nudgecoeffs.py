@@ -44,7 +44,7 @@ def test_compute_nudgecoeffs_e(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    nudgecoeff_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dtype=wpfloat, backend=backend)
+    nudgecoeff_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dtype=wpfloat, allocator=backend)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
     refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
     grf_nudge_start_e = refinement.get_nudging_refinement_value(dims.EdgeDim)

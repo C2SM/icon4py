@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, utils as common_utils
@@ -97,7 +97,7 @@ def create_vertical_params(
 def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     grid: icon_grid.IconGrid,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     swap_vertical_wind_advective_tendency: bool = False,
 ) -> dycore_states.DiagnosticStateNonHydro:
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
@@ -122,11 +122,11 @@ def construct_diagnostics(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
         normal_wind_iau_increment=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, backend=backend
+            grid, dims.EdgeDim, dims.KDim, allocator=backend
         ),
-        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
         exner_dynamical_increment=init_savepoint.exner_dyn_incr(),
     )
 

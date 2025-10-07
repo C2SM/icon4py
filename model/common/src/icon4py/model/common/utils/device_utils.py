@@ -8,7 +8,7 @@
 
 import functools
 from collections.abc import Callable
-from typing import Any
+from typing import Any, ParamSpec, TypeVar
 
 import gt4py.next as gtx
 import gt4py.next.allocators as gtx_allocators
@@ -21,9 +21,9 @@ except ImportError:
     cp = None
 
 
-def is_cupy_device(
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-) -> bool:
+def is_cupy_device(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> bool:
+    if allocator is None:
+        return False
     return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)
 
 
@@ -37,7 +37,13 @@ def sync(backend: gtx_typing.Backend | None = None) -> None:
         cp.cuda.runtime.deviceSynchronize()
 
 
-def synchronized_function(func: Callable[..., Any], *, backend: gtx_typing.Backend | None):
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+
+
+def synchronized_function(
+    func: Callable[_P, _R], *, backend: gtx_typing.Backend | None
+) -> Callable[_P, _R]:
     """
     Wraps a function and synchronizes after execution
     """

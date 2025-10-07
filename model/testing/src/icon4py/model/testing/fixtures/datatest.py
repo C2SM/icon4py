@@ -10,11 +10,12 @@ from __future__ import annotations
 import pkgutil
 from typing import TYPE_CHECKING
 
+import gt4py.next.typing as gtx_typing
 import pytest
-from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
+from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import (
     config,
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(scope="session")
-def backend(request: pytest.FixtureRequest) -> gtx_backend.Backend | None:
+def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
     """
     Fixture to provide a GT4Py backend for the tests.
 
@@ -146,7 +147,7 @@ def data_provider(
     ranked_data_path: pathlib.Path,
     experiment: definitions.Experiment,
     processor_props: decomposition.ProcessProperties,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
@@ -163,7 +164,7 @@ def grid_savepoint(
 
 @pytest.fixture
 def icon_grid(
-    grid_savepoint: serialbox.IconGridSavepoint, backend: gtx_backend.Backend
+    grid_savepoint: serialbox.IconGridSavepoint, backend: gtx_typing.Backend
 ) -> base_grid.Grid:
     """
     Load the icon grid from an ICON savepoint.
@@ -556,6 +557,35 @@ def htop_moist_proc() -> float:
 @pytest.fixture
 def maximal_layer_thickness() -> float:
     return 25000.0
+
+
+@pytest.fixture
+def rayleigh_coeff(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
+        return 0.1
+    else:
+        return 5.0
+
+
+@pytest.fixture
+def exner_expol(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
+        return 0.3333333333333
+    else:
+        return 0.333
+
+
+@pytest.fixture
+def vwind_offctr(experiment: definitions.Experiment) -> float:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
+        return 0.15
+    else:
+        return 0.2
+
+
+@pytest.fixture
+def rayleigh_type() -> int:
+    return RayleighType.KLEMP
 
 
 @pytest.fixture

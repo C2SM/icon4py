@@ -9,7 +9,7 @@ import functools
 import logging
 import pathlib
 from types import ModuleType
-from typing import Literal, TypeAlias
+from typing import Literal, Protocol, TypeAlias
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -17,7 +17,6 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition, halo
-from icon4py.model.common.decomposition.halo import SingleNodeDecomposer
 from icon4py.model.common.exceptions import InvalidConfigError
 from icon4py.model.common.grid import (
     base,
@@ -40,6 +39,7 @@ class IconGridError(RuntimeError):
 
 
 CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+# TODO (halungge): use a TypeDict for that
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
 
@@ -106,13 +106,7 @@ class GridManager:
 
         if not self._reader:
             self.open()
-
-        self._construct_decomposed_grid(
-            backend=backend,
-            with_skip_values=keep_skip_values,
-            decomposer=decomposer,
-            run_properties=run_properties,
-        )
+        self._grid = self._construct_grid(backend=backend, with_skip_values=keep_skip_values)
         self._coordinates = self._read_coordinates(backend)
         self._geometry = self._read_geometry_fields(backend)
 
@@ -195,6 +189,16 @@ class GridManager:
             gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.GeometryName.DUAL_AREA),
+                allocator=backend,
+            ),
+            gridfile.GeometryName.EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.EDGE_LENGTH),
+                allocator=backend,
+            ),
+            gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH),
                 allocator=backend,
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
@@ -338,7 +342,7 @@ class GridManager:
         return self._grid
 
     @property
-    def geometry(self) -> GeometryDict:
+    def geometry_fields(self) -> GeometryDict:
         return self._geometry
 
     @property
