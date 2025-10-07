@@ -12,7 +12,6 @@ import functools
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
-from re import Pattern
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
 import numpy as np
@@ -20,22 +19,22 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import SingleNodeExchange, ProcessProperties
+from icon4py.model.common.decomposition.definitions import ProcessProperties, SingleNodeExchange
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import ghex # type: ignore [import-not-found]
-    import mpi4py # type: ignore [import-not-found]
-    from ghex.context import make_context # type: ignore [import-not-found]
-    from ghex.unstructured import ( # type: ignore [import-not-found]
+    import ghex  # type: ignore [import-not-found]
+    import mpi4py  # type: ignore [import-not-found]
+    from ghex.context import make_context  # type: ignore [import-not-found]
+    from ghex.unstructured import (  # type: ignore [import-not-found]
         DomainDescriptor,
         HaloGenerator,
         make_communication_object,
         make_field_descriptor,
         make_pattern,
     )
-    from ghex.util import Architecture # type: ignore [import-not-found]
+    from ghex.util import Architecture  # type: ignore [import-not-found]
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -46,7 +45,7 @@ except ImportError:
     unstructured = None
 
 try:
-    import dace # type: ignore [import-not-found]
+    import dace  # type: ignore [import-not-found]
 
     from icon4py.model.common.orchestration import halo_exchange
 except ImportError:
@@ -55,7 +54,7 @@ except ImportError:
     dace: ModuleType | None = None  # type: ignore[no-redef]
 
 if TYPE_CHECKING:
-    import mpi4py.MPI # type: ignore [import-not-found]
+    import mpi4py.MPI  # type: ignore [import-not-found]
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -117,15 +116,15 @@ class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm = None
 
     @functools.cached_property
-    def rank(self) -> int: # type: ignore [override]
+    def rank(self) -> int:  # type: ignore [override]
         return self.comm.Get_rank()
 
     @functools.cached_property
-    def comm_name(self)-> str: # type: ignore [override]
+    def comm_name(self) -> str:  # type: ignore [override]
         return self.comm.Get_name()
 
     @functools.cached_property
-    def comm_size(self) -> int: # type: ignore [override]
+    def comm_size(self) -> int:  # type: ignore [override]
         return self.comm.Get_size()
 
 
@@ -232,7 +231,7 @@ class GHexMultiNodeExchange:
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
 
         # Slice the fields based on the dimension
-        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields] # type: ignore[arg-type] # mypy fails to type check correctly, f is already a field
+        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]  # type: ignore[arg-type] # mypy fails to type check correctly, f is already a field
 
         # Create field descriptors and perform the exchange
         applied_patterns = [

@@ -23,7 +23,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import dace # type: ignore [import-not-found]
+    import dace  # type: ignore [import-not-found]
 
     from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
 except ImportError:
@@ -119,7 +119,9 @@ class DecompositionInfo:
     def num_vertices(self) -> int | None:
         return self._num_vertices
 
-    def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL) -> data_alloc.NDArray:
+    def local_index(
+        self, dim: Dimension, entry_type: EntryType = EntryType.ALL
+    ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._to_local_index(dim)
@@ -138,7 +140,7 @@ class DecompositionInfo:
         if isinstance(data, np.ndarray):
             import numpy as xp
         else:
-            import cupy as xp # type: ignore
+            import cupy as xp  # type: ignore[import-not-found, no-redef]
 
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
@@ -146,7 +148,9 @@ class DecompositionInfo:
     def owner_mask(self, dim: Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
-    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL) -> data_alloc.NDArray:
+    def global_index(
+        self, dim: Dimension, entry_type: EntryType = EntryType.ALL
+    ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._global_index[dim]
