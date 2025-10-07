@@ -44,6 +44,11 @@ class ProcessProperties(Protocol):
 
 @dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):
+    comm: Any
+    rank: int
+    comm_name: str
+    comm_size: int
+
     def __init__(self) -> None:
         object.__setattr__(self, "comm", None)
         object.__setattr__(self, "rank", 0)
@@ -103,18 +108,18 @@ class DecompositionInfo:
         return self._klevels
 
     @property
-    def num_cells(self):
+    def num_cells(self) -> int | None:
         return self._num_cells
 
     @property
-    def num_edges(self):
+    def num_edges(self) -> int | None:
         return self._num_edges
 
     @property
-    def num_vertices(self):
+    def num_vertices(self) -> int | None:
         return self._num_vertices
 
-    def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+    def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._to_local_index(dim)
@@ -127,13 +132,13 @@ class DecompositionInfo:
                 mask = self._owner_mask[dim]
                 return index[mask]
 
-    def _to_local_index(self, dim: Dimension):
+    def _to_local_index(self, dim: Dimension) -> data_alloc.NDArray:
         data = self._global_index[dim]
         assert data.ndim == 1
         if isinstance(data, np.ndarray):
             import numpy as xp
         else:
-            import cupy as xp
+            import cupy as xp # type: ignore
 
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
@@ -141,7 +146,7 @@ class DecompositionInfo:
     def owner_mask(self, dim: Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
-    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL) -> None:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._global_index[dim]
@@ -154,7 +159,7 @@ class DecompositionInfo:
 
 
 class ExchangeResult(Protocol):
-    def wait(self): ...
+    def wait(self) -> None: ...
 
     def is_ready(self) -> bool: ...
 
@@ -165,9 +170,9 @@ class ExchangeRuntime(Protocol):
 
     def exchange_and_wait(self, dim: Dimension, *fields: tuple) -> Any: ...
 
-    def get_size(self): ...
+    def get_size(self) -> None: ...
 
-    def my_rank(self): ...
+    def my_rank(self) -> None: ...
 
 
 @dataclass
@@ -178,10 +183,10 @@ class SingleNodeExchange:
     def exchange_and_wait(self, dim: Dimension, *fields: tuple) -> None:
         return
 
-    def my_rank(self):
+    def my_rank(self) -> int:
         return 0
 
-    def get_size(self):
+    def get_size(self) -> int:
         return 1
 
     def __call__(self, *args: Any, **kwargs: dict[str, Any]) -> ExchangeResult | None:
@@ -247,7 +252,7 @@ class HaloExchangeWaitRuntime(Protocol):
         """Wait on the communication handle."""
         ...
 
-    def __sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+    def __sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
         """DaCe related: SDFGConvertible interface."""
         ...
 
@@ -269,7 +274,7 @@ class HaloExchangeWait:
 
     if dace:
         # Implementation of DaCe SDFGConvertible interface
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
             sdfg = DummyNestedSDFG().__sdfg__()
             sdfg.name = "_halo_exchange_wait_"
             return sdfg
@@ -282,7 +287,7 @@ class HaloExchangeWait:
 
     else:
 
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
             raise NotImplementedError(
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
@@ -386,5 +391,5 @@ def create_exchange(props: ProcessProperties, decomp_info: DecompositionInfo) ->
 @create_exchange.register(SingleNodeProcessProperties)
 def create_single_node_exchange(
     props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
-) -> ExchangeRuntime:
+) -> SingleNodeExchange:
     return SingleNodeExchange()
