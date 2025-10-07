@@ -1,0 +1,1247 @@
+{
+  "action": {
+    "latency": {
+      "lower_value": 0.00715,
+      "upper_value": 0.23603,
+      "value": 0.01189
+    },
+    "latency_total": {
+      "lower_value": 4.0,
+      "upper_value": 4.0,
+      "value": 4.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "adv_hflx": {
+    "latency": {
+      "lower_value": 15.707970000000001,
+      "upper_value": 31.834130000000002,
+      "value": 16.097050000000003
+    },
+    "latency_total": {
+      "lower_value": 5795.0,
+      "upper_value": 5795.0,
+      "value": 5795.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "adv_horiz": {
+    "latency": {
+      "lower_value": 16.19697,
+      "upper_value": 32.33409,
+      "value": 16.583489999999998
+    },
+    "latency_total": {
+      "lower_value": 5970.0,
+      "upper_value": 5970.0,
+      "value": 5970.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "adv_vert": {
+    "latency": {
+      "lower_value": 2.86198,
+      "upper_value": 4.0102,
+      "value": 2.98446
+    },
+    "latency_total": {
+      "lower_value": 1074.0,
+      "upper_value": 1074.0,
+      "value": 1074.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "adv_vflx": {
+    "latency": {
+      "lower_value": 2.42114,
+      "upper_value": 3.55506,
+      "value": 2.54177
+    },
+    "latency_total": {
+      "lower_value": 915.0,
+      "upper_value": 915.0,
+      "value": 915.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "apply_diffusion_to_theta_and_exner": {
+    "latency": {
+      "lower_value": 0.22793,
+      "upper_value": 0.23413,
+      "value": 0.23076
+    },
+    "latency_total": {
+      "lower_value": 83.0,
+      "upper_value": 83.0,
+      "value": 83.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "apply_diffusion_to_vn": {
+    "latency": {
+      "lower_value": 0.17285,
+      "upper_value": 0.18023999999999998,
+      "value": 0.17697000000000002
+    },
+    "latency_total": {
+      "lower_value": 64.0,
+      "upper_value": 64.0,
+      "value": 64.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence": {
+    "latency": {
+      "lower_value": 0.16403,
+      "upper_value": 0.17095000000000002,
+      "value": 0.16719
+    },
+    "latency_total": {
+      "lower_value": 60.0,
+      "upper_value": 60.0,
+      "value": 60.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "apply_divergence_damping_and_update_vn": {
+    "latency": {
+      "lower_value": 0.24319000000000002,
+      "upper_value": 0.25892,
+      "value": 0.24814999999999998
+    },
+    "latency_total": {
+      "lower_value": 447.0,
+      "upper_value": 447.0,
+      "value": 447.0
+    },
+    "num_calls": {
+      "value": 1800
+    }
+  },
+  "back_traj": {
+    "latency": {
+      "lower_value": 0.010010000000000002,
+      "upper_value": 1.5521,
+      "value": 0.17718
+    },
+    "latency_total": {
+      "lower_value": 191.0,
+      "upper_value": 191.0,
+      "value": 191.0
+    },
+    "num_calls": {
+      "value": 1080
+    }
+  },
+  "boundary_halo_cleanup": {
+    "latency": {
+      "lower_value": 0.01884,
+      "upper_value": 0.02503,
+      "value": 0.0206
+    },
+    "latency_total": {
+      "lower_value": 37.0,
+      "upper_value": 37.0,
+      "value": 37.0
+    },
+    "num_calls": {
+      "value": 1800
+    }
+  },
+  "calculate_diagnostic_quantities_for_turbulence": {
+    "latency": {
+      "lower_value": 0.11492000000000001,
+      "upper_value": 0.12088,
+      "value": 0.11728
+    },
+    "latency_total": {
+      "lower_value": 42.0,
+      "upper_value": 42.0,
+      "value": 42.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools": {
+    "latency": {
+      "lower_value": 0.01502,
+      "upper_value": 0.01907,
+      "value": 0.016229999999999998
+    },
+    "latency_total": {
+      "lower_value": 6.0,
+      "upper_value": 6.0,
+      "value": 6.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "calculate_nabla2_and_smag_coefficients_for_vn": {
+    "latency": {
+      "lower_value": 0.19908,
+      "upper_value": 1.1282,
+      "value": 0.20478
+    },
+    "latency_total": {
+      "lower_value": 74.0,
+      "upper_value": 74.0,
+      "value": 74.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "cloud_cover": {
+    "latency": {
+      "lower_value": 1.86801,
+      "upper_value": 4.30512,
+      "value": 1.9239700000000002
+    },
+    "latency_total": {
+      "lower_value": 117.0,
+      "upper_value": 117.0,
+      "value": 117.0
+    },
+    "num_calls": {
+      "value": 61
+    }
+  },
+  "compute_advection_in_horizontal_momentum_equation": {
+    "latency": {
+      "lower_value": 0.18811,
+      "upper_value": 0.72908,
+      "value": 0.194
+    },
+    "latency_total": {
+      "lower_value": 419.0,
+      "upper_value": 419.0,
+      "value": 419.0
+    },
+    "num_calls": {
+      "value": 2160
+    }
+  },
+  "compute_advection_in_vertical_momentum_equation": {
+    "latency": {
+      "lower_value": 0.42987000000000003,
+      "upper_value": 0.45228,
+      "value": 0.44006
+    },
+    "latency_total": {
+      "lower_value": 792.0,
+      "upper_value": 792.0,
+      "value": 792.0
+    },
+    "num_calls": {
+      "value": 1800
+    }
+  },
+  "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection": {
+    "latency": {
+      "lower_value": 0.27298999999999995,
+      "upper_value": 0.283,
+      "value": 0.27724
+    },
+    "latency_total": {
+      "lower_value": 399.0,
+      "upper_value": 399.0,
+      "value": 399.0
+    },
+    "num_calls": {
+      "value": 1440
+    }
+  },
+  "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first": {
+    "latency": {
+      "lower_value": 0.22912,
+      "upper_value": 0.23818,
+      "value": 0.23368999999999998
+    },
+    "latency_total": {
+      "lower_value": 84.0,
+      "upper_value": 84.0,
+      "value": 84.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "compute_contravariant_correction_and_advection_in_vertical_momentum_equation": {
+    "latency": {
+      "lower_value": 0.36406999999999995,
+      "upper_value": 0.36406999999999995,
+      "value": 0.36406999999999995
+    },
+    "latency_total": {
+      "lower_value": 0.0,
+      "upper_value": 0.0,
+      "value": 0.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "compute_contravariant_correction_and_advection_in_vertical_momentum_equation_ski": {
+    "latency": {
+      "lower_value": 0.25797,
+      "upper_value": 0.27418000000000003,
+      "value": 0.26456
+    },
+    "latency_total": {
+      "lower_value": 95.0,
+      "upper_value": 95.0,
+      "value": 95.0
+    },
+    "num_calls": {
+      "value": 359
+    }
+  },
+  "compute_derived_horizontal_winds_and_ke_and_contravariant_correction": {
+    "latency": {
+      "lower_value": 1.5049,
+      "upper_value": 1.5049,
+      "value": 1.5049
+    },
+    "latency_total": {
+      "lower_value": 2.0,
+      "upper_value": 2.0,
+      "value": 2.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "compute_derived_horizontal_winds_and_ke_and_contravariant_correction_skip": {
+    "latency": {
+      "lower_value": 0.2079,
+      "upper_value": 0.23699,
+      "value": 0.21142
+    },
+    "latency_total": {
+      "lower_value": 76.0,
+      "upper_value": 76.0,
+      "value": 76.0
+    },
+    "num_calls": {
+      "value": 359
+    }
+  },
+  "compute_domain_decomp": {
+    "latency": {
+      "lower_value": 812.11901,
+      "upper_value": 812.11901,
+      "value": 812.11901
+    },
+    "latency_total": {
+      "lower_value": 812.0,
+      "upper_value": 812.0,
+      "value": 812.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "compute_dwdz_and_boundary_update_rho_theta_w": {
+    "latency": {
+      "lower_value": 0.027889999999999998,
+      "upper_value": 0.03695,
+      "value": 0.030889999999999997
+    },
+    "latency_total": {
+      "lower_value": 56.0,
+      "upper_value": 56.0,
+      "value": 56.0
+    },
+    "num_calls": {
+      "value": 1800
+    }
+  },
+  "compute_horizontal_velocity_quantities_and_fluxes": {
+    "latency": {
+      "lower_value": 0.38004,
+      "upper_value": 0.39505999999999997,
+      "value": 0.38704
+    },
+    "latency_total": {
+      "lower_value": 697.0,
+      "upper_value": 697.0,
+      "value": 697.0
+    },
+    "num_calls": {
+      "value": 1800
+    }
+  },
+  "compute_intp_coeffs": {
+    "latency": {
+      "lower_value": 2591.6490599999997,
+      "upper_value": 2591.6490599999997,
+      "value": 2591.6490599999997
+    },
+    "latency_total": {
+      "lower_value": 2592.0,
+      "upper_value": 2592.0,
+      "value": 2592.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "compute_perturbed_quantities_and_interpolation": {
+    "latency": {
+      "lower_value": 0.38505,
+      "upper_value": 2.02608,
+      "value": 0.38996000000000003
+    },
+    "latency_total": {
+      "lower_value": 702.0,
+      "upper_value": 702.0,
+      "value": 702.0
+    },
+    "num_calls": {
+      "value": 1800
+    }
+  },
+  "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn": {
+    "latency": {
+      "lower_value": 0.58794,
+      "upper_value": 0.80609,
+      "value": 0.59508
+    },
+    "latency_total": {
+      "lower_value": 1071.0,
+      "upper_value": 1071.0,
+      "value": 1071.0
+    },
+    "num_calls": {
+      "value": 1800
+    }
+  },
+  "diagnose_pres_temp": {
+    "latency": {
+      "lower_value": 0.0050100000000000006,
+      "upper_value": 61.471940000000004,
+      "value": 0.8985
+    },
+    "latency_total": {
+      "lower_value": 65.0,
+      "upper_value": 65.0,
+      "value": 65.0
+    },
+    "num_calls": {
+      "value": 72
+    }
+  },
+  "global_sum": {
+    "latency": {
+      "lower_value": 0.0,
+      "upper_value": 0.00215,
+      "value": 0.00073
+    },
+    "latency_total": {
+      "lower_value": 0.0,
+      "upper_value": 0.0,
+      "value": 0.0
+    },
+    "num_calls": {
+      "value": 369
+    }
+  },
+  "init_ext_data": {
+    "latency": {
+      "lower_value": 123.64411,
+      "upper_value": 123.64411,
+      "value": 123.64411
+    },
+    "latency_total": {
+      "lower_value": 124.0,
+      "upper_value": 124.0,
+      "value": 124.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "init_icon": {
+    "latency": {
+      "lower_value": 2988.2962700000003,
+      "upper_value": 2988.2962700000003,
+      "value": 2988.2962700000003
+    },
+    "latency_total": {
+      "lower_value": 2988.0,
+      "upper_value": 2988.0,
+      "value": 2988.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "init_latbc": {
+    "latency": {
+      "lower_value": 5277.67086,
+      "upper_value": 5277.67086,
+      "value": 5277.67086
+    },
+    "latency_total": {
+      "lower_value": 5278.0,
+      "upper_value": 5278.0,
+      "value": 5278.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "init_nwp_phy": {
+    "latency": {
+      "lower_value": 766.00099,
+      "upper_value": 766.00099,
+      "value": 766.00099
+    },
+    "latency_total": {
+      "lower_value": 766.0,
+      "upper_value": 766.0,
+      "value": 766.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "integrate_nh": {
+    "latency": {
+      "lower_value": 72.23821,
+      "upper_value": 66000.0,
+      "value": 1165.1170200000001
+    },
+    "latency_total": {
+      "lower_value": 419442.0,
+      "upper_value": 419442.0,
+      "value": 419442.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleratio": {
+    "latency": {
+      "lower_value": 0.15306,
+      "upper_value": 0.16499,
+      "value": 0.15580999999999998
+    },
+    "latency_total": {
+      "lower_value": 280.0,
+      "upper_value": 280.0,
+      "value": 280.0
+    },
+    "num_calls": {
+      "value": 1800
+    }
+  },
+  "model_init": {
+    "latency": {
+      "lower_value": 3645.61319,
+      "upper_value": 64000.0,
+      "value": 26278.73913
+    },
+    "latency_total": {
+      "lower_value": 78836.0,
+      "upper_value": 78836.0,
+      "value": 78836.0
+    },
+    "num_calls": {
+      "value": 3
+    }
+  },
+  "nh_diagnostics": {
+    "latency": {
+      "lower_value": 0.0,
+      "upper_value": 137.83908,
+      "value": 0.17789
+    },
+    "latency_total": {
+      "lower_value": 200.0,
+      "upper_value": 200.0,
+      "value": 200.0
+    },
+    "num_calls": {
+      "value": 1126
+    }
+  },
+  "nh_hdiff": {
+    "latency": {
+      "lower_value": 1.2140300000000002,
+      "upper_value": 1.25384,
+      "value": 1.23413
+    },
+    "latency_total": {
+      "lower_value": 444.0,
+      "upper_value": 444.0,
+      "value": 444.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "nh_hdiff_initial_run": {
+    "latency": {
+      "lower_value": 2.2740400000000003,
+      "upper_value": 2.2740400000000003,
+      "value": 2.2740400000000003
+    },
+    "latency_total": {
+      "lower_value": 2.0,
+      "upper_value": 2.0,
+      "value": 2.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "nh_solve": {
+    "latency": {
+      "lower_value": 4.40001,
+      "upper_value": 9.05704,
+      "value": 4.6052100000000005
+    },
+    "latency_total": {
+      "lower_value": 8289.0,
+      "upper_value": 8289.0,
+      "value": 8289.0
+    },
+    "num_calls": {
+      "value": 1800
+    }
+  },
+  "nh_solve.cellcomp": {
+    "latency": {
+      "lower_value": 0.15593,
+      "upper_value": 2.03013,
+      "value": 0.27651
+    },
+    "latency_total": {
+      "lower_value": 995.0,
+      "upper_value": 995.0,
+      "value": 995.0
+    },
+    "num_calls": {
+      "value": 3600
+    }
+  },
+  "nh_solve.edgecomp": {
+    "latency": {
+      "lower_value": 0.23603,
+      "upper_value": 0.46015,
+      "value": 0.36341999999999997
+    },
+    "latency_total": {
+      "lower_value": 1308.0,
+      "upper_value": 1308.0,
+      "value": 1308.0
+    },
+    "num_calls": {
+      "value": 3600
+    }
+  },
+  "nh_solve.exch": {
+    "latency": {
+      "lower_value": 0.0,
+      "upper_value": 0.016929999999999997,
+      "value": 0.00115
+    },
+    "latency_total": {
+      "lower_value": 8.0,
+      "upper_value": 8.0,
+      "value": 8.0
+    },
+    "num_calls": {
+      "value": 7200
+    }
+  },
+  "nh_solve.veltend": {
+    "latency": {
+      "lower_value": 0.6859299999999999,
+      "upper_value": 2.68722,
+      "value": 0.71031
+    },
+    "latency_total": {
+      "lower_value": 1534.0,
+      "upper_value": 1534.0,
+      "value": 1534.0
+    },
+    "num_calls": {
+      "value": 2160
+    }
+  },
+  "nh_solve.vimpl": {
+    "latency": {
+      "lower_value": 0.6861700000000001,
+      "upper_value": 0.77796,
+      "value": 0.7171700000000001
+    },
+    "latency_total": {
+      "lower_value": 2582.0,
+      "upper_value": 2582.0,
+      "value": 2582.0
+    },
+    "num_calls": {
+      "value": 3600
+    }
+  },
+  "nh_solve.vnupd": {
+    "latency": {
+      "lower_value": 0.24605,
+      "upper_value": 0.81015,
+      "value": 0.42497999999999997
+    },
+    "latency_total": {
+      "lower_value": 1530.0,
+      "upper_value": 1530.0,
+      "value": 1530.0
+    },
+    "num_calls": {
+      "value": 3600
+    }
+  },
+  "nwp_microphysics": {
+    "latency": {
+      "lower_value": 2.62809,
+      "upper_value": 3.45111,
+      "value": 2.7475300000000002
+    },
+    "latency_total": {
+      "lower_value": 989.0,
+      "upper_value": 989.0,
+      "value": 989.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "nwp_radiation": {
+    "latency": {
+      "lower_value": 63000.0,
+      "upper_value": 66000.0,
+      "value": 65000.0
+    },
+    "latency_total": {
+      "lower_value": 456555.0,
+      "upper_value": 456555.0,
+      "value": 456555.0
+    },
+    "num_calls": {
+      "value": 7
+    }
+  },
+  "nwp_surface": {
+    "latency": {
+      "lower_value": 7.14612,
+      "upper_value": 15.694139999999999,
+      "value": 7.29022
+    },
+    "latency_total": {
+      "lower_value": 2624.0,
+      "upper_value": 2624.0,
+      "value": 2624.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "nwp_turbdiff": {
+    "latency": {
+      "lower_value": 3.6571,
+      "upper_value": 5.78594,
+      "value": 3.6878800000000003
+    },
+    "latency_total": {
+      "lower_value": 1328.0,
+      "upper_value": 1328.0,
+      "value": 1328.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "nwp_turbtrans": {
+    "latency": {
+      "lower_value": 7.35903,
+      "upper_value": 15.43403,
+      "value": 7.62196
+    },
+    "latency_total": {
+      "lower_value": 2752.0,
+      "upper_value": 2752.0,
+      "value": 2752.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "nwp_turbulence": {
+    "latency": {
+      "lower_value": 5.86605,
+      "upper_value": 15.44094,
+      "value": 6.7880400000000005
+    },
+    "latency_total": {
+      "lower_value": 4894.0,
+      "upper_value": 4894.0,
+      "value": 4894.0
+    },
+    "num_calls": {
+      "value": 721
+    }
+  },
+  "optional_diagnostics_atmosphere": {
+    "latency": {
+      "lower_value": 0.040049999999999995,
+      "upper_value": 0.0422,
+      "value": 0.04077
+    },
+    "latency_total": {
+      "lower_value": 0.0,
+      "upper_value": 0.0,
+      "value": 0.0
+    },
+    "num_calls": {
+      "value": 11
+    }
+  },
+  "ordglb_sum": {
+    "latency": {
+      "lower_value": 0.0069099999999999995,
+      "upper_value": 0.04816,
+      "value": 0.01063
+    },
+    "latency_total": {
+      "lower_value": 4.0,
+      "upper_value": 4.0,
+      "value": 4.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "phys_acc_sync": {
+    "latency": {
+      "lower_value": 0.5860299999999999,
+      "upper_value": 1.0471300000000001,
+      "value": 0.62122
+    },
+    "latency_total": {
+      "lower_value": 224.0,
+      "upper_value": 224.0,
+      "value": 224.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "phys_u_v": {
+    "latency": {
+      "lower_value": 0.15593,
+      "upper_value": 0.49591,
+      "value": 0.16066999999999998
+    },
+    "latency_total": {
+      "lower_value": 58.0,
+      "upper_value": 58.0,
+      "value": 58.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "physics": {
+    "latency": {
+      "lower_value": 26.578190000000003,
+      "upper_value": 66000.0,
+      "value": 1292.0552300000002
+    },
+    "latency_total": {
+      "lower_value": 466432.0,
+      "upper_value": 466432.0,
+      "value": 466432.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "preradiaton": {
+    "latency": {
+      "lower_value": 4.05908,
+      "upper_value": 10.038139999999999,
+      "value": 4.92164
+    },
+    "latency_total": {
+      "lower_value": 34.0,
+      "upper_value": 34.0,
+      "value": 34.0
+    },
+    "num_calls": {
+      "value": 7
+    }
+  },
+  "radheat": {
+    "latency": {
+      "lower_value": 0.49901,
+      "upper_value": 0.54002,
+      "value": 0.50546
+    },
+    "latency_total": {
+      "lower_value": 182.0,
+      "upper_value": 182.0,
+      "value": 182.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "rbf_vector_interpolation_of_u_v_vert_before_nabla2": {
+    "latency": {
+      "lower_value": 0.07105,
+      "upper_value": 0.08106,
+      "value": 0.07316
+    },
+    "latency_total": {
+      "lower_value": 26.0,
+      "upper_value": 26.0,
+      "value": 26.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "rbf_vector_interpolation_of_u_v_vert_before_nabla4": {
+    "latency": {
+      "lower_value": 0.06604,
+      "upper_value": 0.07296000000000001,
+      "value": 0.06868
+    },
+    "latency_total": {
+      "lower_value": 25.0,
+      "upper_value": 25.0,
+      "value": 25.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "rediag_prog_vars": {
+    "latency": {
+      "lower_value": 0.09513,
+      "upper_value": 0.27013,
+      "value": 0.26300999999999997
+    },
+    "latency_total": {
+      "lower_value": 95.0,
+      "upper_value": 95.0,
+      "value": 95.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "satad": {
+    "latency": {
+      "lower_value": 1.53804,
+      "upper_value": 2.0480199999999997,
+      "value": 1.55272
+    },
+    "latency_total": {
+      "lower_value": 561.0,
+      "upper_value": 561.0,
+      "value": 561.0
+    },
+    "num_calls": {
+      "value": 361
+    }
+  },
+  "sso": {
+    "latency": {
+      "lower_value": 1.51801,
+      "upper_value": 2.3489,
+      "value": 1.56103
+    },
+    "latency_total": {
+      "lower_value": 48.0,
+      "upper_value": 48.0,
+      "value": 48.0
+    },
+    "num_calls": {
+      "value": 31
+    }
+  },
+  "total": {
+    "latency": {
+      "lower_value": 429000.0,
+      "upper_value": 429000.0,
+      "value": 429000.0
+    },
+    "latency_total": {
+      "lower_value": 429958.0,
+      "upper_value": 429958.0,
+      "value": 429958.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "transport": {
+    "latency": {
+      "lower_value": 19.23203,
+      "upper_value": 36.79705,
+      "value": 19.71381
+    },
+    "latency_total": {
+      "lower_value": 7097.0,
+      "upper_value": 7097.0,
+      "value": 7097.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "upatmo_construction": {
+    "latency": {
+      "lower_value": 0.02408,
+      "upper_value": 0.56911,
+      "value": 0.29659
+    },
+    "latency_total": {
+      "lower_value": 1.0,
+      "upper_value": 1.0,
+      "value": 1.0
+    },
+    "num_calls": {
+      "value": 2
+    }
+  },
+  "upatmo_destruction": {
+    "latency": {
+      "lower_value": 0.00191,
+      "upper_value": 0.0062,
+      "value": 0.00405
+    },
+    "latency_total": {
+      "lower_value": 0.0,
+      "upper_value": 0.0,
+      "value": 0.0
+    },
+    "num_calls": {
+      "value": 2
+    }
+  },
+  "update_mass_flux_weighted": {
+    "latency": {
+      "lower_value": 0.01502,
+      "upper_value": 0.03195,
+      "value": 0.01686
+    },
+    "latency_total": {
+      "lower_value": 24.0,
+      "upper_value": 24.0,
+      "value": 24.0
+    },
+    "num_calls": {
+      "value": 1440
+    }
+  },
+  "update_mass_flux_weighted_first": {
+    "latency": {
+      "lower_value": 0.01812,
+      "upper_value": 0.02813,
+      "value": 0.020970000000000003
+    },
+    "latency_total": {
+      "lower_value": 8.0,
+      "upper_value": 8.0,
+      "value": 8.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "upper_atmosphere": {
+    "latency": {
+      "lower_value": 0.0052499999999999995,
+      "upper_value": 0.57316,
+      "value": 0.1536
+    },
+    "latency_total": {
+      "lower_value": 1.0,
+      "upper_value": 1.0,
+      "value": 1.0
+    },
+    "num_calls": {
+      "value": 4
+    }
+  },
+  "vertically_implicit_solver_at_corrector_step": {
+    "latency": {
+      "lower_value": 0.69308,
+      "upper_value": 0.70524,
+      "value": 0.69937
+    },
+    "latency_total": {
+      "lower_value": 755.0,
+      "upper_value": 755.0,
+      "value": 755.0
+    },
+    "num_calls": {
+      "value": 1080
+    }
+  },
+  "vertically_implicit_solver_at_corrector_step_first": {
+    "latency": {
+      "lower_value": 0.7181200000000001,
+      "upper_value": 0.73314,
+      "value": 0.7235199999999999
+    },
+    "latency_total": {
+      "lower_value": 260.0,
+      "upper_value": 260.0,
+      "value": 260.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "vertically_implicit_solver_at_corrector_step_last": {
+    "latency": {
+      "lower_value": 0.73528,
+      "upper_value": 0.7472,
+      "value": 0.74229
+    },
+    "latency_total": {
+      "lower_value": 267.0,
+      "upper_value": 267.0,
+      "value": 267.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "vertically_implicit_solver_at_predictor_step": {
+    "latency": {
+      "lower_value": 0.7071500000000001,
+      "upper_value": 0.72598,
+      "value": 0.71497
+    },
+    "latency_total": {
+      "lower_value": 1030.0,
+      "upper_value": 1030.0,
+      "value": 1030.0
+    },
+    "num_calls": {
+      "value": 1440
+    }
+  },
+  "vertically_implicit_solver_at_predictor_step_first": {
+    "latency": {
+      "lower_value": 0.73099,
+      "upper_value": 0.7441,
+      "value": 0.7376699999999999
+    },
+    "latency_total": {
+      "lower_value": 266.0,
+      "upper_value": 266.0,
+      "value": 266.0
+    },
+    "num_calls": {
+      "value": 360
+    }
+  },
+  "wait_for_async_io": {
+    "latency": {
+      "lower_value": 0.07891999999999999,
+      "upper_value": 1045.0139000000001,
+      "value": 859.8974000000001
+    },
+    "latency_total": {
+      "lower_value": 9459.0,
+      "upper_value": 9459.0,
+      "value": 9459.0
+    },
+    "num_calls": {
+      "value": 11
+    }
+  },
+  "write_restart": {
+    "latency": {
+      "lower_value": 0.00405,
+      "upper_value": 0.05102,
+      "value": 0.027540000000000002
+    },
+    "latency_total": {
+      "lower_value": 0.0,
+      "upper_value": 0.0,
+      "value": 0.0
+    },
+    "num_calls": {
+      "value": 2
+    }
+  },
+  "write_restart_communication": {
+    "latency": {
+      "lower_value": 0.0,
+      "upper_value": 0.0,
+      "value": 0.0
+    },
+    "latency_total": {
+      "lower_value": 0.0,
+      "upper_value": 0.0,
+      "value": 0.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "write_restart_io": {
+    "latency": {
+      "lower_value": 0.0,
+      "upper_value": 0.0,
+      "value": 0.0
+    },
+    "latency_total": {
+      "lower_value": 0.0,
+      "upper_value": 0.0,
+      "value": 0.0
+    },
+    "num_calls": {
+      "value": 1
+    }
+  },
+  "wrt_output": {
+    "latency": {
+      "lower_value": 99.92003000000001,
+      "upper_value": 1144.8919799999999,
+      "value": 960.52946
+    },
+    "latency_total": {
+      "lower_value": 10566.0,
+      "upper_value": 10566.0,
+      "value": 10566.0
+    },
+    "num_calls": {
+      "value": 11
+    }
+  }
+}

@@ -18,16 +18,17 @@ import numpy as np
 experiment = "mch_icon-ch1_medium"
 target = "1-rank GH200"
 
-gt4py_metric = "compute"
 openacc_backend = "openacc"
 output_filename = "bench_blueline_stencil_compute"
 
 file_prefix = pathlib.Path(__file__).parent
-openacc_input = file_prefix / "bencher=exp.mch_icon-ch1_medium_stencils=0.362198=ACC.json"
+openacc_input = file_prefix / "bencher=exp.mch_icon-ch1_medium_stencils=0.373574=ACC.json"
 gt4py_input = {
-    "gtfn_gpu": file_prefix / "gt4py_gtfn_timers_202051001.json",
-    "dace_gpu": file_prefix / "gt4py_dace_timers_202051002.json",
+    "gtfn_gpu": file_prefix / "gt4py_gtfn_timers_202051007.json",
+    "dace_gpu": file_prefix / "gt4py_dace_timers_202051007.json",
 }
+gt4py_metrics = ["compute"]  # here we can add other metrics, e.g. 'total'
+
 # Mapping from fortran stencil metric to gt4py stencils. The mapped value is a list,
 # because one stencil in Fortran could correspond to multiple stencils in ICON4Py,
 # if they are not fused in a combined stencil.
@@ -174,10 +175,8 @@ def load_openacc_log(filename: pathlib.Path) -> dict:
     data = {}
     count = {}
     for stencil, meas in j.items():
-        # TODO(edopao): retrieve the total time
-        t = meas["latency"]["value"] / 1000.0  # milliseconds to seconds
-        # TODO(edopao): retrieve the number of calls
-        ncalls = 0
+        t = meas["latency_total"]["value"] / 1000.0  # milliseconds to seconds
+        ncalls = meas["num_calls"]["value"]
         if stencil in fortran_to_icon4py:
             data[stencil] = t
             count[stencil] = ncalls
@@ -191,7 +190,7 @@ def load_openacc_log(filename: pathlib.Path) -> dict:
     return data, count
 
 
-def load_gt4py_timers(filename: pathlib.Path) -> dict:
+def load_gt4py_timers(filename: pathlib.Path, metric: str) -> dict:
     with filename.open("r") as f:
         j = json.load(f)
 
@@ -205,7 +204,7 @@ def load_gt4py_timers(filename: pathlib.Path) -> dict:
         assert m is not None
         stencil = m[1]
         if stencil in mapped_icon4py_stencils:
-            jj[stencil] = v[gt4py_metric]
+            jj[stencil] = v[metric]
         else:
             log.warning(f"skipping gt4py meas for {stencil}")
 
@@ -236,19 +235,22 @@ stencil_names = [v[0] for v in sorted(openacc_meas.items(), key=lambda x: x[1], 
 backends = [openacc_backend]
 data = {openacc_backend: [openacc_meas[stencil] for stencil in stencil_names]}
 for backend, filename in gt4py_input.items():
-    backends.append(backend)
-    gt4py_meas = load_gt4py_timers(filename)
-    values = []
-    for stencil in stencil_names:
-        tvalues = gt4py_meas[stencil]
-        if len(tvalues) != openacc_count[stencil]:
-            # TODO(edopao): enable exception
-            # raise ValueError(
-            #     f"Mismatch number of calls on {stencil} openacc={openacc_count[stencil]} gt4py={len(tvalues)}."
-            # )
-            pass
-        values.append(np.sum(tvalues))
-    data[backend] = values
+    for metric in gt4py_metrics:
+        if len(gt4py_metrics) > 1:
+            name = f"{backend}_{metric}"
+        else:
+            name = backend
+        backends.append(name)
+        gt4py_meas = load_gt4py_timers(filename, metric)
+        values = []
+        for stencil in stencil_names:
+            tvalues = gt4py_meas[stencil]
+            if len(tvalues) != openacc_count[stencil]:
+                log.error(
+                    f"Mismatch number of calls on {stencil} {openacc_backend}={openacc_count[stencil]} {name}={len(tvalues)}."
+                )
+            values.append(np.sum(tvalues))
+        data[name] = values
 
 
 # Combine all bar plots in a single plot
@@ -291,7 +293,7 @@ for i, backend in enumerate(backends):
 
 ax.set_title(f"Backend comparison on {experiment} ({target})")
 ax.set_xlabel("Total compute time [s]")
-ax.set_ylabel("Stencil name")
+ax.set_ylabel(f"Stencil name (speedup w.r.t. {openacc_backend} next to the bars)")
 ax.set_yticks(index + (len(backends) * bar_width) / 2 - bar_width / 2)
 ax.set_yticklabels(stencil_names, rotation=0)
 
