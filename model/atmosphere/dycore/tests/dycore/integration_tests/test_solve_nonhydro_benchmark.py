@@ -174,13 +174,13 @@ def test_solve_nonhydro_benchmark(
     )
 
     prep_adv = dycore_states.PrepAdvection(
-        vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
-        mass_flx_me=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
+        vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
+        mass_flx_me=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, backend=backend
+            mesh, dims.CellDim, dims.KDim, allocator=backend
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, backend=backend
+            mesh, dims.CellDim, dims.KDim, allocator=backend
         ),
     )
 
@@ -294,47 +294,47 @@ def test_solve_nonhydro_benchmark(
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, backend=backend
+            mesh, dims.CellDim, dims.KDim, allocator=backend
         ),
         perturbed_exner_at_cells_on_model_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, backend=backend
+            mesh, dims.CellDim, dims.KDim, allocator=backend
         ),
         rho_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, backend=backend
+            mesh, dims.CellDim, dims.KDim, allocator=backend
         ),
         exner_tendency_due_to_slow_physics=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, backend=backend
+            mesh, dims.CellDim, dims.KDim, allocator=backend
         ),
-        grf_tend_rho=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        grf_tend_thv=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        grf_tend_w=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        grf_tend_rho=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        grf_tend_thv=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        grf_tend_w=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
         mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, backend=backend
+            mesh, dims.EdgeDim, dims.KDim, allocator=backend
         ),
         normal_wind_tendency_due_to_slow_physics_process=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, backend=backend
+            mesh, dims.EdgeDim, dims.KDim, allocator=backend
         ),
-        grf_tend_vn=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
+        grf_tend_vn=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
-            data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
+            data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
+            data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-            data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+            data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+            data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
         ),
-        tangential_wind=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
-        vn_on_half_levels=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
+        tangential_wind=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
+        vn_on_half_levels=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
         contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, backend=backend
+            mesh, dims.CellDim, dims.KDim, allocator=backend
         ),
-        rho_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        rho_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
         normal_wind_iau_increment=data_alloc.zero_field(
-            mesh, dims.EdgeDim, dims.KDim, backend=backend
+            mesh, dims.EdgeDim, dims.KDim, allocator=backend
         ),
-        exner_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        exner_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
         exner_dynamical_increment=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, backend=backend
+            mesh, dims.CellDim, dims.KDim, allocator=backend
         ),
     )
 
@@ -347,27 +347,27 @@ def test_solve_nonhydro_benchmark(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=data_alloc.random_field(mesh, dims.CellDim, dtype=bool, backend=backend),
+        owner_mask=data_alloc.random_field(mesh, dims.CellDim, dtype=bool, allocator=backend),
         backend=backend,
     )
 
     prognostic_state_nnow = prognostics.PrognosticState(
         w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, backend=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, allocator=backend
         ),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
     )
     prognostic_state_nnew = prognostics.PrognosticState(
         w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, backend=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, allocator=backend
         ),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
     )
 
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
