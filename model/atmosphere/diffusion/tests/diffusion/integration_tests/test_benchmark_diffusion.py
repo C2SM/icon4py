@@ -190,20 +190,20 @@ def test_diffusion_benchmark(
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
     )
 
     prognostic_state = prognostics.PrognosticState(
         w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, backend=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, allocator=backend
         ),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, backend=backend),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
+        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
     )
 
     diffusion_granule = diffusion.Diffusion(
