@@ -83,27 +83,14 @@ def test_run_diffusion_benchmark(
 
     decomposition_info = construct_decomposition_info(mesh, backend)
 
-    match mesh.global_properties.geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
-            geometry_field_source = grid_geometry.IcosahedronGridGeometry(
-                grid=mesh,
-                decomposition_info=decomposition_info,
-                backend=backend,
-                coordinates=coordinates,
-                extra_fields=geometry_input_fields,
-                metadata=geometry_meta.attrs,
-            )
-        case base.GeometryType.TORUS:
-            geometry_field_source = grid_geometry.TorusGridGeometry(
-                grid=mesh,
-                decomposition_info=decomposition_info,
-                backend=backend,
-                coordinates=coordinates,
-                extra_fields=geometry_input_fields,
-                metadata=geometry_meta.attrs,
-            )
-        case _:
-            raise ValueError(f"Geometry type {mesh.global_properties.geometry_type} not supported.")
+    geometry_field_source = grid_geometry.GridGeometry.with_geometry_type(
+        grid=mesh,
+        decomposition_info=decomposition_info,
+        backend=backend,
+        coordinates=coordinates,
+        extra_fields=geometry_input_fields,
+        metadata=geometry_meta.attrs,
+    )
 
     cell_geometry = grid_states.CellParams(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),

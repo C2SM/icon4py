@@ -104,6 +104,40 @@ class GridGeometry(factory.FieldSource):
             f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
 
+    @staticmethod
+    def with_geometry_type(
+        grid: icon.IconGrid,
+        decomposition_info: definitions.DecompositionInfo,
+        backend: gtx_typing.Backend | None,
+        coordinates: gm.CoordinateDict,
+        extra_fields: gm.GeometryDict,
+        metadata: dict[str, model.FieldMetaData],
+    ) -> "GridGeometry":
+        match grid.global_properties.geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                return IcosahedronGridGeometry(
+                    grid,
+                    decomposition_info,
+                    backend,
+                    coordinates,
+                    extra_fields,
+                    metadata,
+                )
+            case base.GeometryType.TORUS:
+                return TorusGridGeometry(
+                    grid,
+                    decomposition_info,
+                    backend,
+                    coordinates,
+                    extra_fields,
+                    metadata,
+                )
+            case _:
+                # TODO(msimberg): Warn? Error? Fall back to icosahedron?
+                raise ValueError(
+                    f"Geometry type {gm.grid.global_properties.geometry_type} not supported."
+                )
+
     def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
         name = meta["standard_name"]
