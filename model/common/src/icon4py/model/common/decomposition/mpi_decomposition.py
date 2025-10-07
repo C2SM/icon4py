@@ -12,6 +12,7 @@ import functools
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
+from re import Pattern
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
 import numpy as np
@@ -19,22 +20,22 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import SingleNodeExchange
+from icon4py.model.common.decomposition.definitions import SingleNodeExchange, ProcessProperties
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import ghex
-    import mpi4py
-    from ghex.context import make_context
-    from ghex.unstructured import (
+    import ghex # type: ignore [import-not-found]
+    import mpi4py # type: ignore [import-not-found]
+    from ghex.context import make_context # type: ignore [import-not-found]
+    from ghex.unstructured import ( # type: ignore [import-not-found]
         DomainDescriptor,
         HaloGenerator,
         make_communication_object,
         make_field_descriptor,
         make_pattern,
     )
-    from ghex.util import Architecture
+    from ghex.util import Architecture # type: ignore [import-not-found]
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -45,7 +46,7 @@ except ImportError:
     unstructured = None
 
 try:
-    import dace
+    import dace # type: ignore [import-not-found]
 
     from icon4py.model.common.orchestration import halo_exchange
 except ImportError:
@@ -54,13 +55,13 @@ except ImportError:
     dace: ModuleType | None = None  # type: ignore[no-redef]
 
 if TYPE_CHECKING:
-    import mpi4py.MPI
+    import mpi4py.MPI # type: ignore [import-not-found]
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
 
 
-def init_mpi():
+def init_mpi() -> None:
     from mpi4py import MPI
 
     if not MPI.Is_initialized():
@@ -68,7 +69,7 @@ def init_mpi():
         MPI.Init()
 
 
-def finalize_mpi():
+def finalize_mpi() -> None:
     from mpi4py import MPI
 
     if not MPI.Is_finalized():
@@ -76,7 +77,7 @@ def finalize_mpi():
         MPI.Finalize()
 
 
-def _get_processor_properties(with_mpi=False, comm_id: CommId = None):
+def _get_processor_properties(with_mpi: bool = False, comm_id: CommId = None) -> ProcessProperties:
     def _get_current_comm_or_comm_world(comm_id: CommId) -> mpi4py.MPI.Comm:
         if isinstance(comm_id, int):
             comm = mpi4py.MPI.Comm.f2py(comm_id)
@@ -93,7 +94,7 @@ def _get_processor_properties(with_mpi=False, comm_id: CommId = None):
 
 
 class ParallelLogger(logging.Filter):
-    def __init__(self, process_properties: definitions.ProcessProperties = None):
+    def __init__(self, process_properties: definitions.ProcessProperties | None = None) -> None:
         super().__init__()
         self._rank_info = ""
         if process_properties and process_properties.comm_size > 1:
@@ -116,15 +117,15 @@ class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm = None
 
     @functools.cached_property
-    def rank(self):
+    def rank(self) -> int: # type: ignore [override]
         return self.comm.Get_rank()
 
     @functools.cached_property
-    def comm_name(self):
+    def comm_name(self)-> str: # type: ignore [override]
         return self.comm.Get_name()
 
     @functools.cached_property
-    def comm_size(self):
+    def comm_size(self) -> int: # type: ignore [override]
         return self.comm.Get_size()
 
 
@@ -159,16 +160,16 @@ class GHexMultiNodeExchange:
 
         log.info("communication object initialized")
 
-    def _domain_descriptor_info(self, descr):
+    def _domain_descriptor_info(self, descr: DomainDescriptor) -> str:
         return f" domain_descriptor=[id='{descr.domain_id()}', size='{descr.size()}', inner_size='{descr.inner_size()}' (halo size='{descr.size() - descr.inner_size()}')"
 
-    def get_size(self):
+    def get_size(self) -> int:
         return self._context.size()
 
-    def my_rank(self):
+    def my_rank(self) -> int:
         return self._context.rank()
 
-    def _create_domain_descriptor(self, dim: gtx.Dimension):
+    def _create_domain_descriptor(self, dim: gtx.Dimension) -> DomainDescriptor:
         all_global = self._decomposition_info.global_index(
             dim, definitions.DecompositionInfo.EntryType.ALL
         )
@@ -217,7 +218,7 @@ class GHexMultiNodeExchange:
         else:
             raise ValueError(f"Unknown dimension {dim}")
 
-    def exchange(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]):
+    def exchange(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]) -> MultiNodeResult:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
 
@@ -231,7 +232,7 @@ class GHexMultiNodeExchange:
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
 
         # Slice the fields based on the dimension
-        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
+        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields] # type: ignore[arg-type] # mypy fails to type check correctly, f is already a field
 
         # Create field descriptors and perform the exchange
         applied_patterns = [
@@ -244,6 +245,7 @@ class GHexMultiNodeExchange:
             )
             for f in sliced_fields
         ]
+        assert hasattr(fields[0], "array_ns")
         if hasattr(fields[0].array_ns, "cuda"):
             # TODO(havogt): this is a workaround as ghex does not know that it should synchronize
             # the GPU before the exchange. This is necessary to ensure that all data is ready for the exchange.
@@ -252,12 +254,12 @@ class GHexMultiNodeExchange:
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple) -> None:
         res = self.exchange(dim, *fields)
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
-    def __call__(self, *args, **kwargs) -> MultiNodeResult | None:
+    def __call__(self, *args: Any, **kwargs: dict[str, Any]) -> MultiNodeResult | None:
         """Perform a halo exchange operation.
 
         Args:
@@ -268,6 +270,7 @@ class GHexMultiNodeExchange:
             wait: If True, the operation will block until the exchange is completed (default: True).
         """
         dim = kwargs.get("dim")
+        assert isinstance(dim, gtx.Dimension)
         if dim is None:
             raise ValueError("Need to define a dimension.")
         wait = kwargs.get("wait", True)
@@ -280,15 +283,17 @@ class GHexMultiNodeExchange:
 
     if dace:
         # Implementation of DaCe SDFGConvertible interface
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
             if len(args) > GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace:
                 raise ValueError(
                     f"Maximum number of fields to communicate is {GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace}. Adapt the max number accordingly."
                 )
             dim = kwargs.get("dim")
+            assert isinstance(dim, gtx.Dimension)
             if dim is None:
                 raise ValueError("Need to define a dimension.")
             wait = kwargs.get("wait", True)
+            assert isinstance(wait, bool)
 
             # Build the halo exchange SDFG and return it
             sdfg = dace.SDFG("_halo_exchange_")
@@ -321,7 +326,7 @@ class GHexMultiNodeExchange:
 
     else:
 
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
             raise NotImplementedError(
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
@@ -353,7 +358,7 @@ class HaloExchangeWait:
 
     if dace:
         # Implementation of DaCe SDFGConvertible interface
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
             sdfg = dace.SDFG("_halo_exchange_wait_")
             state = sdfg.add_state()
 
@@ -406,7 +411,7 @@ class HaloExchangeWait:
 
     else:
 
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
             raise NotImplementedError(
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
@@ -433,10 +438,10 @@ def create_multinode_halo_exchange_wait(runtime: GHexMultiNodeExchange) -> HaloE
 
 @dataclass
 class MultiNodeResult:
-    handle: ...
-    pattern_refs: ...
+    handle: Any
+    pattern_refs: Any
 
-    def wait(self):
+    def wait(self) -> None:
         self.handle.wait()
         del self.pattern_refs
 
@@ -447,7 +452,7 @@ class MultiNodeResult:
 @definitions.create_exchange.register(MPICommProcessProperties)
 def create_multinode_node_exchange(
     props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
-) -> definitions.ExchangeRuntime:
+) -> GHexMultiNodeExchange | SingleNodeExchange:
     if props.comm_size > 1:
         return GHexMultiNodeExchange(props, decomp_info)
     else:

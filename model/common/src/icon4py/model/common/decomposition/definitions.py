@@ -146,7 +146,7 @@ class DecompositionInfo:
     def owner_mask(self, dim: Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
-    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL) -> None:
+    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._global_index[dim]
