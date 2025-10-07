@@ -627,17 +627,6 @@ class TorusGridGeometry(GridGeometry):
                     allocator=self._backend,
                     dtype=bool,
                 ),
-                # TODO(msimberg): Compute for torus.
-                attrs.EDGE_NORMAL_X: extra_fields[gridfile.GeometryName.EDGE_NORMAL_X],
-                attrs.EDGE_NORMAL_Y: extra_fields[gridfile.GeometryName.EDGE_NORMAL_Y],
-                attrs.EDGE_NORMAL_Z: extra_fields[gridfile.GeometryName.EDGE_NORMAL_Z],
-                attrs.EDGE_NORMAL_U: extra_fields[gridfile.GeometryName.EDGE_NORMAL_X],
-                attrs.EDGE_NORMAL_V: extra_fields[gridfile.GeometryName.EDGE_NORMAL_Y],
-                attrs.EDGE_TANGENT_X: extra_fields[gridfile.GeometryName.EDGE_TANGENT_X],
-                attrs.EDGE_TANGENT_Y: extra_fields[gridfile.GeometryName.EDGE_TANGENT_Y],
-                attrs.EDGE_TANGENT_Z: extra_fields[gridfile.GeometryName.EDGE_TANGENT_Z],
-                attrs.EDGE_DUAL_U: extra_fields[gridfile.GeometryName.EDGE_TANGENT_X],
-                attrs.EDGE_DUAL_V: extra_fields[gridfile.GeometryName.EDGE_TANGENT_Y],
             }
         )
         self.register_provider(input_fields_provider)
@@ -712,9 +701,44 @@ class TorusGridGeometry(GridGeometry):
         )
         self.register_provider(coriolis_params)
 
+        # normals and tangents
+        tangent_normal_coordinates = factory.ProgramFieldProvider(
+            func=stencils.compute_cartesian_coordinates_of_edge_tangent_and_normal_torus,
+            deps={
+                "vertex_x": attrs.VERTEX_X,
+                "vertex_y": attrs.VERTEX_Y,
+                "edge_x": attrs.EDGE_CENTER_X,
+                "edge_y": attrs.EDGE_CENTER_Y,
+                "edge_orientation": attrs.TANGENT_ORIENTATION,
+            },
+            fields={
+                "tangent_x": attrs.EDGE_TANGENT_X,
+                "tangent_y": attrs.EDGE_TANGENT_Y,
+                "tangent_z": attrs.EDGE_TANGENT_Z,
+                "tangent_u": attrs.EDGE_DUAL_U,
+                "tangent_v": attrs.EDGE_DUAL_V,
+                "normal_x": attrs.EDGE_NORMAL_X,
+                "normal_y": attrs.EDGE_NORMAL_Y,
+                "normal_z": attrs.EDGE_NORMAL_Z,
+                "normal_u": attrs.EDGE_NORMAL_U,
+                "normal_v": attrs.EDGE_NORMAL_V,
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+            params={
+                "domain_length": self._grid.global_properties.domain_length,
+                "domain_height": self._grid.global_properties.domain_height,
+            },
+        )
+        self.register_provider(tangent_normal_coordinates)
+
         # 3. primal_normal_vert, primal_normal_cell
         normal_vert_wrapper = SparseFieldProviderWrapper(
-            input_fields_provider,
+            tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
             fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
             pairs=(
@@ -734,7 +758,7 @@ class TorusGridGeometry(GridGeometry):
         )
         self.register_provider(normal_vert_wrapper)
         normal_cell_wrapper = SparseFieldProviderWrapper(
-            input_fields_provider,
+            tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
             fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
             pairs=(
@@ -745,7 +769,7 @@ class TorusGridGeometry(GridGeometry):
         self.register_provider(normal_cell_wrapper)
         # 3. dual normals: the dual normals are the edge tangents
         tangent_vert_wrapper = SparseFieldProviderWrapper(
-            input_fields_provider,
+            tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
             fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
             pairs=(
@@ -765,7 +789,7 @@ class TorusGridGeometry(GridGeometry):
         )
         self.register_provider(tangent_vert_wrapper)
         tangent_cell_wrapper = SparseFieldProviderWrapper(
-            input_fields_provider,
+            tangent_normal_coordinates,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
             fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
             pairs=(

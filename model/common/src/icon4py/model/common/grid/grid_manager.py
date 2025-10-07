@@ -243,7 +243,7 @@ class GridManager:
     def _read_geometry_fields(
         self, backend: gtx_typing.Backend | None, geometry_type: base.GeometryType | None
     ) -> GeometryDict:
-        geometry_fields = {
+        return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
             gridfile.GeometryName.CELL_AREA.value: gtx.as_field(
@@ -298,41 +298,6 @@ class GridManager:
                 allocator=backend,
             ),
         }
-
-        # TODO(msimberg): compute from coordinates?
-        if geometry_type == base.GeometryType.TORUS:
-            geometry_fields[gridfile.GeometryName.EDGE_NORMAL_X.value] = gtx.as_field(
-                (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.EDGE_NORMAL_X),
-                allocator=backend,
-            )
-            geometry_fields[gridfile.GeometryName.EDGE_NORMAL_Y.value] = gtx.as_field(
-                (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.EDGE_NORMAL_Y),
-                allocator=backend,
-            )
-            geometry_fields[gridfile.GeometryName.EDGE_NORMAL_Z.value] = gtx.as_field(
-                (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.EDGE_NORMAL_Z),
-                allocator=backend,
-            )
-            geometry_fields[gridfile.GeometryName.EDGE_TANGENT_X.value] = gtx.as_field(
-                (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.EDGE_TANGENT_X),
-                allocator=backend,
-            )
-            geometry_fields[gridfile.GeometryName.EDGE_TANGENT_Y.value] = gtx.as_field(
-                (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.EDGE_TANGENT_Y),
-                allocator=backend,
-            )
-            geometry_fields[gridfile.GeometryName.EDGE_TANGENT_Z.value] = gtx.as_field(
-                (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.EDGE_TANGENT_Z),
-                allocator=backend,
-            )
-
-        return geometry_fields
 
     def _read_grid_refinement_fields(
         self,

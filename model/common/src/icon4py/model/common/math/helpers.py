@@ -11,7 +11,6 @@ from gt4py.next import (
     abs,  # noqa: A004
     arccos,
     cos,
-    minimum,
     sin,
     sqrt,
     where,
@@ -552,6 +551,48 @@ def arc_length_on_edges(
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def diff_on_edges_torus(
+    x0: fa.EdgeField[ta.wpfloat],
+    x1: fa.EdgeField[ta.wpfloat],
+    y0: fa.EdgeField[ta.wpfloat],
+    y1: fa.EdgeField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+):
+    """
+    Compute the difference between two points on the torus.
+
+    Inputs are cartesian coordinates of the points. Z is assumed zero and is
+    ignored. Distances are computed modulo the domain length and height.
+
+    Args:
+        x0: x coordinate of point_0
+        x1: x coordinate of point_1
+        y0: y coordinate of point_0
+        y1: y coordinate of point_1
+        domain_length: length of the domain
+        domain_height: height of the domain
+
+    Returns:
+        dx, dy
+
+    """
+    x1 = where(
+        abs(x1 - x0) <= 0.5 * domain_length,
+        x1,
+        where(x0 > x1, x1 + domain_length, x1 - domain_length),
+    )
+
+    y1 = where(
+        abs(y1 - y0) <= 0.5 * domain_height,
+        y1,
+        where(y0 > y1, y1 + domain_height, y1 - domain_height),
+    )
+
+    return (x1 - x0, y1 - y0)
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def distance_on_edges_torus(
     x0: fa.EdgeField[ta.wpfloat],
     x1: fa.EdgeField[ta.wpfloat],
@@ -578,11 +619,8 @@ def distance_on_edges_torus(
         distance
 
     """
-    xdiff = abs(x1 - x0)
-    ydiff = abs(y1 - y0)
-    return sqrt(
-        minimum(xdiff, domain_length - xdiff) ** 2 + minimum(ydiff, domain_height - ydiff) ** 2
-    )
+    xdiff, ydiff = diff_on_edges_torus(x0, x1, y0, y1, domain_length, domain_height)
+    return sqrt(xdiff**2 + ydiff**2)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
