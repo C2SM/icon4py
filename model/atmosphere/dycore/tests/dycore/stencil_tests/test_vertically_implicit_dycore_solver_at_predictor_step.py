@@ -80,6 +80,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             "divdamp_type",
             "rayleigh_type",
             "is_iau_active",
+            "at_first_substep",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "end_index_of_damping_layer",
@@ -90,6 +91,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             "divdamp_type",
             "rayleigh_type",
             "is_iau_active",
+            "at_first_substep",
         ),
     }
 
