@@ -6,9 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures.datatest import backend
@@ -16,7 +18,7 @@ from icon4py.model.testing.fixtures.stencil_tests import grid
 from icon4py.model.testing.reference_funcs import enhanced_smagorinski_factor_numpy
 
 
-def test_init_enh_smag_fac(backend, grid):
+def test_init_enh_smag_fac(backend: gtx_typing.Backend, grid: base_grid.Grid) -> None:
     enh_smag_fac = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     a_vec = data_alloc.random_field(
         grid, dims.KDim, low=1.0, high=10.0, extend={dims.KDim: 1}, allocator=backend
