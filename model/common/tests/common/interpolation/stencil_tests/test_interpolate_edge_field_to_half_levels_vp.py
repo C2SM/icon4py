@@ -5,6 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -16,6 +20,10 @@ from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_
 )
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
+
+
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
 
 
 def interpolate_edge_field_to_half_levels_vp_numpy(
@@ -35,14 +43,17 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
     OUTPUTS = ("interpolation_to_half_levels_vp",)
 
     @staticmethod
-    def reference(grid, wgtfac_e: np.ndarray, interpolant: np.ndarray, **kwargs) -> dict:
+    def reference(
+        wgtfac_e: np.ndarray,
+        interpolant: np.ndarray,
+    ) -> dict:
         interpolation_to_half_levels_vp = interpolate_edge_field_to_half_levels_vp_numpy(
             wgtfac_e=wgtfac_e, interpolant=interpolant
         )
         return dict(interpolation_to_half_levels_vp=interpolation_to_half_levels_vp)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.Grid) -> dict:
         interpolant = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         interpolation_to_half_levels_vp = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
