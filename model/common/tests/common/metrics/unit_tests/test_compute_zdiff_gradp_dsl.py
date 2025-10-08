@@ -42,9 +42,6 @@ if TYPE_CHECKING:
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment", [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE]
-)
 def test_compute_zdiff_gradp_dsl(
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,

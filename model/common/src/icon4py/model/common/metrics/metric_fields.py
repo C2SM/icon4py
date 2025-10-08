@@ -610,7 +610,7 @@ def compute_nflat_gradp(
     mask_array = array_ns.where(
         e_owner_mask & boundary_mask,
         flat_idx_max,
-        65,
+        65, # TODO (Yilu)
     )
     nflat_gradp = int(array_ns.min(mask_array))
     return nflat_gradp

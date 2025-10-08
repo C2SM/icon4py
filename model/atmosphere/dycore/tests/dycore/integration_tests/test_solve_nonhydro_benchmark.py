@@ -30,15 +30,12 @@ from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     vertical as v_grid,
 )
-from icon4py.model.common.initialization.jablonowski_williamson_topography import (
-    jablonowski_williamson_topography,
-)
+from icon4py.model.common.initialization  import jablonowski_williamson_topography as topology
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import definitions, grid_utils
-from icon4py.model.testing.grid_utils import construct_decomposition_info
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -87,8 +84,8 @@ def test_solve_nonhydro_benchmark(
 ) -> None:
     dtime = 1.0
     lprep_adv = True
-    ndyn_substeps = 2
-    at_initial_timestep = True
+    ndyn_substeps = 5
+    at_initial_timestep = False
     second_order_divdamp_factor = 0.0
 
     config = solve_nh.NonHydrostaticConfig(
@@ -109,7 +106,7 @@ def test_solve_nonhydro_benchmark(
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
-    decomposition_info = construct_decomposition_info(mesh, backend)
+    decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
@@ -167,7 +164,7 @@ def test_solve_nonhydro_benchmark(
         primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
     )
 
-    topo_c = jablonowski_williamson_topography(
+    topo_c = topology.jablonowski_williamson_topography(
         cell_lat=cell_geometry.cell_center_lat.ndarray,
         u0=35.0,
         backend=backend,
@@ -347,7 +344,7 @@ def test_solve_nonhydro_benchmark(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=data_alloc.random_field(mesh, dims.CellDim, dtype=bool, allocator=backend),
+        owner_mask=data_alloc.as_field(decomposition_info.owner_mask(dims.CellDim), allocator=backend),
         backend=backend,
     )
 
