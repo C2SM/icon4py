@@ -331,7 +331,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
         log.debug(f"transferring dependencies to compute backend: {self._dependencies.keys()}")
 
         deps = {
-            k: data_alloc.as_field(factory.get(v), backend=compute_backend)
+            k: data_alloc.as_field(factory.get(v), allocator=compute_backend)
             for k, v in self._dependencies.items()
         }
 
@@ -343,7 +343,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
                 f"transferring result {k} to target backend: "
                 f"{data_alloc.backend_name(factory.backend)}"
             )
-            self._fields[k] = data_alloc.as_field(v, backend=factory.backend)
+            self._fields[k] = data_alloc.as_field(v, allocator=factory.backend)
 
     def _unravel_output_fields(self):
         out_fields = tuple(self._fields.values())

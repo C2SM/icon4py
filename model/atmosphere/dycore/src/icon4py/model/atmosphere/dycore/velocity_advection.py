@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next import allocators as gtx_allocators  # TODO(havogt): expose in gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
@@ -60,15 +61,14 @@ class VelocityAdvection:
         self.vertical_params = vertical_params
         self.edge_params = edge_params
         self.c_owner_mask = owner_mask
-        self._backend = backend
 
         self.cfl_w_limit: float = 0.65
         self.scalfac_exdiff: float = 0.05
-        self._allocate_local_fields()
+        self._allocate_local_fields(model_backends.get_allocator(backend))
         self._determine_local_domains()
 
         self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
             constant_args={
                 "rbf_vec_coeff_e": self.interpolation_state.rbf_vec_coeff_e,
@@ -98,7 +98,7 @@ class VelocityAdvection:
 
         # TODO(nfarabullini): add `skip_compute_predictor_vertical_advection` to `variants` once possible
         self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
             constant_args={
                 "coeff1_dwdz": self.metric_state.coeff1_dwdz,
@@ -123,7 +123,7 @@ class VelocityAdvection:
         )
 
         self._compute_advection_in_vertical_momentum_equation = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_advection_in_vertical_momentum_equation,
             constant_args={
                 "coeff1_dwdz": self.metric_state.coeff1_dwdz,
@@ -150,7 +150,7 @@ class VelocityAdvection:
         )
 
         self._compute_advection_in_horizontal_momentum_equation = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_advection_in_horizontal_momentum_equation,
             constant_args={
                 "e_bln_c_s": self.interpolation_state.e_bln_c_s,
@@ -179,23 +179,23 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-    def _allocate_local_fields(self):
+    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self._horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-            self.grid, dims.EdgeDim, dims.KDim, backend=self._backend, dtype=ta.vpfloat
+            self.grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
         """
         Declared as z_v_grad_w in ICON. vn dw/dn + vt dw/dt. NOTE THAT IT ONLY HAS nlev LEVELS because w[nlevp1-1] is diagnostic.
         """
 
         self._contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, backend=self._backend, dtype=ta.vpfloat
+            self.grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
         """
         Declared as z_w_con_c_full in ICON. w - (vn dz/dn + vt dz/dt), z is topography height
         """
 
         self.vertical_cfl = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, backend=self._backend, dtype=ta.vpfloat
+            self.grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
 
     def _determine_local_domains(self):

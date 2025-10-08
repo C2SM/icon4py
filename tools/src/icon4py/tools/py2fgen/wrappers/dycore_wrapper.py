@@ -23,13 +23,12 @@ from collections.abc import Callable
 from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
-import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.tools import py2fgen
@@ -43,7 +42,6 @@ logger = setup_logger(__name__)
 @dataclasses.dataclass
 class SolveNonhydroGranule:
     solve_nh: solve_nonhydro.SolveNonhydro
-    backend: gtx_typing.Backend
     dummy_field_factory: Callable
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
@@ -153,10 +151,10 @@ def solve_nh_init(
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
-    logger.info(f"{on_gpu=}")
-    logger.info(
-        f"Using Backend {wrapper_common.BackendIntEnum(backend).name} ({actual_backend.name})"
+    backend_name = (
+        actual_backend.name if hasattr(actual_backend, "name") else actual_backend.__name__
     )
+    logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
@@ -268,8 +266,9 @@ def solve_nh_init(
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
-        backend=actual_backend,
-        dummy_field_factory=wrapper_common.cached_dummy_field_factory(actual_backend),
+        dummy_field_factory=wrapper_common.cached_dummy_field_factory(
+            model_backends.get_allocator(actual_backend)
+        ),
     )
 
 
