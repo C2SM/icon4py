@@ -180,7 +180,6 @@ def _surface_computations(
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     igradp_method: gtx.int32,
 ) -> fa.CellKField[ta.vpfloat]:
-
     exner_at_cells_on_half_levels = (
         _interpolate_to_surface(
             wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
@@ -249,7 +248,7 @@ def _compute_first_and_second_vertical_derivative_of_exner(
 def _set_theta_v_on_surface_level(
     reference_theta_at_cells_on_half_levels: fa.CellKField[vpfloat],
     perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[vpfloat],
-    ) -> fa.CellKField[wpfloat]:
+) -> fa.CellKField[wpfloat]:
     theta_v_at_cells_on_half_levels = (
         reference_theta_at_cells_on_half_levels + perturbed_theta_v_at_cells_on_half_levels
     )
@@ -391,7 +390,7 @@ def compute_perturbed_quantities_and_interpolation(
         wgtfacq_c=wgtfacq_c,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         igradp_method=igradp_method,
-        out= exner_at_cells_on_half_levels,
+        out=exner_at_cells_on_half_levels,
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
             dims.KDim: (surface_level - 1, surface_level),
@@ -434,7 +433,7 @@ def compute_perturbed_quantities_and_interpolation(
     _interpolate_to_surface(
         wgtfacq_c=wgtfacq_c,
         interpolant=perturbed_theta_v_at_cells_on_model_levels,
-        out = perturbed_theta_v_at_cells_on_half_levels,
+        out=perturbed_theta_v_at_cells_on_half_levels,
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
             dims.KDim: (surface_level - 1, surface_level),
@@ -466,7 +465,7 @@ def compute_perturbed_quantities_and_interpolation(
     _set_theta_v_on_surface_level(
         reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
         perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
-        out= theta_v_at_cells_on_half_levels,
+        out=theta_v_at_cells_on_half_levels,
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
             dims.KDim: (surface_level - 1, surface_level),
