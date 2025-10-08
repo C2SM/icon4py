@@ -40,7 +40,7 @@ from icon4py.model.testing import (
 
 from ...decomposition import utils as decomp_utils
 from .. import utils
-from ..fixtures import *
+from ..fixtures import backend, experiment, grid_savepoint, icon_grid, processor_props
 
 
 try:
@@ -170,9 +170,11 @@ def test_fields_distribute_and_gather(processor_props: defs.ProcessProperties, c
         f"rank = {processor_props.rank} has size(cell_area): {local_cell_area.ndarray.shape}, "
         f"has size(edge_length): {local_edge_lat.ndarray.shape}, has size(vertex_length): {local_vertex_lon.ndarray.shape}"
     )
+    global_num_cells = single_node_grid.config.num_cells
+
     # the local number of cells must be at most the global number of cells (analytically computed)
     assert (
-        local_cell_area.asnumpy().shape[0] <= single_node_grid.global_properties.num_cells
+        local_cell_area.asnumpy().shape[0] <= global_num_cells
     ), "local field is larger than global field"
     # global read: read the same (global fields)
 
@@ -219,10 +221,10 @@ def gather_field(field: np.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
         log.debug("fields gathered:")
         log.debug(f"field sizes {local_sizes}")
         local_first_dim = tuple(size / constant_length for size in local_sizes)
-        gathered_field = recv_buffer.reshape((-1, *constant_dims))
+        gathered_field = recv_buffer.reshape((-1, *constant_dims))  # type: ignore [union-attr]
     else:
         gathered_field = None
-        local_first_dim = field.shape[0]
+        local_first_dim = field.shape
     return local_first_dim, gathered_field
 
 
@@ -257,7 +259,7 @@ def assert_gathered_field_against_global(
         print(
             f"rank = {processor_props.rank}:                      --- gathered field has size {gathered_sizes}"
         )
-        sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)
+        sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)  # type: ignore [attr-defined]
         sorted_[gathered_global_indices] = gathered_field
         assert test_helpers.dallclose(
             sorted_, global_reference_field
@@ -280,8 +282,8 @@ def assert_gathered_field_against_global(
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_halo_neighbor_access_c2e(
     processor_props: defs.ProcessProperties, backend: gtx_typing.Backend | None
-):
-    #    processor_props = decomp_utils.DummyProps(rank = 1)
+) -> None:
+    #    processor_props = decomp_utils.DummyProps(1)
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     print(f"running on {processor_props.comm}")
     single_node = run_grid_manager_for_singlenode(file, vertical_config)

@@ -168,10 +168,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         ), "input should be 1d array"  # TODO(halungge): otherwise reshape instead
         cell_neighbors = self._find_cell_neighbors(cells)
 
-        if depot is not None:
-            cells_so_far = self._xp.hstack((depot, cells))
-        else:
-            cells_so_far = cells
+        cells_so_far = self._xp.hstack((depot, cells)) if depot is not None else cells
 
         next_halo_cells = self._xp.setdiff1d(
             self._xp.unique(cell_neighbors), cells_so_far, assume_unique=True

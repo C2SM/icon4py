@@ -55,7 +55,8 @@ test = [
 typing = [
   "mypy[faster-cache]>=1.13.0",
   "typing-extensions>=4.11.0",
-  "types-cffi>=1.16.0"
+  "types-cffi>=1.16.0",
+  "mpi4py>=4.0.0"
 ]
 
 # -- Standard project description options (PEP 621) --

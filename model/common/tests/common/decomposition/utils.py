@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
+from typing import Any
 
 import numpy as np
 from gt4py import next as gtx
@@ -158,8 +159,13 @@ def assert_same_entries(
     assert np.setdiff1d(my_owned, reference[dim][rank], assume_unique=True).size == 0
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, init=False)
 class DummyProps(definitions.ProcessProperties):
+    comm: Any
+    comm_name: str
+    comm_size: int
+    rank: int
+
     def __init__(self, rank: int):
         object.__setattr__(self, "rank", rank % 4)
         object.__setattr__(self, "comm", None)
@@ -168,4 +174,4 @@ class DummyProps(definitions.ProcessProperties):
 
 
 def dummy_four_ranks(rank: int) -> definitions.ProcessProperties:
-    return DummyProps(rank=rank)
+    return DummyProps(rank)

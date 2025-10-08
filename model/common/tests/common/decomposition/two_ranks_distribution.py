@@ -14,7 +14,7 @@ TWO_RANKS_DISTRIBUTION: np.ndarray = np.ones(10)
 TWO_RANKS_DISTRIBUTION[5, 6, 10] = 0
 
 
-# TODO define all the rest
+# TODO (@halungge):  define all the rest or delete
 CELL_OWN: Final[dict[int, list[int]]] = {
     0: [6, 7, 10],
     1: [0, 1, 2, 3, 4, 5, 8, 9, 11, 12, 13, 14, 15, 16, 17],

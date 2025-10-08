@@ -19,7 +19,7 @@ from icon4py.model.common.decomposition import definitions as defs, mpi_decompos
 from icon4py.model.testing import parallel_helpers
 
 from .. import utils
-from ..fixtures import *
+from ..fixtures import icon_grid, processor_props
 
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 
 try:
-    import mpi4py  # type: ignore[import-not-found] # F401:  import mpi4py to check for optional mpi dependency
+    import mpi4py
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 

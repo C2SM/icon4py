@@ -8,18 +8,23 @@
 
 import numpy as np
 import pytest
+from gt4py.next import typing as gtx_typing
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid.geometry_stencils import compute_edge_length
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import grid_utils
+from icon4py.model.testing import definitions, grid_utils, serialbox
 
-from ..fixtures import *
+from ..fixtures import backend, experiment, grid_savepoint
 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_edge_length(experiment, grid_savepoint, backend) -> None:
+def test_edge_length(
+    experiment: definitions.Experiment,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
     keep = True
     grid_file = experiment.grid
     gm = grid_utils.get_grid_manager_from_identifier(

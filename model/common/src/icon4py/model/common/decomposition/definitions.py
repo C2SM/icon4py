@@ -52,6 +52,11 @@ class ProcessProperties(Protocol):
 
 @dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):
+    comm: Any
+    comm_name: str
+    comm_size: int
+    rank: int
+
     def __init__(self):
         object.__setattr__(self, "comm", None)
         object.__setattr__(self, "rank", 0)

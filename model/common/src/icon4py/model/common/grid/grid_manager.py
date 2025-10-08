@@ -11,6 +11,7 @@ import pathlib
 from types import ModuleType
 from typing import Literal, TypeAlias
 
+import gt4py._core.definitions as gtx_core_defs
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -735,7 +736,7 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
 def construct_local_connectivity(
     field_offset: gtx.FieldOffset,
     decomposition_info: decomposition.DecompositionInfo,
-    connectivity: np.ndarray,
+    connectivity: np.ndarray | gtx_core_defs.NDArrayObject,
 ) -> np.ndarray:
     """
     Construct a connectivity table for use on a given rank: it maps from source to target dimension in _local_ indices.
