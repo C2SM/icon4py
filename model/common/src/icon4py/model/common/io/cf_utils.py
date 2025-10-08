@@ -44,7 +44,7 @@ COARDS_LATITUDE_COORDINATE_NAME: Final[str] = "Y"
 
 
 def date2num(
-    date: cftime.datetime | str | float | int,
+    date: cftime.datetime,
     units: str = DEFAULT_TIME_UNIT,
     calendar: str = DEFAULT_CALENDAR,
 ) -> float:
