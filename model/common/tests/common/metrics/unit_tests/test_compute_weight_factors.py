@@ -44,7 +44,12 @@ def test_compute_wgtfac_c(
     backend: gtx_typing.Backend | None,
 ) -> None:
     wgtfac_c = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend={dims.KDim: 1}, backend=backend
+        icon_grid,
+        dims.CellDim,
+        dims.KDim,
+        dtype=ta.wpfloat,
+        extend={dims.KDim: 1},
+        allocator=backend,
     )
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
     z_ifc = metrics_savepoint.z_ifc()

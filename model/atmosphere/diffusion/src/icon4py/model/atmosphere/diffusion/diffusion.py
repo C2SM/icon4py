@@ -14,6 +14,7 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next import allocators as gtx_allocators
 
 # TODO(pstark): switch back to gtx.sqrt once gt4py can return gtx.float32 in gtx.sqrt
 from numpy import sqrt
@@ -382,7 +383,7 @@ class Diffusion:
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):
-        self._backend = backend
+        self._allocator = model_backends.get_allocator(backend)
         self._orchestration = orchestration
         self._exchange = exchange or decomposition.SingleNodeExchange()
         self.config = config
@@ -424,7 +425,7 @@ class Diffusion:
         self._determine_horizontal_domains()
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=mo_intp_rbf_rbf_vec_interpol_vertex,
             constant_args={
                 "ptr_coeff_1": self._interpolation_state.rbf_coeff_1,
@@ -439,7 +440,7 @@ class Diffusion:
         )
 
         self.calculate_nabla2_and_smag_coefficients_for_vn = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=calculate_nabla2_and_smag_coefficients_for_vn,
             constant_args={
                 "tangent_orientation": self._edge_params.tangent_orientation,
@@ -459,7 +460,7 @@ class Diffusion:
         )
 
         self.calculate_diagnostic_quantities_for_turbulence = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=calculate_diagnostic_quantities_for_turbulence,
             constant_args={
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
@@ -474,7 +475,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.apply_diffusion_to_vn = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=apply_diffusion_to_vn,
             constant_args={
                 "primal_normal_vert_v1": self._edge_params.primal_normal_vert[0],
@@ -496,7 +497,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
             constant_args={
                 "geofac_n2s": self._interpolation_state.geofac_n2s,
@@ -524,7 +525,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
             constant_args={
                 "theta_ref_mc": self._metric_state.theta_ref_mc,
@@ -542,7 +543,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.apply_diffusion_to_theta_and_exner = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=apply_diffusion_to_theta_and_exner,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
@@ -567,19 +568,19 @@ class Diffusion:
             },
             offset_provider=self._grid.connectivities,
         )
-        self.copy_field = setup_program(backend=self._backend, program=copy_field)
-        self.scale_k = setup_program(backend=self._backend, program=scale_k)
+        self.copy_field = setup_program(backend=backend, program=copy_field)
+        self.scale_k = setup_program(backend=backend, program=scale_k)
         self.setup_fields_for_initial_step = setup_program(
-            backend=self._backend, program=setup_fields_for_initial_step
+            backend=backend, program=setup_fields_for_initial_step
         )
 
         self.init_diffusion_local_fields_for_regular_timestep = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=init_diffusion_local_fields_for_regular_timestep,
             offset_provider={"Koff": dims.KDim},
         )
 
-        self._allocate_temporary_fields()
+        self._allocate_local_fields(model_backends.get_allocator(backend))
 
         self.init_diffusion_local_fields_for_regular_timestep(
             params.K4,
@@ -594,7 +595,7 @@ class Diffusion:
         )
 
         setup_program(
-            backend=self._backend,
+            backend=backend,
             program=diffusion_utils.init_nabla2_factor_in_upper_damping_zone,
             constant_args={
                 "physical_heights": self._vertical_grid.interface_physical_height,
@@ -615,42 +616,42 @@ class Diffusion:
         #   but this requires some changes in gt4py domain inference.
         self.compile_time_connectivities = self._grid.connectivities
 
-    def _allocate_temporary_fields(self):
-        self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
-        self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
-        self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
-        self.enh_smag_fac = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
+        self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
+        self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
+        self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
+        self.enh_smag_fac = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.u_vert = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, backend=self._backend
+            self._grid, dims.VertexDim, dims.KDim, allocator=allocator
         )
         self.v_vert = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, backend=self._backend
+            self._grid, dims.VertexDim, dims.KDim, allocator=allocator
         )
         self.kh_smag_e = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
         self.kh_smag_ec = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
         self.z_nabla2_e = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
-        self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         # TODO(halungge): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         )
         self.horizontal_cell_index = data_alloc.index_field(
-            self._grid, dims.CellDim, backend=self._backend
+            self._grid, dims.CellDim, allocator=allocator
         )
         self.horizontal_edge_index = data_alloc.index_field(
-            self._grid, dims.EdgeDim, backend=self._backend
+            self._grid, dims.EdgeDim, allocator=allocator
         )
         self.w_tmp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         )
         self.theta_v_tmp = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
 
     def _determine_horizontal_domains(self):
@@ -705,8 +706,8 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
-        smag_limit = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=self._allocator)
+        smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=self._allocator)
 
         self.setup_fields_for_initial_step(
             self._params.K4,
@@ -928,7 +929,7 @@ class Diffusion:
     def orchestration_uid(self) -> str:
         """Unique id based on the runtime state of the Diffusion object. It is used for caching in DaCe Orchestration."""
         members_to_disregard = [
-            "_backend",
+            "_allocator",
             "_exchange",
             "_grid",
             "compile_time_connectivities",

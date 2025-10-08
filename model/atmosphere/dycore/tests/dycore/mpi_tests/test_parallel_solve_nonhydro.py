@@ -101,7 +101,7 @@ def test_run_solve_nonhydro_single_step(
         mass_flx_me=sp.mass_flx_me(),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=sp.mass_flx_ic(),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
         ),
     )
 

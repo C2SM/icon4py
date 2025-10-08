@@ -124,25 +124,25 @@ def test_graupel(
     qnc = entry_savepoint.qnc()
 
     temperature_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     qv_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     qc_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     qr_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     qi_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     qs_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
     qg_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
     )
 
     graupel_microphysics.run(
