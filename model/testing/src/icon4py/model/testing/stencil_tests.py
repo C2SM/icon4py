@@ -125,7 +125,6 @@ def test_and_benchmark(
             compute_samples = metrics_data[key]["compute"].samples
             # emprically exclude first few iterations as warmup
             initial_program_iterations_to_skip = 2
-            print(f"GT4Py compute time samples: {compute_samples}")
             # Exclude first sample unless running in benchmark_only mode
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:
