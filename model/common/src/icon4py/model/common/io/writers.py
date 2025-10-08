@@ -21,6 +21,7 @@ import icon4py.model.common.states.metadata
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils
+from icon4py.model.common.io.io import GlobalFileAttributes
 
 
 EDGE: Final[str] = "edge"
@@ -51,11 +52,11 @@ class NETCDFWriter:
 
     def __init__(
         self,
-        file_name: pathlib.Path,
+        file_name: pathlib.Path | str,
         vertical: v_grid.VerticalGrid,
         horizontal: base.HorizontalGridSize,
         time_properties: TimeProperties,
-        global_attrs: dict,
+        global_attrs: GlobalFileAttributes,
         process_properties: decomposition.ProcessProperties = processor_properties,
     ):
         self._file_name = str(file_name)
@@ -66,7 +67,8 @@ class NETCDFWriter:
         self.attrs = global_attrs
         self.dataset = None
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> str:
+        assert self.dataset is not None
         return self.dataset.getncattr(item)
 
     @functools.cached_property
@@ -78,7 +80,7 @@ class NETCDFWriter:
         return self._vertical_params.interface_physical_height.ndarray.shape[0]
 
     def initialize_dataset(self) -> None:
-        self.dataset = nc.Dataset(
+        self.dataset = nc.Dataset(  # type: ignore [assignment] # dataset is reassigned here
             self._file_name,
             "w",
             format="NETCDF4",
@@ -86,6 +88,7 @@ class NETCDFWriter:
             parallel=self._process_properties.comm_size > 1,
             comm=self._process_properties.comm,
         )
+        assert self.dataset is not None
         log.info(f"Creating file {self._file_name} at {self.dataset.filepath()}")
         self.dataset.setncatts({k: str(v) for (k, v) in self.attrs.items()})
         ## create dimensions all except time are fixed
@@ -144,6 +147,7 @@ class NETCDFWriter:
         Returns:
 
         """
+        assert self.dataset is not None
         time = self.dataset[TIME]
         time_pos = len(time)
         time[time_pos] = cf_utils.date2num(model_time, units=time.units, calendar=time.calendar)
@@ -166,6 +170,7 @@ class NETCDFWriter:
                 new_var.location = canonical_new_slice.location
 
             else:
+                assert ds_var is not None
                 actual_var_name = ds_var.get(var_name).name
                 dims = ds_var.get(actual_var_name).dimensions
                 shape = ds_var.get(actual_var_name).shape
@@ -181,18 +186,22 @@ class NETCDFWriter:
                     slice(shape[cf_utils.COARDS_T_POS] - 1, shape[cf_utils.COARDS_T_POS]),
                 )
                 slices = expand_slice + right
+                assert self.dataset is not None
                 self.dataset.variables[actual_var_name][slices] = canonical_new_slice.data
 
     def close(self) -> None:
+        assert self.dataset is not None
         if self.dataset.isopen():
             self.dataset.close()
 
     @property
     def dims(self) -> dict:
+        assert self.dataset is not None
         return self.dataset.dimensions
 
     @property
     def variables(self) -> dict:
+        assert self.dataset is not None
         return self.dataset.variables
 
 
