@@ -186,7 +186,6 @@ class NETCDFWriter:
                     slice(shape[cf_utils.COARDS_T_POS] - 1, shape[cf_utils.COARDS_T_POS]),
                 )
                 slices = expand_slice + right
-                assert self.dataset is not None
                 self.dataset.variables[actual_var_name][slices] = canonical_new_slice.data
 
     def close(self) -> None:
