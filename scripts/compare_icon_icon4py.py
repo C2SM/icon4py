@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# ruff: noqa: ERA001
 
 from __future__ import annotations
 
@@ -62,18 +63,20 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
             "at_first_substep": True,
         },
     ),
-    "compute_contravariant_correction_and_advection_in_vertical_momentum_equation": (
-        "compute_contravariant_correction_and_advection_in_vertical_momentum_equation",
-        {
-            "skip_compute_predictor_vertical_advection": False,
-        },
-    ),
-    "compute_contravariant_correction_and_advection_in_vertical_momentum_equation_ski": (
-        "compute_contravariant_correction_and_advection_in_vertical_momentum_equation",
-        {
-            "skip_compute_predictor_vertical_advection": True,
-        },
-    ),
+    # TODO(edopao): the static variants for 'skip_compute_predictor_vertical_advection' are disabled
+    #   Check https://github.com/C2SM/icon4py/pull/898
+    # "compute_contravariant_correction_and_advection_in_vertical_momentum_equation": (
+    #     "compute_contravariant_correction_and_advection_in_vertical_momentum_equation",
+    #     {
+    #         "skip_compute_predictor_vertical_advection": False,
+    #     },
+    # ),
+    # "compute_contravariant_correction_and_advection_in_vertical_momentum_equation_ski": (
+    #     "compute_contravariant_correction_and_advection_in_vertical_momentum_equation",
+    #     {
+    #         "skip_compute_predictor_vertical_advection": True,
+    #     },
+    # ),
     "compute_derived_horizontal_winds_and_ke_and_contravariant_correction": (
         "compute_derived_horizontal_winds_and_ke_and_contravariant_correction",
         {"skip_compute_predictor_vertical_advection": False},
