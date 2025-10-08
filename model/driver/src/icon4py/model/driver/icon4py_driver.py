@@ -8,11 +8,11 @@
 
 import datetime
 import logging
+import os
 import pathlib
 from collections.abc import Callable
 from typing import NamedTuple
 
-import os
 import click
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -24,7 +24,7 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.io import restart, plots
+from icon4py.model.common.io import plots, restart
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -138,7 +138,7 @@ class TimeLoop:
 
         #---> Restart
         start_time_step_number = 0
-        restart_time_step_number = self._restart.restore_from_restart(prognostic_states, solve_nonhydro_diagnostic_state, self.solve_nonhydro._backend)
+        restart_time_step_number = self._restart.restore_from_restart(prognostic_states, solve_nonhydro_diagnostic_state, self.run_config.backend)
         if restart_time_step_number is not None:
             start_time_step_number = restart_time_step_number + 1
             self._is_first_step_in_simulation = False

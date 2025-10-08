@@ -497,7 +497,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.ibm_diffu_set_bcs_uv_vertices = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=diffu_set_bcs_uv_vertices,
             constant_args={
                 "mask": self._ibm_masks.full_vertex_mask,
@@ -510,7 +510,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.ibm_diffu_reset_w = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=diffu_reset_w,
             constant_args={
                 "mask": self._ibm_masks.half_cell_mask,
@@ -523,7 +523,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.apply_vertical_diffusion_to_vn = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=apply_vertical_diffusion_to_vn,
             constant_args={
                 "multfac": self.zdiffu_wind_multfac,
@@ -538,7 +538,7 @@ class Diffusion:
             offset_provider=self._grid.connectivities,
         )
         self.apply_vertical_diffusion_to_w = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=apply_vertical_diffusion_to_w,
             constant_args={
                 "multfac": self.zdiffu_wind_multfac,

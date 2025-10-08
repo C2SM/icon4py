@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
+import os
 
 import gt4py.next as gtx
 import xarray as xr
@@ -28,7 +29,7 @@ from icon4py.model.testing import serialbox as sb
 
 log = logging.getLogger(__name__)
 
-RANDOM_PERTURBATION_MAGNITUDE = 0.001  # perturbation magnitude for vn profile
+RANDOM_PERTURBATION_MAGNITUDE = float(os.environ.get("ICON4PY_CHANNEL_PERTURBATION", "0.001"))  # perturbation magnitude for vn profile
 
 
 @gtx.field_operator
