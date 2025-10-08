@@ -106,7 +106,7 @@ def test_and_benchmark(
             print("[WARNING] Benchmark warmup enabled, GT4Py timers include warmup iterations.")
         # Clean up GT4Py metrics from previous runs
         if gtx_config.COLLECT_METRICS_LEVEL > 0:
-            gtx_metrics.program_metrics.clear()
+            gtx_metrics.sources.clear()
 
         benchmark(
             _configured_program,
@@ -117,12 +117,12 @@ def test_and_benchmark(
         # Collect GT4Py runtime metrics if enabled
         if gtx_config.COLLECT_METRICS_LEVEL > 0:
             assert (
-                len(gtx_metrics.program_metrics.data.keys()) == 1
-            ), "Expected exactly one entry in gtx_metrics"
+                len(gtx_metrics.sources) == 1
+            ), "Expected exactly one entry in gtx_metrics.sources"
             # Store GT4Py metrics in benchmark.extra_info
-            metrics_data = gtx_metrics.program_metrics.data
+            metrics_data = gtx_metrics.sources
             key = next(iter(metrics_data))
-            compute_samples = metrics_data[key]["compute"].samples
+            compute_samples = metrics_data[key].metrics["compute"].samples
             # emprically exclude first few iterations as warmup
             initial_program_iterations_to_skip = 2
             # Exclude first sample unless running in benchmark_only mode
