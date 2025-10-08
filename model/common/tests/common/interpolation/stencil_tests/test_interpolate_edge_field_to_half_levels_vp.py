@@ -7,23 +7,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 import icon4py.model.testing.stencil_tests as test_helpers
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.interpolation.stencils.interpolate_edge_field_to_half_levels_vp import (
     interpolate_edge_field_to_half_levels_vp,
 )
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as base_grid
 
 
 def interpolate_edge_field_to_half_levels_vp_numpy(

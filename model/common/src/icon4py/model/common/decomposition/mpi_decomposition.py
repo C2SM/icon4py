@@ -19,7 +19,7 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import ProcessProperties, SingleNodeExchange
+from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -76,7 +76,7 @@ def finalize_mpi() -> None:
         MPI.Finalize()
 
 
-def _get_processor_properties(with_mpi: bool = False, comm_id: CommId = None) -> ProcessProperties:
+def _get_processor_properties(with_mpi: bool = False, comm_id: CommId = None) -> Any:
     def _get_current_comm_or_comm_world(comm_id: CommId) -> mpi4py.MPI.Comm:
         if isinstance(comm_id, int):
             comm = mpi4py.MPI.Comm.f2py(comm_id)
@@ -186,7 +186,7 @@ class GHexMultiNodeExchange:
         )
         return domain_desc
 
-    def _create_pattern(self, horizontal_dim: gtx.Dimension):
+    def _create_pattern(self, horizontal_dim: gtx.Dimension) -> DomainDescriptor:
         assert horizontal_dim.kind == gtx.DimensionKind.HORIZONTAL
 
         global_halo_idx = self._decomposition_info.global_index(
