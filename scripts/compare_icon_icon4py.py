@@ -32,10 +32,13 @@ output_filename = "bench_blueline_stencil_compute"
 file_prefix = pathlib.Path(__file__).parent
 openacc_input = file_prefix / "bencher=exp.mch_icon-ch1_medium_stencils=0.373574=ACC.json"
 gt4py_input = {
-    "gtfn_gpu": file_prefix / "gt4py_gtfn_timers_202051008_G-89541209_I-dda0d1872.json",
-    "dace_gpu": file_prefix / "gt4py_dace_timers_202051008_G-89541209_I-dda0d1872.json",
+    "gtfn_gpu": file_prefix / "gt4py_gtfn_timers_20251008_G-89541209_I-dda0d1872.json",
+    "dace_gpu": file_prefix / "gt4py_dace_timers_20251008_G-89541209_I-dda0d1872.json",
 }
 gt4py_metrics = ["compute"]  # here we can add other metrics, e.g. 'total'
+gt4py_unmatched_ncalls_threshold = (
+    2  # ignore unmatched icon4py stencils if less than this threshold
+)
 
 # Mapping from fortran stencil to gt4py stencil variants. The mapped value contains,
 # besides the gt4py stencil name, a dictionary of static arguments that should be
@@ -160,7 +163,7 @@ def load_openacc_log(filename: pathlib.Path) -> dict:
     return data, count
 
 
-def load_gt4py_timers(filename: pathlib.Path, metric: str) -> dict:
+def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
     log.info(f"Loading icon4py data from {filename}")
     with filename.open("r") as f:
         j = json.load(f)
@@ -169,6 +172,7 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> dict:
     re_stencil = re.compile("(\S+)\[.+\]")
 
     data = {}
+    unmatched_data = {}
     for k, v in j.items():
         # remove the backend form the stencil name
         m = re_stencil.match(k)
@@ -178,65 +182,95 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> dict:
         assert stencil == stencil_metadata["name"]
         if metric not in v["metrics"]:
             log.debug(f"no meas for icon4py stencil {stencil_metadata}")
-        elif stencil in icon4py_stencils:
-            fortran_names = [
-                k
-                for k, desc in icon4py_stencils[stencil]
-                # all static args specified in the fortran stencil variant must match
-                if desc.items() <= stencil_metadata["static_args"].items()
-            ]
-            if len(fortran_names) != 1:
-                raise ValueError(f"Could not find a match for icon4py stencil {stencil_metadata}")
-            fortran_name = fortran_names[0]
-            if fortran_name in data:
-                raise ValueError(f"Double entry for fortran stencil {fortran_name}.")
-
+        else:
             metric_data = v["metrics"][metric]
             # we replace the first measurement with the median value
             metric_data[0] = np.median(metric_data)
-            data[fortran_name] = metric_data
-        else:
-            log.warning(f"skipping icon4py meas for {stencil}")
+
+            if stencil in icon4py_stencils:
+                fortran_names = [
+                    k
+                    for k, desc in icon4py_stencils[stencil]
+                    # all static args specified in the fortran stencil variant must match
+                    if desc.items() <= stencil_metadata["static_args"].items()
+                ]
+                if len(fortran_names) != 1:
+                    raise ValueError(
+                        f"Could not find a match for icon4py stencil {stencil_metadata}"
+                    )
+                fortran_name = fortran_names[0]
+                if fortran_name in data:
+                    raise ValueError(f"Double entry for fortran stencil {fortran_name}.")
+                data[fortran_name] = metric_data
+            else:
+                log.warning(f"Unmatched icon4py meas for {stencil}")
+                if stencil in unmatched_data:
+                    raise NotImplementedError("Cannot handle stencil variant in unmatched data.")
+                if len(metric_data) >= gt4py_unmatched_ncalls_threshold:
+                    unmatched_data[stencil] = metric_data
 
     diff = set(fortran_to_icon4py.keys()) - set(data.keys())
     if len(diff) != 0:
         raise ValueError(f"Missing icon4py meas for these stencils: {diff}.")
 
-    return data
+    return data, unmatched_data
 
 
 openacc_meas, openacc_count = load_openacc_log(openacc_input)
 
 # Sort stencil names in descendent order of openacc total time.
-stencil_names = [v[0] for v in sorted(openacc_meas.items(), key=lambda x: x[1], reverse=True)]
+stencil_names: list[str] = [
+    v[0] for v in sorted(openacc_meas.items(), key=lambda x: x[1], reverse=True)
+]
+
+# Sort unmatched stencils in alphabetical order
+unmatched_stencil_names: list[str] | None = None
 
 backends: list[str] = [openacc_backend]
 data: dict[str, list[float]] = {
     openacc_backend: [openacc_meas[stencil] for stencil in stencil_names]
 }
+unmatched_data: dict[str, list[float]] = {}
 for backend, filename in gt4py_input.items():
     for metric in gt4py_metrics:
         # create a unique name for the combination of backend and metric
-        name = f"{backend}_{metric}" if len(gt4py_metrics) > 1 else backend
-        backends.append(name)
-        gt4py_meas = load_gt4py_timers(filename, metric)
+        label = f"{backend}_{metric}" if len(gt4py_metrics) > 1 else backend
+        backends.append(label)
+        gt4py_meas, unmatched_gt4py_meas = load_gt4py_timers(filename, metric)
+
         values = []
         for stencil in stencil_names:
             tvalues = gt4py_meas[stencil]
             if len(tvalues) != openacc_count[stencil]:
                 log.error(
-                    f"Mismatch number of calls on {stencil} {openacc_backend}={openacc_count[stencil]} {name}={len(tvalues)}."
+                    f"Mismatch number of calls on {stencil} {openacc_backend}={openacc_count[stencil]} {label}={len(tvalues)}."
                 )
             values.append(np.sum(tvalues))
-        data[name] = values
+        data[label] = values
+
+        # handle stencils that do not have a correspondant fortran stencil
+        if unmatched_stencil_names is None:
+            unmatched_stencil_names = sorted(list(unmatched_gt4py_meas.keys()))
+        elif len(unmatched_stencil_names) != len(unmatched_gt4py_meas):
+            raise ValueError("List of unmatched stencils with different length.")
+        unmatched_data[label] = [
+            np.sum(unmatched_gt4py_meas[stencil]) for stencil in unmatched_stencil_names
+        ]
 
 
 # Combine all bar plots in a single plot
-fig, ax = plt.subplots(figsize=(20, 12))
+fig, ax = plt.subplots(figsize=(22, 24))
 fig.subplots_adjust(left=0.3, right=0.98)
 bar_width = 0.5
 spacing = 1.0  # Additional spacing between stencil names
+gap = spacing * 4
 index = np.arange(len(stencil_names)) * (bar_width * len(backends) + spacing)
+extended_index = (
+    np.arange(len(unmatched_stencil_names)) * (bar_width * (len(backends) - 1) + spacing)
+    + index[-1]
+    + bar_width
+    + gap
+)
 
 # Define base RGB colors for different backends
 base_colors = [
@@ -254,13 +288,14 @@ for i, backend in enumerate(backends):
     color = base_colors[i]
     values = data[backend]
     ax.barh(index + i * bar_width, values, bar_width, label=backend, color=color)
-    if i > 0:  # Only annotate bars for gt4py backends
+    if i > 0:
+        # Only annotate bars for gt4py backends
         ratios = [
             val / openacc_meas[stencil] for stencil, val in zip(stencil_names, values, strict=True)
         ]
         for k, (val, ratio) in enumerate(zip(values, ratios)):
             ax.text(
-                val + 0.05,  # Position slightly above the bar
+                val + 0.02,  # Position slightly above the bar
                 index[k] + (i - 0.5) * bar_width,
                 f"{ratio:.2f}",
                 ha="center",
@@ -268,12 +303,30 @@ for i, backend in enumerate(backends):
                 fontsize=8,
                 rotation=0,
             )
+        # Plot also unmatched icon4py stencils
+        ax.barh(
+            extended_index + (i - 1) * bar_width,
+            unmatched_data[backend],
+            bar_width,
+            color=color,
+        )
 
 ax.set_title(f"Backend comparison on {experiment} ({target})")
 ax.set_xlabel("Total compute time [s]")
 ax.set_ylabel(f"Stencil name (speedup w.r.t. {openacc_backend} next to the bars)")
-ax.set_yticks(index + (len(backends) * bar_width) / 2 - bar_width / 2)
-ax.set_yticklabels(stencil_names, rotation=0)
+ax.set_yticks(
+    np.concatenate(
+        [
+            index + (bar_width * len(backends)) / 2,
+            extended_index + (bar_width * (len(backends) - 1)) / 2,
+        ]
+    )
+    - bar_width / 2
+)
+ax.set_yticklabels(stencil_names + unmatched_stencil_names, rotation=0)
+
+# Add a horizontal line to separate unmatched stencils
+ax.axhline(y=(extended_index[0] - gap / 2), color="red", linestyle="--", linewidth=1.5)
 
 ax.legend(loc="upper right")
 
