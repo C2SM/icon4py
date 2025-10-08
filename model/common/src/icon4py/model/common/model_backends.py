@@ -92,8 +92,8 @@ try:
             A dace backend with custom configuration for the target device.
         """
         on_gpu = device == GPU
-        if blocking_dim is not None and blocking_size is None:
-            raise ValueError("Specified `blocking_dim` but not `blocking_size`.")
+        if (blocking_dim is None) ^ (blocking_size is None):
+            raise ValueError("Undefined behavior for `blocking_dim`={blocking_dim} `blocking_size`={blocking_size}.")
 
         return make_dace_backend(
             auto_optimize=auto_optimize,
