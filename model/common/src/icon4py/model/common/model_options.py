@@ -7,7 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
-import typing
+from collections.abc import Callable
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -18,57 +19,54 @@ from icon4py.model.common import model_backends
 log = logging.getLogger(__name__)
 
 
-def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
+def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
-gtfn_programs = {
-    "mo_intp_rbf_rbf_vec_interpol_vertex",
-    "calculate_diagnostic_quantities_for_turbulence",
-    "apply_diffusion_to_vn",
-    "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence",
-    "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools",
-    "apply_diffusion_to_theta_and_exner",
-    "compute_advection_in_horizontal_momentum_equation",
-    "compute_rayleigh_damping_factor",
-    "compute_perturbed_quantities_and_interpolation",
-    "compute_hydrostatic_correction_term",
-    "vertically_implicit_solver_at_predictor_step",
-    "stencils_61_62",
-    "compute_dwdz_for_divergence_damping",
-    "calculate_divdamp_fields",
-    "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection",
-    "vertically_implicit_solver_at_corrector_step",
-    "init_cell_kdim_field_with_zero_wp",
-    "update_mass_flux_weighted",
-    "compute_theta_and_exner",
-    "compute_exner_from_rhotheta",
-}
-
-
-def get_options(
-    program_name: str, **backend_description: typing.Any
+def get_dace_options(
+    program_name: str, **backend_descriptor: Any
 ) -> model_backends.BackendDescriptor:
-    if program_name in gtfn_programs:
-        backend_description["backend_factory"] = model_backends.make_custom_gtfn_backend
-    if program_name == "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn":
-        backend_description["backend_factory"] = model_backends.make_custom_gtfn_backend
-        backend_description["fuse_all_fieldops"] = True
-    return backend_description
+    return backend_descriptor
+
+
+def get_gtfn_options(
+    program_name: str, **backend_descriptor: Any
+) -> model_backends.BackendDescriptor:
+    return backend_descriptor
+
+
+def get_options(program_name: str, **backend_descriptor: Any) -> model_backends.BackendDescriptor:
+    if "backend_factory" not in backend_descriptor:
+        # here we could set a backend_factory per program
+        backend_descriptor["backend_factory"] = model_backends.make_custom_dace_backend
+    if backend_descriptor["backend_factory"] == model_backends.make_custom_dace_backend:
+        backend_descriptor = get_dace_options(program_name, **backend_descriptor)
+    if backend_descriptor["backend_factory"] == model_backends.make_custom_gtfn_backend:
+        backend_descriptor = get_gtfn_options(program_name, **backend_descriptor)
+
+    return backend_descriptor
 
 
 def customize_backend(
     program_name: str,
     backend: model_backends.DeviceType | model_backends.BackendDescriptor,
 ) -> gtx_typing.Backend:
-    if isinstance(backend, model_backends.DeviceType):
-        backend = {"device": backend}
-    backend = get_options(program_name, **backend)
-    backend_factory = backend.pop("backend_factory", model_backends.make_custom_dace_backend)
-    backend["device"] = backend.get("device", model_backends.DeviceType.CPU)  # set default device
-    custom_backend = backend_factory(**backend)
+    backend_descriptor = (
+        {"device": backend} if isinstance(backend, model_backends.DeviceType) else backend
+    )
+
+    backend_descriptor = get_options(program_name, **backend_descriptor)
+    backend_descriptor["device"] = backend_descriptor.get(
+        "device", model_backends.DeviceType.CPU
+    )  # set default device
+    backend_factory = backend_descriptor.pop(
+        "backend_factory", model_backends.make_custom_dace_backend
+    )
+    custom_backend = backend_factory(**backend_descriptor)
     backend_name = custom_backend.name if custom_backend is not None else "embedded"
-    log.info(f"Using custom backend '{backend_name}' for '{program_name}' with options: {backend}.")
+    log.info(
+        f"Using custom backend '{backend_name}' for '{program_name}' with options: {backend_descriptor}."
+    )
     return custom_backend
 
 
@@ -83,7 +81,7 @@ def setup_program(
     horizontal_sizes: dict[str, gtx.int32] | None = None,
     vertical_sizes: dict[str, gtx.int32] | None = None,
     offset_provider: gtx_typing.OffsetProvider | None = None,
-) -> typing.Callable[..., None]:
+) -> Callable[..., None]:
     """
     This function processes arguments to the GT4Py program. It
     - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', "vertical_sizes');
