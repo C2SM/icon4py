@@ -25,8 +25,8 @@ output_filename = "bench_blueline_stencil_compute"
 file_prefix = pathlib.Path(__file__).parent
 openacc_input = file_prefix / "bencher=exp.mch_icon-ch1_medium_stencils=0.373574=ACC.json"
 gt4py_input = {
-    "gtfn_gpu": file_prefix / "gt4py_gtfn_timers_202051007.json",
-    "dace_gpu": file_prefix / "gt4py_dace_timers_202051007.json",
+    "gtfn_gpu": file_prefix / "gt4py_gtfn_timers_202051008_G-89541209_I-dda0d1872.json",
+    "dace_gpu": file_prefix / "gt4py_dace_timers_202051008_G-89541209_I-dda0d1872.json",
 }
 gt4py_metrics = ["compute"]  # here we can add other metrics, e.g. 'total'
 
