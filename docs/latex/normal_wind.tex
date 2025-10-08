@@ -1,0 +1,92 @@
+%=======================================================================================================================
+\clearpage
+\subsection{Normal wind}
+\label{sub:normal_wind}
+%=======================================================================================================================
+
+
+%-------------------------------------------------------------------------------
+\paragraph{Advection}\
+
+wind and kinetic energy
+\begin{align}
+  &\vt{\n}{\e}{\k} = \sum_{\offProv{e2c2e}} \Wrbf \vn{\n}{\e}{\k} \\
+  &\kinehori{\n}{\e}{\k} = \frac{1}{2} \left( \vn{\n}{\e}{\k}^2 + \vt{\n}{\e}{\k}^2 \right) \\
+  &\kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k} \\
+  &\vn{\n}{\e}{\k-1/2} = \Wlev \vn{\n}{\e}{\k} + (1 - \Wlev) \vn{\n}{\e}{\k-1} \\
+\end{align}
+
+vorticity
+\begin{equation}
+  \vortvert{\n}{\v}{\k} = \sum_{\offProv{v2e}} \Crot \vn{\n}{\e}{\k}
+\end{equation}
+
+contravariant-corrected vertical wind
+\begin{align}
+  &\wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z} \\
+  &\wcc{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \wcc{\n}{\e}{\k} \\
+  &\wcc{\n}{\c}{\k-1/2} = \Wlev \wcc{\n}{\c}{\k} + (1 - \Wlev) \wcc{\n}{\c}{\k-1} \\
+  &(\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}) =
+    \begin{cases}
+      \w{\n}{\c}{\k-1/2},                        & \k \in [0, \nflatlev+1)     \\
+      \w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}, & \k \in [\nflatlev+1, \nlev) \\
+      0,                                         & \k = \nlev
+    \end{cases}\\
+  &(\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k}) = \frac{1}{2} \left[(\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2})
+                                                         + (\w{\n}{\c}{\k+1/2} - \wcc{\n}{\c}{\k+1/2})\right] \\
+\end{align}
+
+sum all contributions
+\begin{equation}
+  \begin{split}
+      \advvn{\n}{\e}{\k} & = \pdxn{\kinehori{}{}{}} + \vt{}{}{} (\vortvert{}{}{} + \coriolis{}) + \pdz{\vn{}{}{}} (\w{}{}{} - \wcc{}{}{}) \\
+                         & = \Gradn_{\offProv{e2c}} \Cgrad \kinehori{\n}{c}{\k} + \kinehori{\n}{\e}{\k} \Gradn_{\offProv{e2c}} \Cgrad     \\
+                         & + \vt{\n}{\e}{\k} (\coriolis{\e} + 1/2 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k})                             \\
+                         & + \frac{\vn{\n}{\e}{\k-1/2} - \vn{\n}{\e}{\k+1/2}}{\Dz{k}}
+      \sum_{\offProv{e2c}} \Whor (\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k})
+  \end{split}
+\end{equation}
+
+%-------------------------------------------------------------------------------
+\paragraph{Exner}
+
+\begin{align}
+  &\exnerprime{\ntilde}{\c}{\k} = (1 + \WtimeExner) \exnerprime{\n}{\c}{\k} - \WtimeExner \exnerprime{\n-1}{\c}{\k} \\
+  &\exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad \k \in [\max(1,\nflatlev), \nlev) \\
+  &\exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
+\end{align}
+
+horizontal gradient (at constant height) of $\exnerprime{}{}{}$ on flat and non-flat levels
+\begin{align}
+  &\exnerprimegradh{\ntilde}{\e}{\k} = \Cgrad \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}, \quad \k \in [0, \nflatlev) \\
+  &\begin{aligned}
+    &\exnerprimegradh{\ntilde}{\e}{\k} &&= \left.\pdxn{\exnerprime{}{}{}}\right|_{s} - \left.\pdxn{h}\right|_{s}\exnerprimedz{}{}{}, \quad \k \in [\nflatlev, \nflatgradp]\\
+    &                                  &&= \Wedge \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}
+                                         - \pdxn{h} \sum_{\offProv{e2c}} \Whor \exnerprimedz{\ntilde}{\c}{\k}
+  \end{aligned} \\
+  &\begin{aligned}
+    &\exnerprimegradh{\ntilde}{\e}{\k} &&= \Wedge (\exnerprime{*}{\c_1}{} - \exnerprime{*}{\c_0}{}), \quad \k \in [\nflatgradp+1, \nlev) \\
+    &                                  &&= \Wedge \Gradn_{\offProv{e2c}} \left[ \exnerprime{\ntilde}{\c}{\k^*} + \dzgradp \left( \exnerprimedz{\ntilde}{\c}{\k^*} + \dzgradp \exnerprimedzz{\ntilde}{\c}{\k^*} \right) \right]
+  \end{aligned}
+\end{align}
+
+Hydrostatic correction term to $\exnerprimegradh{}{}{}$.
+% This is only applied to edges for which the adjacent cell center (horizontally, not terrain-following) would be underground, i.e. edges in the $\IDXpg$ set.
+% $\c_i$ are the indexes of the adjacent cell centers using $\offProv{e2c}$; $k^*$ is the level index of the neighboring (horizontally, not terrain-following) cell center and $h^*$ is its height.
+\begin{align}
+  &\vpotemp{}{\c_i}{\k} = \vpotemp{}{\c_i}{\k^*} + \dzgradp \frac{\vpotemp{}{\c_i}{\k^*-1/2} - \vpotemp{}{\c_i}{\k^*+1/2}}{\Dz{\k^*}} \\
+  &\exnhydrocorr{\e} = \frac{g}{\cpd} \Wedge 4 \frac{ \vpotemp{}{\c_1}{\k} - \vpotemp{}{\c_0}{\k} }{ (\vpotemp{}{\c_1}{\k} + \vpotemp{}{\c_0}{\k})^2 } \\
+  &\exnerprimegradh{\ntilde}{\e}{\k} = \exnerprimegradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), \quad \e \in \IDXpg
+\end{align}
+
+%-------------------------------------------------------------------------------
+\paragraph{Miura scheme}\
+
+$\vpotemp{\n}{\e}{\k}$ is computed with the Miura scheme \S\ref{sub:miura}
+
+%-------------------------------------------------------------------------------
+\paragraph{Final update}
+
+\begin{equation}
+  \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \exnerprimegradh{\ntilde}{\e}{\k} \right)
+\end{equation}
