@@ -32,8 +32,8 @@ from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_th
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_kdim_field_with_zero_wp,
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
+    _init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
     _init_two_cell_kdim_fields_with_zero_vp,
@@ -175,14 +175,11 @@ def _compute_perturbed_quantities_and_interpolation(
 
 @gtx.field_operator
 def _surface_computations(
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     wgtfacq_c: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     igradp_method: gtx.int32,
-) -> tuple[
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-]:
-    temporal_extrapolation_of_perturbed_exner = _init_cell_kdim_field_with_zero_wp()
+) -> fa.CellKField[ta.vpfloat]:
 
     exner_at_cells_on_half_levels = (
         _interpolate_to_surface(
@@ -192,10 +189,7 @@ def _surface_computations(
         else exner_at_cells_on_half_levels
     )
 
-    return (
-        temporal_extrapolation_of_perturbed_exner,
-        exner_at_cells_on_half_levels,
-    )
+    return exner_at_cells_on_half_levels
 
 
 @gtx.field_operator
@@ -252,28 +246,15 @@ def _compute_first_and_second_vertical_derivative_of_exner(
 
 
 @gtx.field_operator
-def _set_theta_v_and_exner_on_surface_level(
-    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
-    wgtfacq_c: fa.CellKField[vpfloat],
-    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
+def _set_theta_v_on_surface_level(
     reference_theta_at_cells_on_half_levels: fa.CellKField[vpfloat],
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat], fa.CellKField[vpfloat]]:
-    perturbed_theta_v_at_cells_on_half_levels = _interpolate_to_surface(
-        wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
-    )
+    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    ) -> fa.CellKField[wpfloat]:
     theta_v_at_cells_on_half_levels = (
         reference_theta_at_cells_on_half_levels + perturbed_theta_v_at_cells_on_half_levels
     )
 
-    exner_at_cells_on_half_levels = _interpolate_to_surface(
-        wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
-    )
-
-    return (
-        perturbed_theta_v_at_cells_on_half_levels,
-        astype(theta_v_at_cells_on_half_levels, wpfloat),
-        exner_at_cells_on_half_levels,
-    )
+    return astype(theta_v_at_cells_on_half_levels, wpfloat)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -374,11 +355,22 @@ def compute_perturbed_quantities_and_interpolation(
         - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level
         - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
+
+    # Init perturbed quantities to zero on lateral boundary
     _init_two_cell_kdim_fields_with_zero_vp(
         out=(perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
         domain={
             dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
             dims.KDim: (model_top, surface_level - 1),
+        },
+    )
+
+    # Compute temporal extrapolation of perturbed exner, needs to be output for future program
+    _init_cell_kdim_field_with_zero_vp(
+        out=temporal_extrapolation_of_perturbed_exner,
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
+            dims.KDim: (surface_level - 1, surface_level),
         },
     )
 
@@ -395,13 +387,11 @@ def compute_perturbed_quantities_and_interpolation(
     )
 
     _surface_computations(
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         wgtfacq_c=wgtfacq_c,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         igradp_method=igradp_method,
-        out=(
-            temporal_extrapolation_of_perturbed_exner,
-            exner_at_cells_on_half_levels,
-        ),
+        out= exner_at_cells_on_half_levels,
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
             dims.KDim: (surface_level - 1, surface_level),
@@ -441,16 +431,10 @@ def compute_perturbed_quantities_and_interpolation(
         },
     )
 
-    _set_theta_v_and_exner_on_surface_level(
-        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+    _interpolate_to_surface(
         wgtfacq_c=wgtfacq_c,
-        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
-        reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
-        out=(
-            perturbed_theta_v_at_cells_on_half_levels,
-            theta_v_at_cells_on_half_levels,
-            exner_at_cells_on_half_levels,
-        ),
+        interpolant=perturbed_theta_v_at_cells_on_model_levels,
+        out = perturbed_theta_v_at_cells_on_half_levels,
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
             dims.KDim: (surface_level - 1, surface_level),
@@ -479,6 +463,17 @@ def compute_perturbed_quantities_and_interpolation(
         },
     )
 
+    _set_theta_v_on_surface_level(
+        reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
+        perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
+        out= theta_v_at_cells_on_half_levels,
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+            dims.KDim: (surface_level - 1, surface_level),
+        },
+    )
+
+    # Init perturbed quantities to zero on 2nd halo layer
     _compute_perturbation_of_rho_and_theta(
         rho=current_rho,
         rho_ref_mc=reference_rho_at_cells_on_model_levels,
