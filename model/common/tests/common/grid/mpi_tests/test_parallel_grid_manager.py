@@ -228,7 +228,6 @@ def gather_field(field: np.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
     return local_first_dim, gathered_field
 
 
-# TODO (halungge): deal with 2d fields
 def assert_gathered_field_against_global(
     decomposition_info: defs.DecompositionInfo,
     processor_props: defs.ProcessProperties,  # F811 # fixture
@@ -277,7 +276,7 @@ def assert_gathered_field_against_global(
 #    - geofac_n2s
 
 
-# TODO (halungge): fix non contiguous dimension for embedded
+# TODO (halungge): fix non contiguous dimension for embedded in gt4py
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_halo_neighbor_access_c2e(
@@ -373,7 +372,7 @@ def test_local_connectivities(
     processor_props: defs.ProcessProperties,
     caplog: Iterator,
     field_offset: gtx.FieldOffset,
-) -> None:  # fixture
+) -> None:
     caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
     grid = utils.run_grid_manager(
         test_defs.Grids.R02B04_GLOBAL, keep_skip_values=True, backend=None
