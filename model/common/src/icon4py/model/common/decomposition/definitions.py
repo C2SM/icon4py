@@ -330,7 +330,7 @@ class SingleNodeResult:
 
 
 class RunType:
-    """Base type for marker types used to initialize the parallel or single node properites."""
+    """Base type for marker types used to initialize the parallel or single node properties."""
 
     pass
 
