@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import contextlib
-import os
 import re
 
 import pytest
@@ -36,12 +35,6 @@ def pytest_configure(config):
         "level(name): marks test as unit or integration tests, mostly applicable where both are available",
     )
 
-    # Check if the --enable-mixed-precision / --enable-single-precision option is set and set the environment variable accordingly
-    if config.getoption("--enable-mixed-precision"):
-        os.environ["FLOAT_PRECISION"] = "mixed"
-    elif config.getoption("--enable-single-precision"):
-        os.environ["FLOAT_PRECISION"] = "single"
-
     # Handle datatest options: --datatest-only  and --datatest-skip
     if m_option := config.getoption("-m", []):
         m_option = [f"({m_option})"]  # add parenthesis around original k_option just in case
@@ -50,6 +43,16 @@ def pytest_configure(config):
 
     if config.getoption("--datatest-skip"):
         config.option.markexpr = " and ".join(["not datatest", *m_option])
+
+    # # Check if the --enable-mixed-precision / --enable-single-precision option is set and set the environment variable accordingly
+    # if config.getoption("--enable-mixed-precision"):
+    #     os.environ["FLOAT_PRECISION"] = "mixed"
+    # elif config.getoption("--enable-single-precision"):
+    #     os.environ["FLOAT_PRECISION"] = "single"
+
+    # TODO(pstark): These env vars are only set after the call chain e.g.
+    #              pytest test_velocity_advection.py >> data_allocation.py >> type_alias.py
+    #              ==>  THEY NEVER TAKE EFFECT!
 
 
 def pytest_addoption(parser: pytest.Parser):
@@ -85,21 +88,22 @@ def pytest_addoption(parser: pytest.Parser):
             help="Grid to use.",
         )
 
-    with contextlib.suppress(ValueError):
-        parser.addoption(
-            "--enable-mixed-precision",
-            action="store_true",
-            help="Switch unit tests from double to mixed-precision",
-            default=False,
-        )
+    # TODO(pstark): remove
+    # with contextlib.suppress(ValueError):
+    #     parser.addoption(
+    #         "--enable-mixed-precision",
+    #         action="store_true",
+    #         help="Switch unit tests from double to mixed-precision",
+    #         default=False,
+    #     )
 
-    with contextlib.suppress(ValueError):
-        parser.addoption(
-            "--enable-single-precision",
-            action="store_true",
-            help="Switch unit tests from double / mixed to single-precision",
-            default=False,
-        )
+    # with contextlib.suppress(ValueError):
+    #     parser.addoption(
+    #         "--enable-single-precision",
+    #         action="store_true",
+    #         help="Switch unit tests from double / mixed to single-precision",
+    #         default=False,
+    #     )
 
     with contextlib.suppress(ValueError):
         parser.addoption(
@@ -117,9 +121,9 @@ def pytest_collection_modifyitems(config, items):
         return
     for item in items:
         if (marker := item.get_closest_marker("level")) is not None:
-            assert all(
-                level in _TEST_LEVELS for level in marker.args
-            ), f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
+            assert all(level in _TEST_LEVELS for level in marker.args), (
+                f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
+            )
             if test_level not in marker.args:
                 item.add_marker(
                     pytest.mark.skip(
