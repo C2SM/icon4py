@@ -110,8 +110,6 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
     return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
 
 
-# TODO(pstark): Check with Chia Rui if this should be deleted as he did in an earlier commit
-#              also remove _update_wind and _update_density_exner_wind imports
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def stencils_61_62(
     rho_now: fa.CellKField[wpfloat],
