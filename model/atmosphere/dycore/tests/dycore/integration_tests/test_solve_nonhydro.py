@@ -1182,15 +1182,15 @@ def test_compute_perturbed_quantities_and_interpolation(
     assert test_utils.dallclose(
         perturbed_exner_at_cells_on_model_levels.asnumpy(), exner_pr_ref.asnumpy()
     )
-    # TODO: indexing to remove last bound to see if it works
+    # TODO: indexing to remove last level to see if it works
     assert test_utils.dallclose(
         rho_at_cells_on_half_levels.asnumpy()[:, : icon_grid.num_levels],
         rho_ic_ref.asnumpy()[:, : icon_grid.num_levels],
     )
-
+    # TODO: indexing to remove last level to see if it works
     assert test_utils.dallclose(
-        exner_at_cells_on_half_levels.asnumpy()[:, nflatlev:],
-        z_exner_ic_ref.asnumpy()[:, nflatlev:],
+        exner_at_cells_on_half_levels.asnumpy()[:, nflatlev : icon_grid.num_levels],
+        z_exner_ic_ref.asnumpy()[:, nflatlev : icon_grid.num_levels],
         rtol=1e-11,
     )
 
