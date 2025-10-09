@@ -14,13 +14,14 @@ import logging
 import pathlib
 import uuid
 from collections.abc import Sequence
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from typing_extensions import Required
 
 from icon4py.model.common import exceptions
 from icon4py.model.common.components import monitor
 from icon4py.model.common.grid import base, vertical as v_grid
+from icon4py.model.common.grid.vertical import VerticalGrid
 from icon4py.model.common.io import cf_utils, ugrid, writers
 
 
@@ -61,7 +62,7 @@ class Config(abc.ABC):
     # TODO(halungge): Need to visit this, when we address configuration
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"instance of {self.__class__}(Config)"
 
     @abc.abstractmethod
@@ -87,16 +88,14 @@ class FieldGroupIOConfig(Config):
     """
 
     output_interval: str
-    start_time: (
-        str | None
-    )  # TODO(halungge): make it possible to pass datetime.datetime objects other than strings?
+    start_time: str  # TODO(halungge): make it possible to pass datetime.datetime objects other than strings?
     filename: str
     variables: list[str]
     timesteps_per_file: int = 10
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.validate()
 
     def _validate_filename(self) -> None:
@@ -130,7 +129,7 @@ class IOConfig(Config):
     time_units = cf_utils.DEFAULT_TIME_UNIT
     calendar = cf_utils.DEFAULT_CALENDAR
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.validate()
 
     def validate(self) -> None:
@@ -192,14 +191,16 @@ class IOMonitor(monitor.Monitor):
         writer(validate=True)
 
     @property
-    def path(self):
+    def path(self) -> pathlib.Path:
         return self._output_path
 
-    def store(self, state: dict, model_time: dt.datetime, *args, **kwargs) -> None:
+    def store(
+        self, state: dict, model_time: dt.datetime, *args: Any, **kwargs: dict[str, Any]
+    ) -> None:
         for m in self._group_monitors:
             m.store(state, model_time, *args, **kwargs)
 
-    def close(self):
+    def close(self) -> None:
         for m in self._group_monitors:
             m.close()
 
@@ -248,17 +249,17 @@ class FieldGroupMonitor(monitor.Monitor):
     """
 
     @property
-    def next_output_time(self):
+    def next_output_time(self) -> dt.datetime:
         return self._next_output_time
 
     @property
-    def time_delta(self):
+    def time_delta(self) -> dt.timedelta:
         return self._time_delta
 
     def __init__(
         self,
         config: FieldGroupIOConfig,
-        vertical: int,
+        vertical: VerticalGrid,
         horizontal: base.HorizontalGridSize,
         grid_id: uuid.UUID,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
@@ -287,13 +288,13 @@ class FieldGroupMonitor(monitor.Monitor):
         self._time_delta = to_delta(config.output_interval)
         self._file_counter = 0
         self._current_timesteps_in_file = 0
-        self._dataset = None
+        self._dataset: writers.NETCDFWriter | None = None
 
     @property
     def output_path(self) -> pathlib.Path:
         return self._output_path
 
-    def _handle_output_path(self, output_path: pathlib.Path, filename: str):
+    def _handle_output_path(self, output_path: pathlib.Path, filename: str) -> None:
         file = output_path.joinpath(filename).absolute()
         path = file.parent
         path.mkdir(parents=True, exist_ok=True, mode=0o777)
@@ -315,9 +316,9 @@ class FieldGroupMonitor(monitor.Monitor):
             self._dataset.close()
         self._file_counter += 1
         filename = generate_name(self._file_name_pattern, self._file_counter)
-        filename = self._output_path.joinpath(filename)
+        filename_path = self._output_path.joinpath(filename)
         df = writers.NETCDFWriter(
-            filename,
+            filename_path,
             vertical_params,
             horizontal_size,
             self._time_properties,
@@ -329,7 +330,9 @@ class FieldGroupMonitor(monitor.Monitor):
     def _update_fetch_times(self) -> None:
         self._next_output_time = self._next_output_time + self._time_delta
 
-    def store(self, state: dict, model_time: dt.datetime, *args, **kwargs) -> None:
+    def store(
+        self, state: dict, model_time: dt.datetime, *args: Any, **kwargs: dict[str, Any]
+    ) -> None:
         """Pick fields from the state dictionary to be written to disk.
 
         Args:
@@ -367,9 +370,10 @@ class FieldGroupMonitor(monitor.Monitor):
         return 0 < self.config.timesteps_per_file == self._current_timesteps_in_file
 
     def _append_data(self, state_to_store: dict, model_time: dt.datetime) -> None:
+        assert self._dataset is not None
         self._dataset.append(state_to_store, model_time)
 
-    def _at_capture_time(self, model_time) -> bool:
+    def _at_capture_time(self, model_time: dt.datetime) -> bool:
         return self._next_output_time == model_time
 
     def close(self) -> None:
