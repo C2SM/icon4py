@@ -59,6 +59,8 @@ try:
         cached: bool = True,
         blocking_dim: gtx.Dimension | None = None,
         blocking_size: int | None = None,
+        make_persistent: bool = False,
+        use_memory_pool: bool = False,
         **_,
     ) -> gtx_typing.Backend:
         """Customize the dace backend with the following configuration.
@@ -75,9 +77,6 @@ try:
         use_memory_pool:
             Allocate temporaries in memory pool, currently only supported for GPU
             (based on CUDA memory pool).
-        use_zero_origin:
-            When set to `True`, the SDFG lowering will not generate the start symbol
-            of the field range. Select this option if all fields have zero origin.
         blocking_dim: The dimension on which loop blocking should be performed.
             If `None` then disabled. If set the `blocking_size` must also be specified.
         blocking_size: The loop blocking size, if `blocking_dim` is specified a value
@@ -97,16 +96,18 @@ try:
                 f"Undefined behavior for `blocking_dim`={blocking_dim} `blocking_size`={blocking_size}."
             )
 
-        return make_dace_backend(
+        return DaCeBackendFactory(  # type: ignore[return-value] # factory-boy typing not precise enough
+            gpu=on_gpu,
             auto_optimize=auto_optimize,
             cached=cached,
-            gpu=on_gpu,
-            async_sdfg_call=True,
-            blocking_dim=blocking_dim,
-            blocking_size=blocking_size,
-            make_persistent=False,
-            use_memory_pool=on_gpu,
-            use_zero_origin=True,
+            otf_workflow__cached_translation=cached,
+            otf_workflow__bare_translation__blocking_dim=blocking_dim,
+            otf_workflow__bare_translation__blocking_size=blocking_size,
+            otf_workflow__bare_translation__async_sdfg_call=on_gpu,
+            otf_workflow__bare_translation__make_persistent=make_persistent,
+            otf_workflow__bare_translation__use_memory_pool=use_memory_pool,
+            otf_workflow__bare_translation__use_metrics=use_metrics,
+            otf_workflow__bindings__make_persistent=make_persistent,
         )
 
     BACKENDS.update(
