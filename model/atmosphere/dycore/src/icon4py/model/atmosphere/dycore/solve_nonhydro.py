@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ruff: noqa: ERA001, B008
 
+import concurrent.futures
 import dataclasses
 import logging
 from typing import Final
@@ -67,6 +68,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
+
+_async_exchange_pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
 @dataclasses.dataclass
@@ -1390,7 +1393,7 @@ class SolveNonhydro:
             )
         )
 
-        # HALO OVERLAP EXPERIMENT START
+        # EXCHANGE OVERLAP EXPERIMENT START
         self._apply_divergence_damping_and_update_vn_first_half(
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
             next_vn=prognostic_states.next.vn,
@@ -1472,7 +1475,7 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
         )
-        # HALO OVERLAP EXPERIMENT END
+        # EXCHANGE OVERLAP EXPERIMENT END
 
         self._vertically_implicit_solver_at_corrector_step(
             next_w=prognostic_states.next.w,
