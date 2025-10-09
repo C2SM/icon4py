@@ -1410,8 +1410,10 @@ class SolveNonhydro:
             apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
         )
 
-        log.debug("exchanging prognostic field 'vn'")
-        # this exchange should wait for `_apply_divergence_damping_and_update_vn_first_half`
+        log.debug("exchanging prognostic field 'vn' first half")
+        # - this exchange should sync to `_apply_divergence_damping_and_update_vn_first_half`
+        # - the exchange should probably run fully asynchronously
+        # - to force MPI to make progress we could put a wait() in a Python future and resolve the future where we currently have the wait
         first_half_exchange = self._exchange.exchange(
             dims.EdgeDim, (prognostic_states.next.vn[:, : self._grid.num_levels // 2])
         )
@@ -1435,12 +1437,13 @@ class SolveNonhydro:
             apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
         )
 
-        log.debug("exchanging prognostic field 'vn'")
+        log.debug("exchanging prognostic field 'vn' second half")
+        # TODO(havogt): this wait could be after the next exchange starts, but ghex doesn't like it: "earlier exchange operation was not finished"
+        first_half_exchange.wait()
         second_half_exchange = self._exchange.exchange(
             dims.EdgeDim, (prognostic_states.next.vn[:, self._grid.num_levels // 2 :])
         )
 
-        first_half_exchange.wait()
         self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first_half(
             spatially_averaged_vn=self.z_vn_avg,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
