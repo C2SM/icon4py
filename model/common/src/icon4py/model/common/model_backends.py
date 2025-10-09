@@ -12,8 +12,6 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 from gt4py.next.program_processors.runners.gtfn import GTFNBackendFactory
 
-from icon4py.model.common import dimension as dims
-
 
 DEFAULT_BACKEND: typing.Final = "embedded"
 
@@ -56,7 +54,12 @@ try:
     from gt4py.next.program_processors.runners.dace import make_dace_backend
 
     def make_custom_dace_backend(
-        device: DeviceType, auto_optimize: bool = True, cached: bool = True, **_
+        device: DeviceType,
+        auto_optimize: bool = True,
+        cached: bool = True,
+        blocking_dim: gtx.Dimension | None = None,
+        blocking_size: int | None = None,
+        **_,
     ) -> gtx_typing.Backend:
         """Customize the dace backend with the following configuration.
 
@@ -75,6 +78,10 @@ try:
         use_zero_origin:
             When set to `True`, the SDFG lowering will not generate the start symbol
             of the field range. Select this option if all fields have zero origin.
+        blocking_dim: The dimension on which loop blocking should be performed.
+            If `None` then disabled. If set the `blocking_size` must also be specified.
+        blocking_size: The loop blocking size, if `blocking_dim` is specified a value
+            must be specified.
 
         Args:
             gpu: Specify if the target device is GPU.
@@ -85,13 +92,18 @@ try:
             A dace backend with custom configuration for the target device.
         """
         on_gpu = device == GPU
+        if (blocking_dim is None) ^ (blocking_size is None):
+            raise ValueError(
+                f"Undefined behavior for `blocking_dim`={blocking_dim} `blocking_size`={blocking_size}."
+            )
+
         return make_dace_backend(
             auto_optimize=auto_optimize,
             cached=cached,
             gpu=on_gpu,
             async_sdfg_call=True,
-            blocking_dim=dims.KDim,
-            blocking_size=10,
+            blocking_dim=blocking_dim,
+            blocking_size=blocking_size,
             make_persistent=False,
             use_memory_pool=on_gpu,
             use_zero_origin=True,
