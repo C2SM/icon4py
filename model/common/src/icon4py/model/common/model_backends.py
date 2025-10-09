@@ -67,9 +67,7 @@ try:
         cached: bool = True,
         auto_optimize: bool = True,
         async_sdfg_call: bool = True,
-        blocking_dim: gtx.Dimension | None = None,
-        blocking_size: int | None = None,
-        make_persistent: bool = False,
+        optimization_args: dict[str, typing.Any] | None = None,
         optimization_hooks: dict[GT4PyAutoOptHook, GT4PyAutoOptHookFun] | None = None,
         use_memory_pool: bool = True,
         use_metrics: bool = True,
@@ -83,14 +81,8 @@ try:
             auto_optimize: Enable the SDFG auto-optimize pipeline.
             async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
                 of GPU kernel execution with the Python driver code.
-            blocking_dim: The dimension on which loop blocking should be performed.
-                If `None` then disabled. If set the `blocking_size` must also be specified.
-            blocking_size: The loop blocking size, if `blocking_dim` is specified a value
-                must be specified.
-            make_persistent:
-                Allocate temporary arrays at SDFG initialization, when it is loaded
-                from the binary library. The memory will be persistent across all SDFG
-                calls and released only at application exit.
+            optimization_args: A `dict` containing configuration parameters for
+                the SDFG auto-optimize pipeline.
             optimization_hooks: A `dict` containing the hooks that should be called,
                 in the SDFG auto-optimize pipeline. Only applicable when `auto_optimize=True`.
             use_memory_pool: Allocate temporaries in memory pool, currently only
@@ -102,33 +94,39 @@ try:
             A dace backend with custom configuration for the target device.
         """
         on_gpu = device == GPU
-        if blocking_dim and not blocking_size:
-            raise ValueError(f"Undefined `blocking_size` for `blocking_dim`={blocking_dim}.")
+        fixed_optimization_args: typing.Final[dict[str, typing.Any]] = {
+            "assume_pointwise": True,
+            "gpu_memory_pool": (use_memory_pool if on_gpu else False),
+            "optimization_hooks": optimization_hooks,
+            "unit_strides_kind": (
+                gtx_common.DimensionKind.HORIZONTAL
+                if gtx_config.UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE
+                else None  # let `gt_auto_optimize` select `unit_strides_kind` based on `gpu` argument
+            ),
+            "validate": False,
+            "validate_all": False,
+        }
+
         if optimization_hooks and not auto_optimize:
             raise ValueError("Optimizations hook given, but auto-optimize pipeline is disabled.")
+        if optimization_args and not auto_optimize:
+            raise ValueError("Optimizations args given, but auto-optimize pipeline is disabled.")
+        if optimization_args is None:
+            optimization_args = {}
+        elif any(arg in fixed_optimization_args for arg in optimization_args):
+            raise ValueError(
+                f"The following arguments cannot be overriden: {set(optimization_args.keys()).intersection(fixed_optimization_args.keys())}."
+            )
 
         return DaCeBackendFactory(  # type: ignore[return-value] # factory-boy typing not precise enough
             gpu=on_gpu,
             cached=cached,
             auto_optimize=auto_optimize,
             otf_workflow__cached_translation=cached,
-            otf_workflow__bare_translation__auto_optimize_args={
-                "assume_pointwise": True,
-                "blocking_dim": blocking_dim,
-                "blocking_size": blocking_size,
-                "gpu_block_size": (32, 8, 1),
-                "gpu_memory_pool": (use_memory_pool if on_gpu else False),
-                "make_persistent": make_persistent,
-                "optimization_hooks": optimization_hooks,
-                "unit_strides_kind": (
-                    gtx_common.DimensionKind.HORIZONTAL
-                    if gtx_config.UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE
-                    else None  # let `gt_auto_optimize` select `unit_strides_kind` based on `gpu` argument
-                ),
-                "validate": False,
-                "validate_all": False,
-            },
             otf_workflow__bare_translation__async_sdfg_call=(async_sdfg_call if on_gpu else False),
+            otf_workflow__bare_translation__auto_optimize_args=(
+                optimization_args | fixed_optimization_args
+            ),
             otf_workflow__bare_translation__use_metrics=use_metrics,
         )
 
