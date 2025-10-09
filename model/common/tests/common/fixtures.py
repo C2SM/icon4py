@@ -31,10 +31,6 @@ from icon4py.model.testing.fixtures.datatest import (
     ndyn_substeps,
     processor_props,
     ranked_data_path,
-    savepoint_diffusion_exit,
-    savepoint_diffusion_init,
-    step_date_exit,
-    step_date_init,
     stretch_factor,
     topography_savepoint,
 )

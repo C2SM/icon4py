@@ -73,7 +73,7 @@ def run_nonhydro_substeps(
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
-    "grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
+    "grid", [definitions.Grids.MCH_OPR_R19B08_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
 )
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
@@ -82,7 +82,13 @@ def test_solve_nonhydro_benchmark(
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-    dtime = 1.0
+
+    if grid == definitions.Grids.R02B07_GLOBAL:
+        dtime = 1.5
+    elif grid == definitions.Grids.MCH_OPR_R19B08_DOMAIN01:
+        dtime = 1.0 / 6.0
+    else:
+        dtime = 1.0
     lprep_adv = True
     ndyn_substeps = 5
     at_initial_timestep = False
