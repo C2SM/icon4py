@@ -96,6 +96,7 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
+        # TODO(nfarabullini): add `skip_compute_predictor_vertical_advection` to `variants` once possible
         self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = setup_program(
             backend=backend,
             program=compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
@@ -107,9 +108,6 @@ class VelocityAdvection:
                 "ddqz_z_half": self.metric_state.ddqz_z_half,
                 "geofac_n2s": self.interpolation_state.geofac_n2s,
                 "owner_mask": self.c_owner_mask,
-            },
-            variants={
-                "skip_compute_predictor_vertical_advection": [True, False],
             },
             vertical_sizes={
                 "end_index_of_damping_layer": self.vertical_params.end_index_of_damping_layer,
