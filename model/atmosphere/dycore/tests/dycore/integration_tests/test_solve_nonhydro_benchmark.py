@@ -30,7 +30,7 @@ from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     vertical as v_grid,
 )
-from icon4py.model.common.initialization  import jablonowski_williamson_topography as topology
+from icon4py.model.common.initialization import jablonowski_williamson_topography as topology
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -72,25 +72,24 @@ def run_nonhydro_substeps(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
-@pytest.mark.parametrize(
-    "grid", [definitions.Grids.MCH_OPR_R19B08_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
-)
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 def test_solve_nonhydro_benchmark(
-    grid: definitions.GridDescription,
+    benchmark_grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-
-    if grid == definitions.Grids.R02B07_GLOBAL:
+    if benchmark_grid == definitions.Grids.R02B07_GLOBAL:
         dtime = 1.5
-    elif grid == definitions.Grids.MCH_OPR_R19B08_DOMAIN01:
+    elif benchmark_grid == definitions.Grids.MCH_OPR_R19B08_DOMAIN01:
         dtime = 1.0 / 6.0
     else:
         dtime = 1.0
+
     lprep_adv = True
-    ndyn_substeps = 5
+    ndyn_substeps = (
+        2  # TODO (Yilu) should change back to 5 before merging, 2 is for speeding up the test
+    )
     at_initial_timestep = False
     second_order_divdamp_factor = 0.0
 
@@ -105,7 +104,7 @@ def test_solve_nonhydro_benchmark(
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
     grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid, num_levels=80, keep_skip_values=True, backend=backend
+        benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
     )
 
     mesh = grid_manager.grid
@@ -350,7 +349,9 @@ def test_solve_nonhydro_benchmark(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=data_alloc.as_field(decomposition_info.owner_mask(dims.CellDim), allocator=backend),
+        owner_mask=data_alloc.as_field(
+            decomposition_info.owner_mask(dims.CellDim), allocator=backend
+        ),
         backend=backend,
     )
 

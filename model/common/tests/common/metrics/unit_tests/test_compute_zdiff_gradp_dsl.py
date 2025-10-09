@@ -47,7 +47,6 @@ def test_compute_zdiff_gradp_dsl(
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     backend: gtx_typing.Backend,
-    experiment: definitions.Experiment,
 ) -> None:
     xp = data_alloc.import_array_ns(backend)
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()

@@ -140,7 +140,6 @@ def _get_metrics_factory(
 @pytest.mark.datatest
 def test_factory_nflat_gradp(
     grid_savepoint: serialbox.IconGridSavepoint,
-    metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,

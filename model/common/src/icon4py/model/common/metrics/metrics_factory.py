@@ -36,6 +36,7 @@ from icon4py.model.common.metrics import (
     metric_fields as mf,
     metrics_attributes as attrs,
     reference_atmosphere,
+    reference_atmosphere as ra,
 )
 from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -292,9 +293,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_coeff_dwdz)
 
         compute_theta_exner_rho_ref_mc = factory.ProgramFieldProvider(
-            func=mf.compute_theta_exner_rho_ref_mc.with_backend(self._backend),
+            func=ra.compute_reference_atmosphere_cell_fields.with_backend(self._backend),
             deps={
-                "z_mc": attrs.Z_MC,
+                "z_height": attrs.Z_MC,
             },
             domain={
                 dims.CellDim: (
@@ -307,25 +308,25 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={
-                "exner_ref_mc": attrs.EXNER_REF_MC,
                 "theta_ref_mc": attrs.THETA_REF_MC,
+                "exner_ref_mc": attrs.EXNER_REF_MC,
                 "rho_ref_mc": attrs.RHO_REF_MC,
             },
             params={
+                "p0ref": constants.REFERENCE_PRESSURE,
+                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
+                "grav": constants.GRAV,
+                "cpd": constants.CPD,
+                "rd": constants.RD,
+                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
-                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
-                "grav": constants.GRAV,
-                "rd": constants.RD,
-                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
-                "rd_o_cpd": constants.RD_O_CPD,
-                "p0ref": constants.REFERENCE_PRESSURE,
             },
         )
         self.register_provider(compute_theta_exner_rho_ref_mc)
 
         compute_theta_rho_ref_me = factory.ProgramFieldProvider(
-            func=mf.compute_theta_rho_ref_me.with_backend(self._backend),
+            func=ra.compute_reference_atmosphere_edge_fields.with_backend(self._backend),
             deps={"z_mc": attrs.Z_MC, "c_lin_e": interpolation_attributes.C_LIN_E},
             domain={
                 dims.EdgeDim: (
@@ -342,20 +343,20 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "theta_ref_me": attrs.THETA_REF_ME,
             },
             params={
+                "p0ref": constants.REFERENCE_PRESSURE,
+                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
+                "grav": constants.GRAV,
+                "cpd": constants.CPD,
+                "rd": constants.RD,
+                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
-                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
-                "grav": constants.GRAV,
-                "rd": constants.RD,
-                "p0sl_bg": constants.SEA_LEVEL_PRESSURE,
-                "rd_o_cpd": constants.RD_O_CPD,
-                "p0ref": constants.REFERENCE_PRESSURE,
             },
         )
         self.register_provider(compute_theta_rho_ref_me)
 
         compute_theta_d_exner_dz_ref_ic = factory.ProgramFieldProvider(
-            func=mf.compute_theta_d_exner_dz_ref_ic.with_backend(self._backend),
+            func=ra.compute_theta_d_exner_dz_ref_ic.with_backend(self._backend),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
             },
@@ -651,6 +652,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "lateral_boundary_level": self._grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
+                "nlev": self._grid.num_levels,
             },
             fields=(attrs.NFLAT_GRADP,),
         )
