@@ -165,6 +165,7 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     [
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
+        (definitions.Experiments.GAUSS3D, "2001-01-01T00:00:04.000"),
     ],
 )
 def test_diffusion_init(
@@ -298,6 +299,7 @@ def _verify_init_values_against_savepoint(
         (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:20.000"),
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
+        (definitions.Experiments.GAUSS3D, "2001-01-01T00:00:04.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -315,6 +317,9 @@ def test_verify_diffusion_init_against_savepoint(
     ndyn_substeps,
     backend,
 ):
+    if experiment == definitions.Experiments.GAUSS3D:
+        pytest.xfail("wrong results")
+
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
@@ -365,6 +370,11 @@ def test_verify_diffusion_init_against_savepoint(
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
+        (
+            definitions.Experiments.GAUSS3D,
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
@@ -389,6 +399,9 @@ def test_run_diffusion_single_step(
 ):
     if orchestration and not test_utils.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
+
+    if experiment == definitions.Experiments.GAUSS3D:
+        pytest.xfail("wrong results")
 
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
@@ -451,6 +464,11 @@ def test_run_diffusion_single_step(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
+        (
+            definitions.Experiments.GAUSS3D,
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -475,6 +493,9 @@ def test_run_diffusion_multiple_steps(
     pytest.skip("dace orchestration broken by precompiled programs")
     if not test_utils.is_dace(backend):
         raise pytest.skip("This test is only executed for dace backends")
+
+    if experiment == definitions.Experiments.GAUSS3D:
+        pytest.xfail("probably wrong results? not tested")
     ######################################################################
     # Diffusion initialization
     ######################################################################
@@ -574,8 +595,23 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
-@pytest.mark.parametrize("linit", [True])
+@pytest.mark.parametrize(
+    "experiment,step_date_init,step_date_exit,linit",
+    [
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            True,
+        ),
+        (
+            definitions.Experiments.GAUSS3D,
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            False,
+        ),
+    ],
+)
 # TODO(): Enable dace orchestration, currently broken by precompiled programs
 @pytest.mark.parametrize("orchestration", [False])
 def test_run_diffusion_initial_step(
@@ -594,6 +630,10 @@ def test_run_diffusion_initial_step(
 ):
     if orchestration and not test_utils.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
+
+    if experiment == definitions.Experiments.GAUSS3D:
+        pytest.xfail("wrong results")
+
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -652,17 +692,20 @@ def test_run_diffusion_initial_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("linit", [True])
 # TODO(havogt): Remove custom `experiment` parametrization
 @pytest.mark.parametrize(
-    "experiment,step_date_init",
+    "experiment,step_date_init,linit",
     [
-        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000", True),
+        (definitions.Experiments.GAUSS3D, "2001-01-01T00:00:04.000", False),
     ],
 )
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
 ):
+    if experiment == definitions.Experiments.GAUSS3D:
+        pytest.xfail("wrong results")
+
     savepoint = savepoint_diffusion_init
     config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
 

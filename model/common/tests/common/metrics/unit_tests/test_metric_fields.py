@@ -146,8 +146,19 @@ def test_compute_rayleigh_w(
         icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     rayleigh_type = 2
-    rayleigh_coeff = 0.1 if experiment == definitions.Experiments.EXCLAIM_APE else 5.0
-    damping_height = 50000.0 if experiment == definitions.Experiments.EXCLAIM_APE else 12500.0
+    match experiment:
+        case definitions.Experiments.EXCLAIM_APE:
+            rayleigh_coeff = 0.1
+            damping_height = 50000.0
+        case definitions.Experiments.GAUSS3D:
+            rayleigh_coeff = 0.1
+            damping_height = 45000.0
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            rayleigh_coeff = 0.75
+            damping_height = 8000.0
+        case _:
+            rayleigh_coeff = 5.0
+            damping_height = 12500.0
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
@@ -231,7 +242,14 @@ def test_compute_exner_exfac(
     backend: gtx_typing.Backend,
 ) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    exner_expol = 0.333 if experiment == definitions.Experiments.MCH_CH_R04B09 else 0.3333333333333
+    match experiment:
+        case definitions.Experiments.MCH_CH_R04B09:
+            exner_expol = 0.333
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            exner_expol = 0.333
+        case _:
+            exner_expol = 1.0 / 3.0
+
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     mf.compute_exner_exfac.with_backend(backend)(
@@ -314,7 +332,14 @@ def test_compute_exner_w_implicit_weight_parameter(
     )
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
-    vwind_offctr = 0.2 if experiment == definitions.Experiments.MCH_CH_R04B09 else 0.15
+    match experiment:
+        case definitions.Experiments.MCH_CH_R04B09:
+            vwind_offctr = 0.2
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            vwind_offctr = 0.2
+        case _:
+            vwind_offctr = 0.15
+
     xp = data_alloc.import_array_ns(backend)
     exner_w_implicit_weight_parameter = mf.compute_exner_w_implicit_weight_parameter(
         c2e=icon_grid.get_connectivity(dims.C2E).ndarray,

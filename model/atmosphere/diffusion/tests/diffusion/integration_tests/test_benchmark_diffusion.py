@@ -21,6 +21,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import (
+    base,
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
     vertical as v_grid,
@@ -82,7 +83,7 @@ def test_run_diffusion_benchmark(
 
     decomposition_info = construct_decomposition_info(mesh, backend)
 
-    geometry_field_source = grid_geometry.GridGeometry(
+    geometry_field_source = grid_geometry.GridGeometry.with_geometry_type(
         grid=mesh,
         decomposition_info=decomposition_info,
         backend=backend,

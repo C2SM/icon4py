@@ -11,7 +11,7 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -42,7 +42,13 @@ def metrics_config(experiment: definitions.Experiment) -> tuple:
     rayleigh_coeff = 5.0
     lowest_layer_thickness = 50.0
     exner_expol = 0.333
-    vwind_offctr = 0.2
+    match experiment:
+        case definitions.Experiments.MCH_CH_R04B09:
+            vwind_offctr = 0.2
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            vwind_offctr = 0.2
+        case _:
+            vwind_offctr = 0.15
     rayleigh_type = 2
     model_top_height = 23500.0
     stretch_factor = 1.0
@@ -60,6 +66,13 @@ def metrics_config(experiment: definitions.Experiment) -> tuple:
             rayleigh_coeff = 0.1
             exner_expol = 0.3333333333333
             vwind_offctr = 0.15
+        case definitions.Experiments.GAUSS3D:
+            rayleigh_coeff = 0.1
+            damping_height = 45000.0
+            exner_expol = 1.0 / 3.0
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            rayleigh_coeff = 0.75
+            damping_height = 8000.0
 
     return (
         lowest_layer_thickness,
@@ -615,7 +628,7 @@ def test_factory_compute_diffusion_mask_and_coef(
     field_1 = factory.get(attrs.MASK_HDIFF)
     field_2 = factory.get(attrs.ZD_DIFFCOEF_DSL)
 
-    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
+    assert (field_ref_1.asnumpy() == field_1.asnumpy()).all()
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-10)
 
 

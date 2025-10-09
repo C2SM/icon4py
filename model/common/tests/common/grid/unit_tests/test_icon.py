@@ -225,6 +225,7 @@ def _sphere_area(radius: float) -> float:
     return 4.0 * math.pi * radius**2.0
 
 
+# TODO(msimberg): Test construction from fields.
 @pytest.mark.parametrize(
     "geometry_type,grid_root,grid_level,global_num_cells,num_cells,mean_cell_area,expected_global_num_cells,expected_num_cells,expected_mean_cell_area",
     [
