@@ -111,11 +111,11 @@ def _combined_field_operator(
     fa.CellKField[ta.vpfloat],
 ]:
     temporal_extrapolation_of_perturbed_exner = concat_where(
-        dims.KDim == nlev, 0.0, temporal_extrapolation_of_perturbed_exner)
+        dims.KDim >= nlev-1, 0.0, temporal_extrapolation_of_perturbed_exner)
 
     # _surface_computations
     exner_at_cells_on_half_levels = concat_where(
-        dims.KDim == nlev,
+        dims.KDim >= nlev-1,
         _interpolate_to_surface(
             wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
         ), exner_at_cells_on_half_levels) if igradp_method == horzpres_discr_type.TAYLOR_HYDRO else exner_at_cells_on_half_levels
@@ -145,7 +145,7 @@ def _combined_field_operator(
     )
 
     rho_at_cells_on_half_levels = concat_where(
-        (dims.KDim >= 1) & (dims.KDim < nlev),
+        (dims.KDim >= 1) & (dims.KDim < nlev-1),
         _interpolate_cell_field_to_half_levels_wp(wgtfac_c, current_rho),
         rho_at_cells_on_half_levels,
     )
