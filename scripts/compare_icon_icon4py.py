@@ -223,7 +223,7 @@ stencil_names: list[str] = [
     v[0] for v in sorted(openacc_meas.items(), key=lambda x: x[1], reverse=True)
 ]
 
-# Sort unmatched stencils in alphabetical order
+# Collect the names of unmatched stencils
 unmatched_stencil_names: list[str] | None = None
 
 backends: list[str] = [openacc_backend]
@@ -326,7 +326,7 @@ ax.set_yticks(
 ax.set_yticklabels(stencil_names + unmatched_stencil_names, rotation=0)
 
 # Add a horizontal line to separate unmatched stencils
-ax.axhline(y=(extended_index[0] - gap / 2), color="red", linestyle="--", linewidth=1.5)
+ax.axhline(y=(extended_index[0] - gap / 2), color="gray", linestyle="--", linewidth=1.5)
 
 ax.legend(loc="upper right")
 
