@@ -9,12 +9,7 @@ import typing
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import (
-    allocators as gtx_allocators,
-    backend as gtx_backend,
-    common as gtx_common,
-    config as gtx_config,
-)
+from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 from gt4py.next.program_processors.runners.gtfn import GTFNBackendFactory
 
 
@@ -57,9 +52,9 @@ def get_allocator(
 
 try:
     from gt4py.next.program_processors.runners.dace import (
-        DaCeBackendFactory,
         GT4PyAutoOptHook,
         GT4PyAutoOptHookFun,
+        make_dace_backend,
     )
 
     def make_custom_dace_backend(
@@ -94,40 +89,15 @@ try:
             A dace backend with custom configuration for the target device.
         """
         on_gpu = device == GPU
-        fixed_optimization_args: typing.Final[dict[str, typing.Any]] = {
-            "assume_pointwise": True,
-            "gpu_memory_pool": (use_memory_pool if on_gpu else False),
-            "optimization_hooks": optimization_hooks,
-            "unit_strides_kind": (
-                gtx_common.DimensionKind.HORIZONTAL
-                if gtx_config.UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE
-                else None  # let `gt_auto_optimize` select `unit_strides_kind` based on `gpu` argument
-            ),
-            "validate": False,
-            "validate_all": False,
-        }
-
-        if optimization_hooks and not auto_optimize:
-            raise ValueError("Optimizations hook given, but auto-optimize pipeline is disabled.")
-        if optimization_args and not auto_optimize:
-            raise ValueError("Optimizations args given, but auto-optimize pipeline is disabled.")
-        if optimization_args is None:
-            optimization_args = {}
-        elif any(arg in fixed_optimization_args for arg in optimization_args):
-            raise ValueError(
-                f"The following arguments cannot be overriden: {set(optimization_args.keys()).intersection(fixed_optimization_args.keys())}."
-            )
-
-        return DaCeBackendFactory(  # type: ignore[return-value] # factory-boy typing not precise enough
+        return make_dace_backend(
             gpu=on_gpu,
             cached=cached,
             auto_optimize=auto_optimize,
-            otf_workflow__cached_translation=cached,
-            otf_workflow__bare_translation__async_sdfg_call=(async_sdfg_call if on_gpu else False),
-            otf_workflow__bare_translation__auto_optimize_args=(
-                optimization_args | fixed_optimization_args
-            ),
-            otf_workflow__bare_translation__use_metrics=use_metrics,
+            async_sdfg_call=async_sdfg_call,
+            optimization_args=optimization_args,
+            optimization_hooks=optimization_hooks,
+            use_memory_pool=use_memory_pool,
+            use_metrics=use_metrics,
         )
 
     BACKENDS.update(
