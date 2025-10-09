@@ -90,14 +90,14 @@ def _calculate_divdamp_fields(
 
 @gtx.program
 def calculate_divdamp_fields(
-    interpolated_fourth_order_divdamp_factor: fa.KField[float],
-    fourth_order_divdamp_scaling_coeff: fa.KField[float],
-    reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[float],
+    interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
+    fourth_order_divdamp_scaling_coeff: fa.KField[wpfloat],
+    reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[wpfloat],
     divdamp_order: gtx.int32,
-    mean_cell_area: float,
-    second_order_divdamp_factor: float,
-    max_nudging_coefficient: float,
-    dbl_eps: float,
+    mean_cell_area: wpfloat,
+    second_order_divdamp_factor: wpfloat,
+    max_nudging_coefficient: wpfloat,
+    wp_eps: wpfloat,
 ):
     _calculate_divdamp_fields(
         interpolated_fourth_order_divdamp_factor,
@@ -105,7 +105,7 @@ def calculate_divdamp_fields(
         mean_cell_area,
         second_order_divdamp_factor,
         max_nudging_coefficient,
-        dbl_eps,
+        wp_eps,
         out=(
             fourth_order_divdamp_scaling_coeff,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary,
