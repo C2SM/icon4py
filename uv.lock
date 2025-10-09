@@ -1420,7 +1420,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "0.0.0+missing.version.info"
-source = { git = "https://github.com/edopao/gt4py?branch=dace_backend_customization#5b4f6fff0f980e7599be27b8581cd92c40633a0c" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace_backend_customization#8f8395207415acfba467314343f254ad04f5b40b" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },

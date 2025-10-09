@@ -9,7 +9,12 @@ import typing
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+from gt4py.next import (
+    allocators as gtx_allocators,
+    backend as gtx_backend,
+    common as gtx_common,
+    config as gtx_config,
+)
 from gt4py.next.program_processors.runners.gtfn import GTFNBackendFactory
 
 
@@ -97,9 +102,9 @@ try:
             A dace backend with custom configuration for the target device.
         """
         on_gpu = device == GPU
-        if (blocking_dim is not None) and (blocking_size is None):
+        if blocking_dim and not blocking_size:
             raise ValueError(f"Undefined `blocking_size` for `blocking_dim`={blocking_dim}.")
-        if optimization_hooks is not None and not auto_optimize:
+        if optimization_hooks and not auto_optimize:
             raise ValueError("Optimizations hook given, but auto-optimize pipeline is disabled.")
 
         return DaCeBackendFactory(  # type: ignore[return-value] # factory-boy typing not precise enough
@@ -107,12 +112,23 @@ try:
             cached=cached,
             auto_optimize=auto_optimize,
             otf_workflow__cached_translation=cached,
-            otf_workflow__bare_translation__blocking_dim=blocking_dim,
-            otf_workflow__bare_translation__blocking_size=blocking_size,
+            otf_workflow__bare_translation__auto_optimize_args={
+                "assume_pointwise": True,
+                "blocking_dim": blocking_dim,
+                "blocking_size": blocking_size,
+                "gpu_block_size": (32, 8, 1),
+                "gpu_memory_pool": (use_memory_pool if on_gpu else False),
+                "make_persistent": make_persistent,
+                "optimization_hooks": optimization_hooks,
+                "unit_strides_kind": (
+                    gtx_common.DimensionKind.HORIZONTAL
+                    if gtx_config.UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE
+                    else None  # let `gt_auto_optimize` select `unit_strides_kind` based on `gpu` argument
+                ),
+                "validate": False,
+                "validate_all": False,
+            },
             otf_workflow__bare_translation__async_sdfg_call=(async_sdfg_call if on_gpu else False),
-            otf_workflow__bare_translation__make_persistent=make_persistent,
-            otf_workflow__bare_translation__optimization_hooks=optimization_hooks,
-            otf_workflow__bare_translation__use_memory_pool=(use_memory_pool if on_gpu else False),
             otf_workflow__bare_translation__use_metrics=use_metrics,
         )
 
