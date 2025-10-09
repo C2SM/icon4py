@@ -283,7 +283,7 @@ for i, backend in enumerate(backends):
     if i > 0:
         # Only annotate bars for gt4py backends
         ratios = [
-            val / openacc_meas[stencil] for stencil, val in zip(stencil_names, values, strict=True)
+            openacc_meas[stencil] / val for stencil, val in zip(stencil_names, values, strict=True)
         ]
         for k, (val, ratio) in enumerate(zip(values, ratios)):
             ax.text(
