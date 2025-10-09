@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 from collections.abc import Sequence
 from datetime import datetime
@@ -157,6 +158,38 @@ def test_model(
             *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
             *session.posargs,
+            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
+        )
+
+
+# TODO(pstark): Is this a good way to add the single precision tests?
+@nox.session(python=["3.10", "3.11"])
+def __test_file(session: nox.Session) -> None:
+    """Run tests for specific pytest file."""
+    _install_session_venv(session, extras=["dace", "fortran", "io", "testing"], groups=["test"])
+
+    testfile = None
+    filtered_posargs = []
+    for arg in session.posargs:
+        if arg.startswith("--testfile="):
+            testfile = arg.split("=", 1)[1]
+        else:
+            filtered_posargs.append(arg)
+
+    if not testfile:
+        session.error("Missing required argument: --testfile=/path/to/file")
+
+    if not pathlib.Path(testfile).is_file():
+        session.error(f"File '{testfile}' not found.")
+
+    # Use the directory of the test file as working directory
+    test_dir = pathlib.Path(testfile).parent if pathlib.Path(testfile).parent else "."
+    test_filename = pathlib.Path(testfile).name
+
+    with session.chdir(test_dir):
+        session.run(
+            *f"pytest {test_filename} --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
+            *filtered_posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
         )
 
