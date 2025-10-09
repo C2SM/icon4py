@@ -12,7 +12,6 @@ from __future__ import annotations
 import json
 import logging
 import pathlib
-import re
 from typing import Any, TypeAlias
 
 import matplotlib.pyplot as plt
@@ -168,19 +167,11 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
     with filename.open("r") as f:
         j = json.load(f)
 
-    # regex to remove the backend from the stencil name
-    re_stencil = re.compile("(\S+)\[.+\]")
-
     data = {}
     unmatched_data = {}
-    for k, v in j.items():
+    for v in j.values():
         stencil_metadata = v["metadata"]
         stencil = stencil_metadata["name"]
-        # remove the backend label from the stencil key
-        # TODO(edopao): fix regex for custom backend case
-        # m = re_stencil.match(k)
-        # assert m is not None
-        # assert m[1] == stencil
         if metric not in v["metrics"]:
             log.debug(f"no meas for icon4py stencil {stencil_metadata}")
         else:
