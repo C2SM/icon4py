@@ -110,15 +110,16 @@ def _combined_field_operator(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
+    temporal_extrapolation_of_perturbed_exner = concat_where(
+        dims.KDim == nlev, 0.0, temporal_extrapolation_of_perturbed_exner)
+
     # _surface_computations
     exner_at_cells_on_half_levels = concat_where(
-        dims.KDim >= nlev,
+        dims.KDim == nlev,
         _interpolate_to_surface(
             wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
-        )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
-        else exner_at_cells_on_half_levels, exner_at_cells_on_half_levels
-    )
+        ), exner_at_cells_on_half_levels) if igradp_method == horzpres_discr_type.TAYLOR_HYDRO else exner_at_cells_on_half_levels
+
 
     # _compute_perturbed_quantities_and_interpolation
     exner_at_cells_on_half_levels = (
@@ -144,7 +145,7 @@ def _combined_field_operator(
     )
 
     rho_at_cells_on_half_levels = concat_where(
-        dims.KDim >= 1,
+        (dims.KDim >= 1) & (dims.KDim < nlev),
         _interpolate_cell_field_to_half_levels_wp(wgtfac_c, current_rho),
         rho_at_cells_on_half_levels,
     )
@@ -356,13 +357,6 @@ def compute_perturbed_quantities_and_interpolation(
     )
 
     # Compute temporal extrapolation of perturbed exner, needs to be output for future program
-    _init_cell_kdim_field_with_zero_vp(
-        out=temporal_extrapolation_of_perturbed_exner,
-        domain={
-            dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
-            dims.KDim: (surface_level - 1, surface_level),
-        },
-    )
 
     _extrapolate_temporally_exner_pressure(
         exner_exfac=time_extrapolation_parameter_for_exner,
