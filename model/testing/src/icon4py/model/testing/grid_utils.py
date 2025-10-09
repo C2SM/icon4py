@@ -109,7 +109,7 @@ def construct_decomposition_info(
     xp = data_alloc.array_ns(on_gpu)
 
     def _add_dimension(dim: gtx.Dimension) -> None:
-        indices = data_alloc.index_field(grid, dim, backend=backend)
+        indices = data_alloc.index_field(grid, dim, allocator=backend)
         owner_mask = xp.ones((grid.size[dim],), dtype=bool)
         decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 

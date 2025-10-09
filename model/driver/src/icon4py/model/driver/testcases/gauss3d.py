@@ -162,7 +162,7 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
     log.info("Hydrostatic adjustment computation completed.")
 
     eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=backend)
-    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend)
+    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
         eta_v,
         cell_2_edge_coeff,
@@ -220,7 +220,7 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("U, V computation completed.")
 
-    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend)
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
     testcases_utils.compute_perturbed_exner.with_backend(backend)(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),

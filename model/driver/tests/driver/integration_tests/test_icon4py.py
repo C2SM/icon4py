@@ -257,7 +257,7 @@ def test_run_timeloop_single_step(
             icon_grid,
             dims.CellDim,
             dims.KDim,
-            backend=backend,
+            allocator=backend,
         ),
     )
 
@@ -284,13 +284,13 @@ def test_run_timeloop_single_step(
         vn_on_half_levels=sp_v.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
         rho_iau_increment=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
         ),  # sp.rho_incr(),
         normal_wind_iau_increment=data_alloc.zero_field(
-            icon_grid, dims.EdgeDim, dims.KDim, backend=backend
+            icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
         ),  # sp.vn_incr(),
         exner_iau_increment=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
         ),  # sp.exner_incr(),
         exner_dynamical_increment=sp.exner_dyn_incr(),
     )

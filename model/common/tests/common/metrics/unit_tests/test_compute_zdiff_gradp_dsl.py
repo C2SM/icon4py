@@ -55,9 +55,9 @@ def test_compute_zdiff_gradp_dsl(
     z_ifc = metrics_savepoint.z_ifc()
     z_ifc_ground_level = z_ifc.ndarray[:, icon_grid.num_levels]
     z_mc = metrics_savepoint.z_mc()
-    k_lev = data_alloc.index_field(icon_grid, dims.KDim, dtype=gtx.int32, backend=backend)
+    k_lev = data_alloc.index_field(icon_grid, dims.KDim, dtype=gtx.int32, allocator=backend)
     flat_idx = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=backend
     )
     edge_domain = h_grid.domain(dims.EdgeDim)
     horizontal_start_edge = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))

@@ -402,7 +402,7 @@ def test_compute_vertical_coordinate(
         topography = topography_savepoint.topo_c()
     elif experiment == definitions.Experiments.EXCLAIM_APE:
         topography = data_alloc.zero_field(
-            icon_grid, dims.CellDim, backend=backend, dtype=ta.wpfloat
+            icon_grid, dims.CellDim, allocator=backend, dtype=ta.wpfloat
         )
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()

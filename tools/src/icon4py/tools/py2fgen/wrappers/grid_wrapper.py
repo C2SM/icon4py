@@ -14,7 +14,7 @@ from gt4py import next as gtx
 from gt4py.next.type_system import type_specifications as ts
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.type_alias import wpfloat
@@ -114,6 +114,7 @@ def grid_init(
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
+    allocator = model_backends.get_allocator(actual_backend)
     grid = wrapper_common.construct_icon_grid(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
@@ -137,7 +138,7 @@ def grid_init(
         vertical_size=vertical_size,
         limited_area=limited_area,
         mean_cell_area=mean_cell_area,
-        backend=actual_backend,
+        allocator=allocator,
     )
     # Edge geometry
     edge_params = grid_states.EdgeParams(

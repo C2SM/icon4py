@@ -94,7 +94,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
 
         # limiter fields
         self._r_m = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
 
         # stencils
@@ -207,13 +207,13 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
 
         # reconstruction fields
         self._p_coeff_1 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
         self._p_coeff_2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
         self._p_coeff_3 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
 
         # stencils
@@ -464,13 +464,13 @@ class SemiLagrangian(FiniteVolume):
 
         # backtrajectory fields
         self._z_real_vt = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=self._backend
         )
         self._p_distv_bary_1 = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=self._backend
         )
         self._p_distv_bary_2 = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=self._backend
         )
 
         # stencils

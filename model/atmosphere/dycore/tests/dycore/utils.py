@@ -122,11 +122,11 @@ def construct_diagnostics(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
         normal_wind_iau_increment=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, backend=backend
+            grid, dims.EdgeDim, dims.KDim, allocator=backend
         ),
-        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
         exner_dynamical_increment=init_savepoint.exner_dyn_incr(),
     )
 

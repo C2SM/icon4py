@@ -350,7 +350,7 @@ def test_cartesian_centers_edge(
     assert y.ndarray.shape == (grid.num_edges,)
     assert z.ndarray.shape == (grid.num_edges,)
     # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, backend=backend)
+    norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, allocator=backend)
     math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
     assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
@@ -367,7 +367,7 @@ def test_cartesian_centers_cell(
     assert y.ndarray.shape == (grid.num_cells,)
     assert z.ndarray.shape == (grid.num_cells,)
     # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, backend=backend)
+    norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, allocator=backend)
     math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
     assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
@@ -382,7 +382,7 @@ def test_vertex(backend: gtx_typing.Backend, experiment: definitions.Experiment)
     assert y.ndarray.shape == (grid.num_vertices,)
     assert z.ndarray.shape == (grid.num_vertices,)
     # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, backend=backend)
+    norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, allocator=backend)
     math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
     assert test_utils.dallclose(norm.asnumpy(), 1.0)
 

@@ -26,7 +26,7 @@ def interpolate_vt_to_interface_edges_numpy(
 ) -> np.ndarray:
     vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
     z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
-    z_vt_ie[:, 0] = 0
+    z_vt_ie[:, 0] = vt[:, 0]
     return z_vt_ie
 
 

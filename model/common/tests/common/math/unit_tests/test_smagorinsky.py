@@ -17,9 +17,9 @@ from icon4py.model.testing.reference_funcs import enhanced_smagorinski_factor_nu
 
 
 def test_init_enh_smag_fac(backend, grid):
-    enh_smag_fac = data_alloc.zero_field(grid, dims.KDim, backend=backend)
+    enh_smag_fac = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     a_vec = data_alloc.random_field(
-        grid, dims.KDim, low=1.0, high=10.0, extend={dims.KDim: 1}, backend=backend
+        grid, dims.KDim, low=1.0, high=10.0, extend={dims.KDim: 1}, allocator=backend
     )
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)

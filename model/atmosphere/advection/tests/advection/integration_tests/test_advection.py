@@ -149,7 +149,7 @@ def test_advection_run_single_step(
     )
     prep_adv = construct_prep_adv(advection_init_savepoint)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
-    p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
 
     log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
