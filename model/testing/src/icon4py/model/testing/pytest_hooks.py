@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import contextlib
+import os
 import re
 
 import pytest
@@ -34,6 +35,9 @@ def pytest_configure(config):
         "markers",
         "level(name): marks test as unit or integration tests, mostly applicable where both are available",
     )
+    config.addinivalue_line(
+        "markers", "single_precision_ready: intended to run if single precision is selected"
+    )
 
     # Handle datatest options: --datatest-only  and --datatest-skip
     if m_option := config.getoption("-m", []):
@@ -44,15 +48,8 @@ def pytest_configure(config):
     if config.getoption("--datatest-skip"):
         config.option.markexpr = " and ".join(["not datatest", *m_option])
 
-    # # Check if the --enable-mixed-precision / --enable-single-precision option is set and set the environment variable accordingly
-    # if config.getoption("--enable-mixed-precision"):
-    #     os.environ["FLOAT_PRECISION"] = "mixed"
-    # elif config.getoption("--enable-single-precision"):
-    #     os.environ["FLOAT_PRECISION"] = "single"
-
-    # TODO(pstark): These env vars are only set after the call chain e.g.
-    #              pytest test_velocity_advection.py >> data_allocation.py >> type_alias.py
-    #              ==>  THEY NEVER TAKE EFFECT!
+    if os.environ.get("FLOAT_PRECISION", "double").lower() == "single":
+        config.option.markexpr = " and ".join(["single_precision_ready", *m_option])
 
 
 def pytest_addoption(parser: pytest.Parser):

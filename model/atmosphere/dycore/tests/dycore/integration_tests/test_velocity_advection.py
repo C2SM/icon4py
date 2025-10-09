@@ -757,6 +757,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 def test_compute_advection_in_vertical_momentum_equation(
     experiment,
@@ -892,6 +893,7 @@ def test_compute_advection_in_vertical_momentum_equation(
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
 def test_compute_advection_in_horizontal_momentum_equation(
     experiment,
