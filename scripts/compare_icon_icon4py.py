@@ -174,12 +174,13 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
     data = {}
     unmatched_data = {}
     for k, v in j.items():
-        # remove the backend form the stencil name
-        m = re_stencil.match(k)
-        assert m is not None
-        stencil = m[1]
         stencil_metadata = v["metadata"]
-        assert stencil == stencil_metadata["name"]
+        stencil = stencil_metadata["name"]
+        # remove the backend label from the stencil key
+        # TODO(edopao): fix regex for custom backend case
+        # m = re_stencil.match(k)
+        # assert m is not None
+        # assert m[1] == stencil
         if metric not in v["metrics"]:
             log.debug(f"no meas for icon4py stencil {stencil_metadata}")
         else:
