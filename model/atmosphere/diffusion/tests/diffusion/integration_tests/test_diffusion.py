@@ -26,8 +26,7 @@ from icon4py.model.testing import (
     test_utils,
 )
 
-from ..fixt
-ures import *  # noqa: F403
+from ..fixtures import *  # noqa: F403
 from ..utils import (
     compare_dace_orchestration_multiple_steps,
     diff_multfac_vn_numpy,

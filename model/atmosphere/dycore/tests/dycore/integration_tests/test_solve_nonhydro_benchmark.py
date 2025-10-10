@@ -349,8 +349,10 @@ def test_solve_nonhydro_benchmark(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=data_alloc.as_field(
-            decomposition_info.owner_mask(dims.CellDim), allocator=backend
+        owner_mask=gtx.as_field(
+            (dims.CellDim,),
+            decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type] # mypy does not take the type of owner_mask
+            allocator=backend,  # type: ignore[arg-type]
         ),
         backend=backend,
     )
