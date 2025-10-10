@@ -251,10 +251,10 @@ for backend, filename in gt4py_input.items():
 
 
 # Combine all bar plots in a single plot
-fig, ax = plt.subplots(figsize=(22, 24))
+fig, ax = plt.subplots(figsize=(22, 64))
 fig.subplots_adjust(left=0.3, right=0.98)
-bar_width = 0.5
-spacing = 1.0  # Additional spacing between stencil names
+bar_width = 8.0
+spacing = 20.0  # Additional spacing between stencil names
 gap = spacing * 4
 index = np.arange(len(stencil_names)) * (bar_width * len(backends) + spacing)
 extended_index = (
@@ -271,6 +271,7 @@ base_colors = [
     (0.8, 0.4, 0.1),  # Example RGB color 3
     (0.5, 0.1, 0.7),  # Example RGB color 4
     (0.3, 0.3, 0.3),  # Example RGB color 5
+    (0.4, 0.4, 0.4),  # Example RGB color 6
 ]
 
 if len(base_colors) < len(backends):
@@ -279,7 +280,7 @@ if len(base_colors) < len(backends):
 for i, backend in enumerate(backends):
     color = base_colors[i]
     values = data[backend]
-    ax.barh(index + i * bar_width, values, bar_width, label=backend, color=color)
+    ax.barh(index + i * bar_width, width=values, height=bar_width, label=backend, color=color)
     if i > 0:
         # Only annotate bars for gt4py backends
         ratios = [
@@ -292,8 +293,9 @@ for i, backend in enumerate(backends):
                 f"{ratio:.2f}",
                 ha="center",
                 va="bottom",
-                fontsize=8,
+                fontsize=10,
                 rotation=0,
+                color=color,
             )
         # Plot also unmatched icon4py stencils
         ax.barh(
