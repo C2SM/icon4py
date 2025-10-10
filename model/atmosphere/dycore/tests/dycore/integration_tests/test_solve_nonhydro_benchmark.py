@@ -79,10 +79,7 @@ def test_solve_nonhydro_benchmark(
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-    if benchmark_grid == definitions.Grids.R02B07_GLOBAL:
-        dtime = 90.0
-    else:
-        dtime = 10.0
+    dtime = 90.0 if benchmark_grid == definitions.Grids.R02B07_GLOBAL else 10.0
 
     lprep_adv = True
     ndyn_substeps = 5
