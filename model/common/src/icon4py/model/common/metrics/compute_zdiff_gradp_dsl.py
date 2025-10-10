@@ -31,7 +31,7 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
     z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
     z_aux2 = z_aux1 - 5.0  # extrapol_dist
     zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
-    jk_field = array_ns.arange(nlev)
+    jk_field = array_ns.arange(nlev, dtype=gtx.int32)
     zdiff_gradp[horizontal_start:, :, :] = (
         array_ns.expand_dims(z_me, axis=1)[horizontal_start:, :, :]
         - z_mc[e2c][horizontal_start:, :, :]
@@ -126,4 +126,4 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
     vertoffset_gradp = vertidx_gradp - vertoffset_gradp
     vertoffset_gradp[:horizontal_start_1, :, :] = 0.0
 
-    return zdiff_gradp, vertoffset_gradp.astype(gtx.int32)
+    return zdiff_gradp, vertoffset_gradp
