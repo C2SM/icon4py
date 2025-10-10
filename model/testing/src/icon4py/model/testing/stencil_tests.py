@@ -244,11 +244,22 @@ class StencilTest:
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
-        setattr(cls, f"test_{cls.__name__}", test_and_benchmark)
+        pytest_prefix = "test_"
+
+        setattr(cls, f"{pytest_prefix}{cls.__name__}", test_and_benchmark)
+
+        # in case a test inherits from another test avoid running the tests of its parent
+        if cls.__base__ is not None and cls.__base__ != StencilTest:
+            # TODO(iomaganaris): find a way to hide this instead of using an empty function
+            setattr(cls, f"{pytest_prefix}{cls.__base__.__name__}", lambda: ())
 
         # decorate `static_variant` with parametrized fixtures, since the
         # parametrization is only available in the concrete subclass definition
-        if cls.STATIC_PARAMS is None:
+        # Check if cls.static_variant is already a pytest fixture to allow inheriting from other StencilTests
+        if hasattr(cls.static_variant, "_pytestfixturefunction"):
+            # Already a fixture, do nothing
+            pass
+        elif cls.STATIC_PARAMS is None:
             # not parametrized, return an empty tuple
             cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
         else:
