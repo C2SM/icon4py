@@ -289,7 +289,7 @@ for i, backend in enumerate(backends):
         for k, (val, ratio) in enumerate(zip(values, ratios)):
             ax.text(
                 val + 0.02,  # Position slightly above the bar
-                index[k] + (i - 0.5) * bar_width,
+                index[k] + (i - 0.3) * bar_width,
                 f"{ratio:.2f}",
                 ha="center",
                 va="bottom",
