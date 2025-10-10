@@ -28,7 +28,9 @@ dependencies = [
   'packaging>=20.0',
   'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
-  'scipy>=1.14.1'
+  'scipy>=1.14.1',
+  'himl>=0.16.4',
+  'omegaconf>=2.3.0'
 ]
 description = "Shared code for the icon4py model."
 license = {text = "BSD-3 License"}

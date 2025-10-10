@@ -1,0 +1,7 @@
+diffusion:
+    hdiff_efdt_ratio: 24.0
+    thslp_zdiffu: 0.02
+    thhgtd_zdiffu: 125.0
+    velocity_boundary_diffusion_denom: 150.0
+    max_nudging_coefficient: 0.375
+    shear_type: "VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND"

@@ -68,7 +68,7 @@ Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 log = logging.getLogger(__name__)
 
 
-class DiffusionType(int, enum.Enum):
+class DiffusionType(enum.IntEnum):
     """
     Order of nabla operator for diffusion.
 
@@ -115,8 +115,8 @@ class DiffusionConfig:
     def __init__(
         self,
         diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
+        apply_to_vertical_wind=True,
+        apply_to_horizontal_wind=True,
         hdiff_temp=True,
         type_vn_diffu: int = 1,
         smag_3d: bool = False,
@@ -143,11 +143,11 @@ class DiffusionConfig:
 
         #: If True, apply diffusion on the vertical wind field
         #: Called 'lhdiff_w' in mo_diffusion_nml.f90
-        self.apply_to_vertical_wind: bool = hdiff_w
+        self.apply_to_vertical_wind: bool = apply_to_vertical_wind
 
         #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
         #: Called 'lhdiff_vn' in mo_diffusion_nml.f90
-        self.apply_to_horizontal_wind = hdiff_vn
+        self.apply_to_horizontal_wind = apply_to_horizontal_wind
 
         #:  If True, apply horizontal diffusion to temperature field
         #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
