@@ -331,7 +331,7 @@ def test_dycore_wrapper_granule_inputs(
     )  # undo the -1 to go back to Fortran value
 
     # other params
-    dtime = sp.get_metadata("dtime").get("dtime")
+    dtime = sp.dtime()
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
 
     # metric state parameters
@@ -598,7 +598,7 @@ def test_dycore_wrapper_granule_inputs(
         ),  # TODO(): sp.vol_flx_ic(),
     )
     expected_second_order_divdamp_factor = sp.divdamp_fac_o2()
-    expected_dtime = sp.get_metadata("dtime").get("dtime")
+    expected_dtime = sp.dtime()
     expected_lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     expected_at_first_substep = substep_init == 1
     expected_at_last_substep = substep_init == ndyn_substeps
@@ -885,7 +885,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     sp_step_exit = savepoint_nonhydro_step_final
 
     # other params
-    dtime = sp.get_metadata("dtime").get("dtime")
+    dtime = sp.dtime()
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
 
     # solve nh run parameters
@@ -1064,7 +1064,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     sp_step_exit = savepoint_nonhydro_step_final
 
     # other params
-    dtime = sp.get_metadata("dtime").get("dtime")
+    dtime = sp.dtime()
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
 
     # solve nh run parameters

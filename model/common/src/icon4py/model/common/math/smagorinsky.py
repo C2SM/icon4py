@@ -10,20 +10,21 @@ from gt4py.next import broadcast, maximum, minimum
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, Koff
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
 def _en_smag_fac_for_zero_nshift(
-    vect_a: fa.KField[float],
-    hdiff_smag_fac: float,
-    hdiff_smag_fac2: float,
-    hdiff_smag_fac3: float,
-    hdiff_smag_fac4: float,
-    hdiff_smag_z: float,
-    hdiff_smag_z2: float,
-    hdiff_smag_z3: float,
-    hdiff_smag_z4: float,
-) -> fa.KField[float]:
+    vect_a: fa.KField[wpfloat],
+    hdiff_smag_fac: wpfloat,
+    hdiff_smag_fac2: wpfloat,
+    hdiff_smag_fac3: wpfloat,
+    hdiff_smag_fac4: wpfloat,
+    hdiff_smag_z: wpfloat,
+    hdiff_smag_z2: wpfloat,
+    hdiff_smag_z3: wpfloat,
+    hdiff_smag_z4: wpfloat,
+) -> fa.KField[wpfloat]:
     dz21 = hdiff_smag_z2 - hdiff_smag_z
     alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
     df32 = hdiff_smag_fac3 - hdiff_smag_fac2
@@ -33,8 +34,8 @@ def _en_smag_fac_for_zero_nshift(
 
     bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
     aqdr = df32 / dz32 - bqdr * dz32
-    zf = 0.5 * (vect_a + vect_a(Koff[1]))
-    zero = broadcast(0.0, (KDim,))
+    zf = wpfloat(0.5) * (vect_a + vect_a(Koff[1]))
+    zero = broadcast(wpfloat(0.0), (KDim,))
 
     dzlin = minimum(broadcast(dz21, (KDim,)), maximum(zero, zf - hdiff_smag_z))
     dzqdr = minimum(broadcast(dz42, (KDim,)), maximum(zero, zf - hdiff_smag_z2))
@@ -44,16 +45,16 @@ def _en_smag_fac_for_zero_nshift(
 
 @gtx.program
 def en_smag_fac_for_zero_nshift(
-    vect_a: fa.KField[float],
-    hdiff_smag_fac: float,
-    hdiff_smag_fac2: float,
-    hdiff_smag_fac3: float,
-    hdiff_smag_fac4: float,
-    hdiff_smag_z: float,
-    hdiff_smag_z2: float,
-    hdiff_smag_z3: float,
-    hdiff_smag_z4: float,
-    enh_smag_fac: fa.KField[float],
+    vect_a: fa.KField[wpfloat],
+    hdiff_smag_fac: wpfloat,
+    hdiff_smag_fac2: wpfloat,
+    hdiff_smag_fac3: wpfloat,
+    hdiff_smag_fac4: wpfloat,
+    hdiff_smag_z: wpfloat,
+    hdiff_smag_z2: wpfloat,
+    hdiff_smag_z3: wpfloat,
+    hdiff_smag_z4: wpfloat,
+    enh_smag_fac: fa.KField[wpfloat],
 ):
     _en_smag_fac_for_zero_nshift(
         vect_a,

@@ -10,13 +10,14 @@ import dataclasses
 import enum
 import functools
 import logging
-import math
-import sys
 from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import allocators as gtx_allocators
+
+# TODO(pstark): switch back to gtx.sqrt once gt4py can return gtx.float32 in gtx.sqrt
+from numpy import sqrt
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
@@ -56,6 +57,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.orchestration import decorator as dace_orchestration
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -121,18 +123,18 @@ class DiffusionConfig:
         type_vn_diffu: int = 1,
         smag_3d: bool = False,
         type_t_diffu: int = 2,
-        hdiff_efdt_ratio: float = 36.0,
-        hdiff_w_efdt_ratio: float = 15.0,
-        smagorinski_scaling_factor: float = 0.015,
+        hdiff_efdt_ratio: wpfloat = 36.0,
+        hdiff_w_efdt_ratio: wpfloat = 15.0,
+        smagorinski_scaling_factor: wpfloat = 0.015,
         n_substeps: int = 5,
         zdiffu_t: bool = True,
-        thslp_zdiffu: float = 0.025,
-        thhgtd_zdiffu: float = 200.0,
-        velocity_boundary_diffusion_denom: float = 200.0,
-        temperature_boundary_diffusion_denom: float = 135.0,
-        _nudge_max_coeff: float | None = None,  # default is set in __init__
-        max_nudging_coefficient: float | None = None,  # default is set in __init__
-        nudging_decay_rate: float = 2.0,
+        thslp_zdiffu: wpfloat = 0.025,
+        thhgtd_zdiffu: wpfloat = 200.0,
+        velocity_boundary_diffusion_denom: wpfloat = 200.0,  # denom_diffu_v
+        temperature_boundary_diffusion_denom: wpfloat = 135.0,  # denom_diffu_t
+        _nudge_max_coeff: wpfloat | None = None,  # default is set in __init__
+        max_nudging_coefficient: wpfloat | None = None,  # default is set in __init__
+        nudging_decay_rate: wpfloat = 2.0,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         ltkeshs: bool = True,
     ):
@@ -167,24 +169,24 @@ class DiffusionConfig:
 
         #: Ratio of e-folding time to (2*)time step
         #: Called 'hdiff_efdt_ratio' in mo_diffusion_nml.f90
-        self.hdiff_efdt_ratio: float = hdiff_efdt_ratio
+        self.hdiff_efdt_ratio: wpfloat = wpfloat(hdiff_efdt_ratio)
 
         #: Ratio of e-folding time to time step for w diffusion (NH only)
         #: Called 'hdiff_w_efdt_ratio' in mo_diffusion_nml.f90.
-        self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
+        self.hdiff_w_efdt_ratio: wpfloat = wpfloat(hdiff_w_efdt_ratio)
 
         #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
         #: Called 'hdiff_smag_fac' in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
+        self.smagorinski_scaling_factor: wpfloat = wpfloat(smagorinski_scaling_factor)
 
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
 
         #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f90
-        self.thslp_zdiffu = thslp_zdiffu
+        self.thslp_zdiffu: wpfloat = wpfloat(thslp_zdiffu)
         #: threshold [m] for height difference between adjacent grid points, defaults to 200m (temperature diffusion)
-        self.thhgtd_zdiffu = thhgtd_zdiffu
+        self.thhgtd_zdiffu: wpfloat = wpfloat(thhgtd_zdiffu)
 
         # from other namelists:
         # from parent namelist mo_nonhydrostatic_nml
@@ -197,13 +199,15 @@ class DiffusionConfig:
 
         #: Denominator for temperature boundary diffusion
         #: Called 'denom_diffu_t' in mo_gridref_nml.f90
-        self.temperature_boundary_diffusion_denominator: float = (
+        self.temperature_boundary_diffusion_denominator: wpfloat = wpfloat(
             temperature_boundary_diffusion_denom
         )
 
         #: Denominator for velocity boundary diffusion
         #: Called 'denom_diffu_v' in mo_gridref_nml.f90
-        self.velocity_boundary_diffusion_denominator: float = velocity_boundary_diffusion_denom
+        self.velocity_boundary_diffusion_denominator: wpfloat = wpfloat(
+            velocity_boundary_diffusion_denom
+        )
 
         # parameters from namelist: mo_interpol_nml.f90
 
@@ -221,19 +225,19 @@ class DiffusionConfig:
                 "Cannot set both '_max_nudging_coefficient' and 'scaled_max_nudging_coefficient'."
             )
         elif max_nudging_coefficient is not None:
-            self.max_nudging_coefficient: float = max_nudging_coefficient
+            self.max_nudging_coefficient: wpfloat = wpfloat(max_nudging_coefficient)
         elif _nudge_max_coeff is not None:
-            self.max_nudging_coefficient: float = (
-                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * _nudge_max_coeff
+            self.max_nudging_coefficient: wpfloat = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * wpfloat(_nudge_max_coeff)
             )
         else:  # default value in ICON
-            self.max_nudging_coefficient: float = (
-                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * 0.02
+            self.max_nudging_coefficient: wpfloat = (
+                constants.DEFAULT_DYNAMICS_TO_PHYSICS_TIMESTEP_RATIO * wpfloat(0.02)
             )
 
         #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
         #: Called 'nudge_efold_width' in mo_interpol_nml.f90
-        self.nudge_efold_width: float = nudging_decay_rate
+        self.nudge_efold_width: wpfloat = wpfloat(nudging_decay_rate)
 
         #: Type of shear forcing used in turbulence
         #: Called 'itype_shear' in mo_turbdiff_nml.f90
@@ -270,7 +274,7 @@ class DiffusionConfig:
 
     @functools.cached_property
     def substep_as_float(self):
-        return float(self.ndyn_substeps)
+        return wpfloat(self.ndyn_substeps)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -278,25 +282,33 @@ class DiffusionParams:
     """Calculates derived quantities depending on the diffusion config."""
 
     config: dataclasses.InitVar[DiffusionConfig]
-    K2: Final[float] = dataclasses.field(init=False)
-    K4: Final[float] = dataclasses.field(init=False)
-    K6: Final[float] = dataclasses.field(init=False)
-    K4W: Final[float] = dataclasses.field(init=False)
-    smagorinski_factor: Final[float] = dataclasses.field(init=False)
-    smagorinski_height: Final[float] = dataclasses.field(init=False)
+    K2: Final[wpfloat] = dataclasses.field(init=False)
+    K4: Final[wpfloat] = dataclasses.field(init=False)
+    K6: Final[wpfloat] = dataclasses.field(init=False)
+    K4W: Final[wpfloat] = dataclasses.field(init=False)
+    smagorinski_factor: Final[wpfloat] = dataclasses.field(init=False)
+    smagorinski_height: Final[wpfloat] = dataclasses.field(init=False)
 
     def __post_init__(self, config):
         object.__setattr__(
             self,
             "K2",
-            (1.0 / (config.hdiff_efdt_ratio * 8.0) if config.hdiff_efdt_ratio > 0.0 else 0.0),
+            (
+                wpfloat(1.0) / (config.hdiff_efdt_ratio * wpfloat(8.0))
+                if config.hdiff_efdt_ratio > wpfloat(0.0)
+                else wpfloat(0.0)
+            ),
         )
-        object.__setattr__(self, "K4", self.K2 / 8.0)
-        object.__setattr__(self, "K6", self.K2 / 64.0)
+        object.__setattr__(self, "K4", self.K2 / wpfloat(8.0))
+        object.__setattr__(self, "K6", self.K2 / wpfloat(64.0))
         object.__setattr__(
             self,
             "K4W",
-            (1.0 / (config.hdiff_w_efdt_ratio * 36.0) if config.hdiff_w_efdt_ratio > 0 else 0.0),
+            (
+                wpfloat(1.0) / (config.hdiff_w_efdt_ratio * wpfloat(36.0))
+                if config.hdiff_w_efdt_ratio > wpfloat(0.0)
+                else wpfloat(0.0)
+            ),
         )
 
         (
@@ -326,7 +338,7 @@ class DiffusionParams:
                 smagorinski_factor = (
                     config.smagorinski_scaling_factor
                     if config.smagorinski_scaling_factor
-                    else 0.15,
+                    else wpfloat(0.15),
                 )
                 smagorinski_height = None
             case _:
@@ -343,12 +355,12 @@ def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
 
     The calculation and magic numbers are taken from mo_diffusion_nml.f90
     """
-    magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
+    magic_sqrt = sqrt(1600.0 * (1600.0 + 50000.0))
     magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
     magic_z2 = 1600.0 + 50000.0 + magic_sqrt
     factor = (config.smagorinski_scaling_factor, magic_fac2_value, 0.0, 1.0)
     heights = (32500.0, magic_z2, 50000.0, 90000.0)
-    return factor, heights
+    return gtx.astype((factor, heights), wpfloat)
 
 
 class Diffusion:
@@ -386,23 +398,30 @@ class Diffusion:
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
             self._exchange
         )  # wait on a communication handle
-        self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
-            constants.CPD - constants.GAS_CONSTANT_DRY_AIR
+        self.rd_o_cvd: vpfloat = gtx.astype(
+            constants.GAS_CONSTANT_DRY_AIR / (constants.CPD - constants.GAS_CONSTANT_DRY_AIR),
+            vpfloat,
         )
         #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
-        self.thresh_tdiff: float = -5.0
+        self.thresh_tdiff: wpfloat = wpfloat(-5.0)
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
-        self.nudgezone_diff: float = 0.04 / (
-            config.max_nudging_coefficient + sys.float_info.epsilon
+        self.nudgezone_diff: vpfloat = gtx.astype(
+            wpfloat(0.04) / (config.max_nudging_coefficient + constants.WP_EPS), vpfloat
         )
-        self.bdy_diff: float = 0.015 / (config.max_nudging_coefficient + sys.float_info.epsilon)
-        self.fac_bdydiff_v: float = (
-            math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
+        self.bdy_diff: wpfloat = wpfloat(0.015) / (
+            config.max_nudging_coefficient + constants.WP_EPS
+        )
+        self.fac_bdydiff_v: wpfloat = (
+            sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
         )
 
-        self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
-        self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
+        self.smag_offset: vpfloat = gtx.astype(
+            wpfloat(0.25) * params.K4 * config.substep_as_float, vpfloat
+        )
+        self.diff_multfac_w: wpfloat = gtx.astype(
+            min(wpfloat(1.0) / wpfloat(48.0), params.K4W * config.substep_as_float), wpfloat
+        )
         self._determine_horizontal_domains()
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
@@ -511,7 +530,7 @@ class Diffusion:
             constant_args={
                 "theta_ref_mc": self._metric_state.theta_ref_mc,
                 "thresh_tdiff": self.thresh_tdiff,
-                "smallest_vpfloat": constants.DBL_EPS,
+                "smallest_vpfloat": constants.VP_EPS,
             },
             horizontal_sizes={
                 "horizontal_start": self._edge_start_nudging,
@@ -574,6 +593,7 @@ class Diffusion:
             self.enh_smag_fac,
             offset_provider={"Koff": dims.KDim},
         )
+
         setup_program(
             backend=backend,
             program=diffusion_utils.init_nabla2_factor_in_upper_damping_zone,
@@ -585,10 +605,10 @@ class Diffusion:
                 "vertical_start": 1,
                 "vertical_end": gtx.int32(self._vertical_grid.end_index_of_damping_layer + 1),
                 "end_index_of_damping_layer": self._vertical_grid.end_index_of_damping_layer,
-                "heights_1": self._vertical_grid.interface_physical_height.ndarray[1].item(),
-                "heights_nrd_shift": self._vertical_grid.interface_physical_height.ndarray[
+                "heights_1": self._vertical_grid.interface_physical_height[1].as_scalar(),
+                "heights_nrd_shift": self._vertical_grid.interface_physical_height[
                     self._vertical_grid.end_index_of_damping_layer + 1
-                ].item(),
+                ].as_scalar(),
             },
         )(diff_multfac_n2w=self.diff_multfac_n2w)
 
@@ -673,7 +693,7 @@ class Diffusion:
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
-        dtime: float,
+        dtime: wpfloat,
     ):
         """
         Calculate initial diffusion step.
@@ -696,7 +716,7 @@ class Diffusion:
             smag_limit,
         )
         self._do_diffusion_step(
-            diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, 0.0
+            diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, wpfloat(0.0)
         )
         self._sync_cell_fields(prognostic_state)
 
@@ -704,7 +724,7 @@ class Diffusion:
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
-        dtime: float,
+        dtime: wpfloat,
     ):
         """
         Do one diffusion step within regular time loop.
@@ -742,10 +762,10 @@ class Diffusion:
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
-        dtime: float,
-        diff_multfac_vn: fa.KField[float],
-        smag_limit: fa.KField[float],
-        smag_offset: float,
+        dtime: wpfloat,
+        diff_multfac_vn: fa.KField[wpfloat],
+        smag_limit: fa.KField[wpfloat],
+        smag_offset: wpfloat,
     ):
         """
         Run a diffusion step.

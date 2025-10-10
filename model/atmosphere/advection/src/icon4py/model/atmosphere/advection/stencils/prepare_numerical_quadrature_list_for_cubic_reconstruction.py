@@ -53,7 +53,7 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
     wgt_zeta_2: ta.wpfloat,
     wgt_eta_1: ta.wpfloat,
     wgt_eta_2: ta.wpfloat,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     eps: ta.wpfloat,
 ) -> tuple[
     fa.EdgeKField[ta.vpfloat],
@@ -110,7 +110,7 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
 
     wgt_t_detjac_1 = where(
         famask_bool,
-        dbl_eps
+        wp_eps
         + z_wgt_1
         * (
             (
@@ -134,7 +134,7 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
     )
     wgt_t_detjac_2 = where(
         famask_bool,
-        dbl_eps
+        wp_eps
         + z_wgt_2
         * (
             (
@@ -158,7 +158,7 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
     )
     wgt_t_detjac_3 = where(
         famask_bool,
-        dbl_eps
+        wp_eps
         + z_wgt_3
         * (
             (
@@ -182,7 +182,7 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
     )
     wgt_t_detjac_4 = where(
         famask_bool,
-        dbl_eps
+        wp_eps
         + z_wgt_4
         * (
             (
@@ -378,7 +378,7 @@ def prepare_numerical_quadrature_list_for_cubic_reconstruction(
     wgt_zeta_2: ta.wpfloat,
     wgt_eta_1: ta.wpfloat,
     wgt_eta_2: ta.wpfloat,
-    dbl_eps: ta.wpfloat,
+    wp_eps: ta.wpfloat,
     eps: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -424,7 +424,7 @@ def prepare_numerical_quadrature_list_for_cubic_reconstruction(
         wgt_zeta_2,
         wgt_eta_1,
         wgt_eta_2,
-        dbl_eps,
+        wp_eps,
         eps,
         out=(
             p_quad_vector_sum_1,

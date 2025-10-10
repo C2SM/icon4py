@@ -9,7 +9,7 @@
 from gt4py import next as gtx
 from gt4py.next import arccos, cos, sin, sqrt, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2V, Koff
 from icon4py.model.common.type_alias import wpfloat
 
@@ -29,7 +29,7 @@ def average_level_plus1_on_cells(
     Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(Koff[1]))
+    return wpfloat(0.5) * (half_level_field + half_level_field(Koff[1]))
 
 
 @gtx.field_operator
@@ -47,7 +47,7 @@ def average_level_plus1_on_edges(
     Returns: fa.EdgeKField[wpfloat] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(Koff[1]))
+    return wpfloat(0.5) * (half_level_field + half_level_field(Koff[1]))
 
 
 @gtx.field_operator
@@ -100,8 +100,8 @@ def _grad_fd_tang(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def geographical_to_cartesian_on_cells(
-    lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat]
-) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
+    lat: fa.CellField[wpfloat], lon: fa.CellField[wpfloat]
+) -> tuple[fa.CellField[wpfloat], fa.CellField[wpfloat], fa.CellField[wpfloat]]:
     """
     Convert geographical (lat, lon) coordinates to cartesian coordinates on the unit sphere.
 
@@ -123,8 +123,8 @@ def geographical_to_cartesian_on_cells(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def geographical_to_cartesian_on_edges(
-    lat: fa.EdgeField[ta.wpfloat], lon: fa.EdgeField[ta.wpfloat]
-) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    lat: fa.EdgeField[wpfloat], lon: fa.EdgeField[wpfloat]
+) -> tuple[fa.EdgeField[wpfloat], fa.EdgeField[wpfloat], fa.EdgeField[wpfloat]]:
     """
     Convert geographical (lat, lon) coordinates to cartesian coordinates on the unit sphere.
 
@@ -146,8 +146,8 @@ def geographical_to_cartesian_on_edges(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def geographical_to_cartesian_on_vertices(
-    lat: fa.VertexField[ta.wpfloat], lon: fa.VertexField[ta.wpfloat]
-) -> tuple[fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat]]:
+    lat: fa.VertexField[wpfloat], lon: fa.VertexField[wpfloat]
+) -> tuple[fa.VertexField[wpfloat], fa.VertexField[wpfloat], fa.VertexField[wpfloat]]:
     """
     Convert geographical (lat, lon) coordinates to cartesian coordinates on the unit sphere.
 
@@ -169,52 +169,52 @@ def geographical_to_cartesian_on_vertices(
 
 @gtx.field_operator
 def dot_product_on_edges(
-    x1: fa.EdgeField[ta.wpfloat],
-    x2: fa.EdgeField[ta.wpfloat],
-    y1: fa.EdgeField[ta.wpfloat],
-    y2: fa.EdgeField[ta.wpfloat],
-    z1: fa.EdgeField[ta.wpfloat],
-    z2: fa.EdgeField[ta.wpfloat],
-) -> fa.EdgeField[ta.wpfloat]:
+    x1: fa.EdgeField[wpfloat],
+    x2: fa.EdgeField[wpfloat],
+    y1: fa.EdgeField[wpfloat],
+    y2: fa.EdgeField[wpfloat],
+    z1: fa.EdgeField[wpfloat],
+    z2: fa.EdgeField[wpfloat],
+) -> fa.EdgeField[wpfloat]:
     """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
     return x1 * x2 + y1 * y2 + z1 * z2
 
 
 @gtx.field_operator
 def dot_product_on_cells(
-    x1: fa.CellField[ta.wpfloat],
-    x2: fa.CellField[ta.wpfloat],
-    y1: fa.CellField[ta.wpfloat],
-    y2: fa.CellField[ta.wpfloat],
-    z1: fa.CellField[ta.wpfloat],
-    z2: fa.CellField[ta.wpfloat],
-) -> fa.CellField[ta.wpfloat]:
+    x1: fa.CellField[wpfloat],
+    x2: fa.CellField[wpfloat],
+    y1: fa.CellField[wpfloat],
+    y2: fa.CellField[wpfloat],
+    z1: fa.CellField[wpfloat],
+    z2: fa.CellField[wpfloat],
+) -> fa.CellField[wpfloat]:
     """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
     return x1 * x2 + y1 * y2 + z1 * z2
 
 
 @gtx.field_operator
 def dot_product_on_vertices(
-    x1: fa.VertexField[ta.wpfloat],
-    x2: fa.VertexField[ta.wpfloat],
-    y1: fa.VertexField[ta.wpfloat],
-    y2: fa.VertexField[ta.wpfloat],
-    z1: fa.VertexField[ta.wpfloat],
-    z2: fa.VertexField[ta.wpfloat],
-) -> fa.VertexField[ta.wpfloat]:
+    x1: fa.VertexField[wpfloat],
+    x2: fa.VertexField[wpfloat],
+    y1: fa.VertexField[wpfloat],
+    y2: fa.VertexField[wpfloat],
+    z1: fa.VertexField[wpfloat],
+    z2: fa.VertexField[wpfloat],
+) -> fa.VertexField[wpfloat]:
     """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
     return x1 * x2 + y1 * y2 + z1 * z2
 
 
 @gtx.field_operator
 def cross_product_on_edges(
-    x1: fa.EdgeField[ta.wpfloat],
-    x2: fa.EdgeField[ta.wpfloat],
-    y1: fa.EdgeField[ta.wpfloat],
-    y2: fa.EdgeField[ta.wpfloat],
-    z1: fa.EdgeField[ta.wpfloat],
-    z2: fa.EdgeField[ta.wpfloat],
-) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    x1: fa.EdgeField[wpfloat],
+    x2: fa.EdgeField[wpfloat],
+    y1: fa.EdgeField[wpfloat],
+    y2: fa.EdgeField[wpfloat],
+    z1: fa.EdgeField[wpfloat],
+    z2: fa.EdgeField[wpfloat],
+) -> tuple[fa.EdgeField[wpfloat], fa.EdgeField[wpfloat], fa.EdgeField[wpfloat]]:
     """Compute cross product of cartesian vectors (x1, y1, z1) x (x2, y2, z2)"""
     x = y1 * z2 - z1 * y2
     y = z1 * x2 - x1 * z2
@@ -224,8 +224,8 @@ def cross_product_on_edges(
 
 @gtx.field_operator
 def norm2_on_edges(
-    x: fa.EdgeField[ta.wpfloat], y: fa.EdgeField[ta.wpfloat], z: fa.EdgeField[ta.wpfloat]
-) -> fa.EdgeField[ta.wpfloat]:
+    x: fa.EdgeField[wpfloat], y: fa.EdgeField[wpfloat], z: fa.EdgeField[wpfloat]
+) -> fa.EdgeField[wpfloat]:
     """
     Compute 2 norm of a cartesian vector (x, y, z)
     Args:
@@ -242,8 +242,8 @@ def norm2_on_edges(
 
 @gtx.field_operator
 def norm2_on_cells(
-    x: fa.CellField[ta.wpfloat], y: fa.CellField[ta.wpfloat], z: fa.CellField[ta.wpfloat]
-) -> fa.CellField[ta.wpfloat]:
+    x: fa.CellField[wpfloat], y: fa.CellField[wpfloat], z: fa.CellField[wpfloat]
+) -> fa.CellField[wpfloat]:
     """
     Compute 2 norm of a cartesian vector (x, y, z)
     Args:
@@ -260,8 +260,8 @@ def norm2_on_cells(
 
 @gtx.field_operator
 def norm2_on_vertices(
-    x: fa.VertexField[ta.wpfloat], y: fa.VertexField[ta.wpfloat], z: fa.VertexField[ta.wpfloat]
-) -> fa.VertexField[ta.wpfloat]:
+    x: fa.VertexField[wpfloat], y: fa.VertexField[wpfloat], z: fa.VertexField[wpfloat]
+) -> fa.VertexField[wpfloat]:
     """
     Compute 2 norm of a cartesian vector (x, y, z)
     Args:
@@ -278,8 +278,8 @@ def norm2_on_vertices(
 
 @gtx.field_operator
 def normalize_cartesian_vector_on_edges(
-    v_x: fa.EdgeField[ta.wpfloat], v_y: fa.EdgeField[ta.wpfloat], v_z: fa.EdgeField[ta.wpfloat]
-) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    v_x: fa.EdgeField[wpfloat], v_y: fa.EdgeField[wpfloat], v_z: fa.EdgeField[wpfloat]
+) -> tuple[fa.EdgeField[wpfloat], fa.EdgeField[wpfloat], fa.EdgeField[wpfloat]]:
     """
     Normalize a cartesian vector.
 
@@ -297,7 +297,7 @@ def normalize_cartesian_vector_on_edges(
 
 
 @gtx.field_operator
-def invert_edge_field(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
+def invert_edge_field(f: fa.EdgeField[wpfloat]) -> fa.EdgeField[wpfloat]:
     """
     Invert values.
     Args:
@@ -306,13 +306,13 @@ def invert_edge_field(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
     Returns:
         1/f where f is not zero.
     """
-    return where(f != 0.0, 1.0 / f, f)
+    return where(f != wpfloat(0.0), wpfloat(1.0) / f, f)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_inverse_on_edges(
-    f: fa.EdgeField[ta.wpfloat],
-    f_inverse: fa.EdgeField[ta.wpfloat],
+    f: fa.EdgeField[wpfloat],
+    f_inverse: fa.EdgeField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
@@ -321,12 +321,12 @@ def compute_inverse_on_edges(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def zonal_and_meridional_components_on_cells(
-    lat: fa.CellField[ta.wpfloat],
-    lon: fa.CellField[ta.wpfloat],
-    x: fa.CellField[ta.wpfloat],
-    y: fa.CellField[ta.wpfloat],
-    z: fa.CellField[ta.wpfloat],
-) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
+    lat: fa.CellField[wpfloat],
+    lon: fa.CellField[wpfloat],
+    x: fa.CellField[wpfloat],
+    y: fa.CellField[wpfloat],
+    z: fa.CellField[wpfloat],
+) -> tuple[fa.CellField[wpfloat], fa.CellField[wpfloat]]:
     """
     Compute normalized zonal and meridional components of a cartesian vector (x, y, z) at point (lat, lon)
 
@@ -355,12 +355,12 @@ def zonal_and_meridional_components_on_cells(
 
 @gtx.field_operator
 def zonal_and_meridional_components_on_edges(
-    lat: fa.EdgeField[ta.wpfloat],
-    lon: fa.EdgeField[ta.wpfloat],
-    x: fa.EdgeField[ta.wpfloat],
-    y: fa.EdgeField[ta.wpfloat],
-    z: fa.EdgeField[ta.wpfloat],
-) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    lat: fa.EdgeField[wpfloat],
+    lon: fa.EdgeField[wpfloat],
+    x: fa.EdgeField[wpfloat],
+    y: fa.EdgeField[wpfloat],
+    z: fa.EdgeField[wpfloat],
+) -> tuple[fa.EdgeField[wpfloat], fa.EdgeField[wpfloat]]:
     """
     Compute the zonal and meridional component of a vector (x, y, z) at position (lat, lon)
 
@@ -389,13 +389,13 @@ def zonal_and_meridional_components_on_edges(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_components_on_edges(
-    lat: fa.EdgeField[ta.wpfloat],
-    lon: fa.EdgeField[ta.wpfloat],
-    x: fa.EdgeField[ta.wpfloat],
-    y: fa.EdgeField[ta.wpfloat],
-    z: fa.EdgeField[ta.wpfloat],
-    u: fa.EdgeField[ta.wpfloat],
-    v: fa.EdgeField[ta.wpfloat],
+    lat: fa.EdgeField[wpfloat],
+    lon: fa.EdgeField[wpfloat],
+    x: fa.EdgeField[wpfloat],
+    y: fa.EdgeField[wpfloat],
+    z: fa.EdgeField[wpfloat],
+    u: fa.EdgeField[wpfloat],
+    v: fa.EdgeField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
@@ -406,11 +406,11 @@ def compute_zonal_and_meridional_components_on_edges(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
-    lat: fa.EdgeField[ta.wpfloat],
-    lon: fa.EdgeField[ta.wpfloat],
-    u: fa.EdgeField[ta.wpfloat],
-    v: fa.EdgeField[ta.wpfloat],
-) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    lat: fa.EdgeField[wpfloat],
+    lon: fa.EdgeField[wpfloat],
+    u: fa.EdgeField[wpfloat],
+    v: fa.EdgeField[wpfloat],
+) -> tuple[fa.EdgeField[wpfloat], fa.EdgeField[wpfloat], fa.EdgeField[wpfloat]]:
     """
     Compute cartesian coordinates from zonal an meridional components at position (lat, lon)
     Args:
@@ -438,13 +438,13 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
-    edge_lat: fa.EdgeField[ta.wpfloat],
-    edge_lon: fa.EdgeField[ta.wpfloat],
-    u: fa.EdgeField[ta.wpfloat],
-    v: fa.EdgeField[ta.wpfloat],
-    x: fa.EdgeField[ta.wpfloat],
-    y: fa.EdgeField[ta.wpfloat],
-    z: fa.EdgeField[ta.wpfloat],
+    edge_lat: fa.EdgeField[wpfloat],
+    edge_lon: fa.EdgeField[wpfloat],
+    u: fa.EdgeField[wpfloat],
+    v: fa.EdgeField[wpfloat],
+    x: fa.EdgeField[wpfloat],
+    y: fa.EdgeField[wpfloat],
+    z: fa.EdgeField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
@@ -460,11 +460,11 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
-    lat: fa.CellField[ta.wpfloat],
-    lon: fa.CellField[ta.wpfloat],
-    u: fa.CellField[ta.wpfloat],
-    v: fa.CellField[ta.wpfloat],
-) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
+    lat: fa.CellField[wpfloat],
+    lon: fa.CellField[wpfloat],
+    u: fa.CellField[wpfloat],
+    v: fa.CellField[wpfloat],
+) -> tuple[fa.CellField[wpfloat], fa.CellField[wpfloat], fa.CellField[wpfloat]]:
     """
     Compute cartesian coordinates form zonal an meridonal components at position (lat, lon)
     Args:
@@ -492,13 +492,13 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
-    cell_lat: fa.CellField[ta.wpfloat],
-    cell_lon: fa.CellField[ta.wpfloat],
-    u: fa.CellField[ta.wpfloat],
-    v: fa.CellField[ta.wpfloat],
-    x: fa.CellField[ta.wpfloat],
-    y: fa.CellField[ta.wpfloat],
-    z: fa.CellField[ta.wpfloat],
+    cell_lat: fa.CellField[wpfloat],
+    cell_lon: fa.CellField[wpfloat],
+    u: fa.CellField[wpfloat],
+    v: fa.CellField[wpfloat],
+    x: fa.CellField[wpfloat],
+    y: fa.CellField[wpfloat],
+    z: fa.CellField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
@@ -514,13 +514,13 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
 
 @gtx.field_operator
 def arc_length_on_edges(
-    x0: fa.EdgeField[ta.wpfloat],
-    x1: fa.EdgeField[ta.wpfloat],
-    y0: fa.EdgeField[ta.wpfloat],
-    y1: fa.EdgeField[ta.wpfloat],
-    z0: fa.EdgeField[ta.wpfloat],
-    z1: fa.EdgeField[ta.wpfloat],
-    radius: ta.wpfloat,
+    x0: fa.EdgeField[wpfloat],
+    x1: fa.EdgeField[wpfloat],
+    y0: fa.EdgeField[wpfloat],
+    y1: fa.EdgeField[wpfloat],
+    z0: fa.EdgeField[wpfloat],
+    z1: fa.EdgeField[wpfloat],
+    radius: wpfloat,
 ):
     """
     Compute the arc length between two points on the sphere.

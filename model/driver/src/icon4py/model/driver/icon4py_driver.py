@@ -27,6 +27,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import device_utils
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
@@ -55,9 +56,9 @@ class TimeLoop:
         self._n_time_steps: int = int(
             (self.run_config.end_date - self.run_config.start_date) / self.run_config.dtime
         )
-        self.dtime_in_seconds: float = self.run_config.dtime.total_seconds()
+        self.dtime_in_seconds: wpfloat = wpfloat(self.run_config.dtime.total_seconds())
         self._n_substeps_var: int = self.run_config.n_substeps
-        self._substep_timestep: float = float(self.dtime_in_seconds / self._n_substeps_var)
+        self._substep_timestep: wpfloat = self.dtime_in_seconds / wpfloat(self._n_substeps_var)
 
         self._validate_config()
 
@@ -114,7 +115,7 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        second_order_divdamp_factor: float,
+        second_order_divdamp_factor: wpfloat,
         do_prep_adv: bool,
         profiling: driver_config.ProfilingConfig | None = None,
     ):
@@ -200,7 +201,7 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        second_order_divdamp_factor: float,
+        second_order_divdamp_factor: wpfloat,
         do_prep_adv: bool,
     ):
         # TODO(OngChia): Add update_spinup_damping here to compute second_order_divdamp_factor
@@ -268,7 +269,7 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        second_order_divdamp_factor: float,
+        second_order_divdamp_factor: wpfloat,
         do_prep_adv: bool,
     ):
         # TODO(OngChia): compute airmass for prognostic_state here
@@ -331,7 +332,7 @@ class DriverParams(NamedTuple):
         second_order_divdamp_factor: Second order divergence damping factor.
     """
 
-    second_order_divdamp_factor: float
+    second_order_divdamp_factor: wpfloat
 
 
 def initialize(
@@ -522,9 +523,10 @@ def initialize(
 )
 @click.option(
     "--enable_profiling",
-    is_flag=True,
-    default=False,
-    help="Enable detailed profiling with GT4Py metrics.",
+    is_flag=False,
+    flag_value="gt4py_metrics.json",
+    default="",
+    help="Enable detailed profiling with GT4Py metrics. Can be a flag (--enable_profiling) or provide a filename (--enable_profiling='gt4py_metrics.json').",
 )
 @click.option(
     "--icon4py_driver_backend",
@@ -602,7 +604,9 @@ def icon4py_driver(
         ds.prep_advection_prognostic,
         dp.second_order_divdamp_factor,
         do_prep_adv=False,
-        profiling=driver_config.ProfilingConfig() if enable_profiling else None,
+        profiling=driver_config.ProfilingConfig(gt4py_metrics_output_file=enable_profiling)
+        if enable_profiling
+        else None,
     )
 
     log.info("time loop:  DONE")

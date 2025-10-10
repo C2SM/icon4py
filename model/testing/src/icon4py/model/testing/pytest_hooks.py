@@ -35,10 +35,9 @@ def pytest_configure(config):
         "markers",
         "level(name): marks test as unit or integration tests, mostly applicable where both are available",
     )
-
-    # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
-    if config.getoption("--enable-mixed-precision"):
-        os.environ["FLOAT_PRECISION"] = "mixed"
+    config.addinivalue_line(
+        "markers", "single_precision_ready: intended to run if single precision is selected"
+    )
 
     # Handle datatest options: --datatest-only  and --datatest-skip
     if m_option := config.getoption("-m", []):
@@ -48,6 +47,9 @@ def pytest_configure(config):
 
     if config.getoption("--datatest-skip"):
         config.option.markexpr = " and ".join(["not datatest", *m_option])
+
+    if os.environ.get("FLOAT_PRECISION", "double").lower() == "single":
+        config.option.markexpr = " and ".join(["single_precision_ready", *m_option])
 
 
 def pytest_addoption(parser: pytest.Parser):
@@ -83,13 +85,22 @@ def pytest_addoption(parser: pytest.Parser):
             help="Grid to use.",
         )
 
-    with contextlib.suppress(ValueError):
-        parser.addoption(
-            "--enable-mixed-precision",
-            action="store_true",
-            help="Switch unit tests from double to mixed-precision",
-            default=False,
-        )
+    # TODO(pstark): remove
+    # with contextlib.suppress(ValueError):
+    #     parser.addoption(
+    #         "--enable-mixed-precision",
+    #         action="store_true",
+    #         help="Switch unit tests from double to mixed-precision",
+    #         default=False,
+    #     )
+
+    # with contextlib.suppress(ValueError):
+    #     parser.addoption(
+    #         "--enable-single-precision",
+    #         action="store_true",
+    #         help="Switch unit tests from double / mixed to single-precision",
+    #         default=False,
+    #     )
 
     with contextlib.suppress(ValueError):
         parser.addoption(
@@ -107,9 +118,9 @@ def pytest_collection_modifyitems(config, items):
         return
     for item in items:
         if (marker := item.get_closest_marker("level")) is not None:
-            assert all(
-                level in _TEST_LEVELS for level in marker.args
-            ), f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
+            assert all(level in _TEST_LEVELS for level in marker.args), (
+                f"Invalid test level argument on function '{item.name}' - possible values are {_TEST_LEVELS}"
+            )
             if test_level not in marker.args:
                 item.add_marker(
                     pytest.mark.skip(

@@ -93,7 +93,7 @@ def test_run_solve_nonhydro_single_step(
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
-    dtime = sp_v.get_metadata("dtime").get("dtime")
+    dtime = sp_v.dtime()
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     # clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")  # noqa: ERA001 [commented-out-code]
     prep_adv = dycore_states.PrepAdvection(
