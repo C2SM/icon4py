@@ -82,7 +82,7 @@ def test_solve_nonhydro_benchmark(
     dtime = 90.0 if benchmark_grid == definitions.Grids.R02B07_GLOBAL else 10.0
 
     lprep_adv = True
-    ndyn_substeps = 5
+    ndyn_substeps = 1
     at_initial_timestep = False
     second_order_divdamp_factor = 0.0
 
