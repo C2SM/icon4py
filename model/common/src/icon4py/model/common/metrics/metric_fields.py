@@ -603,7 +603,7 @@ def compute_nflat_gradp(
     array_ns: ModuleType = np,
 ) -> int:
     """
-    compute the nflat_gradp value as the minimum value of the flat_idx array.
+    compute the nflat_gradp value as the minimum value of the flat_idx_max array.
     """
     boundary_mask = array_ns.arange(flat_idx_max.shape[0]) >= lateral_boundary_level
     mask_array = array_ns.where(
@@ -611,7 +611,7 @@ def compute_nflat_gradp(
         flat_idx_max,
         nlev,
     )
-    nflat_gradp = int(array_ns.min(mask_array))
+    nflat_gradp = array_ns.min(mask_array)
     return nflat_gradp
 
 

@@ -47,12 +47,7 @@ def test_diffusion_benchmark(
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-    if benchmark_grid == definitions.Grids.R02B07_GLOBAL:
-        dtime = 1.5
-    elif benchmark_grid == definitions.Grids.MCH_OPR_R19B08_DOMAIN01:
-        dtime = 1.0 / 6.0
-    else:
-        dtime = 1.0
+    dtime = 10.0
 
     config = diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,

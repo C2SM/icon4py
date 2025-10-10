@@ -80,11 +80,9 @@ def test_solve_nonhydro_benchmark(
     benchmark: Any,
 ) -> None:
     if benchmark_grid == definitions.Grids.R02B07_GLOBAL:
-        dtime = 1.5
-    elif benchmark_grid == definitions.Grids.MCH_OPR_R19B08_DOMAIN01:
-        dtime = 1.0 / 6.0
+        dtime = 90.0
     else:
-        dtime = 1.0
+        dtime = 10.0
 
     lprep_adv = True
     ndyn_substeps = 5

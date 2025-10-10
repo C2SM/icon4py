@@ -71,18 +71,6 @@ def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
     The default parametrization is often overwritten for specific tests."""
     return request.param
 
-
-@pytest.fixture(
-    params=[definitions.Grids.MCH_OPR_R04B07_DOMAIN01],
-    ids=lambda r: r.name,
-)
-def benchmark_grid(request: pytest.FixtureRequest) -> definitions.GridDescription:
-    """Default parametrization for benchmark testing.
-
-    The default parametrization is often overwritten for specific tests."""
-    return request.param
-
-
 @pytest.fixture(params=[False], scope="session")
 def processor_props(request: pytest.FixtureRequest) -> decomposition.ProcessProperties:
     return dt_utils.get_processor_properties_for_run(decomposition.SingleNodeRun())
