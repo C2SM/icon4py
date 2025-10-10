@@ -88,7 +88,7 @@ def test_solve_nonhydro_benchmark(
 
     lprep_adv = True
     ndyn_substeps = (
-        2  # TODO (Yilu) should change back to 5 before merging, 2 is for speeding up the test
+        5
     )
     at_initial_timestep = False
     second_order_divdamp_factor = 0.0
