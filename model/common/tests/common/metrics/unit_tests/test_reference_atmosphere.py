@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
-from mypy.fastparse import Constant
 
 import icon4py.model.common.type_alias as ta
 import icon4py.model.testing.test_utils as stencil_tests
