@@ -40,13 +40,10 @@ from ..fixtures import *  # noqa: F403
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
-@pytest.mark.parametrize(
-    "grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
-)
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-def test_run_diffusion_benchmark(
-    grid: definitions.GridDescription,
+def test_diffusion_benchmark(
+    benchmark_grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
@@ -73,7 +70,7 @@ def test_run_diffusion_benchmark(
     diffusion_parameters = diffusion.DiffusionParams(config)
 
     grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid, num_levels=85, keep_skip_values=True, backend=backend
+        benchmark_grid, num_levels=85, keep_skip_values=True, backend=backend
     )
 
     mesh = grid_manager.grid
