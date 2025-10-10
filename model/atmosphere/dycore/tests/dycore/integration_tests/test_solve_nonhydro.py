@@ -1187,10 +1187,9 @@ def test_compute_perturbed_quantities_and_interpolation(
         rho_at_cells_on_half_levels.asnumpy(),
         rho_ic_ref.asnumpy(),
     )
-    # TODO: field fails at last k level
     assert test_utils.dallclose(
-        exner_at_cells_on_half_levels.asnumpy()[:, nflatlev : ],
-        z_exner_ic_ref.asnumpy()[:, nflatlev : ],
+        exner_at_cells_on_half_levels.asnumpy()[:, nflatlev:],
+        z_exner_ic_ref.asnumpy()[:, nflatlev:],
         rtol=1e-11,
     )
 
@@ -1202,7 +1201,6 @@ def test_compute_perturbed_quantities_and_interpolation(
         theta_v_at_cells_on_half_levels.asnumpy()[lb:, :], theta_v_ic_ref.asnumpy()[lb:, :]
     )
 
-    # TODO: this inherits error because it uses exner_at_cells_on_half_levels
     assert test_utils.dallclose(
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[lb:, nflatlev:],
         z_dexner_dz_c_1_ref.asnumpy()[lb:, nflatlev:],

@@ -32,9 +32,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_th
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
-    _init_cell_kdim_field_with_zero_vp,
-)
 from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
     _init_two_cell_kdim_fields_with_zero_vp,
 )
@@ -97,7 +94,7 @@ def _combined_field_operator(
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
-    nlev: gtx.int32
+    nlev: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
@@ -111,15 +108,8 @@ def _combined_field_operator(
     fa.CellKField[ta.vpfloat],
 ]:
     temporal_extrapolation_of_perturbed_exner = concat_where(
-        dims.KDim >= nlev-1, 0.0, temporal_extrapolation_of_perturbed_exner)
-
-    # _surface_computations
-    exner_at_cells_on_half_levels = concat_where(
-        dims.KDim >= nlev-1,
-        _interpolate_to_surface(
-            wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
-        ), exner_at_cells_on_half_levels) if igradp_method == horzpres_discr_type.TAYLOR_HYDRO else exner_at_cells_on_half_levels
-
+        dims.KDim >= nlev - 1, 0.0, temporal_extrapolation_of_perturbed_exner
+    )
 
     # _compute_perturbed_quantities_and_interpolation
     exner_at_cells_on_half_levels = (
@@ -127,6 +117,19 @@ def _combined_field_operator(
             (maximum(1, nflatlev) <= dims.KDim),
             _interpolate_cell_field_to_half_levels_vp(
                 wgtfac_c=wgtfac_c, interpolant=temporal_extrapolation_of_perturbed_exner
+            ),
+            exner_at_cells_on_half_levels,
+        )
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
+        else exner_at_cells_on_half_levels
+    )
+
+    # _surface_computations
+    exner_at_cells_on_half_levels = (
+        concat_where(
+            dims.KDim >= nlev - 1,
+            _interpolate_to_surface(
+                wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
             ),
             exner_at_cells_on_half_levels,
         )
@@ -145,7 +148,7 @@ def _combined_field_operator(
     )
 
     rho_at_cells_on_half_levels = concat_where(
-        (dims.KDim >= 1) & (dims.KDim < nlev-1),
+        (dims.KDim >= 1) & (dims.KDim < nlev - 1),
         _interpolate_cell_field_to_half_levels_wp(wgtfac_c, current_rho),
         rho_at_cells_on_half_levels,
     )
@@ -185,10 +188,11 @@ def _combined_field_operator(
 
     # _interpolate_to_surface
     perturbed_theta_v_at_cells_on_half_levels = concat_where(
-        dims.KDim >= nlev-1,
+        dims.KDim >= nlev - 1,
         wgtfacq_c(Koff[-1]) * perturbed_theta_v_at_cells_on_model_levels(Koff[-1])
         + wgtfacq_c(Koff[-2]) * perturbed_theta_v_at_cells_on_model_levels(Koff[-2])
-        + wgtfacq_c(Koff[-3]) * perturbed_theta_v_at_cells_on_model_levels(Koff[-3]), perturbed_theta_v_at_cells_on_half_levels
+        + wgtfacq_c(Koff[-3]) * perturbed_theta_v_at_cells_on_model_levels(Koff[-3]),
+        perturbed_theta_v_at_cells_on_half_levels,
     )
 
     # _compute_first_and_second_vertical_derivative_of_exner
