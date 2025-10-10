@@ -64,6 +64,7 @@ def compute_first_vertical_derivative_numpy(
     return first_vertical_derivative
 
 
+@pytest.mark.continuous_benchmarking
 @pytest.mark.uses_concat_where
 class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
     PROGRAM = compute_perturbed_quantities_and_interpolation
@@ -80,6 +81,33 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         "pressure_buoyancy_acceleration_at_cells_on_half_levels",
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "limited_area",
+            "igradp_method",
+            "start_cell_lateral_boundary_level_3",
+            "start_cell_halo_level_2",
+            "end_cell_end",
+            "end_cell_halo",
+            "end_cell_halo_level_2",
+            "start_cell_lateral_boundary",
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "nflatlev",
+            "nflat_gradp",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "limited_area",
+            "igradp_method",
+            "vertical_start",
+            "vertical_end",
+            "nflatlev",
+            "nflat_gradp",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -398,7 +426,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         end_cell_halo_level_2 = grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
         nflatlev = 4
-        nflat_gradp = 27
+        nflat_gradp = grid.num_levels // 2
 
         return dict(
             temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
