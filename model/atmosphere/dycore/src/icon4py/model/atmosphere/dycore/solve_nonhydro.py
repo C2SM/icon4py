@@ -690,7 +690,7 @@ class SolveNonhydro:
                 "divdamp_order": gtx.int32(self._config.divdamp_order),
                 "mean_cell_area": self._grid.global_properties.mean_cell_area,
                 "max_nudging_coefficient": self._config.max_nudging_coefficient,
-                "dbl_eps": constants.WP_EPS,
+                "wp_eps": constants.WP_EPS,
             },
         )
         self._compute_rayleigh_damping_factor = setup_program(
