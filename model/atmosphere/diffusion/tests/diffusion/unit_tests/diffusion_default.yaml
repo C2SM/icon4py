@@ -1,0 +1,21 @@
+diffusion:
+    diffusion_type: "SMAGORINSKY_4TH_ORDER"
+    apply_to_vertical_wind: True
+    apply_to_horizontal_wind: True
+    apply_to_temperature: True
+    type_vn_diffu: 1
+    compute_3d_smag_coeff: False
+    type_t_diffu: 2
+    hdiff_efdt_ratio: 36.0
+    hdiff_w_efdt_ratio: 15.0
+    smagorinski_scaling_factor: 0.015
+    n_substeps: 5
+    apply_zdiffusion_t: True
+    thslp_zdiffu: 0.025
+    thhgtd_zdiffu: 200.0
+    temperature_boundary_diffusion_denom: 135.0
+    velocity_boundary_diffusion_denom: 200.0
+    max_nudging_coefficient: 0.1
+    nudging_decay_rate: 2.0
+    shear_type: "VERTICAL_OF_HORIZONTAL_WIND"
+    ltkeshs: True
