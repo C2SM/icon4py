@@ -11,12 +11,13 @@ import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import parallel_helpers, test_utils
+from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
 
 from .. import utils
+from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -75,7 +76,7 @@ def test_run_solve_nonhydro_single_step(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = test_defs.construct_nonhydrostatic_config(experiment)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = nh.NonHydrostaticParams(config)
@@ -90,12 +91,10 @@ def test_run_solve_nonhydro_single_step(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
     dtime = sp_v.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
-    # clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")  # noqa: ERA001 [commented-out-code]
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
@@ -106,7 +105,6 @@ def test_run_solve_nonhydro_single_step(
     )
 
     recompute = sp_v.get_metadata("recompute").get("recompute")
-    # linit = sp_v.get_metadata("linit").get("linit")  # noqa: ERA001 [commented-out-code]
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=0.0,

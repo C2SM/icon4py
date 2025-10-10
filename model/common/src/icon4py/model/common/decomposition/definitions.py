@@ -207,9 +207,9 @@ class ExchangeResult(Protocol):
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]) -> ExchangeResult: ...
+    def exchange(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]) -> ExchangeResult: ...
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]) -> None: ...
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]) -> None: ...
 
     def get_size(self) -> int: ...
 
@@ -218,10 +218,10 @@ class ExchangeRuntime(Protocol):
 
 @dataclass
 class SingleNodeExchange:
-    def exchange(self, dim: gtx.Dimension, fields: Sequence[gtx.Field]) -> ExchangeResult:
+    def exchange(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: gtx.Dimension, fields: Sequence[gtx.Field]) -> None:
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]) -> None:
         return
 
     def my_rank(self) -> int:
