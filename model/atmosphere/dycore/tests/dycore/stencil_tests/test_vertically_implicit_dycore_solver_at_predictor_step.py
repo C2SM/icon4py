@@ -53,7 +53,6 @@ from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
 )
 
 
-@pytest.mark.continuous_benchmarking
 @pytest.mark.uses_concat_where
 class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_predictor_step
@@ -524,3 +523,28 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             vertical_start_index_model_top=gtx.int32(0),
             vertical_end_index_model_surface=gtx.int32(grid.num_levels + 1),
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestVerticallyImplicitSolverAtPredictorStepContinuousBenchmarking(
+    TestVerticallyImplicitSolverAtPredictorStep
+):
+    @pytest.fixture(
+        params=[{"at_first_substep": value} for value in [True, False]],
+        ids=lambda param: f"at_first_substep[{param['at_first_substep']}]",
+    )
+    def input_data(
+        self, request: pytest.FixtureRequest, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        assert (
+            grid.id == "01f00602-c07e-cd84-b894-bd17fffd2720"
+        ), "This test only works with the icon_benchmark grid."
+        base_data = TestVerticallyImplicitSolverAtPredictorStep.input_data.__wrapped__(
+            self, request, grid
+        )
+        base_data["at_first_substep"] = request.param["at_first_substep"]
+        base_data["is_iau_active"] = False
+        base_data["divdamp_type"] = 32
+        base_data["end_index_of_damping_layer"] = 13
+        base_data["kstart_moist"] = 0
+        return base_data

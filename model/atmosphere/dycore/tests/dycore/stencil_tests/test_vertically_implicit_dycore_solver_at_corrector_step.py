@@ -51,7 +51,6 @@ from .test_update_dynamical_exner_time_increment import update_dynamical_exner_t
 from .test_update_mass_volume_flux import update_mass_volume_flux_numpy
 
 
-@pytest.mark.continuous_benchmarking
 @pytest.mark.uses_concat_where
 class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_corrector_step
@@ -403,6 +402,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         params=[
             {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la}
             for afs, als, la in itertools.product(*([(True, False)] * 3))
+            if not (afs and als)
         ],
         ids=lambda p: (
             f"at_first_substep[{p['at_first_substep']}]__"
@@ -535,3 +535,37 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             vertical_start_index_model_top=gtx.int32(0),
             vertical_end_index_model_surface=gtx.int32(grid.num_levels + 1),
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestVerticallyImplicitSolverAtCorrectorStepContinuousBenchmarking(
+    TestVerticallyImplicitSolverAtCorrectorStep
+):
+    @pytest.fixture(
+        params=[
+            {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la}
+            for afs, als, la in itertools.product(*([(True, False)] * 3))
+            if not (afs and als)
+        ],
+        ids=lambda p: (
+            f"at_first_substep[{p['at_first_substep']}]__"
+            f"at_last_substep[{p['at_last_substep']}]__"
+            f"lprep_adv[{p['lprep_adv']}]"
+        ),
+    )
+    def input_data(
+        self, request: pytest.FixtureRequest, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        assert (
+            grid.id == "01f00602-c07e-cd84-b894-bd17fffd2720"
+        ), "This test only works with the icon_benchmark grid."
+        base_data = TestVerticallyImplicitSolverAtCorrectorStep.input_data.__wrapped__(
+            self, request, grid
+        )
+        base_data["at_first_substep"] = request.param["at_first_substep"]
+        base_data["at_last_substep"] = request.param["at_last_substep"]
+        base_data["lprep_adv"] = request.param["lprep_adv"]
+        base_data["is_iau_active"] = False
+        base_data["end_index_of_damping_layer"] = 13
+        base_data["kstart_moist"] = 0
+        return base_data

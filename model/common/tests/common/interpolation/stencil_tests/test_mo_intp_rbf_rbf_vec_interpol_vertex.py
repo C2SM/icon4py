@@ -21,7 +21,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 
-@pytest.mark.continuous_benchmarking
 class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
     PROGRAM = mo_intp_rbf_rbf_vec_interpol_vertex
     OUTPUTS = ("p_u_out", "p_v_out")
@@ -75,3 +74,13 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestMoIntpRbfRbfVecInterpolVertexContinuousBenchmarking(TestMoIntpRbfRbfVecInterpolVertex):
+    @pytest.fixture
+    def input_data(self, grid):
+        assert (
+            grid.id == "01f00602-c07e-cd84-b894-bd17fffd2720"
+        ), "This test only works with the icon_benchmark grid."
+        return TestMoIntpRbfRbfVecInterpolVertex.input_data.__wrapped__(self, grid)

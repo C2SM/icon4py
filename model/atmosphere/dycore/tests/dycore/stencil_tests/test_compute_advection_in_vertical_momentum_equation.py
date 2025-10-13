@@ -268,7 +268,6 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
     return vertical_wind_advective_tendency
 
 
-@pytest.mark.continuous_benchmarking
 @pytest.mark.embedded_remap_error
 class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
     PROGRAM = compute_advection_in_vertical_momentum_equation
@@ -483,6 +482,13 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         )
 
 
+@pytest.mark.continuous_benchmarking
+class TestFusedVelocityAdvectionStencilVMomentumContinuousBenchmarking(
+    TestFusedVelocityAdvectionStencilVMomentum
+):
+    pass
+
+
 @pytest.mark.embedded_remap_error
 class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.StencilTest):
     PROGRAM = compute_contravariant_correction_and_advection_in_vertical_momentum_equation
@@ -695,3 +701,10 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             vertical_start=vertical_start,
             vertical_end=vertical_end,
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestFusedVelocityAdvectionStencilVMomentumAndContravariantContinuousBenchmarking(
+    TestFusedVelocityAdvectionStencilVMomentumAndContravariant
+):
+    pass

@@ -141,7 +141,6 @@ def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.nd
     return vn_at_surface
 
 
-@pytest.mark.continuous_benchmarking
 @pytest.mark.embedded_remap_error
 class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection(
     stencil_tests.StencilTest
@@ -315,7 +314,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
         nlev = grid.num_levels
-        nflatlev = (grid.num_levels * 3) // 10
+        nflatlev = 13
 
         skip_compute_predictor_vertical_advection = request.param[
             "skip_compute_predictor_vertical_advection"
@@ -351,3 +350,34 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             vertical_start=vertical_start,
             vertical_end=vertical_end,
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrectionContinuousBenchmarking(
+    TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection
+):
+    @pytest.fixture(
+        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]],
+        ids=lambda param: f"skip_compute_predictor_vertical_advection[{param['skip_compute_predictor_vertical_advection']}]",
+    )
+    def input_data(
+        self, grid: base.Grid, request: pytest.FixtureRequest
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        assert (
+            grid.id == "01f00602-c07e-cd84-b894-bd17fffd2720"
+        ), "This test only works with the icon_benchmark grid."
+        base_data = TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection.input_data.__wrapped__(
+            self, grid, request
+        )
+        base_data["skip_compute_predictor_vertical_advection"] = request.param[
+            "skip_compute_predictor_vertical_advection"
+        ]
+        base_data["nflatlev"] = 6
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        base_data["horizontal_start"] = grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        base_data["horizontal_end"] = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+        base_data["vertical_start"] = 0
+        base_data["vertical_end"] = grid.num_levels + 1
+        return base_data

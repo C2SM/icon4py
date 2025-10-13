@@ -64,7 +64,6 @@ def compute_first_vertical_derivative_numpy(
     return first_vertical_derivative
 
 
-@pytest.mark.continuous_benchmarking
 @pytest.mark.uses_concat_where
 class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
     PROGRAM = compute_perturbed_quantities_and_interpolation
@@ -432,7 +431,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         end_cell_halo_level_2 = grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
         nflatlev = 4
-        nflat_gradp = grid.num_levels // 2
+        nflat_gradp = 27
 
         return dict(
             temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
@@ -477,3 +476,20 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             vertical_start=0,
             vertical_end=grid.num_levels + 1,
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestComputePerturbedQuantitiesAndInterpolationContinuousBenchmarking(
+    TestComputePerturbedQuantitiesAndInterpolation
+):
+    @pytest.fixture
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        assert (
+            grid.id == "01f00602-c07e-cd84-b894-bd17fffd2720"
+        ), "This test only works with the icon_benchmark grid."
+        base_data = TestComputePerturbedQuantitiesAndInterpolation.input_data.__wrapped__(
+            self, grid
+        )
+        base_data["nflatlev"] = 6
+        base_data["nflat_gradp"] = 35
+        return base_data

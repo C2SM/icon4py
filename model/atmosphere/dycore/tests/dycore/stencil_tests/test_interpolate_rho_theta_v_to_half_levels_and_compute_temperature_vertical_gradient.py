@@ -34,7 +34,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
-@pytest.mark.continuous_benchmarking
 class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration(
     stencil_tests.StencilTest
 ):
@@ -250,3 +249,10 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             vertical_start=1,
             vertical_end=grid.num_levels,
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAccelerationContinuousBenchmarking(
+    TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
+):
+    pass
