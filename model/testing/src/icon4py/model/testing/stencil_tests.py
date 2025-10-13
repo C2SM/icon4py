@@ -83,9 +83,9 @@ def test_and_benchmark(
     _configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
-    benchmark_only = request.config.getoption("benchmark_only")
-    skip_verification = request.node.get_closest_marker("skip_verification") is not None
-    if (not benchmark_only) and (not skip_verification):
+    benchmark_only_option = request.config.getoption("benchmark_only")
+    benchmark_only_mark = request.node.get_closest_marker("benchmark_only") is not None
+    if (not benchmark_only_option) and (not benchmark_only_mark):
         reference_outputs = self.reference(
             _ConnectivityConceptFixer(
                 grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)

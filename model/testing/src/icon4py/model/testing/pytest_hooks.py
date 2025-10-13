@@ -35,10 +35,6 @@ def pytest_configure(config):
         "markers",
         "level(name): marks test as unit or integration tests, mostly applicable where both are available",
     )
-    config.addinivalue_line(
-        "markers",
-        "skip_verification(reason): skips verification for continuous benchmarking tests",
-    )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):
@@ -111,7 +107,7 @@ def pytest_collection_modifyitems(config, items):
         if (marker := item.get_closest_marker("continuous_benchmarking")) is not None:
             if not config.getoption("--benchmark-only"):
                 item.add_marker(
-                    pytest.mark.skip_verification(
+                    pytest.mark.benchmark_only(
                         reason="Continuous benchmarking tests shouldn't be verified."
                     )
                 )
