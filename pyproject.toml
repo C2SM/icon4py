@@ -184,6 +184,7 @@ markers = [
   "infinite_concat_where",
   "gtfn_too_slow",
   "continuous_benchmarking",
+  "skip_verificaion",
   "benchmark_only: benchmark only tests without verification"
 ]
 # add all namespace packages to pythonpath to make them available for pytest

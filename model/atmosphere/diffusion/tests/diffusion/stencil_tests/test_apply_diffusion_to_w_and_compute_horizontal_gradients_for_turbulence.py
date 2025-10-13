@@ -8,12 +8,13 @@
 import gt4py.next as gtx
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
@@ -28,7 +29,6 @@ from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.continuous_benchmarking
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
@@ -119,8 +119,8 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         diff_multfac_w = 5.0
 
         w = zero_field(grid, dims.CellDim, dims.KDim)
-        dwdx = zero_field(grid, dims.CellDim, dims.KDim)
-        dwdy = zero_field(grid, dims.CellDim, dims.KDim)
+        dwdx = random_field(grid, dims.CellDim, dims.KDim)
+        dwdy = random_field(grid, dims.CellDim, dims.KDim)
 
         return dict(
             area=area,
@@ -142,3 +142,34 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulenceContinuousBenchmarking(
+    TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence
+):
+    @pytest.fixture
+    def input_data(self, grid: base.Grid) -> dict:
+        assert (
+            grid.id == "01f00602-c07e-cd84-b894-bd17fffd2720"
+        ), "This test only works with the icon_benchmark grid."
+        # Use the parent class's fixture indirectly by calling its method, not the fixture itself
+        base_data = (
+            TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence.input_data.__wrapped__(
+                self, grid
+            )
+        )
+        cell_domain = h_grid.domain(dims.CellDim)
+        base_data["interior_idx"] = grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
+        base_data["halo_idx"] = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+
+        def _get_start_index_for_w_diffusion() -> int32:
+            return (
+                grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+                if grid.limited_area
+                else grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+            )
+
+        base_data["horizontal_start"] = _get_start_index_for_w_diffusion()
+        base_data["horizontal_end"] = grid.end_index(cell_domain(h_grid.Zone.HALO))
+        return base_data
