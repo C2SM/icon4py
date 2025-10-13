@@ -32,7 +32,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import definitions, stencil_tests
 
 from .test_compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner_numpy,
@@ -485,7 +485,7 @@ class TestComputePerturbedQuantitiesAndInterpolationContinuousBenchmarking(
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         assert (
-            grid.id == "01f00602-c07e-cd84-b894-bd17fffd2720"
+            grid.id == definitions.GridUUIDs.MCH_OPR_R19B08_DOMAIN01
         ), "This test only works with the icon_benchmark grid."
         base_data = TestComputePerturbedQuantitiesAndInterpolation.input_data.__wrapped__(
             self, grid

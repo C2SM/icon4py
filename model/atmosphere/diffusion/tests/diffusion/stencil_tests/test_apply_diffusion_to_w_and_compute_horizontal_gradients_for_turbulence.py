@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing import definitions
 from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
@@ -151,7 +152,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulenceContinuousB
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         assert (
-            grid.id == "01f00602-c07e-cd84-b894-bd17fffd2720"
+            grid.id == definitions.GridUUIDs.MCH_OPR_R19B08_DOMAIN01
         ), "This test only works with the icon_benchmark grid."
         # Use the parent class's fixture indirectly by calling its method, not the fixture itself
         base_data = (

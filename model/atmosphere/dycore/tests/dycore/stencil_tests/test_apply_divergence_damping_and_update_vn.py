@@ -21,6 +21,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions
 
 
 divergence_damp_order = DivergenceDampingOrder()
@@ -282,7 +283,7 @@ class TestApplyDivergenceDampingAndUpdateVnContinuousBenchmarking(
     )
     def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
         assert (
-            grid.id == "01f00602-c07e-cd84-b894-bd17fffd2720"
+            grid.id == definitions.GridUUIDs.MCH_OPR_R19B08_DOMAIN01
         ), "This test only works with the icon_benchmark grid."
         # Use the parent class's fixture indirectly by calling its method, not the fixture itself
         base_data = TestApplyDivergenceDampingAndUpdateVn.input_data.__wrapped__(

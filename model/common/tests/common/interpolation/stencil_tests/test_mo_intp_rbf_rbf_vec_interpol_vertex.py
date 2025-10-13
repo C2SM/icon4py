@@ -78,9 +78,4 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
 @pytest.mark.continuous_benchmarking
 class TestMoIntpRbfRbfVecInterpolVertexContinuousBenchmarking(TestMoIntpRbfRbfVecInterpolVertex):
-    @pytest.fixture
-    def input_data(self, grid):
-        assert (
-            grid.id == "01f00602-c07e-cd84-b894-bd17fffd2720"
-        ), "This test only works with the icon_benchmark grid."
-        return TestMoIntpRbfRbfVecInterpolVertex.input_data.__wrapped__(self, grid)
+    pass
