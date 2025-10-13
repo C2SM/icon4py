@@ -16,9 +16,6 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import allocators as gtx_allocators
 
-# TODO(pstark): switch back to gtx.sqrt once gt4py can return gtx.float32 in gtx.sqrt
-from numpy import sqrt
-
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
@@ -66,6 +63,15 @@ Diffusion module ported from ICON mo_nh_diffusion.f90.
 
 Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 """
+
+
+# TODO(pstark): switch back to gtx.sqrt once gt4py can return gtx.float32 in gtx.sqrt
+def sqrt(value):
+    if isinstance(value, float):
+        return value**0.5
+    else:
+        return value ** (wpfloat(0.5))
+
 
 log = logging.getLogger(__name__)
 
