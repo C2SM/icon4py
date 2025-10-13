@@ -251,7 +251,6 @@ class StencilTest:
 
         # in case a test inherits from another test avoid running the tests of its parent
         if cls.__base__ is not None and cls.__base__ != StencilTest:
-            # TODO(iomaganaris): find a way to hide this instead of using an empty function
             setattr(cls, f"{pytest_prefix}{cls.__base__.__name__}", pytest.mark.skip(lambda: ()))
 
         # decorate `static_variant` with parametrized fixtures, since the
