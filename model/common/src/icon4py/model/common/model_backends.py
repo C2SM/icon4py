@@ -51,11 +51,7 @@ def get_allocator(
 
 
 try:
-    from gt4py.next.program_processors.runners.dace import (
-        GT4PyAutoOptHook,
-        GT4PyAutoOptHookFun,
-        make_dace_backend,
-    )
+    from gt4py.next.program_processors.runners.dace import make_dace_backend
 
     def make_custom_dace_backend(
         device: DeviceType,
@@ -63,8 +59,6 @@ try:
         auto_optimize: bool = True,
         async_sdfg_call: bool = True,
         optimization_args: dict[str, typing.Any] | None = None,
-        optimization_hooks: dict[GT4PyAutoOptHook, GT4PyAutoOptHookFun] | None = None,
-        use_memory_pool: bool = True,
         use_metrics: bool = True,
         **_,
     ) -> gtx_typing.Backend:
@@ -78,10 +72,6 @@ try:
                 of GPU kernel execution with the Python driver code.
             optimization_args: A `dict` containing configuration parameters for
                 the SDFG auto-optimize pipeline.
-            optimization_hooks: A `dict` containing the hooks that should be called,
-                in the SDFG auto-optimize pipeline. Only applicable when `auto_optimize=True`.
-            use_memory_pool: Allocate temporaries in memory pool, currently only
-                supported for GPU (based on CUDA memory pool).
             use_metrics: Add SDFG instrumentation to collect the metric for stencil
                 compute time.
 
@@ -95,8 +85,6 @@ try:
             auto_optimize=auto_optimize,
             async_sdfg_call=async_sdfg_call,
             optimization_args=optimization_args,
-            optimization_hooks=optimization_hooks,
-            use_memory_pool=use_memory_pool,
             use_metrics=use_metrics,
             use_zero_origin=True,
         )
