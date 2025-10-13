@@ -368,9 +368,9 @@ class SolveNonhydro:
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
         | None,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
-        self._exchange = exchange
+        self._exchange = exchange if (exchange is not None) else decomposition.SingleNodeExchange()
 
         self._grid = grid
         self._config = config
