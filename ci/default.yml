@@ -62,3 +62,47 @@ test_tools_datatests_aarch64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
+
+
+.test_single_precision:
+  stage: test
+  allow_failure: true
+  script:
+    - nox -s "__test_file-3.10" -- --testfile=model/atmosphere/dycore/tests/dycore/integration_tests/test_velocity_advection.py --backend=$BACKEND -k "test_compute_advection_in_horizontal_momentum_equation or test_compute_advection_in_vertical_momentum_equation"
+  variables:
+    FLOAT_PRECISION: single
+    SLURM_TIMELIMIT: '00:20:00'
+  parallel:
+    matrix:
+      - BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
+
+test_single_precision_aarch64:
+  extends: [.test_single_precision, .test_template_aarch64]
+
+# TODO(pstark): remove one version of the single precision tests
+.test_single_precision_v2:
+  stage: test
+  script:
+    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --single-precision --backend=$BACKEND --level=$LEVEL
+  rules:
+    - if: $BACKEND == 'dace_gpu' && $COMPONENT != 'dycore'
+      when: never  # run only in daily CI, to save compute resources
+    - if: $COMPONENT == 'common' && $LEVEL == 'integration'
+      variables:
+        NUM_PROCESSES: 1
+        SLURM_TIMELIMIT: '00:45:00'
+    - if: $BACKEND == 'dace_gpu'
+      variables:
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '01:00:00'
+    - if: $BACKEND == 'embedded'
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
+  parallel:
+    matrix:
+      - COMPONENT: [dycore]
+        BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
+        LEVEL: [integration]

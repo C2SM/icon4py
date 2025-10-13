@@ -59,7 +59,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
         zeta_3,
         zeta_4,
         famask_int,
-        dbl_eps,
+        wp_eps,
     ):
         z_wgt_1 = 0.0625 * wgt_zeta_1 * wgt_eta_1
         z_wgt_2 = 0.0625 * wgt_zeta_1 * wgt_eta_2
@@ -104,7 +104,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
 
         wgt_t_detjac_1 = np.where(
             famask_bool,
-            dbl_eps
+            wp_eps
             + z_wgt_1
             * (
                 (
@@ -129,7 +129,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
 
         wgt_t_detjac_2 = np.where(
             famask_bool,
-            dbl_eps
+            wp_eps
             + z_wgt_2
             * (
                 (
@@ -154,7 +154,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
 
         wgt_t_detjac_3 = np.where(
             famask_bool,
-            dbl_eps
+            wp_eps
             + z_wgt_3
             * (
                 (
@@ -178,7 +178,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
         )
         wgt_t_detjac_4 = np.where(
             famask_bool,
-            dbl_eps
+            wp_eps
             + z_wgt_4
             * (
                 (
@@ -414,7 +414,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
         wgt_zeta_2: float,
         wgt_eta_1: float,
         wgt_eta_2: float,
-        dbl_eps: float,
+        wp_eps: float,
         **kwargs: Any,
     ) -> dict:
         wgt_t_detjac_1, wgt_t_detjac_2, wgt_t_detjac_3, wgt_t_detjac_4 = cls._compute_wgt_t_detjac(
@@ -439,7 +439,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
             zeta_3,
             zeta_4,
             famask_int,
-            dbl_eps,
+            wp_eps,
         )
 
         (
@@ -570,7 +570,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
         wgt_zeta_2 = 0.003
         wgt_eta_1 = 0.002
         wgt_eta_2 = 0.007
-        dbl_eps = np.float64(0.1)
+        wp_eps = np.float64(0.1)
         eps = 0.1
         return dict(
             famask_int=famask_int,
@@ -622,7 +622,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
             wgt_zeta_2=wgt_zeta_2,
             wgt_eta_1=wgt_eta_1,
             wgt_eta_2=wgt_eta_2,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             eps=eps,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
