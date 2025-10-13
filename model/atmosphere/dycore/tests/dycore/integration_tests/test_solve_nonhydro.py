@@ -810,7 +810,6 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
-# why is this not run for APE?
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
@@ -1023,7 +1022,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
     lowest_layer_thickness,
     model_top_height,
@@ -1031,9 +1029,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     damping_height,
     grid_savepoint,
     metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
     savepoint_nonhydro_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_nonhydro_exit,
@@ -1241,17 +1236,8 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    grid_savepoint,
     metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
     savepoint_nonhydro_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_nonhydro_exit,
@@ -1383,7 +1369,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -1394,9 +1379,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    substep_init,
-    substep_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
@@ -1599,19 +1581,13 @@ def test_apply_divergence_damping_and_update_vn(
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
 ):
     sp_nh_init = savepoint_nonhydro_init
@@ -1724,15 +1700,10 @@ def test_apply_divergence_damping_and_update_vn(
     ],
 )
 def test_compute_horizontal_velocity_quantities_and_fluxes(
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
     icon_grid,
-    ndyn_substeps,
     grid_savepoint,
     lowest_layer_thickness,
     model_top_height,
@@ -1742,8 +1713,6 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -1906,21 +1875,17 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
 def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     istep_init,
     istep_exit,
-    substep_init,
-    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
     icon_grid,
     ndyn_substeps,
     at_first_substep,
-    grid_savepoint,
     savepoint_dycore_30_to_38_init,
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -2029,7 +1994,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -2040,9 +2004,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    istep_exit,
-    substep_exit,
     savepoint_vertically_implicit_dycore_solver_init,
     backend,
 ):
