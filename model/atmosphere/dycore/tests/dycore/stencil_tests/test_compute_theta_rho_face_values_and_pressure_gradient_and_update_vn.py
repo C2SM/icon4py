@@ -500,8 +500,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
 
         dtime = 0.9
         iau_wgt_dyn = 1.0
-        is_iau_active = False
-        limited_area = False
+        is_iau_active = True
+        limited_area = True
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         start_edge_lateral_boundary = grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
@@ -511,8 +511,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         end_edge_nudging = grid.end_index(edge_domain(h_grid.Zone.NUDGING))
         end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
-        nflatlev = 6
-        nflat_gradp = 35
+        nflatlev = 4
+        nflat_gradp = 27
 
         return dict(
             rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
@@ -578,4 +578,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVnContinuousBenchmarking(
         base_data = TestComputeThetaRhoPressureGradientAndUpdateVn.input_data.__wrapped__(
             self, grid
         )
+        base_data["is_iau_active"] = False
+        base_data["limited_area"] = False
+        base_data["nflatlev"] = 6
+        base_data["nflat_gradp"] = 35
         return base_data
