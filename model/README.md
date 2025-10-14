@@ -89,5 +89,6 @@ Note that the current Python build for GHEX seems not to run on MacOS.
 mpirun -np 4 pytest -v -s --with-mpi --datatest model/atmosphere/diffusion/diffusion_tests/mpi_tests/
 mpirun -np 4 pytest -v -s --with-mpi --datatest model/common/tests/mpi_tests/
 ```
+
 You can restrict the number of compile process that gt4py uses by setting `GT4PY_BUILD_JOBS` environment variable:
-```export GT4PY_BUILD_JOBS=4```
+`export GT4PY_BUILD_JOBS=4`
