@@ -29,11 +29,6 @@ from icon4py.model.testing import serialbox as sb
 
 log = logging.getLogger(__name__)
 
-# sponge length on outflow
-SPONGE_LENGTH = float(os.environ.get("ICON4PY_CHANNEL_SPONGE_LENGTH", "50.0"))
-# perturbation magnitude for vn profile
-RANDOM_PERTURBATION_MAGNITUDE = float(os.environ.get("ICON4PY_CHANNEL_PERTURBATION", "0.001"))
-
 
 @gtx.field_operator
 def _set_boundary_conditions_cell(
@@ -80,8 +75,9 @@ class ChannelFlow:
         self.num_edges = grid.num_edges
         self.num_levels = grid.num_levels
 
+        # perturbation magnitude for vn profile
         self.random_perturbation_magnitude = (
-            RANDOM_PERTURBATION_MAGNITUDE  # perturbation magnitude for vn profile
+            float(os.environ.get("ICON4PY_CHANNEL_PERTURBATION", "0.001"))
         )
 
         # Allocate here so it's not re-allocated every BC call
@@ -154,6 +150,8 @@ class ChannelFlow:
         fa.EdgeKField[ta.wpfloat],
     ]:
         xp = data_alloc.import_array_ns(self.backend)
+        # sponge length on outflow
+        SPONGE_LENGTH = float(os.environ.get("ICON4PY_CHANNEL_SPONGE_LENGTH", "50.0"))
 
         grid_file = xr.open_dataset(grid_file_path)
         domain_length = grid_file.domain_length
