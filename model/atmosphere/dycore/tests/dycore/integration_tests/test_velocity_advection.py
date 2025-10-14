@@ -6,10 +6,18 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
+
+
+if TYPE_CHECKING:
+    from gt4py.next import typing as gtx_typing
+
+    from icon4py.model.common.grid import icon
+    from icon4py.model.testing import serialbox
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
@@ -57,7 +65,9 @@ def _compare_cfl(
     assert vertical_cfl[horizontal_start:horizontal_end, :].max() == icon_result_max_vcfl_dyn
 
 
-def create_vertical_params(vertical_config, grid_savepoint):
+def create_vertical_params(
+    vertical_config: v_grid.VerticalGridConfig, grid_savepoint: serialbox.IconGridSavepoint
+) -> v_grid.VerticalGrid:
     return v_grid.VerticalGrid(
         config=vertical_config, vct_a=grid_savepoint.vct_a(), vct_b=grid_savepoint.vct_b()
     )
@@ -73,18 +83,18 @@ def create_vertical_params(vertical_config, grid_savepoint):
     ],
 )
 def test_verify_velocity_init_against_savepoint(
-    interpolation_savepoint,
-    step_date_init,
-    grid_savepoint,
-    icon_grid,
-    metrics_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    experiment,
-    backend,
-):
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    step_date_init: str,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    icon_grid: icon.IconGrid,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    lowest_layer_thickness: ta.wpfloat,
+    model_top_height: ta.wpfloat,
+    stretch_factor: ta.wpfloat,
+    damping_height: ta.wpfloat,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
     vertical_config = v_grid.VerticalGridConfig(
@@ -395,8 +405,8 @@ def test_velocity_corrector_step(
 
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
