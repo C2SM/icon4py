@@ -28,7 +28,6 @@ from icon4py.model.common.interpolation import (
 )
 from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.decomposition import definitions as decomposition
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -46,7 +45,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         geometry_source: geometry.GridGeometry,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -56,7 +54,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
-        self._exchange = exchange
         characteristic_length = self._grid.global_properties.characteristic_length
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
