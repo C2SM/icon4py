@@ -29,7 +29,10 @@ from icon4py.model.testing import serialbox as sb
 
 log = logging.getLogger(__name__)
 
-RANDOM_PERTURBATION_MAGNITUDE = float(os.environ.get("ICON4PY_CHANNEL_PERTURBATION", "0.001"))  # perturbation magnitude for vn profile
+# sponge length on outflow
+SPONGE_LENGTH = float(os.environ.get("ICON4PY_CHANNEL_SPONGE_LENGTH", "50.0"))
+# perturbation magnitude for vn profile
+RANDOM_PERTURBATION_MAGNITUDE = float(os.environ.get("ICON4PY_CHANNEL_PERTURBATION", "0.001"))
 
 
 @gtx.field_operator
@@ -62,13 +65,15 @@ class ChannelFlow:
         grid: icon_grid.IconGrid,
         savepoint_path: str,
         grid_file_path: str,
-        backend: gtx_backend.Backend = gtx.gtfn_cpu,
+        backend: gtx_backend.Backend,
+        do_channel: bool = True,
     ):
         """
         Initialize the channel
         """
 
         self.backend = backend
+        self.do_channel = do_channel
         xp = data_alloc.import_array_ns(self.backend)
 
         self.num_cells = grid.num_cells
@@ -150,8 +155,6 @@ class ChannelFlow:
     ]:
         xp = data_alloc.import_array_ns(self.backend)
 
-        sponge_length = 50
-
         grid_file = xr.open_dataset(grid_file_path)
         domain_length = grid_file.domain_length
         cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
@@ -171,10 +174,10 @@ class ChannelFlow:
         for k in range(self.num_levels):
             # outflow: tanh sponge + outflow
             full_cell_sponge_np[:, k] = (
-                1 + xp.tanh((cell_x + sponge_length / 2 - x_outflow) * 2 * xp.pi / sponge_length)
+                1 + xp.tanh((cell_x + SPONGE_LENGTH / 2 - x_outflow) * 2 * xp.pi / SPONGE_LENGTH)
             ) / 2
             full_edge_sponge_np[:, k] = (
-                1 + xp.tanh((edge_x + sponge_length / 2 - x_outflow) * 2 * xp.pi / sponge_length)
+                1 + xp.tanh((edge_x + SPONGE_LENGTH / 2 - x_outflow) * 2 * xp.pi / SPONGE_LENGTH)
             ) / 2
             full_cell_sponge_np[:, k] = xp.where(
                 cell_x >= x_outflow, 1.0, full_cell_sponge_np[:, k]
@@ -214,7 +217,6 @@ class ChannelFlow:
         fa.CellKField[ta.wpfloat],
         fa.CellKField[ta.wpfloat],
     ]:
-        channel_height = 100
         nh_t0 = 300.0
         nh_brunt_vais = 0.0
 
@@ -233,6 +235,7 @@ class ChannelFlow:
         d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
         geopot = data_provider.from_metrics_savepoint().geopot().ndarray
         full_level_heights = data_provider.from_metrics_savepoint().z_mc().ndarray
+        half_level_heights = data_provider.from_metrics_savepoint().z_ifc().ndarray
 
         edge_geometry = grid_savepoint.construct_edge_geometry()
         primal_normal_x = edge_geometry.primal_normal[0].ndarray
@@ -248,8 +251,9 @@ class ChannelFlow:
         )
 
         # Rescale the channel data to the ICON grid and mirror y to full channel height
-        channel_y = channel_y * channel_height / 2
-        channel_y = xp.concatenate((channel_y, channel_height - channel_y[::-1]), axis=0)
+        model_top = half_level_heights[0, 0]
+        channel_y = channel_y * model_top / 2
+        channel_y = xp.concatenate((channel_y, model_top - channel_y[::-1]), axis=0)
         channel_U = xp.concatenate((channel_U, channel_U[::-1]), axis=0)
 
         # Interpolate LM_u onto the ICON grid
@@ -327,6 +331,11 @@ class ChannelFlow:
 
     def set_initial_conditions(
         self,
+        vn: fa.EdgeKField[ta.wpfloat],
+        w: fa.CellKField[ta.wpfloat],
+        rho: fa.CellKField[ta.wpfloat],
+        exner: fa.CellKField[ta.wpfloat],
+        theta_v: fa.CellKField[ta.wpfloat],
     ) -> tuple[
         fa.EdgeKField[ta.wpfloat],
         fa.CellKField[ta.wpfloat],
@@ -337,13 +346,15 @@ class ChannelFlow:
         """
         Set the initial conditions for the channel flow
         """
-        vn = gtx.as_field((dims.EdgeDim, dims.KDim), self.vn_ndarray, allocator=self.backend)
-        w = gtx.as_field((dims.CellDim, dims.KDim), self.w_ndarray, allocator=self.backend)
-        exner = gtx.as_field((dims.CellDim, dims.KDim), self.exner_ndarray, allocator=self.backend)
-        rho = gtx.as_field((dims.CellDim, dims.KDim), self.rho_ndarray, allocator=self.backend)
-        theta_v = gtx.as_field(
-            (dims.CellDim, dims.KDim), self.theta_v_ndarray, allocator=self.backend
-        )
+        if self.do_channel:
+            # overwrite variables with channel fields, else return untouched
+            vn = gtx.as_field((dims.EdgeDim, dims.KDim), self.vn_ndarray, allocator=self.backend)
+            w = gtx.as_field((dims.CellDim, dims.KDim), self.w_ndarray, allocator=self.backend)
+            exner = gtx.as_field((dims.CellDim, dims.KDim), self.exner_ndarray, allocator=self.backend)
+            rho = gtx.as_field((dims.CellDim, dims.KDim), self.rho_ndarray, allocator=self.backend)
+            theta_v = gtx.as_field(
+                (dims.CellDim, dims.KDim), self.theta_v_ndarray, allocator=self.backend
+            )
         return vn, w, rho, exner, theta_v
 
     def set_boundary_conditions(
@@ -364,48 +375,50 @@ class ChannelFlow:
         Set the boundary conditions for the channel flow
         """
 
-        xp = data_alloc.import_array_ns(self.backend)
-        self.random_field_full_edge_np = xp.random.normal(
-            loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels)
-        )
-        self.random_field_full_edge = gtx.as_field(
-            (dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend
-        )
+        if self.do_channel:
+            # modify variables with channel fields, else return untouched
+            xp = data_alloc.import_array_ns(self.backend)
+            self.random_field_full_edge_np = xp.random.normal(
+                loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels)
+            )
+            self.random_field_full_edge = gtx.as_field(
+                (dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend
+            )
 
-        _set_boundary_conditions_edge(
-            field=vn,
-            channel_field=self.vn + self.random_field_full_edge,
-            sponge=self.full_edge_sponge,
-            out=vn,
-            offset_provider={},
-        )
-        _set_boundary_conditions_cell(
-            field=w,
-            channel_field=self.w,
-            sponge=self.half_cell_sponge,
-            out=w,
-            offset_provider={},
-        )
-        _set_boundary_conditions_cell(
-            field=rho,
-            channel_field=self.rho,
-            sponge=self.full_cell_sponge,
-            out=rho,
-            offset_provider={},
-        )
-        _set_boundary_conditions_cell(
-            field=exner,
-            channel_field=self.exner,
-            sponge=self.full_cell_sponge,
-            out=exner,
-            offset_provider={},
-        )
-        _set_boundary_conditions_cell(
-            field=theta_v,
-            channel_field=self.theta_v,
-            sponge=self.full_cell_sponge,
-            out=theta_v,
-            offset_provider={},
-        )
+            _set_boundary_conditions_edge(
+                field=vn,
+                channel_field=self.vn + self.random_field_full_edge,
+                sponge=self.full_edge_sponge,
+                out=vn,
+                offset_provider={},
+            )
+            _set_boundary_conditions_cell(
+                field=w,
+                channel_field=self.w,
+                sponge=self.half_cell_sponge,
+                out=w,
+                offset_provider={},
+            )
+            _set_boundary_conditions_cell(
+                field=rho,
+                channel_field=self.rho,
+                sponge=self.full_cell_sponge,
+                out=rho,
+                offset_provider={},
+            )
+            _set_boundary_conditions_cell(
+                field=exner,
+                channel_field=self.exner,
+                sponge=self.full_cell_sponge,
+                out=exner,
+                offset_provider={},
+            )
+            _set_boundary_conditions_cell(
+                field=theta_v,
+                channel_field=self.theta_v,
+                sponge=self.full_cell_sponge,
+                out=theta_v,
+                offset_provider={},
+            )
 
         return vn, w, rho, exner, theta_v

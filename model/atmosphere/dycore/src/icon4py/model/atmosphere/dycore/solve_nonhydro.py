@@ -1101,7 +1101,13 @@ class SolveNonhydro:
                 prognostic_states.current.rho,
                 prognostic_states.current.exner,
                 prognostic_states.current.theta_v,
-            ) = self._channel.set_initial_conditions()
+            ) = self._channel.set_initial_conditions(
+                prognostic_states.current.vn,
+                prognostic_states.current.w,
+                prognostic_states.current.rho,
+                prognostic_states.current.exner,
+                prognostic_states.current.theta_v,
+            )
 
             log.info(" ***IBM fixing initial conditions")
             self._ibm_set_dirichlet_value_edges(

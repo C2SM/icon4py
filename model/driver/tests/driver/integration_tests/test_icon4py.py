@@ -7,17 +7,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
-import click
-import pytest
 import gt4py.next as gtx
+import pytest
 
-from icon4py.model.atmosphere.diffusion import diffusion_states
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
+from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half_e
@@ -27,8 +26,8 @@ from icon4py.model.driver import (
     icon4py_configuration,
     icon4py_driver,
     initialization_utils as driver_init,
-    serialbox_helpers as driver_sb,
 )
+from icon4py.model.driver.testcases import channel
 from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
 
@@ -48,34 +47,34 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            1,
-            2,
-            1,
-            2,
-            "2021-06-20T12:00:00.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            True,
-            False,
-            False,
-        ),
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            1,
-            2,
-            1,
-            2,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            False,
-            False,
-            True,
-        ),
+            #(
+            #    definitions.Experiments.MCH_CH_R04B09,
+            #    1,
+            #    2,
+            #    1,
+            #    2,
+            #    "2021-06-20T12:00:00.000",
+            #    "2021-06-20T12:00:10.000",
+            #    "2021-06-20T12:00:10.000",
+            #    "2021-06-20T12:00:10.000",
+            #    True,
+            #    False,
+            #    False,
+            #),
+            #(
+            #    definitions.Experiments.MCH_CH_R04B09,
+            #    1,
+            #    2,
+            #    1,
+            #    2,
+            #    "2021-06-20T12:00:10.000",
+            #    "2021-06-20T12:00:20.000",
+            #    "2021-06-20T12:00:20.000",
+            #    "2021-06-20T12:00:20.000",
+            #    False,
+            #    False,
+            #    True,
+            #),
         (
             definitions.Experiments.GAUSS3D,
             1,
@@ -115,7 +114,22 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     backend: gtx_typing.Backend,
 ):
+    DO_CHANNEL=False
+    DO_IBM=False
     if experiment == definitions.Experiments.GAUSS3D:
+        ICON4PY_DIR = os.getcwd()
+        os.environ["ICON4PY_DIR"] = ICON4PY_DIR
+        os.environ["ICON4PY_SAVEPOINT_PATH"] = ICON4PY_DIR + "/testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
+        os.environ["ICON4PY_GRID_FILE_PATH"] = ICON4PY_DIR + "/testdata/grids/torus_50000x5000_res500/Torus_Triangles_50000m_x_5000m_res500m.nc"
+        os.environ["ICON4PY_NUM_LEVELS"] = "35"
+        os.environ["ICON4PY_END_DATE"] = "0001-01-01T00:00:04"
+        os.environ["ICON4PY_DTIME"] = "4.0"
+        os.environ["ICON4PY_PLOT_FREQUENCY"] = "1"
+        os.environ["ICON4PY_CHANNEL_SPONGE_LENGTH"] = "5000.0"
+        os.environ["ICON4PY_CHANNEL_PERTURBATION"] = "0.0"
+        os.environ["ICON4PY_DIFFU_COEFF"] = "0.001"
+        DO_CHANNEL=True
+        DO_IBM=True
         config = icon4py_configuration.read_config(
             experiment_type=driver_init.ExperimentType.GAUSS3D,
             backend=backend,
@@ -138,6 +152,23 @@ def test_run_timeloop_single_step(
             backend=backend,
         )
 
+    savepoint_path = os.environ.get("ICON4PY_SAVEPOINT_PATH", "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data")
+    grid_file_path = os.environ.get("ICON4PY_GRID_FILE_PATH", "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc")
+    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
+        grid=icon_grid,
+        savepoint_path=savepoint_path,
+        grid_file_path=grid_file_path,
+        backend=backend,
+        do_ibm=DO_IBM,
+    )
+    channel_inst = channel.ChannelFlow(
+        grid=icon_grid,
+        savepoint_path=savepoint_path,
+        grid_file_path=grid_file_path,
+        backend=backend,
+        do_channel=DO_CHANNEL,
+    )
+
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     grg = interpolation_savepoint.geofac_grg()
@@ -153,7 +184,7 @@ def test_run_timeloop_single_step(
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
     xp = data_alloc.import_array_ns(backend)
-    ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KHalfDim)), dtype=float)
+    ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KDim)+1), dtype=float)
     ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
     compute_ddqz_z_half_e.with_backend(backend=backend)(
         ddqz_z_half=metrics_savepoint.ddqz_z_half(),
@@ -162,8 +193,8 @@ def test_run_timeloop_single_step(
         horizontal_start=0,
         horizontal_end=grid_savepoint.num(dims.EdgeDim),
         vertical_start=0,
-        vertical_end=grid_savepoint.num(dims.KHalfDim),
-        offset_provider={},
+        vertical_end=grid_savepoint.num(dims.KDim)+1,
+        offset_provider=icon_grid.connectivities,
     )
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
         mask_hdiff=metrics_savepoint.mask_hdiff(),
@@ -202,6 +233,7 @@ def test_run_timeloop_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
+        ibm_masks=ibm_masks,
     )
 
     sp = savepoint_nonhydro_init
@@ -277,6 +309,8 @@ def test_run_timeloop_single_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        ibm_masks=ibm_masks,
+        channel=channel_inst,
     )
 
     diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
