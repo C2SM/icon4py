@@ -1,5 +1,6 @@
 import dataclasses
 import functools
+from typing import TypeVar, Generic
 
 from icon4py.model.atmosphere.diffusion.diffusion import TurbulenceShearForcingType, DiffusionType
 from icon4py.model.common import constants
@@ -107,6 +108,7 @@ class DiffusionConfig:
 
 
 
+
     def __post_init__(self):
         #: TODO: This code is duplicated in `solve_nonhydro.py`, clean this up when implementing proper configuration handling.
         if self._nudge_max_coeff is not None and self.max_nudging_coefficient is not None:
@@ -150,5 +152,7 @@ class DiffusionConfig:
     @functools.cached_property
     def substep_as_float(self):
         return float(self.ndyn_substeps)
+
+
 
 
