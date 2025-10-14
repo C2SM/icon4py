@@ -29,6 +29,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.test_utils import vp_eps, wp_eps
@@ -51,8 +52,8 @@ def _compare_cfl(
     horizontal_end: int,
     vertical_start: int,
     vertical_end: int,
-    rtol: float = rtol_8eps,
-    atol: float = atol_2eps,
+    rtol: vpfloat = rtol_8eps,
+    atol: vpfloat = atol_2eps,
 ) -> None:
     cfl_clipping_mask = np.where(np.abs(vertical_cfl) > 0.0, True, False)
     assert (
