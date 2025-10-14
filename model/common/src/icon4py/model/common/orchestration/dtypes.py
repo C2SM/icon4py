@@ -11,8 +11,6 @@ from typing import Final
 
 import gt4py.next as gtx
 
-from icon4py.model.common import type_alias
-
 
 try:
     import dace
@@ -28,16 +26,9 @@ if dace:
     VertexDim_sym = dace.symbol("VertexDim_sym")
     KDim_sym = dace.symbol("KDim_sym")
 
-    #TODO(pstark): I guess we wouldn't have to care what wpfloat/vpfloat combination is present if with these tuples the mapping from gtx to dace types is correct?
-    # dace_typedict = {
-    #     gtx.float32 : dace.float32,
-    #     gtx.float64 : dace.float64,
-    #     gtx.int32   : dace.int32,
-    #     gtx.int64   : dace.int64,
-    # }
     ICON4PY_PRIMITIVE_DTYPES: Final = (
-        type_alias.wpfloat,
-        type_alias.vpfloat,
+        gtx.float32,
+        gtx.float64,
         float,
         bool,
         gtx.int32,
@@ -45,8 +36,8 @@ if dace:
         int,
     )
     DACE_PRIMITIVE_DTYPES: Final = (
-        dace.float64 if not type_alias.precision == "single" else dace.float32,
-        dace.float64 if type_alias.precision == "double" else dace.float32,
+        dace.float32,
+        dace.float64,
         dace.float64,
         dace.bool,
         dace.int32,
