@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import os
+import pathlib
+import pickle
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -29,7 +31,7 @@ from icon4py.model.driver import (
 )
 from icon4py.model.driver.testcases import channel
 from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
-from icon4py.model.testing.fixtures.datatest import backend
+from icon4py.model.testing.fixtures.datatest import _download_ser_data, backend
 
 from ..fixtures import *  # noqa: F403
 from ..utils import construct_icon4pyrun_config
@@ -47,34 +49,34 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
-            #(
-            #    definitions.Experiments.MCH_CH_R04B09,
-            #    1,
-            #    2,
-            #    1,
-            #    2,
-            #    "2021-06-20T12:00:00.000",
-            #    "2021-06-20T12:00:10.000",
-            #    "2021-06-20T12:00:10.000",
-            #    "2021-06-20T12:00:10.000",
-            #    True,
-            #    False,
-            #    False,
-            #),
-            #(
-            #    definitions.Experiments.MCH_CH_R04B09,
-            #    1,
-            #    2,
-            #    1,
-            #    2,
-            #    "2021-06-20T12:00:10.000",
-            #    "2021-06-20T12:00:20.000",
-            #    "2021-06-20T12:00:20.000",
-            #    "2021-06-20T12:00:20.000",
-            #    False,
-            #    False,
-            #    True,
-            #),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            1,
+            2,
+            1,
+            2,
+            "2021-06-20T12:00:00.000",
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            True,
+            False,
+            False,
+        ),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            1,
+            2,
+            1,
+            2,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+            False,
+            False,
+            True,
+        ),
         (
             definitions.Experiments.GAUSS3D,
             1,
@@ -114,20 +116,18 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     backend: gtx_typing.Backend,
 ):
+    ranked_data_path = pathlib.Path("testdata/ser_icondata/mpitask1")
+    savepoint_path = ranked_data_path / experiment.name / "ser_data"
+    grid_file_path = pathlib.Path("testdata/grids") / experiment.grid.name / experiment.grid.file_name
     DO_CHANNEL=False
     DO_IBM=False
     if experiment == definitions.Experiments.GAUSS3D:
-        ICON4PY_DIR = os.getcwd()
-        os.environ["ICON4PY_DIR"] = ICON4PY_DIR
-        os.environ["ICON4PY_SAVEPOINT_PATH"] = ICON4PY_DIR + "/testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
-        os.environ["ICON4PY_GRID_FILE_PATH"] = ICON4PY_DIR + "/testdata/grids/torus_50000x5000_res500/Torus_Triangles_50000m_x_5000m_res500m.nc"
         os.environ["ICON4PY_NUM_LEVELS"] = "35"
         os.environ["ICON4PY_END_DATE"] = "0001-01-01T00:00:04"
         os.environ["ICON4PY_DTIME"] = "4.0"
-        os.environ["ICON4PY_PLOT_FREQUENCY"] = "1"
+        os.environ["ICON4PY_DIFFU_COEFF"] = "0.001"
         os.environ["ICON4PY_CHANNEL_SPONGE_LENGTH"] = "5000.0"
         os.environ["ICON4PY_CHANNEL_PERTURBATION"] = "0.0"
-        os.environ["ICON4PY_DIFFU_COEFF"] = "0.001"
         DO_CHANNEL=True
         DO_IBM=True
         config = icon4py_configuration.read_config(
@@ -152,19 +152,17 @@ def test_run_timeloop_single_step(
             backend=backend,
         )
 
-    savepoint_path = os.environ.get("ICON4PY_SAVEPOINT_PATH", "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data")
-    grid_file_path = os.environ.get("ICON4PY_GRID_FILE_PATH", "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc")
     ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         grid=icon_grid,
-        savepoint_path=savepoint_path,
-        grid_file_path=grid_file_path,
+        savepoint_path=str(savepoint_path), # make these Paths some day
+        grid_file_path=str(grid_file_path), # make these Paths some day
         backend=backend,
         do_ibm=DO_IBM,
     )
     channel_inst = channel.ChannelFlow(
         grid=icon_grid,
-        savepoint_path=savepoint_path,
-        grid_file_path=grid_file_path,
+        savepoint_path=str(savepoint_path), # make these Paths some day
+        grid_file_path=str(grid_file_path), # make these Paths some day
         backend=backend,
         do_channel=DO_CHANNEL,
     )
@@ -398,38 +396,51 @@ def test_run_timeloop_single_step(
         do_prep_adv,
     )
 
-    rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = timeloop_diffusion_savepoint_exit.exner()
-    theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
-    vn_sp = timeloop_diffusion_savepoint_exit.vn()
-    w_sp = timeloop_diffusion_savepoint_exit.w()
+    if experiment == definitions.Experiments.GAUSS3D:
+        # I cannot create serialized data for this from fortran for now
+        _download_ser_data(1, ranked_data_path, definitions.Experiments.CHANNEL_IBM)
+        fname = "end_of_timestep_000000000.pkl"
+        fpath = ranked_data_path / definitions.Experiments.CHANNEL_IBM.name / fname
+        with fpath.open("rb") as ifile:
+            state = pickle.load(ifile)
+            vn_sp = state["vn"]
+            w_sp = state["w"]
+            theta_sp = state["theta_v"]
+            rho_sp = state["rho"]
+            exner_sp = state["exner"]
+    else:
+        rho_sp = savepoint_nonhydro_exit.rho_new().asnumpy()
+        exner_sp = timeloop_diffusion_savepoint_exit.exner().asnumpy()
+        theta_sp = timeloop_diffusion_savepoint_exit.theta_v().asnumpy()
+        vn_sp = timeloop_diffusion_savepoint_exit.vn().asnumpy()
+        w_sp = timeloop_diffusion_savepoint_exit.w().asnumpy()
 
     assert test_utils.dallclose(
         prognostic_states.current.vn.asnumpy(),
-        vn_sp.asnumpy(),
+        vn_sp,
         atol=6e-12,
     )
 
     assert test_utils.dallclose(
         prognostic_states.current.w.asnumpy(),
-        w_sp.asnumpy(),
+        w_sp,
         atol=8e-14,
     )
 
     assert test_utils.dallclose(
         prognostic_states.current.exner.asnumpy(),
-        exner_sp.asnumpy(),
+        exner_sp,
     )
 
     assert test_utils.dallclose(
         prognostic_states.current.theta_v.asnumpy(),
-        theta_sp.asnumpy(),
+        theta_sp,
         atol=4e-12,
     )
 
     assert test_utils.dallclose(
         prognostic_states.current.rho.asnumpy(),
-        rho_sp.asnumpy(),
+        rho_sp,
     )
 
 
