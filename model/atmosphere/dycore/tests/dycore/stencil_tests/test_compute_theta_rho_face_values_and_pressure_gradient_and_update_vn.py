@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.type_alias as ta
-import icon4py.model.testing.stencil_tests as test_helpers
+from icon4py.model.testing import definitions, stencil_tests
 from icon4py.model.atmosphere.dycore.dycore_states import (
     HorizontalPressureDiscretizationType,
     RhoThetaAdvectionType,
@@ -124,7 +124,7 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
 @pytest.mark.embedded_remap_error
 @pytest.mark.skip_value_error
 @pytest.mark.uses_as_offset
-class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
+class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
     PROGRAM = compute_theta_rho_face_values_and_pressure_gradient_and_update_vn
     OUTPUTS = (
         "rho_at_edges_on_model_levels",
@@ -132,6 +132,33 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         "horizontal_pressure_gradient",
         "next_vn",
     )
+    STATIC_PARAMS = {
+            stencil_tests.StandardStaticVariants.NONE: (),
+            stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+                "iau_wgt_dyn",
+                "is_iau_active",
+                "limited_area",
+                "start_edge_lateral_boundary",
+                "start_edge_lateral_boundary_level_7",
+                "start_edge_nudging_level_2",
+                "end_edge_nudging",
+                "end_edge_halo",
+                "nflatlev",
+                "nflat_gradp",
+                "horizontal_start",
+                "horizontal_end",
+                "vertical_start",
+                "vertical_end",
+            ),
+            stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+                "is_iau_active",
+                "limited_area",
+                "nflatlev",
+                "nflat_gradp",
+                "vertical_start",
+                "vertical_end",
+            ),
+        }
 
     @staticmethod
     def reference(
@@ -473,8 +500,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
 
         dtime = 0.9
         iau_wgt_dyn = 1.0
-        is_iau_active = True
-        limited_area = True
+        is_iau_active = False
+        limited_area = False
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         start_edge_lateral_boundary = grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
@@ -484,8 +511,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         end_edge_nudging = grid.end_index(edge_domain(h_grid.Zone.NUDGING))
         end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
-        nflatlev = 4
-        nflat_gradp = 27
+        nflatlev = 6
+        nflat_gradp = 35
 
         return dict(
             rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
@@ -537,3 +564,18 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestComputeThetaRhoPressureGradientAndUpdateVnContinuousBenchmarking(
+    TestComputeThetaRhoPressureGradientAndUpdateVn
+):
+    @pytest.fixture
+    def input_data(self, grid: base.Grid) -> dict:
+        assert (
+            grid.id == definitions.GridUUIDs.MCH_OPR_R19B08_DOMAIN01
+        ), "This test only works with the icon_benchmark grid."
+        base_data = TestComputeThetaRhoPressureGradientAndUpdateVn.input_data.__wrapped__(
+            self, grid
+        )
+        return base_data
