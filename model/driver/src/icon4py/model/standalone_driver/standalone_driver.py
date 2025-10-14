@@ -37,7 +37,7 @@ from icon4py.model.driver import (
 log = logging.getLogger(__name__)
 
 
-class TimeLoop:
+class TimeLoop: # TODO (Yilu) rename the Timeloop to Driver
     @classmethod
     def name(cls):
         return cls.__name__
