@@ -29,8 +29,6 @@ Immersed boundary method module
 
 log = logging.getLogger(__name__)
 
-DO_IBM: Final[bool] = True
-
 DIRICHLET_VALUE_VN: Final[float] = 0.0
 DIRICHLET_VALUE_W: Final[float] = 0.0
 DIRICHLET_VALUE_RHO: Final[float] = -999.0
@@ -344,6 +342,7 @@ class ImmersedBoundaryMethodMasks:
         savepoint_path: str,
         grid_file_path: str,
         backend: gtx_typing.Backend,
+        do_ibm: bool = True,
     ):
         """
         Initialize the immersed boundary method masks.
@@ -354,6 +353,7 @@ class ImmersedBoundaryMethodMasks:
             savepoint_path=savepoint_path,
             grid_file_path=grid_file_path,
             backend=backend,
+            do_ibm=do_ibm,
         )
 
         log.info("IBM initialized")
@@ -364,6 +364,7 @@ class ImmersedBoundaryMethodMasks:
         savepoint_path: str,
         grid_file_path: str,
         backend: gtx_typing.Backend,
+        do_ibm: bool,
     ) -> None:
         """
         Create masks for the immersed boundary method.
@@ -377,7 +378,7 @@ class ImmersedBoundaryMethodMasks:
         full_vertex_mask_np = xp.zeros((grid.num_vertices, grid.num_levels), dtype=bool)
         neigh_full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
 
-        if DO_IBM:
+        if do_ibm:
             # Fill masks, otherwise False everywhere
             # half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
             # half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
@@ -508,13 +509,16 @@ class ImmersedBoundaryMethodMasks:
 
         # Channel
         match savepoint_path.split("/")[-2]:
+            case "gauss3d_torus":
+                # this is used for the CHANNEL_IBM testcase
+                blocks = [[20000, 25500, 0, 5000, 500]]
             case "exclaim_channel_950x350x100_5m_nlev20":
                 blocks = [[150, 200, 150, 199, 50]]
             case "exclaim_channel_950x350x100_2.5m_nlev40":
                 blocks = [[150, 200, 149, 200, 50]]
             case "exclaim_channel_950x350x100_1.5m_nlev64":
                 blocks = [[150, 200, 150, 199, 50]]
-                job_name = os.environ.get("SLURM_JOB_NAME")
+                job_name = os.environ.get("SLURM_JOB_NAME", "not_mltbld")
                 if "multibuilding" in job_name:
                     blocks = [
                             [150, 200,  49,  99, 50],
@@ -562,26 +566,3 @@ class ImmersedBoundaryMethodMasks:
                     half_cell_mask_np[:, k],
                 )
         return half_cell_mask_np
-
-    # --------------------------------------------------------------------------
-    # non-hydro and advection part
-
-    # --------------------------------------------------------------------------
-    # diffusion part
-
-    def set_bcs_khsmag(
-        self,
-        Kh_smag: fa.EdgeKField[float],
-    ):
-        if not self.DO_IBM:
-            return
-        # Set to zero Kh_smag as a 'hack' for setting to zero the gradient of
-        # theta_v on masked edges.
-        # Actually these edges have some gradient, but this is ignored for now.
-        _set_bcs_edges(
-            mask=self.full_edge_mask,
-            dir_value=0,
-            field=Kh_smag,
-            out=Kh_smag,
-            offset_provider={},
-        )
