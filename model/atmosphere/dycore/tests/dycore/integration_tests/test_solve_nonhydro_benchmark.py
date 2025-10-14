@@ -40,7 +40,6 @@ from icon4py.model.testing import definitions, grid_utils
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
-
 def run_nonhydro_substeps(
     solve_nonhydro,
     diagnostic_state_nh,
