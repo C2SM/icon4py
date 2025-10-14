@@ -72,9 +72,11 @@ def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
     return request.param
 
 
-@pytest.fixture(params=[False], scope="session")
+@pytest.fixture(scope="session", params=[False])
 def processor_props(request: pytest.FixtureRequest) -> decomposition.ProcessProperties:
-    return dt_utils.get_processor_properties_for_run(decomposition.SingleNodeRun())
+    with_mpi = request.param
+    runtype = decomposition.get_runtype(with_mpi=with_mpi)
+    return decomposition.get_processor_properties(runtype)
 
 
 @pytest.fixture(scope="session")

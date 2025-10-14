@@ -106,21 +106,21 @@ class ParallelLogger(logging.Filter):
 
 @definitions.get_processor_properties.register(definitions.MultiNodeRun)
 def get_multinode_properties(
-    s: definitions.MultiNodeRun, comm_id: CommId = None
+    s: definitions.RunType, comm_id: CommId = None
 ) -> definitions.ProcessProperties:
     return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm = None
 
     @functools.cached_property
-    def rank(self):
+    def rank(self) -> int:
         return self.comm.Get_rank()
 
     @functools.cached_property
-    def comm_name(self):
+    def comm_name(self) -> str:
         return self.comm.Get_name()
 
     @functools.cached_property
@@ -143,6 +143,10 @@ class GHexMultiNodeExchange:
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
             dim: self._create_domain_descriptor(dim)
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        }
+        self._field_size: dict[gtx.Dimension : int] = {
+            dim: self._decomposition_info.global_index(dim).shape[0]
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
@@ -207,17 +211,20 @@ class GHexMultiNodeExchange:
     def _slice_field_based_on_dim(self, field: gtx.Field, dim: gtx.Dimension) -> data_alloc.NDArray:
         """
         Slices the field based on the dimension passed in.
-        """
-        if dim == dims.VertexDim:
-            return field.ndarray[: self._decomposition_info.num_vertices, :]
-        elif dim == dims.EdgeDim:
-            return field.ndarray[: self._decomposition_info.num_edges, :]
-        elif dim == dims.CellDim:
-            return field.ndarray[: self._decomposition_info.num_cells, :]
-        else:
-            raise ValueError(f"Unknown dimension {dim}")
 
-    def exchange(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]):
+        This is a helper function needed for the granule - Fortran integration. As the Fortran fields have nproma
+        size but the global_index fields used to initialize GHEX exchanges have only local num_edge,
+        num_cell_num_vertex size.
+        """
+        print(f" field = {field}, {type(field)}")
+        try:
+            assert field.ndarray.ndim == 2
+            trim_length = self._field_size[dim]
+            return field.ndarray[:trim_length, :]
+        except KeyError:
+            log.warn(f"Trying to trim field of invalid dimension {dim} for exchange. Not trimming.")
+
+    def exchange(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]):
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
 
@@ -252,7 +259,7 @@ class GHexMultiNodeExchange:
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]):
         res = self.exchange(dim, *fields)
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")

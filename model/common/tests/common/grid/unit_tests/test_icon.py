@@ -524,7 +524,7 @@ def test_global_grid_params_from_grid_manager(
     grid_descriptor: definitions.GridDescription,
     backend: gtx_typing.Backend,
     geometry_type: base.GeometryType,
-    subdivision: base.GridSubdivision,
+    subdivision: icon.GridSubdivision,
     radius: float,
     domain_length: float,
     domain_height: float,

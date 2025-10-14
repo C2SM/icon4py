@@ -214,6 +214,7 @@ def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool) -> bool:
     value = dimension in CONNECTIVITIES_ON_PENTAGONS or (
         limited_area and dimension in CONNECTIVITIES_ON_BOUNDARIES
     )
+
     return value
 
 
