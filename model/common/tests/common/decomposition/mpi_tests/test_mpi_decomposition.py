@@ -5,13 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 from typing import Any
 
 import numpy as np
 import pytest
 
-from icon4py.model.common.grid import icon
-from icon4py.model.common.utils.data_allocation import constant_field
+from icon4py.model.common.grid import horizontal as h_grid, icon
+from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
@@ -21,6 +23,7 @@ except ImportError:
 
 import gt4py.next as gtx
 
+import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.testing import definitions as test_defs, serialbox
@@ -34,6 +37,7 @@ from ...fixtures import (
     experiment,
     grid_savepoint,
     icon_grid,
+    interpolation_savepoint,
     metrics_savepoint,
     ranked_data_path,
 )
@@ -253,7 +257,7 @@ def test_exchange_on_dummy_data(
     grid = grid_savepoint.construct_icon_grid()
 
     number = processor_props.rank + 10.0
-    input_field = constant_field(
+    input_field = data_alloc.constant_field(
         grid,
         number,
         dimension,
@@ -274,11 +278,51 @@ def test_exchange_on_dummy_data(
         f" rank={processor_props.rank} - exchanged points: {np.sum(result != number)/grid.num_levels}"
     )
     print(f"rank={processor_props.rank} - halo points: {halo_points}")
+    changed_points = np.argwhere(result[:, 2] != number)
+    print(f"rank={processor_props.rank} - num changed points {changed_points.shape} ")
 
     assert np.all(result[local_points, :] == number)
     assert np.all(result[halo_points, :] != number)
 
-    changed_points = np.argwhere(result[:, 2] != number)
-    print(f"rank={processor_props.rank} - num changed points {changed_points.shape} ")
 
-    print(f"rank={processor_props.rank} - changed points {changed_points} ")
+@pytest.mark.mpi
+@pytest.mark.datatest
+@pytest.mark.parametrize("processor_props", [False], indirect=True)
+def test_halo_exchange_for_sparse_field(
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    experiment: test_defs.Experiment,
+    processor_props: definitions.ProcessProperties,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    icon_grid: icon.IconGrid,
+    backend,
+    decomposition_info: definitions.DecompositionInfo,
+):
+    xp = data_alloc.import_array_ns(backend)
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    edge_cell_length = grid_savepoint.edge_cell_length()
+    edge_owner_mask = grid_savepoint.e_owner_mask()
+    c_lin_e_ref = interpolation_savepoint.c_lin_e()
+    print(
+        f"{processor_props.rank}/{processor_props.comm_size}: size of reference field {c_lin_e_ref.asnumpy().shape}"
+    )
+
+    horizontal_start = icon_grid.start_index(
+        h_grid.edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+
+    c_lin_e = compute_c_lin_e(
+        edge_cell_length.asnumpy(),
+        inv_dual_edge_length.asnumpy(),
+        edge_owner_mask.asnumpy(),
+        horizontal_start,
+        xp,
+    )
+    print(
+        f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {c_lin_e_ref.asnumpy().shape}"
+    )
+    # convert to field
+    c_lin_e_field = gtx.as_field((dims.EdgeDim, dims.E2CDim), c_lin_e, backend)
+    exchange.exchange_and_wait(dims.EdgeDim, c_lin_e_field)
+
+    assert test_helpers.dallclose(c_lin_e_field.asnumpy(), c_lin_e_ref.asnumpy())
