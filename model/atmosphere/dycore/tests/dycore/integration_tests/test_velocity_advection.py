@@ -6,18 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
-from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
-
-
-if TYPE_CHECKING:
-    from gt4py.next import typing as gtx_typing
-
-    from icon4py.model.common.grid import icon
-    from icon4py.model.testing import serialbox
+from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
@@ -33,12 +26,13 @@ from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_a
 from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
+    icon,
     states as grid_states,
     vertical as v_grid,
 )
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions, serialbox, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
