@@ -6,18 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pytest
-
-
-if TYPE_CHECKING:
-    from gt4py.next import typing as gtx_typing
-
-    from icon4py.model.common import type_alias as ta
+from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusion_states
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import icon, vertical as v_grid
 from icon4py.model.testing import definitions, parallel_helpers, serialbox, test_utils
