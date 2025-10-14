@@ -33,6 +33,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
+from icon4py.model.common.decomposition import definitions as decomposition
 
 log = logging.getLogger(__name__)
 
@@ -83,6 +84,7 @@ class GridGeometry(factory.FieldSource):
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         """
         Args:
@@ -103,6 +105,7 @@ class GridGeometry(factory.FieldSource):
         self._attrs = metadata
         self._geometry_type: base.GeometryType | None = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
+        self._exchange = exchange
         log.info(
             f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )

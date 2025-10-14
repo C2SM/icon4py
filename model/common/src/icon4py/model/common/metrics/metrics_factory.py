@@ -39,6 +39,7 @@ from icon4py.model.common.metrics import (
 )
 from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.decomposition import definitions as decomposition
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -64,6 +65,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         rayleigh_coeff: float,
         exner_expol: float,
         vwind_offctr: float,
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -74,6 +76,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
+        self._exchange = exchange
         self._interpolation_source = interpolation_source
         log.info(
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
