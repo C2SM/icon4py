@@ -156,8 +156,6 @@ def test_time_step_flags(
     ],
 )
 def test_nonhydro_predictor_step(
-    istep_init,
-    istep_exit,
     substep_init,
     step_date_init,
     step_date_exit,
@@ -172,7 +170,6 @@ def test_nonhydro_predictor_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     experiment,
-    ndyn_substeps,
     at_initial_timestep,
     caplog,
     backend,
@@ -1179,8 +1176,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     )
 
     assert test_utils.dallclose(
-        rho_at_cells_on_half_levels.asnumpy(),
-        rho_ic_ref.asnumpy(),
+        rho_at_cells_on_half_levels.asnumpy(),rho_ic_ref.asnumpy()
     )
     assert test_utils.dallclose(
         exner_at_cells_on_half_levels.asnumpy()[:, nflatlev:],
@@ -1203,9 +1199,9 @@ def test_compute_perturbed_quantities_and_interpolation(
     )
     assert test_utils.dallclose(
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels.asnumpy()[
-            lb:, nflat_gradp:
+            lb:, :
         ],
-        z_dexner_dz_c_2_ref.asnumpy()[lb:, nflat_gradp:],
+        z_dexner_dz_c_2_ref.asnumpy()[lb:, :],
         rtol=5e-9,
     )
 
