@@ -314,7 +314,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
         nlev = grid.num_levels
-        nflatlev = 13
+        nflatlev = 11
 
         skip_compute_predictor_vertical_advection = request.param[
             "skip_compute_predictor_vertical_advection"
