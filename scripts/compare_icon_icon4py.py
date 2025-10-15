@@ -201,6 +201,14 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
                 if len(metric_data) >= gt4py_unmatched_ncalls_threshold:
                     unmatched_data[stencil] = metric_data
 
+    # Merge 'compute_hydrostatic_correction_term' stencil into 'apply_divergence_damping_and_update_vn'
+    assert "compute_hydrostatic_correction_term" in unmatched_data
+    data["apply_divergence_damping_and_update_vn"] = list(zip(
+        data["apply_divergence_damping_and_update_vn"],
+        unmatched_data.pop("compute_hydrostatic_correction_term"),
+        strict=True,
+    ))
+
     diff = set(fortran_to_icon4py.keys()) - set(data.keys())
     if len(diff) != 0:
         raise ValueError(f"Missing icon4py meas for these stencils: {diff}.")
