@@ -93,6 +93,7 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn": None,
     "interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration": None,
     "update_mass_flux_weighted": None,
+    "update_mass_flux_weighted_first": None,
     "vertically_implicit_solver_at_corrector_step": (
         "vertically_implicit_solver_at_corrector_step",
         {
@@ -222,6 +223,20 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
             unmatched_data.pop("compute_exner_from_rhotheta"),
             unmatched_data.pop("compute_theta_and_exner"),
             unmatched_data.pop("update_theta_v"),
+            strict=True,
+        )
+    ]
+
+    assert "update_mass_flux_weighted_first" not in data
+    data["update_mass_flux_weighted_first"] = [
+        a + b
+        for a, b in zip(
+            data["update_mass_flux_weighted"][::5][
+                1:
+            ],  # take only every fifth measurement from the last calls and skip first which is the median
+            unmatched_data.pop("init_cell_kdim_field_with_zero_wp")[
+                1:
+            ],  # skip first call to match with the above
             strict=True,
         )
     ]
