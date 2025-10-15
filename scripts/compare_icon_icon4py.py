@@ -48,6 +48,7 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "apply_diffusion_to_vn": None,
     "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence": None,
     "apply_divergence_damping_and_update_vn": None,
+    "boundary_halo_cleanup": None,
     "calculate_diagnostic_quantities_for_turbulence": None,
     "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools": None,
     "calculate_nabla2_and_smag_coefficients_for_vn": None,
@@ -208,6 +209,18 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
         for a, b in zip(
             data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"],
             unmatched_data.pop("compute_hydrostatic_correction_term"),
+            strict=True,
+        )
+    ]
+
+    # Merge some stencils into 'boundary_halo_cleanup'
+    assert "boundary_halo_cleanup" not in data
+    data["boundary_halo_cleanup"] = [
+        a + b + c
+        for a, b, c in zip(
+            unmatched_data.pop("compute_exner_from_rhotheta"),
+            unmatched_data.pop("compute_theta_and_exner"),
+            unmatched_data.pop("update_theta_v"),
             strict=True,
         )
     ]
