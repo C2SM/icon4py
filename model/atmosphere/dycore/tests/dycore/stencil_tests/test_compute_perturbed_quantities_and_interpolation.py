@@ -474,9 +474,6 @@ class TestComputePerturbedQuantitiesAndInterpolationContinuousBenchmarking(
 ):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        assert (
-            grid.id == definitions.GridUUIDs.MCH_OPR_R19B08_DOMAIN01
-        ), "This test only works with the icon_benchmark grid."
         base_data = TestComputePerturbedQuantitiesAndInterpolation.input_data.__wrapped__(
             self, grid
         )

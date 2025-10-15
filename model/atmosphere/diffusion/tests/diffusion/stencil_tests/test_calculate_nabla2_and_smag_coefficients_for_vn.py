@@ -215,9 +215,6 @@ class TestCalculateNabla2AndSmagCoefficientsForVnContinuousBenchmarking(
 ):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        assert (
-            grid.id == definitions.GridUUIDs.MCH_OPR_R19B08_DOMAIN01
-        ), "This test only works with the icon_benchmark grid."
         base_data = TestCalculateNabla2AndSmagCoefficientsForVn.input_data.__wrapped__(self, grid)
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))

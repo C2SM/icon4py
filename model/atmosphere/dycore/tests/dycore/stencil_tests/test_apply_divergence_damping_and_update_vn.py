@@ -282,9 +282,6 @@ class TestApplyDivergenceDampingAndUpdateVnContinuousBenchmarking(
         ids=lambda param: f"limited_area[{param['limited_area']}]__divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}]",
     )
     def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
-        assert (
-            grid.id == definitions.GridUUIDs.MCH_OPR_R19B08_DOMAIN01
-        ), "This test only works with the icon_benchmark grid."
         # Use the parent class's fixture indirectly by calling its method, not the fixture itself
         base_data = TestApplyDivergenceDampingAndUpdateVn.input_data.__wrapped__(
             self, request, grid

@@ -151,9 +151,6 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulenceContinuousB
 ):
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        assert (
-            grid.id == definitions.GridUUIDs.MCH_OPR_R19B08_DOMAIN01
-        ), "This test only works with the icon_benchmark grid."
         # Use the parent class's fixture indirectly by calling its method, not the fixture itself
         base_data = (
             TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence.input_data.__wrapped__(

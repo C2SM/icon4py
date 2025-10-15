@@ -19,7 +19,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import definitions, stencil_tests
 
 from .test_add_interpolated_horizontal_advection_of_w import (
     add_interpolated_horizontal_advection_of_w_numpy,
@@ -486,7 +486,11 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
 class TestFusedVelocityAdvectionStencilVMomentumContinuousBenchmarking(
     TestFusedVelocityAdvectionStencilVMomentum
 ):
-    pass
+    @pytest.fixture
+    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        base_data = TestFusedVelocityAdvectionStencilVMomentum.input_data.__wrapped__(self, grid)
+        base_data["end_index_of_damping_layer"] = 12
+        return base_data
 
 
 @pytest.mark.embedded_remap_error

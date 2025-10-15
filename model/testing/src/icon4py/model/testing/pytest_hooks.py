@@ -103,8 +103,16 @@ def pytest_addoption(parser: pytest.Parser):
 
 def pytest_collection_modifyitems(config, items):
     """Modify collected test items based on command line options."""
+    test_grid = config.getoption("--grid")
     for item in items:
         if (marker := item.get_closest_marker("continuous_benchmarking")) is not None:
+            if test_grid != "icon_benchmark":
+                item.add_marker(
+                    pytest.mark.skip(
+                        reason="Continuous benchmarking tests only run with --grid icon_benchmark"
+                    )
+                )
+                continue
             if not config.getoption("--benchmark-only"):
                 item.add_marker(
                     pytest.mark.benchmark_only(
