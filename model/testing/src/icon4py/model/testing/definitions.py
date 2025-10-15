@@ -128,10 +128,6 @@ class Grids:
     )
 
 
-class GridUUIDs:
-    MCH_OPR_R19B08_DOMAIN01: Final = "01f00602-c07e-cd84-b894-bd17fffd2720"
-
-
 @dataclasses.dataclass
 class Experiment:
     name: str
