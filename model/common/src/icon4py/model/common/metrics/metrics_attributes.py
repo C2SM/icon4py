@@ -30,7 +30,6 @@ EXNER_REF_MC: Final[str] = "exner_ref_mc"
 THETA_REF_MC: Final[str] = "theta_ref_mc"
 D2DEXDZ2_FAC1_MC: Final[str] = "d2dexdz2_fac1_mc"
 D2DEXDZ2_FAC2_MC: Final[str] = "d2dexdz2_fac2_mc"
-VERT_OUT: Final[str] = "vert_out"
 DDXT_Z_HALF_E: Final[str] = "ddxt_z_half_e"
 DDXN_Z_HALF_E: Final[str] = "ddxn_z_half_e"
 DDXN_Z_FULL: Final[str] = "ddxn_z_full"
@@ -177,14 +176,6 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="d2dexdz2_fac2_mc",
-        dtype=ta.wpfloat,
-    ),
-    VERT_OUT: dict(
-        standard_name=VERT_OUT,
-        long_name="vert_out",
-        units="",
-        dims=(dims.VertexDim, dims.KHalfDim),
-        icon_var_name="vert_out",
         dtype=ta.wpfloat,
     ),
     DDXT_Z_HALF_E: dict(
