@@ -71,13 +71,21 @@ On MacOS run
 ```bash
 brew install mpich
 ```
-
+or 
+```bash
+brew install open-mpi
+```
 2. Install optional python libraries:
    In the main folder of the repository, run
 
 ```bash
-uv sync --extra distributed  or `uv sync --extra all` which all optional dependencies
+uv sync --extra distributed 
 ```
+or
+```bash
+uv sync --extra all` 
+```
+which all optional dependencies
 
 Note that the current Python build for GHEX seems not to run on MacOS.
 
