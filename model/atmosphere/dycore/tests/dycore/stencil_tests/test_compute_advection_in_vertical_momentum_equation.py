@@ -502,6 +502,9 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         "contravariant_corrected_w_at_cells_on_model_levels",
         "vertical_cfl",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),  # For now compile time variants triger error in gt4py
+    }
 
     @staticmethod
     def reference(
@@ -629,7 +632,8 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         )
 
     @pytest.fixture(
-        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]]
+        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]],
+        ids=lambda param: f"skip_compute_predictor_vertical_advection[{param['skip_compute_predictor_vertical_advection']}]",
     )
     def input_data(
         self, grid: base.Grid, request: pytest.FixtureRequest
