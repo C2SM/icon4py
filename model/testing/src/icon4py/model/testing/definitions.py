@@ -143,7 +143,11 @@ class Experiments:
         description="EXCLAIM Aquaplanet experiment",
         grid=Grids.R02B04_GLOBAL,
         num_levels=60,
-        partitioned_data={1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download"},
+        partitioned_data={
+            1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download",
+            2: "https://polybox.ethz.ch/index.php/s/GQNcLtp4CN7ERbi/download",
+            4: "https://polybox.ethz.ch/index.php/s/XCcE34Ry5EQckoK/download",
+        },
     )
     MCH_CH_R04B09: Final = Experiment(
         name="mch_ch_r04b09_dsl",
