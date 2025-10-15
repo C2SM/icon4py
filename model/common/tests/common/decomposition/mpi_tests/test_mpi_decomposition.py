@@ -5,10 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import numpy as np
 import pytest
 
+from icon4py.model.common.grid import icon
 from icon4py.model.common.utils.data_allocation import constant_field
 
 
@@ -17,15 +19,14 @@ try:
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
+import gt4py.next as gtx
+
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    DomainDescriptorIdGenerator,
-    SingleNodeExchange,
-    create_exchange,
-)
-from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
-from icon4py.model.testing.fixtures.datatest import (  # import fixtures from test_utils
+from icon4py.model.common.decomposition import definitions, mpi_decomposition
+from icon4py.model.testing import definitions as test_defs, serialbox
+from icon4py.model.testing.parallel_helpers import check_comm_size, processor_props
+
+from ...fixtures import (
     backend,
     data_provider,
     decomposition_info,
@@ -36,7 +37,6 @@ from icon4py.model.testing.fixtures.datatest import (  # import fixtures from te
     metrics_savepoint,
     ranked_data_path,
 )
-from icon4py.model.testing.parallel_helpers import check_comm_size, processor_props
 
 
 """
@@ -51,11 +51,17 @@ mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
 
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_props(processor_props):
+def test_props(processor_props: definitions.ProcessProperties) -> None:
     assert processor_props.comm
 
 
 @pytest.mark.mpi(min_size=2)
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_defs.Experiments.MCH_CH_R04B09,
+    ],
+)
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
     ("dim, owned, total"),
@@ -67,25 +73,30 @@ def test_props(processor_props):
 )
 @pytest.mark.datatest
 def test_decomposition_info_masked(
-    dim,
-    owned,
-    total,
-    caplog,
-    download_ser_data,
-    decomposition_info,
-    processor_props,
-):
-    check_comm_size(processor_props, sizes=[2])
+    dim: gtx.Dimension,
+    owned: int,
+    total: int,
+    caplog: Any,
+    download_ser_data: Any,
+    decomposition_info: definitions.DecompositionInfo,
+    processor_props: definitions.ProcessProperties,
+    experiment: test_defs.Experiment,
+) -> None:
+    check_comm_size(processor_props, sizes=(2,))
     my_rank = processor_props.rank
-    all_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.ALL)
+    all_indices = decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
     assert all_indices.shape[0] == my_total
 
-    owned_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.OWNED)
+    owned_indices = decomposition_info.global_index(
+        dim, definitions.DecompositionInfo.EntryType.OWNED
+    )
     assert owned_indices.shape[0] == my_owned
 
-    halo_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.HALO)
+    halo_indices = decomposition_info.global_index(
+        dim, definitions.DecompositionInfo.EntryType.HALO
+    )
     assert halo_indices.shape[0] == my_total - my_owned
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
 
@@ -102,6 +113,12 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
+    "experiment",
+    [
+        test_defs.Experiments.MCH_CH_R04B09,
+    ],
+)
+@pytest.mark.parametrize(
     ("dim, owned, total"),
     (
         (dims.CellDim, (10448, 10448), (10611, 10612)),
@@ -112,28 +129,30 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 @pytest.mark.datatest
 @pytest.mark.mpi(min_size=2)
 def test_decomposition_info_local_index(
-    dim,
-    owned,
-    total,
-    caplog,
-    download_ser_data,  # fixture
-    decomposition_info,  # fixture
-    processor_props,  # fixture
+    dim: gtx.Dimension,
+    owned: int,
+    total: int,
+    caplog: Any,
+    decomposition_info: definitions.DecompositionInfo,
+    processor_props: definitions.ProcessProperties,
+    experiment: test_defs.Experiment,
 ):
-    check_comm_size(processor_props, sizes=[2])
+    check_comm_size(processor_props, sizes=(2,))
     my_rank = processor_props.rank
-    all_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.ALL)
+    all_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
 
     assert all_indices.shape[0] == my_total
     assert np.array_equal(all_indices, np.arange(0, my_total))
-    halo_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.HALO)
+    halo_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.HALO)
     assert halo_indices.shape[0] == my_total - my_owned
     assert halo_indices.shape[0] < all_indices.shape[0]
     assert np.all(halo_indices <= np.max(all_indices))
 
-    owned_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.OWNED)
+    owned_indices = decomposition_info.local_index(
+        dim, definitions.DecompositionInfo.EntryType.OWNED
+    )
     assert owned_indices.shape[0] == my_owned
     assert owned_indices.shape[0] <= all_indices.shape[0]
     assert np.all(owned_indices <= np.max(all_indices))
@@ -144,12 +163,12 @@ def test_decomposition_info_local_index(
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5, 6, 7, 8])
 def test_domain_descriptor_id_are_globally_unique(
-    num,
-    processor_props,  # F811 #fixture
-):
+    num: int,
+    processor_props: definitions.ProcessProperties,
+) -> None:
     props = processor_props
     size = props.comm_size
-    id_gen = DomainDescriptorIdGenerator(parallel_props=props)
+    id_gen = definitions.DomainDescriptorIdGenerator(parallel_props=props)
     id1 = id_gen()
     assert id1 == props.comm_size * props.rank
     assert id1 < props.comm_size * (props.rank + 2)
@@ -170,25 +189,28 @@ def test_domain_descriptor_id_are_globally_unique(
 @pytest.mark.datatest
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_decomposition_info_matches_gridsize(
-    caplog,
-    download_ser_data,  # fixture
-    decomposition_info,  # fixture
-    icon_grid,  # fixture
-    processor_props,  # fixture
-):
+    caplog: Any,
+    decomposition_info: definitions.DecompositionInfo,
+    icon_grid: icon.IconGrid,
+    processor_props: definitions.ProcessProperties,
+) -> None:
     check_comm_size(processor_props)
     assert (
         decomposition_info.global_index(
-            dim=dims.CellDim, entry_type=DecompositionInfo.EntryType.ALL
+            dim=dims.CellDim, entry_type=definitions.DecompositionInfo.EntryType.ALL
         ).shape[0]
         == icon_grid.num_cells
     )
     assert (
-        decomposition_info.global_index(dims.VertexDim, DecompositionInfo.EntryType.ALL).shape[0]
+        decomposition_info.global_index(
+            dims.VertexDim, definitions.DecompositionInfo.EntryType.ALL
+        ).shape[0]
         == icon_grid.num_vertices
     )
     assert (
-        decomposition_info.global_index(dims.EdgeDim, DecompositionInfo.EntryType.ALL).shape[0]
+        decomposition_info.global_index(
+            dims.EdgeDim, definitions.DecompositionInfo.EntryType.ALL
+        ).shape[0]
         == icon_grid.num_edges
     )
 
@@ -196,38 +218,38 @@ def test_decomposition_info_matches_gridsize(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_create_multi_node_runtime_with_mpi(
-    decomposition_info,
-    processor_props,
-):
+    decomposition_info: definitions.DecompositionInfo,
+    processor_props: definitions.ProcessProperties,
+) -> None:
     props = processor_props
-    exchange = create_exchange(props, decomposition_info)
+    exchange = definitions.create_exchange(props, decomposition_info)
     if props.comm_size > 1:
-        assert isinstance(exchange, GHexMultiNodeExchange)
+        assert isinstance(exchange, mpi_decomposition.GHexMultiNodeExchange)
     else:
-        assert isinstance(exchange, SingleNodeExchange)
+        assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
 @pytest.mark.mpi_skip()
 def test_create_single_node_runtime_without_mpi(
-    processor_props,
-    decomposition_info,
-):
-    exchange = create_exchange(processor_props, decomposition_info)
-    assert isinstance(exchange, SingleNodeExchange)
+    processor_props: definitions.ProcessProperties,
+    decomposition_info: definitions.DecompositionInfo,
+) -> None:
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
 def test_exchange_on_dummy_data(
-    processor_props,
-    decomposition_info,
-    grid_savepoint,
-    metrics_savepoint,
-    dimension,
-):
-    exchange = create_exchange(processor_props, decomposition_info)
+    processor_props: definitions.ProcessProperties,
+    decomposition_info: definitions.DecompositionInfo,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    dimension: gtx.Dimension,
+) -> None:
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
     grid = grid_savepoint.construct_icon_grid()
 
     number = processor_props.rank + 10.0
@@ -238,8 +260,12 @@ def test_exchange_on_dummy_data(
         dims.KDim,
     )
 
-    halo_points = decomposition_info.local_index(dimension, DecompositionInfo.EntryType.HALO)
-    local_points = decomposition_info.local_index(dimension, DecompositionInfo.EntryType.OWNED)
+    halo_points = decomposition_info.local_index(
+        dimension, definitions.DecompositionInfo.EntryType.HALO
+    )
+    local_points = decomposition_info.local_index(
+        dimension, definitions.DecompositionInfo.EntryType.OWNED
+    )
     assert np.all(input_field == number)
     exchange.exchange_and_wait(dimension, input_field)
     result = input_field.asnumpy()
