@@ -249,9 +249,14 @@ class StencilTest:
 
         setattr(cls, f"{pytest_prefix}{cls.__name__}", test_and_benchmark)
 
-        # in case a test inherits from another test avoid running the tests of its parent
+        # in case a test inherits from another test overload the test function of its parent and skip it
+        # to avoid running the tests of its parent
         if cls.__base__ is not None and cls.__base__ != StencilTest:
-            setattr(cls, f"{pytest_prefix}{cls.__base__.__name__}", pytest.mark.skip(lambda: ()))
+
+            def skipped_test() -> None:
+                pass
+
+            setattr(cls, f"{pytest_prefix}{cls.__base__.__name__}", pytest.mark.skip(skipped_test))
 
         # decorate `static_variant` with parametrized fixtures, since the
         # parametrization is only available in the concrete subclass definition
