@@ -49,6 +49,7 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence": None,
     "apply_divergence_damping_and_update_vn": None,
     "boundary_halo_cleanup": None,
+    "compute_dwdz_and_boundary_update_rho_theta_w": None,
     "calculate_diagnostic_quantities_for_turbulence": None,
     "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools": None,
     "calculate_nabla2_and_smag_coefficients_for_vn": None,
@@ -227,8 +228,9 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
         )
     ]
 
+    # Merge some stencils into 'update_mass_flux_weighted_first'
     assert "update_mass_flux_weighted_first" not in data
-    data["update_mass_flux_weighted_first"] = [
+    data["update_mass_flux_weighted_first"] = [  # name matches icon-exclaim timer
         a + b
         for a, b in zip(
             data["update_mass_flux_weighted"][::5][
@@ -237,6 +239,17 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
             unmatched_data.pop("init_cell_kdim_field_with_zero_wp")[
                 1:
             ],  # skip first call to match with the above
+            strict=True,
+        )
+    ]
+
+    # Merge some stencils into 'compute_dwdz_and_boundary_update_rho_theta_w'
+    assert "compute_dwdz_and_boundary_update_rho_theta_w" not in data
+    data["compute_dwdz_and_boundary_update_rho_theta_w"] = [  # name matches icon-exclaim timer
+        a + b
+        for a, b in zip(
+            unmatched_data.pop("stencils_61_62"),
+            unmatched_data.pop("compute_dwdz_for_divergence_damping"),
             strict=True,
         )
     ]
