@@ -83,7 +83,7 @@ class GridGeometry(factory.FieldSource):
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(), # noqa: B008
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),  # noqa: B008
     ):
         """
         Args:

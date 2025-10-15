@@ -48,3 +48,33 @@ def test_distributed_dual_normal_cell(
     dual_normal_cell_x_ref = grid_savepoint.dual_normal_cell_x().asnumpy()
     dual_normal_cell_x = grid_geometry.get(attrs.EDGE_TANGENT_CELL_U)
     assert test_utils.dallclose(dual_normal_cell_x.asnumpy(), dual_normal_cell_x_ref, atol=1e-14)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "attrs_name, grid_name",
+    [
+        ("edge_area", "edge_areas"),
+        ("edge_midpoint_to_cell_center_distance", "edge_cell_length"),
+        ("eastward_component_of_edge_tangent_on_vertex", "dual_normal_vert_x"),
+        ("edge_midpoint_to_vertex_distance", "edge_vert_length"),
+        ("orientation_of_normal_to_cell_edges", "edge_orientation"),
+        ("grid_latitude_of_vertex", "verts_vertex_lat"),
+        ("cell_area", "cell_areas"),
+    ],
+)
+def test_distributed_geometry_attrs(
+    backend: gtx_typing.Backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    experiment: test_defs.Experiment,
+    processor_props: decomposition.ProcessProperties,
+    attrs_name: str,
+    grid_name: str,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
+    field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
+    field = grid_geometry.get(attrs_name).asnumpy()
+    assert test_utils.dallclose(field, field_ref, equal_nan=True, atol=1e-13)
