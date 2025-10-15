@@ -452,6 +452,23 @@ def read_static_fields(
         grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
         grg = interpolation_savepoint.geofac_grg()
 
+        icon_grid = grid_savepoint.construct_icon_grid(backend=backend)
+        xp = data_alloc.import_array_ns(backend)
+        ddqz_z_half_e_np = xp.zeros(
+            (grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KDim) + 1), dtype=float
+        )
+        ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
+        compute_ddqz_z_half_e.with_backend(backend=backend)(
+            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+            c_lin_e=interpolation_savepoint.c_lin_e(),
+            ddqz_z_half_e=ddqz_z_half_e,
+            horizontal_start=0,
+            horizontal_end=grid_savepoint.num(dims.EdgeDim),
+            vertical_start=0,
+            vertical_end=grid_savepoint.num(dims.KDim) + 1,
+            offset_provider=icon_grid.connectivities,
+        )
+
         diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
             e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
             rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
@@ -461,6 +478,18 @@ def read_static_fields(
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+        )
+        diffusion_metric_state = diffusion_states.DiffusionMetricState(
+            mask_hdiff=metrics_savepoint.mask_hdiff(),
+            theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+            wgtfac_c=metrics_savepoint.wgtfac_c(),
+            zd_intcoef=metrics_savepoint.zd_intcoef(),
+            zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+            zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+            ddqz_z_full=metrics_savepoint.ddqz_z_full(),
+            ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
+            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+            ddqz_z_half_e=ddqz_z_half_e,
         )
         solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
             c_lin_e=interpolation_savepoint.c_lin_e(),
@@ -481,32 +510,6 @@ def read_static_fields(
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
 
-        icon_grid = grid_savepoint.construct_icon_grid(backend=backend)
-        xp = data_alloc.import_array_ns(backend)
-        ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KDim)+1), dtype=float)
-        ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
-        compute_ddqz_z_half_e.with_backend(backend=backend)(
-            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
-            c_lin_e=interpolation_savepoint.c_lin_e(),
-            ddqz_z_half_e=ddqz_z_half_e,
-            horizontal_start=0,
-            horizontal_end=grid_savepoint.num(dims.EdgeDim),
-            vertical_start=0,
-            vertical_end=grid_savepoint.num(dims.KDim)+1,
-            offset_provider=icon_grid.connectivities,
-        )
-        diffusion_metric_state = diffusion_states.DiffusionMetricState(
-            mask_hdiff=metrics_savepoint.mask_hdiff(),
-            theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-            wgtfac_c=metrics_savepoint.wgtfac_c(),
-            zd_intcoef=metrics_savepoint.zd_intcoef(),
-            zd_vertoffset=metrics_savepoint.zd_vertoffset(),
-            zd_diffcoef=metrics_savepoint.zd_diffcoef(),
-            ddqz_z_full=metrics_savepoint.ddqz_z_full(),
-            ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
-            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
-            ddqz_z_half_e=ddqz_z_half_e,
-        )
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),

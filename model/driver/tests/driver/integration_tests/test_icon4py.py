@@ -118,9 +118,11 @@ def test_run_timeloop_single_step(
 ):
     ranked_data_path = pathlib.Path("testdata/ser_icondata/mpitask1")
     savepoint_path = ranked_data_path / experiment.name / "ser_data"
-    grid_file_path = pathlib.Path("testdata/grids") / experiment.grid.name / experiment.grid.file_name
-    DO_CHANNEL=False
-    DO_IBM=False
+    grid_file_path = (
+        pathlib.Path("testdata/grids") / experiment.grid.name / experiment.grid.file_name
+    )
+    DO_CHANNEL = False
+    DO_IBM = False
     if experiment == definitions.Experiments.GAUSS3D:
         os.environ["ICON4PY_NUM_LEVELS"] = "35"
         os.environ["ICON4PY_END_DATE"] = "0001-01-01T00:00:04"
@@ -128,8 +130,8 @@ def test_run_timeloop_single_step(
         os.environ["ICON4PY_DIFFU_COEFF"] = "0.001"
         os.environ["ICON4PY_CHANNEL_SPONGE_LENGTH"] = "5000.0"
         os.environ["ICON4PY_CHANNEL_PERTURBATION"] = "0.0"
-        DO_CHANNEL=True
-        DO_IBM=True
+        DO_CHANNEL = True
+        DO_IBM = True
         config = icon4py_configuration.read_config(
             experiment_type=driver_init.ExperimentType.GAUSS3D,
             backend=backend,
@@ -154,15 +156,15 @@ def test_run_timeloop_single_step(
 
     ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         grid=icon_grid,
-        savepoint_path=str(savepoint_path), # make these Paths some day
-        grid_file_path=str(grid_file_path), # make these Paths some day
+        savepoint_path=str(savepoint_path),  # make these Paths some day
+        grid_file_path=str(grid_file_path),  # make these Paths some day
         backend=backend,
         do_ibm=DO_IBM,
     )
     channel_inst = channel.ChannelFlow(
         grid=icon_grid,
-        savepoint_path=str(savepoint_path), # make these Paths some day
-        grid_file_path=str(grid_file_path), # make these Paths some day
+        savepoint_path=str(savepoint_path),  # make these Paths some day
+        grid_file_path=str(grid_file_path),  # make these Paths some day
         backend=backend,
         do_channel=DO_CHANNEL,
     )
@@ -170,6 +172,22 @@ def test_run_timeloop_single_step(
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     grg = interpolation_savepoint.geofac_grg()
+
+    xp = data_alloc.import_array_ns(backend)
+    ddqz_z_half_e_np = xp.zeros(
+        (grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KDim) + 1), dtype=float
+    )
+    ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
+    compute_ddqz_z_half_e.with_backend(backend=backend)(
+        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+        c_lin_e=interpolation_savepoint.c_lin_e(),
+        ddqz_z_half_e=ddqz_z_half_e,
+        horizontal_start=0,
+        horizontal_end=grid_savepoint.num(dims.EdgeDim),
+        vertical_start=0,
+        vertical_end=grid_savepoint.num(dims.KDim) + 1,
+        offset_provider=icon_grid.connectivities,
+    )
 
     diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
@@ -180,19 +198,6 @@ def test_run_timeloop_single_step(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
-    )
-    xp = data_alloc.import_array_ns(backend)
-    ddqz_z_half_e_np = xp.zeros((grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KDim)+1), dtype=float)
-    ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
-    compute_ddqz_z_half_e.with_backend(backend=backend)(
-        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
-        c_lin_e=interpolation_savepoint.c_lin_e(),
-        ddqz_z_half_e=ddqz_z_half_e,
-        horizontal_start=0,
-        horizontal_end=grid_savepoint.num(dims.EdgeDim),
-        vertical_start=0,
-        vertical_end=grid_savepoint.num(dims.KDim)+1,
-        offset_provider=icon_grid.connectivities,
     )
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
         mask_hdiff=metrics_savepoint.mask_hdiff(),
