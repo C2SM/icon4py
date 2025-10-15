@@ -203,13 +203,14 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
 
     # Merge 'compute_hydrostatic_correction_term' stencil into 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn'
     assert "compute_hydrostatic_correction_term" in unmatched_data
-    data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"] = list(
-        zip(
+    data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"] = [
+        a + b
+        for a, b in zip(
             data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"],
             unmatched_data.pop("compute_hydrostatic_correction_term"),
             strict=True,
         )
-    )
+    ]
 
     diff = set(fortran_to_icon4py.keys()) - set(data.keys())
     if len(diff) != 0:
