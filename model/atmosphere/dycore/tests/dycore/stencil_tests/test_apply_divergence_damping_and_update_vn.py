@@ -173,7 +173,10 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
 
         return dict(next_vn=next_vn)
 
-    @pytest.fixture(params=[True, False])
+    @pytest.fixture(
+        params=[{"limited_area": la} for la in [True, False]],
+        ids=lambda param: f"limited_area[{param['limited_area']}]",
+    )
     def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim)
@@ -222,7 +225,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             and (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
         )
 
-        limited_area = request.param
+        limited_area = request.param["limited_area"]
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
@@ -282,7 +285,6 @@ class TestApplyDivergenceDampingAndUpdateVnContinuousBenchmarking(
         ids=lambda param: f"limited_area[{param['limited_area']}]__divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}]",
     )
     def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
-        # Use the parent class's fixture indirectly by calling its method, not the fixture itself
         base_data = TestApplyDivergenceDampingAndUpdateVn.input_data.__wrapped__(
             self, request, grid
         )

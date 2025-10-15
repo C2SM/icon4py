@@ -223,11 +223,7 @@ def test_run_diffusion_benchmark(
 
 @pytest.mark.continuous_benchmarking
 def test_run_diffusion_benchmark_continuous_benchmarking(
-    grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-    assert (
-        grid == definitions.Grids.MCH_OPR_R19B08_DOMAIN01
-    ), "This test only works with the icon_benchmark grid."
-    test_run_diffusion_benchmark(grid, backend, benchmark)
+    test_run_diffusion_benchmark(definitions.Grids.MCH_OPR_R19B08_DOMAIN01, backend, benchmark)
