@@ -91,6 +91,7 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "compute_horizontal_velocity_quantities_and_fluxes": None,
     "compute_perturbed_quantities_and_interpolation": None,
     "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn": None,
+    "interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration": None,
     "update_mass_flux_weighted": None,
     "vertically_implicit_solver_at_corrector_step": (
         "vertically_implicit_solver_at_corrector_step",
