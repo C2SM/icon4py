@@ -612,7 +612,7 @@ def compute_nflat_gradp(
         nlev,
     )
     nflat_gradp = array_ns.min(mask_array)
-    return nflat_gradp
+    return nflat_gradp.item()
 
 
 @gtx.field_operator
