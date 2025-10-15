@@ -20,7 +20,7 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     type_alias as ta,
 )
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions, definitions as decomposition
 from icon4py.model.common.grid import (
     base,
     geometry_attributes as attrs,
@@ -33,7 +33,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
-from icon4py.model.common.decomposition import definitions as decomposition
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +83,7 @@ class GridGeometry(factory.FieldSource):
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(), # noqa: B008
     ):
         """
         Args:

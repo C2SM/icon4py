@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions, definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -39,7 +39,6 @@ from icon4py.model.common.metrics import (
 )
 from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.decomposition import definitions as decomposition
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -65,7 +64,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         rayleigh_coeff: float,
         exner_expol: float,
         vwind_offctr: float,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),  # noqa: B008
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)

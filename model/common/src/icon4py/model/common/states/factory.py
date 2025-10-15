@@ -55,8 +55,8 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import xarray as xa
 
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base as base_grid,
     horizontal as h_grid,
@@ -132,10 +132,6 @@ class FieldSource(GridProvider, Protocol):
     @property
     def _sources(self) -> FieldSource:
         return self
-
-    # @property
-    # def _exchange(self) -> decomposition.ExchangeRuntime:
-    #     return self._exchange
 
     @property
     def metadata(self) -> MutableMapping[str, model.FieldMetaData]:
