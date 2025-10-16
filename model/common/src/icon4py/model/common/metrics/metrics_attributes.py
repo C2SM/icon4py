@@ -143,7 +143,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="coeff1_dwdz",
         dtype=ta.wpfloat,
-    ),
+    ), # TODO (Yilu) looks a bit suspecious
     COEFF2_DWDZ: dict(
         standard_name=COEFF2_DWDZ,
         long_name="coeff2_dwdz",
@@ -151,7 +151,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="coeff2_dwdz",
         dtype=ta.wpfloat,
-    ),
+    ), # TODO (Yilu) looks a bit suspecious
     EXNER_REF_MC: dict(
         standard_name=EXNER_REF_MC,
         long_name="exner_ref_mc",
@@ -231,7 +231,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.VertexDim, dims.KHalfDim),
         icon_var_name="vert_out",
         dtype=ta.wpfloat,
-    ),
+    ), # TODO (Yilu) this one seems not used?
     DDXT_Z_HALF_E: dict(
         standard_name=DDXT_Z_HALF_E,
         long_name="ddxt_z_half_e",
@@ -292,10 +292,10 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=WGTFAC_C,
         long_name="wgtfac_c",
         units="",
-        dims=(dims.CellDim, dims.KDim),
+        dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="wgtfac_c",
         dtype=ta.wpfloat,
-    ),
+    ), # TODO (Yilu) this seems probably lives on half levels
     WGTFAC_E: dict(
         standard_name=WGTFAC_E,
         long_name="wgtfac_e",
@@ -319,7 +319,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="pg_edgeidx_dsl",
         dtype=bool,
-    ),
+    ), # TODO (Yilu) not used?
     PG_EDGEDIST_DSL: dict(
         standard_name=PG_EDGEDIST_DSL,
         long_name="extrapolation distance for pressure gradient downward extrapolation",
@@ -367,7 +367,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="vertoffset_gradp",
         dtype=gtx.int32,
-    ),
+    ), # TODO (Yilu)
     COEFF_GRADEKIN: dict(
         standard_name=COEFF_GRADEKIN,
         long_name="coeff_gradekin",
@@ -375,7 +375,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="coeff_gradekin",
         dtype=ta.wpfloat,
-    ),
+    ), # TODO (Yilu)
     WGTFACQ_C: dict(
         standard_name=WGTFACQ_C,
         long_name="weighting_factor_for_quadratic_interpolation_to_cell_surface",
@@ -397,23 +397,23 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="maxslp",
         units="",
         dims=(dims.CellDim, dims.KDim),
-        icon_var_name="maxslp",
+        icon_var_name="z_maxslp",
         dtype=ta.wpfloat,
-    ),
+    ), # TODO (Yilu) this is called as z_maxslp in ICON
     MAXHGTD: dict(
         standard_name=MAXHGTD,
         long_name="maxhgtd",
         units="",
         dims=(dims.CellDim, dims.KDim),
-        icon_var_name="maxhgtd",
+        icon_var_name="z_maxhgtd",
         dtype=ta.wpfloat,
-    ),
+    ), # TODO (Yilu) this is called as z_maxslp in ICON
     MAXSLP_AVG: dict(
         standard_name=MAXSLP_AVG,
         long_name="maxslp_avg",
         units="",
         dims=(dims.CellDim, dims.KDim),
-        icon_var_name="maxslp_avg",
+        icon_var_name="z_maxslp_avg",
         dtype=ta.wpfloat,
     ),
     MAXHGTD_AVG: dict(
@@ -421,7 +421,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="maxhgtd_avg",
         units="",
         dims=(dims.CellDim, dims.KDim),
-        icon_var_name="maxhgtd_avg",
+        icon_var_name="z_maxhgtd_avg",
         dtype=ta.wpfloat,
     ),
     MAX_NBHGT: dict(
@@ -439,13 +439,13 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="mask_hdiff",
         dtype=ta.wpfloat,
-    ),
+    ), # TODO (Yilu) did not find in the original fortran code, should check the computation
     ZD_DIFFCOEF_DSL: dict(
         standard_name=ZD_DIFFCOEF_DSL,
         long_name="zd_diffcoef_dsl",
         units="",
         dims=(dims.CellDim, dims.KDim),
-        icon_var_name="zd_diffcoef_dsl",
+        icon_var_name="zd_diffcoef",
         dtype=ta.wpfloat,
     ),
     ZD_INTCOEF_DSL: dict(
@@ -453,7 +453,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="zd_intcoef_dsl",
         units="",
         dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
-        icon_var_name="zd_intcoef_dsl",
+        icon_var_name="zd_intcoef",
         dtype=ta.wpfloat,
     ),
     ZD_VERTOFFSET_DSL: dict(
@@ -463,7 +463,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
         icon_var_name="zd_vertoffset_dsl",
         dtype=gtx.int32,
-    ),
+    ),# TODO (Yilu) did not find in the original fortran code, should check the computation
     CELL_HEIGHT_ON_HALF_LEVEL: dict(
         standard_name=CELL_HEIGHT_ON_HALF_LEVEL,
         long_name="vertical_coordinates_on_half_levels",
@@ -471,5 +471,5 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="z_ifc",
         dtype=ta.wpfloat,
-    ),
+    ), # TODO (Yilu) check this is on cell or edge?
 }
