@@ -11,7 +11,8 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import geometry, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -78,6 +79,7 @@ def _get_metrics_factory(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
+    exchange: decomposition.Exchange = geometry.single_node_default,
 ) -> metrics_factory.MetricsFieldsFactory:
     registry_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = metrics_factories.get(registry_name)
@@ -85,7 +87,7 @@ def _get_metrics_factory(
     topography = topography_savepoint.topo_c()
 
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+        geometry = gridtest_utils.get_grid_geometry(backend, experiment, exchange=exchange)
         (
             lowest_layer_thickness,
             model_top_height,
@@ -113,6 +115,7 @@ def _get_metrics_factory(
             geometry_source=geometry,
             backend=backend,
             metadata=interpolation_attributes.attrs,
+            exchange=exchange,
         )
         factory = metrics_factory.MetricsFieldsFactory(
             grid=geometry.grid,
@@ -127,6 +130,7 @@ def _get_metrics_factory(
             rayleigh_coeff=rayleigh_coeff,
             exner_expol=exner_expol,
             vwind_offctr=vwind_offctr,
+            exchange=exchange,
         )
         metrics_factories[registry_name] = factory
     return factory
@@ -510,7 +514,7 @@ def test_factory_zdiff_gradp(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.ZDIFF_GRADP)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-5)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-10)
 
 
 @pytest.mark.level("integration")

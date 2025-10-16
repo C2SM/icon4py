@@ -13,7 +13,7 @@ import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions, definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -45,6 +45,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         geometry_source: geometry.GridGeometry,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
+        exchange: decomposition.ExchangeRuntime = geometry.single_node_default,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -54,6 +55,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
+        self._exchange = exchange
         characteristic_length = self._grid.global_properties.characteristic_length
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {

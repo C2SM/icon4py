@@ -56,6 +56,7 @@ import gt4py.next.typing as gtx_typing
 import xarray as xa
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base as base_grid,
     horizontal as h_grid,
@@ -126,6 +127,7 @@ class FieldSource(GridProvider, Protocol):
     """
 
     _providers: MutableMapping[str, FieldProvider] = {}  # noqa:  RUF012 instance variable
+    _exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange()
 
     @property
     def _sources(self) -> FieldSource:
@@ -189,6 +191,8 @@ class FieldSource(GridProvider, Protocol):
                     )
 
                 buffer = provider(field_name, self._sources, self.backend, self)
+                if hasattr(buffer, "domain"):
+                    self._exchange.exchange_and_wait(*buffer.domain.dims, buffer)
                 return (
                     buffer
                     if type_ == RetrievalType.FIELD
