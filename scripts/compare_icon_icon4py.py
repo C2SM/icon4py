@@ -48,6 +48,7 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "apply_diffusion_to_vn": None,
     "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence": None,
     "apply_divergence_damping_and_update_vn": None,
+    "boundary_halo_cleanup": None,
     "calculate_diagnostic_quantities_for_turbulence": None,
     "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools": None,
     "calculate_nabla2_and_smag_coefficients_for_vn": None,
@@ -90,6 +91,7 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "compute_horizontal_velocity_quantities_and_fluxes": None,
     "compute_perturbed_quantities_and_interpolation": None,
     "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn": None,
+    "interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration": None,
     "update_mass_flux_weighted": None,
     "vertically_implicit_solver_at_corrector_step": (
         "vertically_implicit_solver_at_corrector_step",
@@ -200,6 +202,29 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
                     raise NotImplementedError("Cannot handle stencil variant in unmatched data.")
                 if len(metric_data) >= gt4py_unmatched_ncalls_threshold:
                     unmatched_data[stencil] = metric_data
+
+    # Merge 'compute_hydrostatic_correction_term' stencil into 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn'
+    assert "compute_hydrostatic_correction_term" in unmatched_data
+    data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"] = [
+        a + b
+        for a, b in zip(
+            data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"],
+            unmatched_data.pop("compute_hydrostatic_correction_term"),
+            strict=True,
+        )
+    ]
+
+    # Merge some stencils into 'boundary_halo_cleanup'
+    assert "boundary_halo_cleanup" not in data
+    data["boundary_halo_cleanup"] = [
+        a + b + c
+        for a, b, c in zip(
+            unmatched_data.pop("compute_exner_from_rhotheta"),
+            unmatched_data.pop("compute_theta_and_exner"),
+            unmatched_data.pop("update_theta_v"),
+            strict=True,
+        )
+    ]
 
     diff = set(fortran_to_icon4py.keys()) - set(data.keys())
     if len(diff) != 0:
