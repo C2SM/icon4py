@@ -15,6 +15,8 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
+
 from ...fixtures import (
     backend,
     data_provider,
@@ -25,11 +27,7 @@ from ...fixtures import (
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
-from model.common.tests.common.interpolation.unit_tests.test_interpolation_factory import (
-    _get_interpolation_factory,
-    assert_reordered,
-)
+from ..unit_tests.test_interpolation_factory import _get_interpolation_factory, assert_reordered
 
 
 if TYPE_CHECKING:
