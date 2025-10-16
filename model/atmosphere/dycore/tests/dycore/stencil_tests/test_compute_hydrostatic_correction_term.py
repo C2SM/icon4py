@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 
 def compute_hydrostatic_correction_term_numpy(
@@ -86,11 +86,23 @@ def compute_hydrostatic_correction_term_numpy(
     return z_hydro_corr
 
 
-@pytest.mark.skip_value_error
 @pytest.mark.uses_as_offset
 class TestComputeHydrostaticCorrectionTerm(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = compute_hydrostatic_correction_term
+    STATIC_PARAMS = {
+        StandardStaticVariants.NONE: (),
+        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+        ),
+        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -155,3 +167,10 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestComputeHydrostaticCorrectionTermContinuousBenchmarking(
+    TestComputeHydrostaticCorrectionTerm
+):
+    pass

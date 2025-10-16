@@ -8,14 +8,16 @@
 import gt4py.next as gtx
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import definitions
+from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
 from .test_apply_nabla2_to_w_in_upper_damping_layer import (
@@ -31,6 +33,25 @@ from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
+    STATIC_PARAMS = {
+        StandardStaticVariants.NONE: (),
+        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "halo_idx",
+            "interior_idx",
+            "vertical_start",
+            "vertical_end",
+            "nrdmax",
+            "type_shear",
+        ),
+        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nrdmax",
+            "type_shear",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -99,8 +120,8 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         diff_multfac_w = 5.0
 
         w = zero_field(grid, dims.CellDim, dims.KDim)
-        dwdx = zero_field(grid, dims.CellDim, dims.KDim)
-        dwdy = zero_field(grid, dims.CellDim, dims.KDim)
+        dwdx = random_field(grid, dims.CellDim, dims.KDim)
+        dwdy = random_field(grid, dims.CellDim, dims.KDim)
 
         return dict(
             area=area,
@@ -122,3 +143,31 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulenceContinuousBenchmarking(
+    TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence
+):
+    @pytest.fixture
+    def input_data(self, grid: base.Grid) -> dict:
+        # Use the parent class's fixture indirectly by calling its method, not the fixture itself
+        base_data = (
+            TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence.input_data.__wrapped__(
+                self, grid
+            )
+        )
+        cell_domain = h_grid.domain(dims.CellDim)
+        base_data["interior_idx"] = grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
+        base_data["halo_idx"] = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+
+        def _get_start_index_for_w_diffusion() -> int32:
+            return (
+                grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+                if grid.limited_area
+                else grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+            )
+
+        base_data["horizontal_start"] = _get_start_index_for_w_diffusion()
+        base_data["horizontal_end"] = grid.end_index(cell_domain(h_grid.Zone.HALO))
+        return base_data
