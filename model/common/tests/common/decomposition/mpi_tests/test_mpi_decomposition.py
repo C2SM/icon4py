@@ -15,6 +15,8 @@ from icon4py.model.common.grid import horizontal as h_grid, icon
 from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+import gt4py.next.typing as gtx_typing
+
 
 try:
     import mpi4py  # import mpi4py to check for optional mpi dependency
@@ -294,7 +296,7 @@ def test_halo_exchange_for_sparse_field(
     processor_props: definitions.ProcessProperties,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
-    backend,
+    backend: gtx_typing.Backend|None,
     decomposition_info: definitions.DecompositionInfo,
 ):
     xp = data_alloc.import_array_ns(backend)
@@ -322,7 +324,7 @@ def test_halo_exchange_for_sparse_field(
         f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {c_lin_e_ref.asnumpy().shape}"
     )
     # convert to field
-    c_lin_e_field = gtx.as_field((dims.EdgeDim, dims.E2CDim), c_lin_e, backend)
+    c_lin_e_field = gtx.as_field((dims.EdgeDim, dims.E2CDim), data=c_lin_e,dtype=gtx.float64,allocator=backend)
     exchange.exchange_and_wait(dims.EdgeDim, c_lin_e_field)
 
     assert test_helpers.dallclose(c_lin_e_field.asnumpy(), c_lin_e_ref.asnumpy())
