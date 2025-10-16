@@ -91,7 +91,7 @@ or
 uv sync --extra all 
 ```
 
-which all optional dependencies
+which installs all optional dependencies.
 
 Note that the current Python build for GHEX seems not to run on MacOS.
 
