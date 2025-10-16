@@ -7,15 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
-from typing import Literal
+from typing import Literal, TypeAlias
 
 import gt4py.next as gtx
 
 
 DEFAULT_PRECISION = "double"
 
-wpfloat: type[gtx.float32] | type[gtx.float64] = gtx.float64
-vpfloat: type[gtx.float32] | type[gtx.float64] = wpfloat
+wpfloat: TypeAlias = gtx.float64
+vpfloat: TypeAlias = wpfloat
 
 precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 
