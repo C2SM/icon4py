@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
@@ -39,6 +40,9 @@ from icon4py.model.testing import definitions, grid_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
+
+
+log = logging.getLogger(__file__)
 
 
 def run_nonhydro_substeps(
@@ -82,7 +86,7 @@ def test_solve_nonhydro_benchmark(
     dtime = 90.0 if benchmark_grid == definitions.Grids.R02B07_GLOBAL else 10.0
 
     lprep_adv = True
-    ndyn_substeps = 1
+    ndyn_substeps = 2
     at_initial_timestep = False
     second_order_divdamp_factor = 0.0
 
@@ -352,7 +356,7 @@ def test_solve_nonhydro_benchmark(
 
     prognostic_state_nnow = prognostics.PrognosticState(
         w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, allocator=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         ),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
@@ -361,7 +365,7 @@ def test_solve_nonhydro_benchmark(
     )
     prognostic_state_nnew = prognostics.PrognosticState(
         w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, allocator=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         ),
         vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
@@ -370,16 +374,45 @@ def test_solve_nonhydro_benchmark(
     )
 
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
+    log.debug("finished setup")
+    log.debug("running timestep nr = 1")
 
-    benchmark(
-        run_nonhydro_substeps,
-        solve_nonhydro,
-        diagnostic_state_nh,
-        prognostic_states,
-        prep_adv,
-        second_order_divdamp_factor,
-        dtime,
-        ndyn_substeps,
-        at_initial_timestep,
-        lprep_adv,
+    solve_nonhydro.time_step(
+        diagnostic_state_nh=diagnostic_state_nh,
+        prognostic_states=prognostic_states,
+        prep_adv=prep_adv,
+        lprep_adv=lprep_adv,
+        at_last_substep=False,
+        at_first_substep=True,
+        at_initial_timestep=at_initial_timestep,
+        dtime=dtime,
+        ndyn_substeps_var=ndyn_substeps,
+        second_order_divdamp_factor=second_order_divdamp_factor,
     )
+    log.debug("running timestep nr = 2")
+    solve_nonhydro.time_step(
+        diagnostic_state_nh=diagnostic_state_nh,
+        prognostic_states=prognostic_states,
+        prep_adv=prep_adv,
+        lprep_adv=lprep_adv,
+        at_last_substep=True,
+        at_first_substep=False,
+        at_initial_timestep=at_initial_timestep,
+        dtime=dtime,
+        ndyn_substeps_var=ndyn_substeps,
+        second_order_divdamp_factor=second_order_divdamp_factor,
+    )
+
+    # benchmark(
+    #     run_nonhydro_substeps,
+    #     solve_nonhydro,
+    #     diagnostic_state_nh,
+    #     prognostic_states,
+    #     prep_adv,
+    #     second_order_divdamp_factor,
+    #     dtime,
+    #     ndyn_substeps,
+    #     at_initial_timestep,
+    #     lprep_adv,
+    # )
+    log.debug("finished benchmark")
