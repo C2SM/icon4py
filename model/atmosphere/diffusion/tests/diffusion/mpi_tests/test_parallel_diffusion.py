@@ -12,7 +12,7 @@ import pytest
 from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusion_states
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import icon, vertical as v_grid
 from icon4py.model.testing import definitions, parallel_helpers, serialbox, test_utils
@@ -50,10 +50,10 @@ def test_parallel_diffusion(
     grid_savepoint: serialbox.IconGridSavepoint,
     metric_state: diffusion_states.DiffusionMetricState,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
-    lowest_layer_thickness: float,
-    model_top_height: int,
-    stretch_factor: float,
-    damping_height: int,
+    lowest_layer_thickness: ta.wpfloat,
+    model_top_height: ta.wpfloat,
+    stretch_factor: ta.wpfloat,
+    damping_height: ta.wpfloat,
     caplog: Any,
     backend: gtx_typing.Backend,
     orchestration: bool,
@@ -66,7 +66,6 @@ def test_parallel_diffusion(
         f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{definitions.Experiments.MCH_CH_R04B09}'"
     )
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
         f"local cells = {decomposition_info.global_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
         f"local edges = {decomposition_info.global_index(dims.EdgeDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
         f"local vertices = {decomposition_info.global_index(dims.VertexDim, decomposition.DecompositionInfo.EntryType.ALL).shape}"
@@ -172,16 +171,15 @@ def test_parallel_diffusion_multiple_steps(
     decomposition_info: decomposition.DecompositionInfo,
     icon_grid: icon.IconGrid,
     savepoint_diffusion_init: serialbox.IconDiffusionInitSavepoint,
-    savepoint_diffusion_exit: serialbox.IconDiffusionExitSavepoint,
     grid_savepoint: serialbox.IconGridSavepoint,
     metric_state: diffusion_states.DiffusionMetricState,
     interpolation_state: diffusion_states.DiffusionInterpolationState,
-    lowest_layer_thickness: float,
-    model_top_height: float,
-    stretch_factor: float,
-    damping_height: float,
+    lowest_layer_thickness: ta.wpfloat,
+    model_top_height: ta.wpfloat,
+    stretch_factor: ta.wpfloat,
+    damping_height: ta.wpfloat,
     caplog: Any,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
 ):
     if not test_utils.is_dace(backend):
         raise pytest.skip("This test is only executed for `dace backends.")
@@ -194,7 +192,6 @@ def test_parallel_diffusion_multiple_steps(
         f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{definitions.Experiments.MCH_CH_R04B09}'"
     )
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
         f"local cells = {decomposition_info.global_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
         f"local edges = {decomposition_info.global_index(dims.EdgeDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
         f"local vertices = {decomposition_info.global_index(dims.VertexDim, decomposition.DecompositionInfo.EntryType.ALL).shape}"

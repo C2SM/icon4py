@@ -274,7 +274,7 @@ def construct_decomposition(
     v_owner_mask = v_owner_mask[:num_vertices]
 
     decomposition_info = (
-        definitions.DecompositionInfo(klevels=num_levels)
+        definitions.DecompositionInfo()
         # TODO (halungge): last argument is called `decomp_domain` in icon, it is not needed in the granules should we pass it nevertheless?
         .set_dimension(dims.CellDim, c_glb_index, c_owner_mask, None)
         .set_dimension(dims.EdgeDim, e_glb_index, e_owner_mask, None)

@@ -23,9 +23,7 @@ from ..utils import dummy_four_ranks
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
 def test_create_single_node_runtime_without_mpi(processor_props):  # fixture
-    decomposition_info = definitions.DecompositionInfo(
-        klevels=10,
-    )
+    decomposition_info = definitions.DecompositionInfo()
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     assert isinstance(exchange, definitions.SingleNodeExchange)

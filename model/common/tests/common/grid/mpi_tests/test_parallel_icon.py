@@ -8,18 +8,24 @@
 
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
 
 import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common.decomposition import definitions as defs, mpi_decomposition
-from icon4py.model.testing import parallel_helpers
+from icon4py.model.testing import definitions as test_defs, parallel_helpers
 
+from ...fixtures import (
+    backend,
+    data_provider,
+    download_ser_data,
+    grid_savepoint,
+    icon_grid,
+    processor_props,
+    ranked_data_path,
+)
 from .. import utils
-from ..fixtures import icon_grid, processor_props
 
 
 if TYPE_CHECKING:
@@ -67,9 +73,18 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_defs.Experiments.MCH_CH_R04B09,
+    ],
+)
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_distributed_local(
-    processor_props: decomp_defs.ProcessProperties, dim: gtx.Dimension, icon_grid: base_grid.Grid
+    processor_props: decomp_defs.ProcessProperties,
+    dim: gtx.Dimension,
+    icon_grid: base_grid.Grid,
+    experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
@@ -129,12 +144,19 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        test_defs.Experiments.MCH_CH_R04B09,
+    ],
+)
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
 def test_distributed_halo(
     processor_props: decomp_defs.ProcessProperties,
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
+    experiment: test_defs.Experiment,
     level: int,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)

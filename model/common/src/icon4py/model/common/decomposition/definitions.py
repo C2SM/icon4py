@@ -104,18 +104,12 @@ class DecompositionInfo:
 
     def __init__(
         self,
-        klevels: int,
     ):
-        self._klevels = klevels
         self._global_index = {}
         self._halo_levels = {}
         self._owner_mask = {}
 
-    @property
-    def klevels(self):
-        return self._klevels
-
-    def local_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
+   def local_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._to_local_index(dim)

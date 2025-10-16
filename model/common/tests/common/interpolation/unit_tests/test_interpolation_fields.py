@@ -79,9 +79,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
 @pytest.mark.level("unit")
 @pytest.mark.embedded_only
 @pytest.mark.datatest
-def test_compute_geofac_div(
-    experiment, grid_savepoint, interpolation_savepoint, icon_grid, backend
-):
+def test_compute_geofac_div(experiment, grid_savepoint, interpolation_savepoint, icon_grid):
     mesh = icon_grid
     primal_edge_length = grid_savepoint.primal_edge_length()
     edge_orientation = grid_savepoint.edge_orientation()

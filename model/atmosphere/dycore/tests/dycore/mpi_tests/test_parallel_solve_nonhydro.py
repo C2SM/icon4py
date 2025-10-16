@@ -6,15 +6,17 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 import numpy as np
 import pytest
+from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
-from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
-from icon4py.model.common.grid import states as grid_states, vertical as v_grid
+from icon4py.model.common.grid import icon, states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
+from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -38,33 +40,33 @@ from ..fixtures import *  # noqa: F403
 )
 @pytest.mark.mpi
 def test_run_solve_nonhydro_single_step(
-    istep_init,
-    istep_exit,
-    step_date_init,
-    step_date_exit,
-    experiment,
-    ndyn_substeps,
-    icon_grid,
-    savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    grid_savepoint,
-    metrics_savepoint,
-    interpolation_savepoint,
-    savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_final,
-    processor_props,  # : F811 fixture
-    decomposition_info,  # : F811 fixture
-    backend,
-):
+    istep_init: int,
+    istep_exit: int,
+    step_date_init: str,
+    step_date_exit: str,
+    substep_init: int,
+    experiment: test_defs.Experiment,
+    ndyn_substeps: int,
+    icon_grid: icon.IconGrid,
+    savepoint_nonhydro_init: serialbox.IconNonHydroInitSavepoint,
+    lowest_layer_thickness: ta.wpfloat,
+    model_top_height: ta.wpfloat,
+    stretch_factor: ta.wpfloat,
+    damping_height: ta.wpfloat,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    savepoint_nonhydro_exit: serialbox.IconNonHydroExitSavepoint,
+    savepoint_nonhydro_step_final: serialbox.IconNonHydroFinalSavepoint,
+    processor_props: definitions.ProcessProperties,
+    decomposition_info: definitions.DecompositionInfo,  # : F811 fixture
+    backend: gtx_typing.Backend | None,
+) -> None:
     parallel_helpers.check_comm_size(processor_props)
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
     )
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels} "
         f"local cells = {decomposition_info.global_index(dims.CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
         f"local edges = {decomposition_info.global_index(dims.EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
         f"local vertices = {decomposition_info.global_index(dims.VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
@@ -174,6 +176,11 @@ def test_run_solve_nonhydro_single_step(
     assert test_utils.dallclose(
         savepoint_nonhydro_exit.rho_new().asnumpy(),
         prognostic_states.next.rho.asnumpy(),
+    )
+
+    assert test_utils.dallclose(
+        savepoint_nonhydro_exit.rho_ic().asnumpy(),
+        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
     )
 
     assert test_utils.dallclose(
