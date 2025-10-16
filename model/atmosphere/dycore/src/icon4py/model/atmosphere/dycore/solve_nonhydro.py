@@ -154,26 +154,26 @@ class NonHydrostaticConfig:
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
         rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
-        rayleigh_coeff: wpfloat = 0.05,
+        rayleigh_coeff: wpfloat | float = 0.05,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
         is_iau_active: bool = False,
-        iau_wgt_dyn: wpfloat = 0.0,
+        iau_wgt_dyn: wpfloat | float = 0.0,
         divdamp_type: dycore_states.DivergenceDampingType = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL,
-        divdamp_trans_start: wpfloat = 12500.0,
-        divdamp_trans_end: wpfloat = 17500.0,
+        divdamp_trans_start: wpfloat | float = 12500.0,
+        divdamp_trans_end: wpfloat | float = 17500.0,
         l_vert_nested: bool = False,
-        rhotheta_offctr: wpfloat = -0.1,
-        veladv_offctr: wpfloat = 0.25,
-        _nudge_max_coeff: wpfloat | None = None,  # default is set in __init__
-        max_nudging_coefficient: wpfloat | None = None,  # default is set in __init__
-        fourth_order_divdamp_factor: wpfloat = 0.0025,
-        fourth_order_divdamp_factor2: wpfloat = 0.004,
-        fourth_order_divdamp_factor3: wpfloat = 0.004,
-        fourth_order_divdamp_factor4: wpfloat = 0.004,
-        fourth_order_divdamp_z: wpfloat = 32500.0,
-        fourth_order_divdamp_z2: wpfloat = 40000.0,
-        fourth_order_divdamp_z3: wpfloat = 60000.0,
-        fourth_order_divdamp_z4: wpfloat = 80000.0,
+        rhotheta_offctr: wpfloat | float = -0.1,
+        veladv_offctr: wpfloat | float = 0.25,
+        _nudge_max_coeff: wpfloat | float | None = None,  # default is set in __init__
+        max_nudging_coefficient: wpfloat | float | None = None,  # default is set in __init__
+        fourth_order_divdamp_factor: wpfloat | float = 0.0025,
+        fourth_order_divdamp_factor2: wpfloat | float = 0.004,
+        fourth_order_divdamp_factor3: wpfloat | float = 0.004,
+        fourth_order_divdamp_factor4: wpfloat | float = 0.004,
+        fourth_order_divdamp_z: wpfloat | float = 32500.0,
+        fourth_order_divdamp_z2: wpfloat | float = 40000.0,
+        fourth_order_divdamp_z3: wpfloat | float = 60000.0,
+        fourth_order_divdamp_z4: wpfloat | float = 80000.0,
     ):
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
@@ -1278,6 +1278,9 @@ class SolveNonhydro:
         # scaling factor for second-order divergence damping: second_order_divdamp_factor_from_sfc_to_divdamp_z*delta_x**2
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
+
+        # TODO(pstark): check with Chia Rui what what if this change is correct:
+        #              -> I think we can remove the following three lines and instead give the second_order_divdamp_scaling_coeff to self._calculate_divdamp_fields
         second_order_divdamp_scaling_coeff = wpfloat(second_order_divdamp_factor) * wpfloat(
             self._grid.global_properties.mean_cell_area
         )
