@@ -15,7 +15,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.tests.common.fixtures import (
+from ...fixtures import (
     backend,
     data_provider,
     download_ser_data,
