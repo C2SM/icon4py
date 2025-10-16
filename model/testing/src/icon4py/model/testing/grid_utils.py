@@ -113,7 +113,7 @@ def construct_decomposition_info(
         owner_mask = xp.ones((grid.size[dim],), dtype=bool)
         decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
-    decomposition_info = decomposition_defs.DecompositionInfo(klevels=grid.num_levels)
+    decomposition_info = decomposition_defs.DecompositionInfo()
     _add_dimension(dims.EdgeDim)
     _add_dimension(dims.VertexDim)
     _add_dimension(dims.CellDim)
