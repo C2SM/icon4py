@@ -233,12 +233,10 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
     data["update_mass_flux_weighted_first"] = [  # name matches icon-exclaim timer
         a + b
         for a, b in zip(
-            data["update_mass_flux_weighted"][::5][
-                1:
-            ],  # take only every fifth measurement from the last calls and skip first which is the median
-            unmatched_data.pop("init_cell_kdim_field_with_zero_wp")[
-                1:
-            ],  # skip first call to match with the above
+            data["update_mass_flux_weighted"][
+                ::5
+            ],  # take only every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep
+            unmatched_data.pop("init_cell_kdim_field_with_zero_wp"),
             strict=True,
         )
     ]
