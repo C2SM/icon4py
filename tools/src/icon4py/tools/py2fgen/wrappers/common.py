@@ -49,8 +49,8 @@ log = logging.getLogger(__name__)
 
 class BackendIntEnum(eve.IntEnum):
     DEFAULT = 0
-    DEFAULT_CPU = 1
-    DEFAULT_GPU = 2
+    DACE = 1
+    GTFN = 2
     _GTFN_CPU = 11
     _GTFN_GPU = 12
     _DACE_CPU = 21
@@ -70,41 +70,36 @@ with contextlib.suppress(NotImplementedError):  # dace backends might not be ava
 
 def select_backend(
     selector: BackendIntEnum, on_gpu: bool
-) -> gtx_typing.Backend | model_backends.DeviceType:
-    if selector == BackendIntEnum.DEFAULT_CPU:
-        if on_gpu:
-            raise ValueError(
-                f"Inconsistent backend selection: {selector.name} and on_gpu={on_gpu}."
-            )
-        return model_backends.CPU
-    if selector == BackendIntEnum.DEFAULT_GPU:
-        if not on_gpu:
-            raise ValueError(
-                f"Inconsistent backend selection: {selector.name} and on_gpu={on_gpu}."
-            )
-        assert isinstance(model_backends.GPU, model_backends.DeviceType)
-        return model_backends.GPU
-    if selector == BackendIntEnum.DEFAULT:
-        device_type = model_backends.GPU if on_gpu else model_backends.CPU
-        assert isinstance(device_type, model_backends.DeviceType)
-        return device_type
-
-    if selector not in (
+) -> gtx_typing.Backend | model_backends.BackendDescriptor:
+    if selector in (
         BackendIntEnum._GTFN_CPU,
         BackendIntEnum._GTFN_GPU,
         BackendIntEnum._DACE_CPU,
         BackendIntEnum._DACE_GPU,
     ):
-        raise ValueError(f"Invalid backend selector: {selector.name}")
-    if on_gpu and selector in (BackendIntEnum._DACE_CPU, BackendIntEnum._GTFN_CPU):
-        raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=True")
-    if not on_gpu and selector in (BackendIntEnum._DACE_GPU, BackendIntEnum._GTFN_GPU):
-        raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=False")
+        # Concrete non-customizable backends.
+        # TODO(havogt): consider removing
+        if on_gpu and selector in (BackendIntEnum._DACE_CPU, BackendIntEnum._GTFN_CPU):
+            raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=True")
+        if not on_gpu and selector in (BackendIntEnum._DACE_GPU, BackendIntEnum._GTFN_GPU):
+            raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=False")
 
-    backend = _BACKEND_MAP.get(selector)
-    assert backend is not None
+        backend = _BACKEND_MAP.get(selector)
+        assert backend is not None
+        return backend
 
-    return backend
+    backend_descriptor: model_backends.BackendDescriptor = {}
+    backend_descriptor["device"] = model_backends.GPU if on_gpu else model_backends.CPU
+    if selector == BackendIntEnum.DEFAULT:
+        return backend_descriptor
+    if selector == BackendIntEnum.DACE:
+        backend_descriptor["backend_factory"] = model_backends.make_custom_dace_backend
+        return backend_descriptor
+    if selector == BackendIntEnum.GTFN:
+        backend_descriptor["backend_factory"] = model_backends.make_custom_gtfn_backend
+        return backend_descriptor
+
+    raise ValueError(f"Invalid backend selector: {selector}")
 
 
 def cached_dummy_field_factory(
