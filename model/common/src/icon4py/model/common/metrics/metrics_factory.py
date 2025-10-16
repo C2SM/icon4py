@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.decomposition import definitions, definitions as decomposition
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -54,7 +54,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self,
         grid: icon.IconGrid,
         vertical_grid: v_grid.VerticalGrid,
-        decomposition_info: definitions.DecompositionInfo,
+        decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
         topography: gtx.Field,
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
