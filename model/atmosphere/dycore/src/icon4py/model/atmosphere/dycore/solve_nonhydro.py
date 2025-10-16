@@ -1275,13 +1275,15 @@ class SolveNonhydro:
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = wpfloat(1.0) / ndyn_substeps_var_wp
 
+        second_order_divdamp_factor_wp = wpfloat(second_order_divdamp_factor)
+
         # scaling factor for second-order divergence damping: second_order_divdamp_factor_from_sfc_to_divdamp_z*delta_x**2
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
 
         # TODO(pstark): check with Chia Rui what what if this change is correct:
-        #              -> I think we can remove the following three lines and instead give the second_order_divdamp_scaling_coeff to self._calculate_divdamp_fields
-        second_order_divdamp_scaling_coeff = wpfloat(second_order_divdamp_factor) * wpfloat(
+        #              -> I think we have to instead give the second_order_divdamp_scaling_coeff to self._calculate_divdamp_fields
+        second_order_divdamp_scaling_coeff = second_order_divdamp_factor_wp * wpfloat(
             self._grid.global_properties.mean_cell_area
         )
 
@@ -1289,7 +1291,7 @@ class SolveNonhydro:
             interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
             fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            second_order_divdamp_factor=second_order_divdamp_scaling_coeff,
+            second_order_divdamp_factor=second_order_divdamp_factor_wp,
         )
 
         log.debug("corrector run velocity advection")
@@ -1326,13 +1328,14 @@ class SolveNonhydro:
         log.debug("corrector: start stencil apply_divergence_damping_and_update_vn")
         apply_2nd_order_divergence_damping = (
             self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
-            and second_order_divdamp_scaling_coeff > 1.0e-6
+            and second_order_divdamp_scaling_coeff > wpfloat(1.0e-6)
         )
         apply_4th_order_divergence_damping = (
             self._config.divdamp_order == dycore_states.DivergenceDampingOrder.FOURTH_ORDER
             or (
                 self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
-                and second_order_divdamp_factor <= (4.0 * self._config.fourth_order_divdamp_factor)
+                and second_order_divdamp_factor_wp
+                <= (wpfloat(4.0) * self._config.fourth_order_divdamp_factor)
             )
         )
 
