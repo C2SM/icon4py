@@ -45,7 +45,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         geometry_source: geometry.GridGeometry,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),  # noqa: B008
+        exchange: decomposition.ExchangeRuntime = geometry.single_node_default,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)

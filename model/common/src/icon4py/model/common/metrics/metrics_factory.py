@@ -64,7 +64,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         rayleigh_coeff: float,
         exner_expol: float,
         vwind_offctr: float,
-        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),  # noqa: B008
+        exchange: decomposition.ExchangeRuntime = geometry.single_node_default,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)

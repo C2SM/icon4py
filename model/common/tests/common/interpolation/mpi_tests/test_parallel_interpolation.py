@@ -20,6 +20,7 @@ from icon4py.model.testing import definitions as test_defs, parallel_helpers, te
 from ...fixtures import (
     backend,
     data_provider,
+    decomposition_info,
     download_ser_data,
     experiment,
     icon_grid,
@@ -58,11 +59,13 @@ def test_distributed_interpolation_attrs(
     interpolation_savepoint: sb.InterpolationSavepoint,
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
     attrs_name: str,
     intrp_name: str,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
-    factory = _get_interpolation_factory(backend, experiment)
+    exchange = decomposition.create_exchange(processor_props, decomposition_info)
+    factory = _get_interpolation_factory(backend, experiment, exchange=exchange)
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, rtol=5e-9)
@@ -84,12 +87,14 @@ def test_distributed_interpolation_attrs_reordered(
     interpolation_savepoint: sb.InterpolationSavepoint,
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
     attrs_name: str,
     intrp_name: str,
     lb_domain: typing.Any,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
-    factory = _get_interpolation_factory(backend, experiment)
+    exchange = decomposition.create_exchange(processor_props, decomposition_info)
+    factory = _get_interpolation_factory(backend, experiment, exchange=exchange)
     lb = factory.grid.start_index(lb_domain) if not isinstance(lb_domain, int) else lb_domain
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()

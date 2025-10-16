@@ -16,7 +16,7 @@ import pytest
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import geometry, horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
@@ -60,7 +60,9 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 
 def _get_interpolation_factory(
-    backend: gtx_typing.Backend | None, experiment: definitions.Experiment
+    backend: gtx_typing.Backend | None,
+    experiment: definitions.Experiment,
+    exchange: decomposition.ExchangeRuntime = geometry.single_node_default,
 ) -> interpolation_factory.InterpolationFieldsFactory:
     registry_key = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
@@ -73,6 +75,7 @@ def _get_interpolation_factory(
             geometry_source=geometry,
             backend=backend,
             metadata=attrs.attrs,
+            exchange=exchange,
         )
         interpolation_factories[registry_key] = factory
     return factory

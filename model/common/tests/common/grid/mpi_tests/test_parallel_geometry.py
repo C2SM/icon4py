@@ -12,12 +12,14 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry_attributes as attrs
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
 
 from ...fixtures import (
     backend,
     data_provider,
+    decomposition_info,
     download_ser_data,
     experiment,
     grid_savepoint,
@@ -30,7 +32,6 @@ from ...fixtures import (
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.testing import serialbox as sb
 
 
@@ -42,9 +43,11 @@ def test_distributed_dual_normal_cell(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
-    grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
+    exchange = decomposition.create_exchange(processor_props, decomposition_info)
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, exchange=exchange)
     dual_normal_cell_x_ref = grid_savepoint.dual_normal_cell_x().asnumpy()
     dual_normal_cell_x = grid_geometry.get(attrs.EDGE_TANGENT_CELL_U)
     assert test_utils.dallclose(dual_normal_cell_x.asnumpy(), dual_normal_cell_x_ref, atol=1e-14)
@@ -70,11 +73,13 @@ def test_distributed_geometry_attrs(
     grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
     attrs_name: str,
     grid_name: str,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
-    grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
+    exchange = decomposition.create_exchange(processor_props, decomposition_info)
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, exchange=exchange)
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = grid_geometry.get(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, equal_nan=True, atol=1e-13)
