@@ -1287,12 +1287,26 @@ class SolveNonhydro:
             self._grid.global_properties.mean_cell_area
         )
 
-        self._calculate_divdamp_fields(
-            interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
-            fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
-            reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            second_order_divdamp_factor=second_order_divdamp_factor_wp,
+        dycore_utils._calculate_divdamp_fields(
+            self.interpolated_fourth_order_divdamp_factor,
+            gtx.int32(self._config.divdamp_order),
+            wpfloat(self._grid.global_properties.mean_cell_area),
+            second_order_divdamp_factor_wp,
+            self._config.max_nudging_coefficient,
+            constants.WP_EPS,
+            out=(
+                self.fourth_order_divdamp_scaling_coeff,
+                self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+            ),
         )
+
+        # TODO(pstark): Find and solve bug that appears when running with the compiled self._calculate_divdamp_fields in combination with single precision.
+        # self._calculate_divdamp_fields(
+        #     interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
+        #     fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
+        #     reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+        #     second_order_divdamp_factor=second_order_divdamp_factor_wp,
+        # )
 
         log.debug("corrector run velocity advection")
         self.velocity_advection.run_corrector_step(
