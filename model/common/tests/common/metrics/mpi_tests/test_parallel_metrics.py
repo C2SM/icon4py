@@ -50,7 +50,6 @@ vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     "attrs_name, metrics_name",
     [
         ("functional_determinant_of_metrics_on_full_levels_on_edges", "ddqz_z_full_e"),
-        # ("ddxt_z_half_e", "ddxt_z_half_e"), DDXT_Z_HALF_E
         ("zdiff_gradp", "zdiff_gradp"),
         ("height", "z_mc"),
         ("functional_determinant_of_metrics_on_interface_levels", "ddqz_z_half"),
