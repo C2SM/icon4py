@@ -179,6 +179,11 @@ def test_run_solve_nonhydro_single_step(
     )
 
     assert test_utils.dallclose(
+        savepoint_nonhydro_exit.rho_ic().asnumpy(),
+        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
+    )
+
+    assert test_utils.dallclose(
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         diagnostic_state_nh.theta_v_at_cells_on_half_levels.asnumpy(),
     )
