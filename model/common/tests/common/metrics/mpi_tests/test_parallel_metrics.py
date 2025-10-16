@@ -17,10 +17,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
-from model.common.tests.common.interpolation.unit_tests.test_interpolation_factory import (
-    _get_interpolation_factory,
-    assert_reordered,
-)
 
 from ...fixtures import (
     backend,
