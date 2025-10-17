@@ -1420,7 +1420,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "0.0.0+missing.version.info"
-source = { git = "https://github.com/edopao/gt4py?branch=dace-fix_lowering#647b2e32b0a221ac4d9accf4f86844c7723572b1" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace-fix_lowering#91f375cac0c87ca3ef5425ad945387279f5d5095" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
