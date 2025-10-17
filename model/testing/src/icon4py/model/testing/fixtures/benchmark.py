@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(
-    params=[definitions.Grids.MCH_OPR_R04B07_DOMAIN01],
+    params=[definitions.Grids.R02B04_GLOBAL],
     ids=lambda r: r.name,
 )
 # TODO (Yilu): change to the right grids for benchmarks
