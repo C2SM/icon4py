@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 try:
-    import cupy as xp
+    import cupy as xp  # type: ignore[import-not-found]
 except ImportError:
     import numpy as xp
 
@@ -75,7 +75,7 @@ def as_field(
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
     data = field.asnumpy() if embedded_on_host else field.ndarray
-    return gtx.as_field(field.domain, data=data, allocator=allocator)
+    return gtx.as_field(field.domain, data=data, allocator=allocator)  # type: ignore [arg-type]
 
 
 def random_field(
@@ -92,7 +92,7 @@ def random_field(
     )
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type]
 
 
 def random_sign(
@@ -106,7 +106,7 @@ def random_sign(
     arr = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dims, extend=extend))
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type]
 
 
 def random_mask(
@@ -125,13 +125,13 @@ def random_mask(
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type]
 
 
 def zero_field(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    dtype=ta.wpfloat,
+    dtype: npt.DTypeLike = ta.wpfloat,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
@@ -143,12 +143,12 @@ def constant_field(
     grid: grid_base.Grid,
     value: float,
     *dims: gtx.Dimension,
-    dtype=ta.wpfloat,
+    dtype: npt.DTypeLike = ta.wpfloat,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
+        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),  # type: ignore [arg-type]
         allocator=allocator,
     )
 
@@ -166,7 +166,7 @@ def index_field(
     grid: grid_base.Grid,
     dim: gtx.Dimension,
     extend: dict[gtx.Dimension, int] | None = None,
-    dtype=gtx.int32,
+    dtype: npt.DTypeLike = gtx.int32,  # type: ignore [attr-defined]
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     xp = import_array_ns(allocator)
