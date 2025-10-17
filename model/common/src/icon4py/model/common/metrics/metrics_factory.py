@@ -140,7 +140,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 array_ns=self._xp,
             ),
             fields=(attrs.CELL_HEIGHT_ON_HALF_LEVEL,),
-            domain=(dims.CellDim, dims.KDim),
+            domain=(dims.CellDim, dims.KHalfDim),
             deps={
                 "vct_a": "vct_a",
                 "topography": "topography",
