@@ -20,8 +20,6 @@ from gt4py.next import allocators as gtx_allocators
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
-from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.atmosphere.dycore.ibm import diffu_set_bcs_uv_vertices, diffu_reset_w
 from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
@@ -33,10 +31,6 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
     apply_diffusion_to_theta_and_exner,
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.model.atmosphere.diffusion.stencils.vertical_wind_diffusion import (
-    apply_vertical_diffusion_to_vn,
-    apply_vertical_diffusion_to_w,
-)
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
@@ -49,6 +43,11 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
+from icon4py.model.atmosphere.diffusion.stencils.vertical_wind_diffusion import (
+    apply_vertical_diffusion_to_vn,
+    apply_vertical_diffusion_to_w,
+)
+from icon4py.model.atmosphere.dycore.ibm import diffu_reset_w, diffu_set_bcs_uv_vertices
 from icon4py.model.common import (
     constants,
     dimension as dims,
