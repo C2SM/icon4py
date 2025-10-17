@@ -8,6 +8,7 @@
 import gt4py.next as gtx
 from gt4py.next import astype, where
 
+from icon4py.model.atmosphere.dycore.ibm import _set_bcs_green_gauss_gradient
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2CDim
 from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss_method import (
@@ -139,6 +140,7 @@ def _compute_horizontal_advection_of_rho_and_theta(
     perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
     geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_y: gtx.Field[[dims.CellDim, dims.C2E2CODim], wpfloat],
+    ibm_green_gauss_gradient_mask: fa.CellKField[bool],
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1."""
     (
@@ -155,6 +157,9 @@ def _compute_horizontal_advection_of_rho_and_theta(
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
     )
+
+    (ddx_perturbed_rho, ddy_perturbed_rho) = _set_bcs_green_gauss_gradient(mask=ibm_green_gauss_gradient_mask, grad_x=ddx_perturbed_rho, grad_y=ddy_perturbed_rho)
+    (ddx_perturbed_theta_v, ddy_perturbed_theta_v) = _set_bcs_green_gauss_gradient(mask=ibm_green_gauss_gradient_mask, grad_x=ddx_perturbed_theta_v, grad_y=ddy_perturbed_theta_v)
 
     (p_distv_bary_1, p_distv_bary_2) = _compute_backward_trajectory_from_edge_center(
         p_vn,
