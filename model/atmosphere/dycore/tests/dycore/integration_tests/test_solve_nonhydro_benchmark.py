@@ -79,13 +79,15 @@ def run_nonhydro_substeps(
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", (definitions.Experiments.EXCLAIM_APE,))
 def test_solve_nonhydro_benchmark(
+    experiment,
     benchmark_grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
     metrics_savepoint:serialbox.MetricSavepoint,
     interpolation_savepoint:serialbox.InterpolationSavepoint,
-    grid_savepoint:serialbox.IconGridSavepoint.IconGridSavpoint
+    grid_savepoint:serialbox.IconGridSavepoint
 ) -> None:
     dtime = 90.0 if benchmark_grid == definitions.Grids.R02B07_GLOBAL else 10.0
 
