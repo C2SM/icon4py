@@ -284,7 +284,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
-                    v_grid.Domain(dims.KHalfDim, v_grid.Zone.TOP, 1),
+                    v_grid.Domain(dims.KDim, v_grid.Zone.TOP, 1),
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },

@@ -143,7 +143,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="coeff1_dwdz",
         dtype=ta.wpfloat,
-    ), # TODO (Yilu) looks a bit suspecious
+    ),
     COEFF2_DWDZ: dict(
         standard_name=COEFF2_DWDZ,
         long_name="coeff2_dwdz",
@@ -151,7 +151,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="coeff2_dwdz",
         dtype=ta.wpfloat,
-    ), # TODO (Yilu) looks a bit suspecious
+    ),
     EXNER_REF_MC: dict(
         standard_name=EXNER_REF_MC,
         long_name="exner_ref_mc",
@@ -471,5 +471,5 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="z_ifc",
         dtype=ta.wpfloat,
-    ), # TODO (Yilu) check this is on cell or edge?
+    ),
 }
