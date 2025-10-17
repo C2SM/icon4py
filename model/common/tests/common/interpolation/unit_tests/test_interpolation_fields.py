@@ -97,7 +97,6 @@ def test_compute_geofac_div(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
-    backend: gtx_typing.Backend,
 ) -> None:
     mesh = icon_grid
     primal_edge_length = grid_savepoint.primal_edge_length()
@@ -105,7 +104,7 @@ def test_compute_geofac_div(
     area = grid_savepoint.cell_areas()
     geofac_div_ref = interpolation_savepoint.geofac_div()
     geofac_div = data_alloc.zero_field(mesh, dims.CellDim, dims.C2EDim)
-    compute_geofac_div.with_backend(backend)(
+    compute_geofac_div.with_backend(None)(
         primal_edge_length=primal_edge_length,
         edge_orientation=edge_orientation,
         area=area,

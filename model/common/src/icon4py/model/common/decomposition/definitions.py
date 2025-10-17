@@ -91,21 +91,15 @@ class DecompositionInfo:
 
     def __init__(
         self,
-        klevels: int,
         num_cells: int | None = None,
         num_edges: int | None = None,
         num_vertices: int | None = None,
     ):
         self._global_index: dict = {}
-        self._klevels = klevels
         self._owner_mask: dict = {}
         self._num_vertices = num_vertices
         self._num_cells = num_cells
         self._num_edges = num_edges
-
-    @property
-    def klevels(self) -> int:
-        return self._klevels
 
     @property
     def num_cells(self) -> int | None:
