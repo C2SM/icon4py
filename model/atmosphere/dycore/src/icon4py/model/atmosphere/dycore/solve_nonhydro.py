@@ -1063,20 +1063,23 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
-
+        log.debug(
+            f"After predictor/corrector - updating theta_v: for initial_timestemp [{at_initial_timestep}] and first substep [{at_first_substep}] / last substep [{at_last_substep}]"
+        )
         if self._grid.limited_area:
+            log.debug("running limited area stencils - theta exner")
             self._compute_theta_and_exner(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-
+            log.debug("running limited area stencils - rho theta")
             self._compute_exner_from_rhotheta(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-
+        log.debug("update theta_v ")
         self._update_theta_v(
             rho_now=prognostic_states.current.rho,
             theta_v_now=prognostic_states.current.theta_v,
@@ -1085,6 +1088,7 @@ class SolveNonhydro:
             rho_new=prognostic_states.next.rho,
             theta_v_new=prognostic_states.next.theta_v,
         )
+        log.debug("time step -- Done")
 
     # flake8: noqa: C901
     def run_predictor_step(
