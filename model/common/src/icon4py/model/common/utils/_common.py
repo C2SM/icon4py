@@ -174,7 +174,7 @@ class Pair(Generic[T]):
         return self.__first
 
     @first.setter  # type: ignore[no-redef]
-    def first(self, value: T) -> None:
+    def first(self, value: T) -> T:
         self.__first = value
 
     @named_property
@@ -183,7 +183,7 @@ class Pair(Generic[T]):
         return self.__second
 
     @second.setter  # type: ignore[no-redef]
-    def second(self, value: T) -> None:
+    def second(self, value: T) -> T:
         self.__second = value
 
     @named_property
@@ -240,7 +240,7 @@ class PredictorCorrectorPair(Pair[T]):
 
 class TimeStepPair(Pair[T]):
     current = Pair.frozen_first
-    next = Pair.second
+    next = Pair.frozen_second
 
 
 P = ParamSpec("P")
