@@ -1281,8 +1281,6 @@ class SolveNonhydro:
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
 
-        # TODO(pstark): check with Chia Rui what what if this change is correct:
-        #              -> I think we have to instead give the second_order_divdamp_scaling_coeff to self._calculate_divdamp_fields
         second_order_divdamp_scaling_coeff = second_order_divdamp_factor_wp * wpfloat(
             self._grid.global_properties.mean_cell_area
         )
