@@ -79,7 +79,7 @@ def run_nonhydro_substeps(
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", (definitions.Experiments.EXCLAIM_APE,))
+@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 def test_solve_nonhydro_benchmark(
     experiment,
     benchmark_grid: definitions.GridDescription,
