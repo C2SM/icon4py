@@ -100,12 +100,14 @@ def _compute_horizontal_pressure_gradient(
         inv_dual_edge_length=inv_dual_edge_length,
         z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
     )
-    between_flat_and_flatgradp = _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
-        inv_dual_edge_length=inv_dual_edge_length,
-        z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
-        ddxn_z_full=ddxn_z_full,
-        c_lin_e=c_lin_e,
-        z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+    between_flat_and_flatgradp = (
+        _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_exner_ex_pr=temporal_extrapolation_of_perturbed_exner,
+            ddxn_z_full=ddxn_z_full,
+            c_lin_e=c_lin_e,
+            z_dexner_dz_c_1=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        )
     )
     below_flatgradp = _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
         inv_dual_edge_length=inv_dual_edge_length,
@@ -123,11 +125,13 @@ def _compute_horizontal_pressure_gradient(
         below_flatgradp,
     )
 
-    horizontal_pressure_gradient_final = _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
-        ipeidx_dsl=ipeidx_dsl,
-        pg_exdist=pg_exdist,
-        z_hydro_corr=hydrostatic_correction_on_lowest_level,
-        z_gradh_exner=horizontal_pressure_gradient,
+    horizontal_pressure_gradient_final = (
+        _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
+            ipeidx_dsl=ipeidx_dsl,
+            pg_exdist=pg_exdist,
+            z_hydro_corr=hydrostatic_correction_on_lowest_level,
+            z_gradh_exner=horizontal_pressure_gradient,
+        )
     )
     return horizontal_pressure_gradient_final
 
