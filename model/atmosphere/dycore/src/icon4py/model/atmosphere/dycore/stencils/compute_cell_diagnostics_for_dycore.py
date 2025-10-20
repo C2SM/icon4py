@@ -526,9 +526,11 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_accele
     time_averaged_perturbed_theta_v_vp, time_averaged_perturbed_theta_v_kup_vp = astype(
         (time_averaged_perturbed_theta_v, time_averaged_perturbed_theta_v_kup), vpfloat
     )
-    perturbed_theta_v_at_cells_on_half_levels = (
+    perturbed_theta_v_at_cells_on_half_levels = concat_where(
+        dims.KDim == 0,
         wgtfac_c * time_averaged_perturbed_theta_v_vp
-        + (vpfloat("1.0") - wgtfac_c) * time_averaged_perturbed_theta_v_kup_vp
+        + (vpfloat("1.0") - wgtfac_c) * time_averaged_perturbed_theta_v_kup_vp,
+        broadcast(0.0, (dims.CellDim, dims.KDim)),
     )
 
     theta_v_at_cells_on_half_levels = (
