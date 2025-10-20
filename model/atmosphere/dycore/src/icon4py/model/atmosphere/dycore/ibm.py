@@ -12,14 +12,12 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import xarray as xr
 from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import serialbox as sb
 
 
 """
@@ -338,9 +336,11 @@ class ImmersedBoundaryMethodMasks:
 
     def __init__(
         self,
+        mask_label: str,
         grid: icon_grid.IconGrid,
-        savepoint_path: str,
-        grid_file_path: str,
+        cell_x: data_alloc.NDArray,
+        cell_y: data_alloc.NDArray,
+        half_level_heights: data_alloc.NDArray,
         backend: gtx_typing.Backend,
         do_ibm: bool = True,
     ):
@@ -349,9 +349,11 @@ class ImmersedBoundaryMethodMasks:
         """
 
         self._make_masks(
+            mask_label=mask_label,
             grid=grid,
-            savepoint_path=savepoint_path,
-            grid_file_path=grid_file_path,
+            cell_x=cell_x,
+            cell_y=cell_y,
+            half_level_heights=half_level_heights,
             backend=backend,
             do_ibm=do_ibm,
         )
@@ -360,9 +362,11 @@ class ImmersedBoundaryMethodMasks:
 
     def _make_masks(
         self,
+        mask_label: str,
         grid: icon_grid.IconGrid,
-        savepoint_path: str,
-        grid_file_path: str,
+        cell_x: data_alloc.NDArray,
+        cell_y: data_alloc.NDArray,
+        half_level_heights: data_alloc.NDArray,
         backend: gtx_typing.Backend,
         do_ibm: bool,
     ) -> None:
@@ -380,15 +384,31 @@ class ImmersedBoundaryMethodMasks:
 
         if do_ibm:
             # Fill masks, otherwise False everywhere
-            # half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
-            # half_cell_mask_np = self._mask_gaussian_hill(grid_file_path, savepoint_path, backend, half_cell_mask_np)
-            half_cell_mask_np = self._mask_blocks(
-                grid_file_path, savepoint_path, backend, half_cell_mask_np
-            )
+            log.info(f"Creating IBM masks for '{mask_label}'")
+            if "gaussian_hill" in mask_label:
+                half_cell_mask_np = self._mask_gaussian_hill(
+                    mask_label=mask_label,
+                    cell_x=cell_x,
+                    cell_y=cell_y,
+                    half_level_heights=half_level_heights,
+                    backend=backend,
+                    half_cell_mask_np=half_cell_mask_np,
+                )
+            elif "channel" in mask_label or "gauss3d_torus" in mask_label:
+                half_cell_mask_np = self._mask_blocks(
+                    mask_label=mask_label,
+                    cell_x=cell_x,
+                    cell_y=cell_y,
+                    half_level_heights=half_level_heights,
+                    backend=backend,
+                    half_cell_mask_np=half_cell_mask_np,
+                )
+            else:
+                raise ValueError(f"IBM mask_label '{mask_label}' not recognized.")
 
             full_cell_mask_np = half_cell_mask_np[:, :-1]
 
-            log.info(f"IBM: nr. of masked cells: {xp.sum(full_cell_mask_np)}")
+            log.info(f"Number of masked cells: {xp.sum(full_cell_mask_np)}")
 
             c2e = grid.connectivities[dims.C2EDim.value].ndarray
             for k in range(grid.num_levels + 1):
@@ -412,53 +432,12 @@ class ImmersedBoundaryMethodMasks:
         self.full_vertex_mask = gtx.as_field((VertexDim, KDim), full_vertex_mask_np)
         self.neigh_full_cell_mask = gtx.as_field((CellDim, KDim), neigh_full_cell_mask_np)
 
-    def _mask_test_cells(self, half_cell_mask_np: data_alloc.NDArray) -> data_alloc.NDArray:
-        """
-        Create a test mask.
-        """
-
-        # on Torus_Triangles_1000m_x_1000m_res10m
-        #
-        # individual cells
-        # half_cell_mask_np[[10,11], -3:] = True
-        #
-        # "cube" block (x-aligned faces zig-zaggy)
-        # ids = [
-        #     1449, 1450, 1451,
-        #     1597, 1598, 1599, 1600, 1601, 1602, 1603,
-        #     1745, 1746, 1747, 1748, 1749, 1750, 1751, 1752, 1753, 1754, 1755,
-        #     1893, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907,
-        #     2044, 2045, 2046, 2047, 2048, 2049, 2050, 2051, 2052, 2053, 2054, 2055, 2056, 2057, 2058, 2059,
-        #     2196, 2197, 2198, 2199, 2200, 2201, 2202, 2203, 2204, 2205, 2206, 2207, 2208, 2209, 2210, 2211,
-        #     2348, 2349, 2350, 2351, 2352, 2353, 2354, 2355, 2356, 2357, 2358, 2359, 2360, 2361, 2362,
-        #     2500, 2501, 2502, 2503, 2504, 2505, 2506, 2507, 2508, 2509, 2510,
-        #     2652, 2653, 2654, 2655, 2656, 2657, 2658,
-        #     2804, 2805, 2806
-        # ]
-        #
-        # non-zig-zaggy block
-        # ids = [
-        #     1443, 1444, 1445, 1446, 1447, 1448, 1449, 1450, 1451,
-        #     1593, 1594, 1595, 1596, 1597, 1598, 1599, 1600, 1601, 1602, 1603,
-        #     1743, 1744, 1745, 1746, 1747, 1748, 1749, 1750, 1751, 1752, 1753, 1754, 1755,
-        #     1893, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907,
-        #     2044, 2045, 2046, 2047, 2048, 2049, 2050, 2051, 2052, 2053, 2054, 2055, 2056, 2057, 2058, 2059,
-        #     2196, 2197, 2198, 2199, 2200, 2201, 2202, 2203, 2204, 2205, 2206, 2207, 2208, 2209, 2210, 2211,
-        #     2348, 2349, 2350, 2351, 2352, 2353, 2354, 2355, 2356, 2357, 2358, 2359, 2360, 2361, 2362,
-        #     2500, 2501, 2502, 2503, 2504, 2505, 2506, 2507, 2508, 2509, 2510, 2511, 2512,
-        #     2652, 2653, 2654, 2655, 2656, 2657, 2658, 2659, 2660, 2661, 2662,
-        #     2804, 2805, 2806, 2807, 2808, 2809, 2810, 2811, 2812
-        # ]
-        # half_cell_mask_np[ids, -81:] = True
-
-        # on Torus_Triangles_250m_x_250m_res2.5m
-
-        return half_cell_mask_np
-
     def _mask_gaussian_hill(
         self,
-        grid_file_path: str,
-        savepoint_path: str,
+        mask_label: str,
+        cell_x: data_alloc.NDArray,
+        cell_y: data_alloc.NDArray,
+        half_level_heights: data_alloc.NDArray,
         backend: gtx_typing.Backend,
         half_cell_mask_np: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
@@ -472,21 +451,12 @@ class ImmersedBoundaryMethodMasks:
         hill_height = 100.0
         hill_width = 100.0
 
-        grid_file = xr.open_dataset(grid_file_path)
-        data_provider = sb.IconSerialDataProvider(
-            backend=backend,
-            fname_prefix="icon_pydycore",
-            path=savepoint_path,
-        )
-        metrics_savepoint = data_provider.from_metrics_savepoint()
-        half_level_heights = metrics_savepoint.z_ifc().ndarray
+        def compute_distance_from_hill(x, y):
+            return ((x - hill_x) ** 2 + (y - hill_y) ** 2) ** 0.5
 
-        compute_distance_from_hill = lambda x, y: ((x - hill_x) ** 2 + (y - hill_y) ** 2) ** 0.5
-        compute_hill_elevation = lambda x, y: hill_height * xp.exp(
-            -((compute_distance_from_hill(x, y) / hill_width) ** 2)
-        )
-        cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
-        cell_y = xp.asarray(grid_file.cell_circumcenter_cartesian_y.values)
+        def compute_hill_elevation(x, y):
+            return hill_height * xp.exp(-((compute_distance_from_hill(x, y) / hill_width) ** 2))
+
         for k in range(half_cell_mask_np.shape[1]):
             half_cell_mask_np[:, k] = xp.where(
                 compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:, k],
@@ -497,8 +467,10 @@ class ImmersedBoundaryMethodMasks:
 
     def _mask_blocks(
         self,
-        grid_file_path: str,
-        savepoint_path: str,
+        mask_label: str,
+        cell_x: data_alloc.NDArray,
+        cell_y: data_alloc.NDArray,
+        half_level_heights: data_alloc.NDArray,
         backend: gtx_typing.Backend,
         half_cell_mask_np: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
@@ -508,7 +480,7 @@ class ImmersedBoundaryMethodMasks:
         xp = data_alloc.import_array_ns(backend)
 
         # Channel
-        match savepoint_path.split("/")[-2]:
+        match mask_label:
             case "gauss3d_torus":
                 # this is used for the CHANNEL_IBM testcase
                 blocks = [[20000, 25500, 0, 5000, 500]]
@@ -518,41 +490,29 @@ class ImmersedBoundaryMethodMasks:
                 blocks = [[150, 200, 149, 200, 50]]
             case "exclaim_channel_950x350x100_1.5m_nlev64":
                 blocks = [[150, 200, 150, 199, 50]]
-                job_name = os.environ.get("SLURM_JOB_NAME", "not_mltbld")
-                if "multibuilding" in job_name:
+                if "multibuilding" in mask_label:
                     blocks = [
-                            [150, 200,  49,  99, 50],
-                            [150, 200, 150, 199, 50],
-                            [150, 200, 250, 300, 50],
-                            [250, 300,  49,  99, 50],
-                            [250, 300, 150, 199, 50],
-                            [250, 300, 250, 300, 50],
-                            [350, 400,  49,  99, 50],
-                            [350, 400, 150, 199, 50],
-                            [350, 400, 250, 300, 50],
-                            [450, 500,  49,  99, 50],
-                            [450, 500, 150, 199, 50],
-                            [450, 500, 250, 300, 50],
-                            [550, 600,  49,  99, 50],
-                            [550, 600, 150, 199, 50],
-                            [550, 600, 250, 300, 50],
-                            ]
+                        [150, 200, 49, 99, 50],
+                        [150, 200, 150, 199, 50],
+                        [150, 200, 250, 300, 50],
+                        [250, 300, 49, 99, 50],
+                        [250, 300, 150, 199, 50],
+                        [250, 300, 250, 300, 50],
+                        [350, 400, 49, 99, 50],
+                        [350, 400, 150, 199, 50],
+                        [350, 400, 250, 300, 50],
+                        [450, 500, 49, 99, 50],
+                        [450, 500, 150, 199, 50],
+                        [450, 500, 250, 300, 50],
+                        [550, 600, 49, 99, 50],
+                        [550, 600, 150, 199, 50],
+                        [550, 600, 250, 300, 50],
+                    ]
             case "exclaim_channel_950x350x100_1.25m_nlev80":
                 blocks = [[150, 200, 150, 199, 50]]
             case "exclaim_channel_950x350x100_1m_nlev100":
                 blocks = [[150, 200, 150, 199, 50]]
 
-        grid_file = xr.open_dataset(grid_file_path)
-        data_provider = sb.IconSerialDataProvider(
-            backend=backend,
-            fname_prefix="icon_pydycore",
-            path=savepoint_path,
-        )
-        metrics_savepoint = data_provider.from_metrics_savepoint()
-        half_level_heights = metrics_savepoint.z_ifc().ndarray
-
-        cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
-        cell_y = xp.asarray(grid_file.cell_circumcenter_cartesian_y.values)
         for k in range(half_cell_mask_np.shape[1]):
             for block in blocks:
                 xmin, xmax, ymin, ymax, top = block

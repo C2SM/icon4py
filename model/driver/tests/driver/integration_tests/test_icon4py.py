@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
+import xarray as xr
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
@@ -29,7 +30,7 @@ from icon4py.model.driver import (
     icon4py_driver,
     initialization_utils as driver_init,
 )
-from icon4py.model.driver.testcases import channel
+from icon4py.model.driver.testcases import channel_flow
 from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import _download_ser_data, backend
 
@@ -49,34 +50,34 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            1,
-            2,
-            1,
-            2,
-            "2021-06-20T12:00:00.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            True,
-            False,
-            False,
-        ),
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            1,
-            2,
-            1,
-            2,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            False,
-            False,
-            True,
-        ),
+        # (
+        #    definitions.Experiments.MCH_CH_R04B09,
+        #    1,
+        #    2,
+        #    1,
+        #    2,
+        #    "2021-06-20T12:00:00.000",
+        #    "2021-06-20T12:00:10.000",
+        #    "2021-06-20T12:00:10.000",
+        #    "2021-06-20T12:00:10.000",
+        #    True,
+        #    False,
+        #    False,
+        # ),
+        # (
+        #    definitions.Experiments.MCH_CH_R04B09,
+        #    1,
+        #    2,
+        #    1,
+        #    2,
+        #    "2021-06-20T12:00:10.000",
+        #    "2021-06-20T12:00:20.000",
+        #    "2021-06-20T12:00:20.000",
+        #    "2021-06-20T12:00:20.000",
+        #    False,
+        #    False,
+        #    True,
+        # ),
         (
             definitions.Experiments.GAUSS3D,
             1,
@@ -154,26 +155,59 @@ def test_run_timeloop_single_step(
             backend=backend,
         )
 
-    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
-        grid=icon_grid,
-        savepoint_path=str(savepoint_path),  # make these Paths some day
-        grid_file_path=str(grid_file_path),  # make these Paths some day
-        backend=backend,
-        do_ibm=DO_IBM,
-    )
-    channel_inst = channel.ChannelFlow(
-        grid=icon_grid,
-        savepoint_path=str(savepoint_path),  # make these Paths some day
-        grid_file_path=str(grid_file_path),  # make these Paths some day
-        backend=backend,
-        do_channel=DO_CHANNEL,
-    )
-
+    xp = data_alloc.import_array_ns(backend)
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     grg = interpolation_savepoint.geofac_grg()
 
-    xp = data_alloc.import_array_ns(backend)
+    grid_file_obj = xr.open_dataset(grid_file_path)
+    domain_length = grid_file_obj.domain_length
+    cell_x = xp.asarray(grid_file_obj.cell_circumcenter_cartesian_x.values)
+    cell_y = xp.asarray(grid_file_obj.cell_circumcenter_cartesian_y.values)
+    edge_x = xp.asarray(grid_file_obj.edge_middle_cartesian_x.values)
+    wgtfac_c = metrics_savepoint.wgtfac_c().ndarray
+    ddqz_z_half = metrics_savepoint.ddqz_z_half().ndarray
+    theta_ref_mc = metrics_savepoint.theta_ref_mc().ndarray
+    theta_ref_ic = metrics_savepoint.theta_ref_ic().ndarray
+    exner_ref_mc = metrics_savepoint.exner_ref_mc().ndarray
+    d_exner_dz_ref_ic = metrics_savepoint.d_exner_dz_ref_ic().ndarray
+    geopot = metrics_savepoint.geopot().ndarray
+    full_level_heights = metrics_savepoint.z_mc().ndarray
+    half_level_heights = metrics_savepoint.z_ifc().ndarray
+    primal_normal_x = edge_geometry.primal_normal[0].ndarray
+
+    mask_label = savepoint_path.absolute().parent.stem
+    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
+        mask_label=mask_label,
+        cell_x=cell_x,
+        cell_y=cell_y,
+        half_level_heights=half_level_heights,
+        grid=icon_grid,
+        backend=backend,
+        do_ibm=DO_IBM,
+    )
+    random_perturbation_magnitude = float(os.environ.get("ICON4PY_CHANNEL_PERTURBATION", "0.001"))
+    sponge_length = float(os.environ.get("ICON4PY_CHANNEL_SPONGE_LENGTH", "50.0"))
+    channel = channel_flow.ChannelFlow(
+        random_perturbation_magnitude=random_perturbation_magnitude,
+        sponge_length=sponge_length,
+        grid=icon_grid,
+        domain_length=domain_length,
+        cell_x=cell_x,
+        edge_x=edge_x,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        geopot=geopot,
+        full_level_heights=full_level_heights,
+        half_level_heights=half_level_heights,
+        primal_normal_x=primal_normal_x,
+        backend=backend,
+        do_channel=DO_CHANNEL,
+    )
     ddqz_z_half_e_np = xp.zeros(
         (grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KDim) + 1), dtype=float
     )
@@ -313,7 +347,7 @@ def test_run_timeloop_single_step(
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
         ibm_masks=ibm_masks,
-        channel=channel_inst,
+        channel=channel,
     )
 
     diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(

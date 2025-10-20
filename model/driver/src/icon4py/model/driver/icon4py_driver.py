@@ -16,10 +16,12 @@ from typing import NamedTuple
 import click
 import gt4py.next.typing as gtx_typing
 import numpy as np
+import xarray as xr
 from devtools import Timer
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
+from icon4py.model.common.grid import base, icon as icon_grid
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
@@ -29,12 +31,13 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.utils import device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
 )
 from icon4py.model.driver.testcases import channel_flow
+from icon4py.model.testing import serialbox as sb
 
 
 log = logging.getLogger(__name__)
@@ -436,18 +439,63 @@ def initialize(
         ser_type=serialization_type,
     )
 
-    savepoint_path = os.environ.get("ICON4PY_SAVEPOINT_PATH", "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data")
-    grid_file_path = os.environ.get("ICON4PY_GRID_FILE_PATH", "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res10m.nc")
+    xp = data_alloc.import_array_ns(backend)
+    grid_file_obj = xr.open_dataset(grid_file)
+    domain_length = grid_file_obj.domain_length
+    cell_x = xp.asarray(grid_file_obj.cell_circumcenter_cartesian_x.values)
+    cell_y = xp.asarray(grid_file_obj.cell_circumcenter_cartesian_y.values)
+    edge_x = xp.asarray(grid_file_obj.edge_middle_cartesian_x.values)
+    data_provider = sb.IconSerialDataProvider(
+        backend=backend,
+        fname_prefix="icon_pydycore",
+        path=str(file_path.absolute()),
+    )
+    metrics_savepoint = data_provider.from_metrics_savepoint()
+    wgtfac_c = metrics_savepoint.wgtfac_c().ndarray
+    ddqz_z_half = metrics_savepoint.ddqz_z_half().ndarray
+    theta_ref_mc = metrics_savepoint.theta_ref_mc().ndarray
+    theta_ref_ic = metrics_savepoint.theta_ref_ic().ndarray
+    exner_ref_mc = metrics_savepoint.exner_ref_mc().ndarray
+    d_exner_dz_ref_ic = metrics_savepoint.d_exner_dz_ref_ic().ndarray
+    geopot = metrics_savepoint.geopot().ndarray
+    full_level_heights = metrics_savepoint.z_mc().ndarray
+    half_level_heights = metrics_savepoint.z_ifc().ndarray
+
+    grid_savepoint = data_provider.from_savepoint_grid(
+        grid_id="some_grid_uuid",
+        grid_shape=icon_grid.GridShape(geometry_type=base.GeometryType.TORUS),
+    )
+    edge_geometry = grid_savepoint.construct_edge_geometry()
+    primal_normal_x = edge_geometry.primal_normal[0].ndarray
+
+    mask_label = str(file_path.absolute().parent)
     ibm_masks = ibm.ImmersedBoundaryMethodMasks(
+        mask_label=mask_label,
+        cell_x=cell_x,
+        cell_y=cell_y,
+        half_level_heights=half_level_heights,
         grid=grid,
-        savepoint_path=savepoint_path,
-        grid_file_path=grid_file_path,
         backend=backend,
     )
+    random_perturbation_magnitude = float(os.environ.get("ICON4PY_CHANNEL_PERTURBATION", "0.001"))
+    sponge_length = float(os.environ.get("ICON4PY_CHANNEL_SPONGE_LENGTH", "50.0"))
     channel = channel_flow.ChannelFlow(
+        random_perturbation_magnitude=random_perturbation_magnitude,
+        sponge_length=sponge_length,
         grid=grid,
-        savepoint_path=savepoint_path,
-        grid_file_path=grid_file_path,
+        domain_length=domain_length,
+        cell_x=cell_x,
+        edge_x=edge_x,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        geopot=geopot,
+        full_level_heights=full_level_heights,
+        half_level_heights=half_level_heights,
+        primal_normal_x=primal_normal_x,
         backend=backend,
     )
 

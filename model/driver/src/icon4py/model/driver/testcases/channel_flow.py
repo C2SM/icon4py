@@ -7,10 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
-import os
 
 import gt4py.next as gtx
-import xarray as xr
 from gt4py.next import backend as gtx_backend
 from gt4py.next.ffront.fbuiltins import broadcast
 
@@ -21,10 +19,9 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid import base, horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import utils as testcases_utils
-from icon4py.model.testing import serialbox as sb
 
 
 log = logging.getLogger(__name__)
@@ -57,9 +54,22 @@ class ChannelFlow:
 
     def __init__(
         self,
+        sponge_length: float,
+        random_perturbation_magnitude: float,
         grid: icon_grid.IconGrid,
-        savepoint_path: str,
-        grid_file_path: str,
+        domain_length: float,
+        cell_x: data_alloc.NDArray,
+        edge_x: data_alloc.NDArray,
+        wgtfac_c: data_alloc.NDArray,
+        ddqz_z_half: data_alloc.NDArray,
+        theta_ref_mc: data_alloc.NDArray,
+        theta_ref_ic: data_alloc.NDArray,
+        exner_ref_mc: data_alloc.NDArray,
+        d_exner_dz_ref_ic: data_alloc.NDArray,
+        geopot: data_alloc.NDArray,
+        full_level_heights: data_alloc.NDArray,
+        half_level_heights: data_alloc.NDArray,
+        primal_normal_x: data_alloc.NDArray,
         backend: gtx_backend.Backend,
         do_channel: bool = True,
     ):
@@ -76,9 +86,7 @@ class ChannelFlow:
         self.num_levels = grid.num_levels
 
         # perturbation magnitude for vn profile
-        self.random_perturbation_magnitude = (
-            float(os.environ.get("ICON4PY_CHANNEL_PERTURBATION", "0.001"))
-        )
+        self.random_perturbation_magnitude = random_perturbation_magnitude
 
         # Allocate here so it's not re-allocated every BC call
         self.random_field_full_edge_np = xp.random.normal(
@@ -88,20 +96,13 @@ class ChannelFlow:
             (dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend
         )
 
-        data_provider = sb.IconSerialDataProvider(
-            backend=self.backend,
-            fname_prefix="icon_pydycore",
-            path=savepoint_path,
-        )
-        grid_savepoint = data_provider.from_savepoint_grid(
-            grid_id="some_grid_uuid",
-            grid_shape=icon_grid.GridShape(geometry_type=base.GeometryType.TORUS),
-        )
-
         self.channel_y, self.channel_U = self.load_channel_data()
 
         self.full_cell_sponge, self.half_cell_sponge, self.full_edge_sponge = self.make_sponges(
-            grid_file_path=grid_file_path,
+            sponge_length=sponge_length,
+            domain_length=domain_length,
+            cell_x=cell_x,
+            edge_x=edge_x,
         )
 
         (
@@ -119,8 +120,16 @@ class ChannelFlow:
             channel_y=self.channel_y,
             channel_U=self.channel_U,
             grid=grid,
-            data_provider=data_provider,
-            grid_savepoint=grid_savepoint,
+            wgtfac_c=wgtfac_c,
+            ddqz_z_half=ddqz_z_half,
+            theta_ref_mc=theta_ref_mc,
+            theta_ref_ic=theta_ref_ic,
+            exner_ref_mc=exner_ref_mc,
+            d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+            geopot=geopot,
+            full_level_heights=full_level_heights,
+            half_level_heights=half_level_heights,
+            primal_normal_x=primal_normal_x,
         )
 
         log.info("Channel flow initialized")
@@ -143,20 +152,16 @@ class ChannelFlow:
 
     def make_sponges(
         self,
-        grid_file_path: str,
+        sponge_length: float,
+        cell_x: data_alloc.NDArray,
+        edge_x: data_alloc.NDArray,
+        domain_length: float,
     ) -> tuple[
         fa.CellKField[ta.wpfloat],
         fa.CellKField[ta.wpfloat],
         fa.EdgeKField[ta.wpfloat],
     ]:
         xp = data_alloc.import_array_ns(self.backend)
-        # sponge length on outflow
-        SPONGE_LENGTH = float(os.environ.get("ICON4PY_CHANNEL_SPONGE_LENGTH", "50.0"))
-
-        grid_file = xr.open_dataset(grid_file_path)
-        domain_length = grid_file.domain_length
-        cell_x = xp.asarray(grid_file.cell_circumcenter_cartesian_x.values)
-        edge_x = xp.asarray(grid_file.edge_middle_cartesian_x.values)
 
         # Cleanup the grid
         # Adjust x values to coincide with the periodic boundary
@@ -172,10 +177,10 @@ class ChannelFlow:
         for k in range(self.num_levels):
             # outflow: tanh sponge + outflow
             full_cell_sponge_np[:, k] = (
-                1 + xp.tanh((cell_x + SPONGE_LENGTH / 2 - x_outflow) * 2 * xp.pi / SPONGE_LENGTH)
+                1 + xp.tanh((cell_x + sponge_length / 2 - x_outflow) * 2 * xp.pi / sponge_length)
             ) / 2
             full_edge_sponge_np[:, k] = (
-                1 + xp.tanh((edge_x + SPONGE_LENGTH / 2 - x_outflow) * 2 * xp.pi / SPONGE_LENGTH)
+                1 + xp.tanh((edge_x + sponge_length / 2 - x_outflow) * 2 * xp.pi / sponge_length)
             ) / 2
             full_cell_sponge_np[:, k] = xp.where(
                 cell_x >= x_outflow, 1.0, full_cell_sponge_np[:, k]
@@ -201,8 +206,16 @@ class ChannelFlow:
         channel_y: data_alloc.NDArray,
         channel_U: data_alloc.NDArray,
         grid: icon_grid.IconGrid,
-        data_provider: sb.IconSerialDataProvider,
-        grid_savepoint: sb.IconGridSavepoint,
+        wgtfac_c: data_alloc.NDArray,
+        ddqz_z_half: data_alloc.NDArray,
+        theta_ref_mc: data_alloc.NDArray,
+        theta_ref_ic: data_alloc.NDArray,
+        exner_ref_mc: data_alloc.NDArray,
+        d_exner_dz_ref_ic: data_alloc.NDArray,
+        geopot: data_alloc.NDArray,
+        full_level_heights: data_alloc.NDArray,
+        half_level_heights: data_alloc.NDArray,
+        primal_normal_x: data_alloc.NDArray,
     ) -> tuple[
         data_alloc.NDArray,
         data_alloc.NDArray,
@@ -225,18 +238,6 @@ class ChannelFlow:
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
 
-        wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
-        ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
-        theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
-        theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
-        exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
-        d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
-        geopot = data_provider.from_metrics_savepoint().geopot().ndarray
-        full_level_heights = data_provider.from_metrics_savepoint().z_mc().ndarray
-        half_level_heights = data_provider.from_metrics_savepoint().z_ifc().ndarray
-
-        edge_geometry = grid_savepoint.construct_edge_geometry()
-        primal_normal_x = edge_geometry.primal_normal[0].ndarray
         primal_normal_x = xp.repeat(
             xp.expand_dims(primal_normal_x, axis=-1), self.num_levels, axis=1
         )

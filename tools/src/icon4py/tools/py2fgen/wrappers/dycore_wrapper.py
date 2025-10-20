@@ -265,6 +265,8 @@ def solve_nh_init(
             owner_mask=c_owner_mask,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
+            ibm_masks=ibm_masks,
+            channel=channel,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(
             model_backends.get_allocator(actual_backend)
