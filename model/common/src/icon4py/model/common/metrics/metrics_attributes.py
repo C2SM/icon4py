@@ -356,7 +356,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=ZDIFF_GRADP,
         long_name="zdiff_gradp",
         units="",
-        dims=(dims.EdgeDim, dims.KDim),
+        dims=(dims.EdgeDim, dims.E2CDim, dims.KDim),
         icon_var_name="zdiff_gradp",
         dtype=ta.wpfloat,
     ),
@@ -364,7 +364,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=VERTOFFSET_GRADP,
         long_name="vertoffset_gradp",
         units="",
-        dims=(dims.EdgeDim, dims.KDim),
+        dims=(dims.EdgeDim, dims.E2CDim, dims.KDim),
         icon_var_name="vertoffset_gradp",
         dtype=gtx.int32,
     ), # TODO (Yilu)
