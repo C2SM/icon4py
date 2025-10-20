@@ -58,7 +58,7 @@ class ChannelFlow:
         sponge_length: float,
         random_perturbation_magnitude: float,
         grid: icon_grid.IconGrid,
-        domain_length: float,
+        domain_length: ta.wpfloat,
         cell_x: data_alloc.NDArray,
         edge_x: data_alloc.NDArray,
         wgtfac_c: data_alloc.NDArray,
