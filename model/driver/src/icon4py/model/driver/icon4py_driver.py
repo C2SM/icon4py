@@ -21,11 +21,11 @@ from devtools import Timer
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.common.grid import base, icon as icon_grid
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import base, icon as icon_grid
 from icon4py.model.common.io import plots, restart
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
