@@ -194,8 +194,8 @@ def test_nonhydro_predictor_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
@@ -544,8 +544,8 @@ def test_nonhydro_corrector_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
@@ -742,8 +742,8 @@ def test_run_solve_nonhydro_single_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
@@ -874,8 +874,8 @@ def test_run_solve_nonhydro_multi_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
