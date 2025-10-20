@@ -14,7 +14,6 @@ from typing import NamedTuple
 
 import click
 import gt4py.next.typing as gtx_typing
-import numpy as np
 from devtools import Timer
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
@@ -27,7 +26,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.utils import device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
     driver_configuration as driver_config,
     initialization_utils as driver_init,
@@ -37,7 +36,7 @@ from icon4py.model.standalone_driver import (
 log = logging.getLogger(__name__)
 
 
-class TimeLoop:  # TODO (Yilu) rename the Timeloop to Driver
+class Driver:
     @classmethod
     def name(cls):
         return cls.__name__
@@ -48,9 +47,10 @@ class TimeLoop:  # TODO (Yilu) rename the Timeloop to Driver
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
     ):
-        self.run_config: driver_config.Icon4pyRunConfig = config
+        self.config: driver_config.Icon4pyRunConfig = config
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
+        self._xp = data_alloc.import_array_ns(self.config.backend)
 
         self._initialize_timeloop_parameters()
         self._validate_config()
@@ -60,52 +60,48 @@ class TimeLoop:  # TODO (Yilu) rename the Timeloop to Driver
         Initialize parameters needed for running the time loop from start to end date
         """
         self._n_time_steps: int = int(
-            (self.run_config.end_date - self.run_config.start_date) / self.run_config.dtime
+            (self.config.end_date - self.config.start_date) / self.config.dtime
         )
-        self._dtime_in_seconds: ta.wpfloat = self.run_config.dtime.total_seconds()
-        self._ndyn_substeps_var: int = self._update_ndyn_substeps(self.run_config.ndyn_substeps)
-        self._max_ndyn_substeps: int = self.run_config.ndyn_substeps + 7
+        self._dtime_in_seconds: ta.wpfloat = self.config.dtime.total_seconds()
+        self._ndyn_substeps_var: int = self._update_ndyn_substeps(self.config.ndyn_substeps)
+        self._max_ndyn_substeps: int = self.config.ndyn_substeps + 7
         self._substep_timestep: ta.wpfloat = ta.wpfloat(
             self._dtime_in_seconds / self._ndyn_substeps_var
         )
         self._elapse_time_in_seconds: ta.wpfloat = ta.wpfloat("0.0")
 
         # current simulation date
-        self._simulation_date: datetime.datetime = self.run_config.start_date
+        self._simulation_date: datetime.datetime = self.config.start_date
 
-        self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
+        self._is_first_step_in_simulation: bool = not self.config.restart_mode
 
         self._cfl_watch_mode = False
-
-    def _update_ndyn_substeps(self, new_ndyn_substeps: int):
-        self._ndyn_substeps_var = new_ndyn_substeps
 
     def _validate_config(self):
         if self._n_time_steps < 0:
             raise ValueError("end_date should be larger than start_date. Please check.")
+
+    def _update_ndyn_substeps(self, new_ndyn_substeps: int):
+        self._ndyn_substeps_var = new_ndyn_substeps
+
+    def re_initialization(self):
+        self._initialize_timeloop_parameters()
+        self._validate_config()
 
     @property
     def first_step_in_simulation(self):
         return self._is_first_step_in_simulation
 
     def _is_last_substep(self, step_nr: int):
-        return step_nr == (self.ndyn_substeps_var - 1)
+        return step_nr == (self._ndyn_substeps_var - 1)
 
     @staticmethod
     def _is_first_substep(step_nr: int):
         return step_nr == 0
 
     def _next_simulation_date(self):
-        self._simulation_date += self.run_config.dtime
-        self._elapse_time_in_seconds += self.run_config.dtime
-
-    @property
-    def ndyn_substeps_var(self):
-        return self._ndyn_substeps_var
-
-    @property
-    def simulation_date(self):
-        return self._simulation_date
+        self._simulation_date += self.config.dtime
+        self._elapse_time_in_seconds += self.config.dtime
 
     @property
     def n_time_steps(self):
@@ -131,36 +127,31 @@ class TimeLoop:  # TODO (Yilu) rename the Timeloop to Driver
             f"starting time loop for dtime={self._dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
         )
         log.info(
-            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self._dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
+            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind}, dtime={self._dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
         )
 
         # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
 
         # TODO(OngChia): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
-        timer_first_timestep = Timer("TimeLoop: first time step", dp=6)
-        timer_after_first_timestep = Timer("TimeLoop: after first time step", dp=6)
+        timer_first_timestep = Timer("Driver: first time step", dp=6)
+        timer_after_first_timestep = Timer("Driver: after first time step", dp=6)
         for time_step in range(self._n_time_steps):
             timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
             if profiling is not None:
                 if not profiling.skip_first_timestep or time_step > 0:
                     gtx_config.COLLECT_METRICS_LEVEL = profiling.gt4py_metrics_level
 
-            log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            if log.isEnabledFor(logging.DEBUG):
-                log.debug(
-                    f" MAX VN: {np.abs(prognostic_states.current.vn.asnumpy()).max():.15e} , MAX W: {np.abs(prognostic_states.current.w.asnumpy()).max():.15e}"
+            log.info(f"simulation date : {self._simulation_date}, run timestep : {time_step}")
+            if self.config.output_statistics:
+                rho_arg_max = self._xp.abs(prognostic_states.current.rho.ndarray).max()
+                vn_arg_max = self._xp.abs(prognostic_states.current.vn.ndarray).max()
+                w_arg_max = self._xp.abs(prognostic_states.current.w.ndarray).max()
+                log.info(
+                    f" MAX RHO, VN, and W: {prognostic_states.current.rho.ndarray[rho_arg_max]:.5e} / {prognostic_states.current.vn.ndarray[vn_arg_max]:.5e} / {prognostic_states.current.w.ndarray[w_arg_max]:.5e}, at levels: {self._xp.unravel_index(rho_arg_max, prognostic_states.current.rho.ndarray.shape)[1]} / {self._xp.unravel_index(vn_arg_max, prognostic_states.current.vn.ndarray.shape)[1]} / {self._xp.unravel_index(w_arg_max, prognostic_states.current.w.ndarray.shape)[1]}"
                 )
-                log.debug(
-                    f" MAX RHO: {np.abs(prognostic_states.current.rho.asnumpy()).max():.15e} , MAX THETA_V: {np.abs(prognostic_states.current.theta_v.asnumpy()).max():.15e}"
-                )
-                # TODO(OngChia): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
-
-            second_order_divdamp_factor = self._update_spinup_damping(
-                self.solve_nonhydro._config.fourth_order_divdamp_factor
-            )
 
             timer.start()
             self._integrate_one_time_step(
@@ -168,15 +159,12 @@ class TimeLoop:  # TODO (Yilu) rename the Timeloop to Driver
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv,
-                second_order_divdamp_factor,
                 do_prep_adv,
             )
-            device_utils.sync(self.run_config.backend)
+            device_utils.sync(self.config.backend)
             timer.capture()
 
             self._is_first_step_in_simulation = False
-
-            # TODO(OngChia): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
             # TODO(OngChia): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
@@ -195,16 +183,12 @@ class TimeLoop:  # TODO (Yilu) rename the Timeloop to Driver
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
-        # TODO(OngChia): Add update_spinup_damping here to compute second_order_divdamp_factor
-
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_states,
             prep_adv,
-            second_order_divdamp_factor,
             do_prep_adv,
         )
 
@@ -263,15 +247,14 @@ class TimeLoop:  # TODO (Yilu) rename the Timeloop to Driver
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        second_order_divdamp_factor: float,
         do_prep_adv: bool,
     ):
         # TODO(OngChia): compute airmass for prognostic_state here
 
-        for dyn_substep in range(self.ndyn_substeps_var):
+        for dyn_substep in range(self._ndyn_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
-                f"{self.ndyn_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
+                f"{self._ndyn_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
             )
 
             self._update_time_levels_for_velocity_tendencies(
@@ -284,9 +267,9 @@ class TimeLoop:  # TODO (Yilu) rename the Timeloop to Driver
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
                 prep_adv=prep_adv,
-                second_order_divdamp_factor=second_order_divdamp_factor,
+                second_order_divdamp_factor=ta.wpfloat("0.0"),
                 dtime=self._substep_timestep,
-                ndyn_substeps_var=self.ndyn_substeps_var,
+                ndyn_substeps_var=self._ndyn_substeps_var,
                 at_initial_timestep=self._is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
@@ -305,11 +288,12 @@ class TimeLoop:  # TODO (Yilu) rename the Timeloop to Driver
         self,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
     ):
+        skip_checking_watch_mode_quit = False
         # TODO (Chia Rui): perform a global max operation in multinode run
         global_max_vertical_cfl = solve_nonhydro_diagnostic_state.max_vertical_cfl
 
         if (
-            global_max_vertical_cfl > ta.wpfloat("0.81") * self.run_config.vertical_cfl_threshold
+            global_max_vertical_cfl > ta.wpfloat("0.81") * self.config.vertical_cfl_threshold
             and not self._cfl_watch_mode
         ):
             log.critical(
@@ -318,61 +302,66 @@ class TimeLoop:  # TODO (Yilu) rename the Timeloop to Driver
             self._cfl_watch_mode = True
 
         if self._cfl_watch_mode:
-            substep_fraction = ta.wpfloat(self.ndyn_substeps_var / self.run_config.ndyn_substeps)
+            substep_fraction = ta.wpfloat(self._ndyn_substeps_var / self.config.ndyn_substeps)
             if (
                 global_max_vertical_cfl * substep_fraction
-                > ta.wpfloat("0.9") * self.run_config.vertical_cfl_threshold
+                > ta.wpfloat("0.9") * self.config.vertical_cfl_threshold
             ):
                 log.critical(
                     f"Maximum vertical CFL number {global_max_vertical_cfl} is close to critical threshold"
                 )
 
-            vertical_cfl_threshold_for_increment = self.run_config.vertical_cfl_threshold
+            vertical_cfl_threshold_for_increment = self.config.vertical_cfl_threshold
             vertical_cfl_threshold_for_decrement = (
-                ta.wpfloat("0.9") * self.run_config.vertical_cfl_threshold
+                ta.wpfloat("0.9") * self.config.vertical_cfl_threshold
             )
 
             if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:
                 ndyn_substeps_increment = max(
                     1,
                     round(
-                        self.ndyn_substeps_var
+                        self._ndyn_substeps_var
                         * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)
                         / vertical_cfl_threshold_for_increment
                     ),
                 )
-                new_ndyn_substeps_var = min(self.ndyn_substeps_var + ndyn_substeps_increment, self._max_ndyn_substeps)
+                new_ndyn_substeps_var = min(
+                    self._ndyn_substeps_var + ndyn_substeps_increment, self._max_ndyn_substeps
+                )
                 self._update_ndyn_substeps(new_ndyn_substeps_var)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
                 log.critical(
-                    f"The number of dynamics substeps is increased to {self.ndyn_substeps_var}"
+                    f"The number of dynamics substeps is increased to {self._ndyn_substeps_var}"
                 )
             if (
-                self.ndyn_substeps_var > self.run_config.ndyn_substeps
+                self._ndyn_substeps_var > self.config.ndyn_substeps
                 and global_max_vertical_cfl
-                * ta.wpfloat(self.ndyn_substeps_var / (self.ndyn_substeps_var - 1))
+                * ta.wpfloat(self._ndyn_substeps_var / (self._ndyn_substeps_var - 1))
                 < vertical_cfl_threshold_for_decrement
             ):
-                self._update_ndyn_substeps(self.ndyn_substeps_var - 1)
+                self._update_ndyn_substeps(self._ndyn_substeps_var - 1)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
                 log.critical(
-                    f"The number of dynamics substeps is decreaed to {self.ndyn_substeps_var}"
+                    f"The number of dynamics substeps is decreaed to {self._ndyn_substeps_var}"
                 )
-            elif (
-                self.ndyn_substeps_var == self.run_config.ndyn_substeps
-                and global_max_vertical_cfl
-                < ta.wpfloat("0.76") * self.run_config.vertical_cfl_threshold
-            ):
-                log.critical(
-                    "CFL number for vertical advection in dynamical core has decreased, leaving watch mode"
-                )
-                self._cfl_watch_mode = False
+                skip_checking_watch_mode_quit = True
+        if (
+            not skip_checking_watch_mode_quit
+            and self._ndyn_substeps_var == self.config.ndyn_substeps
+            and global_max_vertical_cfl < ta.wpfloat("0.76") * self.config.vertical_cfl_threshold
+        ):
+            log.critical(
+                "CFL number for vertical advection in dynamical core has decreased, leaving watch mode"
+            )
+            self._cfl_watch_mode = False
 
         # reset max_vertical_cfl to zero
         solve_nonhydro_diagnostic_state.max_vertical_cfl = ta.wpfloat("0.0")
 
-    def _update_spinup_damping(self, fourth_order_divdamp_factor: ta.wpfloat) -> ta.wpfloat:
-        if self.run_config.apply_initial_stabilization:
+    def _update_spinup_second_order_divergence_damping(
+        self, fourth_order_divdamp_factor: ta.wpfloat
+    ) -> ta.wpfloat:
+        if self.config.apply_initial_stabilization:
             if self._elapse_time_in_seconds <= ta.wpfloat("1800.0"):
                 return ta.wpfloat("0.8") * fourth_order_divdamp_factor
             elif self._elapse_time_in_seconds <= ta.wpfloat("7200.0"):
@@ -425,7 +414,7 @@ def initialize(
     experiment_type: driver_init.ExperimentType,
     grid_file: pathlib.Path,
     backend: gtx_typing.Backend,
-) -> tuple[TimeLoop, DriverStates, DriverParams]:
+) -> tuple[Driver, DriverStates, DriverParams]:
     """
     Initialize the driver run.
 
@@ -445,7 +434,7 @@ def initialize(
         backend: GT4Py backend.
 
     Returns:
-        TimeLoop: Time loop object.
+        Driver: Driver object.
         DriverStates: Initial states for the driver run.
         DriverParams: Parameters for the driver run.
     """
@@ -547,7 +536,7 @@ def initialize(
     )
     prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
-    time_loop = TimeLoop(
+    time_loop = Driver(
         run_config=config.run_config,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
@@ -567,39 +556,14 @@ def initialize(
 
 
 @click.command()
-@click.argument("input_path")
+@click.argument("grid_file")
 @click.option(
     "--run_path",
     default="./",
     help="Folder for code logs to file and to console. Only debug logging is going to the file.",
 )
 @click.option(
-    "--mpi",
-    default=False,
-    show_default=True,
-    help="Whether or not you are running with mpi. Currently not fully tested yet.",
-)
-@click.option(
-    "--serialization_type",
-    default=driver_init.SerializationType.SB.value,
-    show_default=True,
-    help="Serialization type for grid info and static fields. This is currently the only possible way to load the grid info and static fields.",
-)
-@click.option(
-    "--experiment_type",
-    default=driver_init.ExperimentType.ANY.value,
-    show_default=True,
-    help="Option for configuration and how the initial state is generated. "
-    "Setting it to the default value will instruct the model to use the default configuration of MeteoSwiss regional experiment and read the initial state from serialized data. "
-    "Currently, users can also set it to either jabw or grauss_3d_torus to generate analytic initial condition for the JW and mountain wave tests, respectively (they are placed in abs_path_to_icon4py/model/driver/src/icon4py/model/driver/test_cases/).",
-)
-@click.option(
-    "--grid_file",
-    required=True,
-    help="Path of the grid file.",
-)
-@click.option(
-    "--enable_output",
+    "--enable_statistics_output",
     is_flag=True,
     default=False,
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
@@ -617,12 +581,8 @@ def initialize(
     help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_cpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
 )
 def icon4py_driver(
-    input_path,
-    run_path,
-    mpi,
-    serialization_type,
-    experiment_type,
     grid_file,
+    run_path,
     enable_output,
     enable_profiling,
     icon4py_driver_backend,
@@ -658,7 +618,7 @@ def icon4py_driver(
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
 
-    time_loop: TimeLoop
+    time_loop: Driver
     ds: DriverStates
     dp: DriverParams
     time_loop, ds, dp = initialize(
@@ -684,7 +644,6 @@ def icon4py_driver(
         ds.solve_nonhydro_diagnostic,
         ds.prognostics,
         ds.prep_advection_prognostic,
-        dp.second_order_divdamp_factor,
         do_prep_adv=False,
         profiling=driver_config.ProfilingConfig() if enable_profiling else None,
     )

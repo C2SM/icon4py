@@ -33,6 +33,8 @@ class Icon4pyRunConfig:  # TODO (Yilu) think of a better name
 
     ndyn_substeps: int = 5
 
+    output_statistics: bool = False
+
     apply_initial_stabilization: bool = True  # TODO (Yilu) remove
     """
     ltestcase in ICON
