@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import os
 import logging
+import os
 from typing import Final
 
 import gt4py.next as gtx
