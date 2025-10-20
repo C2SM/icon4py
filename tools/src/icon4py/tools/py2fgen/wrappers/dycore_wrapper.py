@@ -27,10 +27,11 @@ import numpy as np
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
+from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.driver.testcases import channel_flow
 from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
@@ -142,6 +143,14 @@ def solve_nh_init(
     stretch_factor: gtx.float64,
     nflat_gradp: gtx.int32,
     num_levels: gtx.int32,
+    domain_length: gtx.float64,
+    cell_x: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    cell_y: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    edge_x: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
+    primal_normal_x: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
+    z_ifc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    z_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    geopot: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
@@ -250,6 +259,37 @@ def solve_nh_init(
 
     # datatest config, vertical parameters
     vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
+
+    mask_label = "gauss3d_torus"
+    random_perturbation_magnitude = 0.001
+    sponge_length = 5000.0
+    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
+        mask_label=mask_label,
+        cell_x=cell_x,
+        cell_y=cell_y,
+        half_level_heights=z_ifc,
+        grid=grid_wrapper.grid_state.grid,
+        backend=actual_backend,
+    )
+    channel = channel_flow.ChannelFlow(
+        random_perturbation_magnitude=random_perturbation_magnitude,
+        sponge_length=sponge_length,
+        grid=grid_wrapper.grid_state.grid,
+        domain_length=domain_length,
+        cell_x=cell_x,
+        edge_x=edge_x,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        geopot=geopot,
+        full_level_heights=z_mc,
+        half_level_heights=z_ifc,
+        primal_normal_x=primal_normal_x,
+        backend=actual_backend,
+    )
 
     global granule  # noqa: PLW0603 [global-statement]
     granule = SolveNonhydroGranule(
