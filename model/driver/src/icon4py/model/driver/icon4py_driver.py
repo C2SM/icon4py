@@ -34,7 +34,7 @@ from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
 )
-from icon4py.model.driver.testcases import channel
+from icon4py.model.driver.testcases import channel_flow
 
 
 log = logging.getLogger(__name__)
@@ -444,7 +444,7 @@ def initialize(
         grid_file_path=grid_file_path,
         backend=backend,
     )
-    channel_inst = channel.ChannelFlow(
+    channel = channel_flow.ChannelFlow(
         grid=grid,
         savepoint_path=savepoint_path,
         grid_file_path=grid_file_path,
@@ -482,7 +482,7 @@ def initialize(
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
         ibm_masks=ibm_masks,
-        channel=channel_inst,
+        channel=channel,
     )
 
     (
