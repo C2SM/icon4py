@@ -9,13 +9,14 @@
 import logging
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
     field_type_aliases as fa,
+    model_backends,
     type_alias as ta,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
@@ -70,7 +71,10 @@ class ChannelFlow:
         full_level_heights: data_alloc.NDArray,
         half_level_heights: data_alloc.NDArray,
         primal_normal_x: data_alloc.NDArray,
-        backend: gtx_backend.Backend,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
         do_channel: bool = True,
     ):
         """

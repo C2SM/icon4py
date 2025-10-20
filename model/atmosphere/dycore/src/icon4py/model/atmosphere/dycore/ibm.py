@@ -7,14 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
-import os
 from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next.ffront.fbuiltins import where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -341,7 +340,10 @@ class ImmersedBoundaryMethodMasks:
         cell_x: data_alloc.NDArray,
         cell_y: data_alloc.NDArray,
         half_level_heights: data_alloc.NDArray,
-        backend: gtx_typing.Backend,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
         do_ibm: bool = True,
     ):
         """
@@ -367,7 +369,10 @@ class ImmersedBoundaryMethodMasks:
         cell_x: data_alloc.NDArray,
         cell_y: data_alloc.NDArray,
         half_level_heights: data_alloc.NDArray,
-        backend: gtx_typing.Backend,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
         do_ibm: bool,
     ) -> None:
         """
@@ -438,7 +443,10 @@ class ImmersedBoundaryMethodMasks:
         cell_x: data_alloc.NDArray,
         cell_y: data_alloc.NDArray,
         half_level_heights: data_alloc.NDArray,
-        backend: gtx_typing.Backend,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
         half_cell_mask_np: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
         """
@@ -471,7 +479,10 @@ class ImmersedBoundaryMethodMasks:
         cell_x: data_alloc.NDArray,
         cell_y: data_alloc.NDArray,
         half_level_heights: data_alloc.NDArray,
-        backend: gtx_typing.Backend,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
         half_cell_mask_np: data_alloc.NDArray,
     ) -> data_alloc.NDArray:
         """
