@@ -180,8 +180,12 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
             log.debug(f"no meas for icon4py stencil {stencil_metadata}")
         else:
             metric_data = v["metrics"][metric]
-            # we replace the first measurement with the median value
-            metric_data[0] = np.median(metric_data)
+
+            if (
+                stencil != "update_mass_flux_weighted"
+            ):  # median of this stencil is handled differently below
+                # we replace the first measurement with the median value
+                metric_data[0] = np.median(metric_data)
 
             if stencil in icon4py_stencils:
                 fortran_names = [
@@ -205,6 +209,35 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
                 if len(metric_data) >= gt4py_unmatched_ncalls_threshold:
                     unmatched_data[stencil] = metric_data
 
+    assert "update_mass_flux_weighted" in data
+    assert "update_mass_flux_weighted_original" not in data
+    data["update_mass_flux_weighted_original"] = data.pop("update_mass_flux_weighted")
+    data["update_mass_flux_weighted"] = [
+        data["update_mass_flux_weighted_original"][i]
+        for i in range(0, len(data["update_mass_flux_weighted_original"]))
+        if i % 5 != 0
+    ]  # take all BUT every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep ("update_mass_flux_weighted_first")
+    data["update_mass_flux_weighted"][0] = np.median(
+        data["update_mass_flux_weighted"]
+    )  # replace first measurement with median
+
+    # Merge some stencils into 'update_mass_flux_weighted_first'
+    assert "update_mass_flux_weighted_first" not in data
+    data["update_mass_flux_weighted_first"] = data["update_mass_flux_weighted_original"][
+        ::5
+    ]  # take ONLY every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep
+    data["update_mass_flux_weighted_first"][0] = np.median(
+        data["update_mass_flux_weighted_first"]
+    )  # replace first measurement with median
+    data["update_mass_flux_weighted_first"] = [  # name matches icon-exclaim timer
+        a + b
+        for a, b in zip(
+            data["update_mass_flux_weighted_first"],
+            unmatched_data.pop("init_cell_kdim_field_with_zero_wp"),
+            strict=True,
+        )
+    ]
+
     # Merge 'compute_hydrostatic_correction_term' stencil into 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn'
     assert "compute_hydrostatic_correction_term" in unmatched_data
     data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"] = [
@@ -224,19 +257,6 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
             unmatched_data.pop("compute_exner_from_rhotheta"),
             unmatched_data.pop("compute_theta_and_exner"),
             unmatched_data.pop("update_theta_v"),
-            strict=True,
-        )
-    ]
-
-    # Merge some stencils into 'update_mass_flux_weighted_first'
-    assert "update_mass_flux_weighted_first" not in data
-    data["update_mass_flux_weighted_first"] = [  # name matches icon-exclaim timer
-        a + b
-        for a, b in zip(
-            data["update_mass_flux_weighted"][
-                ::5
-            ],  # take only every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep
-            unmatched_data.pop("init_cell_kdim_field_with_zero_wp"),
             strict=True,
         )
     ]
