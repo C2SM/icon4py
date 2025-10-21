@@ -171,7 +171,7 @@ def read_config(
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
-        diffu_coeff = float(os.environ.get("ICON4PY_DIFFU_COEFF", 0.0))
+        diffu_coeff = float(os.environ.get("ICON4PY_DIFFU_COEFF", "0.0"))
         return diffusion.DiffusionConfig(
             n_substeps=n_substeps,
             zdiffu_wind=True,

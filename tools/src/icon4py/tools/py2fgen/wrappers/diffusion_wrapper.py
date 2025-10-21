@@ -35,8 +35,10 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.atmosphere.dycore import ibm
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
+from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half_e
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.tools.common.logger import setup_logger
@@ -104,6 +106,13 @@ def diffusion_init(
     lowest_layer_thickness: gtx.float64,
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,
+    cell_x: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    cell_y: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    z_ifc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    ddqz_z_full: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    ddqz_z_half: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
@@ -175,6 +184,22 @@ def diffusion_init(
         zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
     if zd_vertoffset is None:
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
+
+    ddqz_z_half_e_np = xp.zeros(
+        (grid_wrapper.grid_state.grid.num_edges, grid_wrapper.grid_state.grid.num_levels + 1), dtype=float
+    )
+    ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=actual_backend)
+    compute_ddqz_z_half_e.with_backend(backend=actual_backend)(
+        ddqz_z_half=ddqz_z_half,
+        c_lin_e=c_lin_e,
+        ddqz_z_half_e=ddqz_z_half_e,
+        horizontal_start=0,
+        horizontal_end=grid_wrapper.grid_state.grid.num_edges,
+        vertical_start=0,
+        vertical_end=grid_wrapper.grid_state.grid.num_levels + 1,
+        offset_provider=grid_wrapper.grid_state.grid.connectivities,
+    )
+
     # Metric state
     metric_state = DiffusionMetricState(
         mask_hdiff=mask_hdiff,
@@ -183,6 +208,10 @@ def diffusion_init(
         zd_intcoef=zd_intcoef,
         zd_vertoffset=zd_vertoffset,
         zd_diffcoef=zd_diffcoef,
+        ddqz_z_full=ddqz_z_full,
+        ddqz_z_full_e=ddqz_z_full_e,
+        ddqz_z_half=ddqz_z_half,
+        ddqz_z_half_e=ddqz_z_half_e,
     )
 
     # Interpolation state
@@ -195,6 +224,16 @@ def diffusion_init(
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
+    )
+
+    mask_label = "gauss3d_torus"
+    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
+        mask_label=mask_label,
+        cell_x=cell_x,
+        cell_y=cell_y,
+        half_level_heights=z_ifc,
+        grid=grid_wrapper.grid_state.grid,
+        backend=actual_backend,
     )
 
     # Initialize the diffusion granule
@@ -211,6 +250,7 @@ def diffusion_init(
             cell_params=grid_wrapper.grid_state.cell_geometry,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
+            ibm_masks=ibm_masks,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(
             model_backends.get_allocator(actual_backend)

@@ -261,8 +261,6 @@ def solve_nh_init(
     vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
 
     mask_label = "gauss3d_torus"
-    random_perturbation_magnitude = 0.001
-    sponge_length = 5000.0
     ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         mask_label=mask_label,
         cell_x=cell_x,
@@ -271,6 +269,8 @@ def solve_nh_init(
         grid=grid_wrapper.grid_state.grid,
         backend=actual_backend,
     )
+    random_perturbation_magnitude = 0.001
+    sponge_length = 5000.0
     channel = channel_flow.ChannelFlow(
         random_perturbation_magnitude=random_perturbation_magnitude,
         sponge_length=sponge_length,
