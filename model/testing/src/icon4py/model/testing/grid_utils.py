@@ -124,7 +124,6 @@ def construct_decomposition_info(
 def get_grid_geometry(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
-    exchange: decomposition_defs.ExchangeRuntime = geometry.single_node_default,
 ) -> geometry.GridGeometry:
     register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
 
@@ -144,7 +143,6 @@ def get_grid_geometry(
             gm.coordinates,
             gm.geometry_fields,
             geometry_attrs.attrs,
-            exchange=exchange,
         )
         return geometry_source
 

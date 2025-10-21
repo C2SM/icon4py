@@ -192,7 +192,7 @@ class FieldSource(GridProvider, Protocol):
 
                 buffer = provider(field_name, self._sources, self.backend, self)
                 if hasattr(buffer, "domain"):
-                    self._exchange.exchange_and_wait(*buffer.domain.dims, buffer)
+                    self._exchange.exchange_and_wait(buffer.domain.dims[0], buffer)
                 return (
                     buffer
                     if type_ == RetrievalType.FIELD

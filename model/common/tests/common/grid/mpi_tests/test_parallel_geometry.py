@@ -55,7 +55,6 @@ if TYPE_CHECKING:
 def test_distributed_geometry_attrs(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     attrs_name: str,
@@ -77,10 +76,8 @@ def test_distributed_geometry_attrs(
                     }
 
 
-
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
 
-    #grid_geometry = grid_utils.get_grid_geometry(backend, experiment, exchange=exchange, decomposition_info=decomposition_info)
     grid_geometry = geometry.GridGeometry(grid = grid, decomposition_info=decomposition_info, backend=backend,
                                           metadata =attrs.attrs, coordinates=coordinates, extra_fields=extra_fields,
                                           exchange=exchange)

@@ -78,6 +78,7 @@ def finalize_mpi():
 
 def _get_processor_properties(with_mpi=False, comm_id: CommId = None):
     def _get_current_comm_or_comm_world(comm_id: CommId) -> mpi4py.MPI.Comm:
+        #import mpi4py
         if isinstance(comm_id, int):
             comm = mpi4py.MPI.Comm.f2py(comm_id)
         elif isinstance(comm_id, mpi4py.MPI.Comm):
@@ -209,11 +210,11 @@ class GHexMultiNodeExchange:
         Slices the field based on the dimension passed in.
         """
         if dim == dims.VertexDim:
-            return field.ndarray[: self._decomposition_info.num_vertices, :]
+            return field.ndarray[: self._decomposition_info.num_vertices]
         elif dim == dims.EdgeDim:
-            return field.ndarray[: self._decomposition_info.num_edges, :]
+            return field.ndarray[: self._decomposition_info.num_edges]
         elif dim == dims.CellDim:
-            return field.ndarray[: self._decomposition_info.num_cells, :]
+            return field.ndarray[: self._decomposition_info.num_cells]
         else:
             raise ValueError(f"Unknown dimension {dim}")
 
@@ -231,8 +232,7 @@ class GHexMultiNodeExchange:
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
 
         # Slice the fields based on the dimension
-        #sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
-        sliced_fields = fields
+        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
 
         # Create field descriptors and perform the exchange
         applied_patterns = [
