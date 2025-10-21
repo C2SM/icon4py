@@ -817,7 +817,7 @@ class SolveNonhydro:
             enh_smag_fac=self.interpolated_fourth_order_divdamp_factor,
         )
 
-        self.p_test_run = True
+        self.p_test_run = False
 
     def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
