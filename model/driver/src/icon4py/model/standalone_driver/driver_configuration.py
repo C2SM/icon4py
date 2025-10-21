@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass(frozen=True)
-class Icon4pyRunConfig:  # TODO (Yilu) think of a better name
+class DriverConfig:
     backend: gtx_typing.Backend
     grid_path: Path
     configuration_file_path: Path
@@ -55,24 +55,21 @@ class Icon4pyRunConfig:  # TODO (Yilu) think of a better name
         return self.backend
 
 
-# TODO (Yilu) the read_config should only return the configure for jabw
 def read_config(
     backend: gtx_typing.Backend,
-) -> Icon4pyConfig:
+) -> tuple[DriverConfig, v_grid.VerticalGridConfig, diffusion.DiffusionConfig, solve_nh.NonHydrostaticConfig]:
 
-    def _jabw_vertical_config():
-        return v_grid.VerticalGridConfig(
+    vertical_config = v_grid.VerticalGridConfig(
             num_levels=35,
             rayleigh_damping_height=45000.0,
         )
 
-    def _jabw_diffusion_config(ndyn_substeps: int):
-        return diffusion.DiffusionConfig(
+    diffusion_config = diffusion.DiffusionConfig(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
             hdiff_temp=False,
-            n_substeps=ndyn_substeps,
+            n_substeps=5,
             type_t_diffu=2,
             type_vn_diffu=1,
             hdiff_efdt_ratio=10.0,
@@ -82,24 +79,25 @@ def read_config(
             velocity_boundary_diffusion_denom=200.0,
         )
 
-    def _jablownoski_Williamson_config():
-        icon_run_config = Icon4pyRunConfig(
+    nonhydro_config = solve_nh.NonHydrostaticConfig(
+        fourth_order_divdamp_factor=0.0025,
+    )
+
+    driver_run_config = DriverConfig(
             dtime=datetime.timedelta(seconds=300.0),
             end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
             apply_initial_stabilization=False,
             ndyn_substeps=5,
             backend=backend,
         )
-        jabw_vertical_config = _jabw_vertical_config()
-        jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.ndyn_substeps)
-        jabw_nonhydro_config = _jabw_nonhydro_config()
 
-        return (
-            icon_run_config,
-            jabw_vertical_config,
-            jabw_diffusion_config,
-            jabw_nonhydro_config,
-        )
+
+    return (
+        driver_run_config,
+        vertical_config,
+        diffusion_config,
+        nonhydro_config,
+    )
 
 
 @dataclasses.dataclass
