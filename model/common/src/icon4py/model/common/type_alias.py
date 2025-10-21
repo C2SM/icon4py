@@ -12,7 +12,7 @@ from typing import Literal, TypeAlias
 import gt4py.next as gtx
 
 
-DEFAULT_PRECISION = "double"
+DEFAULT_PRECISION = "single"  # TODO(pstark): reset default to double
 
 wpfloat: TypeAlias = gtx.float64
 vpfloat: TypeAlias = wpfloat
