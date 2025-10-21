@@ -10,10 +10,10 @@ import datetime
 import logging
 import pathlib
 from collections.abc import Callable
-from typing import NamedTuple
+from typing import Annotated, NamedTuple
 
-import click
 import gt4py.next.typing as gtx_typing
+import typer
 from devtools import Timer
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
@@ -48,6 +48,7 @@ class Driver:
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
     ):
         self.config: driver_config.Icon4pyRunConfig = config
+        self.log = logging.getLogger("Driver")
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
         self._xp = data_alloc.import_array_ns(self.config.backend)
@@ -555,37 +556,29 @@ def initialize(
     )
 
 
-@click.command()
-@click.argument("grid_file")
-@click.option(
-    "--run_path",
-    default="./",
-    help="Folder for code logs to file and to console. Only debug logging is going to the file.",
-)
-@click.option(
-    "--enable_statistics_output",
-    is_flag=True,
-    default=False,
-    help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
-)
-@click.option(
-    "--enable_profiling",
-    is_flag=True,
-    default=False,
-    help="Enable detailed profiling with GT4Py metrics.",
-)
-@click.option(
-    "--icon4py_driver_backend",
-    "-b",
-    required=True,
-    help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_cpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
-)
 def icon4py_driver(
-    grid_file,
-    run_path,
-    enable_output,
-    enable_profiling,
-    icon4py_driver_backend,
+    grid_file_path: Annotated[str, typer.Argument(help="Grid file path.")],
+    icon4py_driver_backend: Annotated[
+        str,
+        typer.Argument(
+            "--backend",
+            help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([k for k in model_backends.BACKENDS.keys()])}",
+        ),
+    ],
+    run_path: Annotated[
+        str, typer.Option(help="Folder path that holds the output and log files.", default="./")
+    ],
+    log_level: Annotated[
+        str,
+        typer.Option(
+            help=f"Logging level of log files. Possible options are {' / '.join([k for k in driver_init.LOGGING_LEVELS.keys()])}",
+            default=driver_init.LOGGING_LEVELS.keys()[0],
+        ),
+    ],
+    enable_statistics_output: Annotated[
+        bool, typer.Option(help="Enable model statistics output at every time step.", default=False)
+    ],
+    enable_profiling: Annotated[bool, typer.Option(help="Enable profiling.", default=False)],
 ) -> None:
     """
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
@@ -615,26 +608,21 @@ def icon4py_driver(
         )
     backend = model_backends.BACKENDS[icon4py_driver_backend]
 
-    parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
-    driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
+    parallel_props = decomposition.get_processor_properties(
+        decomposition.get_runtype(with_mpi=False)
+    )
+    driver_init.configure_logging(run_path, log_level, parallel_props)
 
     time_loop: Driver
     ds: DriverStates
     dp: DriverParams
     time_loop, ds, dp = initialize(
-        pathlib.Path(input_path),
+        pathlib.Path(grid_file_path),
         parallel_props,
-        serialization_type,
-        experiment_type,
-        pathlib.Path(grid_file),
         backend,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
-    log.info(
-        f"input args: input_path={input_path}, n_time_steps={time_loop.n_time_steps}, ending date={time_loop.run_config.end_date}"
-    )
-
-    log.info(f"input args: input_path={input_path}, n_time_steps={time_loop.n_time_steps}")
+    log.info(f"input args: grid_path={grid_file_path}")
 
     log.info("dycore configuring: DONE")
     log.info("time loop: START")
@@ -652,4 +640,4 @@ def icon4py_driver(
 
 
 if __name__ == "__main__":
-    icon4py_driver()
+    typer.run(icon4py_driver)

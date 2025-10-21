@@ -39,7 +39,7 @@ class DriverConfig:
 
     ndyn_substeps: int = 5
 
-    output_statistics: bool = False
+    enable_statistics_output: bool = False
 
     def __post_init__(self):
         for name in ["grid_path", "configuration_file_path", "output_path"]:

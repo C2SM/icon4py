@@ -29,7 +29,7 @@ dependencies = [
   "icon4py-common>=0.0.6",
   "icon4py-testing>=0.0.6",  # TODO(): remove this dependency when driver is fully standalone
   # external dependencies
-  "click>=8.0.1",
+  "typer>=0.20.0",
   "devtools>=0.12",
   "gt4py==1.0.9",
   "packaging>=20.0",

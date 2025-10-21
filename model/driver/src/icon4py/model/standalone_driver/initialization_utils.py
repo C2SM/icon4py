@@ -37,6 +37,11 @@ from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
 from icon4py.model.testing import serialbox as sb
 
 
+LOGGING_LEVELS: dict[str, int] = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "critical": logging.CRITICAL,
+}
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 INITIALIZATION_ERROR_MSG = "The requested experiment type is not implemented."
 
@@ -549,8 +554,11 @@ def configure_logging(
         pathlib.Path(run_path).absolute() if run_path else pathlib.Path(__file__).absolute().parent
     )
     run_dir.mkdir(exist_ok=True)
-    logfile = run_dir.joinpath(f"dummy_dycore_driver_{experiment_name}.log")
-    logfile.touch(exist_ok=True)
+    import datetime
+
+    logfile = run_dir.joinpath(f"log_{experiment_name}_{datetime.now(datetime.timezone.utc)}")
+    logfile.touch(exist_ok=False)
+
     logging_level = logging.DEBUG
     logging.basicConfig(
         level=logging_level,
