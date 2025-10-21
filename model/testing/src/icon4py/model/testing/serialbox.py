@@ -280,6 +280,10 @@ class IconGridSavepoint(IconSavepoint):
                 return self.verts_vertex_lon()
             case _:
                 raise ValueError
+    def coordinates(self):
+        return {dims.CellDim:{"lat":self.cell_center_lat(), "lon":self.cell_center_lon()},
+                dims.EdgeDim:{"lat":self.edges_center_lat(), "lon":self.edges_center_lon()},
+                dims.VertexDim:{"lat":self.verts_vertex_lat(), "lon":self.verts_vertex_lon()}}
 
     def cell_center_lat(self):
         return self._get_field("cell_center_lat", dims.CellDim)

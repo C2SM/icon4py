@@ -231,7 +231,8 @@ class GHexMultiNodeExchange:
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
 
         # Slice the fields based on the dimension
-        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
+        #sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
+        sliced_fields = fields
 
         # Create field descriptors and perform the exchange
         applied_patterns = [
