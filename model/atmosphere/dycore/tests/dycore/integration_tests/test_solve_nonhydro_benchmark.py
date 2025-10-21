@@ -42,9 +42,6 @@ from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
-log = logging.getLogger(__file__)
-
-
 def run_nonhydro_substeps(
     solve_nonhydro,
     diagnostic_state_nh,
@@ -79,20 +76,15 @@ def run_nonhydro_substeps(
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
 def test_solve_nonhydro_benchmark(
-    experiment,
     benchmark_grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
-    metrics_savepoint: serialbox.MetricSavepoint,
-    interpolation_savepoint: serialbox.InterpolationSavepoint,
-    grid_savepoint: serialbox.IconGridSavepoint,
 ) -> None:
     dtime = 90.0 if benchmark_grid == definitions.Grids.R02B07_GLOBAL else 10.0
 
     lprep_adv = True
-    ndyn_substeps = 2
+    ndyn_substeps = 1
     at_initial_timestep = False
     second_order_divdamp_factor = 0.0
 
@@ -388,21 +380,6 @@ def test_solve_nonhydro_benchmark(
     )
 
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
-    log.info("finished setup")
-    log.info("running timestep nr = 1")
-
-    # solve_nonhydro.time_step(
-    #     diagnostic_state_nh=diagnostic_state_nh,
-    #     prognostic_states=prognostic_states,
-    #     prep_adv=prep_adv,
-    #     lprep_adv=lprep_adv,
-    #     at_last_substep=False,
-    #     at_first_substep=True,
-    #     at_initial_timestep=at_initial_timestep,
-    #     dtime=dtime,
-    #     ndyn_substeps_var=ndyn_substeps,
-    #     second_order_divdamp_factor=second_order_divdamp_factor,
-    # )
 
     benchmark(
         run_nonhydro_substeps,
@@ -416,4 +393,3 @@ def test_solve_nonhydro_benchmark(
         at_initial_timestep,
         lprep_adv,
     )
-    log.info("finished benchmark")

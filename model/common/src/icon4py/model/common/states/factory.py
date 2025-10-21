@@ -714,6 +714,6 @@ def dtype_or_default(
     return metadata[field_name].get("dtype", ta.wpfloat)
 
 
-def replace_khalfdim(dim:gtx.Dimension)->gtx.Dimension:
-    """ workaround to have consistent definitions. Remove once gt4py supports vertically staggered dimension"""
+def replace_khalfdim(dim: gtx.Dimension) -> gtx.Dimension:
+    """workaround to have consistent definitions. Remove once gt4py supports vertically staggered dimension"""
     return dims.KDim if dim == dims.KHalfDim else dim

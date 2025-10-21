@@ -19,10 +19,9 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(
-    params=[definitions.Grids.R02B04_GLOBAL],
+    params=[definitions.Grids.MCH_OPR_R19B08_DOMAIN01, definitions.Grids.R02B07_GLOBAL],
     ids=lambda r: r.name,
 )
-# TODO (Yilu): change to the right grids for benchmarks
 def benchmark_grid(request: pytest.FixtureRequest) -> definitions.GridDescription:
     """Default parametrization for benchmark testing.
 

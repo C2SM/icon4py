@@ -243,7 +243,6 @@ class VerticalGrid:
         """Vertical index where damping ends."""
         return self.index(Domain(dims.KDim, Zone.DAMPING))
 
-
     @property
     def vct_a(self) -> fa.KField:
         return self._vct_a
