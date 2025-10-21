@@ -85,9 +85,9 @@ def test_solve_nonhydro_benchmark(
     benchmark_grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
-    metrics_savepoint:serialbox.MetricSavepoint,
-    interpolation_savepoint:serialbox.InterpolationSavepoint,
-    grid_savepoint:serialbox.IconGridSavepoint
+    metrics_savepoint: serialbox.MetricSavepoint,
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    grid_savepoint: serialbox.IconGridSavepoint,
 ) -> None:
     dtime = 90.0 if benchmark_grid == definitions.Grids.R02B07_GLOBAL else 10.0
 
@@ -182,10 +182,10 @@ def test_solve_nonhydro_benchmark(
         vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
         mass_flx_me=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
         dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         ),
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         ),
     )
 
@@ -234,85 +234,87 @@ def test_solve_nonhydro_benchmark(
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
         nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
     )
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
-    # metric_state_nonhydro = dycore_states.MetricStateNonHydro(
-    #     bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
-    #     mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
-    #     rayleigh_w=metrics_field_source.get(metrics_attributes.RAYLEIGH_W),
-    #     time_extrapolation_parameter_for_exner=metrics_field_source.get(
-    #         metrics_attributes.EXNER_EXFAC
-    #     ),
-    #     reference_exner_at_cells_on_model_levels=metrics_field_source.get(
-    #         metrics_attributes.EXNER_REF_MC
-    #     ),
-    #     wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-    #     wgtfacq_c=metrics_field_source.get(metrics_attributes.WGTFACQ_C),
-    #     inv_ddqz_z_full=metrics_field_source.get(metrics_attributes.INV_DDQZ_Z_FULL),
-    #     reference_rho_at_cells_on_model_levels=metrics_field_source.get(
-    #         metrics_attributes.RHO_REF_MC
-    #     ),
-    #     reference_theta_at_cells_on_model_levels=metrics_field_source.get(
-    #         metrics_attributes.THETA_REF_MC
-    #     ),
-    #     exner_w_explicit_weight_parameter=metrics_field_source.get(
-    #         metrics_attributes.EXNER_W_EXPLICIT_WEIGHT_PARAMETER
-    #     ),
-    #     ddz_of_reference_exner_at_cells_on_half_levels=metrics_field_source.get(
-    #         metrics_attributes.D_EXNER_DZ_REF_IC
-    #     ),
-    #     ddqz_z_half=metrics_field_source.get(metrics_attributes.DDQZ_Z_HALF),
-    #     reference_theta_at_cells_on_half_levels=metrics_field_source.get(
-    #         metrics_attributes.THETA_REF_IC
-    #     ),
-    #     d2dexdz2_fac1_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
-    #     d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
-    #     reference_rho_at_edges_on_model_levels=metrics_field_source.get(
-    #         metrics_attributes.RHO_REF_ME
-    #     ),
-    #     reference_theta_at_edges_on_model_levels=metrics_field_source.get(
-    #         metrics_attributes.THETA_REF_ME
-    #     ),
-    #     ddxn_z_full=metrics_field_source.get(metrics_attributes.DDXN_Z_FULL),
-    #     zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
-    #     vertoffset_gradp=metrics_field_source.get(metrics_attributes.VERTOFFSET_GRADP),
-    #     nflat_gradp=metrics_field_source.get(metrics_attributes.NFLAT_GRADP),
-    #     pg_edgeidx_dsl=metrics_field_source.get(metrics_attributes.PG_EDGEIDX_DSL),
-    #     pg_exdist=metrics_field_source.get(metrics_attributes.PG_EDGEDIST_DSL),
-    #     ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),
-    #     ddxt_z_full=metrics_field_source.get(metrics_attributes.DDXT_Z_FULL),
-    #     wgtfac_e=metrics_field_source.get(metrics_attributes.WGTFAC_E),
-    #     wgtfacq_e=metrics_field_source.get(metrics_attributes.WGTFACQ_E),
-    #     exner_w_implicit_weight_parameter=metrics_field_source.get(
-    #         metrics_attributes.EXNER_W_IMPLICIT_WEIGHT_PARAMETER
-    #     ),
-    #     horizontal_mask_for_3d_divdamp=metrics_field_source.get(
-    #         metrics_attributes.HORIZONTAL_MASK_FOR_3D_DIVDAMP
-    #     ),
-    #     scaling_factor_for_3d_divdamp=metrics_field_source.get(
-    #         metrics_attributes.SCALING_FACTOR_FOR_3D_DIVDAMP
-    #     ),
-    #     coeff1_dwdz=metrics_field_source.get(metrics_attributes.COEFF1_DWDZ),
-    #     coeff2_dwdz=metrics_field_source.get(metrics_attributes.COEFF2_DWDZ),
-    #     coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
-    # )
+    # metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
+    metric_state_nonhydro = dycore_states.MetricStateNonHydro(
+        bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
+        mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
+        rayleigh_w=metrics_field_source.get(metrics_attributes.RAYLEIGH_W),
+        time_extrapolation_parameter_for_exner=metrics_field_source.get(
+            metrics_attributes.EXNER_EXFAC
+        ),
+        reference_exner_at_cells_on_model_levels=metrics_field_source.get(
+            metrics_attributes.EXNER_REF_MC
+        ),
+        wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
+        wgtfacq_c=metrics_field_source.get(metrics_attributes.WGTFACQ_C),
+        inv_ddqz_z_full=metrics_field_source.get(metrics_attributes.INV_DDQZ_Z_FULL),
+        reference_rho_at_cells_on_model_levels=metrics_field_source.get(
+            metrics_attributes.RHO_REF_MC
+        ),
+        reference_theta_at_cells_on_model_levels=metrics_field_source.get(
+            metrics_attributes.THETA_REF_MC
+        ),
+        exner_w_explicit_weight_parameter=metrics_field_source.get(
+            metrics_attributes.EXNER_W_EXPLICIT_WEIGHT_PARAMETER
+        ),
+        ddz_of_reference_exner_at_cells_on_half_levels=metrics_field_source.get(
+            metrics_attributes.D_EXNER_DZ_REF_IC
+        ),
+        ddqz_z_half=metrics_field_source.get(metrics_attributes.DDQZ_Z_HALF),
+        reference_theta_at_cells_on_half_levels=metrics_field_source.get(
+            metrics_attributes.THETA_REF_IC
+        ),
+        d2dexdz2_fac1_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
+        d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
+        reference_rho_at_edges_on_model_levels=metrics_field_source.get(
+            metrics_attributes.RHO_REF_ME
+        ),
+        reference_theta_at_edges_on_model_levels=metrics_field_source.get(
+            metrics_attributes.THETA_REF_ME
+        ),
+        ddxn_z_full=metrics_field_source.get(metrics_attributes.DDXN_Z_FULL),
+        zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
+        vertoffset_gradp=metrics_field_source.get(metrics_attributes.VERTOFFSET_GRADP),
+        nflat_gradp=metrics_field_source.get(metrics_attributes.NFLAT_GRADP),
+        pg_edgeidx_dsl=metrics_field_source.get(metrics_attributes.PG_EDGEIDX_DSL),
+        pg_exdist=metrics_field_source.get(metrics_attributes.PG_EDGEDIST_DSL),
+        ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),
+        ddxt_z_full=metrics_field_source.get(metrics_attributes.DDXT_Z_FULL),
+        wgtfac_e=metrics_field_source.get(metrics_attributes.WGTFAC_E),
+        wgtfacq_e=metrics_field_source.get(metrics_attributes.WGTFACQ_E),
+        exner_w_implicit_weight_parameter=metrics_field_source.get(
+            metrics_attributes.EXNER_W_IMPLICIT_WEIGHT_PARAMETER
+        ),
+        horizontal_mask_for_3d_divdamp=metrics_field_source.get(
+            metrics_attributes.HORIZONTAL_MASK_FOR_3D_DIVDAMP
+        ),
+        scaling_factor_for_3d_divdamp=metrics_field_source.get(
+            metrics_attributes.SCALING_FACTOR_FOR_3D_DIVDAMP
+        ),
+        coeff1_dwdz=metrics_field_source.get(metrics_attributes.COEFF1_DWDZ),
+        coeff2_dwdz=metrics_field_source.get(metrics_attributes.COEFF2_DWDZ),
+        coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
+    )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         ),
         perturbed_exner_at_cells_on_model_levels=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KDim, allocator=backend
         ),
         rho_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         ),
         exner_tendency_due_to_slow_physics=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KDim, allocator=backend
         ),
         grf_tend_rho=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
         grf_tend_thv=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
-        grf_tend_w=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        grf_tend_w=data_alloc.zero_field(
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        ),
         mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
             mesh, dims.EdgeDim, dims.KDim, allocator=backend
         ),
@@ -325,13 +327,19 @@ def test_solve_nonhydro_benchmark(
             data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
-            data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+            data_alloc.zero_field(
+                mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+            ),
+            data_alloc.zero_field(
+                mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+            ),
         ),
         tangential_wind=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
-        vn_on_half_levels=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
+        vn_on_half_levels=data_alloc.zero_field(
+            mesh, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        ),
         contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, allocator=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
         ),
         rho_iau_increment=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
         normal_wind_iau_increment=data_alloc.zero_field(
@@ -382,7 +390,6 @@ def test_solve_nonhydro_benchmark(
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
     log.info("finished setup")
     log.info("running timestep nr = 1")
-
 
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
