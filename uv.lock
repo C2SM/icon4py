@@ -932,7 +932,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/philip-paul-mueller/dace?branch=gt4py_icon4py_tasklet_investigation#97839b2c9c3980aa3854a365b7183c9f002d024b" }
+source = { git = "https://github.com/philip-paul-mueller/dace?branch=__phimuell_dace_icon4py_testing#cd02f655fefe858522c2135393291c79e84cedaf" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1926,7 +1926,7 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/philip-paul-mueller/dace?branch=gt4py_icon4py_tasklet_investigation" },
+    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/philip-paul-mueller/dace?branch=__phimuell_dace_icon4py_testing" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
     { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=__phimuell_gt4py_icon4py_testing" },
