@@ -180,12 +180,8 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
             log.debug(f"no meas for icon4py stencil {stencil_metadata}")
         else:
             metric_data = v["metrics"][metric]
-
-            if (
-                stencil != "update_mass_flux_weighted"
-            ):  # median of this stencil is handled differently below
-                # we replace the first measurement with the median value
-                metric_data[0] = np.median(metric_data)
+            # we replace the first measurement with the median value
+            metric_data[0] = np.median(metric_data)
 
             if stencil in icon4py_stencils:
                 fortran_names = [
@@ -210,29 +206,21 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
                     unmatched_data[stencil] = metric_data
 
     assert "update_mass_flux_weighted" in data
-    assert "update_mass_flux_weighted_original" not in data
-    data["update_mass_flux_weighted_original"] = data.pop("update_mass_flux_weighted")
+    update_mass_flux_weighted_original = data.pop("update_mass_flux_weighted")
     data["update_mass_flux_weighted"] = [
-        data["update_mass_flux_weighted_original"][i]
-        for i in range(0, len(data["update_mass_flux_weighted_original"]))
+        update_mass_flux_weighted_original[i]
+        for i in range(0, len(update_mass_flux_weighted_original))
         if i % 5 != 0
     ]  # take all BUT every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep ("update_mass_flux_weighted_first")
-    data["update_mass_flux_weighted"][0] = np.median(
-        data["update_mass_flux_weighted"]
-    )  # replace first measurement with median
 
     # Merge some stencils into 'update_mass_flux_weighted_first'
     assert "update_mass_flux_weighted_first" not in data
-    data["update_mass_flux_weighted_first"] = data["update_mass_flux_weighted_original"][
-        ::5
-    ]  # take ONLY every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep
-    data["update_mass_flux_weighted_first"][0] = np.median(
-        data["update_mass_flux_weighted_first"]
-    )  # replace first measurement with median
     data["update_mass_flux_weighted_first"] = [  # name matches icon-exclaim timer
         a + b
         for a, b in zip(
-            data["update_mass_flux_weighted_first"],
+            update_mass_flux_weighted_original[
+                ::5
+            ],  # take ONLY every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep
             unmatched_data.pop("init_cell_kdim_field_with_zero_wp"),
             strict=True,
         )
