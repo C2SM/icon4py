@@ -234,7 +234,7 @@ def test_solve_nonhydro_benchmark(
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
         nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
     )
-    # metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
+
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
         bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
         mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
@@ -391,29 +391,29 @@ def test_solve_nonhydro_benchmark(
     log.info("finished setup")
     log.info("running timestep nr = 1")
 
-    solve_nonhydro.time_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_states=prognostic_states,
-        prep_adv=prep_adv,
-        lprep_adv=lprep_adv,
-        at_last_substep=False,
-        at_first_substep=True,
-        at_initial_timestep=at_initial_timestep,
-        dtime=dtime,
-        ndyn_substeps_var=ndyn_substeps,
-        second_order_divdamp_factor=second_order_divdamp_factor,
-    )
-
-    # benchmark(
-    #     run_nonhydro_substeps,
-    #     solve_nonhydro,
-    #     diagnostic_state_nh,
-    #     prognostic_states,
-    #     prep_adv,
-    #     second_order_divdamp_factor,
-    #     dtime,
-    #     ndyn_substeps,
-    #     at_initial_timestep,
-    #     lprep_adv,
+    # solve_nonhydro.time_step(
+    #     diagnostic_state_nh=diagnostic_state_nh,
+    #     prognostic_states=prognostic_states,
+    #     prep_adv=prep_adv,
+    #     lprep_adv=lprep_adv,
+    #     at_last_substep=False,
+    #     at_first_substep=True,
+    #     at_initial_timestep=at_initial_timestep,
+    #     dtime=dtime,
+    #     ndyn_substeps_var=ndyn_substeps,
+    #     second_order_divdamp_factor=second_order_divdamp_factor,
     # )
+
+    benchmark(
+        run_nonhydro_substeps,
+        solve_nonhydro,
+        diagnostic_state_nh,
+        prognostic_states,
+        prep_adv,
+        second_order_divdamp_factor,
+        dtime,
+        ndyn_substeps,
+        at_initial_timestep,
+        lprep_adv,
+    )
     log.info("finished benchmark")
