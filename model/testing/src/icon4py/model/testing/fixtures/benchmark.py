@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(
+    scope="module",
     params=[definitions.Grids.MCH_OPR_R19B08_DOMAIN01, definitions.Grids.R02B07_GLOBAL],
     ids=lambda r: r.name,
 )

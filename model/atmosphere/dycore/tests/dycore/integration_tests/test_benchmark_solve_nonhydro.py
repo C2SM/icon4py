@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -29,6 +30,7 @@ from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
+    grid_manager as gm,
     vertical as v_grid,
 )
 from icon4py.model.common.initialization import jablonowski_williamson_topography as topology
@@ -42,50 +44,23 @@ from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
-def run_nonhydro_substeps(
-    solve_nonhydro,
-    diagnostic_state_nh,
-    prognostic_states,
-    prep_adv,
-    second_order_divdamp_factor,
-    dtime,
-    ndyn_substeps,
-    at_initial_timestep,
-    lprep_adv,
-):
-    for i_substep in range(ndyn_substeps):
-        at_first_substep = i_substep == 0
-        at_last_substep = i_substep == ndyn_substeps - 1
-
-        solve_nonhydro.time_step(
-            diagnostic_state_nh=diagnostic_state_nh,
-            prognostic_states=prognostic_states,
-            prep_adv=prep_adv,
-            second_order_divdamp_factor=second_order_divdamp_factor,
-            dtime=dtime,
-            ndyn_substeps_var=ndyn_substeps,
-            at_initial_timestep=at_initial_timestep,
-            lprep_adv=lprep_adv,
-            at_first_substep=at_first_substep,
-            at_last_substep=at_last_substep,
-        )
-
-
-@pytest.mark.embedded_remap_error
-@pytest.mark.benchmark
-@pytest.mark.continuous_benchmarking
-@pytest.mark.benchmark_only
-def test_benchmark_solve_nonhydro(
+@pytest.fixture(scope="module")
+def grid_manager(
     benchmark_grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
-    benchmark: Any,
-) -> None:
-    dtime = 90.0 if benchmark_grid == definitions.Grids.R02B07_GLOBAL else 10.0
+) -> gm.GridManager:
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
+    )
+    return grid_manager
 
-    lprep_adv = True
-    ndyn_substeps = 1
-    at_initial_timestep = False
-    second_order_divdamp_factor = 0.0
+
+@pytest.fixture(scope="module")
+def solve_nonhydro(
+    grid_manager: gm.GridManager,
+    backend: gtx_typing.Backend | None,
+) -> solve_nh.SolveNonhydro:
+    mesh = grid_manager.grid
 
     config = solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
@@ -97,11 +72,6 @@ def test_benchmark_solve_nonhydro(
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
-    )
-
-    mesh = grid_manager.grid
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
@@ -167,17 +137,6 @@ def test_benchmark_solve_nonhydro(
         cell_lat=cell_geometry.cell_center_lat.ndarray,
         u0=35.0,
         backend=backend,
-    )
-
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
-        mass_flx_me=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
@@ -287,6 +246,61 @@ def test_benchmark_solve_nonhydro(
         coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
     )
 
+    solve_nonhydro = solve_nh.SolveNonhydro(
+        grid=mesh,
+        config=config,
+        params=nonhydro_params,
+        metric_state_nonhydro=metric_state_nonhydro,
+        interpolation_state=interpolation_state,
+        vertical_params=vertical_grid,
+        edge_geometry=edge_geometry,
+        cell_geometry=cell_geometry,
+        owner_mask=gtx.as_field(
+            (dims.CellDim,),
+            decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type] # mypy not take the type of owner_mask
+            allocator=backend,  # type: ignore[arg-type]
+        ),
+        backend=backend,
+    )
+
+    return solve_nonhydro
+
+
+@pytest.mark.parametrize(
+    "at_first_substep, at_last_substep", [(True, False), (False, True), (False, False)]
+)
+@pytest.mark.embedded_remap_error
+@pytest.mark.benchmark
+@pytest.mark.continuous_benchmarking
+@pytest.mark.benchmark_only
+def test_benchmark_solve_nonhydro(
+    solve_nonhydro: solve_nh.SolveNonhydro,
+    grid_manager: gm.GridManager,
+    at_first_substep: bool,
+    at_last_substep: bool,
+    backend: gtx_typing.Backend | None,
+    benchmark: Any,
+) -> None:
+    mesh = grid_manager.grid
+
+    dtime = 10.0 if mesh.limited_area else 90.0
+
+    lprep_adv = True
+    ndyn_substeps = 5
+    at_initial_timestep = False
+    second_order_divdamp_factor = 0.02
+
+    prep_adv = dycore_states.PrepAdvection(
+        vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
+        mass_flx_me=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        ),
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
+        ),
+    )
+
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=0.0,
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
@@ -342,23 +356,6 @@ def test_benchmark_solve_nonhydro(
         ),
     )
 
-    solve_nonhydro = solve_nh.SolveNonhydro(
-        grid=mesh,
-        config=config,
-        params=nonhydro_params,
-        metric_state_nonhydro=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_grid,
-        edge_geometry=edge_geometry,
-        cell_geometry=cell_geometry,
-        owner_mask=gtx.as_field(
-            (dims.CellDim,),
-            decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type] # mypy does not take the type of owner_mask
-            allocator=backend,  # type: ignore[arg-type]
-        ),
-        backend=backend,
-    )
-
     prognostic_state_nnow = prognostics.PrognosticState(
         w=data_alloc.random_field(
             mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
@@ -380,15 +377,20 @@ def test_benchmark_solve_nonhydro(
 
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
+    solve_nonhydro_timestep_variants = functools.partial(
+        solve_nonhydro.time_step,
+        diagnostic_state_nh=diagnostic_state_nh,
+        prognostic_states=prognostic_states,
+        prep_adv=prep_adv,
+        second_order_divdamp_factor=second_order_divdamp_factor,
+        dtime=dtime,
+        ndyn_substeps_var=ndyn_substeps,
+        at_initial_timestep=at_initial_timestep,
+        lprep_adv=lprep_adv,
+    )
+
     benchmark(
-        run_nonhydro_substeps,
-        solve_nonhydro,
-        diagnostic_state_nh,
-        prognostic_states,
-        prep_adv,
-        second_order_divdamp_factor,
-        dtime,
-        ndyn_substeps,
-        at_initial_timestep,
-        lprep_adv,
+        solve_nonhydro_timestep_variants,
+        at_first_substep=at_first_substep,
+        at_last_substep=at_last_substep,
     )
