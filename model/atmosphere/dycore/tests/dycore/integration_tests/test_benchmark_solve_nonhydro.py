@@ -75,8 +75,7 @@ def run_nonhydro_substeps(
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-@pytest.mark.datatest
-def test_solve_nonhydro_benchmark(
+def test_benchmark_solve_nonhydro(
     benchmark_grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
