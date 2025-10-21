@@ -135,11 +135,11 @@ def add_origin(xp: ModuleType, table: NDArray) -> NDArray:
     return xp.column_stack((xp.arange(table.shape[0], dtype=xp.int32), table))
 
 
-def get_nproma(tables: Iterable[NDArray]) -> int:
-    tables = list(tables)
-    nproma = tables[0].shape[0]
-    if not all(table.shape[0] == nproma for table in tables):
-        raise ValueError("All connectivity tables must have the same number of rows (nproma).")
+def get_nproma(arrays: Iterable[NDArray]) -> int:
+    arrays = list(arrays)
+    nproma = arrays[0].shape[0]
+    if not all(array.shape[0] == nproma for array in arrays):
+        raise ValueError("All arrays must have the same number of rows (nproma).")
     return nproma
 
 
@@ -249,6 +249,12 @@ def construct_icon_grid(
     )
 
 
+def _pad_array_to_nproma(array: np.ndarray, nproma: int, pad_value: int) -> np.ndarray:
+    if len(array.shape) != 1:
+        raise ValueError("Implemented only 1D arrays.")
+    return np.pad(array, (0, nproma - array.shape[0]), constant_values=pad_value)
+
+
 def construct_decomposition(
     c_glb_index: np.ndarray,
     e_glb_index: np.ndarray,
@@ -259,19 +265,17 @@ def construct_decomposition(
     num_cells: int,
     num_edges: int,
     num_vertices: int,
-    num_levels: int,
     comm_id: int,
 ) -> tuple[
     definitions.ProcessProperties, definitions.DecompositionInfo, definitions.ExchangeRuntime
 ]:
-    log.debug("Offsetting Fortran connectivitity arrays by 1")
-    c_glb_index = adjust_fortran_indices(c_glb_index)
-    e_glb_index = adjust_fortran_indices(e_glb_index)
-    v_glb_index = adjust_fortran_indices(v_glb_index)
-
-    c_owner_mask = c_owner_mask[:num_cells]
-    e_owner_mask = e_owner_mask[:num_edges]
-    v_owner_mask = v_owner_mask[:num_vertices]
+    # We pad the full global index arrays to nproma size to make ghex work with the nrpoma sized fields.
+    # The fill value is chosen such that these entries are not part of any halo (max int32 value).
+    nproma = get_nproma([c_owner_mask, e_owner_mask, v_owner_mask])
+    pad_value = np.iinfo(c_glb_index.dtype).max
+    c_glb_index = _pad_array_to_nproma(adjust_fortran_indices(c_glb_index), nproma, pad_value)
+    e_glb_index = _pad_array_to_nproma(adjust_fortran_indices(e_glb_index), nproma, pad_value)
+    v_glb_index = _pad_array_to_nproma(adjust_fortran_indices(v_glb_index), nproma, pad_value)
 
     decomposition_info = (
         definitions.DecompositionInfo(
