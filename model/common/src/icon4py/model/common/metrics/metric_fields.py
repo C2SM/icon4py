@@ -539,7 +539,7 @@ def compute_exner_exfac(
 @gtx.program
 def compute_wgtfac_e(
     wgtfac_c: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     wgtfac_e: fa.EdgeKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -697,7 +697,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_pressure_gradient_downward_extrapolation_mask_distance(
     z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     topography: fa.CellField[wpfloat],
     e_owner_mask: fa.EdgeField[bool],
     flat_idx_max: fa.EdgeField[gtx.int32],
