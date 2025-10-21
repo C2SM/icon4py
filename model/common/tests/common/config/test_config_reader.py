@@ -5,7 +5,7 @@ from typing import Optional
 
 import pytest
 
-from icon4py.model.atmosphere.diffusion import config_reader
+from icon4py.model.common.config import config_reader
 import omegaconf as oc
 
 
