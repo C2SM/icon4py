@@ -67,7 +67,6 @@ def test_run_solve_nonhydro_single_step(
         f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
     )
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels} "
         f"local cells = {decomposition_info.global_index(dims.CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
         f"local edges = {decomposition_info.global_index(dims.EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
         f"local vertices = {decomposition_info.global_index(dims.VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
@@ -177,6 +176,11 @@ def test_run_solve_nonhydro_single_step(
     assert test_utils.dallclose(
         savepoint_nonhydro_exit.rho_new().asnumpy(),
         prognostic_states.next.rho.asnumpy(),
+    )
+
+    assert test_utils.dallclose(
+        savepoint_nonhydro_exit.rho_ic().asnumpy(),
+        diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
     )
 
     assert test_utils.dallclose(
