@@ -1286,7 +1286,7 @@ class SolveNonhydro:
             interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
             fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            second_order_divdamp_factor=second_order_divdamp_scaling_coeff,
+            second_order_divdamp_factor=second_order_divdamp_factor,
         )
 
         log.debug("corrector run velocity advection")
