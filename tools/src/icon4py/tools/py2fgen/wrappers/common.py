@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-import contextlib
 import functools
 import logging
 from collections.abc import Callable, Iterable
@@ -51,43 +50,11 @@ class BackendIntEnum(eve.IntEnum):
     DEFAULT = 0
     DACE = 1
     GTFN = 2
-    _GTFN_CPU = 11
-    _GTFN_GPU = 12
-    _DACE_CPU = 21
-    _DACE_GPU = 22
-
-
-_BACKEND_MAP: dict[BackendIntEnum, gtx_typing.Backend | None] = {
-    BackendIntEnum._GTFN_CPU: model_backends.BACKENDS["gtfn_cpu"],
-    BackendIntEnum._GTFN_GPU: model_backends.BACKENDS["gtfn_gpu"],
-}
-with contextlib.suppress(NotImplementedError):  # dace backends might not be available
-    _BACKEND_MAP |= {
-        BackendIntEnum._DACE_CPU: model_backends.BACKENDS.get("dace_cpu"),
-        BackendIntEnum._DACE_GPU: model_backends.BACKENDS.get("dace_gpu"),
-    }
 
 
 def select_backend(
     selector: BackendIntEnum, on_gpu: bool
 ) -> gtx_typing.Backend | model_backends.BackendDescriptor:
-    if selector in (
-        BackendIntEnum._GTFN_CPU,
-        BackendIntEnum._GTFN_GPU,
-        BackendIntEnum._DACE_CPU,
-        BackendIntEnum._DACE_GPU,
-    ):
-        # Concrete non-customizable backends.
-        # TODO(havogt): consider removing
-        if on_gpu and selector in (BackendIntEnum._DACE_CPU, BackendIntEnum._GTFN_CPU):
-            raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=True")
-        if not on_gpu and selector in (BackendIntEnum._DACE_GPU, BackendIntEnum._GTFN_GPU):
-            raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=False")
-
-        backend = _BACKEND_MAP.get(selector)
-        assert backend is not None
-        return backend
-
     backend_descriptor: model_backends.BackendDescriptor = {}
     backend_descriptor["device"] = model_backends.GPU if on_gpu else model_backends.CPU
     if selector == BackendIntEnum.DEFAULT:

@@ -19,6 +19,7 @@ BACKENDS: dict[str, gtx_typing.Backend | None] = {
     "embedded": None,
     "roundtrip": gtx.itir_python,
     "gtfn_cpu": gtx.gtfn_cpu,
+    "gtfn_gpu": gtx.gtfn_gpu,
 }
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
@@ -128,6 +129,3 @@ def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gt
         cached=cached,
         otf_workflow__cached_translation=cached,
     )
-
-
-BACKENDS["gtfn_gpu"] = make_custom_gtfn_backend(device=GPU)

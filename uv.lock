@@ -1079,6 +1079,15 @@ wheels = [
 ]
 
 [[package]]
+name = "diskcache"
+version = "5.6.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/21/1c1ffc1a039ddcc459db43cc108658f32c57d271d7289a2794e401d0fdb6/diskcache-5.6.3.tar.gz", hash = "sha256:2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc", size = 67916, upload-time = "2023-08-31T06:12:00.316Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/27/4570e78fc0bf5ea0ca45eb1de3818a23787af9b390c0b0a0033a1b8236f9/diskcache-5.6.3-py3-none-any.whl", hash = "sha256:5e31b2d5fbad117cc363ebaf6b689474db18a1f6438bc82358b024abd4c2ca19", size = 45550, upload-time = "2023-08-31T06:11:58.822Z" },
+]
+
+[[package]]
 name = "distlib"
 version = "0.3.9"
 source = { registry = "https://pypi.org/simple" }
@@ -1419,8 +1428,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.9.post15+bb7826e9"
-source = { git = "https://github.com/GridTools/gt4py?branch=main#bb7826e9b3fdf87a2617798eeb7b239a6f57a37c" }
+version = "1.0.9"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1431,6 +1440,7 @@ dependencies = [
     { name = "cytoolz" },
     { name = "deepdiff" },
     { name = "devtools" },
+    { name = "diskcache" },
     { name = "factory-boy" },
     { name = "filelock" },
     { name = "frozendict" },
@@ -1449,6 +1459,10 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "versioningit" },
     { name = "xxhash" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a9/1c/2577d3b2380dc3e5451432a96de730ce4fdf4b602f63b9b989d0373f9ed4/gt4py-1.0.9.tar.gz", hash = "sha256:8b7d1eab14b1d093d1db943de8d8a759e9b979464892533d31c9ff9d6abc53ca", size = 724634, upload-time = "2025-09-12T12:30:50.244Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/52/bc/e49d6dfc6169ea10dc10ed723b281aa841d7c644297c95a427455317638a/gt4py-1.0.9-py3-none-any.whl", hash = "sha256:1ef45657dd470e77bbe0f5cc9bf3c17493efc0df498ee74897069b2cbf6ac9cb", size = 925459, upload-time = "2025-09-12T12:30:48.731Z" },
 ]
 
 [package.optional-dependencies]
@@ -1791,7 +1805,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", specifier = "==1.0.9" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1808,7 +1822,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", specifier = "==1.0.9" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1825,7 +1839,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", specifier = "==1.0.9" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1842,7 +1856,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", specifier = "==1.0.9" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1859,7 +1873,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", specifier = "==1.0.9" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1929,10 +1943,10 @@ requires-dist = [
     { name = "dace", marker = "extra == 'dace'", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_09_25" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=main" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=main" },
-    { name = "gt4py", extras = ["next"], marker = "extra == 'dace'", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", specifier = "==1.0.9" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", extras = ["next"], marker = "extra == 'dace'" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["dace", "distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1968,7 +1982,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", specifier = "==1.0.9" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1996,7 +2010,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", specifier = "==1.0.9" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2042,9 +2056,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=main" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=main" },
+    { name = "gt4py", specifier = "==1.0.9" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
