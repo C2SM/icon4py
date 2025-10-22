@@ -53,7 +53,7 @@ def _get_metrics_factory(
     topography = topography_savepoint.topo_c()
 
     if not factory:
-        geometry = gridtest_utils.get_grid_geometry(backend, experiment, exchange=exchange)
+        geometry = gridtest_utils.get_grid_geometry(backend, experiment)
         (
             lowest_layer_thickness,
             model_top_height,

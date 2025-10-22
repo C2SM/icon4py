@@ -32,6 +32,7 @@ from icon4py.model.testing import (
     data_handling as data,
     datatest_utils as dt_utils,
     definitions,
+    definitions as test_defs,
     locking,
 )
 
@@ -605,7 +606,10 @@ def top_height_limit_for_maximal_layer_thickness() -> float:
 
 @pytest.fixture
 def parallel_geometry_grid(
-    grid_savepoint, backend, decomposition_info, processor_props
+    grid_savepoint: serialbox.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+    decomposition_info: decomposition.DecompositionInfo,
+    processor_props: decomposition.ProcessProperties,
 ) -> Generator[geometry.GridGeometry, Any, None]:
     grid = grid_savepoint.construct_icon_grid(backend)
     coordinates = grid_savepoint.coordinates()
@@ -637,7 +641,11 @@ def parallel_geometry_grid(
 
 @pytest.fixture
 def parallel_interpolation(
-    grid_savepoint, backend, decomposition_info, processor_props, parallel_geometry_grid
+    grid_savepoint: serialbox.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+    decomposition_info: decomposition.DecompositionInfo,
+    processor_props: decomposition.ProcessProperties,
+    parallel_geometry_grid: geometry.GridGeometry,
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory, Any, None]:
     geometry_source = parallel_geometry_grid
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
@@ -654,14 +662,14 @@ def parallel_interpolation(
 
 @pytest.fixture
 def parallel_metrics(
-    backend,
-    grid_savepoint,
-    topography_savepoint,
-    experiment,
-    decomposition_info,
-    processor_props,
-    parallel_geometry_grid,
-    parallel_interpolation,
+    backend: gtx_typing.Backend,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: test_defs.Experiment,
+    decomposition_info: decomposition.DecompositionInfo,
+    processor_props: decomposition.ProcessProperties,
+    parallel_geometry_grid: geometry.GridGeometry,
+    parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
 ) -> Generator[metrics_factory.MetricsFieldsFactory, Any, None]:
     geometry_source = parallel_geometry_grid
     interpolation_field_source = parallel_interpolation

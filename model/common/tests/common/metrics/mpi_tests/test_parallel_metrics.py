@@ -14,10 +14,10 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import geometry, horizontal as h_grid
+from icon4py.model.common.interpolation import interpolation_factory
+from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
-from model.common.src.icon4py.model.common.grid import geometry
-from model.common.src.icon4py.model.common.interpolation import interpolation_factory
 
 from ...fixtures import (
     backend,
@@ -72,7 +72,7 @@ def test_distributed_metrics_attrs(
     decomposition_info: decomposition.DecompositionInfo,
     parallel_geometry_grid: geometry.GridGeometry,
     parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
-    parallel_metrics,
+    parallel_metrics: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
 ) -> None:
