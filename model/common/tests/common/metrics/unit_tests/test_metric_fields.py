@@ -177,7 +177,7 @@ def test_compute_coeff_dwdz(
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),
         1 / metrics_savepoint.inv_ddqz_z_full().asnumpy(),
-        allocator=backend,  # TODO(havogt): needs fix in GT4Py
+        allocator=backend,
     )
 
     mf.compute_coeff_dwdz.with_backend(backend=backend)(
