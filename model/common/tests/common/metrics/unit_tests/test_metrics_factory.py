@@ -15,7 +15,6 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
-from icon4py.model.common.metrics.metrics_factory import metrics_config
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
@@ -23,6 +22,7 @@ from icon4py.model.testing import (
     serialbox,
     test_utils as test_helpers,
 )
+from icon4py.model.testing.definitions import metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,

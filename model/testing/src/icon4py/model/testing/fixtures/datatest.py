@@ -26,7 +26,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.metrics.metrics_factory import metrics_config
 from icon4py.model.testing import (
     config,
     data_handling as data,
@@ -35,6 +34,7 @@ from icon4py.model.testing import (
     definitions as test_defs,
     locking,
 )
+from icon4py.model.testing.definitions import metrics_config
 
 
 if TYPE_CHECKING:
