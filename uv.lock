@@ -931,8 +931,8 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "1.0.0"
-source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_09_25#8be382c919af1ca742fcfdce2385c0db0b169f79" }
+version = "2025.10.22"
+source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_10_22#71b8b2a37c8c52e82ea3a6fc6de804710ca16343" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1926,7 +1926,7 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_09_25" },
+    { name = "dace", marker = "extra == 'dace'", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_10_22" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
     { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=releasing_v1.0.10" },

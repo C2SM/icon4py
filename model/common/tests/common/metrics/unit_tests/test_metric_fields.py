@@ -378,7 +378,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     c_lin_e = interpolation_savepoint.c_lin_e()
     topography = gtx.as_field(
         (dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend
-    )  # TODO(havogt): needs fix in GT4Py
+    )
 
     k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, allocator=backend)
     edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, allocator=backend)
@@ -416,7 +416,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         (dims.EdgeDim,),
         xp.max(flat_idx.asnumpy(), axis=1),
         dtype=gtx.int32,
-        allocator=backend,  # TODO(havogt): needs fix in GT4Py
+        allocator=backend,
     )
 
     mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
