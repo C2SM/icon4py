@@ -1142,7 +1142,7 @@ class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
         return self._get_field("ddt_vn_phy", dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
     def vn_incr(self):
-        return self._get_field("vn_now", dims.EdgeDim, dims.KDim, vpfloat)
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
     def bdy_divdamp(self):
         return self._get_field("bdy_divdamp", dims.KDim)
