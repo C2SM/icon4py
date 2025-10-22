@@ -317,9 +317,9 @@ name = "test.pypi"
 url = "https://test.pypi.org/simple/"
 
 [tool.uv.sources]
-dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_09_25"}
+dace = {git = "https://github.com/philip-paul-mueller/dace/", branch = "gt4py_icon4py_tasklet_investigation"}
 # ghex = {git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
-# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
+gt4py = {git = "https://github.com/philip-paul-mueller/gt4py", branch = "use_trivial_tasklet_elimination_test_for_icon4_py"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}

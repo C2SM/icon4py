@@ -55,57 +55,37 @@ try:
 
     def make_custom_dace_backend(
         device: DeviceType,
-        auto_optimize: bool = True,
         cached: bool = True,
-        blocking_dim: gtx.Dimension | None = None,
-        blocking_size: int | None = None,
+        auto_optimize: bool = True,
+        async_sdfg_call: bool = True,
+        optimization_args: dict[str, typing.Any] | None = None,
+        use_metrics: bool = True,
         **_,
     ) -> gtx_typing.Backend:
-        """Customize the dace backend with the following configuration.
-
-        async_sdfg_call:
-            In icon4py we want to make an asynchronous SDFG call on gpu to allow
-            overlapping of gpu kernel execution with the Python driver code.
-        blocking_dim:
-            Apply loop-blocking on the vertical dimension `KDim`.
-        make_persistent:
-            Allocate temporary arrays at SDFG initialization, when it is loaded
-            from the binary library. The memory will be persistent across all SDFG
-            calls and released only at application exit.
-        use_memory_pool:
-            Allocate temporaries in memory pool, currently only supported for GPU
-            (based on CUDA memory pool).
-        use_zero_origin:
-            When set to `True`, the SDFG lowering will not generate the start symbol
-            of the field range. Select this option if all fields have zero origin.
-        blocking_dim: The dimension on which loop blocking should be performed.
-            If `None` then disabled. If set the `blocking_size` must also be specified.
-        blocking_size: The loop blocking size, if `blocking_dim` is specified a value
-            must be specified.
+        """Customize the dace backend with the given configuration parameters.
 
         Args:
-            gpu: Specify if the target device is GPU.
-            enable_loop_blocking: Flag to enable loop-blocking transformation on
-                the vertical dimension, default `False`.
+            device: The target device.
+            cached: Cache the lowered SDFG as a JSON file and the compiled programs.
+            auto_optimize: Enable the SDFG auto-optimize pipeline.
+            async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
+                of GPU kernel execution with the Python driver code.
+            optimization_args: A `dict` containing configuration parameters for
+                the SDFG auto-optimize pipeline.
+            use_metrics: Add SDFG instrumentation to collect the metric for stencil
+                compute time.
 
         Returns:
             A dace backend with custom configuration for the target device.
         """
         on_gpu = device == GPU
-        if (blocking_dim is None) ^ (blocking_size is None):
-            raise ValueError(
-                f"Undefined behavior for `blocking_dim`={blocking_dim} `blocking_size`={blocking_size}."
-            )
-
         return make_dace_backend(
-            auto_optimize=auto_optimize,
-            cached=cached,
             gpu=on_gpu,
-            async_sdfg_call=True,
-            blocking_dim=blocking_dim,
-            blocking_size=blocking_size,
-            make_persistent=False,
-            use_memory_pool=on_gpu,
+            cached=cached,
+            auto_optimize=auto_optimize,
+            async_sdfg_call=async_sdfg_call,
+            optimization_args=optimization_args,
+            use_metrics=use_metrics,
             use_zero_origin=True,
         )
 
@@ -118,7 +98,7 @@ try:
 
 except ImportError:
     # dace module not installed, thus the dace backends are not available
-    def make_custom_dace_backend(device: str, **options) -> gtx_typing.Backend:
+    def make_custom_dace_backend(device: DeviceType, **options) -> gtx_typing.Backend:
         raise NotImplementedError("Depends on dace module, which is not installed.")
 
 
