@@ -14,7 +14,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import geometry, horizontal as h_grid
+from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
 
 from ...fixtures import (
@@ -23,18 +25,20 @@ from ...fixtures import (
     decomposition_info,
     download_ser_data,
     experiment,
+    grid_savepoint,
     icon_grid,
     interpolation_savepoint,
+    parallel_geometry_grid,
+    parallel_interpolation,
     processor_props,
     ranked_data_path,
 )
-from ..unit_tests.test_interpolation_factory import _get_interpolation_factory, assert_reordered
+from ..unit_tests.test_interpolation_factory import assert_reordered
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
-    from icon4py.model.common.decomposition import definitions as decomposition
     from icon4py.model.testing import serialbox as sb
 
 vertex_domain = h_grid.domain(dims.VertexDim)
@@ -57,17 +61,19 @@ vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 def test_distributed_interpolation_attrs(
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
+    grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
+    parallel_geometry_grid: geometry.GridGeometry,
+    parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
-    exchange = decomposition.create_exchange(processor_props, decomposition_info)
-    factory = _get_interpolation_factory(backend, experiment, exchange=exchange)
+    intp_factory = parallel_interpolation
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
-    field = factory.get(attrs_name).asnumpy()
+    field = intp_factory.get(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, rtol=5e-9)
 
 
@@ -85,16 +91,17 @@ def test_distributed_interpolation_attrs(
 def test_distributed_interpolation_attrs_reordered(
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
+    grid_savepoint: sb.IconGridSavepoint,
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
+    parallel_interpolation,
     attrs_name: str,
     intrp_name: str,
     lb_domain: typing.Any,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
-    exchange = decomposition.create_exchange(processor_props, decomposition_info)
-    factory = _get_interpolation_factory(backend, experiment, exchange=exchange)
+    factory = parallel_interpolation
     lb = factory.grid.start_index(lb_domain) if not isinstance(lb_domain, int) else lb_domain
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()

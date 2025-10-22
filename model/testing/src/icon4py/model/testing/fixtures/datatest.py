@@ -8,7 +8,8 @@
 from __future__ import annotations
 
 import pkgutil
-from typing import TYPE_CHECKING
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next.typing as gtx_typing
 import pytest
@@ -16,7 +17,16 @@ import pytest
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends
 from icon4py.model.common.constants import RayleighType
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.grid import (
+    base as base_grid,
+    geometry,
+    geometry_attributes as attrs,
+    gridfile,
+    vertical,
+)
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.common.metrics.metrics_factory import metrics_config
 from icon4py.model.testing import (
     config,
     data_handling as data,
@@ -591,3 +601,107 @@ def rayleigh_type() -> int:
 @pytest.fixture
 def top_height_limit_for_maximal_layer_thickness() -> float:
     return 15000.0
+
+
+@pytest.fixture
+def parallel_geometry_grid(
+    grid_savepoint, backend, decomposition_info, processor_props
+) -> Generator[geometry.GridGeometry, Any, None]:
+    grid = grid_savepoint.construct_icon_grid(backend)
+    coordinates = grid_savepoint.coordinates()
+    extra_fields = {
+        gridfile.GeometryName.CELL_AREA: grid_savepoint.cell_areas(),
+        gridfile.GeometryName.EDGE_LENGTH: grid_savepoint.primal_edge_length(),
+        gridfile.GeometryName.DUAL_EDGE_LENGTH: grid_savepoint.dual_edge_length(),
+        gridfile.GeometryName.EDGE_CELL_DISTANCE: grid_savepoint.edge_cell_length(),
+        gridfile.GeometryName.EDGE_VERTEX_DISTANCE: grid_savepoint.edge_vert_length(),
+        gridfile.GeometryName.DUAL_AREA: grid_savepoint.vertex_dual_area(),
+        gridfile.GeometryName.TANGENT_ORIENTATION: grid_savepoint.tangent_orientation(),
+        gridfile.GeometryName.CELL_NORMAL_ORIENTATION: grid_savepoint.edge_orientation(),
+        gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX: grid_savepoint.vertex_edge_orientation(),
+    }
+
+    exchange = decomposition.create_exchange(processor_props, decomposition_info)
+
+    grid_geometry = geometry.GridGeometry(
+        grid=grid,
+        decomposition_info=decomposition_info,
+        backend=backend,
+        metadata=attrs.attrs,
+        coordinates=coordinates,
+        extra_fields=extra_fields,
+        exchange=exchange,
+    )
+    yield grid_geometry
+
+
+@pytest.fixture
+def parallel_interpolation(
+    grid_savepoint, backend, decomposition_info, processor_props, parallel_geometry_grid
+) -> Generator[interpolation_factory.InterpolationFieldsFactory, Any, None]:
+    geometry_source = parallel_geometry_grid
+    exchange = decomposition.create_exchange(processor_props, decomposition_info)
+    intp_factory = interpolation_factory.InterpolationFieldsFactory(
+        grid=geometry_source.grid,
+        decomposition_info=decomposition_info,
+        geometry_source=geometry_source,
+        backend=backend,
+        metadata=interpolation_attributes.attrs,
+        exchange=exchange,
+    )
+    yield intp_factory
+
+
+@pytest.fixture
+def parallel_metrics(
+    backend,
+    grid_savepoint,
+    topography_savepoint,
+    experiment,
+    decomposition_info,
+    processor_props,
+    parallel_geometry_grid,
+    parallel_interpolation,
+) -> Generator[metrics_factory.MetricsFieldsFactory, Any, None]:
+    geometry_source = parallel_geometry_grid
+    interpolation_field_source = parallel_interpolation
+    exchange = decomposition.create_exchange(processor_props, decomposition_info)
+    topography = topography_savepoint.topo_c()
+    (
+        lowest_layer_thickness,
+        model_top_height,
+        stretch_factor,
+        damping_height,
+        rayleigh_coeff,
+        exner_expol,
+        vwind_offctr,
+        rayleigh_type,
+    ) = metrics_config(experiment)
+
+    vertical_config = vertical.VerticalGridConfig(
+        geometry_source.grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_grid = vertical.VerticalGrid(
+        vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
+    )
+    factory = metrics_factory.MetricsFieldsFactory(
+        grid=geometry_source.grid,
+        vertical_grid=vertical_grid,
+        decomposition_info=decomposition_info,
+        geometry_source=geometry_source,
+        topography=topography,
+        interpolation_source=interpolation_field_source,
+        backend=backend,
+        metadata=metrics_attributes.attrs,
+        rayleigh_type=rayleigh_type,
+        rayleigh_coeff=rayleigh_coeff,
+        exner_expol=exner_expol,
+        vwind_offctr=vwind_offctr,
+        exchange=exchange,
+    )
+
+    yield factory

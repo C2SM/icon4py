@@ -15,6 +15,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
+from icon4py.model.common.metrics.metrics_factory import metrics_config
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
@@ -37,41 +38,6 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 metrics_factories: dict[str, metrics_factory.MetricsFieldsFactory] = {}
-
-
-def metrics_config(experiment: definitions.Experiment) -> tuple:
-    rayleigh_coeff = 5.0
-    lowest_layer_thickness = 50.0
-    exner_expol = 0.333
-    vwind_offctr = 0.2
-    rayleigh_type = 2
-    model_top_height = 23500.0
-    stretch_factor = 1.0
-    damping_height = 45000.0
-    match experiment:
-        case definitions.Experiments.MCH_CH_R04B09:
-            lowest_layer_thickness = 20.0
-            model_top_height = 23000.0
-            stretch_factor = 0.65
-            damping_height = 12500.0
-        case definitions.Experiments.EXCLAIM_APE:
-            model_top_height = 75000.0
-            stretch_factor = 0.9
-            damping_height = 50000.0
-            rayleigh_coeff = 0.1
-            exner_expol = 0.3333333333333
-            vwind_offctr = 0.15
-
-    return (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-    )
 
 
 def _get_metrics_factory(

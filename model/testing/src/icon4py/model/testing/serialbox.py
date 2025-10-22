@@ -280,10 +280,13 @@ class IconGridSavepoint(IconSavepoint):
                 return self.verts_vertex_lon()
             case _:
                 raise ValueError
+
     def coordinates(self):
-        return {dims.CellDim:{"lat":self.cell_center_lat(), "lon":self.cell_center_lon()},
-                dims.EdgeDim:{"lat":self.edges_center_lat(), "lon":self.edges_center_lon()},
-                dims.VertexDim:{"lat":self.verts_vertex_lat(), "lon":self.verts_vertex_lon()}}
+        return {
+            dims.CellDim: {"lat": self.cell_center_lat(), "lon": self.cell_center_lon()},
+            dims.EdgeDim: {"lat": self.edges_center_lat(), "lon": self.edges_center_lon()},
+            dims.VertexDim: {"lat": self.verts_vertex_lat(), "lon": self.verts_vertex_lon()},
+        }
 
     def cell_center_lat(self):
         return self._get_field("cell_center_lat", dims.CellDim)
@@ -527,6 +530,11 @@ class IconGridSavepoint(IconSavepoint):
             global_properties=self.global_grid_params,
             start_index=start_index,
             end_index=end_index,
+            refinement_control={
+                dims.CellDim: self.refin_ctrl(dims.CellDim),
+                dims.EdgeDim: self.refin_ctrl(dims.EdgeDim),
+                dims.VertexDim: self.refin_ctrl(dims.VertexDim),
+            },
         )
 
     def construct_edge_geometry(self) -> grid_states.EdgeParams:

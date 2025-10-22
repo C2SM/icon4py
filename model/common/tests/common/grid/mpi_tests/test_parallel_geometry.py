@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry_attributes as attrs, geometry, gridfile
+from icon4py.model.common.grid import geometry, geometry_attributes as attrs, gridfile
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
 
 from ...fixtures import (
@@ -24,16 +24,14 @@ from ...fixtures import (
     experiment,
     grid_savepoint,
     icon_grid,
+    parallel_geometry_grid,
     processor_props,
     ranked_data_path,
 )
 
 
 if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
     from icon4py.model.testing import serialbox as sb
-
 
 
 @pytest.mark.datatest
@@ -53,34 +51,17 @@ if TYPE_CHECKING:
     ],
 )
 def test_distributed_geometry_attrs(
-    backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
+    parallel_geometry_grid: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    grid = grid_savepoint.construct_icon_grid(backend)
-    coordinates = grid_savepoint.coordinates()
-    extra_fields = {gridfile.GeometryName.CELL_AREA: grid_savepoint.cell_areas(), gridfile.GeometryName.EDGE_LENGTH:grid_savepoint.primal_edge_length(),
-                    gridfile.GeometryName.DUAL_EDGE_LENGTH:grid_savepoint.dual_edge_length(),
-                    gridfile.GeometryName.EDGE_CELL_DISTANCE: grid_savepoint.edge_cell_length(),
-                    gridfile.GeometryName.EDGE_VERTEX_DISTANCE: grid_savepoint.edge_vert_length(),
-                    gridfile.GeometryName.DUAL_AREA: grid_savepoint.vertex_dual_area(),
-                    gridfile.GeometryName.TANGENT_ORIENTATION:grid_savepoint.tangent_orientation(),
-                    gridfile.GeometryName.CELL_NORMAL_ORIENTATION: grid_savepoint.edge_orientation(),
-                    gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX: grid_savepoint.vertex_edge_orientation()
-                    }
-
-
-    exchange = decomposition.create_exchange(processor_props, decomposition_info)
-
-    grid_geometry = geometry.GridGeometry(grid = grid, decomposition_info=decomposition_info, backend=backend,
-                                          metadata =attrs.attrs, coordinates=coordinates, extra_fields=extra_fields,
-                                          exchange=exchange)
+    grid_geometry = parallel_geometry_grid
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = grid_geometry.get(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, equal_nan=True, atol=1e-13)

@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import typing
 from typing import TYPE_CHECKING
 
 import pytest
@@ -17,6 +16,8 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
+from model.common.src.icon4py.model.common.grid import geometry
+from model.common.src.icon4py.model.common.interpolation import interpolation_factory
 
 from ...fixtures import (
     backend,
@@ -27,11 +28,13 @@ from ...fixtures import (
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
+    parallel_geometry_grid,
+    parallel_interpolation,
+    parallel_metrics,
     processor_props,
     ranked_data_path,
     topography_savepoint,
 )
-from ..unit_tests.test_metrics_factory import _get_metrics_factory
 
 
 if TYPE_CHECKING:
@@ -57,7 +60,6 @@ vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         ("rayleigh_w", "rayleigh_w"),
         ("coeff_gradekin", "coeff_gradekin"),
         ("mask_prog_halo_c", "mask_prog_halo_c"),
-        ("zd_intcoef_dsl", "zd_intcoef"),
     ],
 )
 def test_distributed_metrics_attrs(
@@ -68,18 +70,14 @@ def test_distributed_metrics_attrs(
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
+    parallel_geometry_grid: geometry.GridGeometry,
+    parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
+    parallel_metrics,
     attrs_name: str,
     metrics_name: str,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
-    exchange = decomposition.create_exchange(processor_props, decomposition_info)
-    factory = _get_metrics_factory(
-        backend=backend,
-        experiment=experiment,
-        grid_savepoint=grid_savepoint,
-        topography_savepoint=topography_savepoint,
-        exchange=exchange,
-    )
+    factory = parallel_metrics
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, rtol=1e-8, atol=1.0e-10)

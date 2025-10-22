@@ -78,7 +78,6 @@ def finalize_mpi():
 
 def _get_processor_properties(with_mpi=False, comm_id: CommId = None):
     def _get_current_comm_or_comm_world(comm_id: CommId) -> mpi4py.MPI.Comm:
-        #import mpi4py
         if isinstance(comm_id, int):
             comm = mpi4py.MPI.Comm.f2py(comm_id)
         elif isinstance(comm_id, mpi4py.MPI.Comm):
