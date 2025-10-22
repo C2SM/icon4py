@@ -932,7 +932,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/philip-paul-mueller/dace?branch=__phimuell_dace_icon4py_testing#4f261668a6bcb18b375799bdf1a8f08e50677ef4" }
+source = { git = "https://github.com/philip-paul-mueller/dace?branch=__phimuell_dace_icon4py_testing#d3f09e47b2d7e1c6292e96879b86b5835b135052" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
