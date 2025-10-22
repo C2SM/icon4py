@@ -14,7 +14,7 @@ import pytest
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import vertical as v_grid
@@ -24,7 +24,6 @@ from icon4py.model.driver import (
     icon4py_configuration,
     icon4py_driver,
     initialization_utils as driver_init,
-    serialbox_helpers as driver_sb,
 )
 from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
@@ -137,11 +136,26 @@ def test_run_timeloop_single_step(
 
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    grg = interpolation_savepoint.geofac_grg()
 
-    diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
-        interpolation_savepoint
+    diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=interpolation_savepoint.geofac_div(),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=grg[0],
+        geofac_grg_y=grg[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-    diffusion_metric_state = driver_sb.construct_metric_state_for_diffusion(metrics_savepoint)
+    diffusion_metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+    )
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -245,8 +259,11 @@ def test_run_timeloop_single_step(
         backend=backend,
     )
 
-    diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
-        timeloop_diffusion_savepoint_init,
+    diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=timeloop_diffusion_savepoint_init.hdef_ic(),
+        div_ic=timeloop_diffusion_savepoint_init.div_ic(),
+        dwdx=timeloop_diffusion_savepoint_init.dwdx(),
+        dwdy=timeloop_diffusion_savepoint_init.dwdy(),
     )
 
     prep_adv = dycore_states.PrepAdvection(
