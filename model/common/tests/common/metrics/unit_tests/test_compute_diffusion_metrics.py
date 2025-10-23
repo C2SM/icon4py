@@ -107,7 +107,7 @@ def test_compute_diffusion_mask_and_coeff(
     )
 
     compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),
+        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
@@ -193,7 +193,7 @@ def test_compute_diffusion_intcoef_and_vertoffset(
     )
 
     compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),
+        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
