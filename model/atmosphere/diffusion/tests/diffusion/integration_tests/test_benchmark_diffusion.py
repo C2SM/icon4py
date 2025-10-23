@@ -44,6 +44,9 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.benchmark_only
 def test_diffusion_benchmark(
     benchmark_grid: definitions.GridDescription,
+    geometry_field_source: grid_geometry.GridGeometry,
+    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
+    metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
@@ -74,19 +77,6 @@ def test_diffusion_benchmark(
     )
 
     mesh = grid_manager.grid
-    coordinates = grid_manager.coordinates
-    geometry_input_fields = grid_manager.geometry_fields
-
-    decomposition_info = construct_decomposition_info(mesh, backend)
-
-    geometry_field_source = grid_geometry.GridGeometry(
-        grid=mesh,
-        decomposition_info=decomposition_info,
-        backend=backend,
-        coordinates=coordinates,
-        extra_fields=geometry_input_fields,
-        metadata=geometry_meta.attrs,
-    )
 
     cell_geometry = grid_states.CellParams(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
@@ -122,12 +112,6 @@ def test_diffusion_benchmark(
         dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
     )
 
-    topo_c = jablonowski_williamson_topography(
-        cell_lat=cell_geometry.cell_center_lat.ndarray,
-        u0=35.0,
-        backend=backend,
-    )
-
     vertical_config = v_grid.VerticalGridConfig(
         mesh.num_levels,
         lowest_layer_thickness=50,
@@ -143,28 +127,6 @@ def test_diffusion_benchmark(
         vct_b=vct_b,
     )
 
-    interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        grid=mesh,
-        decomposition_info=decomposition_info,
-        geometry_source=geometry_field_source,
-        backend=backend,
-        metadata=interpolation_attributes.attrs,
-    )
-
-    metrics_field_source = metrics_factory.MetricsFieldsFactory(
-        grid=mesh,
-        vertical_grid=vertical_grid,
-        decomposition_info=decomposition_info,
-        geometry_source=geometry_field_source,
-        topography=gtx.as_field((dims.CellDim,), data=topo_c),
-        interpolation_source=interpolation_field_source,
-        backend=backend,
-        metadata=metrics_attributes.attrs,
-        rayleigh_type=RayleighType.KLEMP,
-        rayleigh_coeff=5.0,
-        exner_expol=0.333,
-        vwind_offctr=0.2,
-    )
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),

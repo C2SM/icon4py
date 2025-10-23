@@ -45,19 +45,11 @@ from ..fixtures import *  # noqa: F403
 
 
 @pytest.fixture(scope="module")
-def grid_manager(
-    benchmark_grid: definitions.GridDescription,
-    backend: gtx_typing.Backend | None,
-) -> gm.GridManager:
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
-    )
-    return grid_manager
-
-
-@pytest.fixture(scope="module")
 def solve_nonhydro(
     grid_manager: gm.GridManager,
+    geometry_field_source: grid_geometry.GridGeometry,
+    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
+    metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend | None,
 ) -> solve_nh.SolveNonhydro:
     mesh = grid_manager.grid
@@ -72,19 +64,7 @@ def solve_nonhydro(
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
-    coordinates = grid_manager.coordinates
-    geometry_input_fields = grid_manager.geometry_fields
-
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
-
-    geometry_field_source = grid_geometry.GridGeometry(
-        grid=mesh,
-        decomposition_info=decomposition_info,
-        backend=backend,
-        coordinates=coordinates,
-        extra_fields=geometry_input_fields,
-        metadata=geometry_meta.attrs,
-    )
 
     vertical_config = v_grid.VerticalGridConfig(
         mesh.num_levels,
@@ -133,34 +113,6 @@ def solve_nonhydro(
         primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
     )
 
-    topo_c = topology.jablonowski_williamson_topography(
-        cell_lat=cell_geometry.cell_center_lat.ndarray,
-        u0=35.0,
-        backend=backend,
-    )
-
-    interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        grid=mesh,
-        decomposition_info=decomposition_info,
-        geometry_source=geometry_field_source,
-        backend=backend,
-        metadata=interpolation_attributes.attrs,
-    )
-
-    metrics_field_source = metrics_factory.MetricsFieldsFactory(
-        grid=mesh,
-        vertical_grid=vertical_grid,
-        decomposition_info=decomposition_info,
-        geometry_source=geometry_field_source,
-        topography=gtx.as_field((dims.CellDim,), data=topo_c),  # type: ignore[arg-type]  # NDArrayObject is not exported from gt4py
-        interpolation_source=interpolation_field_source,
-        backend=backend,
-        metadata=metrics_attributes.attrs,
-        rayleigh_type=RayleighType.KLEMP,
-        rayleigh_coeff=5.0,
-        exner_expol=0.333,
-        vwind_offctr=0.2,
-    )
 
     interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
