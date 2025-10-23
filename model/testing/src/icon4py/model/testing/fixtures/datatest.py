@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pkgutil
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import gt4py.next.typing as gtx_typing
 import pytest
@@ -610,7 +610,7 @@ def parallel_geometry_grid(
     backend: gtx_typing.Backend,
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
-) -> Generator[geometry.GridGeometry, Any, None]:
+) -> Generator[geometry.GridGeometry]:
     grid = grid_savepoint.construct_icon_grid(backend)
     coordinates = grid_savepoint.coordinates()
     extra_fields = {
@@ -646,7 +646,7 @@ def parallel_interpolation(
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
     parallel_geometry_grid: geometry.GridGeometry,
-) -> Generator[interpolation_factory.InterpolationFieldsFactory, Any, None]:
+) -> Generator[interpolation_factory.InterpolationFieldsFactory]:
     geometry_source = parallel_geometry_grid
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
     intp_factory = interpolation_factory.InterpolationFieldsFactory(
@@ -670,7 +670,7 @@ def parallel_metrics(
     processor_props: decomposition.ProcessProperties,
     parallel_geometry_grid: geometry.GridGeometry,
     parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
-) -> Generator[metrics_factory.MetricsFieldsFactory, Any, None]:
+) -> Generator[metrics_factory.MetricsFieldsFactory]:
     geometry_source = parallel_geometry_grid
     interpolation_field_source = parallel_interpolation
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
@@ -685,7 +685,6 @@ def parallel_metrics(
         vwind_offctr,
         rayleigh_type,
     ) = metrics_config(experiment)
-
     vertical_config = vertical.VerticalGridConfig(
         geometry_source.grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,

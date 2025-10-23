@@ -199,16 +199,16 @@ class VerticalGrid:
         return self.config.num_levels
 
     def index(self, domain: Domain) -> gtx.int32:
-        match str(domain.marker):
-            case "Zone.TOP":
+        match domain.marker:
+            case Zone.TOP:
                 index = 0
-            case "Zone.BOTTOM":
+            case Zone.BOTTOM:
                 index = self._bottom_level(domain)
-            case "Zone.MOIST":
+            case Zone.MOIST:
                 index = self._start_index_for_moist_physics
-            case "Zone.FLAT":
+            case Zone.FLAT:
                 index = self._end_index_of_flat_layer
-            case "Zone.DAMPING":
+            case Zone.DAMPING:
                 index = self._end_index_of_damping_layer
             case _:
                 raise exceptions.IconGridError(f"not a valid vertical zone: {domain.marker}")
