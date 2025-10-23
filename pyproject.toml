@@ -317,7 +317,8 @@ name = "test.pypi"
 url = "https://test.pypi.org/simple/"
 
 [tool.uv.sources]
-dace = {git = "https://github.com/philip-paul-mueller/dace", branch = "__phimuell_dace_icon4py_testing"}
+# dace = {git = "https://github.com/philip-paul-mueller/dace", branch = "__phimuell_dace_icon4py_testing"}
+dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_10_23"}
 # ghex = {git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
 gt4py = {git = "https://github.com/philip-paul-mueller/gt4py", branch = "__phimuell_gt4py_icon4py_testing"}
 # gt4py = {index = "test.pypi"}
