@@ -60,11 +60,11 @@ def test_compute_diffusion_mask_and_coeff(
     if experiment == definitions.Experiments.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")
 
-    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
+    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, allocator=backend)
 
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
@@ -107,7 +107,7 @@ def test_compute_diffusion_mask_and_coeff(
     )
 
     compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
@@ -146,11 +146,11 @@ def test_compute_diffusion_intcoef_and_vertoffset(
     if experiment == definitions.Experiments.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")
 
-    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
+    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, allocator=backend)
 
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
@@ -193,7 +193,7 @@ def test_compute_diffusion_intcoef_and_vertoffset(
     )
 
     compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,

@@ -10,7 +10,8 @@ import datetime
 import functools
 import logging
 
-from gt4py.next import backend as gtx_backend, metrics as gtx_metrics
+import gt4py.next.typing as gtx_typing
+from gt4py.next import metrics as gtx_metrics
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
@@ -25,7 +26,7 @@ n_substeps_reduced = 2
 
 @dataclasses.dataclass(frozen=True)
 class Icon4pyRunConfig:
-    backend: gtx_backend.Backend
+    backend: gtx_typing.Backend
     dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
@@ -58,7 +59,7 @@ class Icon4pyConfig:
 
 def read_config(
     experiment_type: driver_init.ExperimentType,
-    backend: gtx_backend.Backend,
+    backend: gtx_typing.Backend,
 ) -> Icon4pyConfig:
     def _mch_ch_r04b09_vertical_config():
         return v_grid.VerticalGridConfig(

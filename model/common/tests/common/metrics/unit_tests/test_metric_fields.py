@@ -14,7 +14,7 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import horizontal
+from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils as testing_helpers
@@ -57,7 +57,7 @@ def test_compute_ddq_z_half(
     nlevp1 = icon_grid.num_levels + 1
     z_mc = metrics_savepoint.z_mc()
     ddqz_z_half = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
 
     mf.compute_ddqz_z_half.with_backend(backend=backend)(
@@ -84,8 +84,8 @@ def test_compute_ddqz_z_full_and_inverse(
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
-    ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    inv_ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    inv_ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
 
     mf.compute_ddqz_z_full_and_inverse.with_backend(backend)(
         z_ifc=z_ifc,
@@ -110,7 +110,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
     backend: gtx_typing.Backend,
 ) -> None:
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
-    scaling_factor_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.KDim, backend=backend)
+    scaling_factor_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.KDim, allocator=backend)
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     divdamp_type = 3
@@ -143,7 +143,7 @@ def test_compute_rayleigh_w(
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
     rayleigh_w_full = data_alloc.zero_field(
-        icon_grid, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     rayleigh_type = 2
     rayleigh_coeff = 0.1 if experiment == definitions.Experiments.EXCLAIM_APE else 5.0
@@ -172,12 +172,12 @@ def test_compute_coeff_dwdz(
     coeff1_dwdz_ref = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz_ref = metrics_savepoint.coeff2_dwdz()
 
-    coeff1_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    coeff1_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),
         1 / metrics_savepoint.inv_ddqz_z_full().asnumpy(),
-        allocator=backend,  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+        allocator=backend,
     )
 
     mf.compute_coeff_dwdz.with_backend(backend=backend)(
@@ -202,7 +202,7 @@ def test_compute_exner_w_explicit_weight_parameter(
     icon_grid: base_grid.Grid, metrics_savepoint: sb.MetricSavepoint, backend: gtx_typing.Backend
 ) -> None:
     exner_w_explicit_weight_parameter_full = data_alloc.zero_field(
-        icon_grid, dims.CellDim, backend=backend
+        icon_grid, dims.CellDim, allocator=backend
     )
     vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
     exner_w_implicit_weight_parameter = metrics_savepoint.vwind_impl_wgt()
@@ -232,7 +232,7 @@ def test_compute_exner_exfac(
 ) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     exner_expol = 0.333 if experiment == definitions.Experiments.MCH_CH_R04B09 else 0.3333333333333
-    exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     mf.compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
@@ -265,10 +265,10 @@ def test_compute_exner_w_implicit_weight_parameter(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     z_ddxn_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     z_ddxt_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
@@ -342,7 +342,7 @@ def test_compute_wgtfac_e(
     backend: gtx_typing.Backend,
 ) -> None:
     wgtfac_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     wgtfac_e_ref = metrics_savepoint.wgtfac_e()
     mf.compute_wgtfac_e.with_backend(backend)(
@@ -376,18 +376,18 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     z_mc = metrics_savepoint.z_mc()
     z_ifc = metrics_savepoint.z_ifc()
     c_lin_e = interpolation_savepoint.c_lin_e()
-    topography = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+    topography = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
 
-    k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend)
-    edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, backend=backend)
+    k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, allocator=backend)
+    edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, allocator=backend)
 
     flat_idx = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=backend
     )
     edge_mask = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, allocator=backend
     )
-    ex_distance = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
+    ex_distance = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
@@ -414,7 +414,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         (dims.EdgeDim,),
         xp.max(flat_idx.asnumpy(), axis=1),
         dtype=gtx.int32,
-        allocator=backend,  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+        allocator=backend,
     )
 
     mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
@@ -451,7 +451,7 @@ def test_compute_mask_prog_halo_c(
     backend: gtx_typing.Backend,
 ) -> None:
     mask_prog_halo_c_full = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dtype=bool, backend=backend
+        icon_grid, dims.CellDim, dtype=bool, allocator=backend
     )
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
@@ -476,7 +476,7 @@ def test_compute_bdy_halo_c(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    bdy_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, backend=backend)
+    bdy_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, allocator=backend)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
@@ -501,15 +501,17 @@ def test_compute_horizontal_mask_for_3d_divdamp(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    horizontal_mask_for_3d_divdamp = data_alloc.zero_field(icon_grid, dims.EdgeDim, backend=backend)
+    horizontal_mask_for_3d_divdamp = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, allocator=backend
+    )
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
     mf.compute_horizontal_mask_for_3d_divdamp.with_backend(backend)(
         e_refin_ctrl=e_refin_ctrl,
         horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,
-        grf_nudge_start_e=gtx.int32(horizontal._GRF_NUDGEZONE_START_EDGES),
-        grf_nudgezone_width=gtx.int32(horizontal._GRF_NUDGEZONE_WIDTH),
+        grf_nudge_start_e=gtx.int32(refinement.get_nudging_refinement_value(dims.EdgeDim)),
+        grf_nudgezone_width=gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),
         horizontal_start=horizontal_start,
         horizontal_end=icon_grid.num_edges,
         offset_provider={},
@@ -527,8 +529,8 @@ def test_compute_theta_exner_ref_mc(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    exner_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    theta_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    exner_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    theta_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     t0sl_bg = constants.SEA_LEVEL_TEMPERATURE
     del_t_bg = constants.DELTA_TEMPERATURE
     h_scal_bg = constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
