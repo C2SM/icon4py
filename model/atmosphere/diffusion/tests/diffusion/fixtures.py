@@ -10,7 +10,13 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.testing import serialbox as sb
-from icon4py.model.testing.fixtures.benchmark import benchmark_grid
+from icon4py.model.testing.fixtures.benchmark import (
+    benchmark_grid,
+    grid_manager,
+    geometry_field_source,
+    interpolation_field_source,
+    metrics_field_source,
+)
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     damping_height,
