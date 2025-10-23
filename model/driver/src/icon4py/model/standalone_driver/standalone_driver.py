@@ -8,11 +8,11 @@
 
 import datetime
 import logging
+import os
 import pathlib
 from collections.abc import Callable
 from typing import Annotated, NamedTuple
 
-import gt4py.next.typing as gtx_typing
 import typer
 from devtools import Timer
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
@@ -20,7 +20,7 @@ from gt4py.next import config as gtx_config, metrics as gtx_metrics
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import model_backends, type_alias as ta
+from icon4py.model.common import type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -28,7 +28,7 @@ from icon4py.model.common.states import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
-    driver_configuration as driver_config,
+    driver_configuration as driver_configure,
     initialization_utils as driver_init,
 )
 
@@ -43,11 +43,11 @@ class Driver:
 
     def __init__(
         self,
-        config: driver_config.Icon4pyRunConfig,
+        config: driver_config.DriverConfig,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
     ):
-        self.config: driver_config.Icon4pyRunConfig = config
+        self.config: driver_config.DriverConfig = config
         self.log = logging.getLogger("Driver")
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
@@ -409,12 +409,10 @@ class DriverParams(NamedTuple):
 
 
 def initialize(
-    file_path: pathlib.Path,
-    props: decomposition.ProcessProperties,
-    serialization_type: driver_init.SerializationType,
-    experiment_type: driver_init.ExperimentType,
-    grid_file: pathlib.Path,
-    backend: gtx_typing.Backend,
+    run_path: pathlib.Path,
+    grid_file_path: pathlib.Path,
+    log_level: str,
+    backend: str,
 ) -> tuple[Driver, DriverStates, DriverParams]:
     """
     Initialize the driver run.
@@ -439,9 +437,17 @@ def initialize(
         DriverStates: Initial states for the driver run.
         DriverParams: Parameters for the driver run.
     """
+    parallel_props = decomposition.get_processor_properties(
+        decomposition.get_runtype(with_mpi=False)
+    )
+    # TODO (Chia Rui): experiment name should be in driver config
+    driver_init.configure_logging(run_path, log_level, "Jablownoski-Williamson", parallel_props)
+
     log.info("initialize parallel runtime")
-    log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(experiment_type=experiment_type, backend=backend)
+    log.info("reading configuration: experiment Jablownoski-Williamson")
+    driver_config, vertical_config, diffusion_config, solve_nh_config = (
+        driver_configure.read_config(backend=backend)
+    )
 
     decomp_info = driver_init.read_decomp_info(
         path=file_path,
@@ -575,9 +581,6 @@ def icon4py_driver(
             default=driver_init.LOGGING_LEVELS.keys()[0],
         ),
     ],
-    enable_statistics_output: Annotated[
-        bool, typer.Option(help="Enable model statistics output at every time step.", default=False)
-    ],
     enable_profiling: Annotated[bool, typer.Option(help="Enable profiling.", default=False)],
 ) -> None:
     """
@@ -600,26 +603,19 @@ def icon4py_driver(
 
     2. run time loop
     """
-
-    if icon4py_driver_backend not in model_backends.BACKENDS:
-        raise ValueError(
-            f"Invalid driver backend: {icon4py_driver_backend}. \n"
-            f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS])}"
-        )
-    backend = model_backends.BACKENDS[icon4py_driver_backend]
-
-    parallel_props = decomposition.get_processor_properties(
-        decomposition.get_runtype(with_mpi=False)
+    # checking is run path exists, if not, make a new directory.
+    filter_run_path = (
+        pathlib.Path(run_path).absolute() if run_path else pathlib.Path("./").absolute()
     )
-    driver_init.configure_logging(run_path, log_level, parallel_props)
+    os.mkdir(filter_run_path, exist_ok=True)
 
     time_loop: Driver
     ds: DriverStates
-    dp: DriverParams
-    time_loop, ds, dp = initialize(
-        pathlib.Path(grid_file_path),
-        parallel_props,
-        backend,
+    driver, ds = initialize(
+        filter_run_path,
+        pathlib.Path(grid_file_path).absolute(),
+        log_level,
+        icon4py_driver_backend,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
     log.info(f"input args: grid_path={grid_file_path}")

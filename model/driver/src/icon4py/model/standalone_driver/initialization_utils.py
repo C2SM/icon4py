@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import enum
+import datetime
 import functools
 import logging
 import pathlib
@@ -37,30 +37,13 @@ from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
 from icon4py.model.testing import serialbox as sb
 
 
-LOGGING_LEVELS: dict[str, int] = {
+log = logging.getLogger(__name__)
+
+_LOGGING_LEVELS: dict[str, int] = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
     "critical": logging.CRITICAL,
 }
-SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
-INITIALIZATION_ERROR_MSG = "The requested experiment type is not implemented."
-
-SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
-log = logging.getLogger(__name__)
-
-
-class SerializationType(str, enum.Enum):
-    SB = "serialbox"
-    NC = "netcdf"
-
-
-class ExperimentType(str, enum.Enum):
-    JABW = "jabw"
-    """initial condition of Jablonowski-Williamson test"""
-    GAUSS3D = "gauss3d_torus"
-    """initial condition of Gauss 3D test"""
-    ANY = "any"
-    """any test with initial conditions read from serialized data (remember to set correct SIMULATION_START_DATE)"""
 
 
 def read_icon_grid(
@@ -531,9 +514,9 @@ def read_static_fields(
 
 
 def configure_logging(
-    run_path: str,
+    run_path: pathlib.Path,
     experiment_name: str,
-    enable_output: bool = True,
+    logging_level: str,
     processor_procs: decomposition.ProcessProperties = None,
 ) -> None:
     """
@@ -548,20 +531,16 @@ def configure_logging(
         processor_procs: ProcessProperties
 
     """
-    if not enable_output:
-        return
-    run_dir = (
-        pathlib.Path(run_path).absolute() if run_path else pathlib.Path(__file__).absolute().parent
-    )
-    run_dir.mkdir(exist_ok=True)
-    import datetime
+    if logging_level not in _LOGGING_LEVELS:
+        raise ValueError(
+            f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([k for k in _LOGGING_LEVELS])}"
+        )
 
-    logfile = run_dir.joinpath(f"log_{experiment_name}_{datetime.now(datetime.timezone.utc)}")
+    logfile = run_path.joinpath(f"log_{experiment_name}_{datetime.now(datetime.timezone.utc)}")
     logfile.touch(exist_ok=False)
 
-    logging_level = logging.DEBUG
     logging.basicConfig(
-        level=logging_level,
+        level=_LOGGING_LEVELS[logging_level],
         format="%(asctime)s %(filename)-20s (%(lineno)-4d) : %(funcName)-20s:  %(levelname)-8s %(message)s",
         filemode="w",
         filename=logfile,
@@ -573,7 +552,7 @@ def configure_logging(
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging_level)
+    console_handler.setLevel(_LOGGING_LEVELS[logging_level])
     logging.getLogger("").addHandler(console_handler)
 
 
