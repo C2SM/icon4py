@@ -275,7 +275,7 @@ def construct_decomposition(
 
     decomposition_info = (
         definitions.DecompositionInfo(
-            klevels=num_levels, num_cells=num_cells, num_edges=num_edges, num_vertices=num_vertices
+            num_cells=num_cells, num_edges=num_edges, num_vertices=num_vertices
         )
         .with_dimension(dims.CellDim, c_glb_index, c_owner_mask)
         .with_dimension(dims.EdgeDim, e_glb_index, e_owner_mask)

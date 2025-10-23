@@ -48,6 +48,8 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "apply_diffusion_to_vn": None,
     "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence": None,
     "apply_divergence_damping_and_update_vn": None,
+    "boundary_halo_cleanup": None,
+    "compute_dwdz_and_boundary_update_rho_theta_w": None,
     "calculate_diagnostic_quantities_for_turbulence": None,
     "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools": None,
     "calculate_nabla2_and_smag_coefficients_for_vn": None,
@@ -90,7 +92,9 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "compute_horizontal_velocity_quantities_and_fluxes": None,
     "compute_perturbed_quantities_and_interpolation": None,
     "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn": None,
+    "interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration": None,
     "update_mass_flux_weighted": None,
+    "update_mass_flux_weighted_first": None,
     "vertically_implicit_solver_at_corrector_step": (
         "vertically_implicit_solver_at_corrector_step",
         {
@@ -200,6 +204,61 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
                     raise NotImplementedError("Cannot handle stencil variant in unmatched data.")
                 if len(metric_data) >= gt4py_unmatched_ncalls_threshold:
                     unmatched_data[stencil] = metric_data
+
+    assert "update_mass_flux_weighted" in data
+    update_mass_flux_weighted_original = data.pop("update_mass_flux_weighted")
+    data["update_mass_flux_weighted"] = [
+        update_mass_flux_weighted_original[i]
+        for i in range(0, len(update_mass_flux_weighted_original))
+        if i % 5 != 0
+    ]  # take all BUT every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep ("update_mass_flux_weighted_first")
+
+    # Merge some stencils into 'update_mass_flux_weighted_first'
+    assert "update_mass_flux_weighted_first" not in data
+    data["update_mass_flux_weighted_first"] = [  # name matches icon-exclaim timer
+        a + b
+        for a, b in zip(
+            update_mass_flux_weighted_original[
+                ::5
+            ],  # take ONLY every fifth measurement which corresponds to the first substep of the 5 substeps per ICON timestep
+            unmatched_data.pop("init_cell_kdim_field_with_zero_wp"),
+            strict=True,
+        )
+    ]
+
+    # Merge 'compute_hydrostatic_correction_term' stencil into 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn'
+    assert "compute_hydrostatic_correction_term" in unmatched_data
+    data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"] = [
+        a + b
+        for a, b in zip(
+            data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"],
+            unmatched_data.pop("compute_hydrostatic_correction_term"),
+            strict=True,
+        )
+    ]
+
+    # Merge some stencils into 'boundary_halo_cleanup'
+    assert "boundary_halo_cleanup" not in data
+    data["boundary_halo_cleanup"] = [
+        a + b + c
+        for a, b, c in zip(
+            unmatched_data.pop("compute_exner_from_rhotheta"),
+            unmatched_data.pop("compute_theta_and_exner"),
+            unmatched_data.pop("update_theta_v"),
+            strict=True,
+        )
+    ]
+
+    # Merge some stencils into 'compute_dwdz_and_boundary_update_rho_theta_w'
+    assert "compute_dwdz_and_boundary_update_rho_theta_w" not in data
+    data["compute_dwdz_and_boundary_update_rho_theta_w"] = [  # name matches icon-exclaim timer
+        a + b
+        for a, b in zip(
+            unmatched_data.pop("stencils_61_62"),
+            unmatched_data.pop("compute_dwdz_for_divergence_damping"),
+            strict=True,
+        )
+    ]
 
     diff = set(fortran_to_icon4py.keys()) - set(data.keys())
     if len(diff) != 0:
