@@ -14,6 +14,7 @@ import pathlib
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Final, Literal
 
+import icon4py.model.atmosphere.dycore.config
 from icon4py.model.testing import config
 
 
@@ -226,18 +227,18 @@ def construct_diffusion_config(
         )
 
 
-def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydrostaticConfig:
+def construct_nonhydrostatic_config(experiment: Experiment) -> icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig:
     from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 
     if experiment == Experiments.MCH_CH_R04B09:
-        return solve_nh.NonHydrostaticConfig(
+        return icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig(
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
             iau_wgt_dyn=1.0,
             fourth_order_divdamp_factor=0.004,
             max_nudging_coefficient=0.375,
         )
     elif experiment == Experiments.EXCLAIM_APE:
-        return solve_nh.NonHydrostaticConfig(
+        return icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig(
             rayleigh_coeff=0.1,
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
         )

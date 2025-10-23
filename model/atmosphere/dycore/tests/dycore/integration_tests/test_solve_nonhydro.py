@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import pytest
 
+import icon4py.model.atmosphere.dycore.config
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.stencils import (
@@ -47,7 +48,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    config = solve_nh.NonHydrostaticConfig()
+    config = icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig()
     second_order_divdamp_factor = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
@@ -990,7 +991,7 @@ def test_run_solve_nonhydro_multi_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
-    config = solve_nh.NonHydrostaticConfig()
+    config = icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig()
     params = solve_nh.NonHydrostaticParams(config)
 
     assert params.advection_implicit_weight_parameter == savepoint_nonhydro_init.wgt_nnew_vel()

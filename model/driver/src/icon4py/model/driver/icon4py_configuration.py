@@ -13,6 +13,7 @@ import logging
 import gt4py.next.typing as gtx_typing
 from gt4py.next import metrics as gtx_metrics
 
+import icon4py.model.atmosphere.dycore.config
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common.grid import vertical as v_grid
@@ -54,7 +55,7 @@ class Icon4pyConfig:
     run_config: Icon4pyRunConfig
     vertical_grid_config: v_grid.VerticalGridConfig
     diffusion_config: diffusion.DiffusionConfig
-    solve_nonhydro_config: solve_nh.NonHydrostaticConfig
+    solve_nonhydro_config: icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig
 
 
 def read_config(
@@ -90,7 +91,7 @@ def read_config(
         )
 
     def _mch_ch_r04b09_nonhydro_config():
-        return solve_nh.NonHydrostaticConfig(
+        return icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig(
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
             iau_wgt_dyn=1.0,
             fourth_order_divdamp_factor=0.004,
@@ -120,7 +121,7 @@ def read_config(
         )
 
     def _jabw_nonhydro_config():
-        return solve_nh.NonHydrostaticConfig(
+        return icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig(
             # original igradp_method is 2
             # original divdamp_order is 4
             fourth_order_divdamp_factor=0.0025,
@@ -171,7 +172,7 @@ def read_config(
         )
 
     def _gauss3d_nonhydro_config():
-        return solve_nh.NonHydrostaticConfig(
+        return icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig(
             igradp_method=3,
             fourth_order_divdamp_factor=0.0025,
         )

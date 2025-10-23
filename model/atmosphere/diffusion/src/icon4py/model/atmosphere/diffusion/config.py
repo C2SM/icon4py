@@ -4,6 +4,7 @@ from typing import TypeVar, Generic
 
 from icon4py.model.atmosphere.diffusion.diffusion import TurbulenceShearForcingType, DiffusionType
 from icon4py.model.common import constants
+from icon4py.model.common.config import reader as config_reader
 
 
 @dataclasses.dataclass
@@ -155,4 +156,7 @@ class DiffusionConfig:
 
 
 
+
+def init_config() -> config_reader.ConfigReader:
+    return config_reader.ConfigReader(DiffusionConfig())
 

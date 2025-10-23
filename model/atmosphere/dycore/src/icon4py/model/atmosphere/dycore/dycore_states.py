@@ -41,8 +41,8 @@ class DivergenceDampingType(enum.IntEnum):
     #: combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
     COMBINED = 32
 
-
-class DivergenceDampingOrder(FrozenNamespace[int]):
+# TODO (@halungge): FrozenNamespace[int]
+class DivergenceDampingOrder(enum.Enum):
     #: 2nd order divergence damping
     SECOND_ORDER = 2
     #: 4th order divergence damping
@@ -50,8 +50,8 @@ class DivergenceDampingOrder(FrozenNamespace[int]):
     #: combined 2nd and 4th orders divergence damping and enhanced vertical wind off - centering during initial spinup phase
     COMBINED = 24
 
-
-class HorizontalPressureDiscretizationType(FrozenNamespace[int]):
+# TODO (@halungge): FrozenNamespace[int]
+class HorizontalPressureDiscretizationType(enum.Enum):
     """Parameter called igradp_method in ICON namelist."""
 
     #: conventional discretization with metric correction term
@@ -65,8 +65,8 @@ class HorizontalPressureDiscretizationType(FrozenNamespace[int]):
     #: Same as igradp_method_polynomial, but hydrostatic approximation for downward extrapolation over steep slopes
     POLYNOMIAL_HYDRO = 5
 
-
-class RhoThetaAdvectionType(FrozenNamespace[int]):
+# TODO (@halungge): FrozenNamespace[int]
+class RhoThetaAdvectionType(enum.Enum):
     """Parameter called iadv_rhotheta in ICON namelist."""
 
     #: simple 2nd order upwind-biased scheme

@@ -488,7 +488,7 @@ def test_factory_horizontal_mask_for_3d_divdamp(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
+    assert test_helpers.dallclose(field_refserialbox.asnumpy(), field.asnumpy())
 
 
 @pytest.mark.level("integration")

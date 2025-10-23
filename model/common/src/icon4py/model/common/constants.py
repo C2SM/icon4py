@@ -8,6 +8,7 @@
 
 import sys
 from typing import Final
+import enum
 
 from gt4py.eve import utils as eve_utils
 
@@ -152,8 +153,9 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     p0ref = REFERENCE_PRESSURE
     eps = DBL_EPS
 
-
-class RayleighType(eve_utils.FrozenNamespace[int]):
+#TODO (halungge): move! this is not a constant
+# TODO (@halungge): FrozenNamespace[int]
+class RayleighType(enum.Enum):
     #: classical Rayleigh damping, which makes use of a reference state.
     CLASSIC = 1
     #: Klemp (2008) type Rayleigh damping

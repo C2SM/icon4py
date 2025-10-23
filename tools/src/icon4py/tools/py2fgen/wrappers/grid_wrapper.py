@@ -179,7 +179,7 @@ def grid_init(
             exchange_runtime,
         ) = wrapper_common.construct_decomposition(
             c_glb_index,
-            e_glb_index,
+            -,
             v_glb_index,
             c_owner_mask,
             e_owner_mask,
