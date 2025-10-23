@@ -155,14 +155,15 @@ def _init_nabla2_factor_in_upper_damping_zone(
     heights_nrd_shift: float,
     heights_1: float,
 ) -> fa.KField[float]:
-    diff_multfac_n2w = (
-        1.0 / 12.0 * ((physical_heights - heights_nrd_shift) / (heights_1 - heights_nrd_shift)) ** 4
-    )
-    return concat_where(
+    height_sliced = concat_where(
         ((1 + nshift) <= dims.KDim) & (dims.KDim < (nshift + end_index_of_damping_layer + 1)),
-        diff_multfac_n2w,
+        physical_heights,
         0.0,
     )
+    diff_multfac_n2w = (
+        1.0 / 12.0 * ((height_sliced - heights_nrd_shift) / (heights_1 - heights_nrd_shift)) ** 4
+    )
+    return diff_multfac_n2w
 
 
 @gtx.program
@@ -179,13 +180,15 @@ def init_nabla2_factor_in_upper_damping_zone(
     """
     Calculate diff_multfac_n2w.
 
+    numpy version, since gt4py does not allow non-constant indexing into fields
+
     Args
-        physical_heights: vector of physical heights [m] of the height levels
+        physcial_heights: vector of physical heights [m] of the height levels
         k_field: field of k levels
         end_index_of_damping_layer: index of the level where rayleigh damping starts
         nshift: 0
-        heights_nrd_shift: physical_heights at end_index_of_damping_layer + nshift + 1,
-        heights_1: physical_heights at 1st level,
+        heights_nrd_shift: physcial_heights at end_index_of_damping_layer + nshift + 1,
+        heights_1: physcial_heights at 1st level,
         vertical_start: vertical lower bound,
         vertical_end: vertical upper bound,
     """
