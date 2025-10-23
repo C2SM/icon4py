@@ -127,7 +127,6 @@ def test_diffusion_benchmark(
         vct_b=vct_b,
     )
 
-
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
         rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),

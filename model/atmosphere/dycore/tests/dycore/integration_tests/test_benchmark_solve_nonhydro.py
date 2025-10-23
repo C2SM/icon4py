@@ -113,7 +113,6 @@ def solve_nonhydro(
         primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
     )
 
-
     interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
         c_intp=interpolation_field_source.get(interpolation_attributes.CELL_AW_VERTS),

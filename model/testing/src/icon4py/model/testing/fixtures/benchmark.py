@@ -7,19 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from importlib.metadata import metadata
+from collections.abc import Generator
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.testing import definitions
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.testing import grid_utils
+from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -27,7 +23,10 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.initialization import jablonowski_williamson_topography as topology
-from icon4py.model.common.constants import RayleighType
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.testing import definitions, grid_utils
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
@@ -35,13 +34,14 @@ if TYPE_CHECKING:
 
 @pytest.fixture(
     scope="session",
-    params=[definitions.Grids.R02B04_GLOBAL, definitions.Grids.MCH_CH_R04B09_DSL],
+    params=[definitions.Grids.R19_B07_MCH_LOCAL, definitions.Grids.R02B04_GLOBAL],
 )
 def benchmark_grid(request: pytest.FixtureRequest) -> definitions.GridDescription:
     """Default parametrization for benchmark testing.
 
     The default parametrization is often overwritten for specific tests."""
     return request.param
+
 
 @pytest.fixture(scope="session")
 def grid_manager(
@@ -54,22 +54,20 @@ def grid_manager(
     return grid_manager
 
 
-
 @pytest.fixture(
     scope="session",
 )
 def geometry_field_source(
     grid_manager: gm.GridManager,
     backend: gtx_typing.Backend | None,
-) -> grid_geometry.GridGeometry:
-
+) -> Generator[grid_geometry.GridGeometry, None, None]:
     mesh = grid_manager.grid
 
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
 
     geometry_field_source = grid_geometry.GridGeometry(
-        grid= mesh,
-        decomposition_info = decomposition_info,
+        grid=mesh,
+        decomposition_info=decomposition_info,
         backend=backend,
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
@@ -79,7 +77,6 @@ def geometry_field_source(
     del geometry_field_source
 
 
-
 @pytest.fixture(
     scope="session",
 )
@@ -87,22 +84,20 @@ def interpolation_field_source(
     grid_manager: gm.GridManager,
     geometry_field_source: grid_geometry.GridGeometry,
     backend: gtx_typing.Backend | None,
-) -> interpolation_factory.InterpolationFieldsFactory:
-
+) -> Generator[interpolation_factory.InterpolationFieldsFactory, None, None]:
     mesh = grid_manager.grid
 
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        grid= mesh,
-        decomposition_info = decomposition_info,
-        geometry_source = geometry_field_source,
+        grid=mesh,
+        decomposition_info=decomposition_info,
+        geometry_source=geometry_field_source,
         backend=backend,
-        metadata= interpolation_attributes.attrs,
+        metadata=interpolation_attributes.attrs,
     )
     yield interpolation_field_source
     del interpolation_field_source
-
 
 
 @pytest.fixture(
@@ -113,8 +108,7 @@ def metrics_field_source(
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     backend: gtx_typing.Backend | None,
-) -> metrics_factory.MetricsFieldsFactory:
-
+) -> Generator[metrics_factory.MetricsFieldsFactory, None, None]:
     mesh = grid_manager.grid
 
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
