@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
 import numpy as np
 from gt4py import next as gtx
+from gt4py.eve import utils
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
@@ -55,6 +56,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     import mpi4py.MPI
+    from gt4py.next.embedded import nd_array_field
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -128,6 +130,15 @@ class MPICommProcessProperties(definitions.ProcessProperties):
         return self.comm.Get_size()
 
 
+def _field_buffer_key(
+    field: nd_array_field.NdArrayField,
+):  # TODO(havogt): make NDArrayField public?
+    return field.array_byte_bounds()
+
+
+hashable_by_field_buffer = utils.hashable_by(_field_buffer_key)
+
+
 class GHexMultiNodeExchange:
     max_num_of_fields_to_communicate_dace: Final[int] = (
         10  # maximum number of fields to perform halo exchange on (DaCe-related)
@@ -156,6 +167,8 @@ class GHexMultiNodeExchange:
         self.num_of_halo_tasklets = (
             0  # Some SDFG variables need to be defined only once (per fused SDFG)
         )
+
+        self._applied_patterns_cache: dict = {}
 
         log.info("communication object initialized")
 
@@ -217,6 +230,23 @@ class GHexMultiNodeExchange:
         else:
             raise ValueError(f"Unknown dimension {dim}")
 
+    def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field):
+        # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
+        key = hashable_by_field_buffer(f)
+        try:
+            return self._applied_patterns_cache[key]
+        except KeyError:
+            assert dim in f.domain.dims
+            array = self._slice_field_based_on_dim(f, dim)
+            self._applied_patterns_cache[key] = self._patterns[dim](
+                make_field_descriptor(
+                    self._domain_descriptors[dim],
+                    array,
+                    arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
+                )
+            )
+            return self._applied_patterns_cache[key]
+
     def exchange(self, dim: gtx.Dimension, *fields: Sequence[gtx.Field]):
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
@@ -224,26 +254,7 @@ class GHexMultiNodeExchange:
             This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
             the granule context where fields otherwise have length nproma.
         """
-        assert dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-        pattern = self._patterns[dim]
-        assert pattern is not None, f"pattern for {dim.value} not found"
-        domain_descriptor = self._domain_descriptors[dim]
-        assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
-
-        # Slice the fields based on the dimension
-        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
-
-        # Create field descriptors and perform the exchange
-        applied_patterns = [
-            pattern(
-                make_field_descriptor(
-                    domain_descriptor,
-                    f,
-                    arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
-                )
-            )
-            for f in sliced_fields
-        ]
+        applied_patterns = [self._get_applied_pattern(f) for f in fields]
         if hasattr(fields[0].array_ns, "cuda"):
             # TODO(havogt): this is a workaround as ghex does not know that it should synchronize
             # the GPU before the exchange. This is necessary to ensure that all data is ready for the exchange.
