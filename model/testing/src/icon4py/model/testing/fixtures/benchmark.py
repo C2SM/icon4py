@@ -74,7 +74,6 @@ def geometry_field_source(
         metadata=geometry_meta.attrs,
     )
     yield geometry_field_source
-    del geometry_field_source
 
 
 @pytest.fixture(
@@ -97,7 +96,6 @@ def interpolation_field_source(
         metadata=interpolation_attributes.attrs,
     )
     yield interpolation_field_source
-    del interpolation_field_source
 
 
 @pytest.fixture(
@@ -155,4 +153,3 @@ def metrics_field_source(
         vwind_offctr=0.2,
     )
     yield metrics_field_source
-    del metrics_field_source
