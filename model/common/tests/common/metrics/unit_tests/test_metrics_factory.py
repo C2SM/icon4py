@@ -10,10 +10,12 @@ from __future__ import annotations
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import geometry, vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
+from icon4py.model.common.states.utils import single_node_default
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
@@ -21,6 +23,7 @@ from icon4py.model.testing import (
     serialbox,
     test_utils as test_helpers,
 )
+from icon4py.model.testing.definitions import metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -38,46 +41,12 @@ from icon4py.model.testing.fixtures.datatest import (
 metrics_factories: dict[str, metrics_factory.MetricsFieldsFactory] = {}
 
 
-def metrics_config(experiment: definitions.Experiment) -> tuple:
-    rayleigh_coeff = 5.0
-    lowest_layer_thickness = 50.0
-    exner_expol = 0.333
-    vwind_offctr = 0.2
-    rayleigh_type = 2
-    model_top_height = 23500.0
-    stretch_factor = 1.0
-    damping_height = 45000.0
-    match experiment:
-        case definitions.Experiments.MCH_CH_R04B09:
-            lowest_layer_thickness = 20.0
-            model_top_height = 23000.0
-            stretch_factor = 0.65
-            damping_height = 12500.0
-        case definitions.Experiments.EXCLAIM_APE:
-            model_top_height = 75000.0
-            stretch_factor = 0.9
-            damping_height = 50000.0
-            rayleigh_coeff = 0.1
-            exner_expol = 0.3333333333333
-            vwind_offctr = 0.15
-
-    return (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-    )
-
-
 def _get_metrics_factory(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
+    exchange: decomposition.Exchange = single_node_default,
 ) -> metrics_factory.MetricsFieldsFactory:
     registry_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = metrics_factories.get(registry_name)
@@ -113,6 +82,7 @@ def _get_metrics_factory(
             geometry_source=geometry,
             backend=backend,
             metadata=interpolation_attributes.attrs,
+            exchange=exchange,
         )
         factory = metrics_factory.MetricsFieldsFactory(
             grid=geometry.grid,
@@ -127,6 +97,7 @@ def _get_metrics_factory(
             rayleigh_coeff=rayleigh_coeff,
             exner_expol=exner_expol,
             vwind_offctr=vwind_offctr,
+            exchange=exchange,
         )
         metrics_factories[registry_name] = factory
     return factory
@@ -510,7 +481,7 @@ def test_factory_zdiff_gradp(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.ZDIFF_GRADP)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-5)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-10)
 
 
 @pytest.mark.level("integration")

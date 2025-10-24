@@ -7,20 +7,23 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import typing
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common.grid import geometry, horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
     rbf_interpolation as rbf,
 )
 from icon4py.model.common.states import factory
+from icon4py.model.common.states.utils import single_node_default
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
@@ -50,7 +53,7 @@ C2E_SIZE = 3
 E2C_SIZE = 2
 
 
-interpolation_factories = {}
+interpolation_factories: dict = {}
 
 cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
@@ -58,7 +61,9 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 
 def _get_interpolation_factory(
-    backend: gtx_typing.Backend | None, experiment: definitions.Experiment
+    backend: gtx_typing.Backend | None,
+    experiment: definitions.Experiment,
+    exchange: decomposition.ExchangeRuntime = single_node_default,
 ) -> interpolation_factory.InterpolationFieldsFactory:
     registry_key = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
@@ -71,6 +76,7 @@ def _get_interpolation_factory(
             geometry_source=geometry,
             backend=backend,
             metadata=attrs.attrs,
+            exchange=exchange,
         )
         interpolation_factories[registry_key] = factory
     return factory
@@ -81,7 +87,7 @@ def test_factory_raises_error_on_unknown_field(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     decomposition_info: decomposition.DecompositionInfo,
-):
+) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
@@ -92,7 +98,7 @@ def test_factory_raises_error_on_unknown_field(
     )
     with pytest.raises(ValueError) as error:
         interpolation_source.get("foo", factory.RetrievalType.METADATA)
-        assert "unknown field" in error.value
+        assert "unknown field" in str(error.value)
 
 
 @pytest.mark.level("integration")
@@ -109,7 +115,7 @@ def test_get_c_lin_e(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.c_lin_e()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -132,7 +138,7 @@ def test_get_geofac_div(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.geofac_div()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -157,7 +163,7 @@ def test_get_geofac_grdiv(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.geofac_grdiv()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -167,7 +173,7 @@ def test_get_geofac_grdiv(
     assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=rtol)
 
 
-def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs):
+def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs: typing.Any) -> None:
     assert val.shape == ref.shape, f"arrays do not have the same shape: {val.shape} vs {ref.shape}"
     s_val = np.argsort(val)
     s_ref = np.argsort(ref)
@@ -191,7 +197,7 @@ def test_get_geofac_rot(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.geofac_rot()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -217,7 +223,7 @@ def test_get_geofac_n2s(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.geofac_n2s()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -232,7 +238,7 @@ def test_get_geofac_grg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-):
+) -> None:
     field_ref = interpolation_savepoint.geofac_grg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -270,7 +276,7 @@ def test_get_mass_conserving_cell_average_weight(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.c_bln_avg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -298,7 +304,7 @@ def test_e_flx_avg(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.e_flx_avg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -322,7 +328,7 @@ def test_e_bln_c_s(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.e_bln_c_s()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -345,7 +351,7 @@ def test_pos_on_tplane_e_x_y(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref_1 = interpolation_savepoint.pos_on_tplane_e_x()
     field_ref_2 = interpolation_savepoint.pos_on_tplane_e_y()
     factory = _get_interpolation_factory(backend, experiment)
@@ -369,7 +375,7 @@ def test_cells_aw_verts(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.c_intp()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -393,7 +399,7 @@ def test_nudgecoeffs(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.nudgecoeff_e()
     factory = _get_interpolation_factory(backend, experiment)
     field = factory.get(attrs.NUDGECOEFFS_E)
@@ -415,7 +421,7 @@ def test_rbf_interpolation_coeffs_cell(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     atol: float,
-):
+) -> None:
     field_ref_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
     field_ref_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
     factory = _get_interpolation_factory(backend, experiment)
@@ -448,7 +454,7 @@ def test_rbf_interpolation_coeffs_edge(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     atol: float,
-):
+) -> None:
     field_ref_e = interpolation_savepoint.rbf_vec_coeff_e()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -476,7 +482,7 @@ def test_rbf_interpolation_coeffs_vertex(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     atol: float,
-):
+) -> None:
     field_ref_v1 = interpolation_savepoint.rbf_vec_coeff_v1()
     field_ref_v2 = interpolation_savepoint.rbf_vec_coeff_v2()
     factory = _get_interpolation_factory(backend, experiment)

@@ -209,11 +209,11 @@ class GHexMultiNodeExchange:
         Slices the field based on the dimension passed in.
         """
         if dim == dims.VertexDim:
-            return field.ndarray[: self._decomposition_info.num_vertices, :]
+            return field.ndarray[: self._decomposition_info.num_vertices]
         elif dim == dims.EdgeDim:
-            return field.ndarray[: self._decomposition_info.num_edges, :]
+            return field.ndarray[: self._decomposition_info.num_edges]
         elif dim == dims.CellDim:
-            return field.ndarray[: self._decomposition_info.num_cells, :]
+            return field.ndarray[: self._decomposition_info.num_cells]
         else:
             raise ValueError(f"Unknown dimension {dim}")
 
