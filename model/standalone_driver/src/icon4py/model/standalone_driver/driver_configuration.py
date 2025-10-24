@@ -25,6 +25,7 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass(frozen=True)
 class DriverConfig:
+    experiment_name: str
     backend_name: dataclasses.InitVar[str]
     backend: gtx_typing.Backend = dataclasses.field(init=False)
     grid_path: Path

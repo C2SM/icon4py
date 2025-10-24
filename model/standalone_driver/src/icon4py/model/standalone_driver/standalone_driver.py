@@ -36,6 +36,18 @@ from icon4py.model.standalone_driver import (
 log = logging.getLogger(__name__)
 
 
+class _DriverFormatter(logging.Formatter):
+    def __init__(self, style: str, default_fmt: str, debug_fmt: str):
+        super().__init__(fmt=default_fmt, style=style)
+        self._debug_formatter = logging.Formatter(fmt=debug_fmt, style=style)
+
+    def format(self, record: logging.LogRecord) -> logging.Formatter:
+        if record.levelno == logging.DEBUG:
+            return self._debug_formatter.format(record)
+        else:
+            return super().format(record)
+
+
 class Driver:
     @classmethod
     def name(cls):
@@ -43,18 +55,31 @@ class Driver:
 
     def __init__(
         self,
-        config: driver_config.DriverConfig,
+        config: driver_configure.DriverConfig,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
     ):
-        self.config: driver_config.DriverConfig = config
-        self.log = logging.getLogger("Driver")
+        self.config: driver_configure.DriverConfig = config
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
         self._xp = data_alloc.import_array_ns(self.config.backend)
+        self._log = logging.getLogger(self.name)
 
         self._initialize_timeloop_parameters()
         self._validate_config()
+        self._filter_log()
+
+    def _filter_log(self):
+        file_handler = logging.FileHandler(
+            filename=f"log_{self.config.experiment_name}_statistics_{datetime.now(datetime.timezone.utc)}.txt"
+        )
+        default_log_format = "{message}"
+        debug_log_format = "{asctime} {funcName:<20} : {message}"
+        file_handler.setFormatter(
+            _DriverFormatter(style="{", default_fmt=default_log_format, debug_fmt=debug_log_format)
+        )
+        file_handler.setLevel(logging.DEBUG)
+        self._log.addHandler(file_handler)
 
     def _initialize_timeloop_parameters(self):
         """
@@ -74,7 +99,7 @@ class Driver:
         # current simulation date
         self._simulation_date: datetime.datetime = self.config.start_date
 
-        self._is_first_step_in_simulation: bool = not self.config.restart_mode
+        self._is_first_step_in_simulation: bool = True
 
         self._cfl_watch_mode = False
 
@@ -122,7 +147,7 @@ class Driver:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
-        profiling: driver_config.ProfilingConfig | None = None,
+        profiling: driver_configure.ProfilingConfig | None = None,
     ):
         log.info(
             f"starting time loop for dtime={self._dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
