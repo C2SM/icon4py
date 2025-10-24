@@ -254,7 +254,7 @@ class GHexMultiNodeExchange:
             This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
             the granule context where fields otherwise have length nproma.
         """
-        applied_patterns = [self._get_applied_pattern(f) for f in fields]
+        applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         if hasattr(fields[0].array_ns, "cuda"):
             # TODO(havogt): this is a workaround as ghex does not know that it should synchronize
             # the GPU before the exchange. This is necessary to ensure that all data is ready for the exchange.
