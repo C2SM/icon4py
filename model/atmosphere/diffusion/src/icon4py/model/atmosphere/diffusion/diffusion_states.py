@@ -5,12 +5,22 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 import dataclasses
 import functools
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import icon as icon_grid
 
 
 @dataclasses.dataclass(frozen=True)
@@ -77,3 +87,42 @@ class DiffusionInterpolationState:
     def geofac_n2s_nbh(self) -> gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], float]:
         geofac_nbh_ar = self.geofac_n2s.ndarray[:, 1:]
         return gtx.as_field((dims.CellDim, dims.C2E2CDim), geofac_nbh_ar)
+
+
+def initialize_diffusion_diagnostic_state(
+    grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None
+) -> DiffusionDiagnosticState:
+    return DiffusionDiagnosticState(
+        hdef_ic=data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=backend,
+            dtype=ta.vpfloat,
+        ),
+        div_ic=data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=backend,
+            dtype=ta.vpfloat,
+        ),
+        dwdx=data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=backend,
+            dtype=ta.vpfloat,
+        ),
+        dwdy=data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=backend,
+            dtype=ta.vpfloat,
+        ),
+    )
