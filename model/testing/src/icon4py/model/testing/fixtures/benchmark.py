@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture(
     scope="session",
-    params=[definitions.Grids.R02B04_GLOBAL, definitions.Grids.MCH_CH_R04B09_DSL],
+    params=[definitions.Grids.R02B07_GLOBAL],
 )
 def benchmark_grid(request: pytest.FixtureRequest) -> definitions.GridDescription:
     """Default parametrization for benchmark testing.
