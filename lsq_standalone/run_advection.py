@@ -8,10 +8,10 @@
 
 import numpy
 import pytest
+import functools
 from collections.abc import Callable, Mapping, Sequence
 from gt4py import next as gtx
 from mesh_generator import mesh_generator
-from icon4py.model.common.interpolation.interpolation_fields import compute_geofac_div
 
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.common import dimension as dims
@@ -42,9 +42,20 @@ from model.atmosphere.advection.tests.advection.utils import (
     verify_advection_fields,
 )
 from icon4py.model.common.grid.base import HorizontalGridSize, GridConfig
-from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.grid import icon as icon
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import (
+    geometry,
+    geometry_attributes as geometry_attrs,
+    horizontal as h_grid,
+    icon,
+    refinement,
+    base,
+)
+from icon4py.model.common.interpolation import (
+    interpolation_attributes as attrs,
+    interpolation_fields,
+    rbf_interpolation as rbf,
+)
+from icon4py.model.common.states import factory
 
 # ntracer legend for the serialization data used here in test_advection:
 # ------------------------------------
@@ -246,17 +257,82 @@ mesh = icon.icon_grid(
     global_properties= global_properties,
     refinement_control= None,
 )
-#geofac_div = data_alloc.zero_field(mesh)
 geofac_div = data_alloc.zero_field(mesh, dims.CellDim, dims.C2EDim)
 primal_edge_length = gtx.as_field((dims.EdgeDim,), primal_edge_length)
 edge_orientation = gtx.as_field((dims.CellDim, dims.C2EDim), edge_orientation)
 area = gtx.as_field((dims.CellDim,), area)
-compute_geofac_div(primal_edge_length, edge_orientation, area, out= geofac_div, offset_provider={"C2E": mesh.get_connectivity("C2E")})
+geofac_div = interpolation_fields.compute_geofac_div(primal_edge_length, edge_orientation, area, out= geofac_div, offset_provider={"C2E": mesh.get_connectivity("C2E")})
+_backend = backend
+_xp = data_alloc.import_array_ns(backend)
+characteristic_length = 11.1
+_config = {
+            "divavg_cntrwgt": 0.5,
+            "weighting_factor": 0.0,
+            "max_nudging_coefficient": 0.375,
+            "nudge_efold_width": 2.0,
+            "nudge_zone_width": 10,
+            "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
+            "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
+            "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
+            "rbf_scale_cell": rbf.compute_default_rbf_scale(
+                characteristic_length, rbf.RBFDimension.CELL
+            ),
+            "rbf_scale_edge": rbf.compute_default_rbf_scale(
+                characteristic_length, rbf.RBFDimension.EDGE
+            ),
+            "rbf_scale_vertex": rbf.compute_default_rbf_scale(
+                characteristic_length, rbf.RBFDimension.VERTEX
+            ),
+}
+edge_domain = h_grid.domain(dims.EdgeDim)
+rbf_vec_coeff_e = factory.NumpyFieldsProvider(
+            func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=_xp),
+            fields=(attrs.RBF_VEC_COEFF_E,),
+            domain=(dims.CellDim, dims.E2C2EDim),
+            deps={
+                "edge_lat": geometry_attrs.EDGE_LAT,
+                "edge_lon": geometry_attrs.EDGE_LON,
+                "edge_center_x": geometry_attrs.EDGE_CENTER_X,
+                "edge_center_y": geometry_attrs.EDGE_CENTER_Y,
+                "edge_center_z": geometry_attrs.EDGE_CENTER_Z,
+                "edge_normal_x": geometry_attrs.EDGE_NORMAL_X,
+                "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
+                "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
+                "edge_dual_normal_u": geometry_attrs.EDGE_DUAL_U,
+                "edge_dual_normal_v": geometry_attrs.EDGE_DUAL_V,
+            },
+            connectivities={"rbf_offset": dims.E2C2EDim},
+            params={
+                "rbf_kernel": _config["rbf_kernel_edge"].value,
+                "scale_factor": _config["rbf_scale_edge"],
+#                "horizontal_start": icon.IconGrid.start_index(
+#                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                "horizontal_start": 0,
+            },
+)
+(pos_on_tplane_e_x, pos_on_tplane_e_y) = interpolation_fields.compute_pos_on_tplane_e_x_y(
+    grid_sphere_radius = 1.0,
+    primal_normal_v1 =
+    primal_normal_v2 =
+    dual_normal_v1 =
+    dual_normal_v2 =
+    cells_lon =
+    cells_lat =
+    edges_lon =
+    edges_lat =
+    vertex_lon =
+    vertex_lat =
+    owner_mask =
+    e2c = e2c_table,
+    e2v = e2v_table,
+    e2c2e = e2c2e_table,
+    horizontal_start = 0.
+)
 interpolation_state = advection_states.AdvectionInterpolationState(
-    geofac_div=compute_geofac_div(data_alloc.import_array_ns(primal_edge_length), data_alloc.import_array_ns(edge_orientation), data_alloc.import_array_ns(area), out= geofac_div, offset_provider={"C2E": mesh.get_connectivity("C2E")}),
-    rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
-    pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
-    pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),
+    geofac_div=geofac_div,
+    rbf_vec_coeff_e=rbf_vec_coeff_e,
+    pos_on_tplane_e_1=pos_on_tplane_e_x,
+    pos_on_tplane_e_2=pos_on_tplane_e_y,
 )
 least_squares_state = construct_least_squares_state(interpolation_savepoint, backend=backend)
 metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
