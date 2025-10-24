@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture(
     scope="session",
-    params=[definitions.Grids.R02B07_GLOBAL],
+    params=[definitions.Grids.R02B04_GLOBAL],
 )
 def benchmark_grid(request: pytest.FixtureRequest) -> definitions.GridDescription:
     """Default parametrization for benchmark testing.
@@ -43,24 +43,16 @@ def benchmark_grid(request: pytest.FixtureRequest) -> definitions.GridDescriptio
     return request.param
 
 
-@pytest.fixture(scope="session")
-def grid_manager(
-    benchmark_grid: definitions.GridDescription,
-    backend: gtx_typing.Backend | None,
-) -> gm.GridManager:
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
-    )
-    return grid_manager
-
-
 @pytest.fixture(
     scope="session",
 )
 def geometry_field_source(
-    grid_manager: gm.GridManager,
+    benchmark_grid: definitions.GridDescription,
     backend: gtx_typing.Backend | None,
 ) -> Generator[grid_geometry.GridGeometry, None, None]:
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid=benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
+    )
     mesh = grid_manager.grid
 
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
@@ -75,15 +67,17 @@ def geometry_field_source(
     )
     yield geometry_field_source
 
-
 @pytest.fixture(
     scope="session",
 )
 def interpolation_field_source(
-    grid_manager: gm.GridManager,
+    benchmark_grid: definitions.GridDescription,
     geometry_field_source: grid_geometry.GridGeometry,
     backend: gtx_typing.Backend | None,
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory, None, None]:
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid=benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
+    )
     mesh = grid_manager.grid
 
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
@@ -102,11 +96,14 @@ def interpolation_field_source(
     scope="session",
 )
 def metrics_field_source(
-    grid_manager: gm.GridManager,
+    benchmark_grid: definitions.GridDescription,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     backend: gtx_typing.Backend | None,
 ) -> Generator[metrics_factory.MetricsFieldsFactory, None, None]:
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid=benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
+    )
     mesh = grid_manager.grid
 
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)

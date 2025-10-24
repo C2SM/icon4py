@@ -9,7 +9,6 @@
 from icon4py.model.testing.fixtures.benchmark import (
     benchmark_grid,
     geometry_field_source,
-    grid_manager,
     interpolation_field_source,
     metrics_field_source,
 )

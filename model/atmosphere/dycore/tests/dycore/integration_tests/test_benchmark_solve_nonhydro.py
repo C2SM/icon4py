@@ -46,12 +46,15 @@ from ..fixtures import *  # noqa: F403
 
 @pytest.fixture(scope="module")
 def solve_nonhydro(
-    grid_manager: gm.GridManager,
+    benchmark_grid: definitions.GridDescription,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend | None,
 ) -> solve_nh.SolveNonhydro:
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid=benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
+    )
     mesh = grid_manager.grid
 
     config = solve_nh.NonHydrostaticConfig(
@@ -226,12 +229,15 @@ def solve_nonhydro(
 @pytest.mark.benchmark_only
 def test_benchmark_solve_nonhydro(
     solve_nonhydro: solve_nh.SolveNonhydro,
-    grid_manager: gm.GridManager,
+    benchmark_grid: definitions.GridDescription,
     at_first_substep: bool,
     at_last_substep: bool,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid=benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
+    )
     mesh = grid_manager.grid
 
     dtime = 10.0 if mesh.limited_area else 90.0
