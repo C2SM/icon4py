@@ -194,7 +194,7 @@ config = construct_config(
      v2c_table,
      v2e_table,
      e2c_table,
-     e2c2v_table, 
+     e2c2v_table,
      c2e_table,
      e2c2e0_table,
      e2c2e_table,
@@ -213,7 +213,7 @@ neighbor_tables = {
   dims.C2E2C: c2e2c_table,
   dims.C2E: c2e_table,
   dims.E2C: e2c_table,
-  dims.C2E: v2e_table,
+  dims.V2E: v2e_table,
   dims.E2V: e2v_table,
   dims.V2C: v2c_table,
   dims.C2V: c2v_table,
@@ -224,7 +224,15 @@ gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], float]
 #h_grid_domain = h_grid.Domain(dims.VertexDim, dims.V2CDim)
 h_grid_domain_start = h_grid.Domain(dims.VertexDim, h_grid.Zone.INTERIOR)
 h_grid_domain_end = h_grid.Domain(dims.VertexDim, h_grid.Zone.END)
-grid_config = GridConfig(horizontal_config = 2047, vertical_size= 1)
+grid_config = base.GridConfig(
+            horizontal_config=base.HorizontalGridSize(
+                num_cells=2048,
+                num_vertices=1024,
+                num_edges=3072,
+            ),
+            vertical_size=65,
+        )
+#grid_config = GridConfig(horizontal_config = 2047, vertical_size= 1)
 start_indices= Mapping[h_grid_domain_start, gtx.int32()]
 end_indices= Mapping[h_grid_domain_end, gtx.int32()]
 global_properties = icon.GlobalGridParams()
@@ -238,9 +246,12 @@ mesh = icon.icon_grid(
     global_properties= global_properties,
     refinement_control= None,
 )
-geofac_div = data_alloc.zero_field(mesh)
-#geofac_div = data_alloc.zero_field(mesh, dims.CellDim, dims.C2EDim)
-geofac_div=compute_geofac_div(data_alloc.import_array_ns(primal_edge_length), data_alloc.import_array_ns(edge_orientation), data_alloc.import_array_ns(area), out= geofac_div, offset_provider={"C2E": mesh.get_connectivity("C2E")})
+#geofac_div = data_alloc.zero_field(mesh)
+geofac_div = data_alloc.zero_field(mesh, dims.CellDim, dims.C2EDim)
+primal_edge_length = gtx.as_field((dims.EdgeDim,), primal_edge_length)
+edge_orientation = gtx.as_field((dims.CellDim, dims.C2EDim), edge_orientation)
+area = gtx.as_field((dims.CellDim,), area)
+compute_geofac_div(primal_edge_length, edge_orientation, area, out= geofac_div, offset_provider={"C2E": mesh.get_connectivity("C2E")})
 interpolation_state = advection_states.AdvectionInterpolationState(
     geofac_div=compute_geofac_div(data_alloc.import_array_ns(primal_edge_length), data_alloc.import_array_ns(edge_orientation), data_alloc.import_array_ns(area), out= geofac_div, offset_provider={"C2E": mesh.get_connectivity("C2E")}),
     rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
