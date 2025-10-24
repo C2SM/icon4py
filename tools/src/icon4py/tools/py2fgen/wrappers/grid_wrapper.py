@@ -187,7 +187,6 @@ def grid_init(
             num_cells,
             num_edges,
             num_vertices,
-            vertical_size,
             comm_id,
         )
         wrapper_debug_utils.print_grid_decomp_info(
