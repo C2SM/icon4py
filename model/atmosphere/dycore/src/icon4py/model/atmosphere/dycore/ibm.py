@@ -415,19 +415,20 @@ class ImmersedBoundaryMethodMasks:
 
             log.info(f"Number of masked cells: {xp.sum(full_cell_mask_np)}")
 
+
             c2e = grid.connectivities[dims.C2EDim.value].ndarray
             for k in range(grid.num_levels + 1):
-                half_edge_mask_np[xp.unique(c2e[xp.where(half_cell_mask_np[:, k])[0]]), k] = True
+                half_edge_mask_np[xp.unique(xp.asarray(c2e[xp.where(half_cell_mask_np[:, k])[0]])), k] = True
             full_edge_mask_np = half_edge_mask_np[:, :-1]
 
             c2v = grid.connectivities[dims.C2VDim.value].ndarray
             for k in range(grid.num_levels):
-                full_vertex_mask_np[xp.unique(c2v[xp.where(full_cell_mask_np[:, k])[0]]), k] = True
+                full_vertex_mask_np[xp.unique(xp.asarray(c2v[xp.where(full_cell_mask_np[:, k])[0]])), k] = True
 
             c2e2c = grid.connectivities[dims.C2E2CDim.value].ndarray
             for k in range(grid.num_levels):
                 neigh_full_cell_mask_np[
-                    xp.unique(c2e2c[xp.where(full_cell_mask_np[:, k])[0]]), k
+                    xp.unique(xp.asarray(c2e2c[xp.where(full_cell_mask_np[:, k])[0]])), k
                 ] = True
 
         self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
