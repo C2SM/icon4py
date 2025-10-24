@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import gt4py.next as gtx
 import pytest
 
 
@@ -19,23 +18,24 @@ if TYPE_CHECKING:
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
+    grid_manager as gm,
     vertical as v_grid,
-)
-from icon4py.model.common.initialization.jablonowski_williamson_topography import (
-    jablonowski_williamson_topography,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, grid_utils
-from icon4py.model.testing.grid_utils import construct_decomposition_info
-
-from ..fixtures import *  # noqa: F403
+from icon4py.model.testing.fixtures.benchmark import (
+    benchmark_grid,
+    geometry_field_source,
+    grid_manager,
+    interpolation_field_source,
+    metrics_field_source,
+)
+from icon4py.model.testing.fixtures.datatest import backend
 
 
 @pytest.mark.embedded_remap_error
@@ -43,8 +43,8 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 def test_diffusion_benchmark(
-    benchmark_grid: definitions.GridDescription,
     geometry_field_source: grid_geometry.GridGeometry,
+    grid_manager: gm.GridManager,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend | None,
@@ -71,10 +71,6 @@ def test_diffusion_benchmark(
     )
 
     diffusion_parameters = diffusion.DiffusionParams(config)
-
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        benchmark_grid, num_levels=85, keep_skip_values=True, backend=backend
-    )
 
     mesh = grid_manager.grid
 

@@ -6,12 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.testing.fixtures.benchmark import (
-    benchmark_grid,
-    geometry_field_source,
-    interpolation_field_source,
-    metrics_field_source,
-)
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     damping_height,

@@ -14,7 +14,6 @@ import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.dimension as dims
-import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -34,7 +33,8 @@ if TYPE_CHECKING:
 
 @pytest.fixture(
     scope="session",
-    params=[definitions.Grids.R02B04_GLOBAL],
+    params=[definitions.Grids.R02B04_GLOBAL, definitions.Grids.MCH_CH_R04B09_DSL],
+    ids=lambda r: r.name,
 )
 def benchmark_grid(request: pytest.FixtureRequest) -> definitions.GridDescription:
     """Default parametrization for benchmark testing.
@@ -43,16 +43,26 @@ def benchmark_grid(request: pytest.FixtureRequest) -> definitions.GridDescriptio
     return request.param
 
 
+@pytest.fixture(scope="session")
+def grid_manager(
+    benchmark_grid: definitions.GridDescription,
+    backend: gtx_typing.Backend | None,
+) -> Generator[gm.GridManager, None, None]:
+    grid_file = grid_utils.resolve_full_grid_file_name(benchmark_grid)
+    grid_manager = grid_utils.get_grid_manager(
+        grid_file, num_levels=80, keep_skip_values=True, backend=backend
+    )
+    print(f"deleting GridManager source for {benchmark_grid.name}")
+    yield grid_manager
+
+
 @pytest.fixture(
     scope="session",
 )
 def geometry_field_source(
-    benchmark_grid: definitions.GridDescription,
+    grid_manager: gm.GridManager,
     backend: gtx_typing.Backend | None,
 ) -> Generator[grid_geometry.GridGeometry, None, None]:
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid=benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
-    )
     mesh = grid_manager.grid
 
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
@@ -67,17 +77,15 @@ def geometry_field_source(
     )
     yield geometry_field_source
 
+
 @pytest.fixture(
     scope="session",
 )
 def interpolation_field_source(
-    benchmark_grid: definitions.GridDescription,
+    grid_manager: gm.GridManager,
     geometry_field_source: grid_geometry.GridGeometry,
     backend: gtx_typing.Backend | None,
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory, None, None]:
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid=benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
-    )
     mesh = grid_manager.grid
 
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
@@ -96,14 +104,11 @@ def interpolation_field_source(
     scope="session",
 )
 def metrics_field_source(
-    benchmark_grid: definitions.GridDescription,
+    grid_manager: gm.GridManager,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     backend: gtx_typing.Backend | None,
 ) -> Generator[metrics_factory.MetricsFieldsFactory, None, None]:
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid=benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
-    )
     mesh = grid_manager.grid
 
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
@@ -123,14 +128,8 @@ def metrics_field_source(
         vct_b=vct_b,
     )
 
-    cell_geometry = grid_states.CellParams(
-        cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
-        cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
-        area=geometry_field_source.get(geometry_meta.CELL_AREA),
-    )
-
     topo_c = topology.jablonowski_williamson_topography(
-        cell_lat=cell_geometry.cell_center_lat.ndarray,
+        cell_lat=geometry_field_source.get(geometry_meta.CELL_LAT).ndarray,
         u0=35.0,
         backend=backend,
     )

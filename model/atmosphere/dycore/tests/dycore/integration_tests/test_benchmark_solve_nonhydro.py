@@ -9,14 +9,10 @@
 from __future__ import annotations
 
 import functools
-import logging
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
 import pytest
-
-from icon4py.model.atmosphere.dycore.dycore_states import DivergenceDampingOrder
-from icon4py.model.common.constants import RayleighType
 
 
 if TYPE_CHECKING:
@@ -26,40 +22,39 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import utils as common_utils
-from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
     grid_manager as gm,
     vertical as v_grid,
 )
-from icon4py.model.common.initialization import jablonowski_williamson_topography as topology
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import definitions, grid_utils, serialbox
-
-from .. import utils
-from ..fixtures import *  # noqa: F403
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import grid_utils
+from icon4py.model.testing.fixtures.benchmark import (
+    benchmark_grid,
+    geometry_field_source,
+    grid_manager,
+    interpolation_field_source,
+    metrics_field_source,
+)
+from icon4py.model.testing.fixtures.datatest import backend
 
 
 @pytest.fixture(scope="module")
 def solve_nonhydro(
-    benchmark_grid: definitions.GridDescription,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend | None,
 ) -> solve_nh.SolveNonhydro:
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid=benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
-    )
-    mesh = grid_manager.grid
+    mesh = geometry_field_source.grid
 
     config = solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
-        divdamp_order=DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type]
+        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type]
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coefficient=0.375,
@@ -228,16 +223,13 @@ def solve_nonhydro(
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 def test_benchmark_solve_nonhydro(
+    grid_manager: gm.GridManager,
     solve_nonhydro: solve_nh.SolveNonhydro,
-    benchmark_grid: definitions.GridDescription,
     at_first_substep: bool,
     at_last_substep: bool,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid=benchmark_grid, num_levels=80, keep_skip_values=True, backend=backend
-    )
     mesh = grid_manager.grid
 
     dtime = 10.0 if mesh.limited_area else 90.0
