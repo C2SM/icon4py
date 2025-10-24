@@ -30,7 +30,9 @@ from gt4py.next.type_system import type_specifications as ts
 from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
+from icon4py.model.common.model_options import customize_backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import channel_flow
 from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
@@ -260,14 +262,15 @@ def solve_nh_init(
     # datatest config, vertical parameters
     vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
 
+    xp = data_alloc.import_array_ns(customize_backend(actual_backend))
     mask_label = "gauss3d_torus"
     ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         mask_label=mask_label,
-        cell_x=cell_x,
-        cell_y=cell_y,
+        cell_x=xp.asarray(cell_x),
+        cell_y=xp.asarray(cell_y),
         half_level_heights=z_ifc,
         grid=grid_wrapper.grid_state.grid,
-        backend=actual_backend,
+        backend=customize_backend(actual_backend),
     )
     random_perturbation_magnitude = 0.001
     sponge_length = 5000.0
@@ -276,8 +279,8 @@ def solve_nh_init(
         sponge_length=sponge_length,
         grid=grid_wrapper.grid_state.grid,
         domain_length=domain_length,
-        cell_x=cell_x,
-        edge_x=edge_x,
+        cell_x=xp.asarray(cell_x),
+        edge_x=xp.asarray(edge_x),
         wgtfac_c=wgtfac_c,
         ddqz_z_half=ddqz_z_half,
         theta_ref_mc=theta_ref_mc,
@@ -288,7 +291,7 @@ def solve_nh_init(
         full_level_heights=z_mc,
         half_level_heights=z_ifc,
         primal_normal_x=primal_normal_x,
-        backend=actual_backend,
+        backend=customize_backend(actual_backend),
     )
 
     global granule  # noqa: PLW0603 [global-statement]

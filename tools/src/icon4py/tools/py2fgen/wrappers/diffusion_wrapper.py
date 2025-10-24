@@ -39,8 +39,10 @@ from icon4py.model.atmosphere.dycore import ibm
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half_e
+from icon4py.model.common.model_options import customize_backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
@@ -185,11 +187,15 @@ def diffusion_init(
     if zd_vertoffset is None:
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
 
+    xp = data_alloc.import_array_ns(customize_backend(actual_backend))
     ddqz_z_half_e_np = xp.zeros(
-        (grid_wrapper.grid_state.grid.num_edges, grid_wrapper.grid_state.grid.num_levels + 1), dtype=float
+        (grid_wrapper.grid_state.grid.num_edges, grid_wrapper.grid_state.grid.num_levels + 1),
+        dtype=float,
     )
-    ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=actual_backend)
-    compute_ddqz_z_half_e.with_backend(backend=actual_backend)(
+    ddqz_z_half_e = gtx.as_field(
+        (dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=customize_backend(actual_backend)
+    )
+    compute_ddqz_z_half_e.with_backend(backend=customize_backend(actual_backend))(
         ddqz_z_half=ddqz_z_half,
         c_lin_e=c_lin_e,
         ddqz_z_half_e=ddqz_z_half_e,
@@ -229,11 +235,11 @@ def diffusion_init(
     mask_label = "gauss3d_torus"
     ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         mask_label=mask_label,
-        cell_x=cell_x,
-        cell_y=cell_y,
+        cell_x=xp.asarray(cell_x),
+        cell_y=xp.asarray(cell_y),
         half_level_heights=z_ifc,
         grid=grid_wrapper.grid_state.grid,
-        backend=actual_backend,
+        backend=customize_backend(actual_backend),
     )
 
     # Initialize the diffusion granule
