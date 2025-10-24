@@ -38,7 +38,7 @@ def test_custom_backend_options(backend_factory: typing.Callable, expected_backe
         "backend_factory": backend_factory,
         "device": model_backends.CPU,
     }
-    backend = customize_backend(backend_options)
+    backend = customize_backend("foo", backend_options)
     backend_name = expected_backend + "_cpu"
     # TODO(havogt): test should be improved to work without string comparison
     assert repr(model_backends.BACKENDS[backend_name]) == repr(backend)
@@ -46,8 +46,8 @@ def test_custom_backend_options(backend_factory: typing.Callable, expected_backe
 
 def test_custom_backend_device() -> None:
     device = model_backends.CPU
-    backend = customize_backend(device)
-    default_backend = "gtfn_cpu"
+    backend = customize_backend("foo", device)
+    default_backend = "dace_cpu"
     # TODO(havogt): test should be improved to work without string comparison
     assert repr(model_backends.BACKENDS[default_backend]) == repr(backend)
 
@@ -55,10 +55,10 @@ def test_custom_backend_device() -> None:
 @pytest.mark.parametrize(
     "backend",
     [
-        model_backends.BACKENDS["gtfn_cpu"],
+        model_backends.BACKENDS["dace_cpu"],
         model_backends.CPU,
-        {"backend_factory": model_backends.make_custom_gtfn_backend, "device": model_backends.CPU},
-        {"backend_factory": model_backends.make_custom_gtfn_backend},
+        {"backend_factory": model_backends.make_custom_dace_backend, "device": model_backends.CPU},
+        {"backend_factory": model_backends.make_custom_dace_backend},
         {"device": model_backends.CPU},
     ],
 )
@@ -69,7 +69,7 @@ def test_setup_program_defaults(
     | None,
 ) -> None:
     partial_program = setup_program(backend=backend, program=program_return_field)
-    backend = model_backends.BACKENDS["gtfn_cpu"]
+    backend = model_backends.BACKENDS["dace_cpu"]
     expected_partial = functools.partial(
         program_return_field.with_backend(backend).compile(
             enable_jit=False,
@@ -94,7 +94,7 @@ def test_setup_program_defaults(
             "dace_gpu",
         ),
         ({"backend_factory": model_backends.make_custom_dace_backend}, "dace_cpu"),
-        ({"device": model_backends.GPU}, "gtfn_gpu"),
+        ({"device": model_backends.GPU}, "dace_gpu"),
     ],
 )
 def test_setup_program_specify_inputs(
