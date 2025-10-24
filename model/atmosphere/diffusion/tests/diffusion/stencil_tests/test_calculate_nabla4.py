@@ -55,7 +55,7 @@ def calculate_nabla4_numpy(
     return z_nabla4_e2
 
 
-# @pytest.mark.continuous_benchmarking # TODO (Yilu) put this back after debugging
+@pytest.mark.continuous_benchmarking
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
