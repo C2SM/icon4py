@@ -97,7 +97,7 @@ class ChannelFlow:
             loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels)
         )
         self.random_field_full_edge = gtx.as_field(
-            (dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend
+            (dims.EdgeDim, dims.KDim), self.random_field_full_edge_np
         )
 
         self.channel_y, self.channel_U = self.load_channel_data()
@@ -147,7 +147,8 @@ class ChannelFlow:
         xp = data_alloc.import_array_ns(self.backend)
 
         # Lee & Moser data: Re_tau = 5200
-        data = xp.loadtxt("../python-scripts/data/LeeMoser_chan5200.mean", skiprows=72)
+        # data = xp.loadtxt("../python-scripts/data/LeeMoser_chan5200.mean", skiprows=72)
+        data = xp.loadtxt("LeeMoser_chan5200.mean", skiprows=72)
 
         channel_y = data[:, 0]
         channel_U = data[:, 2] * 4.14872e-02  # <U> * u_tau (that's how it's normalized in the file)
@@ -313,11 +314,11 @@ class ChannelFlow:
             self.num_levels,
         )
 
-        vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=self.backend)
-        w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=self.backend)
-        exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=self.backend)
-        rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=self.backend)
-        theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=self.backend)
+        vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray)
+        w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray)
+        exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray)
+        rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray)
+        theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray)
 
         return (
             vn_ndarray,
@@ -351,12 +352,13 @@ class ChannelFlow:
         """
         if self.do_channel:
             # overwrite variables with channel fields, else return untouched
-            vn = gtx.as_field((dims.EdgeDim, dims.KDim), self.vn_ndarray, allocator=self.backend)
-            w = gtx.as_field((dims.CellDim, dims.KDim), self.w_ndarray, allocator=self.backend)
-            exner = gtx.as_field((dims.CellDim, dims.KDim), self.exner_ndarray, allocator=self.backend)
-            rho = gtx.as_field((dims.CellDim, dims.KDim), self.rho_ndarray, allocator=self.backend)
+            vn = gtx.as_field((dims.EdgeDim, dims.KDim), self.vn_ndarray)
+            w = gtx.as_field((dims.CellDim, dims.KDim), self.w_ndarray)
+            exner = gtx.as_field((dims.CellDim, dims.KDim), self.exner_ndarray)
+            rho = gtx.as_field((dims.CellDim, dims.KDim), self.rho_ndarray)
             theta_v = gtx.as_field(
-                (dims.CellDim, dims.KDim), self.theta_v_ndarray, allocator=self.backend
+                (dims.CellDim, dims.KDim),
+                self.theta_v_ndarray,
             )
         return vn, w, rho, exner, theta_v
 
@@ -382,10 +384,13 @@ class ChannelFlow:
             # modify variables with channel fields, else return untouched
             xp = data_alloc.import_array_ns(self.backend)
             self.random_field_full_edge_np = xp.random.normal(
-                loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels)
+                loc=0,
+                scale=self.random_perturbation_magnitude,
+                size=(self.num_edges, self.num_levels),
             )
             self.random_field_full_edge = gtx.as_field(
-                (dims.EdgeDim, dims.KDim), self.random_field_full_edge_np, allocator=self.backend
+                (dims.EdgeDim, dims.KDim),
+                self.random_field_full_edge_np,
             )
 
             _set_boundary_conditions_edge(
