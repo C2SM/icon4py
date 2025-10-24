@@ -48,7 +48,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-):
+) -> None:
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
         experiment.grid, 1, True, backend
     )
@@ -80,7 +80,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-):
+) -> None:
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
         experiment.grid, 1, True, backend
     )
@@ -110,7 +110,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-):
+) -> None:
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
         experiment.grid, 1, True, backend
     )
@@ -153,7 +153,7 @@ def test_rbf_interpolation_coeffs_cell(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
-):
+) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
@@ -176,7 +176,7 @@ def test_rbf_interpolation_coeffs_cell(
         geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
         geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
-        rbf.DEFAULT_RBF_KERNEL[rbf_dim],
+        rbf.DEFAULT_RBF_KERNEL[rbf_dim],  # type: ignore[arg-type]
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
         array_ns=data_alloc.import_array_ns(backend),
@@ -222,7 +222,7 @@ def test_rbf_interpolation_coeffs_vertex(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
-):
+) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
@@ -245,7 +245,7 @@ def test_rbf_interpolation_coeffs_vertex(
         geometry.get(geometry_attrs.EDGE_NORMAL_Y).ndarray,
         geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
-        rbf.DEFAULT_RBF_KERNEL[rbf_dim],
+        rbf.DEFAULT_RBF_KERNEL[rbf_dim],  # type: ignore[arg-type]
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
         array_ns=data_alloc.import_array_ns(backend),
@@ -291,7 +291,7 @@ def test_rbf_interpolation_coeffs_edge(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
-):
+) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
@@ -316,7 +316,7 @@ def test_rbf_interpolation_coeffs_edge(
         # order of coefficients computed by icon4py matches order of
         # coefficients in savepoint.
         grid_savepoint.e2c2e(),
-        rbf.DEFAULT_RBF_KERNEL[rbf_dim],
+        rbf.DEFAULT_RBF_KERNEL[rbf_dim],  # type: ignore[arg-type]
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
         array_ns=data_alloc.import_array_ns(backend),
