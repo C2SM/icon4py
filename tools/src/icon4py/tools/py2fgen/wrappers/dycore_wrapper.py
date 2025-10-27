@@ -262,12 +262,11 @@ def solve_nh_init(
     # datatest config, vertical parameters
     vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
 
-    xp = data_alloc.import_array_ns(customize_backend(actual_backend))
     mask_label = "gauss3d_torus"
     ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         mask_label=mask_label,
-        cell_x=xp.asarray(cell_x),
-        cell_y=xp.asarray(cell_y),
+        cell_x=cell_x.ndarray,
+        cell_y=cell_y.ndarray,
         half_level_heights=z_ifc,
         grid=grid_wrapper.grid_state.grid,
         backend=customize_backend(actual_backend),
@@ -279,8 +278,8 @@ def solve_nh_init(
         sponge_length=sponge_length,
         grid=grid_wrapper.grid_state.grid,
         domain_length=domain_length,
-        cell_x=xp.asarray(cell_x),
-        edge_x=xp.asarray(edge_x),
+        cell_x=cell_x.ndarray,
+        edge_x=edge_x.ndarray,
         wgtfac_c=wgtfac_c,
         ddqz_z_half=ddqz_z_half,
         theta_ref_mc=theta_ref_mc,

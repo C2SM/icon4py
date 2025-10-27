@@ -235,8 +235,8 @@ def diffusion_init(
     mask_label = "gauss3d_torus"
     ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         mask_label=mask_label,
-        cell_x=xp.asarray(cell_x),
-        cell_y=xp.asarray(cell_y),
+        cell_x=cell_x.ndarray,
+        cell_y=cell_y.ndarray,
         half_level_heights=z_ifc,
         grid=grid_wrapper.grid_state.grid,
         backend=customize_backend(actual_backend),
