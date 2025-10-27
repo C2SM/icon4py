@@ -133,7 +133,7 @@ class MPICommProcessProperties(definitions.ProcessProperties):
 def _field_buffer_key(
     field: nd_array_field.NdArrayField,
 ):  # TODO(havogt): make NDArrayField public?
-    return field.array_byte_bounds()
+    return field.array_byte_bounds(field.ndarray)
 
 
 hashable_by_field_buffer = utils.hashable_by(_field_buffer_key)
