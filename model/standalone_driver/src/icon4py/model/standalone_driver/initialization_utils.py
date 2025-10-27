@@ -11,6 +11,7 @@ import functools
 import logging
 import pathlib
 
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import netCDF4 as nc4
 
@@ -26,16 +27,21 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     states as grid_states,
     vertical as v_grid,
+    grid_manager as gm,
+    geometry as grid_geometry,
+    geometry_attributes as geometry_meta,
 )
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import serialbox_helpers as driver_sb
-from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
-from icon4py.model.testing import serialbox as sb
+from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson # TODO (Yilu) should be get rid of
+from icon4py.model.testing import definitions, grid_utils, serialbox as sb
 
+from model.common.src.icon4py.model.common.constants import RayleighType
 
 log = logging.getLogger(__name__)
 
@@ -75,146 +81,6 @@ def read_icon_grid(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def model_initialization_serialbox(
-    grid: icon_grid.IconGrid,
-    path: pathlib.Path,
-    backend: gtx_typing.Backend,
-    rank: int = 0,
-) -> tuple[
-    diffusion_states.DiffusionDiagnosticState,
-    dycore_states.DiagnosticStateNonHydro,
-    dycore_states.PrepAdvection,
-    float,
-    diagnostics.DiagnosticState,
-    prognostics.PrognosticState,
-    prognostics.PrognosticState,
-]:
-    """
-    Initial condition read from serialized data. Diagnostic variables are allocated as zero
-    fields.
-
-    Args:
-        grid: IconGrid
-        path: path where to find the input data
-        backend: GT4Py backend
-        rank: mpi rank of the current compute node
-    Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
-        PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
-        variables (now and next).
-    """
-
-    data_provider = _serial_data_provider(backend, path, rank)
-    diffusion_init_savepoint = data_provider.from_savepoint_diffusion_init(
-        linit=True, date=SIMULATION_START_DATE
-    )
-    solve_nonhydro_init_savepoint = data_provider.from_savepoint_nonhydro_init(
-        istep=1, date=SIMULATION_START_DATE, substep=1
-    )
-    velocity_init_savepoint = data_provider.from_savepoint_velocity_init(
-        istep=1, date=SIMULATION_START_DATE, substep=1
-    )
-    prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
-        diffusion_init_savepoint,
-    )
-    solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=0.0,
-        theta_v_at_cells_on_half_levels=solve_nonhydro_init_savepoint.theta_v_ic(),
-        perturbed_exner_at_cells_on_model_levels=solve_nonhydro_init_savepoint.exner_pr(),
-        rho_at_cells_on_half_levels=solve_nonhydro_init_savepoint.rho_ic(),
-        exner_tendency_due_to_slow_physics=solve_nonhydro_init_savepoint.ddt_exner_phy(),
-        grf_tend_rho=solve_nonhydro_init_savepoint.grf_tend_rho(),
-        grf_tend_thv=solve_nonhydro_init_savepoint.grf_tend_thv(),
-        grf_tend_w=solve_nonhydro_init_savepoint.grf_tend_w(),
-        mass_flux_at_edges_on_model_levels=solve_nonhydro_init_savepoint.mass_fl_e(),
-        normal_wind_tendency_due_to_slow_physics_process=solve_nonhydro_init_savepoint.ddt_vn_phy(),
-        grf_tend_vn=solve_nonhydro_init_savepoint.grf_tend_vn(),
-        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            velocity_init_savepoint.ddt_vn_apc_pc(0),
-            velocity_init_savepoint.ddt_vn_apc_pc(1),
-        ),
-        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
-            velocity_init_savepoint.ddt_w_adv_pc(0),
-            velocity_init_savepoint.ddt_w_adv_pc(1),
-        ),
-        tangential_wind=velocity_init_savepoint.vt(),
-        vn_on_half_levels=velocity_init_savepoint.vn_ie(),
-        contravariant_correction_at_cells_on_half_levels=velocity_init_savepoint.w_concorr_c(),
-        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
-        normal_wind_iau_increment=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, allocator=backend
-        ),
-        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
-        exner_dynamical_increment=solve_nonhydro_init_savepoint.exner_dyn_incr(),
-    )
-
-    diagnostic_state = diagnostics.DiagnosticState(
-        pressure=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            allocator=backend,
-        ),
-        pressure_ifc=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        temperature=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            allocator=backend,
-        ),
-        virtual_temperature=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            allocator=backend,
-        ),
-        u=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            allocator=backend,
-        ),
-        v=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            allocator=backend,
-        ),
-    )
-
-    prognostic_state_next = prognostics.PrognosticState(
-        w=solve_nonhydro_init_savepoint.w_new(),
-        vn=solve_nonhydro_init_savepoint.vn_new(),
-        theta_v=solve_nonhydro_init_savepoint.theta_v_new(),
-        rho=solve_nonhydro_init_savepoint.rho_new(),
-        exner=solve_nonhydro_init_savepoint.exner_new(),
-    )
-
-    prep_adv = dycore_states.PrepAdvection(
-        vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
-        mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=solve_nonhydro_init_savepoint.mass_flx_ic(),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            allocator=backend,
-        ),
-    )
-
-    return (
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
-        prep_adv,
-        solve_nonhydro_init_savepoint.divdamp_fac_o2(),
-        diagnostic_state,
-        prognostic_state_now,
-        prognostic_state_next,
-    )
-
-
 def read_initial_state(
     grid: icon_grid.IconGrid,
     cell_param: grid_states.CellParams,
@@ -222,7 +88,6 @@ def read_initial_state(
     path: pathlib.Path,
     backend: gtx_typing.Backend,
     rank=0,
-    experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
     dycore_states.DiagnosticStateNonHydro,
@@ -233,7 +98,7 @@ def read_initial_state(
     prognostics.PrognosticState,
 ]:
     """
-    Read initial prognostic and diagnostic fields.
+    Read initial prognostic and diagnostic fields for the jablonowski_williamson test case.
 
     Args:
         grid: IconGrid
@@ -248,56 +113,23 @@ def read_initial_state(
         PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
         variables (now and next).
     """
-    if experiment_type == ExperimentType.JABW:
-        (
-            diffusion_diagnostic_state,
-            solve_nonhydro_diagnostic_state,
-            prep_adv,
-            divdamp_fac_o2,
-            diagnostic_state,
-            prognostic_state_now,
-            prognostic_state_next,
-        ) = jablonowski_williamson.model_initialization_jabw(
-            grid=grid,
-            cell_param=cell_param,
-            edge_param=edge_param,
-            path=path,
-            backend=backend,
-            rank=rank,
-        )
-    elif experiment_type == ExperimentType.GAUSS3D:
-        (
-            diffusion_diagnostic_state,
-            solve_nonhydro_diagnostic_state,
-            prep_adv,
-            divdamp_fac_o2,
-            diagnostic_state,
-            prognostic_state_now,
-            prognostic_state_next,
-        ) = gauss3d.model_initialization_gauss3d(
-            grid=grid,
-            edge_param=edge_param,
-            path=path,
-            backend=backend,
-            rank=rank,
-        )
-    elif experiment_type == ExperimentType.ANY:
-        (
-            diffusion_diagnostic_state,
-            solve_nonhydro_diagnostic_state,
-            prep_adv,
-            divdamp_fac_o2,
-            diagnostic_state,
-            prognostic_state_now,
-            prognostic_state_next,
-        ) = model_initialization_serialbox(
-            grid=grid,
-            path=path,
-            backend=backend,
-            rank=rank,
-        )
-    else:
-        raise NotImplementedError(INITIALIZATION_ERROR_MSG)
+
+    (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prep_adv,
+        divdamp_fac_o2,
+        diagnostic_state,
+        prognostic_state_now,
+        prognostic_state_next,
+    ) = jablonowski_williamson.model_initialization_jabw(
+        grid=grid,
+        cell_param=cell_param,
+        edge_param=edge_param,
+        path=path,
+        backend=backend,
+        rank=rank,
+    )
 
     return (
         diffusion_diagnostic_state,
@@ -309,49 +141,99 @@ def read_initial_state(
         prognostic_state_next,
     )
 
-
+# TODO (Yilu) grid or grid_manager can be fixtures?
 def read_geometry_fields(
-    path: pathlib.Path,
-    grid_file: pathlib.Path,
+    grid: icon_grid.IconGrid,
     vertical_grid_config: v_grid.VerticalGridConfig,
     backend: gtx_typing.Backend,
-    rank: int = 0,
-    ser_type: SerializationType = SerializationType.SB,
-) -> tuple[
+)-> tuple[
+    decomposition.DecompositionInfo,
+    grid_geometry.GridGeometry,
     grid_states.EdgeParams,
     grid_states.CellParams,
     v_grid.VerticalGrid,
     fa.CellField[bool],
 ]:
     """
-    Read fields containing grid properties.
+        Read geometry fields containing grid properties, not from serialbox data.
 
-    Args:
-        path: path to the serialized input data
-        grid_file: path of the grid
-        vertical_grid_config: Vertical grid configuration
-        backend: GT4py backend
-        rank: mpi rank of the current compute node
-        ser_type: (optional) defaults to SB=serialbox, type of input data to be read
+        Args:
+            grid: grid file
+            vertical_grid_config: Vertical grid configuration
+            backend: GT4py backend
 
-    Returns: a tuple containing fields describing edges, cells, vertical properties of the model
-        the data is originally obtained from the grid file (horizontal fields) or some special input files.
+        Returns: a tuple containing fields describing edges, cells, vertical properties of the model
+            the data is originally obtained from the grid file (horizontal fields) or some special input files.
     """
-    if ser_type == SerializationType.SB:
-        sp = _grid_savepoint(backend, path, grid_file, rank)
-        edge_geometry = sp.construct_edge_geometry()
-        cell_geometry = sp.construct_cell_geometry()
-        vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, backend)
-        vertical_geometry = v_grid.VerticalGrid(
-            config=vertical_grid_config,
-            vct_a=vct_a,
-            vct_b=vct_b,
-        )
-        return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()
-    else:
-        raise NotImplementedError(SB_ONLY_MSG)
+
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid=grid, num_levels=80, keep_skip_values=True, backend=backend
+    )
+    mesh = grid_manager.mesh
+
+    coordinates = mesh.coordinates
+    geometry_input_fields = mesh.geometry_fields
+
+    decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
+
+    geometry_field_source = grid_geometry.GridGeometry(
+        grid=mesh,
+        decomposition_info=decomposition_info,
+        backend=backend,
+        coordinates=coordinates,
+        extra_fields=geometry_input_fields,
+        metadata=geometry_meta.attrs,
+    )
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, backend)
+
+    vertical_grid = v_grid.VerticalGrid(
+        config=vertical_grid_config,
+        vct_a=vct_a,
+        vct_b=vct_b,
+    )
+
+    cell_geometry = grid_states.CellParams(
+        cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
+        cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
+        area=geometry_field_source.get(geometry_meta.CELL_AREA),
+    )
+    edge_geometry = grid_states.EdgeParams(
+        tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
+        inverse_primal_edge_lengths=geometry_field_source.get(
+            f"inverse_of_{geometry_meta.EDGE_LENGTH}"
+        ),
+        inverse_dual_edge_lengths=geometry_field_source.get(
+            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+        ),
+        inverse_vertex_vertex_lengths=geometry_field_source.get(
+            f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
+        ),
+        primal_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+        primal_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        dual_normal_vert_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+        dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+        primal_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_U),
+        dual_normal_cell_x=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_U),
+        primal_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_CELL_V),
+        dual_normal_cell_y=geometry_field_source.get(geometry_meta.EDGE_TANGENT_CELL_V),
+        edge_areas=geometry_field_source.get(geometry_meta.EDGE_AREA),
+        coriolis_frequency=geometry_field_source.get(geometry_meta.CORIOLIS_PARAMETER),
+        edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),
+        edge_center_lon=geometry_field_source.get(geometry_meta.EDGE_LON),
+        primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
+        primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
+    )
+
+    c_owner_mask =gtx.as_field(
+            (dims.CellDim,),
+            decomposition_info.owner_mask(dims.CellDim),
+            allocator=backend,  # type: ignore[arg-type]
+        ),
+
+    return decomposition_info, geometry_field_source, edge_geometry, cell_geometry, vertical_grid, c_owner_mask
 
 
+# TODO (Yilu) can be deleted?
 # TODO(OngChia): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
 def _serial_data_provider(
     backend: gtx_typing.Backend,
@@ -381,31 +263,10 @@ def _grid_savepoint(
     )
     return sp
 
-
-def read_decomp_info(
-    path: pathlib.Path,
-    grid_file: pathlib.Path,
-    procs_props: decomposition.ProcessProperties,
-    backend: gtx_typing.Backend,
-    ser_type=SerializationType.SB,
-) -> decomposition.DecompositionInfo:
-    if ser_type == SerializationType.SB:
-        return _grid_savepoint(
-            backend,
-            path,
-            grid_file,
-            procs_props.rank,
-        ).construct_decomposition_info()
-    else:
-        raise NotImplementedError(SB_ONLY_MSG)
-
-
 def read_static_fields(
-    path: pathlib.Path,
-    grid_file: pathlib.Path,
+    grid: icon_grid.IconGrid,
+    vertical_grid_config: v_grid.VerticalGridConfig,
     backend: gtx_typing.Backend,
-    rank: int = 0,
-    ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
     diffusion_states.DiffusionMetricState,
     diffusion_states.DiffusionInterpolationState,
@@ -428,89 +289,163 @@ def read_static_fields(
         the fields are precalculated in the icon setup.
 
     """
-    if ser_type == SerializationType.SB:
-        data_provider = _serial_data_provider(backend, path, rank)
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid=grid, num_levels=80, keep_skip_values=True, backend=backend
+    )
+    mesh = grid_manager.mesh
 
-        diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
-            data_provider.from_interpolation_savepoint()
-        )
-        diffusion_metric_state = driver_sb.construct_metric_state_for_diffusion(
-            data_provider.from_metrics_savepoint()
-        )
-        interpolation_savepoint = data_provider.from_interpolation_savepoint()
-        grg = interpolation_savepoint.geofac_grg()
-        solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
-            c_lin_e=interpolation_savepoint.c_lin_e(),
-            c_intp=interpolation_savepoint.c_intp(),
-            e_flx_avg=interpolation_savepoint.e_flx_avg(),
-            geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
-            geofac_rot=interpolation_savepoint.geofac_rot(),
-            pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
-            pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
-            rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
-            rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
-            rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=interpolation_savepoint.geofac_div(),
-            geofac_n2s=interpolation_savepoint.geofac_n2s(),
-            geofac_grg_x=grg[0],
-            geofac_grg_y=grg[1],
-            nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
-        )
-        metrics_savepoint = data_provider.from_metrics_savepoint()
-        grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
-        solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
-            bdy_halo_c=metrics_savepoint.bdy_halo_c(),
-            mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
-            rayleigh_w=metrics_savepoint.rayleigh_w(),
-            time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
-            reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
-            wgtfac_c=metrics_savepoint.wgtfac_c(),
-            wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
-            inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
-            reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
-            reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
-            exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
-            ddz_of_reference_exner_at_cells_on_half_levels=metrics_savepoint.d_exner_dz_ref_ic(),
-            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
-            reference_theta_at_cells_on_half_levels=metrics_savepoint.theta_ref_ic(),
-            d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
-            d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
-            reference_rho_at_edges_on_model_levels=metrics_savepoint.rho_ref_me(),
-            reference_theta_at_edges_on_model_levels=metrics_savepoint.theta_ref_me(),
-            ddxn_z_full=metrics_savepoint.ddxn_z_full(),
-            zdiff_gradp=metrics_savepoint.zdiff_gradp(),
-            vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
-            nflat_gradp=grid_savepoint.nflat_gradp(),
-            pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-            pg_exdist=metrics_savepoint.pg_exdist(),
-            ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
-            ddxt_z_full=metrics_savepoint.ddxt_z_full(),
-            wgtfac_e=metrics_savepoint.wgtfac_e(),
-            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid_savepoint.num(dims.KDim)),
-            exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
-            horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
-            scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
-            coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
-            coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
-            coeff_gradekin=metrics_savepoint.coeff_gradekin(),
-        )
+    (
+        decomposition_info,
+        geometry_field_source,
+        edge_param,
+        cell_param,
+        vertical_grid,
+        c_owner_mask,
+    ) = read_geometry_fields(
+        grid=grid,
+        vertical_grid_config=vertical_grid_config,
+        backend=backend)
 
-        diagnostic_metric_state = diagnostics.DiagnosticMetricState(
-            ddqz_z_full=metrics_savepoint.ddqz_z_full(),
-            rbf_vec_coeff_c1=interpolation_savepoint.rbf_vec_coeff_c1(),
-            rbf_vec_coeff_c2=interpolation_savepoint.rbf_vec_coeff_c2(),
-        )
+    interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
+        grid=mesh,
+        decomposition_info=decomposition_info,
+        geometry_source=geometry_field_source,
+        backend=backend,
+        metadata=interpolation_attributes.attrs,
+    )
 
-        return (
-            diffusion_metric_state,
-            diffusion_interpolation_state,
-            solve_nonhydro_metric_state,
-            solve_nonhydro_interpolation_state,
-            diagnostic_metric_state,
-        )
-    else:
-        raise NotImplementedError(SB_ONLY_MSG)
+    metrics_field_source = metrics_factory.MetricsFieldsFactory(
+        grid=mesh,
+        vertical_grid=vertical_grid,
+        decomposition_info=decomposition_info,
+        geometry_source=geometry_field_source,
+        topography=gtx.as_field((dims.CellDim,), data=topo_c), # TODO (Yilu) shall I use the old topo_c for jbw?
+        interpolation_source=interpolation_field_source,
+        backend=backend,
+        metadata=metrics_attributes.attrs,
+        rayleigh_type=RayleighType.KLEMP,
+        rayleigh_coeff=5.0,
+        exner_expol=0.333,
+        vwind_offctr=0.2,
+    )
+
+    diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
+        rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
+        rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V2),
+        geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
+        geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
+        geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
+        geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
+        nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
+    )
+    diffusion_metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
+        theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
+        wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
+        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF_DSL),
+        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
+        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
+    )
+
+    solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
+        c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
+        c_intp=interpolation_field_source.get(interpolation_attributes.CELL_AW_VERTS),
+        e_flx_avg=interpolation_field_source.get(interpolation_attributes.E_FLX_AVG),
+        geofac_grdiv=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRDIV),
+        geofac_rot=interpolation_field_source.get(interpolation_attributes.GEOFAC_ROT),
+        pos_on_tplane_e_1=interpolation_field_source.get(
+            interpolation_attributes.POS_ON_TPLANE_E_X
+        ),
+        pos_on_tplane_e_2=interpolation_field_source.get(
+            interpolation_attributes.POS_ON_TPLANE_E_Y
+        ),
+        rbf_vec_coeff_e=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_E),
+        e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
+        rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
+        rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V2),
+        geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
+        geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
+        geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),
+        geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
+        nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
+    )
+
+    solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
+        bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
+        mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
+        rayleigh_w=metrics_field_source.get(metrics_attributes.RAYLEIGH_W),
+        time_extrapolation_parameter_for_exner=metrics_field_source.get(
+            metrics_attributes.EXNER_EXFAC
+        ),
+        reference_exner_at_cells_on_model_levels=metrics_field_source.get(
+            metrics_attributes.EXNER_REF_MC
+        ),
+        wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
+        wgtfacq_c=metrics_field_source.get(metrics_attributes.WGTFACQ_C),
+        inv_ddqz_z_full=metrics_field_source.get(metrics_attributes.INV_DDQZ_Z_FULL),
+        reference_rho_at_cells_on_model_levels=metrics_field_source.get(
+            metrics_attributes.RHO_REF_MC
+        ),
+        reference_theta_at_cells_on_model_levels=metrics_field_source.get(
+            metrics_attributes.THETA_REF_MC
+        ),
+        exner_w_explicit_weight_parameter=metrics_field_source.get(
+            metrics_attributes.EXNER_W_EXPLICIT_WEIGHT_PARAMETER
+        ),
+        ddz_of_reference_exner_at_cells_on_half_levels=metrics_field_source.get(
+            metrics_attributes.D_EXNER_DZ_REF_IC
+        ),
+        ddqz_z_half=metrics_field_source.get(metrics_attributes.DDQZ_Z_HALF),
+        reference_theta_at_cells_on_half_levels=metrics_field_source.get(
+            metrics_attributes.THETA_REF_IC
+        ),
+        d2dexdz2_fac1_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
+        d2dexdz2_fac2_mc=metrics_field_source.get(metrics_attributes.D2DEXDZ2_FAC1_MC),
+        reference_rho_at_edges_on_model_levels=metrics_field_source.get(
+            metrics_attributes.RHO_REF_ME
+        ),
+        reference_theta_at_edges_on_model_levels=metrics_field_source.get(
+            metrics_attributes.THETA_REF_ME
+        ),
+        ddxn_z_full=metrics_field_source.get(metrics_attributes.DDXN_Z_FULL),
+        zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
+        vertoffset_gradp=metrics_field_source.get(metrics_attributes.VERTOFFSET_GRADP),
+        nflat_gradp=metrics_field_source.get(metrics_attributes.NFLAT_GRADP),
+        pg_edgeidx_dsl=metrics_field_source.get(metrics_attributes.PG_EDGEIDX_DSL),
+        pg_exdist=metrics_field_source.get(metrics_attributes.PG_EDGEDIST_DSL),
+        ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),
+        ddxt_z_full=metrics_field_source.get(metrics_attributes.DDXT_Z_FULL),
+        wgtfac_e=metrics_field_source.get(metrics_attributes.WGTFAC_E),
+        wgtfacq_e=metrics_field_source.get(metrics_attributes.WGTFACQ_E),
+        exner_w_implicit_weight_parameter=metrics_field_source.get(
+            metrics_attributes.EXNER_W_IMPLICIT_WEIGHT_PARAMETER
+        ),
+        horizontal_mask_for_3d_divdamp=metrics_field_source.get(
+            metrics_attributes.HORIZONTAL_MASK_FOR_3D_DIVDAMP
+        ),
+        scaling_factor_for_3d_divdamp=metrics_field_source.get(
+            metrics_attributes.SCALING_FACTOR_FOR_3D_DIVDAMP
+        ),
+        coeff1_dwdz=metrics_field_source.get(metrics_attributes.COEFF1_DWDZ),
+        coeff2_dwdz=metrics_field_source.get(metrics_attributes.COEFF2_DWDZ),
+        coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
+    )
+
+    diagnostic_metric_state = diagnostics.DiagnosticMetricState(
+        ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
+        rbf_vec_coeff_c1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1),
+        rbf_vec_coeff_c2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1),
+    )
+
+    return (
+        diffusion_metric_state,
+        diffusion_interpolation_state,
+        solve_nonhydro_metric_state,
+        solve_nonhydro_interpolation_state,
+        diagnostic_metric_state,
+    )
+
 
 
 def configure_logging(

@@ -73,16 +73,16 @@ class Icon4pyDriver:
         """
         Print out icon4py signature and some important information of the initial setup to the log file.
 
-                                                                ___                      
-            -------                                    //      ||   \                    
-              | |                                     //       ||    |                   
-              | |       __      _ _        _ _       //  ||    ||___/                    
-              | |     //       /   \     |/   \     //_ _||_   ||        \\      //      
-              | |    ||       |     |    |     |    --------   ||         \\    //       
-              | |     \\__     \_ _/     |     |         ||    ||          \\  //        
-            -------                                                           //         
-                                                                             //          
-                                                                = = = = = = //           
+                                                                ___
+            -------                                    //      ||   \
+              | |                                     //       ||    |
+              | |       __      _ _        _ _       //  ||    ||___/
+              | |     //       /   \     |/   \     //_ _||_   ||        \\      //
+              | |    ||       |     |    |     |    --------   ||         \\    //
+              | |     \\__     \_ _/     |     |         ||    ||          \\  //
+            -------                                                           //
+                                                                             //
+                                                                = = = = = = //
         123456789123456789123456789123456789123456789123456789123456789123456789123456789
                  10       20       30       40       50       60       70       80       90
         """
@@ -544,16 +544,8 @@ def initialize(
 
     log.info("initialize parallel runtime")
     log.info("reading configuration: experiment Jablownoski-Williamson")
-    driver_config, vertical_config, diffusion_config, solve_nh_config = (
-        driver_configure.read_config(backend=backend, enable_profiling=enable_profiling)
-    )
-
-    decomp_info = driver_init.read_decomp_info(
-        path=file_path,
-        grid_file=grid_file,
-        procs_props=props,
-        backend=backend,
-        ser_type=serialization_type,
+    driver_config, vertical_grid_config, diffusion_config, solve_nh_config = (
+        driver_configure.read_config(backend=backend)
     )
 
     log.info(f"initializing the grid from '{file_path}'")
@@ -563,20 +555,19 @@ def initialize(
         backend=backend,
         rank=props.rank,
         ser_type=serialization_type,
-    )
+    ) # TODO (Yilu) we should pass the grid?
     log.info(f"reading input fields from '{file_path}'")
     (
+        decomp_info,
+        geometry_field_source,
         edge_geometry,
         cell_geometry,
         vertical_geometry,
         c_owner_mask,
     ) = driver_init.read_geometry_fields(
-        path=file_path,
-        grid_file=grid_file,
+        grid=grid,
         vertical_grid_config=vertical_grid_config,
         backend=backend,
-        rank=props.rank,
-        ser_type=serialization_type,
     )
     (
         diffusion_metric_state,
@@ -585,11 +576,9 @@ def initialize(
         solve_nonhydro_interpolation_state,
         _,
     ) = driver_init.read_static_fields(
-        path=file_path,
-        grid_file=grid_file,
+        grid=grid,
+        vertical_grid_config=vertical_grid_config,
         backend=backend,
-        rank=props.rank,
-        ser_type=serialization_type,
     )
 
     log.info("initializing diffusion")
@@ -637,7 +626,7 @@ def initialize(
         path=file_path,
         backend=backend,
         rank=props.rank,
-    )
+    ) # TODO (Yilu) we should pass the grid?
     prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
     icon4py_driver = Icon4pyDriver(

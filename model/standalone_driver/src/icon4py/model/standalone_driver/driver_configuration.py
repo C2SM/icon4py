@@ -78,7 +78,7 @@ def read_config(
     diffusion.DiffusionConfig,
     solve_nh.NonHydrostaticConfig,
 ]:
-    vertical_config = v_grid.VerticalGridConfig(
+    vertical_grid_config = v_grid.VerticalGridConfig(
         num_levels=35,
         rayleigh_damping_height=45000.0,
     )
@@ -115,7 +115,7 @@ def read_config(
 
     return (
         driver_run_config,
-        vertical_config,
+        vertical_grid_config,
         diffusion_config,
         nonhydro_config,
     )
