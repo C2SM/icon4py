@@ -96,18 +96,30 @@ try:
             raise ValueError(
                 f"Undefined behavior for `blocking_dim`={blocking_dim} `blocking_size`={blocking_size}."
             )
-
+        
         return make_dace_backend(
             auto_optimize=auto_optimize,
             cached=cached,
             gpu=on_gpu,
             async_sdfg_call=True,
-            blocking_dim=blocking_dim,
-            blocking_size=blocking_size,
-            make_persistent=False,
-            use_memory_pool=on_gpu,
+            # blocking_dim=blocking_dim,
+            # blocking_size=blocking_size,
+            # make_persistent=False,
+            # use_memory_pool=on_gpu,
             use_zero_origin=True,
         )
+        # TODO(pstark): Check with main if this is corrected by someone.
+        # return make_dace_backend(
+        #     auto_optimize=auto_optimize,
+        #     cached=cached,
+        #     gpu=on_gpu,
+        #     async_sdfg_call=True,
+        #     blocking_dim=blocking_dim,
+        #     blocking_size=blocking_size,
+        #     make_persistent=False,
+        #     use_memory_pool=on_gpu,
+        #     use_zero_origin=True,
+        # )
 
     BACKENDS.update(
         {
