@@ -23,6 +23,13 @@ from icon4py.model.common.grid import vertical as v_grid
 log = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
+class ProfilingStats:
+    gt4py_metrics_level: int = gtx_metrics.ALL
+    gt4py_metrics_output_file: str = "gt4py_metrics.json"
+    skip_first_timestep: bool = True
+
+
 @dataclasses.dataclass(frozen=True)
 class DriverConfig:
     experiment_name: str
@@ -31,10 +38,13 @@ class DriverConfig:
     grid_path: Path
     configuration_file_path: Path
     output_path: Path
+    profiling_stats: ProfilingStats | None
 
     dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
+
+    apply_extra_second_order_divdamp: bool
 
     vertical_cfl_threshold: ta.wpfloat = 0.85
 
@@ -43,10 +53,10 @@ class DriverConfig:
     enable_statistics_output: bool = False
 
     def __post_init__(self, backend_name):
-        if backend_name not in model_backends.BACKENDS.keys():
+        if backend_name not in model_backends.BACKENDS:
             raise ValueError(
                 f"Invalid driver backend: {backend_name}. \n"
-                f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS.keys()])}"
+                f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS])}"
             )
         object.__setattr__(self, "backend", model_backends.BACKENDS[backend_name])
 
@@ -61,6 +71,7 @@ class DriverConfig:
 
 def read_config(
     backend: str,
+    enable_profiling: bool,
 ) -> tuple[
     DriverConfig,
     v_grid.VerticalGridConfig,
@@ -91,12 +102,15 @@ def read_config(
         fourth_order_divdamp_factor=0.0025,
     )
 
+    profiling_stats = ProfilingStats() if enable_profiling else None
+
     driver_run_config = DriverConfig(
         dtime=datetime.timedelta(seconds=300.0),
         end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
         apply_initial_stabilization=False,
         ndyn_substeps=5,
         backend=backend,
+        profiling_stats=profiling_stats,
     )
 
     return (
@@ -105,10 +119,3 @@ def read_config(
         diffusion_config,
         nonhydro_config,
     )
-
-
-@dataclasses.dataclass
-class ProfilingConfig:
-    gt4py_metrics_level: int = gtx_metrics.ALL
-    gt4py_metrics_output_file: str = "gt4py_metrics.json"
-    skip_first_timestep: bool = True
