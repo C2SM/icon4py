@@ -11,13 +11,14 @@ import pytest
 import functools
 from collections.abc import Callable, Mapping, Sequence
 from gt4py import next as gtx
+from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 from mesh_generator import mesh_generator
 
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures.datatest import (
-    backend,
+#    backend,
     data_provider,
     download_ser_data,
     experiment,
@@ -54,6 +55,7 @@ from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_fields,
     rbf_interpolation as rbf,
+    interpolation_attributes as interpolation_attrs,
 )
 from icon4py.model.common.states import factory
 import icon4py.model.common.grid.states as grid_states
@@ -68,135 +70,9 @@ import icon4py.model.common.grid.states as grid_states
 # ihadv_tracer     | 52, 2, 2, 0, 0 |
 # ------------------------------------
 
-
-@pytest.mark.embedded_remap_error
-@pytest.mark.datatest
-@pytest.mark.parametrize(
-    "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
-    [
-        (
-            "2021-06-20T12:00:10.000",
-            False,
-            1,
-            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            advection.VerticalAdvectionType.NO_ADVECTION,
-            advection.VerticalAdvectionLimiter.NO_LIMITER,
-        ),
-        (
-            "2021-06-20T12:00:20.000",
-            True,
-            1,
-            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-            advection.VerticalAdvectionType.NO_ADVECTION,
-            advection.VerticalAdvectionLimiter.NO_LIMITER,
-        ),
-        (
-            "2021-06-20T12:00:10.000",
-            False,
-            4,
-            advection.HorizontalAdvectionType.NO_ADVECTION,
-            advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
-        ),
-        (
-            "2021-06-20T12:00:20.000",
-            True,
-            4,
-            advection.HorizontalAdvectionType.NO_ADVECTION,
-            advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
-        ),
-    ],
-)
-def test_advection_run_single_step(
-    date,
-    even_timestep,
-    ntracer,
-    horizontal_advection_type,
-    horizontal_advection_limiter,
-    vertical_advection_type,
-    vertical_advection_limiter,
-    *,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
-    # data_provider,
-    backend,
-    advection_init_savepoint,
-    advection_exit_savepoint,
-):
-    # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
-    if (
-        even_timestep
-        and horizontal_advection_type == advection.HorizontalAdvectionType.NO_ADVECTION
-    ):
-        pytest.xfail(
-            "This test is skipped until the cause of nonzero horizontal advection if revealed."
-        )
-    config = construct_config(
-        horizontal_advection_type=horizontal_advection_type,
-        horizontal_advection_limiter=horizontal_advection_limiter,
-        vertical_advection_type=vertical_advection_type,
-        vertical_advection_limiter=vertical_advection_limiter,
-    )
-    interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
-    least_squares_state = construct_least_squares_state(interpolation_savepoint, backend=backend)
-    metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
-    edge_geometry = grid_savepoint.construct_edge_geometry()
-    cell_geometry = grid_savepoint.construct_cell_geometry()
-
-    advection_granule = advection.convert_config_to_advection(
-        config=config,
-        grid=icon_grid,
-        interpolation_state=interpolation_state,
-        least_squares_state=least_squares_state,
-        metric_state=metric_state,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-        even_timestep=even_timestep,
-        backend=backend,
-    )
-
-    diagnostic_state = construct_diagnostic_init_state(
-        icon_grid, advection_init_savepoint, ntracer, backend=backend
-    )
-    prep_adv = construct_prep_adv(advection_init_savepoint)
-    p_tracer_now = advection_init_savepoint.tracer(ntracer)
-    p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
-
-    log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
-
-    advection_granule.run(
-        diagnostic_state=diagnostic_state,
-        prep_adv=prep_adv,
-        p_tracer_now=p_tracer_now,
-        p_tracer_new=p_tracer_new,
-        dtime=dtime,
-    )
-
-    diagnostic_state_ref = construct_diagnostic_exit_state(
-        icon_grid, advection_exit_savepoint, ntracer, backend=backend
-    )
-    p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
-
-    verify_advection_fields(
-        grid=icon_grid,
-        diagnostic_state=diagnostic_state,
-        diagnostic_state_ref=diagnostic_state_ref,
-        p_tracer_new=p_tracer_new,
-        p_tracer_new_ref=p_tracer_new_ref,
-        even_timestep=even_timestep,
-    )
-
 config = construct_config(
     horizontal_advection_type=advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-    horizontal_advection_limiter=advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+    horizontal_advection_limiter=advection.HorizontalAdvectionLimiter.NO_LIMITER,
     vertical_advection_type=advection.VerticalAdvectionType.NO_ADVECTION,
     vertical_advection_limiter=advection.VerticalAdvectionLimiter.NO_LIMITER
 )
@@ -250,6 +126,7 @@ end_indices= Mapping[h_grid_domain_end, gtx.int32()]
 global_properties = icon.GlobalGridParams()
 mesh = icon.icon_grid(
     id_ = 'void',
+#    allocator= gtx_allocators.FieldBufferAllocationUtil,
     allocator= None,
     config= grid_config,
     neighbor_tables= neighbor_tables,
@@ -263,7 +140,8 @@ primal_edge_length = gtx.as_field((dims.EdgeDim,), primal_edge_length)
 edge_orientation = gtx.as_field((dims.CellDim, dims.C2EDim), edge_orientation)
 area = gtx.as_field((dims.CellDim,), area)
 geofac_div = interpolation_fields.compute_geofac_div(primal_edge_length, edge_orientation, area, out= geofac_div, offset_provider={"C2E": mesh.get_connectivity("C2E")})
-_backend = backend
+backend = gtx_backend
+backend = None
 _xp = data_alloc.import_array_ns(backend)
 characteristic_length = 11.1
 _config = {
@@ -306,29 +184,11 @@ rbf_vec_coeff_e = factory.NumpyFieldsProvider(
             params={
                 "rbf_kernel": _config["rbf_kernel_edge"].value,
                 "scale_factor": _config["rbf_scale_edge"],
-#                "horizontal_start": icon.IconGrid.start_index(
-#                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-                "horizontal_start": 0,
+                "horizontal_start": icon.IconGrid.start_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    domain=(dims.CellDim, dims.E2C2EDim)),
             },
 )
-#(pos_on_tplane_e_x, pos_on_tplane_e_y) = interpolation_fields.compute_pos_on_tplane_e_x_y(
-#    grid_sphere_radius = 1.0,
-#    primal_normal_v1 =
-#    primal_normal_v2 =
-#    dual_normal_v1 =
-#    dual_normal_v2 =
-#    cells_lon =
-#    cells_lat =
-#    edges_lon =
-#    edges_lat =
-#    vertex_lon =
-#    vertex_lat =
-#    owner_mask =
-#    e2c = e2c_table,
-#    e2v = e2v_table,
-#    e2c2e = e2c2e_table,
-#    horizontal_start = 0.
-#)
 pos_on_tplane_e_x = cartesian_edge_centers[:, 0]
 pos_on_tplane_e_y = cartesian_edge_centers[:, 1]
 interpolation_state = advection_states.AdvectionInterpolationState(
@@ -337,8 +197,21 @@ interpolation_state = advection_states.AdvectionInterpolationState(
     pos_on_tplane_e_1=pos_on_tplane_e_x,
     pos_on_tplane_e_2=pos_on_tplane_e_y,
 )
-least_squares_state = construct_least_squares_state(interpolation_state, backend=backend)
-#metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
+least_squares_state = advection_states.AdvectionLeastSquaresState(
+        lsq_pseudoinv_1=1,
+        lsq_pseudoinv_2=2,
+)
+constant_f = data_alloc.constant_field(mesh, 1.0, dims.KDim)
+#ddqz_z_full_np = numpy.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
+ddqz_z_full_np = f"inverse_of_{interpolation_attrs.C_LIN_E}"
+ddqz_z_full_np = 0
+metric_state = advection_states.AdvectionMetricState(
+        deepatmo_divh=constant_f,
+        deepatmo_divzl=constant_f,
+        deepatmo_divzu=constant_f,
+#        ddqz_z_full=gtx.as_field((dims.CellDim, dims.KDim), ddqz_z_full_np, allocator=backend),
+        ddqz_z_full=None,
+)
 tangent_orientation = None
 inverse_primal_edge_lengths = f"inverse_of_{geometry_attrs.EDGE_LENGTH}"
 inverse_dual_edge_lengths = f"inverse_of_{geometry_attrs.DUAL_EDGE_LENGTH}"
@@ -357,6 +230,11 @@ edge_center_lat = None
 edge_center_lon = None
 primal_normal_x = None
 primal_normal_y = None
+coriolis_frequency = 0e0
+edge_center_lat = 0e0
+edge_center_lon = 0e0
+primal_normal_x = 0e0
+primal_normal_y = 0e0
 edge_params = grid_states.EdgeParams (
             tangent_orientation=tangent_orientation,
             inverse_primal_edge_lengths=inverse_primal_edge_lengths,
@@ -393,19 +271,26 @@ advection_granule = advection.convert_config_to_advection(
     metric_state=metric_state,
     edge_params=edge_params,
     cell_params=cell_params,
-    even_timestep=False,
     backend=backend,
 )
 
-diagnostic_state = construct_diagnostic_init_state(
-    icon_grid, advection_init_savepoint, ntracer, backend=backend
+diagnostic_state = advection_states.AdvectionDiagnosticState (
+        airmass_now=1,
+        airmass_new=1,
+        grf_tend_tracer=1,
+        hfl_tracer=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
+        vfl_tracer=data_alloc.zero_field(
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
 )
-prep_adv = construct_prep_adv(advection_init_savepoint)
-p_tracer_now = advection_init_savepoint.tracer(ntracer)
-p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
-
-log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
+prep_adv = advection_states.AdvectionPrepAdvState(
+        vn_traj=1,
+        mass_flx_me=1,
+        mass_flx_ic=1,
+)
+p_tracer_now = data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend)
+p_tracer_new = data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend)
+dtime = 0e0
 
 advection_granule.run(
     diagnostic_state=diagnostic_state,
