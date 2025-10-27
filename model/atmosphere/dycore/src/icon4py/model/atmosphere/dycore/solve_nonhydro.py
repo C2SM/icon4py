@@ -1122,12 +1122,6 @@ class SolveNonhydro:
                 cell_areas=self._cell_params.area,
             )
 
-        #  Precompute Rayleigh damping factor
-        self._compute_rayleigh_damping_factor(
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
-            dtime=dtime,
-        )
-
         self._compute_perturbed_quantities_and_interpolation(
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
@@ -1143,6 +1137,12 @@ class SolveNonhydro:
             current_theta_v=prognostic_states.current.theta_v,
             pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
             current_exner=prognostic_states.current.exner,
+        )
+
+        #  Precompute Rayleigh damping factor
+        self._compute_rayleigh_damping_factor(
+            rayleigh_damping_factor=self.rayleigh_damping_factor,
+            dtime=dtime,
         )
 
         log.debug(
