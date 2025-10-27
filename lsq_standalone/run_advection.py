@@ -56,6 +56,7 @@ from icon4py.model.common.interpolation import (
     rbf_interpolation as rbf,
 )
 from icon4py.model.common.states import factory
+import icon4py.model.common.grid.states as grid_states
 
 # ntracer legend for the serialization data used here in test_advection:
 # ------------------------------------
@@ -310,44 +311,89 @@ rbf_vec_coeff_e = factory.NumpyFieldsProvider(
                 "horizontal_start": 0,
             },
 )
-(pos_on_tplane_e_x, pos_on_tplane_e_y) = interpolation_fields.compute_pos_on_tplane_e_x_y(
-    grid_sphere_radius = 1.0,
-    primal_normal_v1 =
-    primal_normal_v2 =
-    dual_normal_v1 =
-    dual_normal_v2 =
-    cells_lon =
-    cells_lat =
-    edges_lon =
-    edges_lat =
-    vertex_lon =
-    vertex_lat =
-    owner_mask =
-    e2c = e2c_table,
-    e2v = e2v_table,
-    e2c2e = e2c2e_table,
-    horizontal_start = 0.
-)
+#(pos_on_tplane_e_x, pos_on_tplane_e_y) = interpolation_fields.compute_pos_on_tplane_e_x_y(
+#    grid_sphere_radius = 1.0,
+#    primal_normal_v1 =
+#    primal_normal_v2 =
+#    dual_normal_v1 =
+#    dual_normal_v2 =
+#    cells_lon =
+#    cells_lat =
+#    edges_lon =
+#    edges_lat =
+#    vertex_lon =
+#    vertex_lat =
+#    owner_mask =
+#    e2c = e2c_table,
+#    e2v = e2v_table,
+#    e2c2e = e2c2e_table,
+#    horizontal_start = 0.
+#)
+pos_on_tplane_e_x = cartesian_edge_centers[:, 0]
+pos_on_tplane_e_y = cartesian_edge_centers[:, 1]
 interpolation_state = advection_states.AdvectionInterpolationState(
     geofac_div=geofac_div,
     rbf_vec_coeff_e=rbf_vec_coeff_e,
     pos_on_tplane_e_1=pos_on_tplane_e_x,
     pos_on_tplane_e_2=pos_on_tplane_e_y,
 )
-least_squares_state = construct_least_squares_state(interpolation_savepoint, backend=backend)
-metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
-edge_geometry = grid_savepoint.construct_edge_geometry()
-cell_geometry = grid_savepoint.construct_cell_geometry()
+least_squares_state = construct_least_squares_state(interpolation_state, backend=backend)
+#metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
+tangent_orientation = None
+inverse_primal_edge_lengths = f"inverse_of_{geometry_attrs.EDGE_LENGTH}"
+inverse_dual_edge_lengths = f"inverse_of_{geometry_attrs.DUAL_EDGE_LENGTH}"
+inverse_vertex_vertex_lengths = geometry_attrs.INVERSE_VERTEX_VERTEX_LENGTH
+primal_normal_vert_x = geometry_attrs.VERTEX_X
+primal_normal_vert_y = geometry_attrs.VERTEX_Y
+dual_normal_vert_x = geometry_attrs.EDGE_TANGENT_VERTEX_U
+dual_normal_vert_y = geometry_attrs.EDGE_TANGENT_VERTEX_V
+primal_normal_cell_x = geometry_attrs.CELL_CENTER_X
+primal_normal_cell_y = geometry_attrs.CELL_CENTER_Y
+dual_normal_cell_x = geometry_attrs.EDGE_DUAL_U #?
+dual_normal_cell_y = geometry_attrs.EDGE_DUAL_V #?
+edge_areas = geometry_attrs.EDGE_AREA
+coriolis_frequency = None
+edge_center_lat = None
+edge_center_lon = None
+primal_normal_x = None
+primal_normal_y = None
+edge_params = grid_states.EdgeParams (
+            tangent_orientation=tangent_orientation,
+            inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+            inverse_dual_edge_lengths=inverse_dual_edge_lengths,
+            inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
+            primal_normal_vert_x=primal_normal_vert_x,
+            primal_normal_vert_y=primal_normal_vert_y,
+            dual_normal_vert_x=dual_normal_vert_x,
+            dual_normal_vert_y=dual_normal_vert_y,
+            primal_normal_cell_x=primal_normal_cell_x,
+            dual_normal_cell_x=dual_normal_cell_x,
+            primal_normal_cell_y=primal_normal_cell_y,
+            dual_normal_cell_y=dual_normal_cell_y,
+            edge_areas=edge_areas,
+            coriolis_frequency=coriolis_frequency,
+            edge_center_lat=edge_center_lat,
+            edge_center_lon=edge_center_lon,
+            primal_normal_x=primal_normal_x,
+            primal_normal_y=primal_normal_y,
+)
+cell_center_lat = geometry_attrs.CELL_LAT
+cell_center_lon = geometry_attrs.CELL_LON
+cell_params = grid_states.CellParams (
+            cell_center_lat=cell_center_lat,
+            cell_center_lon=cell_center_lon,
+            area=area,
+)
 
 advection_granule = advection.convert_config_to_advection(
     config=config,
-    grid=icon_grid,
+    grid=mesh,
     interpolation_state=interpolation_state,
     least_squares_state=least_squares_state,
     metric_state=metric_state,
-    edge_params=edge_geometry,
-    cell_params=cell_geometry,
-    even_timestep=even_timestep,
+    edge_params=edge_params,
+    cell_params=cell_params,
+    even_timestep=False,
     backend=backend,
 )
 
