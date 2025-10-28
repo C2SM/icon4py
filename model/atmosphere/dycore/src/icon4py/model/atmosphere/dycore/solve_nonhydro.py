@@ -63,7 +63,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
 
 log = logging.getLogger(__name__)
@@ -570,7 +570,14 @@ class SolveNonhydro:
         )
 
         self._vertically_implicit_solver_at_predictor_step = setup_program(
-            backend=backend,
+            backend={
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.DeviceType.GPU
+                if device_utils.is_cupy_device(backend)
+                else model_backends.DeviceType.CPU,
+            }
+            if data_alloc.backend_name(backend).startswith("run_dace")
+            else backend,
             program=vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
@@ -607,7 +614,14 @@ class SolveNonhydro:
         )
 
         self._vertically_implicit_solver_at_corrector_step = setup_program(
-            backend=backend,
+            backend={
+                "backend_factory": model_backends.make_custom_dace_backend,
+                "device": model_backends.DeviceType.GPU
+                if device_utils.is_cupy_device(backend)
+                else model_backends.DeviceType.CPU,
+            }
+            if data_alloc.backend_name(backend).startswith("run_dace")
+            else backend,
             program=vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step,
             constant_args={
                 "exner_w_explicit_weight_parameter": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
