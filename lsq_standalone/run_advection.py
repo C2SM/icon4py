@@ -60,6 +60,8 @@ from icon4py.model.common.interpolation import (
 from icon4py.model.common.states import factory
 import icon4py.model.common.grid.states as grid_states
 
+from model.testing.src.icon4py.model.testing import grid_utils
+
 # ntracer legend for the serialization data used here in test_advection:
 # ------------------------------------
 # ntracer          |  0, 1, 2, 3, 4 |
@@ -164,6 +166,8 @@ _config = {
             ),
 }
 edge_domain = h_grid.domain(dims.EdgeDim)
+from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
+grid_geometry = grid_utils.get_grid_geometry(backend=None, experiment=REGIONAL_EXPERIMENT, grid_file=REGIONAL_EXPERIMENT)
 rbf_vec_coeff_e = factory.NumpyFieldsProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=_xp),
             fields=(attrs.RBF_VEC_COEFF_E,),
@@ -184,9 +188,7 @@ rbf_vec_coeff_e = factory.NumpyFieldsProvider(
             params={
                 "rbf_kernel": _config["rbf_kernel_edge"].value,
                 "scale_factor": _config["rbf_scale_edge"],
-                "horizontal_start": icon.IconGrid.start_index(
-                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    domain=(dims.CellDim, dims.E2C2EDim)),
+                "horizontal_start": grid_geometry.grid.start_index(domain=edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
             },
 )
 pos_on_tplane_e_x = cartesian_edge_centers[:, 0]
