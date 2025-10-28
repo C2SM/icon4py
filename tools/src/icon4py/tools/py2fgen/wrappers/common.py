@@ -76,7 +76,7 @@ def cached_dummy_field_factory(
     @functools.lru_cache(maxsize=20)
     def impl(_name: str, domain: gtx.Domain, dtype: gt4py_definitions.DType) -> gtx.Field:
         # _name is used to differentiate between different dummy fields
-        return gtx.zeros(domain, dtype=dtype, allocator=allocator)  # type:ignore[arg-type]  # TODO(): fix type hint
+        return gtx.zeros(domain, dtype=dtype, allocator=allocator)
 
     return impl
 
