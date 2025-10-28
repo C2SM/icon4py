@@ -16,6 +16,7 @@ from gt4py.next.ffront.fbuiltins import where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 from icon4py.model.common.grid import icon as icon_grid
+from icon4py.model.common.model_options import customize_backend
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -350,6 +351,9 @@ class ImmersedBoundaryMethodMasks:
         Initialize the immersed boundary method masks.
         """
 
+        if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
+            backend = customize_backend(backend)
+
         self._make_masks(
             mask_label=mask_label,
             grid=grid,
@@ -369,10 +373,7 @@ class ImmersedBoundaryMethodMasks:
         cell_x: data_alloc.NDArray,
         cell_y: data_alloc.NDArray,
         half_level_heights: data_alloc.NDArray,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
+        backend: gtx_typing.Backend,
         do_ibm: bool,
     ) -> None:
         """
@@ -396,8 +397,8 @@ class ImmersedBoundaryMethodMasks:
                     cell_x=cell_x,
                     cell_y=cell_y,
                     half_level_heights=half_level_heights,
-                    backend=backend,
                     half_cell_mask_np=half_cell_mask_np,
+                    backend=backend,
                 )
             elif "channel" in mask_label or "gauss3d_torus" in mask_label:
                 half_cell_mask_np = self._mask_blocks(
@@ -405,8 +406,8 @@ class ImmersedBoundaryMethodMasks:
                     cell_x=cell_x,
                     cell_y=cell_y,
                     half_level_heights=half_level_heights,
-                    backend=backend,
                     half_cell_mask_np=half_cell_mask_np,
+                    backend=backend,
                 )
             else:
                 raise ValueError(f"IBM mask_label '{mask_label}' not recognized.")
@@ -415,15 +416,18 @@ class ImmersedBoundaryMethodMasks:
 
             log.info(f"Number of masked cells: {xp.sum(full_cell_mask_np)}")
 
-
             c2e = grid.connectivities[dims.C2EDim.value].ndarray
             for k in range(grid.num_levels + 1):
-                half_edge_mask_np[xp.unique(xp.asarray(c2e[xp.where(half_cell_mask_np[:, k])[0]])), k] = True
+                half_edge_mask_np[
+                    xp.unique(xp.asarray(c2e[xp.where(half_cell_mask_np[:, k])[0]])), k
+                ] = True
             full_edge_mask_np = half_edge_mask_np[:, :-1]
 
             c2v = grid.connectivities[dims.C2VDim.value].ndarray
             for k in range(grid.num_levels):
-                full_vertex_mask_np[xp.unique(xp.asarray(c2v[xp.where(full_cell_mask_np[:, k])[0]])), k] = True
+                full_vertex_mask_np[
+                    xp.unique(xp.asarray(c2v[xp.where(full_cell_mask_np[:, k])[0]])), k
+                ] = True
 
             c2e2c = grid.connectivities[dims.C2E2CDim.value].ndarray
             for k in range(grid.num_levels):
@@ -431,12 +435,12 @@ class ImmersedBoundaryMethodMasks:
                     xp.unique(xp.asarray(c2e2c[xp.where(full_cell_mask_np[:, k])[0]])), k
                 ] = True
 
-        self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
-        self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
-        self.full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np)
-        self.half_edge_mask = gtx.as_field((EdgeDim, KDim), half_edge_mask_np)
-        self.full_vertex_mask = gtx.as_field((VertexDim, KDim), full_vertex_mask_np)
-        self.neigh_full_cell_mask = gtx.as_field((CellDim, KDim), neigh_full_cell_mask_np)
+        self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np, allocator=backend)
+        self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np, allocator=backend)
+        self.full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np, allocator=backend)
+        self.half_edge_mask = gtx.as_field((EdgeDim, KDim), half_edge_mask_np, allocator=backend)
+        self.full_vertex_mask = gtx.as_field((VertexDim, KDim), full_vertex_mask_np, allocator=backend)
+        self.neigh_full_cell_mask = gtx.as_field((CellDim, KDim), neigh_full_cell_mask_np, allocator=backend)
 
     def _mask_gaussian_hill(
         self,
@@ -444,11 +448,8 @@ class ImmersedBoundaryMethodMasks:
         cell_x: data_alloc.NDArray,
         cell_y: data_alloc.NDArray,
         half_level_heights: data_alloc.NDArray,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
         half_cell_mask_np: data_alloc.NDArray,
+        backend: gtx_typing.Backend,
     ) -> data_alloc.NDArray:
         """
         Create a Gaussian hill mask.
@@ -480,11 +481,8 @@ class ImmersedBoundaryMethodMasks:
         cell_x: data_alloc.NDArray,
         cell_y: data_alloc.NDArray,
         half_level_heights: data_alloc.NDArray,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
         half_cell_mask_np: data_alloc.NDArray,
+        backend: gtx_typing.Backend,
     ) -> data_alloc.NDArray:
         """
         Create a blocks mask.

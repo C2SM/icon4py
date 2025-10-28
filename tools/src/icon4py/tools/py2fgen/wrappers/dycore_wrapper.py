@@ -30,9 +30,7 @@ from gt4py.next.type_system import type_specifications as ts
 from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.model_options import customize_backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import channel_flow
 from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
@@ -263,34 +261,40 @@ def solve_nh_init(
     vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
 
     mask_label = "gauss3d_torus"
+    # NOTE: the slicing is necessary because these arrays are shaped by nproma,
+    # while the arrays allocated in IBM and the connectivities are shrunk to
+    # their correct shapes
     ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         mask_label=mask_label,
-        cell_x=cell_x.ndarray,
-        cell_y=cell_y.ndarray,
-        half_level_heights=z_ifc,
+        cell_x=cell_x.ndarray[:grid_wrapper.grid_state.grid.num_cells],
+        cell_y=cell_y.ndarray[:grid_wrapper.grid_state.grid.num_cells],
+        half_level_heights=z_ifc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
         grid=grid_wrapper.grid_state.grid,
-        backend=customize_backend(actual_backend),
+        backend=actual_backend,
     )
     random_perturbation_magnitude = 0.001
     sponge_length = 5000.0
+    # NOTE: the slicing is necessary because these arrays are shaped by nproma,
+    # while the arrays allocated in IBM and the connectivities are shrunk to
+    # their correct shapes
     channel = channel_flow.ChannelFlow(
         random_perturbation_magnitude=random_perturbation_magnitude,
         sponge_length=sponge_length,
         grid=grid_wrapper.grid_state.grid,
         domain_length=domain_length,
-        cell_x=cell_x.ndarray,
-        edge_x=edge_x.ndarray,
-        wgtfac_c=wgtfac_c,
-        ddqz_z_half=ddqz_z_half,
-        theta_ref_mc=theta_ref_mc,
-        theta_ref_ic=theta_ref_ic,
-        exner_ref_mc=exner_ref_mc,
-        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
-        geopot=geopot,
-        full_level_heights=z_mc,
-        half_level_heights=z_ifc,
-        primal_normal_x=primal_normal_x,
-        backend=customize_backend(actual_backend),
+        cell_x=cell_x.ndarray[:grid_wrapper.grid_state.grid.num_cells],
+        edge_x=edge_x.ndarray[:grid_wrapper.grid_state.grid.num_edges],
+        wgtfac_c=wgtfac_c.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
+        ddqz_z_half=ddqz_z_half.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
+        theta_ref_mc=theta_ref_mc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
+        theta_ref_ic=theta_ref_ic.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
+        exner_ref_mc=exner_ref_mc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
+        geopot=geopot.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
+        full_level_heights=z_mc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
+        half_level_heights=z_ifc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
+        primal_normal_x=primal_normal_x.ndarray[:grid_wrapper.grid_state.grid.num_edges],
+        backend=actual_backend,
     )
 
     global granule  # noqa: PLW0603 [global-statement]

@@ -21,6 +21,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.model_options import customize_backend
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import utils as testcases_utils
 
@@ -81,6 +82,9 @@ class ChannelFlow:
         Initialize the channel
         """
 
+        if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
+            backend = customize_backend(backend)
+
         self.backend = backend
         self.do_channel = do_channel
         xp = data_alloc.import_array_ns(self.backend)
@@ -97,7 +101,9 @@ class ChannelFlow:
             loc=0, scale=self.random_perturbation_magnitude, size=(self.num_edges, self.num_levels)
         )
         self.random_field_full_edge = gtx.as_field(
-            (dims.EdgeDim, dims.KDim), self.random_field_full_edge_np
+            (dims.EdgeDim, dims.KDim),
+            self.random_field_full_edge_np,
+            allocator=self.backend,
         )
 
         self.channel_y, self.channel_U = self.load_channel_data()
@@ -200,9 +206,15 @@ class ChannelFlow:
         half_cell_sponge_np[:, :-1] = full_cell_sponge_np
         half_cell_sponge_np[:, -1] = half_cell_sponge_np[:, -2]
 
-        full_cell_sponge = gtx.as_field((CellDim, KDim), full_cell_sponge_np)
-        half_cell_sponge = gtx.as_field((CellDim, KDim), half_cell_sponge_np)
-        full_edge_sponge = gtx.as_field((EdgeDim, KDim), full_edge_sponge_np)
+        full_cell_sponge = gtx.as_field(
+            (CellDim, KDim), full_cell_sponge_np, allocator=self.backend
+        )
+        half_cell_sponge = gtx.as_field(
+            (CellDim, KDim), half_cell_sponge_np, allocator=self.backend
+        )
+        full_edge_sponge = gtx.as_field(
+            (EdgeDim, KDim), full_edge_sponge_np, allocator=self.backend
+        )
 
         return full_cell_sponge, half_cell_sponge, full_edge_sponge
 
@@ -314,11 +326,11 @@ class ChannelFlow:
             self.num_levels,
         )
 
-        vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray)
-        w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray)
-        exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray)
-        rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray)
-        theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray)
+        vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=self.backend)
+        w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=self.backend)
+        exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=self.backend)
+        rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=self.backend)
+        theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=self.backend)
 
         return (
             vn_ndarray,
@@ -352,13 +364,16 @@ class ChannelFlow:
         """
         if self.do_channel:
             # overwrite variables with channel fields, else return untouched
-            vn = gtx.as_field((dims.EdgeDim, dims.KDim), self.vn_ndarray)
-            w = gtx.as_field((dims.CellDim, dims.KDim), self.w_ndarray)
-            exner = gtx.as_field((dims.CellDim, dims.KDim), self.exner_ndarray)
-            rho = gtx.as_field((dims.CellDim, dims.KDim), self.rho_ndarray)
+            vn = gtx.as_field((dims.EdgeDim, dims.KDim), self.vn_ndarray, allocator=self.backend)
+            w = gtx.as_field((dims.CellDim, dims.KDim), self.w_ndarray, allocator=self.backend)
+            exner = gtx.as_field(
+                (dims.CellDim, dims.KDim), self.exner_ndarray, allocator=self.backend
+            )
+            rho = gtx.as_field((dims.CellDim, dims.KDim), self.rho_ndarray, allocator=self.backend)
             theta_v = gtx.as_field(
                 (dims.CellDim, dims.KDim),
                 self.theta_v_ndarray,
+                allocator=self.backend,
             )
         return vn, w, rho, exner, theta_v
 
@@ -391,6 +406,7 @@ class ChannelFlow:
             self.random_field_full_edge = gtx.as_field(
                 (dims.EdgeDim, dims.KDim),
                 self.random_field_full_edge_np,
+                allocator=self.backend,
             )
 
             _set_boundary_conditions_edge(

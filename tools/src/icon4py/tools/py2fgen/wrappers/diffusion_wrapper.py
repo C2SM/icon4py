@@ -233,13 +233,16 @@ def diffusion_init(
     )
 
     mask_label = "gauss3d_torus"
+    # NOTE: the slicing is necessary because these arrays are shaped by nproma,
+    # while the arrays allocated in IBM and the connectivities are shrunk to
+    # their correct shapes
     ibm_masks = ibm.ImmersedBoundaryMethodMasks(
         mask_label=mask_label,
-        cell_x=cell_x.ndarray,
-        cell_y=cell_y.ndarray,
-        half_level_heights=z_ifc,
+        cell_x=cell_x.ndarray[:grid_wrapper.grid_state.grid.num_cells],
+        cell_y=cell_y.ndarray[:grid_wrapper.grid_state.grid.num_cells],
+        half_level_heights=z_ifc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
         grid=grid_wrapper.grid_state.grid,
-        backend=customize_backend(actual_backend),
+        backend=actual_backend,
     )
 
     # Initialize the diffusion granule
