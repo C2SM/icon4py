@@ -524,7 +524,7 @@ def initialize(
     - setup the time loop
 
     Parameters:
-        file_path: Path to the serialized data.
+        grid_file_path: Path to the serialized data.
         props: Processor properties.
         serialization_type: Serialization type.
         experiment_type: Experiment type.
@@ -548,68 +548,61 @@ def initialize(
         driver_configure.read_config(backend=backend)
     )
 
-    log.info(f"initializing the grid from '{file_path}'")
-    grid = driver_init.read_icon_grid(
-        path=file_path,
-        grid_file=grid_file,
-        backend=backend,
-        rank=props.rank,
-        ser_type=serialization_type,
-    ) # TODO (Yilu) we should pass the grid?
-    log.info(f"reading input fields from '{file_path}'")
+    log.info(f"initializing the grid from '{grid_file_path}'")
     (
-        decomp_info,
-        geometry_field_source,
-        edge_geometry,
-        cell_geometry,
-        vertical_geometry,
-        c_owner_mask,
-    ) = driver_init.read_geometry_fields(
-        grid=grid,
+        grid,
+        decomposition_info
+    ) = driver_init.create_mesh(
+        grid_file = grid_file_path,
+        vertical_grid_config= vertical_grid_config,
+        backend=backend,
+    )
+    vertical_grid = driver_init.create_vertical_grid(
         vertical_grid_config=vertical_grid_config,
         backend=backend,
     )
-    (
-        diffusion_metric_state,
-        diffusion_interpolation_state,
-        solve_nonhydro_metric_state,
-        solve_nonhydro_interpolation_state,
-        _,
-    ) = driver_init.read_static_fields(
-        grid=grid,
-        vertical_grid_config=vertical_grid_config,
-        backend=backend,
+
+    geometry_field_source = driver_init.create_geometry_factory(
+        mesh = grid,
+        decomposition_info = decomposition_info,
+        backend = backend,
     )
+
+    topo_c = driver_init.create_topography(
+        geometry_field_source = geometry_field_source,
+        backend = backend,
+    )
+
+    (
+        interpolation_field_source,
+        metrics_field_source,
+    ) = driver_init.create_interpolation_metrics_factories(
+        mesh=grid,
+        decomposition_info = decomposition_info,
+        geometry_field_source = geometry_field_source,
+        vertical_grid = vertical_grid,
+        topo_c = topo_c,
+        backend = backend,
+    )
+
+    log.info(f"reading input fields from '{grid_file_path}'")
 
     log.info("initializing diffusion")
-    diffusion_params = diffusion.DiffusionParams(diffusion_config)
-    exchange = decomposition.create_exchange(props, decomp_info)
-    diffusion_granule = diffusion.Diffusion(
-        grid,
-        diffusion_config,
-        diffusion_params,
-        vertical_geometry,
-        diffusion_metric_state,
-        diffusion_interpolation_state,
-        edge_geometry,
-        cell_geometry,
+    exchange = decomposition.create_exchange(parallel_props, decomposition_info)
+    (
+        diffusion_granule,
+        solve_nonhydro_granule,
+    ) = driver_init.initialize_granule(
+        mesh=grid,
+        decomposition_info=decomposition_info,
+        vertical_grid=vertical_grid,
+        diffusion_config=diffusion_config,
+        solve_nh_config=solve_nh_config,
+        geometry_field_source=geometry_field_source,
+        interpolation_field_source=interpolation_field_source,
+        metrics_field_source=metrics_field_source,
         exchange=exchange,
         backend=backend,
-    )
-
-    nonhydro_params = solve_nh.NonHydrostaticParams(solve_nh_config)
-
-    solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        grid=grid,
-        backend=backend,
-        config=solve_nh_config,
-        params=nonhydro_params,
-        metric_state_nonhydro=solve_nonhydro_metric_state,
-        interpolation_state=solve_nonhydro_interpolation_state,
-        vertical_params=vertical_geometry,
-        edge_geometry=edge_geometry,
-        cell_geometry=cell_geometry,
-        owner_mask=c_owner_mask,
     )
 
     (
@@ -621,19 +614,18 @@ def initialize(
         prognostic_state_next,
     ) = driver_init.read_initial_state(
         grid=grid,
-        cell_param=cell_geometry,
-        edge_param=edge_geometry,
-        path=file_path,
+        geometry_field_source=geometry_field_source,
+        path=grid_file_path,
         backend=backend,
-        rank=props.rank,
-    ) # TODO (Yilu) we should pass the grid?
-    prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+        rank=parallel_props.rank,
+    )
 
     icon4py_driver = Icon4pyDriver(
         run_config=driver_config,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
     )
+    prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
     return (
         icon4py_driver,

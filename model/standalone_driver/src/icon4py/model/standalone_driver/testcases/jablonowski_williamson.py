@@ -35,8 +35,10 @@ log = logging.getLogger(__name__)
 
 def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
-    cell_param: grid_states.CellParams,
-    edge_param: grid_states.EdgeParams,
+    cell_lat: data_alloc.NDArray,
+    edge_lat: data_alloc.NDArray,
+    edge_lon: data_alloc.NDArray,
+    primal_normal_x: data_alloc.NDArray,
     path: pathlib.Path,
     backend: gtx_typing.Backend | None,
     rank=0,
@@ -92,10 +94,10 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
         data_provider.from_metrics_savepoint().geopot(), allocator=backend
     ).ndarray
 
-    cell_lat = cell_param.cell_center_lat.ndarray
-    edge_lat = edge_param.edge_center[0].ndarray
-    edge_lon = edge_param.edge_center[1].ndarray
-    primal_normal_x = edge_param.primal_normal[0].ndarray
+    cell_lat = cell_lat
+    edge_lat = edge_lat
+    edge_lon = edge_lon
+    primal_normal_x = primal_normal_x
 
     cell_2_edge_coeff = data_alloc.as_field(
         data_provider.from_interpolation_savepoint().c_lin_e(), allocator=backend
