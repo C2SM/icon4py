@@ -1419,8 +1419,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post624+922be387"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=__phimuell_gt4py_icon4py_testing#922be38773aa38ef8de4d6d5fd2b8983740fb469" }
+version = "1.0.4.post626+441005eb"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=__phimuell_gt4py_icon4py_testing#441005eb7d670f1394e707b16991e504c81d2b53" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
