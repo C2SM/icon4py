@@ -12,6 +12,7 @@ from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.common import model_backends
 
@@ -26,6 +27,20 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
 def get_dace_options(
     program_name: str, **backend_descriptor: Any
 ) -> model_backends.BackendDescriptor:
+    optimization_args = backend_descriptor.get("optimization_args", {})
+    optimization_hooks = optimization_args.get("optimization_hooks", {})
+    if program_name in [
+        "vertically_implicit_solver_at_corrector_step",
+        "vertically_implicit_solver_at_predictor_step",
+    ]:
+        optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
+            lambda sdfg: sdfg.apply_transformations_repeated(
+                gtx_transformations.RemoveAccessNodeCopies(),
+                validate=False,
+                validate_all=False,
+            )
+        )
+    backend_descriptor["optimization_args"] = optimization_args
     return backend_descriptor
 
 
