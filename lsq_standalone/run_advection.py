@@ -119,8 +119,8 @@ grid_config = base.GridConfig(
                 num_edges=3072,
             ),
             vertical_size=65,
+            limited_area=False,
         )
-#grid_config = GridConfig(horizontal_config = 2047, vertical_size= 1)
 start_indices= Mapping[h_grid_domain_start, gtx.int32()]
 end_indices= Mapping[h_grid_domain_end, gtx.int32()]
 global_properties = icon.GlobalGridParams()
@@ -275,21 +275,21 @@ advection_granule = advection.convert_config_to_advection(
 )
 
 diagnostic_state = advection_states.AdvectionDiagnosticState (
-        airmass_now=1,
-        airmass_new=1,
-        grf_tend_tracer=1,
+        airmass_now= data_alloc.constant_field(mesh, 1e0, dims.CellDim, dims.KDim, backend=backend),
+        airmass_new= data_alloc.constant_field(mesh, 1e0, dims.CellDim, dims.KDim, backend=backend),
+        grf_tend_tracer=None,
         hfl_tracer=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
         vfl_tracer=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
 )
 prep_adv = advection_states.AdvectionPrepAdvState(
-        vn_traj=1,
-        mass_flx_me=1,
-        mass_flx_ic=1,
+        vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
+        mass_flx_me=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend),
+        mass_flx_ic=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend),
 )
-p_tracer_now = data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend)
-p_tracer_new = data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, backend=backend)
+p_tracer_now = data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend)
+p_tracer_new = data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend)
 dtime = 0e0
 
 advection_granule.run(
