@@ -21,10 +21,10 @@ from gt4py.next import constructors, typing as gtx_typing
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
 
-from icon4py.model.common.grid import base
-from icon4py.model.common.utils import device_utils
-from icon4py.model.common.model_options import setup_program
 from icon4py.model.common import model_backends
+from icon4py.model.common.grid import base
+from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.utils import device_utils
 
 
 def allocate_data(
@@ -152,7 +152,15 @@ class StencilTest:
                 breakpoint()
                 program_function = setup_program(
                     self.PROGRAM,
-                    {"device": model_backends.GPU if device_utils.is_cupy_device(backend) else model_backends.CPU, "backend_factory": model_backends.make_custom_dace_backend} if backend.name.startswith("run_dace_") else backend,
+                    {
+                        "device": model_backends.GPU
+                        if device_utils.is_cupy_device(backend)
+                        else model_backends.CPU,
+                        "backend_factory": model_backends.make_custom_dace_backend,
+                    }
+                    if backend.name.startswith("run_dace_")
+                    else backend,
+                    # backend=backend,
                     variants=static_args,
                     offset_provider=grid.connectivities,
                 )
