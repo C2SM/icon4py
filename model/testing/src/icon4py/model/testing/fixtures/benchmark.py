@@ -33,31 +33,6 @@ if TYPE_CHECKING:
 
 @pytest.fixture(
     scope="session",
-    params=[definitions.Grids.R02B07_GLOBAL, definitions.Grids.MCH_OPR_R19B08_DOMAIN01],
-    ids=lambda r: r.name,
-)
-def benchmark_grid(request: pytest.FixtureRequest) -> definitions.GridDescription:
-    """Default parametrization for benchmark testing.
-
-    The default parametrization is often overwritten for specific tests."""
-    return request.param
-
-
-@pytest.fixture(scope="session")
-def grid_manager(
-    benchmark_grid: definitions.GridDescription,
-    backend: gtx_typing.Backend | None,
-) -> Generator[gm.GridManager, None, None]:
-    grid_file = grid_utils.resolve_full_grid_file_name(benchmark_grid)
-    grid_manager = grid_utils.get_grid_manager(
-        grid_file, num_levels=80, keep_skip_values=True, backend=backend
-    )
-    print(f"deleting GridManager source for {benchmark_grid.name}")
-    yield grid_manager
-
-
-@pytest.fixture(
-    scope="session",
 )
 def geometry_field_source(
     grid_manager: gm.GridManager,

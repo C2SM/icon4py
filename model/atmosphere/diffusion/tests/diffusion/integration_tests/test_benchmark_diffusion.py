@@ -29,14 +29,12 @@ from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures.benchmark import (
-    benchmark_grid,
     geometry_field_source,
-    grid_manager,
     interpolation_field_source,
     metrics_field_source,
 )
 from icon4py.model.testing.fixtures.datatest import backend
-
+from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
