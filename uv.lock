@@ -1419,8 +1419,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post558+e9aa5c26"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=__phimuell_gt4py_trivial_tasklet_elimination_icon4py_test#e9aa5c2618820e2d4d7189ca386015dc48b59805" }
+version = "1.0.4.post642+ca00fccd"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=__phimuell_gt4py_trivial_tasklet_elimination_icon4py_test#ca00fccde85efff9c8b1db997d7d1d5cfe8741a0" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
