@@ -1,12 +1,22 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+import enum
+import logging
 import pathlib
 from typing import Any
 
 import himl
-import logging
-import enum
 import omegaconf as oc
 
+
 log = logging.Logger(__file__)
+
 
 class ConfigType(enum.Enum):
     DEFAULT = enum.auto()
@@ -18,7 +28,7 @@ class OmegaParser:
         self._default_config = self._read_default_config()
         self._config = self._default_config
 
-    def _read_default_config(self)->Any:
+    def _read_default_config(self) -> Any:
         default_path = pathlib.Path(__file__).parent.joinpath("default")
         configs = []
         for file in default_path.glob("*.yaml"):
@@ -26,19 +36,17 @@ class OmegaParser:
             configs.append(cfg)
         return oc.OmegaConf.merge(*configs)
 
-    def get(self, key:str, type_: ConfigType = ConfigType.FINAL) -> Any:
+    def get(self, key: str, type_: ConfigType = ConfigType.FINAL) -> Any:
         if type_ == ConfigType.DEFAULT:
             return self._default_config.get(key)
         else:
             return self._config.get(key)
 
-    def process(self, path:pathlib.Path)->dict|oc.DictConfig:
+    def process(self, path: pathlib.Path) -> dict | oc.DictConfig:
         cfg = oc.OmegaConf.load(path)
         merged = oc.OmegaConf.merge(self._default_config, cfg)
         self._config = merged
         return merged
-
-
 
 
 class HimlParser:
@@ -48,28 +56,29 @@ class HimlParser:
         self._config = {}
         self._read_default_config()
 
-
     def _read_default_config(self) -> None:
         default_path = pathlib.Path(__file__).parent.joinpath("default")
         log.debug(f"reading default config from {default_path}")
-        self._default_config = self.process(path = default_path)
+        self._default_config = self.process(path=default_path)
 
-
-    def process(self, path:pathlib.Path)-> dict:
+    def process(self, path: pathlib.Path) -> dict:
         filters = ()
         exclude_keys = ()
         default_format = "yaml"
-        config = self._processor.process(path=str(path), filters=filters, exclude_keys=exclude_keys,
-                                output_format=default_format, print_data=True)
+        config = self._processor.process(
+            path=str(path),
+            filters=filters,
+            exclude_keys=exclude_keys,
+            output_format=default_format,
+            print_data=True,
+        )
         merged_config = self._config.copy()
         merged_config.update(config)
         self._config = merged_config
         return merged_config
 
-
-    def get(self, key:str, type_: ConfigType = ConfigType.FINAL) -> Any:
+    def get(self, key: str, type_: ConfigType = ConfigType.FINAL) -> Any:
         if type_ == ConfigType.DEFAULT:
             return self._default_config.get(key)
         else:
             return self._config.get(key)
-

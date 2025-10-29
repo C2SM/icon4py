@@ -1,8 +1,15 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 import functools
-from typing import TypeVar, Generic
 
-from icon4py.model.atmosphere.diffusion.diffusion import TurbulenceShearForcingType, DiffusionType
+from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType, TurbulenceShearForcingType
 from icon4py.model.common import constants
 from icon4py.model.common.config import reader as config_reader
 
@@ -22,15 +29,15 @@ class DiffusionConfig:
 
     #: If True, apply diffusion on the vertical wind field
     #: Called 'lhdiff_w' in mo_diffusion_nml.f90
-    apply_to_vertical_wind:bool = True
+    apply_to_vertical_wind: bool = True
 
     #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
     #: Called 'lhdiff_vn' in mo_diffusion_nml.f90
-    apply_to_horizontal_wind:bool = True
+    apply_to_horizontal_wind: bool = True
 
     #:  If True, apply horizontal diffusion to temperature field
     #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
-    apply_to_temperature:bool = True
+    apply_to_temperature: bool = True
 
     #: Options for discretizing the Smagorinsky momentum diffusion
     #: Called 'itype_vn_diffu' in mo_diffusion_nml.f90
@@ -57,10 +64,11 @@ class DiffusionConfig:
 
     ## parameters from other namelists
 
-
     # TODO (@halungge): use config value interpolation interpolation??
     # from mo_nonhydrostatic_nml.f90
-    n_substeps: int = dataclasses.field(init=False, default=5, metadata={"icon4py_interpolate":"dycore.ndyn_substep"})
+    n_substeps: int = dataclasses.field(
+        init=False, default=5, metadata={"icon4py_interpolate": "dycore.ndyn_substep"}
+    )
 
     #: If True, apply truly horizontal temperature diffusion over steep slopes
     #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
@@ -105,10 +113,6 @@ class DiffusionConfig:
     #: Consider separate horizontal shear production in TKE-equation.
     #: Called 'ltkeshs' in mo_turbdiff_nml.f90
     ltkeshs: bool = True
-
-
-
-
 
     def __post_init__(self):
         #: TODO: This code is duplicated in `solve_nonhydro.py`, clean this up when implementing proper configuration handling.
@@ -155,8 +159,5 @@ class DiffusionConfig:
         return float(self.ndyn_substeps)
 
 
-
-
 def init_config() -> config_reader.ConfigReader:
     return config_reader.ConfigReader(DiffusionConfig())
-

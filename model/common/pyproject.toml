@@ -29,7 +29,7 @@ dependencies = [
   'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
   'scipy>=1.14.1',
-  'himl>=0.16.4', # TODO (@halungge): remvoe again
+  'himl>=0.16.4',  # TODO (@halungge): remvoe again
   'omegaconf>=2.3.0'
 ]
 description = "Shared code for the icon4py model."

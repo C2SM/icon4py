@@ -1,7 +1,7 @@
 run:
-    timestep: 600.0
+  timestep: 600.0
 model:
-    components:
-        - name: "diffusion"
-          config: diffusion.yaml
-        - name: "solve_nonhydro"
+  components:
+    - name: "diffusion"
+      config: diffusion.yaml
+    - name: "solve_nonhydro"

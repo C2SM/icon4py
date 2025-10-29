@@ -34,7 +34,7 @@ dependencies = [
   "gt4py==1.0.9",
   "packaging>=20.0",
   "numpy>=1.23.3",
-    'typer>=0.10'
+  'omegaconf>=2.3.0'
 ]
 description = "ICON model driver."
 license = {text = "BSD-3 License"}

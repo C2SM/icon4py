@@ -20,7 +20,6 @@ from icon4py.model.testing import config
 
 if TYPE_CHECKING:
     from icon4py.model.atmosphere.diffusion import diffusion
-    from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 
 
 DEFAULT_TEST_DATA_FOLDER: Final = "testdata"
@@ -227,8 +226,10 @@ def construct_diffusion_config(
         )
 
 
-def construct_nonhydrostatic_config(experiment: Experiment) -> icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig:
-    from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+def construct_nonhydrostatic_config(
+    experiment: Experiment,
+) -> icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig:
+    from icon4py.model.atmosphere.dycore import dycore_states
 
     if experiment == Experiments.MCH_CH_R04B09:
         return icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig(

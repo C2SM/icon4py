@@ -6,9 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import enum
 import sys
 from typing import Final
-import enum
 
 from gt4py.eve import utils as eve_utils
 
@@ -153,7 +153,8 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     p0ref = REFERENCE_PRESSURE
     eps = DBL_EPS
 
-#TODO (halungge): move! this is not a constant
+
+# TODO (halungge): move! this is not a constant
 # TODO (@halungge): FrozenNamespace[int]
 class RayleighType(enum.Enum):
     #: classical Rayleigh damping, which makes use of a reference state.

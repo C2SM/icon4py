@@ -1,13 +1,20 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import logging
 
 from icon4py.model.common.config import model_config
 from icon4py.model.testing.fixtures.datatest import definitions
 
 
-def test_read_default_config_from_himl_parser(caplog)->None:
+def test_read_default_config_from_himl_parser(caplog) -> None:
     caplog.set_level(logging.DEBUG)
     default_config = model_config.HimlParser()
-
 
     component_list = default_config.get("model").get("components")
     assert len(component_list) == 2
@@ -19,7 +26,7 @@ def test_read_default_config_from_himl_parser(caplog)->None:
     assert_default_config(diffusion_default)
 
 
-def assert_default_config(diffusion_default: dict)->None:
+def assert_default_config(diffusion_default: dict) -> None:
     assert diffusion_default.get("diffusion_type") == "SMAGORINSKY_4TH_ORDER"
     assert diffusion_default.get("apply_to_vertical_wind")
     assert diffusion_default.get("apply_to_horizontal_wind")
@@ -40,10 +47,9 @@ def assert_default_config(diffusion_default: dict)->None:
     assert diffusion_default.get("temperature_boundary_diffusion_denom") == 135.0
 
 
-def test_override_default_values_from_himl_parser(caplog)->None:
+def test_override_default_values_from_himl_parser(caplog) -> None:
     config = model_config.HimlParser()
     path = definitions.serialized_data_path().joinpath("mpitask1/exclaim_ape_R02B04/config")
-
 
     ## diffusion default config
     diffusion_default = config.get("diffusion", model_config.ConfigType.DEFAULT)
@@ -57,10 +63,9 @@ def test_override_default_values_from_himl_parser(caplog)->None:
     assert diffusion_final.get("hdiff_efdt_ratio") != diffusion_default.get("hdiff_efdt_ratio")
 
 
-def test_read_default_config_from_omega_parser(caplog)->None:
+def test_read_default_config_from_omega_parser(caplog) -> None:
     caplog.set_level(logging.DEBUG)
     default_config = model_config.OmegaParser()
-
 
     component_list = default_config.get("model").get("components")
     assert len(component_list) == 2
@@ -72,11 +77,11 @@ def test_read_default_config_from_omega_parser(caplog)->None:
     assert_default_config(diffusion_default)
 
 
-
-def test_override_default_values_from_himl_parser(caplog)->None:
+def test_override_default_values_from_himl_parser(caplog) -> None:
     config = model_config.OmegaParser()
-    path = definitions.serialized_data_path().joinpath("mpitask1/exclaim_ape_R02B04/config/diffusion.yaml")
-
+    path = definitions.serialized_data_path().joinpath(
+        "mpitask1/exclaim_ape_R02B04/config/diffusion.yaml"
+    )
 
     ## diffusion default config
     diffusion_default = config.get("diffusion", model_config.ConfigType.DEFAULT)

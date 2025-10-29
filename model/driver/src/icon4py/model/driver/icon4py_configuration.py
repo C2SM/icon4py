@@ -15,7 +15,7 @@ from gt4py.next import metrics as gtx_metrics
 
 import icon4py.model.atmosphere.dycore.config
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.driver import initialization_utils as driver_init
 

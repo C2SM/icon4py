@@ -1,8 +1,17 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common.config import reader as config_reader
 from icon4py.model.common import constants
+from icon4py.model.common.config import reader as config_reader
+
 
 @dataclasses.dataclass
 class NonHydrostaticConfig:
@@ -16,7 +25,6 @@ class NonHydrostaticConfig:
     # number of dynamics substep -> TODO (@halungge): should this really be here?
     ndyn_substep: int = 5
 
-
     itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
 
     #: Miura scheme for advection of rho and theta
@@ -24,7 +32,9 @@ class NonHydrostaticConfig:
 
     #: Use truly horizontal pressure-gradient computation to ensure numerical
     #: stability without heavy orography smoothing
-    igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    igradp_method: dycore_states.HorizontalPressureDiscretizationType = (
+        dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    )
 
     #: type of Rayleigh damping
     rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP
@@ -33,12 +43,15 @@ class NonHydrostaticConfig:
     #: used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90
     rayleigh_coeff: float = 0.05
 
-
     #: type of divergence damping
-    divdamp_type: dycore_states.DivergenceDampingType = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL
+    divdamp_type: dycore_states.DivergenceDampingType = (
+        dycore_states.DivergenceDampingType.THREE_DIMENSIONAL
+    )
 
     #: order of divergence damping
-    divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED  # the ICON default is 4,
+    divdamp_order: dycore_states.DivergenceDampingOrder = (
+        dycore_states.DivergenceDampingOrder.COMBINED
+    )  # the ICON default is 4,
 
     #: Lower and upper bound of transition zone between 2D and 3D divergence damping in case of divdamp_type = 32 [m]
     divdamp_trans_start: float = 12500.0
@@ -98,7 +111,7 @@ class NonHydrostaticConfig:
 
     #: from mo_run_nml.f90
     #: use vertical nesting # TODO (halungge) not supported in icon4py remove!!
-    l_vert_nested: bool = dataclasses.field(default=False,metadata={"omegaconf_ignore": True})
+    l_vert_nested: bool = dataclasses.field(default=False, metadata={"omegaconf_ignore": True})
 
     #: from mo_interpol_nml.f90
 
@@ -110,12 +123,10 @@ class NonHydrostaticConfig:
     #: Note: The user can pass the ICON namelist parameter `nudge_max_coeff` as `_nudge_max_coeff` or
     #: the properly scaled one as `max_nudging_coefficient`,
     #: see the comment in mo_interpol_nml.f90
-    _nudge_max_coeff: float | None = dataclasses.field(default=None, metadata={"omegaconf_ignore": True})  # default is set in __init__
+    _nudge_max_coeff: float | None = dataclasses.field(
+        default=None, metadata={"omegaconf_ignore": True}
+    )  # default is set in __init__
     max_nudging_coefficient: float | None = None  # default is set in __init__
-
-
-
-
 
     def __post_init__(self):
         #: TODO: This code is duplicated in `diffusion.py`, clean this up when implementing proper configuration handling.
@@ -158,7 +169,6 @@ class NonHydrostaticConfig:
             raise NotImplementedError(
                 "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
             )
-
 
 
 def init_config() -> config_reader.ConfigReader:

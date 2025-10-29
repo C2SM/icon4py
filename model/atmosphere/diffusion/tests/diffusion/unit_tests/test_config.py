@@ -1,9 +1,20 @@
-from typing import Sequence
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+import pathlib
+from collections.abc import Sequence
 
 import omegaconf as oc
-import pathlib
 import pytest
+
 import icon4py.model.atmosphere.diffusion.config.config as diffusion_config
+
+
 def test_diffusion_config():
     structured = oc.OmegaConf.structured(diffusion_config.DiffusionConfig)
 
@@ -11,20 +22,25 @@ def test_diffusion_config():
     structured_init = oc.OmegaConf.structured(diffusion_config.DiffusionConfig())
     assert_default_config(structured_init)
     assert structured_init == structured
-    structured_init_custom_arg = oc.OmegaConf.structured(diffusion_config.DiffusionConfig(n_substeps=2))
+    structured_init_custom_arg = oc.OmegaConf.structured(
+        diffusion_config.DiffusionConfig(n_substeps=2)
+    )
     assert structured_init_custom_arg.n_substeps == 2
     assert_same_except(("n_substeps",), structured_init_custom_arg, structured)
 
     default_file = pathlib.Path(__file__).parent.joinpath("diffusion_default.yaml")
     default_from_yaml = oc.OmegaConf.load(default_file)
     # differences Enum values and private property not present in yaml...
-    assert_same_except(("diffusion_type", "shear_type", "_nudge_max_coeff"), structured, default_from_yaml.diffusion)
+    assert_same_except(
+        ("diffusion_type", "shear_type", "_nudge_max_coeff"),
+        structured,
+        default_from_yaml.diffusion,
+    )
     # create the data class
 
-    # TODO - interpolation
+    # TODO (halungge):- interpolation
     #      - frozen data class
     #      - yml to dataclass
-    x = oc.OmegaConf.to_object(structured)
 
     ape_file = pathlib.Path(__file__).parent.joinpath("diffusion_ape.yaml")
     ape_from_yaml = oc.OmegaConf.load(ape_file)
@@ -41,10 +57,11 @@ def assert_same_except(properties: Sequence[str], arg1, arg2):
     assert arg1 == temp
 
 
-
-
-def assert_default_config(diffusion_default: dict)->None:
-    assert diffusion_default["diffusion_type"] in (diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER, "SMAGORINSKY_4TH_ORDER")
+def assert_default_config(diffusion_default: dict) -> None:
+    assert diffusion_default["diffusion_type"] in (
+        diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        "SMAGORINSKY_4TH_ORDER",
+    )
     assert diffusion_default["apply_to_vertical_wind"]
     assert diffusion_default["apply_to_horizontal_wind"]
     assert diffusion_default["apply_to_temperature"]
@@ -57,7 +74,10 @@ def assert_default_config(diffusion_default: dict)->None:
     assert diffusion_default["hdiff_w_efdt_ratio"] == 15.0
     assert diffusion_default["thslp_zdiffu"] == 0.025
     assert diffusion_default["thhgtd_zdiffu"] == 200.0
-    assert diffusion_default["shear_type"] in (diffusion_config.TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND, "VERTICAL_OF_HORIZONTAL_WIND")
+    assert diffusion_default["shear_type"] in (
+        diffusion_config.TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+        "VERTICAL_OF_HORIZONTAL_WIND",
+    )
     assert diffusion_default["nudging_decay_rate"] == 2.0
     assert diffusion_default["max_nudging_coefficient"] == 0.1
     assert diffusion_default["velocity_boundary_diffusion_denom"] == 200.0

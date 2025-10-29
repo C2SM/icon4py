@@ -12,7 +12,6 @@ import dataclasses
 import enum
 
 import gt4py.next as gtx
-from gt4py.eve.utils import FrozenNamespace
 
 from icon4py.model.common import (
     dimension as dims,
@@ -41,6 +40,7 @@ class DivergenceDampingType(enum.IntEnum):
     #: combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
     COMBINED = 32
 
+
 # TODO (@halungge): FrozenNamespace[int]
 class DivergenceDampingOrder(enum.Enum):
     #: 2nd order divergence damping
@@ -49,6 +49,7 @@ class DivergenceDampingOrder(enum.Enum):
     FOURTH_ORDER = 4
     #: combined 2nd and 4th orders divergence damping and enhanced vertical wind off - centering during initial spinup phase
     COMBINED = 24
+
 
 # TODO (@halungge): FrozenNamespace[int]
 class HorizontalPressureDiscretizationType(enum.Enum):
@@ -64,6 +65,7 @@ class HorizontalPressureDiscretizationType(enum.Enum):
     POLYNOMIAL = 4
     #: Same as igradp_method_polynomial, but hydrostatic approximation for downward extrapolation over steep slopes
     POLYNOMIAL_HYDRO = 5
+
 
 # TODO (@halungge): FrozenNamespace[int]
 class RhoThetaAdvectionType(enum.Enum):
