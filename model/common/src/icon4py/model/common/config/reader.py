@@ -20,7 +20,6 @@ import omegaconf as oc
 #  - extract protocol
 #  - error cases
 
-# error cases for update...
 
 log = logging.getLogger(__file__)
 
@@ -31,16 +30,21 @@ class ConfigType(enum.Enum):
 
 
 T = TypeVar("T")
-DictType = TypeVar("DictType", int, str, float, enum.Enum, bool, bytes, dict, list, pathlib.Path)
 """ T is a data class to which needs to have all its members type anotated with types that
 OmegaConf supports in structured configs: https://omegaconf.readthedocs.io/en/2.3_branch/structured_config.html
 """
 
+_CT = TypeVar("_CT", int, str, float, enum.Enum, bool, bytes, dict, list, pathlib.Path)
+""" TypeVar denoting possible value types in OmegaConf DictConfig"""
 
-class ConfigReader(Generic[T]):
+def resolve_or_else(key:str, value:_CT)->_CT:
+    interpolation = f"oc.select:{key}, {value}"
+    return oc.II(interpolation)
+
+class Configuration(Generic[T]):
     def __init__(self, schema: T | type[T]):
         self._schema: type[T] = schema if isinstance(schema, type) else type(schema)
-        self._default_config: oc.DictConfig = oc.OmegaConf.structured(
+        self._default_config: oc.DictConfig = oc.OmegaConf.create(
             schema
         )  # TODO should this use create?
         self._config: oc.DictConfig = self._default_config.copy()
@@ -67,6 +71,8 @@ class ConfigReader(Generic[T]):
             update = self._load_update(patch)
             if self._name in update.keys():
                 update = update.get(self._name)
+            if oc.OmegaConf.is_readonly(self._config):
+                oc.OmegaConf.set_readonly(self._config, False)
             self._config = oc.OmegaConf.merge(self._config, update)
             oc.OmegaConf.set_readonly(self._config, read_only)
         except oc.ValidationError or ValueError as e:
@@ -81,31 +87,23 @@ class ConfigReader(Generic[T]):
             self._config, resolve=True, throw_on_missing=True, structured_config_mode=mode
         )
 
-    def to_yaml(self, type=ConfigType.USER): ...
+    def to_yaml(self, filename:str|pathlib.Path, type=ConfigType.USER)->None:
+        config = self._config if type == ConfigType.USER else self.default
+        stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(stream)
+
+        ...
 
     @property
     def config(self) -> oc.DictConfig:
-        # TODO set readonly flag?
+        oc.OmegaConf.set_readonly(self._config, True)
         return self._config
 
     @property
-    def default(self) -> T:
+    def default(self) -> oc.DictConfig:
         return oc.OmegaConf.to_object(self._default_config)
 
 
-# TODO  replace parent class by protocol...
-class DictConfigReader(ConfigReader[dict]):
-    def __init__(self, values: dict | oc.DictConfig):
-        self._config = oc.OmegaConf.create(values)
-        oc.OmegaConf.set_readonly(self._config, True)
-
-    def get_config(self) -> dict:
-        return oc.OmegaConf.to_container(self._config, resolve=True)
-
-    @property
-    def default(self) -> dict:
-        return self.get_config()
-
-
-def interpolate_or_else(interpolation: str, default: DictType) -> DictType:
-    return
+def init_config() -> config_reader.Configuration[dict]:
+    return config_reader.Configuration(dict)

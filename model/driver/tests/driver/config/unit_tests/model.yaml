@@ -1,4 +1,5 @@
 model:
+  nsubsteps: "${dycore.ndyn_substep}"
   components:
     diffusion: icon4py.model.atmosphere.diffusion
     dycore: icon4py.model.atmosphere.dycore

@@ -45,7 +45,7 @@ class Time:
 
 
 def test_config_reader_validate_default_config() -> None:
-    reader = config_reader.ConfigReader(Foo(1, "b", [1, 2, 3]))
+    reader = config_reader.Configuration(Foo(1, "b", [1, 2, 3]))
     foo = reader.as_type()
     assert foo.a == 1
     assert foo.b == "b"
@@ -53,26 +53,26 @@ def test_config_reader_validate_default_config() -> None:
 
 
 def test_config_reader_raises_missing_value() -> None:
-    reader = config_reader.ConfigReader(Foo)
+    reader = config_reader.Configuration(Foo)
     with pytest.raises(oc.MissingMandatoryValue):
         reader.as_type()
 
 
 def test_config_reader_raises_for_missing() -> None:
-    reader = config_reader.ConfigReader(OptionalFoo)
+    reader = config_reader.Configuration(OptionalFoo)
     with pytest.raises(oc.MissingMandatoryValue) as e:
         reader.as_type()
 
 
 def test_config_reader_type_validates() -> None:
-    reader = config_reader.ConfigReader(Foo)
+    reader = config_reader.Configuration(Foo)
     wrong_foo = Foo("a", "b", [1, 2, 3])
     with pytest.raises(oc.ValidationError):
         reader.update(wrong_foo)
 
 
 def test_config_reader_supports_optional() -> None:
-    reader = config_reader.ConfigReader(OptionalFoo(a=3))
+    reader = config_reader.Configuration(OptionalFoo(a=3))
     config = reader.as_type()
     assert len(config.c) == 0
     assert config.a == 3
@@ -80,14 +80,14 @@ def test_config_reader_supports_optional() -> None:
 
 
 def test_config_reader_config_equals_default_without_update() -> None:
-    reader = config_reader.ConfigReader(Foo(1, "b", [1, 2, 3]))
+    reader = config_reader.Configuration(Foo(1, "b", [1, 2, 3]))
     foo = reader.as_type()
     default = reader.default
     assert reader.default == foo
 
 
 def test_config_reader_update_from_dataclass() -> None:
-    reader = config_reader.ConfigReader(Foo(1, "b", [1, 2]))
+    reader = config_reader.Configuration(Foo(1, "b", [1, 2]))
     original_config = reader.as_type()
     assert original_config.a == 1
     assert original_config.b == "b"
@@ -101,7 +101,7 @@ def test_config_reader_update_from_dataclass() -> None:
 
 
 def test_config_reader_update_from_file() -> None:
-    reader = config_reader.ConfigReader(Foo(1, "b", [1, 2]))
+    reader = config_reader.Configuration(Foo(1, "b", [1, 2]))
     original_config = reader.as_type()
     file = pathlib.Path(__file__).parent.joinpath("foo_update.yaml")
     reader.update(file)
@@ -111,8 +111,21 @@ def test_config_reader_update_from_file() -> None:
     assert config.c == original_config.c
 
 
+def test_configuration_update_from_dict()->None:
+    reader = config_reader.Configuration(Time(13, 12, 0))
+    assert reader.config.minutes == 12
+    assert reader.config.seconds == 0
+    reader.update(dict(seconds=23, minutes=10))
+    assert reader.config.minutes == 10
+    assert reader.config.seconds == 23
+
+def test_configuration_config_read_only()->None:
+    reader = config_reader.Configuration(Foo(a=1, b="foo", c=[1,2]))
+    with pytest.raises(oc.ReadonlyConfigError) as e:
+        reader.config.b = "bar"
+
 def test_config_enum_parsing_from_value_and_name() -> None:
-    reader = config_reader.ConfigReader(Time)
+    reader = config_reader.Configuration(Time)
     assert reader.as_type().meridiem == Meridiem.AM
     reader.update({"meridiem": 2})
     assert reader.as_type().meridiem == Meridiem.PM
@@ -121,7 +134,7 @@ def test_config_enum_parsing_from_value_and_name() -> None:
 
 
 def test_config_enum_creation() -> None:
-    reader = config_reader.ConfigReader(Time)
+    reader = config_reader.Configuration(Time())
     file = pathlib.Path(__file__).parent.joinpath("time.yaml")
     reader.update(file)
     config = reader.as_type()
@@ -130,3 +143,38 @@ def test_config_enum_creation() -> None:
     assert config.minutes == 33
     assert config.meridiem == Meridiem.PM
     assert reader.default.meridiem == Meridiem.AM
+
+
+def test_resolve_or_default():
+    value = config_reader.resolve_or_else("foo", 42)
+    assert oc.II("oc.select:foo, 42") == value
+
+
+def test_configuration_to_yaml(tmpdir):
+    reader = config_reader.Configuration(Time(hours=2, minutes=11, seconds=23, meridiem="PM"))
+    reader.update(dict(seconds=1))
+    fname = tmpdir.join("time_config.yaml")
+    reader.to_yaml(fname)
+    expected ="""hours: 2
+meridiem: PM
+minutes: 11
+seconds: 1
+"""
+    assert fname.exists()
+    assert fname.read_text(encoding="utf-8") == expected
+
+
+def test_configuration_default_to_yaml(tmpdir):
+    reader = config_reader.Configuration(Time())
+    reader.update(dict(seconds=1))
+    fname = tmpdir.join("time_default.yaml")
+    reader.to_yaml(fname, config_reader.ConfigType.DEFAULT)
+    expected ="""hours: 0
+meridiem: AM
+minutes: 0
+seconds: 0
+"""
+    assert fname.exists()
+    assert fname.read_text(encoding="utf-8") == expected
+
+

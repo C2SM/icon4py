@@ -37,19 +37,20 @@ log = logging.getLogger(__file__)
 @dataclasses.dataclass
 class ModelConfig:
     components: dict[str, str] = dataclasses.field(default_factory=dict)
+    #nsubsteps: field(init=False, default=reader.resolve_or_else("dycore.ndyn_substep", 5))
 
 
-def load_reader(module: ModuleType, update: oc.DictConfig) -> reader.ConfigReader:
+def load_reader(module: ModuleType, update: oc.DictConfig) -> reader.Configuration:
     if hasattr(module, "init_config"):
         log.warning(f" module {module.__name__} has no `init_config` function")
         default_reader = module.init_config()
         default_reader.update(update)
     else:
-        default_reader = reader.DictConfigReader(update)
+        default_reader = reader.DictConfiguration(update)
     return default_reader
 
 
-class ConfigurationManager(reader.ConfigReader):
+class ConfigurationManager(reader.Configuration):
     def __init__(self, model_config: pathlib.Path | str):
         if isinstance(model_config, str):
             model_config = pathlib.Path(model_config)
@@ -63,9 +64,8 @@ class ConfigurationManager(reader.ConfigReader):
         except OSError as e:
             log.error(f"Could not resolve path to {model_config} - {e}")
             sys.exit()
-        model_config_reader = reader.ConfigReader(ModelConfig())
+        model_config_reader = reader.Configuration(ModelConfig())
         self._config = model_config_reader.config
-        self._readers: dict[str, reader.ConfigReader] = {MODEL_NODE: model_config_reader}
 
     def read_config(self):
         # lets assume the configuration is all in one file

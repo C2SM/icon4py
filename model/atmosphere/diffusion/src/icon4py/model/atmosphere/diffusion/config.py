@@ -14,6 +14,8 @@ from icon4py.model.common import constants
 from icon4py.model.common.config import reader as config_reader
 
 
+
+
 @dataclasses.dataclass
 class DiffusionConfig:
     """
@@ -64,11 +66,8 @@ class DiffusionConfig:
 
     ## parameters from other namelists
 
-    # TODO (@halungge): use config value interpolation interpolation??
     # from mo_nonhydrostatic_nml.f90
-    n_substeps: int = dataclasses.field(
-        init=False, default=5, metadata={"icon4py_interpolate": "dycore.ndyn_substep"}
-    )
+    n_substeps: int = dataclasses.field(init=False, default=config_reader.resolve_or_else("nsubsteps", 5))
 
     #: If True, apply truly horizontal temperature diffusion over steep slopes
     #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
@@ -159,5 +158,5 @@ class DiffusionConfig:
         return float(self.ndyn_substeps)
 
 
-def init_config() -> config_reader.ConfigReader:
-    return config_reader.ConfigReader(DiffusionConfig())
+def init_config() -> config_reader.Configuration[DiffusionConfig]:
+    return config_reader.Configuration(DiffusionConfig())

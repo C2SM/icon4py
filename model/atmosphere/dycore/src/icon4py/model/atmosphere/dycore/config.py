@@ -171,5 +171,5 @@ class NonHydrostaticConfig:
             )
 
 
-def init_config() -> config_reader.ConfigReader:
-    return config_reader.ConfigReader(NonHydrostaticConfig())
+def init_config() -> config_reader.Configuration[NonHydrostaticConfig]:
+    return config_reader.Configuration(NonHydrostaticConfig())

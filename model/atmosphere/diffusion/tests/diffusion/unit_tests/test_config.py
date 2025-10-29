@@ -12,7 +12,7 @@ from collections.abc import Sequence
 import omegaconf as oc
 import pytest
 
-import icon4py.model.atmosphere.diffusion.config.config as diffusion_config
+import icon4py.model.atmosphere.diffusion.config as diffusion_config
 
 
 def test_diffusion_config():
@@ -23,10 +23,10 @@ def test_diffusion_config():
     assert_default_config(structured_init)
     assert structured_init == structured
     structured_init_custom_arg = oc.OmegaConf.structured(
-        diffusion_config.DiffusionConfig(n_substeps=2)
+        diffusion_config.DiffusionConfig(hdiff_w_efdt_ratio = 0.55)
     )
-    assert structured_init_custom_arg.n_substeps == 2
-    assert_same_except(("n_substeps",), structured_init_custom_arg, structured)
+    assert structured_init_custom_arg.hdiff_w_efdt_ratio == 0.55
+    assert_same_except(("hdiff_w_efdt_ratio",), structured_init_custom_arg, structured)
 
     default_file = pathlib.Path(__file__).parent.joinpath("diffusion_default.yaml")
     default_from_yaml = oc.OmegaConf.load(default_file)
