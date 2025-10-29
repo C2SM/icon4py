@@ -58,9 +58,9 @@ class DiffusionConfig:
     ## parameters from other namelists
 
 
-    # TODO (@halungge): interpolation??
+    # TODO (@halungge): use config value interpolation interpolation??
     # from mo_nonhydrostatic_nml.f90
-    n_substeps: int = 5
+    n_substeps: int = dataclasses.field(init=False, default=5, metadata={"icon4py_interpolate":"dycore.ndyn_substep"})
 
     #: If True, apply truly horizontal temperature diffusion over steep slopes
     #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90

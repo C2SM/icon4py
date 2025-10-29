@@ -30,7 +30,7 @@ class Meridiem(enum.Enum):
 
 @dataclasses.dataclass
 class Time:
-    hour:int = 0
+    hours:int = 0
     minutes: int = 0
     seconds: int = 0
     meridiem: Meridiem = Meridiem.AM
@@ -38,7 +38,7 @@ class Time:
 
 def test_config_reader_validate_default_config()->None:
     reader = config_reader.ConfigReader(Foo(1, "b", [1,2,3]))
-    foo = reader.get_config()
+    foo = reader.as_type()
     assert foo.a == 1
     assert foo.b == "b"
     assert foo.c == [1,2,3]
@@ -46,13 +46,13 @@ def test_config_reader_validate_default_config()->None:
 def test_config_reader_raises_missing_value()->None:
     reader = config_reader.ConfigReader(Foo)
     with pytest.raises(oc.MissingMandatoryValue):
-        reader.get_config()
+        reader.as_type()
 
 
 def test_config_reader_raises_for_missing()->None:
     reader = config_reader.ConfigReader(OptionalFoo)
     with pytest.raises(oc.MissingMandatoryValue) as e:
-        reader.get_config()
+        reader.as_type()
 
 def test_config_reader_type_validates()->None:
     reader = config_reader.ConfigReader(Foo)
@@ -63,28 +63,29 @@ def test_config_reader_type_validates()->None:
 
 def test_config_reader_supports_optional()->None:
     reader = config_reader.ConfigReader(OptionalFoo(a=3))
-    config = reader.get_config()
+    config = reader.as_type()
     assert len(config.c) == 0
     assert config.a == 3
     assert config.b is None
 
 
-def test_config_reader_default_config_equals_config()->None:
+def test_config_reader_config_equals_default_without_update()->None:
     reader = config_reader.ConfigReader(Foo(1, "b", [1,2,3]))
-    foo = reader.get_config()
+    foo = reader.as_type()
     default = reader.default
-    assert default == foo
+    assert reader.default == foo
+
 
 
 
 def test_config_reader_update_from_dataclass()->None:
     reader = config_reader.ConfigReader(Foo(1, "b", [1, 2]))
-    original_config = reader.get_config()
+    original_config = reader.as_type()
     assert original_config.a == 1
     assert original_config.b == "b"
     assert original_config.c == [1,2]
     reader.update(Foo(2, "b*", [8,7]))
-    update = reader.get_config()
+    update = reader.as_type()
     assert update.a == 2
     assert update.b == "b*"
     # TODO (@halungge): should Sequences replace or append?, same question for general dicts
@@ -92,13 +93,33 @@ def test_config_reader_update_from_dataclass()->None:
 
 def test_config_reader_update_from_file()->None:
     reader = config_reader.ConfigReader(Foo(1, "b", [1, 2]))
-    original_config = reader.get_config()
+    original_config = reader.as_type()
     file = pathlib.Path(__file__).parent.joinpath("foo_update.yaml")
     reader.update(file)
-    config = reader.get_config()
+    config = reader.as_type()
     assert config.a == 42
     assert config.b == "this is the update"
     assert config.c == original_config.c
+
+def test_config_enum_parsing_from_value_and_name()->None:
+    reader = config_reader.ConfigReader(Time)
+    assert reader.as_type().meridiem == Meridiem.AM
+    reader.update({"meridiem":2})
+    assert reader.as_type().meridiem == Meridiem.PM
+    reader.update({"meridiem":"AM"})
+    assert reader.as_type().meridiem == Meridiem.AM
+
+def test_config_enum_creation()->None:
+    reader = config_reader.ConfigReader(Time)
+    file = pathlib.Path(__file__).parent.joinpath("time.yaml")
+    reader.update(file)
+    config = reader.as_type()
+    assert config.hours == 12
+    assert config.seconds == 0
+    assert config.minutes == 33
+    assert config.meridiem == Meridiem.PM
+    assert reader.default.meridiem == Meridiem.AM
+
 
 
 

@@ -7,13 +7,11 @@ vertical:
     nlev: 80
     htop_moist: 3400.0
 
-
-
 diffusion:
     temperature_boundary_diffusion_denom: 45.0
 
 dycore:
-    n_dyn_substep: 4
+    ndyn_substep: 4
     divdamp_order: 4
     divdamp_type: 32
     divdamp_trans_start: 1560

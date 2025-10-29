@@ -192,7 +192,7 @@ class GeometryName(FieldName):
 class CoordinateName(FieldName):
     """
     Coordinates of cell centers, edge midpoints and vertices.
-    Units: radianfor both MPI-M and DWD
+    Units: radian for both MPI-M and DWD
     """
 
     CELL_LONGITUDE = "clon"
