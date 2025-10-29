@@ -149,7 +149,6 @@ class StencilTest:
                         "'FieldOperator's do not support static arguments yet."
                     )
             else:
-                breakpoint()
                 program_function = setup_program(
                     self.PROGRAM,
                     {
@@ -160,7 +159,6 @@ class StencilTest:
                     }
                     if backend.name.startswith("run_dace_")
                     else backend,
-                    # backend=backend,
                     variants=static_args,
                     offset_provider=grid.connectivities,
                 )
