@@ -36,6 +36,7 @@ from icon4py.model.testing.fixtures.benchmark import (
 from icon4py.model.testing.fixtures.datatest import backend
 from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
 @pytest.mark.continuous_benchmarking

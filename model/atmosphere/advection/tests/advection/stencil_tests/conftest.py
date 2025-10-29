@@ -7,4 +7,4 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from icon4py.model.testing.fixtures.datatest import backend
-from icon4py.model.testing.fixtures.stencil_tests import grid,grid_manager
+from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager

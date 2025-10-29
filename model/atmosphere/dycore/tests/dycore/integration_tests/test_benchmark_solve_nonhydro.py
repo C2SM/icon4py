@@ -39,9 +39,7 @@ from icon4py.model.testing.fixtures.benchmark import (
     metrics_field_source,
 )
 from icon4py.model.testing.fixtures.datatest import backend
-from icon4py.model.testing.fixtures.stencil_tests import (
-    grid_manager,
-)
+from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 
 
 @pytest.fixture(scope="module")

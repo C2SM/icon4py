@@ -24,7 +24,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.initialization import jablonowski_williamson_topography as topology
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.testing import definitions, grid_utils
+from icon4py.model.testing import grid_utils
 
 
 if TYPE_CHECKING:

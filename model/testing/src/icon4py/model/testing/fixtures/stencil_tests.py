@@ -12,12 +12,8 @@ from typing import Final
 import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common.grid import base as base_grid, simple as simple_grid
+from icon4py.model.common.grid import base as base_grid, grid_manager as gm, simple as simple_grid
 from icon4py.model.testing import definitions, grid_utils
-
-from icon4py.model.common.grid import (
-    grid_manager as gm,
-)
 
 
 DEFAULT_GRID: Final[str] = "simple"
@@ -31,6 +27,7 @@ VALID_GRID_PRESETS: tuple[str, ...] = (
     "icon_benchmark_regional",
     "icon_benchmark_global",
 )
+
 
 def _get_grid_manager_from_preset(
     grid_preset: str,
@@ -55,14 +52,14 @@ def _get_grid_manager_from_preset(
             )
         case "icon_benchmark_regional":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.MCH_CH_R04B09_DSL,
+                definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
                 num_levels=80,  # default benchmark size in ICON Fortran
                 keep_skip_values=False,
                 backend=backend,
             )
         case "icon_benchmark_global":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.R02B04_GLOBAL,
+                definitions.Grids.R02B07_GLOBAL,
                 num_levels=80,  # default benchmark size in ICON Fortran
                 keep_skip_values=False,
                 backend=backend,
@@ -70,8 +67,11 @@ def _get_grid_manager_from_preset(
         case _:
             return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
 
+
 @pytest.fixture(scope="session")
-def grid_manager(request: pytest.FixtureRequest, backend: gtx_typing.Backend | None) -> gm.GridManager:
+def grid_manager(
+    request: pytest.FixtureRequest, backend: gtx_typing.Backend | None
+) -> gm.GridManager:
     """
     Fixture for providing a grid_manager instance.
 
@@ -106,6 +106,7 @@ def grid_manager(request: pytest.FixtureRequest, backend: gtx_typing.Backend | N
 
     return grid_manager
 
+
 @pytest.fixture(scope="session")
-def grid(grid_manager:gm.GridManager) -> base_grid.Grid:
+def grid(grid_manager: gm.GridManager) -> base_grid.Grid:
     return grid_manager.grid
