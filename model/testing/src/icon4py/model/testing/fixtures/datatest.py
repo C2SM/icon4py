@@ -584,7 +584,7 @@ def vwind_offctr(experiment: definitions.Experiment) -> float:
 
 
 @pytest.fixture
-def rayleigh_type() -> int:
+def rayleigh_type() -> RayleighType:
     return RayleighType.KLEMP
 
 

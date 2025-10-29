@@ -12,14 +12,11 @@ import dataclasses
 import enum
 import pathlib
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Final, Literal
+from typing import Final, Literal
 
 import icon4py.model.atmosphere.dycore.config
+from icon4py.model.atmosphere.diffusion import config as diffusion_config, diffusion
 from icon4py.model.testing import config
-
-
-if TYPE_CHECKING:
-    from icon4py.model.atmosphere.diffusion import diffusion
 
 
 DEFAULT_TEST_DATA_FOLDER: Final = "testdata"
@@ -186,40 +183,33 @@ class Experiments:
 # TODO(havogt): the following configs should be part of the serialized experiment
 def construct_diffusion_config(
     experiment: Experiment, ndyn_substeps: int = 5
-) -> diffusion.DiffusionConfig:
-    from icon4py.model.atmosphere.diffusion import diffusion
-
+) -> diffusion_config.DiffusionConfig:
     if experiment == Experiments.MCH_CH_R04B09:
-        return diffusion.DiffusionConfig(
+        config = diffusion_config.DiffusionConfig(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
             type_t_diffu=2,
             type_vn_diffu=1,
             hdiff_efdt_ratio=24.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
-            zdiffu_t=True,
             thslp_zdiffu=0.02,
             thhgtd_zdiffu=125.0,
             velocity_boundary_diffusion_denom=150.0,
             max_nudging_coefficient=0.375,
-            n_substeps=ndyn_substeps,
             shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
         )
+        config.n_substeps = ndyn_substeps
+        return config
     elif experiment == Experiments.EXCLAIM_APE:
-        return diffusion.DiffusionConfig(
+        config = diffusion_config.DiffusionConfig(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
-            zdiffu_t=False,
             type_t_diffu=2,
             type_vn_diffu=1,
             hdiff_efdt_ratio=24.0,
             smagorinski_scaling_factor=0.025,
-            hdiff_temp=True,
-            n_substeps=ndyn_substeps,
         )
+        config.n_substeps = ndyn_substeps
+        return config
     else:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."

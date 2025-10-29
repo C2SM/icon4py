@@ -37,7 +37,7 @@ log = logging.getLogger(__file__)
 @dataclasses.dataclass
 class ModelConfig:
     components: dict[str, str] = dataclasses.field(default_factory=dict)
-    #nsubsteps: field(init=False, default=reader.resolve_or_else("dycore.ndyn_substep", 5))
+    # nsubsteps: field(init=False, default=reader.resolve_or_else("dycore.ndyn_substep", 5))
 
 
 def load_reader(module: ModuleType, update: oc.DictConfig) -> reader.Configuration:

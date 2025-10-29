@@ -14,8 +14,6 @@ from icon4py.model.common import constants
 from icon4py.model.common.config import reader as config_reader
 
 
-
-
 @dataclasses.dataclass
 class DiffusionConfig:
     """
@@ -67,7 +65,9 @@ class DiffusionConfig:
     ## parameters from other namelists
 
     # from mo_nonhydrostatic_nml.f90
-    n_substeps: int = dataclasses.field(init=False, default=config_reader.resolve_or_else("nsubsteps", 5))
+    n_substeps: int = dataclasses.field(
+        init=False, default=config_reader.resolve_or_else("nsubsteps", 5)
+    )
 
     #: If True, apply truly horizontal temperature diffusion over steep slopes
     #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90

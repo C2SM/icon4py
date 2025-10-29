@@ -111,7 +111,7 @@ def test_config_reader_update_from_file() -> None:
     assert config.c == original_config.c
 
 
-def test_configuration_update_from_dict()->None:
+def test_configuration_update_from_dict() -> None:
     reader = config_reader.Configuration(Time(13, 12, 0))
     assert reader.config.minutes == 12
     assert reader.config.seconds == 0
@@ -119,10 +119,12 @@ def test_configuration_update_from_dict()->None:
     assert reader.config.minutes == 10
     assert reader.config.seconds == 23
 
-def test_configuration_config_read_only()->None:
-    reader = config_reader.Configuration(Foo(a=1, b="foo", c=[1,2]))
+
+def test_configuration_config_read_only() -> None:
+    reader = config_reader.Configuration(Foo(a=1, b="foo", c=[1, 2]))
     with pytest.raises(oc.ReadonlyConfigError) as e:
         reader.config.b = "bar"
+
 
 def test_config_enum_parsing_from_value_and_name() -> None:
     reader = config_reader.Configuration(Time)
@@ -155,7 +157,7 @@ def test_configuration_to_yaml(tmpdir):
     reader.update(dict(seconds=1))
     fname = tmpdir.join("time_config.yaml")
     reader.to_yaml(fname)
-    expected ="""hours: 2
+    expected = """hours: 2
 meridiem: PM
 minutes: 11
 seconds: 1
@@ -169,12 +171,10 @@ def test_configuration_default_to_yaml(tmpdir):
     reader.update(dict(seconds=1))
     fname = tmpdir.join("time_default.yaml")
     reader.to_yaml(fname, config_reader.ConfigType.DEFAULT)
-    expected ="""hours: 0
+    expected = """hours: 0
 meridiem: AM
 minutes: 0
 seconds: 0
 """
     assert fname.exists()
     assert fname.read_text(encoding="utf-8") == expected
-
-

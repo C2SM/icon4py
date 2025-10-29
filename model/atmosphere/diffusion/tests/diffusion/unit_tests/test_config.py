@@ -23,7 +23,7 @@ def test_diffusion_config():
     assert_default_config(structured_init)
     assert structured_init == structured
     structured_init_custom_arg = oc.OmegaConf.structured(
-        diffusion_config.DiffusionConfig(hdiff_w_efdt_ratio = 0.55)
+        diffusion_config.DiffusionConfig(hdiff_w_efdt_ratio=0.55)
     )
     assert structured_init_custom_arg.hdiff_w_efdt_ratio == 0.55
     assert_same_except(("hdiff_w_efdt_ratio",), structured_init_custom_arg, structured)

@@ -37,9 +37,11 @@ OmegaConf supports in structured configs: https://omegaconf.readthedocs.io/en/2.
 _CT = TypeVar("_CT", int, str, float, enum.Enum, bool, bytes, dict, list, pathlib.Path)
 """ TypeVar denoting possible value types in OmegaConf DictConfig"""
 
-def resolve_or_else(key:str, value:_CT)->_CT:
+
+def resolve_or_else(key: str, value: _CT) -> _CT:
     interpolation = f"oc.select:{key}, {value}"
     return oc.II(interpolation)
+
 
 class Configuration(Generic[T]):
     def __init__(self, schema: T | type[T]):
@@ -87,7 +89,7 @@ class Configuration(Generic[T]):
             self._config, resolve=True, throw_on_missing=True, structured_config_mode=mode
         )
 
-    def to_yaml(self, filename:str|pathlib.Path, type=ConfigType.USER)->None:
+    def to_yaml(self, filename: str | pathlib.Path, type=ConfigType.USER) -> None:
         config = self._config if type == ConfigType.USER else self.default
         stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
         with open(filename, "w", encoding="utf-8") as f:
