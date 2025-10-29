@@ -185,15 +185,15 @@ def diffusion_init(
     if zd_vertoffset is None:
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
 
-    xp = data_alloc.import_array_ns(customize_backend(actual_backend))
+    xp = data_alloc.import_array_ns(customize_backend("foo", actual_backend))
     ddqz_z_half_e_np = xp.zeros(
         (grid_wrapper.grid_state.grid.num_edges, grid_wrapper.grid_state.grid.num_levels + 1),
         dtype=float,
     )
     ddqz_z_half_e = gtx.as_field(
-        (dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=customize_backend(actual_backend)
+        (dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=customize_backend("foo", actual_backend)
     )
-    compute_ddqz_z_half_e.with_backend(backend=customize_backend(actual_backend))(
+    compute_ddqz_z_half_e.with_backend(backend=customize_backend("foo", actual_backend))(
         ddqz_z_half=ddqz_z_half,
         c_lin_e=c_lin_e,
         ddqz_z_half_e=ddqz_z_half_e,

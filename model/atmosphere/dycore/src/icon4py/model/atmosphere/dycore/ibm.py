@@ -352,7 +352,7 @@ class ImmersedBoundaryMethodMasks:
         """
 
         if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
-            backend = customize_backend(backend)
+            backend = customize_backend("foo", backend)
 
         self._make_masks(
             mask_label=mask_label,

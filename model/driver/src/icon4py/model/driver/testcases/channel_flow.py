@@ -83,7 +83,7 @@ class ChannelFlow:
         """
 
         if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
-            backend = customize_backend(backend)
+            backend = customize_backend("foo", backend)
 
         self.backend = backend
         self.do_channel = do_channel
