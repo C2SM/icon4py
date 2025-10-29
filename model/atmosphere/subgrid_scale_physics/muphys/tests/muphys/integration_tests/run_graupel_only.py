@@ -14,6 +14,9 @@ import time
 import gt4py.next as gtx
 import numpy as np
 
+from icon4py.model.common.model_options import setup_program
+from icon4py.model.common.utils import device_utils
+
 
 try:
     from netCDF4 import Dataset
@@ -40,6 +43,13 @@ def get_args():
         dest="output_file",
         help="output filename",
         default="output.nc",
+    )
+    parser.add_argument(
+        "-b",
+        metavar="backend",
+        dest="backend",
+        help="gt4py backend",
+        default="gtfn_cpu",
     )
     parser.add_argument("input_file", help="input data file")
     parser.add_argument("itime", help="time-index", nargs="?", default=0)
@@ -111,7 +121,7 @@ def calc_dz(ksize, z):
 
 def write_fields(
     output_filename,
-    ncells,
+    ncell,
     nlev,
     t,
     qv,
@@ -127,14 +137,17 @@ def write_fields(
     pflx,
     pre_gsp,
 ):
-    ncfile = Dataset(output_filename, mode="w")
-    ta_var = ncfile.createVariable("ta", np.double, ("height", "ncells"))
+    ncfile  = Dataset(output_filename, mode="w")
+    ncells  = ncfile.createDimension("ncells", ncell)
+    height  = ncfile.createDimension("height", nlev)
+    height1 = ncfile.createDimension("height1", nlev+1)
+    ta_var  = ncfile.createVariable("ta", np.double, ("height", "ncells"))
     hus_var = ncfile.createVariable("hus", np.double, ("height", "ncells"))
     clw_var = ncfile.createVariable("clw", np.double, ("height", "ncells"))
     cli_var = ncfile.createVariable("cli", np.double, ("height", "ncells"))
-    qr_var = ncfile.createVariable("qr", np.double, ("height", "ncells"))
-    qs_var = ncfile.createVariable("qs", np.double, ("height", "ncells"))
-    qg_var = ncfile.createVariable("qg", np.double, ("height", "ncells"))
+    qr_var  = ncfile.createVariable("qr", np.double, ("height", "ncells"))
+    qs_var  = ncfile.createVariable("qs", np.double, ("height", "ncells"))
+    qg_var  = ncfile.createVariable("qg", np.double, ("height", "ncells"))
     pflx_var = ncfile.createVariable("pflx", np.double, ("height", "ncells"))
     prr_gsp_var = ncfile.createVariable("prr_gsp", np.double, ("height1", "ncells"))
     prs_gsp_var = ncfile.createVariable("prs_gsp", np.double, ("height1", "ncells"))
@@ -159,11 +172,93 @@ def write_fields(
 
 
 args = get_args()
+backend = model_backends.BACKENDS[args.backend]
 
 set_lib_path(args.ldir)
 sys.setrecursionlimit(10**4)
 
 data = Data(args)
+
+dz = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.dz[:, :]),
+    allocator=backend,
+)
+te = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.t[0, :, :]),
+    allocator=backend,
+)
+p = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.p[0, :, :]),
+    allocator=backend,
+)
+qse = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qs[0, :, :]),
+    allocator=backend,
+)
+qie = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qi[0, :, :]),
+    allocator=backend,
+)
+qge = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qg[0, :, :]),
+    allocator=backend,
+)
+qve = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qv[0, :, :]),
+    allocator=backend,
+)
+qce = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qc[0, :, :]),
+    allocator=backend,
+)
+qre = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.qr[0, :, :]),
+    allocator=backend,
+)
+rho = gtx.as_field(
+    (
+        dims.CellDim,
+        dims.KDim,
+    ),
+    np.transpose(data.rho[0, :, :]),
+    allocator=backend,
+)
 
 t_out = gtx.as_field(
     (
@@ -171,6 +266,7 @@ t_out = gtx.as_field(
         dims.KDim,
     ),
     data.t_out,
+    allocator=backend,
 )
 qv_out = gtx.as_field(
     (
@@ -178,6 +274,7 @@ qv_out = gtx.as_field(
         dims.KDim,
     ),
     data.qv_out,
+    allocator=backend,
 )
 qc_out = gtx.as_field(
     (
@@ -185,6 +282,7 @@ qc_out = gtx.as_field(
         dims.KDim,
     ),
     data.qc_out,
+    allocator=backend,
 )
 qr_out = gtx.as_field(
     (
@@ -192,6 +290,7 @@ qr_out = gtx.as_field(
         dims.KDim,
     ),
     data.qr_out,
+    allocator=backend,
 )
 qs_out = gtx.as_field(
     (
@@ -199,6 +298,7 @@ qs_out = gtx.as_field(
         dims.KDim,
     ),
     data.qs_out,
+    allocator=backend,
 )
 qi_out = gtx.as_field(
     (
@@ -206,6 +306,7 @@ qi_out = gtx.as_field(
         dims.KDim,
     ),
     data.qi_out,
+    allocator=backend,
 )
 qg_out = gtx.as_field(
     (
@@ -213,6 +314,7 @@ qg_out = gtx.as_field(
         dims.KDim,
     ),
     data.qg_out,
+    allocator=backend,
 )
 pflx_out = gtx.as_field(
     (
@@ -220,6 +322,7 @@ pflx_out = gtx.as_field(
         dims.KDim,
     ),
     data.pflx_out,
+    allocator=backend,
 )
 pr_out = gtx.as_field(
     (
@@ -227,6 +330,7 @@ pr_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
 )
 ps_out = gtx.as_field(
     (
@@ -234,6 +338,7 @@ ps_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
 )
 pi_out = gtx.as_field(
     (
@@ -241,6 +346,7 @@ pi_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
 )
 pg_out = gtx.as_field(
     (
@@ -248,6 +354,7 @@ pg_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
+    allocator=backend,
 )
 pre_out = gtx.as_field(
     (
@@ -255,183 +362,38 @@ pre_out = gtx.as_field(
         dims.KDim,
     ),
     np.zeros((data.ncells, data.nlev)),
-)
-mask_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.mask_out,
+    allocator=backend,
 )
 
 ksize = data.dz.shape[0]
-k = gtx.as_field((dims.KDim,), np.arange(0, ksize, dtype=np.int32))
-graupel_run = graupel_run.with_backend(model_backends.BACKENDS["gtfn_cpu"])
-graupel_run(
-    k=k,
-    last_lev=ksize - 1,
-    dz=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.dz[:, :]),
-    ),
-    te=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.t[0, :, :]),
-    ),
-    p=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.p[0, :, :]),
-    ),
-    rho=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.rho[0, :, :]),
-    ),
-    qve=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qv[0, :, :]),
-    ),
-    qce=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qc[0, :, :]),
-    ),
-    qre=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qr[0, :, :]),
-    ),
-    qse=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qs[0, :, :]),
-    ),
-    qie=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qi[0, :, :]),
-    ),
-    qge=gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qg[0, :, :]),
-    ),
-    dt=args.dt,
-    qnc=args.qnc,
-    t_out=t_out,
-    qv_out=qv_out,
-    qc_out=qc_out,
-    qr_out=qr_out,
-    qs_out=qs_out,
-    qi_out=qi_out,
-    qg_out=qg_out,
-    pflx=pflx_out,
-    pr=pr_out,
-    ps=ps_out,
-    pi=pi_out,
-    pg=pg_out,
-    pre=pre_out,
+
+graupel_run_program = setup_program(
+    backend=backend,
+    program=graupel_run,
+    constant_args={},
+    horizontal_sizes={},
+    vertical_sizes={
+        "last_lev": ksize - 1,
+    },
     offset_provider={"Koff": dims.KDim},
 )
-start_time = time.time()
-for _x in range(int(args.itime)):
-    graupel_run(
-        k=k,
-        last_lev=ksize - 1,
-        dz=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.dz[:, :]),
-        ),
-        te=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.t[0, :, :]),
-        ),
-        p=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.p[0, :, :]),
-        ),
-        rho=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.rho[0, :, :]),
-        ),
-        qve=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qv[0, :, :]),
-        ),
-        qce=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qc[0, :, :]),
-        ),
-        qre=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qr[0, :, :]),
-        ),
-        qse=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qs[0, :, :]),
-        ),
-        qie=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qi[0, :, :]),
-        ),
-        qge=gtx.as_field(
-            (
-                dims.CellDim,
-                dims.KDim,
-            ),
-            np.transpose(data.qg[0, :, :]),
-        ),
+
+for _x in range(int(args.itime) + 1):
+    if _x == 1:  # Only start timing second iteration
+        device_utils.sync(backend)
+        start_time = time.time()
+
+    graupel_run_program(
+        dz=dz,
+        te=te,
+        p=p,
+        rho=rho,
+        qve=qve,
+        qce=qce,
+        qre=qre,
+        qse=qse,
+        qie=qie,
+        qge=qge,
         dt=args.dt,
         qnc=args.qnc,
         t_out=t_out,
@@ -447,9 +409,11 @@ for _x in range(int(args.itime)):
         pi=pi_out,
         pg=pg_out,
         pre=pre_out,
-        offset_provider={"Koff": dims.KDim},
     )
-end_time = time.time()
+    if _x == int(args.itime):  # End timer on last iteration
+        device_utils.sync(backend)
+        end_time = time.time()
+
 elapsed_time = end_time - start_time
 print("For", int(args.itime), "iterations it took", elapsed_time, "seconds!")
 
