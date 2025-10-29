@@ -23,6 +23,8 @@ from gt4py.next.ffront.decorator import FieldOperator
 
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
+from icon4py.model.common.model_options import setup_program
+from icon4py.model.common import model_backends
 
 
 def allocate_data(
@@ -140,21 +142,22 @@ class StencilTest:
                 f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
             )
         static_args = {name: [input_data[name]] for name in static_variant}
-        program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO(havogt): gt4py should accept `None` in with_backend
         if backend is not None:
-            if isinstance(program, FieldOperator):
+            if isinstance(self.PROGRAM, FieldOperator):
                 if len(static_args) > 0:
                     raise NotImplementedError(
                         "'FieldOperator's do not support static arguments yet."
                     )
             else:
-                program.compile(
+                breakpoint()
+                program_function = setup_program(
+                    self.PROGRAM,
+                    {"device": model_backends.GPU if device_utils.is_cupy_device(backend) else model_backends.CPU, "backend_factory": model_backends.make_custom_dace_backend} if backend.name.startswith("run_dace_") else backend,
+                    variants=static_args,
                     offset_provider=grid.connectivities,
-                    enable_jit=False,
-                    **static_args,  # type: ignore[arg-type]
                 )
 
-        test_func = device_utils.synchronized_function(program, backend=backend)
+        test_func = device_utils.synchronized_function(program_function, backend=backend)
         return test_func
 
     @pytest.fixture

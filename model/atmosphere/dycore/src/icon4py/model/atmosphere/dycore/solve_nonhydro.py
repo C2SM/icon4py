@@ -572,9 +572,9 @@ class SolveNonhydro:
         self._vertically_implicit_solver_at_predictor_step = setup_program(
             backend={
                 "backend_factory": model_backends.make_custom_dace_backend,
-                "device": model_backends.DeviceType.GPU
+                "device": model_backends.GPU
                 if device_utils.is_cupy_device(backend)
-                else model_backends.DeviceType.CPU,
+                else model_backends.CPU,
             }
             if data_alloc.backend_name(backend).startswith("run_dace")
             else backend,
@@ -616,9 +616,9 @@ class SolveNonhydro:
         self._vertically_implicit_solver_at_corrector_step = setup_program(
             backend={
                 "backend_factory": model_backends.make_custom_dace_backend,
-                "device": model_backends.DeviceType.GPU
+                "device": model_backends.GPU
                 if device_utils.is_cupy_device(backend)
-                else model_backends.DeviceType.CPU,
+                else model_backends.CPU,
             }
             if data_alloc.backend_name(backend).startswith("run_dace")
             else backend,
