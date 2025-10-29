@@ -1419,8 +1419,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "0.0.0+missing.version.info"
-source = { git = "https://github.com/edopao/gt4py?branch=dace-update_domain_lowering#40526a4c7f384ed8d56cb41bd503cc20e79eaee1" }
+version = "1.0.10+unknown.version.details"
+source = { git = "https://github.com/edopao/gt4py?branch=dace-update_domain_lowering#9ed2afdce9d0ad61d9f2db5cfbaee8314b6e71ef" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
