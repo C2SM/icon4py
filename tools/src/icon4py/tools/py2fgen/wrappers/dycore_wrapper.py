@@ -160,9 +160,7 @@ def solve_nh_init(
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
-    backend_name = (
-        actual_backend.name if hasattr(actual_backend, "name") else actual_backend.__name__
-    )
+    backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
     config = solve_nonhydro.NonHydrostaticConfig(
