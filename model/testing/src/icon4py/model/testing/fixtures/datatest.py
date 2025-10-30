@@ -32,15 +32,7 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox
 
 
-@pytest.fixture(scope="session")
-def backend_like(request: pytest.FixtureRequest) -> model_backends.BackendLike:
-    """
-    Fixture to provide a GT4Py backend or an ICON4Py BackendDescriptor for the tests.
-
-    See `backend` fixture for details.
-    """
-    spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
-    assert isinstance(spec, str), "Backend spec must be a string"
+def _get_backend_like(spec: str) -> model_backends.BackendLike:
     if spec.count(":") > 1:
         raise ValueError(
             "Invalid backend spec in '--backend' option (spec: <backend_name> or <path.to.module>:<symbol>)"
@@ -59,7 +51,19 @@ def backend_like(request: pytest.FixtureRequest) -> model_backends.BackendLike:
 
 
 @pytest.fixture(scope="session")
-def backend(backend_like: model_backends.BackendLike) -> gtx_typing.Backend | None:
+def backend_like(request: pytest.FixtureRequest) -> model_backends.BackendLike:
+    """
+    Fixture to provide a GT4Py backend or an ICON4Py BackendDescriptor for the tests.
+
+    See `backend` fixture for details.
+    """
+    spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
+    assert isinstance(spec, str), "Backend spec must be a string"
+    return _get_backend_like(spec)
+
+
+@pytest.fixture(scope="session")
+def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
     """
     Fixture to provide a GT4Py backend for the tests.
 
@@ -71,6 +75,9 @@ def backend(backend_like: model_backends.BackendLike) -> gtx_typing.Backend | No
     # TODO(havogt): eventually all tests should support `backend_like`,
     # then `backend_like` should probably be renamed to `backend`.
 
+    spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
+    assert isinstance(spec, str), "Backend spec must be a string"
+    backend_like = _get_backend_like(spec)
     # We create a generic concrete backend (no program specific customization).
     return model_options.customize_backend(None, backend_like)
 
