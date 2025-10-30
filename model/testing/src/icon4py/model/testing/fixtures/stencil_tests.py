@@ -16,6 +16,8 @@ from icon4py.model.common.grid import base as base_grid, grid_manager as gm, sim
 from icon4py.model.testing import definitions, grid_utils
 
 
+BENCHMARK_DEFAULT_LEVELS: Final[int] = 80
+
 DEFAULT_GRID: Final[str] = "simple"
 DEFAULT_NUM_LEVELS: Final[int] = (
     10  # the number matters for performance measurements, but otherwise is arbitrary
@@ -53,14 +55,14 @@ def _get_grid_manager_from_preset(
         case "icon_benchmark_regional":
             return grid_utils.get_grid_manager_from_identifier(
                 definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
-                num_levels=num_levels,
+                num_levels=BENCHMARK_DEFAULT_LEVELS,
                 keep_skip_values=False,
                 backend=backend,
             )
         case "icon_benchmark_global":
             return grid_utils.get_grid_manager_from_identifier(
                 definitions.Grids.R02B07_GLOBAL,
-                num_levels=num_levels,
+                num_levels=BENCHMARK_DEFAULT_LEVELS,
                 keep_skip_values=False,
                 backend=backend,
             )
