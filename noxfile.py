@@ -53,7 +53,7 @@ NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 @nox.session(python=["3.10", "3.11"])
 def benchmark_model(session: nox.Session) -> None:
     """Run pytest benchmarks."""
-    _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
+    _install_session_venv(session, extras=["io", "testing"], groups=["test"])
 
     session.run(
         *f"pytest \
@@ -149,7 +149,7 @@ def test_model(
     session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath
 ) -> None:
     """Run tests for selected icon4py model subpackages."""
-    _install_session_venv(session, extras=["dace", "fortran", "io", "testing"], groups=["test"])
+    _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
@@ -182,7 +182,7 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
 )
 def test_tools(session: nox.Session, datatest: bool) -> None:
     """Run tests for the Fortran integration tools."""
-    _install_session_venv(session, extras=["dace", "fortran", "io", "testing"], groups=["test"])
+    _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
 
     with session.chdir("tools"):
         session.run(
