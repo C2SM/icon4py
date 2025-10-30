@@ -50,7 +50,7 @@ def experiment() -> definitions.Experiment:
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
     return gridtest_utils.get_grid_manager_from_experiment(
-        definitions.Experiments.MCH_CH_R04B09, keep_skip_values=True, backend=None
+        definitions.Experiments.MCH_CH_R04B09, keep_skip_values=True, allocator=None
     ).grid
 
 
