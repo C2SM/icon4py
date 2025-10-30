@@ -94,10 +94,9 @@ requires-python = ">=3.10"
 version = "0.0.6"
 
 [project.optional-dependencies]
-all = ["icon4py[dace,distributed,fortran,io,testing]"]
+all = ["icon4py[distributed,fortran,io,testing]"]
 cuda11 = ["icon4py-common[cuda11]"]
 cuda12 = ["icon4py-common[cuda12]"]
-dace = ["icon4py-common[dace]"]
 distributed = ["icon4py-common[distributed]"]
 fortran = ["icon4py-tools>=0.0.6"]
 io = ["icon4py-common[io]"]
