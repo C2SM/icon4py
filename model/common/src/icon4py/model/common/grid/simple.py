@@ -412,7 +412,9 @@ class SimpleGridData:
 
 
 def simple_grid(
-    *, backend: gtx_typing.Backend | None = None, num_levels: int = DEFAULT_NUM_LEVELS
+    *,
+    allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
+    num_levels: int = DEFAULT_NUM_LEVELS,
 ) -> base.Grid:
     """
     Factory function to create a SimpleGrid instance.
@@ -441,7 +443,7 @@ def simple_grid(
         limited_area=False,
     )
 
-    on_gpu = False if backend is None else device_utils.is_cupy_device(backend)
+    on_gpu = False if allocator is None else device_utils.is_cupy_device(allocator)
     simple_grid_data = SimpleGridData(on_gpu=on_gpu)
 
     neighbor_tables = {
@@ -461,7 +463,9 @@ def simple_grid(
     }
 
     connectivities = {
-        offset.value: base.construct_connectivity(offset, table, skip_value=None, allocator=backend)
+        offset.value: base.construct_connectivity(
+            offset, table, skip_value=None, allocator=allocator
+        )
         for offset, table in neighbor_tables.items()
     }
 

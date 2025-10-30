@@ -88,7 +88,7 @@ def run_grid_manager(
             grid,
             keep_skip_values=keep_skip_values,
             num_levels=1,
-            backend=backend,
+            allocator=backend,
         )
         managers[key] = manager
         return manager

@@ -331,7 +331,7 @@ def test_gridmanager_given_file_not_found_then_abort() -> None:
         manager = gm.GridManager(
             gm.NoTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
         )
-        manager(backend=None, keep_skip_values=True)
+        manager(allocator=None, keep_skip_values=True)
         assert error.value == 1
 
 

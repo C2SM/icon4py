@@ -22,7 +22,7 @@ from icon4py.model.testing.fixtures.stencil_tests import grid
 
 
 def test_cross_product(backend):
-    mesh = simple.simple_grid(backend=backend)
+    mesh = simple.simple_grid(allocator=backend)
     x1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
     y1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
     z1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)

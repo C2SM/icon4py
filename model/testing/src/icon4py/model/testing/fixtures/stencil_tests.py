@@ -12,6 +12,7 @@ from typing import Final
 import gt4py.next.typing as gtx_typing
 import pytest
 
+from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
 from icon4py.model.testing import definitions, grid_utils
 
@@ -32,7 +33,7 @@ def _get_grid_from_preset(
     grid_preset: str,
     *,
     num_levels: int = DEFAULT_NUM_LEVELS,
-    backend: gtx_typing.Backend | None = None,
+    allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
 ) -> base_grid.Grid:
     match grid_preset:
         case "icon_regional":
@@ -40,28 +41,30 @@ def _get_grid_from_preset(
                 definitions.Grids.MCH_CH_R04B09_DSL,
                 num_levels=num_levels,
                 keep_skip_values=False,
-                backend=backend,
+                allocator=allocator,
             ).grid
         case "icon_global":
             return grid_utils.get_grid_manager_from_identifier(
                 definitions.Grids.R02B04_GLOBAL,
                 num_levels=num_levels,
                 keep_skip_values=False,
-                backend=backend,
+                allocator=allocator,
             ).grid
         case "icon_benchmark":
             return grid_utils.get_grid_manager_from_identifier(
                 definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
                 num_levels=80,  # default benchmark size in ICON Fortran
                 keep_skip_values=False,
-                backend=backend,
+                allocator=allocator,
             ).grid
         case _:
-            return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
+            return simple_grid.simple_grid(allocator=allocator, num_levels=num_levels)
 
 
 @pytest.fixture(scope="session")
-def grid(request: pytest.FixtureRequest, backend: gtx_typing.Backend | None) -> base_grid.Grid:
+def grid(
+    request: pytest.FixtureRequest, backend_like: model_backends.BackendLike
+) -> base_grid.Grid:
     """
     Fixture for providing a grid instance.
 
@@ -80,13 +83,15 @@ def grid(request: pytest.FixtureRequest, backend: gtx_typing.Backend | None) -> 
     name, *levels = spec.split(":")
     num_levels = int(levels[0]) if levels and levels[0].strip() else DEFAULT_NUM_LEVELS
 
+    allocator = model_backends.get_allocator(backend_like)
+
     if name in VALID_GRID_PRESETS:
-        grid = _get_grid_from_preset(name, num_levels=num_levels, backend=backend)
+        grid = _get_grid_from_preset(name, num_levels=num_levels, allocator=allocator)
     else:
         try:
             grid_file = pathlib.Path(name).resolve(strict=True)
             grid = grid_utils.get_grid_manager(
-                grid_file, num_levels=num_levels, keep_skip_values=False, backend=backend
+                grid_file, num_levels=num_levels, keep_skip_values=False, allocator=allocator
             ).grid
         except OSError as e:
             raise ValueError(

@@ -146,7 +146,7 @@ def test_io_monitor_write_ugrid_file(test_path):
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
     grid = grid_utils.get_grid_manager_from_experiment(
-        definitions.Experiments.EXCLAIM_APE, keep_skip_values=True, backend=backend
+        definitions.Experiments.EXCLAIM_APE, keep_skip_values=True, allocator=backend
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(

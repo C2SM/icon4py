@@ -13,15 +13,14 @@ from collections.abc import Callable
 from typing import NamedTuple
 
 import click
-import gt4py.next.typing as gtx_typing
 import numpy as np
 from devtools import Timer
-from gt4py.next import config as gtx_config, metrics as gtx_metrics
+from gt4py.next import config as gtx_config, metrics as gtx_metrics, typing as gtx_typing
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -65,6 +64,9 @@ class TimeLoop:
         self._simulation_date: datetime.datetime = self.run_config.start_date
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
+        self._allocator: gtx_typing.FieldBufferAllocationUtil = model_backends.get_allocator(
+            self.run_config.backend
+        )
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -176,7 +178,7 @@ class TimeLoop:
                 second_order_divdamp_factor,
                 do_prep_adv,
             )
-            device_utils.sync(self.run_config.backend)
+            device_utils.sync(self._allocator)
             timer.capture()
 
             self._is_first_step_in_simulation = False
@@ -340,7 +342,7 @@ def initialize(
     serialization_type: driver_init.SerializationType,
     experiment_type: driver_init.ExperimentType,
     grid_file: pathlib.Path,
-    backend: gtx_typing.Backend,
+    backend_like: model_backends.BackendLike,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
     Initialize the driver run.
@@ -367,13 +369,16 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(experiment_type=experiment_type, backend=backend)
+    config = driver_config.read_config(experiment_type=experiment_type, backend=backend_like)
+
+    # TODO(havogt): Serialbox infrastructure needs to be upgraded to work with allocator instead of backend
+    generic_concrete_backend = model_options.customize_backend(None, backend_like)
 
     decomp_info = driver_init.read_decomp_info(
         path=file_path,
         grid_file=grid_file,
         procs_props=props,
-        backend=backend,
+        backend=generic_concrete_backend,
         ser_type=serialization_type,
     )
 
@@ -381,7 +386,7 @@ def initialize(
     grid = driver_init.read_icon_grid(
         path=file_path,
         grid_file=grid_file,
-        backend=backend,
+        backend=generic_concrete_backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -395,7 +400,7 @@ def initialize(
         path=file_path,
         grid_file=grid_file,
         vertical_grid_config=config.vertical_grid_config,
-        backend=backend,
+        backend=generic_concrete_backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -408,7 +413,7 @@ def initialize(
     ) = driver_init.read_static_fields(
         path=file_path,
         grid_file=grid_file,
-        backend=backend,
+        backend=generic_concrete_backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -426,14 +431,14 @@ def initialize(
         edge_geometry,
         cell_geometry,
         exchange=exchange,
-        backend=backend,
+        backend=backend_like,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=grid,
-        backend=backend,
+        backend=backend_like,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
@@ -457,7 +462,7 @@ def initialize(
         cell_param=cell_geometry,
         edge_param=edge_geometry,
         path=file_path,
-        backend=backend,
+        backend=generic_concrete_backend,
         rank=props.rank,
         experiment_type=experiment_type,
     )
@@ -569,7 +574,7 @@ def icon4py_driver(
             f"Invalid driver backend: {icon4py_driver_backend}. \n"
             f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS])}"
         )
-    backend = model_backends.BACKENDS[icon4py_driver_backend]
+    backend_like = model_backends.BACKENDS[icon4py_driver_backend]
 
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
@@ -583,7 +588,7 @@ def icon4py_driver(
         serialization_type,
         experiment_type,
         pathlib.Path(grid_file),
-        backend,
+        backend_like,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
     log.info(

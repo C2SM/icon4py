@@ -12,7 +12,7 @@ from icon4py.model.atmosphere.diffusion import diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.fixtures import backend
+from icon4py.model.testing.fixtures import backend, backend_like
 
 from ..utils import diff_multfac_vn_numpy, smag_limit_numpy
 
@@ -26,7 +26,7 @@ def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
 
 
 def test_scale_k(backend):
-    grid = simple_grid.simple_grid(backend=backend)
+    grid = simple_grid.simple_grid(allocator=backend)
     field = data_alloc.random_field(grid, dims.KDim, allocator=backend)
     scaled_field = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     factor = 2.0
@@ -35,7 +35,7 @@ def test_scale_k(backend):
 
 
 def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
-    grid = simple_grid.simple_grid(backend=backend)
+    grid = simple_grid.simple_grid(allocator=backend)
     diff_multfac_vn_init = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     smag_limit_init = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     k4 = 1.0
@@ -56,7 +56,7 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
 
 
 def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
-    grid = simple_grid.simple_grid(backend=backend)
+    grid = simple_grid.simple_grid(allocator=backend)
     diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     smag_limit = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     k4 = 1.0
@@ -79,7 +79,7 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
 
 
 def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
-    grid = simple_grid.simple_grid(backend=backend)
+    grid = simple_grid.simple_grid(allocator=backend)
     diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     smag_limit = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
     k4 = 0.003

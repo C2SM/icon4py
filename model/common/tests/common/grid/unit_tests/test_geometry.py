@@ -410,7 +410,7 @@ def test_create_auxiliary_orientation_coordinates(
         experiment.grid,
         num_levels=1,
         keep_skip_values=True,
-        backend=backend,
+        allocator=backend,
     )
     grid = gm.grid
     coordinates = gm.coordinates
@@ -420,7 +420,7 @@ def test_create_auxiliary_orientation_coordinates(
     edge_lat = coordinates[dims.EdgeDim]["lat"]
     edge_lon = coordinates[dims.EdgeDim]["lon"]
     lat_0, lon_0, lat_1, lon_1 = geometry.create_auxiliary_coordinate_arrays_for_orientation(
-        grid, cell_lat, cell_lon, edge_lat, edge_lon, backend=backend
+        grid, cell_lat, cell_lon, edge_lat, edge_lon, allocator=backend
     )
     connectivity = grid.get_connectivity(dims.E2C).asnumpy()
     has_boundary_edges = np.count_nonzero(connectivity == -1)

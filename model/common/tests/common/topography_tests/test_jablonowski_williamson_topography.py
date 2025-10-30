@@ -38,7 +38,7 @@ def test_jablonowski_williamson_topography(
     topo_c = topography.jablonowski_williamson_topography(
         cell_lat=cell_center_lat,
         u0=35.0,
-        backend=backend,
+        allocator=backend,
     )
 
     topo_c_ref = topography_savepoint.topo_c().asnumpy()

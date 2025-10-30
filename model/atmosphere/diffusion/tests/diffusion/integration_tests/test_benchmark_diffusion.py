@@ -13,13 +13,10 @@ from typing import TYPE_CHECKING, Any
 import gt4py.next as gtx
 import pytest
 
-
-if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common.constants import RayleighType
+from icon4py.model.common import constants, model_backends, model_options
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -47,7 +44,7 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.benchmark_only
 def test_run_diffusion_benchmark(
     grid: definitions.GridDescription,
-    backend: gtx_typing.Backend | None,
+    backend: model_backends.BackendLike,
     benchmark: Any,
 ) -> None:
     dtime = 10.0
@@ -72,20 +69,22 @@ def test_run_diffusion_benchmark(
 
     diffusion_parameters = diffusion.DiffusionParams(config)
 
+    allocator = model_backends.get_allocator(backend)
+    generic_concrete_backend = model_options.customize_backend(None, backend)
     grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid, num_levels=85, keep_skip_values=True, backend=backend
+        grid, num_levels=85, keep_skip_values=True, allocator=allocator
     )
 
     mesh = grid_manager.grid
     coordinates = grid_manager.coordinates
     geometry_input_fields = grid_manager.geometry_fields
 
-    decomposition_info = construct_decomposition_info(mesh, backend)
+    decomposition_info = construct_decomposition_info(grid=mesh, allocator=allocator)
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
         decomposition_info=decomposition_info,
-        backend=backend,
+        backend=generic_concrete_backend,
         coordinates=coordinates,
         extra_fields=geometry_input_fields,
         metadata=geometry_meta.attrs,
@@ -128,7 +127,7 @@ def test_run_diffusion_benchmark(
     topo_c = jablonowski_williamson_topography(
         cell_lat=cell_geometry.cell_center_lat.ndarray,
         u0=35.0,
-        backend=backend,
+        allocator=allocator,
     )
 
     vertical_config = v_grid.VerticalGridConfig(
@@ -138,7 +137,7 @@ def test_run_diffusion_benchmark(
         stretch_factor=1.0,
         rayleigh_damping_height=1.0,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator=allocator)
 
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_config,
@@ -150,7 +149,7 @@ def test_run_diffusion_benchmark(
         grid=mesh,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        backend=backend,
+        backend=generic_concrete_backend,
         metadata=interpolation_attributes.attrs,
     )
 
@@ -161,9 +160,9 @@ def test_run_diffusion_benchmark(
         geometry_source=geometry_field_source,
         topography=gtx.as_field((dims.CellDim,), data=topo_c),
         interpolation_source=interpolation_field_source,
-        backend=backend,
+        backend=generic_concrete_backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=RayleighType.KLEMP,
+        rayleigh_type=constants.RayleighType.KLEMP,
         rayleigh_coeff=5.0,
         exner_expol=0.333,
         vwind_offctr=0.2,
@@ -190,7 +189,7 @@ def test_run_diffusion_benchmark(
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        hdef_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         div_ic=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
         dwdx=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
         dwdy=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
@@ -198,12 +197,12 @@ def test_run_diffusion_benchmark(
 
     prognostic_state = prognostics.PrognosticState(
         w=data_alloc.random_field(
-            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, allocator=backend
+            mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, low=0.0, allocator=allocator
         ),
-        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=backend),
-        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
-        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
-        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=backend),
+        vn=data_alloc.random_field(mesh, dims.EdgeDim, dims.KDim, allocator=allocator),
+        exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
     )
 
     diffusion_granule = diffusion.Diffusion(
