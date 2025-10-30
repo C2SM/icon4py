@@ -1394,8 +1394,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post560+17be22e7"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=non_dace_dependent_fast_call_scheme#17be22e74a4a5898bc673508fd85d4b18bc33579" }
+version = "1.0.4.post561+c228fc80"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=non_dace_dependent_fast_call_scheme#c228fc80f70920ac673e858d127d90572b44570e" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
