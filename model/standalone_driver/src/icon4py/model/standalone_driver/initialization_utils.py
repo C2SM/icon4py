@@ -7,44 +7,40 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import datetime
-import functools
 import logging
 import pathlib
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import netCDF4 as nc4
+from model.common.src.icon4py.model.common.constants import RayleighType
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, utils as common_utils
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import (
-    definitions as decomposition,
+    definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
 from icon4py.model.common.grid import (
-    base,
+    geometry as grid_geometry,
+    geometry_attributes as geometry_meta,
+    grid_manager as gm,
     icon as icon_grid,
     states as grid_states,
     vertical as v_grid,
-    grid_manager as gm,
-    geometry as grid_geometry,
-    geometry_attributes as geometry_meta,
 )
+from icon4py.model.common.initialization.jablonowski_williamson_topography import (
+    jablonowski_williamson_topography,
+)
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
-from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver.testcases import jablonowski_williamson # TODO (Yilu) should be get rid of
-from icon4py.model.testing import definitions, grid_utils, serialbox as sb
+from icon4py.model.standalone_driver.testcases import jablonowski_williamson
 
-from model.common.src.icon4py.model.common.constants import RayleighType
-from icon4py.model.common.initialization.jablonowski_williamson_topography import (
-    jablonowski_williamson_topography,
-)
 
 log = logging.getLogger(__name__)
 
@@ -54,28 +50,34 @@ _LOGGING_LEVELS: dict[str, int] = {
     "critical": logging.CRITICAL,
 }
 
-# icon_grid, decomp_info = create_mesh(grid_file)
 
-# create_vertical_grid(vertical_grid_config)
-
-# create_factories() -> geometry_field_source, interpolation_field_source, metrics_field_source
-
-# diffusion, solve_nh = initialize_granule()
-
-# read_initial_state()
 def create_mesh(
-    grid_file: pathlib.Path,
+    grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     backend: gtx_typing.Backend,
 ) -> tuple[
-    decomposition.DecompositionInfo,
+    decomposition_defs.DecompositionInfo,
     icon_grid.IconGrid,
 ]:
-    grid_manager = grid_utils.get_grid_manager(
-        grid_file=grid_file, num_levels=vertical_grid_config.num_levels, keep_skip_values=True, backend=backend
-    ) # TODO (Yilu) check keep_skip_values=True or False
-    mesh = grid_manager.mesh
-    decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)
+    grid_manager = gm.GridManager(
+        gm.ToZeroBasedIndexTransformation(),
+        grid_file_path,
+        vertical_grid_config,
+    )
+    grid_manager(backend=backend, keep_skip_values=True)
+    mesh = grid_manager.grid
+
+    xp = data_alloc.import_array_ns(backend)
+
+    def _add_dimension(dim: gtx.Dimension) -> None:
+        indices = data_alloc.index_field(mesh, dim, allocator=backend)
+        owner_mask = xp.ones((mesh.size[dim],), dtype=bool)
+        decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
+
+    decomposition_info = decomposition_defs.DecompositionInfo(klevels=mesh.num_levels)
+    _add_dimension(dims.EdgeDim)
+    _add_dimension(dims.VertexDim)
+    _add_dimension(dims.CellDim)
 
     return mesh, decomposition_info
 
@@ -84,7 +86,6 @@ def create_vertical_grid(
     vertical_grid_config: v_grid.VerticalGridConfig,
     backend: gtx_typing.Backend,
 ) -> v_grid.VerticalGrid:
-
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, backend)
 
     vertical_grid = v_grid.VerticalGrid(
@@ -94,12 +95,12 @@ def create_vertical_grid(
     )
     return vertical_grid
 
+
 def create_geometry_factory(
     mesh: icon_grid.IconGrid,
-    decomposition_info: decomposition.DecompositionInfo,
-    backend:gtx_typing.Backend,
+    decomposition_info: decomposition_defs.DecompositionInfo,
+    backend: gtx_typing.Backend,
 ) -> grid_geometry.GridGeometry:
-
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
         decomposition_info=decomposition_info,
@@ -111,11 +112,11 @@ def create_geometry_factory(
 
     return geometry_field_source
 
-def create_topography(
-    geometry_field_source:grid_geometry.GridGeometry,
-    backend:gtx_typing.Backend,
-) -> data_alloc.NDArray:
 
+def create_topography(
+    geometry_field_source: grid_geometry.GridGeometry,
+    backend: gtx_typing.Backend,
+) -> data_alloc.NDArray:
     topo_c = jablonowski_williamson_topography(
         cell_lat=geometry_field_source.get(geometry_meta.CELL_LAT).ndarray,
         u0=35.0,
@@ -123,18 +124,18 @@ def create_topography(
     )
     return topo_c
 
+
 def create_interpolation_metrics_factories(
     mesh: icon_grid.IconGrid,
-    decomposition_info:decomposition.DecompositionInfo,
-    geometry_field_source:grid_geometry.GridGeometry,
-    vertical_grid:v_grid.VerticalGrid,
+    decomposition_info: decomposition_defs.DecompositionInfo,
+    geometry_field_source: grid_geometry.GridGeometry,
+    vertical_grid: v_grid.VerticalGrid,
     topo_c: data_alloc.NDArray,
-    backend:gtx_typing.Backend,
-)-> tuple[
+    backend: gtx_typing.Backend,
+) -> tuple[
     interpolation_factory.InterpolationFieldsFactory,
     metrics_factory.MetricsFieldsFactory,
 ]:
-
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
         grid=mesh,
         decomposition_info=decomposition_info,
@@ -160,22 +161,22 @@ def create_interpolation_metrics_factories(
 
     return interpolation_field_source, metrics_field_source
 
+
 def initialize_granule(
-    mesh:icon_grid.IconGrid,
-    decomposition_info:decomposition.DecompositionInfo,
-    vertical_grid:v_grid.VerticalGrid,
-    diffusion_config:diffusion.DiffusionConfig,
-    solve_nh_config:solve_nh.NonHydrostaticConfig,
-    geometry_field_source:grid_geometry.GridGeometry,
-    interpolation_field_source:interpolation_factory.InterpolationFieldsFactory,
-    metrics_field_source:metrics_factory.MetricsFieldsFactory,
-    exchange:decomposition.ExchangeRuntime,
-    backend:gtx_typing.Backend,
+    mesh: icon_grid.IconGrid,
+    decomposition_info: decomposition_defs.DecompositionInfo,
+    vertical_grid: v_grid.VerticalGrid,
+    diffusion_config: diffusion.DiffusionConfig,
+    solve_nh_config: solve_nh.NonHydrostaticConfig,
+    geometry_field_source: grid_geometry.GridGeometry,
+    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
+    metrics_field_source: metrics_factory.MetricsFieldsFactory,
+    exchange: decomposition_defs.ExchangeRuntime,
+    backend: gtx_typing.Backend,
 ) -> tuple[
     diffusion.Diffusion,
     solve_nh.SolveNonhydro,
 ]:
-
     cell_geometry = grid_states.CellParams(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
@@ -311,12 +312,6 @@ def initialize_granule(
         coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
     )
 
-    diagnostic_metric_state = diagnostics.DiagnosticMetricState(
-        ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
-        rbf_vec_coeff_c1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1),
-        rbf_vec_coeff_c2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1),
-    )
-
     diffusion_params = diffusion.DiffusionParams(diffusion_config)
 
     diffusion_granule = diffusion.Diffusion(
@@ -356,15 +351,14 @@ def initialize_granule(
 
 def read_initial_state(
     grid: icon_grid.IconGrid,
-    geometry_field_source:grid_geometry.GridGeometry,
-    path: pathlib.Path,
+    geometry_field_source: grid_geometry.GridGeometry,
+    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
+    metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend,
-    rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
     dycore_states.DiagnosticStateNonHydro,
     dycore_states.PrepAdvection,
-    float,
     diagnostics.DiagnosticState,
     prognostics.PrognosticState,
     prognostics.PrognosticState,
@@ -374,15 +368,13 @@ def read_initial_state(
 
     Args:
         grid: IconGrid
-        cell_param: cell properties
-        edge_param: edge properties
-        path: path to the serialized input data
+        geometry_field_source: geometry field factory,
+        interpolation_field_source: interpolation field factory,
+        metrics_field_source: metrics field factory,
         backend: GT4Py backend
-        rank: mpi rank of the current compute node
-        experiment_type: (optional) defaults to ANY=any, type of initial condition to be read
 
     Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
-        PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
+        PrepAdvection, diagnostic variables, and two prognostic
         variables (now and next).
     """
 
@@ -390,36 +382,32 @@ def read_initial_state(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prep_adv,
-        divdamp_fac_o2,
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
     ) = jablonowski_williamson.model_initialization_jabw(
         grid=grid,
-        cell_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
-        edge_lat = geometry_field_source.get(geometry_meta.EDGE_LAT),
-        edge_lon = geometry_field_source.get(geometry_meta.EDGE_LON),
-        primal_normal_x = geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
-        path=path,
+        geometry_field_source=geometry_field_source,
+        interpolation_field_source=interpolation_field_source,
+        metrics_field_source=metrics_field_source,
         backend=backend,
-        rank=rank,
     )
 
     return (
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prep_adv,
-        divdamp_fac_o2,
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
     )
 
+
 def configure_logging(
-    run_path: pathlib.Path,
+    output_path: pathlib.Path,
     experiment_name: str,
     logging_level: str,
-    processor_procs: decomposition.ProcessProperties = None,
+    processor_procs: decomposition_defs.ProcessProperties = None,
 ) -> None:
     """
     Configure logging.
@@ -427,7 +415,7 @@ def configure_logging(
     Log output is sent to console and to a file.
 
     Args:
-        run_path: path to the output folder where the logfile should be stored
+        output_path: path to the output folder where the logfile should be stored
         experiment_name: name of the simulation
         enable_output: enable output logging messages above debug level
         processor_procs: ProcessProperties
@@ -438,7 +426,7 @@ def configure_logging(
             f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([k for k in _LOGGING_LEVELS])}"
         )
 
-    logfile = run_path.joinpath(f"log_{experiment_name}_{datetime.now(datetime.timezone.utc)}")
+    logfile = output_path.joinpath(f"log_{experiment_name}_{datetime.now(datetime.timezone.utc)}")
     logfile.touch(exist_ok=False)
 
     logging.basicConfig(

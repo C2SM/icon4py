@@ -73,18 +73,16 @@ class Icon4pyDriver:
         """
         Print out icon4py signature and some important information of the initial setup to the log file.
 
-                                                                ___
-            -------                                    //      ||   \
-              | |                                     //       ||    |
-              | |       __      _ _        _ _       //  ||    ||___/
-              | |     //       /   \     |/   \     //_ _||_   ||        \\      //
-              | |    ||       |     |    |     |    --------   ||         \\    //
-              | |     \\__     \_ _/     |     |         ||    ||          \\  //
-            -------                                                           //
-                                                                             //
-                                                                = = = = = = //
-        123456789123456789123456789123456789123456789123456789123456789123456789123456789
-                 10       20       30       40       50       60       70       80       90
+                                                                ___                      
+            -------                                    //      ||   \                    
+              | |                                     //       ||    |                   
+              | |       __      _ _        _ _       //  ||    ||___/                    
+              | |     //       /   \     |/   \     //_ _||_   ||        \\      //      
+              | |    ||       |     |    |     |    --------   ||         \\    //       
+              | |     \\__     \_ _/     |     |         ||    ||          \\  //        
+            -------                                                           //         
+                                                                             //          
+                                                                = = = = = = //           
         """
         boundary_line = "*+*" * 33
         icon4py_signature = []
@@ -276,6 +274,8 @@ class Icon4pyDriver:
 
             self._is_first_step_in_simulation = False
 
+            self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
+
             # TODO(OngChia): simple IO enough for JW test
 
         timer_first_timestep.summary(True)
@@ -313,8 +313,6 @@ class Icon4pyDriver:
             )
 
         prognostic_states.swap()
-
-    # TODO(OngChia): add tracer advection here
 
     def _update_time_levels_for_velocity_tendencies(
         self,
@@ -507,11 +505,11 @@ class DriverStates(NamedTuple):
 
 
 def initialize(
-    run_path: pathlib.Path,
+    configuration_file_path: pathlib.Path,
+    output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
     backend: str,
-    enable_profiling: bool,
 ) -> tuple[Icon4pyDriver, DriverStates]:
     """
     Initialize the driver run.
@@ -540,21 +538,23 @@ def initialize(
         decomposition.get_runtype(with_mpi=False)
     )
     # TODO (Chia Rui): experiment name should be in driver config
-    driver_init.configure_logging(run_path, log_level, "Jablownoski-Williamson", parallel_props)
+    driver_init.configure_logging(output_path, log_level, "Jablownoski-Williamson", parallel_props)
 
     log.info("initialize parallel runtime")
     log.info("reading configuration: experiment Jablownoski-Williamson")
     driver_config, vertical_grid_config, diffusion_config, solve_nh_config = (
-        driver_configure.read_config(backend=backend)
+        driver_configure.read_config(
+            configuration_file_path=configuration_file_path,
+            output_path=output_path,
+            grid_file_path=grid_file_path,
+            backend=backend,
+        )
     )
 
     log.info(f"initializing the grid from '{grid_file_path}'")
-    (
-        grid,
-        decomposition_info
-    ) = driver_init.create_mesh(
-        grid_file = grid_file_path,
-        vertical_grid_config= vertical_grid_config,
+    (grid, decomposition_info) = driver_init.create_mesh(
+        grid_file=grid_file_path,
+        vertical_grid_config=vertical_grid_config,
         backend=backend,
     )
     vertical_grid = driver_init.create_vertical_grid(
@@ -563,14 +563,14 @@ def initialize(
     )
 
     geometry_field_source = driver_init.create_geometry_factory(
-        mesh = grid,
-        decomposition_info = decomposition_info,
-        backend = backend,
+        mesh=grid,
+        decomposition_info=decomposition_info,
+        backend=backend,
     )
 
     topo_c = driver_init.create_topography(
-        geometry_field_source = geometry_field_source,
-        backend = backend,
+        geometry_field_source=geometry_field_source,
+        backend=backend,
     )
 
     (
@@ -578,11 +578,11 @@ def initialize(
         metrics_field_source,
     ) = driver_init.create_interpolation_metrics_factories(
         mesh=grid,
-        decomposition_info = decomposition_info,
-        geometry_field_source = geometry_field_source,
-        vertical_grid = vertical_grid,
-        topo_c = topo_c,
-        backend = backend,
+        decomposition_info=decomposition_info,
+        geometry_field_source=geometry_field_source,
+        vertical_grid=vertical_grid,
+        topo_c=topo_c,
+        backend=backend,
     )
 
     log.info(f"reading input fields from '{grid_file_path}'")
@@ -639,7 +639,9 @@ def initialize(
     )
 
 
+# TODO (Chia Rui): Ultimately, these arguments and options should be read from a config file and the only argument should be the path to the config file
 def run_icon4py_driver(
+    configuration_file_path: Annotated[str, typer.Argument(help="Configuration file path.")],
     grid_file_path: Annotated[str, typer.Argument(help="Grid file path.")],
     icon4py_driver_backend: Annotated[
         str,
@@ -648,7 +650,7 @@ def run_icon4py_driver(
             help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([k for k in model_backends.BACKENDS])}",
         ),
     ],
-    run_path: Annotated[
+    output_path: Annotated[
         str, typer.Option(help="Folder path that holds the output and log files.", default="./")
     ],
     log_level: Annotated[
@@ -658,7 +660,6 @@ def run_icon4py_driver(
             default=next(iter(driver_init._LOGGING_LEVELS.keys())),
         ),
     ],
-    enable_profiling: Annotated[bool, typer.Option(help="Enable profiling.", default=False)],
 ) -> None:
     """
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
@@ -681,19 +682,19 @@ def run_icon4py_driver(
     2. run time loop
     """
     # checking is run path exists, if not, make a new directory.
-    filter_run_path = (
-        pathlib.Path(run_path).absolute() if run_path else pathlib.Path("./").absolute()
+    filter_output_path = (
+        pathlib.Path(output_path).absolute() if output_path else pathlib.Path("./").absolute()
     )
-    pathlib.Path.mkdir(filter_run_path, exist_ok=True)
+    pathlib.Path.mkdir(filter_output_path, exist_ok=True)
 
     icon4py_driver: Icon4pyDriver
     ds: DriverStates
     icon4py_driver, ds = initialize(
-        filter_run_path,
+        pathlib.Path(configuration_file_path).absolute(),
+        filter_output_path,
         pathlib.Path(grid_file_path).absolute(),
         log_level,
         icon4py_driver_backend,
-        enable_profiling,
     )
     log.info(f"Starting ICON dycore run: {icon4py_driver.simulation_date.isoformat()}")
     log.info(f"input args: grid_path={grid_file_path}")

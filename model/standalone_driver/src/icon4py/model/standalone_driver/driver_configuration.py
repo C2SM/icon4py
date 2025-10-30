@@ -9,7 +9,7 @@ import dataclasses
 import datetime
 import logging
 import os
-from pathlib import Path
+import pathlib
 
 import gt4py.next.typing as gtx_typing
 from gt4py.next import metrics as gtx_metrics
@@ -35,12 +35,12 @@ class DriverConfig:
     experiment_name: str
     backend_name: dataclasses.InitVar[str]
     backend: gtx_typing.Backend = dataclasses.field(init=False)
-    grid_path: Path
-    configuration_file_path: Path
-    output_path: Path
+    grid_file_path: pathlib.Path
+    configuration_file_path: pathlib.Path
+    output_path: pathlib.Path
     profiling_stats: ProfilingStats | None
 
-    dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
+    dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
 
@@ -60,8 +60,10 @@ class DriverConfig:
             )
         object.__setattr__(self, "backend", model_backends.BACKENDS[backend_name])
 
-        for name in ["grid_path", "configuration_file_path", "output_path"]:
-            path = Path(os.path.expandvars(str(getattr(self, name)))).expanduser().absolute()
+        for name in ["grid_file_path", "configuration_file_path", "output_path"]:
+            path = (
+                pathlib.Path(os.path.expandvars(str(getattr(self, name)))).expanduser().absolute()
+            )
             object.__setattr__(self, name, path)
             if not path.exists():
                 log.warning(f"The path for {name} does not exist: {path}")
@@ -70,6 +72,9 @@ class DriverConfig:
 
 
 def read_config(
+    configuration_file_path: pathlib.Path,
+    output_path: pathlib.Path,
+    grid_file_path: pathlib.Path,
     backend: str,
     enable_profiling: bool,
 ) -> tuple[
@@ -94,7 +99,7 @@ def read_config(
         hdiff_efdt_ratio=10.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
-        zdiffu_t=True,
+        zdiffu_t=False,
         velocity_boundary_diffusion_denom=200.0,
     )
 
@@ -105,11 +110,17 @@ def read_config(
     profiling_stats = ProfilingStats() if enable_profiling else None
 
     driver_run_config = DriverConfig(
+        experiment_name="Jablonowski_Williamson",
+        backend=backend,
+        output_path=output_path,
+        configuration_file_path=configuration_file_path,
+        grid_file_path=grid_file_path,
         dtime=datetime.timedelta(seconds=300.0),
         end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
-        apply_initial_stabilization=False,
+        apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
-        backend=backend,
+        vertical_cfl_threshold=ta.wpfloat("0.85"),
+        enable_statistics_output=True,
         profiling_stats=profiling_stats,
     )
 

@@ -8,7 +8,6 @@
 import functools
 import logging
 import math
-import pathlib
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -16,18 +15,25 @@ import gt4py.next.typing as gtx_typing
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
+from icon4py.model.common.grid import (
+    geometry as grid_geometry,
+    geometry_attributes as geometry_meta,
+    horizontal as h_grid,
+    icon as icon_grid,
+)
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
     edge_2_cell_vector_rbf_interpolation,
 )
+from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
+from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver.testcases import utils as testcases_utils
-from icon4py.model.testing import serialbox as sb
+from icon4py.model.standalone_driver.testcases import utils as testcases_utils
 
 
 log = logging.getLogger(__name__)
@@ -35,18 +41,14 @@ log = logging.getLogger(__name__)
 
 def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
-    cell_lat: data_alloc.NDArray,
-    edge_lat: data_alloc.NDArray,
-    edge_lon: data_alloc.NDArray,
-    primal_normal_x: data_alloc.NDArray,
-    path: pathlib.Path,
+    geometry_field_source: grid_geometry.GridGeometry,
+    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
+    metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend | None,
-    rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
     dycore_states.DiagnosticStateNonHydro,
     dycore_states.PrepAdvection,
-    float,
     diagnostics.DiagnosticState,
     prognostics.PrognosticState,
     prognostics.PrognosticState,
@@ -66,48 +68,24 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
         PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
         variables (now and next).
     """
-    data_provider = sb.IconSerialDataProvider(
-        backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-    )
-
     xp = data_alloc.import_array_ns(backend)
 
-    wgtfac_c = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().wgtfac_c(), allocator=backend
-    ).ndarray
-    ddqz_z_half = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().ddqz_z_half(), allocator=backend
-    ).ndarray
-    theta_ref_mc = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().theta_ref_mc(), allocator=backend
-    ).ndarray
-    theta_ref_ic = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().theta_ref_ic(), allocator=backend
-    ).ndarray
-    exner_ref_mc = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().exner_ref_mc(), allocator=backend
-    ).ndarray
-    d_exner_dz_ref_ic = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().d_exner_dz_ref_ic(), allocator=backend
-    ).ndarray
-    geopot = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().geopot(), allocator=backend
-    ).ndarray
+    wgtfac_c = metrics_field_source.get(metrics_attributes.WGTFAC_C).ndarray
+    ddqz_z_half = metrics_field_source.get(metrics_attributes.DDQZ_Z_HALF).ndarray
+    theta_ref_mc = metrics_field_source.get(metrics_attributes.THETA_REF_MC).ndarray
+    theta_ref_ic = metrics_field_source.get(metrics_attributes.THETA_REF_IC).ndarray
+    exner_ref_mc = metrics_field_source.get(metrics_attributes.EXNER_REF_MC).ndarray
+    d_exner_dz_ref_ic = metrics_field_source.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
+    geopot = metrics_field_source.get(metrics_attributes.GEOPOT).ndarray
 
-    cell_lat = cell_lat
-    edge_lat = edge_lat
-    edge_lon = edge_lon
-    primal_normal_x = primal_normal_x
+    cell_lat = geometry_field_source.get(geometry_meta.CELL_LAT).ndarray
+    edge_lat = geometry_field_source.get(geometry_meta.EDGE_LAT).ndarray
+    edge_lon = geometry_field_source.get(geometry_meta.EDGE_LON).ndarray
+    primal_normal_x = geometry_field_source.get(geometry_meta.EDGE_NORMAL_U).ndarray
 
-    cell_2_edge_coeff = data_alloc.as_field(
-        data_provider.from_interpolation_savepoint().c_lin_e(), allocator=backend
-    )
-    rbf_vec_coeff_c1 = data_alloc.as_field(
-        data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(), allocator=backend
-    )
-    rbf_vec_coeff_c2 = data_alloc.as_field(
-        data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2(), allocator=backend
-    )
+    cell_2_edge_coeff = interpolation_field_source.get(interpolation_attributes.C_LIN_E)
+    rbf_vec_coeff_c1 = interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C1)
+    rbf_vec_coeff_c2 = interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_C2)
 
     num_cells = grid.num_cells
     num_levels = grid.num_levels
@@ -123,15 +101,15 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     )
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
-    p_sfc = 100000.0
-    jw_up = 0.0  # if doing baroclinic wave test, please set it to a nonzero value
-    jw_u0 = 35.0
-    jw_temp0 = 288.0
+    p_sfc = ta.wpfloat("100000.0")
+    jw_up = ta.wpfloat("0.0")  # if doing baroclinic wave test, please set it to a nonzero value
+    jw_u0 = ta.wpfloat("35.0")
+    jw_temp0 = ta.wpfloat("288.0")
     # DEFINED PARAMETERS for jablonowski williamson:
-    eta_0 = 0.252
-    eta_t = 0.2  # tropopause
-    gamma = 0.005  # temperature elapse rate (K/m)
-    dtemp = 4.8e5  # empirical temperature difference (K)
+    eta_0 = ta.wpfloat("0.252")
+    eta_t = ta.wpfloat("0.2")  # tropopause
+    gamma = ta.wpfloat("0.005")  # temperature elapse rate (K/m)
+    dtemp = ta.wpfloat("4.8e5")  # empirical temperature difference (K)
     # for baroclinic wave test
     lon_perturbation_center = math.pi / 9.0  # longitude of the perturb centre
     lat_perturbation_center = 2.0 * lon_perturbation_center  # latitude of the perturb centre
@@ -147,15 +125,20 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
 
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)
-    fac1 = 1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0)
+    fac1 = ta.wpfloat("1.0 / 6.3") - ta.wpfloat("2.0") * (sin_lat**6) * (
+        cos_lat**2 + ta.wpfloat("1.0 / 3.0")
+    )
     fac2 = (
-        (8.0 / 5.0 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * math.pi)
+        (
+            ta.wpfloat("8.0 / 5.0") * (cos_lat**3) * (sin_lat**2 + ta.wpfloat("2.0 / 3.0"))
+            - ta.wpfloat("0.25") * math.pi
+        )
         * phy_const.EARTH_RADIUS
         * phy_const.EARTH_ANGULAR_VELOCITY
     )
     lapse_rate = phy_const.RD * gamma / phy_const.GRAV
     for k_index in range(num_levels - 1, -1, -1):
-        eta_old = xp.full(num_cells, fill_value=1.0e-7, dtype=ta.wpfloat)
+        eta_old = xp.full(num_cells, fill_value=ta.wpfloat("1.0e-7"), dtype=ta.wpfloat)
         log.info(f"In Newton iteration, k = {k_index}")
         # Newton iteration to determine zeta
         for _ in range(100):
@@ -164,7 +147,9 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
             sin_etav = xp.sin(eta_v_ndarray[:, k_index])
 
             temperature_avg = jw_temp0 * (eta_old**lapse_rate)
-            geopot_avg = jw_temp0 * phy_const.GRAV / gamma * (1.0 - eta_old**lapse_rate)
+            geopot_avg = (
+                jw_temp0 * phy_const.GRAV / gamma * (ta.wpfloat("1.0") - eta_old**lapse_rate)
+            )
             temperature_avg = xp.where(
                 eta_old < eta_t, temperature_avg + dtemp * ((eta_t - eta_old) ** 5), temperature_avg
             )
@@ -174,12 +159,12 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
                 - phy_const.RD
                 * dtemp
                 * (
-                    (xp.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t**5)
-                    - 5.0 * (eta_t**4) * eta_old
-                    + 5.0 * (eta_t**3) * (eta_old**2)
-                    - 10.0 / 3.0 * (eta_t**2) * (eta_old**3)
-                    + 1.25 * eta_t * (eta_old**4)
-                    - 0.2 * (eta_old**5)
+                    (xp.log(eta_old / eta_t) + ta.wpfloat("137.0 / 60.0")) * (eta_t**5)
+                    - ta.wpfloat("5.0") * (eta_t**4) * eta_old
+                    + ta.wpfloat("5.0") * (eta_t**3) * (eta_old**2)
+                    - ta.wpfloat("10.0 / 3.0") * (eta_t**2) * (eta_old**3)
+                    + ta.wpfloat("1.25") * eta_t * (eta_old**4)
+                    - ta.wpfloat("0.2") * (eta_old**5)
                 ),
                 geopot_avg,
             )
@@ -187,16 +172,10 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
             geopot_jw = geopot_avg + jw_u0 * (cos_etav**1.5) * (
                 fac1 * jw_u0 * (cos_etav**1.5) + fac2
             )
-            temperature_jw = (
-                temperature_avg
-                + 0.75
-                * eta_old
-                * math.pi
-                * jw_u0
-                / phy_const.RD
-                * sin_etav
-                * xp.sqrt(cos_etav)
-                * (2.0 * jw_u0 * fac1 * (cos_etav**1.5) + fac2)
+            temperature_jw = temperature_avg + ta.wpfloat(
+                "0.75"
+            ) * eta_old * math.pi * jw_u0 / phy_const.RD * sin_etav * xp.sqrt(cos_etav) * (
+                ta.wpfloat("2.0") * jw_u0 * fac1 * (cos_etav**1.5) + fac2
             )
             newton_function = geopot_jw - geopot[:, k_index]
             newton_function_prime = -phy_const.RD / eta_old * temperature_jw
@@ -311,14 +290,14 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     log.info("U, V computation completed.")
 
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-    testcases_utils.compute_perturbed_exner.with_backend(backend)(
-        exner,
-        data_provider.from_metrics_savepoint().exner_ref_mc(),
-        perturbed_exner,
-        0,
-        num_cells,
-        0,
-        num_levels,
+    gt4py_math_op.minus_operation_on_cell_k.with_backend(backend)(
+        field_a=exner,
+        field_b=metrics_field_source.get(metrics_attributes.EXNER_REF_MC),
+        output_field=perturbed_exner,
+        horizontal_start=0,
+        horizontal_end=num_cells,
+        vertical_start=0,
+        vertical_end=num_levels,
         offset_provider={},
     )
     log.info("perturbed_exner initialization completed.")
@@ -362,7 +341,6 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prep_adv,
-        0.0,
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
