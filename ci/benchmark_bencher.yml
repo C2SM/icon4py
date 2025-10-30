@@ -21,7 +21,7 @@ include:
   parallel:
     matrix:
       - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
-        GRID: [icon_benchmark_regional, icon_benchmark_global]
+        GRID: ['icon_benchmark_regional:80', 'icon_benchmark_global:60']
   variables:
     ICON4PY_ENABLE_GRID_DOWNLOAD: false
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false

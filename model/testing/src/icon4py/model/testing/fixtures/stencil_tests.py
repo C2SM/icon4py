@@ -53,14 +53,14 @@ def _get_grid_manager_from_preset(
         case "icon_benchmark_regional":
             return grid_utils.get_grid_manager_from_identifier(
                 definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
-                num_levels=80,  # default benchmark size in ICON Fortran
+                num_levels=num_levels,
                 keep_skip_values=False,
                 backend=backend,
             )
         case "icon_benchmark_global":
             return grid_utils.get_grid_manager_from_identifier(
                 definitions.Grids.R02B07_GLOBAL,
-                num_levels=80,  # default benchmark size in ICON Fortran
+                num_levels=num_levels,
                 keep_skip_values=False,
                 backend=backend,
             )
