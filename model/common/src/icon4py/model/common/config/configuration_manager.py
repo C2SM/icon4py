@@ -12,7 +12,6 @@ import logging
 import pathlib
 import sys
 from types import ModuleType
-from typing import Any
 
 import omegaconf as oc
 
@@ -23,7 +22,7 @@ MODEL_NODE = "model"
 log = logging.getLogger(__file__)
 
 
-# TODO (halungge):
+# TODO (halungge): address
 # [ ]  interpolation of values
 # [-] set all configs to readonly when updated and interpolations done - > does not work for OmegaConf.to_object
 
@@ -46,7 +45,8 @@ def load_reader(module: ModuleType, update: oc.DictConfig) -> reader.Configurati
         default_reader = module.init_config()
         default_reader.update(update)
     else:
-        default_reader = reader.DictConfiguration(update)
+        default_reader = reader.init_config()
+        default_reader.update(update)
     return default_reader
 
 
@@ -87,20 +87,5 @@ class ConfigurationManager(reader.Configuration):
             reader = load_reader(module, module_config)
             self._config[name] = reader.config
 
-    def initialize_readers(self, config: oc.DictConfig):
-        model_config = self._readers[MODEL_NODE].config
-        for name, package in model_config.components.items():
-            config_module = package + ".config"
-            module = importlib.import_module(config_module)
-            module_config = config[name]
-            # TODO (halungge): what happens if there is no config block for this module??
-            reader = load_reader(module, module_config)
-
-            self._readers[name] = reader
-
     def get_configured_modules(self):
         return self._config.model.components
-
-    def get_config(self, module_name: str) -> Any:
-        module_config = self._readers.get(module_name)
-        return module_config.as_type() if module_config else {}

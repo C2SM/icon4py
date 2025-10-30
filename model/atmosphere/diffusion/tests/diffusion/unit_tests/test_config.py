@@ -12,6 +12,7 @@ from collections.abc import Sequence
 import omegaconf as oc
 import pytest
 
+import icon4py.model.atmosphere.diffusion.config
 import icon4py.model.atmosphere.diffusion.config as diffusion_config
 
 
@@ -47,7 +48,7 @@ def test_diffusion_config():
 
 
 def assert_same_except(properties: Sequence[str], arg1, arg2):
-    assert type(arg1) == type(arg2), f"{arg1} and {arg2} are not of the same type"
+    assert type(arg1) is type(arg2), f"{arg1} and {arg2} are not of the same type"
     temp = arg2.copy()
     for p in properties:
         assert hasattr(arg1, p), f"object of type {type(arg1)} has not attribute {p} "
@@ -59,7 +60,7 @@ def assert_same_except(properties: Sequence[str], arg1, arg2):
 
 def assert_default_config(diffusion_default: dict) -> None:
     assert diffusion_default["diffusion_type"] in (
-        diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        icon4py.model.atmosphere.diffusion.config.DiffusionType.SMAGORINSKY_4TH_ORDER,
         "SMAGORINSKY_4TH_ORDER",
     )
     assert diffusion_default["apply_to_vertical_wind"]
@@ -75,7 +76,7 @@ def assert_default_config(diffusion_default: dict) -> None:
     assert diffusion_default["thslp_zdiffu"] == 0.025
     assert diffusion_default["thhgtd_zdiffu"] == 200.0
     assert diffusion_default["shear_type"] in (
-        diffusion_config.TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+        icon4py.model.atmosphere.diffusion.config.TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         "VERTICAL_OF_HORIZONTAL_WIND",
     )
     assert diffusion_default["nudging_decay_rate"] == 2.0

@@ -14,8 +14,8 @@ import pathlib
 from collections.abc import Mapping
 from typing import Final, Literal
 
-import icon4py.model.atmosphere.dycore.config
-from icon4py.model.atmosphere.diffusion import config as diffusion_config, diffusion
+import icon4py.model.atmosphere.dycore.config as dycore_config
+from icon4py.model.atmosphere.diffusion import config as diffusion_config
 from icon4py.model.testing import config
 
 
@@ -186,7 +186,7 @@ def construct_diffusion_config(
 ) -> diffusion_config.DiffusionConfig:
     if experiment == Experiments.MCH_CH_R04B09:
         config = diffusion_config.DiffusionConfig(
-            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+            diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
             type_t_diffu=2,
             type_vn_diffu=1,
             hdiff_efdt_ratio=24.0,
@@ -196,13 +196,13 @@ def construct_diffusion_config(
             thhgtd_zdiffu=125.0,
             velocity_boundary_diffusion_denom=150.0,
             max_nudging_coefficient=0.375,
-            shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+            shear_type=diffusion_config.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
         )
         config.n_substeps = ndyn_substeps
         return config
     elif experiment == Experiments.EXCLAIM_APE:
         config = diffusion_config.DiffusionConfig(
-            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+            diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
             type_t_diffu=2,
             type_vn_diffu=1,
             hdiff_efdt_ratio=24.0,
@@ -218,18 +218,18 @@ def construct_diffusion_config(
 
 def construct_nonhydrostatic_config(
     experiment: Experiment,
-) -> icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig:
+) -> dycore_config.NonHydrostaticConfig:
     from icon4py.model.atmosphere.dycore import dycore_states
 
     if experiment == Experiments.MCH_CH_R04B09:
-        return icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig(
+        return dycore_config.NonHydrostaticConfig(
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
             iau_wgt_dyn=1.0,
             fourth_order_divdamp_factor=0.004,
             max_nudging_coefficient=0.375,
         )
     elif experiment == Experiments.EXCLAIM_APE:
-        return icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig(
+        return dycore_config.NonHydrostaticConfig(
             rayleigh_coeff=0.1,
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
         )

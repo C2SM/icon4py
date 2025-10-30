@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any
 import gt4py.next as gtx
 import pytest
 
+import icon4py.model.atmosphere.diffusion.config as diffusion_config
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
@@ -53,7 +55,7 @@ def test_run_diffusion_benchmark(
     dtime = 10.0
 
     config = diffusion.DiffusionConfig(
-        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         type_t_diffu=2,
@@ -67,7 +69,7 @@ def test_run_diffusion_benchmark(
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coefficient=0.375,
         n_substeps=5,
-        shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+        shear_type=diffusion_config.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
     diffusion_parameters = diffusion.DiffusionParams(config)

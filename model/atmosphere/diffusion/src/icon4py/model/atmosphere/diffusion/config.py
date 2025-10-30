@@ -7,11 +7,43 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+import enum
 import functools
 
-from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType, TurbulenceShearForcingType
 from icon4py.model.common import constants
 from icon4py.model.common.config import reader as config_reader
+
+
+class DiffusionType(enum.IntEnum):
+    """
+    Order of nabla operator for diffusion.
+
+    Note: Called `hdiff_order` in `mo_diffusion_nml.f90`.
+    Note: We currently only support type 5.
+    """
+
+    NO_DIFFUSION = -1  #: no diffusion
+    LINEAR_2ND_ORDER = 2  #: 2nd order linear diffusion on all vertical levels
+    SMAGORINSKY_NO_BACKGROUND = 3  #: Smagorinsky diffusion without background diffusion
+    LINEAR_4TH_ORDER = 4  #: 4th order linear diffusion on all vertical levels
+    SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
+
+
+class TurbulenceShearForcingType(int, enum.Enum):
+    """
+    Type of shear forcing used in turbulance.
+
+    Note: called `itype_sher` in `mo_turbdiff_nml.f90`
+    """
+
+    VERTICAL_OF_HORIZONTAL_WIND = 0  #: only vertical shear of horizontal wind
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND = (
+        1  #: as `VERTICAL_ONLY` plus horizontal shar correction
+    )
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND = (
+        2  #: as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` plus shear form vertical velocity
+    )
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
 
 
 @dataclasses.dataclass

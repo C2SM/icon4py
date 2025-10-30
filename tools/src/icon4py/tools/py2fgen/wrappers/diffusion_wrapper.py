@@ -24,12 +24,8 @@ from collections.abc import Callable
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.diffusion.diffusion import (
-    Diffusion,
-    DiffusionConfig,
-    DiffusionParams,
-    TurbulenceShearForcingType,
-)
+from icon4py.model.atmosphere.diffusion.config import TurbulenceShearForcingType
+from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionConfig, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,

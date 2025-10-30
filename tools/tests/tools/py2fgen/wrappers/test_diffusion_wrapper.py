@@ -12,7 +12,11 @@ import cffi
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion,
+    diffusion_states,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.testing import definitions, test_utils as testing_test_utils
@@ -53,7 +57,7 @@ def test_diffusion_wrapper_granule_inputs(
     ndyn_substeps,
 ):
     # --- Define Diffusion Configuration ---
-    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
+    diffusion_type = diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
@@ -68,7 +72,7 @@ def test_diffusion_wrapper_granule_inputs(
     denom_diffu_v = 150.0
     max_nudging_coefficient = 0.375
     itype_sher = (
-        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
+        diffusion_config.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
 
     # --- Extract Metric State Parameters ---
@@ -312,7 +316,7 @@ def test_diffusion_wrapper_single_step(
     step_date_exit,
 ):
     # Hardcoded DiffusionConfig parameters
-    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
+    diffusion_type = diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
@@ -327,7 +331,7 @@ def test_diffusion_wrapper_single_step(
     denom_diffu_v = 150.0
     max_nudging_coefficient = 0.375
     itype_sher = (
-        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
+        diffusion_config.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
 
     # Metric state parameters

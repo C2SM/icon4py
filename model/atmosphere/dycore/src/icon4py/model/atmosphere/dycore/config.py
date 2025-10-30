@@ -110,7 +110,7 @@ class NonHydrostaticConfig:
     iau_wgt_dyn: float = 0.0
 
     #: from mo_run_nml.f90
-    #: use vertical nesting # TODO (halungge) not supported in icon4py remove!!
+    #: use vertical nesting # TODO (halungge): not supported in icon4py remove!!
     l_vert_nested: bool = dataclasses.field(default=False, metadata={"omegaconf_ignore": True})
 
     #: from mo_interpol_nml.f90

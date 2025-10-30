@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
-import enum
 import logging
 import math
 import sys
@@ -19,7 +18,11 @@ from gt4py.next import allocators as gtx_allocators
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
-from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion_utils
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion_states,
+    diffusion_utils,
+)
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
@@ -67,43 +70,11 @@ Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 log = logging.getLogger(__name__)
 
 
-class DiffusionType(enum.IntEnum):
-    """
-    Order of nabla operator for diffusion.
-
-    Note: Called `hdiff_order` in `mo_diffusion_nml.f90`.
-    Note: We currently only support type 5.
-    """
-
-    NO_DIFFUSION = -1  #: no diffusion
-    LINEAR_2ND_ORDER = 2  #: 2nd order linear diffusion on all vertical levels
-    SMAGORINSKY_NO_BACKGROUND = 3  #: Smagorinsky diffusion without background diffusion
-    LINEAR_4TH_ORDER = 4  #: 4th order linear diffusion on all vertical levels
-    SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
-
-
-class TurbulenceShearForcingType(int, enum.Enum):
-    """
-    Type of shear forcing used in turbulance.
-
-    Note: called `itype_sher` in `mo_turbdiff_nml.f90`
-    """
-
-    VERTICAL_OF_HORIZONTAL_WIND = 0  #: only vertical shear of horizontal wind
-    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND = (
-        1  #: as `VERTICAL_ONLY` plus horizontal shar correction
-    )
-    VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND = (
-        2  #: as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` plus shear form vertical velocity
-    )
-    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
-
-
 @dataclasses.dataclass(frozen=True)
 class DiffusionParams:
     """Calculates derived quantities depending on the diffusion config."""
 
-    config: dataclasses.InitVar[DiffusionConfig]
+    config: dataclasses.InitVar[diffusion_config.DiffusionConfig]
     K2: Final[float] = dataclasses.field(init=False)
     K4: Final[float] = dataclasses.field(init=False)
     K6: Final[float] = dataclasses.field(init=False)
@@ -132,7 +103,7 @@ class DiffusionParams:
         object.__setattr__(self, "smagorinski_factor", smagorinski_factor)
         object.__setattr__(self, "smagorinski_height", smagorinski_height)
 
-    def _determine_smagorinski_factor(self, config: DiffusionConfig):
+    def _determine_smagorinski_factor(self, config: diffusion_config.DiffusionConfig):
         """Enhanced Smagorinsky diffusion factor.
 
         Smagorinsky diffusion factor is defined as a profile in height
@@ -163,7 +134,7 @@ class DiffusionParams:
         return smagorinski_factor, smagorinski_height
 
 
-def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
+def diffusion_type_5_smagorinski_factor(config: diffusion_config.DiffusionConfig):
     """
     Initialize Smagorinski factors used in diffusion type 5.
 
@@ -183,7 +154,7 @@ class Diffusion:
     def __init__(
         self,
         grid: icon_grid.IconGrid,
-        config: DiffusionConfig,
+        config: diffusion_config.DiffusionConfig,
         params: DiffusionParams,
         vertical_grid: v_grid.VerticalGrid,
         metric_state: diffusion_states.DiffusionMetricState,
@@ -620,7 +591,7 @@ class Diffusion:
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
         if (
             self.config.shear_type
-            >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
+            >= diffusion_config.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
             or self.config.ltkeshs
         ):
             log.debug(

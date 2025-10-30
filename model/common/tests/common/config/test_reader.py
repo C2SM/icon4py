@@ -60,7 +60,7 @@ def test_config_reader_raises_missing_value() -> None:
 
 def test_config_reader_raises_for_missing() -> None:
     reader = config_reader.Configuration(OptionalFoo)
-    with pytest.raises(oc.MissingMandatoryValue) as e:
+    with pytest.raises(oc.MissingMandatoryValue):
         reader.as_type()
 
 
@@ -82,7 +82,6 @@ def test_config_reader_supports_optional() -> None:
 def test_config_reader_config_equals_default_without_update() -> None:
     reader = config_reader.Configuration(Foo(1, "b", [1, 2, 3]))
     foo = reader.as_type()
-    default = reader.default
     assert reader.default == foo
 
 
@@ -122,7 +121,7 @@ def test_configuration_update_from_dict() -> None:
 
 def test_configuration_config_read_only() -> None:
     reader = config_reader.Configuration(Foo(a=1, b="foo", c=[1, 2]))
-    with pytest.raises(oc.ReadonlyConfigError) as e:
+    with pytest.raises(oc.ReadonlyConfigError):
         reader.config.b = "bar"
 
 

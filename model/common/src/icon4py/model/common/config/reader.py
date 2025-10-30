@@ -15,7 +15,7 @@ from typing import Generic, TypeVar
 import omegaconf as oc
 
 
-# TODO (@halungge):
+# TODO (@halungge): address
 #  - interpolation
 #  - extract protocol
 #  - error cases
@@ -48,7 +48,7 @@ class Configuration(Generic[T]):
         self._schema: type[T] = schema if isinstance(schema, type) else type(schema)
         self._default_config: oc.DictConfig = oc.OmegaConf.create(
             schema
-        )  # TODO should this use create?
+        )  # TODO (halungge): should this use create?
         self._config: oc.DictConfig = self._default_config.copy()
         oc.OmegaConf.set_readonly(self._default_config, True)
 
@@ -77,7 +77,7 @@ class Configuration(Generic[T]):
                 oc.OmegaConf.set_readonly(self._config, False)
             self._config = oc.OmegaConf.merge(self._config, update)
             oc.OmegaConf.set_readonly(self._config, read_only)
-        except oc.ValidationError or ValueError as e:
+        except (oc.ValidationError, ValueError) as e:
             log.error(f"patch {patch} does not validate against configuration {self._schema}")
             raise e
 
@@ -89,13 +89,11 @@ class Configuration(Generic[T]):
             self._config, resolve=True, throw_on_missing=True, structured_config_mode=mode
         )
 
-    def to_yaml(self, filename: str | pathlib.Path, type=ConfigType.USER) -> None:
-        config = self._config if type == ConfigType.USER else self.default
+    def to_yaml(self, filename: str | pathlib.Path, config_type=ConfigType.USER) -> None:
+        config = self._config if config_type == ConfigType.USER else self.default
         stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
-        with open(filename, "w", encoding="utf-8") as f:
+        with pathlib.Path.open(filename, "w", encoding="utf-8") as f:
             f.write(stream)
-
-        ...
 
     @property
     def config(self) -> oc.DictConfig:
@@ -107,5 +105,5 @@ class Configuration(Generic[T]):
         return oc.OmegaConf.to_object(self._default_config)
 
 
-def init_config() -> config_reader.Configuration[dict]:
-    return config_reader.Configuration(dict)
+def init_config() -> Configuration[dict]:
+    return Configuration(dict())
