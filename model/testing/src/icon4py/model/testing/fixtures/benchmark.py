@@ -35,9 +35,11 @@ if TYPE_CHECKING:
     scope="session",
 )
 def geometry_field_source(
-    grid_manager: gm.GridManager,
+    grid_manager: gm.GridManager | None,
     backend: gtx_typing.Backend | None,
 ) -> Generator[grid_geometry.GridGeometry, None, None]:
+    if not grid_manager:
+        pytest.skip("Incomplete grid Information for test, are you running with `simple_grid`?")
     mesh = grid_manager.grid
 
     decomposition_info = grid_utils.construct_decomposition_info(mesh, backend)

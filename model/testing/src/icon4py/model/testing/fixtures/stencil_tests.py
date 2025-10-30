@@ -34,7 +34,7 @@ def _get_grid_manager_from_preset(
     *,
     num_levels: int = DEFAULT_NUM_LEVELS,
     backend: gtx_typing.Backend | None = None,
-) -> gm.GridManager:
+) -> gm.GridManager | None:
     match grid_preset:
         case "icon_regional":
             return grid_utils.get_grid_manager_from_identifier(
@@ -65,13 +65,13 @@ def _get_grid_manager_from_preset(
                 backend=backend,
             )
         case _:
-            return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
+            return None
 
 
 @pytest.fixture(scope="session")
 def grid_manager(
     request: pytest.FixtureRequest, backend: gtx_typing.Backend | None
-) -> gm.GridManager:
+) -> gm.GridManager | None:
     """
     Fixture for providing a grid_manager instance.
 
@@ -80,15 +80,7 @@ def grid_manager(
     might refer to a known grid configuration or to an existing ICON NetCDF grid file,
     and `<grid_levels>` specifies the number of vertical levels to use (optional).
     """
-    spec = request.config.getoption("grid")
-    if spec is None:
-        spec = DEFAULT_GRID
-    assert isinstance(spec, str), "Grid spec must be a string"
-    if spec.count(":") > 1:
-        raise ValueError("Invalid grid spec in '--grid' option (spec: <grid_name>:<grid_levels>)")
-
-    name, *levels = spec.split(":")
-    num_levels = int(levels[0]) if levels and levels[0].strip() else DEFAULT_NUM_LEVELS
+    name, num_levels = _evaluate_grid_option(request)
 
     if name in VALID_GRID_PRESETS:
         grid_manager = _get_grid_manager_from_preset(name, num_levels=num_levels, backend=backend)
@@ -107,6 +99,25 @@ def grid_manager(
     return grid_manager
 
 
+def _evaluate_grid_option(request: pytest.FixtureRequest) -> tuple[str, int]:
+    spec = request.config.getoption("grid")
+    if spec is None:
+        spec = DEFAULT_GRID
+    assert isinstance(spec, str), "Grid spec must be a string"
+    if spec.count(":") > 1:
+        raise ValueError("Invalid grid spec in '--grid' option (spec: <grid_name>:<grid_levels>)")
+
+    name, *levels = spec.split(":")
+    num_levels = int(levels[0]) if levels and levels[0].strip() else DEFAULT_NUM_LEVELS
+    return name, num_levels
+
+
 @pytest.fixture(scope="session")
-def grid(grid_manager: gm.GridManager) -> base_grid.Grid:
-    return grid_manager.grid
+def grid(
+    request: pytest.FixtureRequest, grid_manager: gm.GridManager, backend: gtx_typing.Backend
+) -> base_grid.Grid:
+    name, num_levels = _evaluate_grid_option(request)
+    if name == "simple":
+        return simple_grid.simple_grid(backend=backend, num_levels=num_levels)
+    else:
+        return grid_manager.grid
