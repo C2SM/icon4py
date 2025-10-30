@@ -350,7 +350,7 @@ def test_global_grid_params_from_fields(
         dual_edge_lengths=xp.asarray([2.0, 3.0]),
         cell_areas=xp.asarray([3.0, 4.0]),
         dual_cell_areas=xp.asarray([4.0, 5.0]),
-        backend=backend,
+        array_ns=xp,
     )
     assert pytest.approx(params.mean_edge_length) == 13.0
     assert pytest.approx(params.mean_dual_edge_length) == 14.0
@@ -366,7 +366,7 @@ def test_global_grid_params_from_fields(
         dual_edge_lengths=xp.asarray([2.0, 3.0]),
         cell_areas=xp.asarray([3.0, 4.0]),
         dual_cell_areas=xp.asarray([4.0, 5.0]),
-        backend=backend,
+        array_ns=xp,
     )
     assert pytest.approx(params.mean_edge_length) == 1.5
     assert pytest.approx(params.mean_dual_edge_length) == 2.5

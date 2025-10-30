@@ -8,7 +8,7 @@
 
 import math
 
-from gt4py.next import backend as gtx_backend
+from gt4py.next import typing as gtx_typing
 
 from icon4py.model.common import constants as phy_const
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -17,10 +17,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 def jablonowski_williamson_topography(
     cell_lat: data_alloc.NDArray,
     u0: float,
-    backend: gtx_backend.Backend | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil | None,
 ) -> data_alloc.NDArray:
     """Function to initialize topography."""
-    xp = data_alloc.import_array_ns(backend)
+    xp = data_alloc.import_array_ns(allocator)
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)
 

@@ -12,6 +12,7 @@ from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import model_backends
 
@@ -48,13 +49,21 @@ def get_options(program_name: str, **backend_descriptor: Any) -> model_backends.
 
 
 def customize_backend(
-    program_name: str,
-    backend: model_backends.DeviceType | model_backends.BackendDescriptor,
-) -> gtx_typing.Backend:
+    program: gtx_typing.Program | gtx.typing.FieldOperator | None,
+    backend: gtx_typing.Backend
+    | model_backends.DeviceType
+    | model_backends.BackendDescriptor
+    | None,
+) -> gtx_typing.Backend | None:
+    program_name = program.__name__ if program is not None else ""
+    if isinstance(backend, gtx_backend.Backend) or backend is None:
+        backend_name = backend.name if backend is not None else "embedded"
+        log.info(f"Using non-custom backend '{backend_name}' for '{program_name}'.")
+        return backend  # type: ignore[return-value]
+
     backend_descriptor = (
         {"device": backend} if isinstance(backend, model_backends.DeviceType) else backend
     )
-
     backend_descriptor = get_options(program_name, **backend_descriptor)
     backend_descriptor["device"] = backend_descriptor.get(
         "device", model_backends.DeviceType.CPU
@@ -63,9 +72,8 @@ def customize_backend(
         "backend_factory", model_backends.make_custom_dace_backend
     )
     custom_backend = backend_factory(**backend_descriptor)
-    backend_name = custom_backend.name if custom_backend is not None else "embedded"
     log.info(
-        f"Using custom backend '{backend_name}' for '{program_name}' with options: {backend_descriptor}."
+        f"Using custom backend '{custom_backend.name}' for '{program_name}' with options: {backend_descriptor}."
     )
     return custom_backend
 
@@ -101,11 +109,7 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
-        backend = customize_backend(program.__name__, backend)
-    else:
-        backend_name = backend.name if backend is not None else "embedded"
-        log.info(f"Using non-custom backend '{backend_name}' for '{program.__name__}'.")
+    backend = customize_backend(program, backend)
 
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend)
