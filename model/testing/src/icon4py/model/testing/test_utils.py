@@ -5,8 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import difflib
 import hashlib
+import logging
+import pathlib
 from typing import Any
 
 import gt4py.next.typing as gtx_typing
@@ -15,6 +17,7 @@ import numpy.typing as npt
 import pytest
 from typing_extensions import Buffer
 
+logger = logging.getLogger(__file__)
 
 def dallclose(
     a: npt.ArrayLike,
@@ -59,3 +62,18 @@ def is_dace(backend: gtx_typing.Backend | None) -> bool:
 
 def is_gtfn_backend(backend: gtx_typing.Backend | None) -> bool:
     return "gtfn" in backend.name if backend else False
+
+
+def diff(reference: pathlib.Path, actual: pathlib.Path):
+    with pathlib.Path.open(reference) as f:
+        reference_lines = f.readlines()
+    with pathlib.Path.open(actual) as f:
+        actual_lines = f.readlines()
+    result = difflib.context_diff(reference_lines, actual_lines)
+
+    clean = True
+    for line in result:
+        logger.info(f"result line: {line}")
+        clean = False
+
+    return clean

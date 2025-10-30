@@ -89,10 +89,11 @@ class Configuration(Generic[T]):
             self._config, resolve=True, throw_on_missing=True, structured_config_mode=mode
         )
 
-    def to_yaml(self, filename: str | pathlib.Path, config_type=ConfigType.USER) -> None:
+    def to_yaml(self, file: str | pathlib.Path, config_type=ConfigType.USER) -> None:
+
         config = self._config if config_type == ConfigType.USER else self.default
         stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
-        with pathlib.Path.open(filename, "w", encoding="utf-8") as f:
+        with open(file, "w", encoding="utf-8") as f:
             f.write(stream)
 
     @property
