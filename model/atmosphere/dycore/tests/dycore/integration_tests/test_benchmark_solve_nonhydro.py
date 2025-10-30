@@ -206,7 +206,7 @@ def solve_nonhydro(
         owner_mask=gtx.as_field(
             (dims.CellDim,),
             decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type] # mypy not take the type of owner_mask
-            allocator=backend,  # type: ignore[arg-type]
+            allocator=backend,
         ),
         backend=backend,
     )
