@@ -12,7 +12,7 @@ from icon4py.model.atmosphere.diffusion import diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.fixtures import backend
+from icon4py.model.testing.fixtures import backend, backend_like
 
 from ..utils import diff_multfac_vn_numpy, smag_limit_numpy
 

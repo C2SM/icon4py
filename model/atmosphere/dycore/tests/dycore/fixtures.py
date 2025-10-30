@@ -9,6 +9,7 @@
 
 from icon4py.model.testing.fixtures.datatest import (
     backend,
+    backend_like,
     damping_height,
     data_provider,
     decomposition_info,
