@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Callable, Sequence
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 import gt4py.next as gtx
 import numpy as np
@@ -141,7 +141,13 @@ class StencilTest:
             raise ValueError(
                 f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
             )
-        static_args = {name: [input_data[name]] for name in static_variant}
+        static_args: dict[str, gtx.Field | gtx_typing.Scalar] = {}
+        for name in static_variant:
+            val = input_data[name]
+            # Scalars are detected via GT4Py utility; mypy doesn't know this predicate,
+            # so we cast to the expected union type after the runtime check.
+            if isinstance(val, gtx.Field) or gtx.is_scalar_type(val):
+                static_args[name] = cast(gtx.Field | gtx_typing.Scalar, val)
         if backend is not None:
             if isinstance(self.PROGRAM, FieldOperator):
                 if len(static_args) > 0:
@@ -159,7 +165,7 @@ class StencilTest:
                     }
                     if backend.name.startswith("run_dace_")
                     else backend,
-                    variants=static_args,
+                    constant_args=static_args,
                     offset_provider=grid.connectivities,
                 )
 
