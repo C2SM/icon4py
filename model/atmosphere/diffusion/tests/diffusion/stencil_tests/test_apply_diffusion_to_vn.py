@@ -166,5 +166,5 @@ class TestApplyDiffusionToVn(StencilTest):
 
 
 @pytest.mark.continuous_benchmarking
-class TestCBApplyDiffusionToVn(TestApplyDiffusionToVn):
+class TestApplyDiffusionToVnContinuousBenchmarking(TestApplyDiffusionToVn):
     pass
