@@ -915,11 +915,13 @@ class SolveNonhydro:
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
         """
-        self.hydrostatic_correction_on_lowest_level = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dtype=ta.vpfloat, allocator=allocator
-        )
-        self.hydrostatic_correction = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+        self.hydrostatic_correction_on_lowest_level = gtx.constructors.empty(
+            domain={
+                dims.EdgeDim: (0, self._grid.num_edges),
+                dims.KDim: (self._grid.num_levels - 1, self._grid.num_levels),
+            },
+            allocator=allocator,
+            dtype=ta.vpfloat,
         )
         """
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
@@ -1151,12 +1153,8 @@ class SolveNonhydro:
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-            z_hydro_corr=self.hydrostatic_correction,
+            z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
-
-        self.hydrostatic_correction_on_lowest_level[...] = self.hydrostatic_correction.ndarray[
-            :, self._grid.num_levels - 1
-        ]
 
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
