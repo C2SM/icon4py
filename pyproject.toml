@@ -316,7 +316,7 @@ name = "test.pypi"
 url = "https://test.pypi.org/simple/"
 
 [tool.uv.sources]
-dace = {git = "https://github.com/philip-paul-mueller/dace", branch = "make_construct_args_public"}
+dace = {git = "https://github.com/philip-paul-mueller/dace", branch = "__phimuell_test_new_calling_convention_pr2353"}
 # ghex = {git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
 gt4py = {git = "https://github.com/philip-paul-mueller/gt4py", branch = "non_dace_dependent_fast_call_scheme"}
 # gt4py = {index = "test.pypi"}
