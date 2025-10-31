@@ -170,50 +170,6 @@ def zonalwind_2_normalwind_ndarray(
     return vn
 
 
-# TODO(OngChia): Can this kind of simple arithmetic operation be replaced by a more general stencil that does the same operation on a general field?
-@gtx.field_operator
-def _compute_perturbed_exner(
-    exner: fa.CellKField[ta.wpfloat],
-    reference_exner: fa.CellKField[ta.vpfloat],
-) -> fa.CellKField[ta.wpfloat]:
-    """
-    Compute the perturbed exner function (exner_pr in ICON).
-        perturbed_exner = exner - reference_exner
-    This stencil is copied from subroutine compute_exner_pert in mo_nh_init_utils in ICON. It should be called
-    during the initialization to initialize perturbed_exner_at_cells_on_model_levels of DiagnosticStateHydro
-    if the model does not restart from a restart file.
-
-    Args:
-        exner: exner function
-        reference_exner: reference exner function
-    Returns:
-        Perturbed exner function
-    """
-    perturbed_exner = exner - reference_exner
-    return perturbed_exner
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_perturbed_exner(
-    exner: fa.CellKField[ta.wpfloat],
-    reference_exner: fa.CellKField[ta.vpfloat],
-    perturbed_exner: fa.CellKField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _compute_perturbed_exner(
-        exner,
-        reference_exner,
-        out=perturbed_exner,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     vn_ndarray: data_alloc.NDArray,
     w_ndarray: data_alloc.NDArray,
