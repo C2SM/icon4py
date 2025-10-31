@@ -38,7 +38,6 @@ from icon4py.model.common.metrics import (
     reference_atmosphere,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.states.utils import single_node_default
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -65,7 +64,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         rayleigh_coeff: float,
         exner_expol: float,
         vwind_offctr: float,
-        exchange: decomposition.ExchangeRuntime = single_node_default,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)

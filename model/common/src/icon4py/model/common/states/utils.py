@@ -13,7 +13,6 @@ import xarray as xa
 from gt4py.next.common import DimsT
 
 from icon4py.model.common import type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -30,6 +29,3 @@ FieldType: TypeAlias = gtx.Field[DimsT, T] | data_alloc.NDArray
 def to_data_array(field: FieldType, attrs: MutableMapping[str, ...]):
     data = data_alloc.as_numpy(field)
     return xa.DataArray(data, attrs=attrs)
-
-
-single_node_default = decomposition.SingleNodeExchange()

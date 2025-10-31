@@ -27,7 +27,6 @@ from icon4py.model.common.interpolation import (
     rbf_interpolation as rbf,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.states.utils import single_node_default
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -46,7 +45,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         geometry_source: geometry.GridGeometry,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
-        exchange: decomposition.ExchangeRuntime = single_node_default,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)

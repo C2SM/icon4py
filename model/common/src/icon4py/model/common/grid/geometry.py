@@ -31,7 +31,6 @@ from icon4py.model.common.grid import (
     icon,
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
-from icon4py.model.common.states.utils import single_node_default
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
 
@@ -84,7 +83,7 @@ class GridGeometry(factory.FieldSource):
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
-        exchange: decomposition.ExchangeRuntime = single_node_default,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     ):
         """
         Args:
