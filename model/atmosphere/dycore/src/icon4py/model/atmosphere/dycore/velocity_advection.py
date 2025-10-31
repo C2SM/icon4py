@@ -296,7 +296,9 @@ class VelocityAdvection:
                 self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
             ].ravel(order="K")
         )
-        diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
+        diagnostic_state.max_vertical_cfl = self.vertical_cfl.maximum(
+            max_vertical_cfl, diagnostic_state.max_vertical_cfl
+        )
 
         # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
         # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
@@ -365,7 +367,9 @@ class VelocityAdvection:
             ].ravel(order="K")
         )
 
-        diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
+        diagnostic_state.max_vertical_cfl = self.vertical_cfl.maximum(
+            max_vertical_cfl, diagnostic_state.max_vertical_cfl
+        )
 
         # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
         # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
