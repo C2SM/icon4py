@@ -61,7 +61,7 @@ def _get_grid_manager_from_preset(
             )
         case "icon_benchmark_global":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.R02B07_GLOBAL,
+                definitions.Grids.R02B06_GLOBAL,
                 num_levels=BENCHMARK_DEFAULT_LEVELS,
                 keep_skip_values=False,
                 backend=backend,
