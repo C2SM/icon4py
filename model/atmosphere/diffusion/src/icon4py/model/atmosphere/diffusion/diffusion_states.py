@@ -10,7 +10,11 @@ import functools
 
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    type_alias as ta,
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -40,6 +44,11 @@ class DiffusionMetricState:
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32]
     zd_diffcoef: fa.CellKField[float]
     zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], float]
+
+    ddqz_z_half: fa.CellKField[ta.vpfloat]  # dims.KHalfDim
+    ddqz_z_half_e: fa.EdgeKField[ta.vpfloat]  # dims.KHalfDim
+    ddqz_z_full: fa.CellKField[ta.vpfloat]
+    ddqz_z_full_e: fa.EdgeKField[ta.vpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
