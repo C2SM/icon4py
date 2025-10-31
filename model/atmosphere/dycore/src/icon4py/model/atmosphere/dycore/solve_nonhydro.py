@@ -816,7 +816,7 @@ class SolveNonhydro:
             enh_smag_fac=self.interpolated_fourth_order_divdamp_factor,
         )
 
-        self.p_test_run = True
+        self.p_test_run = False
 
     def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
@@ -1239,13 +1239,14 @@ class SolveNonhydro:
                 dtime=dtime,
             )
 
-        if self._config.divdamp_type >= 3:
+        if self._grid.limited_area and self._config.divdamp_type >= 3:
             self._compute_dwdz_for_divergence_damping(
                 w=prognostic_states.next.w,
                 w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
             )
 
+        if self._config.divdamp_type >= 3:
             log.debug(
                 "exchanging prognostic field 'w' and local field 'dwdz_at_cells_on_model_levels'"
             )
@@ -1288,7 +1289,7 @@ class SolveNonhydro:
             interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
             fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            second_order_divdamp_factor=second_order_divdamp_scaling_coeff,
+            second_order_divdamp_factor=second_order_divdamp_factor,
         )
 
         log.debug("corrector run velocity advection")

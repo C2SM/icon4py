@@ -32,7 +32,6 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver import serialbox_helpers as driver_sb
 from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
 from icon4py.model.testing import serialbox as sb
 
@@ -126,8 +125,11 @@ def model_initialization_serialbox(
         istep=1, date=SIMULATION_START_DATE, substep=1
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
-        diffusion_init_savepoint,
+    diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=diffusion_init_savepoint.hdef_ic(),
+        div_ic=diffusion_init_savepoint.div_ic(),
+        dwdx=diffusion_init_savepoint.dwdx(),
+        dwdy=diffusion_init_savepoint.dwdy(),
     )
     solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=0.0,
@@ -443,14 +445,27 @@ def read_static_fields(
     if ser_type == SerializationType.SB:
         data_provider = _serial_data_provider(backend, path, rank)
 
-        diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
-            data_provider.from_interpolation_savepoint()
-        )
-        diffusion_metric_state = driver_sb.construct_metric_state_for_diffusion(
-            data_provider.from_metrics_savepoint()
-        )
         interpolation_savepoint = data_provider.from_interpolation_savepoint()
+        metrics_savepoint = data_provider.from_metrics_savepoint()
         grg = interpolation_savepoint.geofac_grg()
+        diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
+            e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
+            rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+            rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+            geofac_div=interpolation_savepoint.geofac_div(),
+            geofac_n2s=interpolation_savepoint.geofac_n2s(),
+            geofac_grg_x=grg[0],
+            geofac_grg_y=grg[1],
+            nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+        )
+        diffusion_metric_state = diffusion_states.DiffusionMetricState(
+            mask_hdiff=metrics_savepoint.mask_hdiff(),
+            theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+            wgtfac_c=metrics_savepoint.wgtfac_c(),
+            zd_intcoef=metrics_savepoint.zd_intcoef(),
+            zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+            zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+        )
         solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
             c_lin_e=interpolation_savepoint.c_lin_e(),
             c_intp=interpolation_savepoint.c_intp(),
