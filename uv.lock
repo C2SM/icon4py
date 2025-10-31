@@ -907,7 +907,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/philip-paul-mueller/dace?branch=make_construct_args_public#767260d41c05ef5afb3f7ceb34918cc704d1fd68" }
+source = { git = "https://github.com/philip-paul-mueller/dace?branch=make_construct_args_public#daf90e910c5ae776fd1082c7c91126c28aaf5928" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1394,8 +1394,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post561+c228fc80"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=non_dace_dependent_fast_call_scheme#c228fc80f70920ac673e858d127d90572b44570e" }
+version = "1.0.4.post562+dab085bb"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=non_dace_dependent_fast_call_scheme#dab085bbb76d882f823626bc395acbdd771dfa32" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
