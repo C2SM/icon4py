@@ -137,9 +137,14 @@ class PythonWrapperGenerator(codegen.TemplatedGenerator):
 
     BindingsLibrary = as_jinja(
         """\
+import importlib
+from icon4py.tools.py2fgen import runtime_config
+for module in runtime_config.EXTRA_MODULES if module:
+    importlib.import_module(module)
+
 import logging
 from {{ library_name }} import ffi
-from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
+from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -161,6 +166,7 @@ from {{ module_name }} import {{ func.name }}
 def {{ func.name }}_wrapper(
 {{render_params(func)}}
 ):
+    runtime_config.HOOK_FUNCTION_ENTER("{{ func.name }}") 
     try:
         if __debug__:
             logger.info("Python execution of {{ func.name }} started.")
@@ -223,11 +229,9 @@ def {{ func.name }}_wrapper(
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
+    runtime_config.HOOK_FUNCTION_EXIT("{{ func.name }}") 
     return 0
-
-        {% endfor %}
-
-
+{% endfor %}
 """
     )
 
