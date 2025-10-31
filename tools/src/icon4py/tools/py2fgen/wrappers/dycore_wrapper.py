@@ -329,6 +329,8 @@ def solve_nh_run(
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 
+    xp = rho_now.array_ns
+
     if vn_incr is None:
         vn_incr = granule.dummy_field_factory("vn_incr", domain=vn_now.domain, dtype=vn_now.dtype)
 
@@ -349,7 +351,9 @@ def solve_nh_run(
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=vol_flx_ic,
     )
 
-    max_vcfl = max_vcfl_size1_array[0]  # Note, needs to be passed back after the timestep
+    # Make `max_vcfl` a 0-d array to avoid cupy synchronization, see `velocity_advection.py`.
+    # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
+    max_vcfl = xp.asarray(max_vcfl_size1_array[0])
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=max_vcfl,
@@ -414,4 +418,4 @@ def solve_nh_run(
     if gtx_config.COLLECT_METRICS_LEVEL > 0:
         gtx_metrics.dump_json("gt4py_timers.json")
 
-    max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl  # pass back to Fortran
+    max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl[()]  # pass back to Fortran
