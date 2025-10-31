@@ -20,7 +20,7 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     type_alias as ta,
 )
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base,
     geometry_attributes as attrs,
@@ -78,11 +78,12 @@ class GridGeometry(factory.FieldSource):
     def __init__(
         self,
         grid: icon.IconGrid,
-        decomposition_info: definitions.DecompositionInfo,
+        decomposition_info: decomposition.DecompositionInfo,
         backend: gtx_typing.Backend | None,
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     ):
         """
         Args:
@@ -103,6 +104,7 @@ class GridGeometry(factory.FieldSource):
         self._attrs = metadata
         self._geometry_type: base.GeometryType | None = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
+        self._exchange = exchange
         log.info(
             f"initialized geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )

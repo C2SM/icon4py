@@ -337,3 +337,6 @@ def create_single_node_exchange(
     props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
 ) -> ExchangeRuntime:
     return SingleNodeExchange()
+
+
+single_node_default = SingleNodeExchange()
