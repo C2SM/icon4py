@@ -1420,7 +1420,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.10+unknown.version.details"
-source = { git = "https://github.com/SF-N/gt4py?branch=multiple_output_domains#1888c2d0d46d44f5d79db7c31ba9aaf029a68f4d" }
+source = { git = "https://github.com/SF-N/gt4py?branch=multiple_output_domains#9d890935229e22d16cae4e724fd9c2ad50803808" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
