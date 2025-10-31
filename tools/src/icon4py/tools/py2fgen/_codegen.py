@@ -139,7 +139,7 @@ class PythonWrapperGenerator(codegen.TemplatedGenerator):
         """\
 import importlib
 from icon4py.tools.py2fgen import runtime_config
-for module in runtime_config.EXTRA_MODULES if module:
+for module in runtime_config.EXTRA_MODULES:
     importlib.import_module(module)
 
 import logging

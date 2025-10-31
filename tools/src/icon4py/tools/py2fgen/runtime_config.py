@@ -60,7 +60,14 @@ class Py2fgenLogLevels(eve.StrEnum):
 LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", Py2fgenLogLevels, Py2fgenLogLevels.INFO)
 """Set the log level for the PY2FGEN generated bindings."""
 
-EXTRA_MODULES: list[str] = os.environ.get("PY2FGEN_EXTRA_MODULES", "").split(",")
+
+def _split_and_strip(s: str | None, sep: str = ",") -> list[str]:
+    if not s:
+        return []
+    return [part.strip() for part in s.split(sep) if part.strip()]
+
+
+EXTRA_MODULES: list[str] = _split_and_strip(os.environ.get("PY2FGEN_EXTRA_MODULES", ""))
 """
 Extra Python modules to be loaded when the PY2FGEN bindings are initialized.
 
