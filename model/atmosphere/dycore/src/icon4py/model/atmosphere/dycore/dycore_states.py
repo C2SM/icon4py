@@ -79,7 +79,7 @@ class RhoThetaAdvectionType(FrozenNamespace[int]):
 class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
-    max_vertical_cfl: ta.wpfloat
+    max_vertical_cfl: ta.wpfloat  # stored as 0-d array (to be able to avoid cupy synchronization)
     """
     Declared as max_vcfl_dyn in ICON. Maximum vertical CFL number over all substeps.
     """

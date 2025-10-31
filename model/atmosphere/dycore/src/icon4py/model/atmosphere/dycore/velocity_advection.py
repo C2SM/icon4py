@@ -291,15 +291,16 @@ class VelocityAdvection:
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = float(
-            self.vertical_cfl.array_ns.max(
-                self.vertical_cfl.ndarray[
-                    self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
-                ].ravel(order="K")
-            )
+        max_vertical_cfl = self.vertical_cfl.array_ns.max(
+            self.vertical_cfl.ndarray[
+                self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
+            ].ravel(order="K")
         )
         diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
-        apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime
+
+        # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
+        # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
+        apply_extra_diffusion_on_vn = True
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
             vn=prognostic_state.vn,
@@ -358,15 +359,17 @@ class VelocityAdvection:
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = float(
-            self.vertical_cfl.array_ns.max(
-                self.vertical_cfl.ndarray[
-                    self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
-                ].ravel(order="K")
-            )
+        max_vertical_cfl = self.vertical_cfl.array_ns.max(
+            self.vertical_cfl.ndarray[
+                self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
+            ].ravel(order="K")
         )
+
         diagnostic_state.max_vertical_cfl = max(max_vertical_cfl, diagnostic_state.max_vertical_cfl)
-        apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime
+
+        # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
+        # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
+        apply_extra_diffusion_on_vn = True
         self._compute_advection_in_horizontal_momentum_equation(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
             vn=prognostic_state.vn,
