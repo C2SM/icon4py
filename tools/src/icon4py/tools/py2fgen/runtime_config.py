@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
+from collections.abc import Callable
 from typing import TypeVar
 
 from gt4py import eve
@@ -58,3 +59,23 @@ class Py2fgenLogLevels(eve.StrEnum):
 
 LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", Py2fgenLogLevels, Py2fgenLogLevels.INFO)
 """Set the log level for the PY2FGEN generated bindings."""
+
+
+def _split_and_strip(s: str | None, sep: str = ",") -> list[str]:
+    if not s:
+        return []
+    return [part.strip() for part in s.split(sep) if part.strip()]
+
+
+EXTRA_MODULES: list[str] = _split_and_strip(os.environ.get("PY2FGEN_EXTRA_MODULES", ""))
+"""
+Extra Python modules to be loaded when the PY2FGEN bindings are initialized.
+
+Modules should be specified as a comma-separated list of module paths ('my.path.to.module').
+"""
+
+# CUSTOMIZATION HOOKS
+
+# TODO: str == function name or pass the function that we are wrapping as identifier?
+HOOK_FUNCTION_ENTER: Callable[[str], None] = lambda func_name: None  # noqa: E731
+HOOK_FUNCTION_EXIT: Callable[[str], None] = lambda func_name: None  # noqa: E731
