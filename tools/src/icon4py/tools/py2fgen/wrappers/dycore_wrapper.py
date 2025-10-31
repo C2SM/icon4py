@@ -27,7 +27,7 @@ import numpy as np
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
-from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -145,7 +145,6 @@ def solve_nh_init(
     num_levels: gtx.int32,
     domain_length: gtx.float64,
     cell_x: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    cell_y: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
     edge_x: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
     primal_normal_x: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
     z_ifc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -258,40 +257,28 @@ def solve_nh_init(
     # datatest config, vertical parameters
     vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
 
-    mask_label = "gauss3d_torus"
-    # NOTE: the slicing is necessary because these arrays are shaped by nproma,
-    # while the arrays allocated in IBM and the connectivities are shrunk to
-    # their correct shapes
-    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
-        mask_label=mask_label,
-        cell_x=cell_x.ndarray[:grid_wrapper.grid_state.grid.num_cells],
-        cell_y=cell_y.ndarray[:grid_wrapper.grid_state.grid.num_cells],
-        half_level_heights=z_ifc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        grid=grid_wrapper.grid_state.grid,
-        backend=actual_backend,
-    )
     random_perturbation_magnitude = 0.001
     sponge_length = 5000.0
-    # NOTE: the slicing is necessary because these arrays are shaped by nproma,
-    # while the arrays allocated in IBM and the connectivities are shrunk to
-    # their correct shapes
     channel = channel_flow.ChannelFlow(
         random_perturbation_magnitude=random_perturbation_magnitude,
         sponge_length=sponge_length,
         grid=grid_wrapper.grid_state.grid,
         domain_length=domain_length,
-        cell_x=cell_x.ndarray[:grid_wrapper.grid_state.grid.num_cells],
-        edge_x=edge_x.ndarray[:grid_wrapper.grid_state.grid.num_edges],
-        wgtfac_c=wgtfac_c.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        ddqz_z_half=ddqz_z_half.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        theta_ref_mc=theta_ref_mc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        theta_ref_ic=theta_ref_ic.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        exner_ref_mc=exner_ref_mc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        d_exner_dz_ref_ic=d_exner_dz_ref_ic.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        geopot=geopot.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        full_level_heights=z_mc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        half_level_heights=z_ifc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        primal_normal_x=primal_normal_x.ndarray[:grid_wrapper.grid_state.grid.num_edges],
+        cell_x=cell_x.ndarray,
+        edge_x=edge_x.ndarray,
+        wgtfac_c=wgtfac_c.ndarray,
+        ddqz_z_half=ddqz_z_half.ndarray,
+        theta_ref_mc=theta_ref_mc.ndarray,
+        theta_ref_ic=theta_ref_ic.ndarray,
+        exner_ref_mc=exner_ref_mc.ndarray,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic.ndarray,
+        geopot=geopot.ndarray,
+        full_level_heights=z_mc.ndarray,
+        half_level_heights=z_ifc.ndarray,
+        primal_normal_x=primal_normal_x.ndarray,
+        num_cells=cell_x.ndarray.shape[0],
+        num_edges=edge_x.ndarray.shape[0],
+        num_levels=z_mc.ndarray.shape[1],
         backend=actual_backend,
     )
 
@@ -309,7 +296,7 @@ def solve_nh_init(
             owner_mask=c_owner_mask,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
-            ibm_masks=ibm_masks,
+            ibm_masks=grid_wrapper.grid_state.ibm_masks,
             channel=channel,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(

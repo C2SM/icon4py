@@ -72,6 +72,9 @@ class ChannelFlow:
         full_level_heights: data_alloc.NDArray,
         half_level_heights: data_alloc.NDArray,
         primal_normal_x: data_alloc.NDArray,
+        num_cells: int,
+        num_edges: int,
+        num_levels: int,
         backend: gtx_typing.Backend
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
@@ -89,9 +92,10 @@ class ChannelFlow:
         self.do_channel = do_channel
         xp = data_alloc.import_array_ns(self.backend)
 
-        self.num_cells = grid.num_cells
-        self.num_edges = grid.num_edges
-        self.num_levels = grid.num_levels
+        # use these instead of grid.num_* because when calling from fortran arrays have nproma sizes
+        self.num_cells = num_cells
+        self.num_edges = num_edges
+        self.num_levels = num_levels
 
         # perturbation magnitude for vn profile
         self.random_perturbation_magnitude = random_perturbation_magnitude

@@ -183,6 +183,10 @@ def test_run_timeloop_single_step(
         cell_y=cell_y,
         half_level_heights=half_level_heights,
         grid=icon_grid,
+        num_cells=icon_grid.num_cells,
+        num_edges=icon_grid.num_edges,
+        num_vertices=icon_grid.num_vertices,
+        num_levels=icon_grid.num_levels,
         backend=backend,
         do_ibm=DO_IBM,
     )
@@ -205,6 +209,9 @@ def test_run_timeloop_single_step(
         full_level_heights=full_level_heights,
         half_level_heights=half_level_heights,
         primal_normal_x=primal_normal_x,
+        num_cells=icon_grid.num_cells,
+        num_edges=icon_grid.num_edges,
+        num_levels=icon_grid.num_levels,
         backend=backend,
         do_channel=DO_CHANNEL,
     )

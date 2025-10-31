@@ -341,6 +341,10 @@ class ImmersedBoundaryMethodMasks:
         cell_x: data_alloc.NDArray,
         cell_y: data_alloc.NDArray,
         half_level_heights: data_alloc.NDArray,
+        num_cells: int,
+        num_edges: int,
+        num_vertices: int,
+        num_levels: int,
         backend: gtx_typing.Backend
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
@@ -353,6 +357,12 @@ class ImmersedBoundaryMethodMasks:
 
         if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
             backend = customize_backend("foo", backend)
+
+        # use these instead of grid.num_* because when calling from fortran arrays have nproma sizes
+        self.num_cells = num_cells
+        self.num_edges = num_edges
+        self.num_vertices = num_vertices
+        self.num_levels = num_levels
 
         self._make_masks(
             mask_label=mask_label,
@@ -381,12 +391,12 @@ class ImmersedBoundaryMethodMasks:
         """
         xp = data_alloc.import_array_ns(backend)
 
-        half_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=bool)
-        half_edge_mask_np = xp.zeros((grid.num_edges, grid.num_levels + 1), dtype=bool)
-        full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
-        full_edge_mask_np = xp.zeros((grid.num_edges, grid.num_levels), dtype=bool)
-        full_vertex_mask_np = xp.zeros((grid.num_vertices, grid.num_levels), dtype=bool)
-        neigh_full_cell_mask_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
+        half_cell_mask_np = xp.zeros((self.num_cells, self.num_levels + 1), dtype=bool)
+        half_edge_mask_np = xp.zeros((self.num_edges, self.num_levels + 1), dtype=bool)
+        full_cell_mask_np = xp.zeros((self.num_cells, self.num_levels), dtype=bool)
+        full_edge_mask_np = xp.zeros((self.num_edges, self.num_levels), dtype=bool)
+        full_vertex_mask_np = xp.zeros((self.num_vertices, self.num_levels), dtype=bool)
+        neigh_full_cell_mask_np = xp.zeros((self.num_cells, self.num_levels), dtype=bool)
 
         if do_ibm:
             # Fill masks, otherwise False everywhere
@@ -417,20 +427,20 @@ class ImmersedBoundaryMethodMasks:
             log.info(f"Number of masked cells: {xp.sum(full_cell_mask_np)}")
 
             c2e = grid.connectivities[dims.C2EDim.value].ndarray
-            for k in range(grid.num_levels + 1):
+            for k in range(self.num_levels + 1):
                 half_edge_mask_np[
                     xp.unique(xp.asarray(c2e[xp.where(half_cell_mask_np[:, k])[0]])), k
                 ] = True
             full_edge_mask_np = half_edge_mask_np[:, :-1]
 
             c2v = grid.connectivities[dims.C2VDim.value].ndarray
-            for k in range(grid.num_levels):
+            for k in range(self.num_levels):
                 full_vertex_mask_np[
                     xp.unique(xp.asarray(c2v[xp.where(full_cell_mask_np[:, k])[0]])), k
                 ] = True
 
             c2e2c = grid.connectivities[dims.C2E2CDim.value].ndarray
-            for k in range(grid.num_levels):
+            for k in range(self.num_levels):
                 neigh_full_cell_mask_np[
                     xp.unique(xp.asarray(c2e2c[xp.where(full_cell_mask_np[:, k])[0]])), k
                 ] = True

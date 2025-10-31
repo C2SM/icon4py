@@ -35,7 +35,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.atmosphere.dycore import ibm
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half_e
@@ -108,9 +107,6 @@ def diffusion_init(
     lowest_layer_thickness: gtx.float64,
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,
-    cell_x: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    cell_y: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    z_ifc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     ddqz_z_full: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddqz_z_half: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -187,7 +183,7 @@ def diffusion_init(
 
     xp = data_alloc.import_array_ns(customize_backend("foo", actual_backend))
     ddqz_z_half_e_np = xp.zeros(
-        (grid_wrapper.grid_state.grid.num_edges, grid_wrapper.grid_state.grid.num_levels + 1),
+        (ddqz_z_full_e.ndarray.shape[0], ddqz_z_half.ndarray.shape[1]),
         dtype=float,
     )
     ddqz_z_half_e = gtx.as_field(
@@ -230,18 +226,6 @@ def diffusion_init(
         nudgecoeff_e=nudgecoeff_e,
     )
 
-    mask_label = "gauss3d_torus"
-    # NOTE: the slicing is necessary because these arrays are shaped by nproma,
-    # while the arrays allocated in IBM and the connectivities are shrunk to
-    # their correct shapes
-    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
-        mask_label=mask_label,
-        cell_x=cell_x.ndarray[:grid_wrapper.grid_state.grid.num_cells],
-        cell_y=cell_y.ndarray[:grid_wrapper.grid_state.grid.num_cells],
-        half_level_heights=z_ifc.ndarray[:grid_wrapper.grid_state.grid.num_cells,:],
-        grid=grid_wrapper.grid_state.grid,
-        backend=actual_backend,
-    )
 
     # Initialize the diffusion granule
     global granule  # noqa: PLW0603 [global-statement]
@@ -257,7 +241,7 @@ def diffusion_init(
             cell_params=grid_wrapper.grid_state.cell_geometry,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
-            ibm_masks=ibm_masks,
+            ibm_masks=grid_wrapper.grid_state.ibm_masks,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(
             model_backends.get_allocator(actual_backend)
