@@ -54,7 +54,7 @@ from .test_set_theta_v_prime_ic_at_lower_boundary import (
 )
 
 
-horzpres_discr_type = HorizontalPressureDiscretizationType()
+horzpres_discr_type = HorizontalPressureDiscretizationType.namespace()
 
 
 def compute_first_vertical_derivative_numpy(

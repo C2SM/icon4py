@@ -11,6 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.config.utils as config_utils
 from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
     vertically_implicit_solver_at_predictor_step,
 )
@@ -299,7 +300,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == constants.RayleighType.KLEMP:
+        if rayleigh_type == config_utils.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (start_cell_index_nudging <= horz_idx)
                 & (horz_idx < end_cell_index_local)

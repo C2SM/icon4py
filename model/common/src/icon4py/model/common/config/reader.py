@@ -71,7 +71,7 @@ class Configuration(Generic[T]):
     def update(self, patch: T | oc.DictConfig | str | pathlib.Path | dict, read_only=False):
         try:
             update = self._load_update(patch)
-            if self._name in update.keys():
+            if self._name in update:
                 update = update.get(self._name)
             if oc.OmegaConf.is_readonly(self._config):
                 oc.OmegaConf.set_readonly(self._config, False)
@@ -90,7 +90,6 @@ class Configuration(Generic[T]):
         )
 
     def to_yaml(self, file: str | pathlib.Path, config_type=ConfigType.USER) -> None:
-
         config = self._config if config_type == ConfigType.USER else self.default
         stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
         with open(file, "w", encoding="utf-8") as f:
@@ -100,6 +99,10 @@ class Configuration(Generic[T]):
     def config(self) -> oc.DictConfig:
         oc.OmegaConf.set_readonly(self._config, True)
         return self._config
+
+    @property
+    def config_as_type(self) -> T:
+        return oc.DictConfig._to_object(self._config)
 
     @property
     def default(self) -> oc.DictConfig:

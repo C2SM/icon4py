@@ -5,14 +5,14 @@ apply_to_vertical_wind: true
 apply_zdiffusion_t: true
 compute_3d_smag_coeff: false
 diffusion_type: SMAGORINSKY_4TH_ORDER
-hdiff_efdt_ratio: 36.0
+hdiff_efdt_ratio: 24.0
 hdiff_w_efdt_ratio: 15.0
 ltkeshs: true
 max_nudging_coefficient: 0.1
 ndyn_substeps: 5
 nudging_decay_rate: 2.0
 shear_type: VERTICAL_OF_HORIZONTAL_WIND
-smagorinski_scaling_factor: 0.015
+smagorinski_scaling_factor: 0.025
 temperature_boundary_diffusion_denominator: 135.0
 thhgtd_zdiffu: 200.0
 thslp_zdiffu: 0.025

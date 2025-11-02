@@ -97,7 +97,7 @@ class DiffusionConfig:
     ## parameters from other namelists
 
     # from mo_nonhydrostatic_nml.f90
-    n_substeps: int = dataclasses.field(
+    ndyn_substeps: int = dataclasses.field(
         init=False, default=config_reader.resolve_or_else("nsubsteps", 5)
     )
 
@@ -114,11 +114,11 @@ class DiffusionConfig:
 
     #: Denominator for temperature boundary diffusion
     #: Called 'denom_diffu_t' in mo_gridref_nml.f90
-    temperature_boundary_diffusion_denom: float = 135.0
+    temperature_boundary_diffusion_denominator: float = 135.0
 
     #: Denominator for velocity boundary diffusion
     #: Called 'denom_diffu_v' in mo_gridref_nml.f90
-    velocity_boundary_diffusion_denom: float = 200.0
+    velocity_boundary_diffusion_denominator: float = 200.0
 
     # parameters from namelist: mo_interpol_nml.f90
 

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common.constants import RayleighType
+from icon4py.model.common.config.utils import RayleighType
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,

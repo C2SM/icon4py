@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import enum
 import sys
 from typing import Final
 
@@ -152,12 +151,3 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     grav_o_rd = GRAV_O_RD
     p0ref = REFERENCE_PRESSURE
     eps = DBL_EPS
-
-
-# TODO (halungge): move! this is not a constant
-# TODO (@halungge): FrozenNamespace[int]
-class RayleighType(enum.Enum):
-    #: classical Rayleigh damping, which makes use of a reference state.
-    CLASSIC = 1
-    #: Klemp (2008) type Rayleigh damping
-    KLEMP = 2

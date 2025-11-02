@@ -21,7 +21,7 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-divergence_damp_order = DivergenceDampingOrder()
+divergence_damp_order = DivergenceDampingOrder.namespace()
 
 
 @pytest.mark.embedded_remap_error

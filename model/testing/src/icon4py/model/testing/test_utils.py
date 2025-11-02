@@ -17,7 +17,9 @@ import numpy.typing as npt
 import pytest
 from typing_extensions import Buffer
 
+
 logger = logging.getLogger(__file__)
+
 
 def dallclose(
     a: npt.ArrayLike,
@@ -64,7 +66,7 @@ def is_gtfn_backend(backend: gtx_typing.Backend | None) -> bool:
     return "gtfn" in backend.name if backend else False
 
 
-def diff(reference: pathlib.Path, actual: pathlib.Path):
+def diff(reference: pathlib.Path, actual: pathlib.Path) -> bool:
     with pathlib.Path.open(reference) as f:
         reference_lines = f.readlines()
     with pathlib.Path.open(actual) as f:

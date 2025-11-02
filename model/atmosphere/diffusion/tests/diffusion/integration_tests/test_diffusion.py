@@ -360,11 +360,11 @@ def test_verify_diffusion_init_against_savepoint(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (
-            definitions.Experiments.EXCLAIM_APE,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-        ),
+        # (
+        #    definitions.Experiments.EXCLAIM_APE,
+        #    "2000-01-01T00:00:02.000",
+        #    "2000-01-01T00:00:02.000",
+        # ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])

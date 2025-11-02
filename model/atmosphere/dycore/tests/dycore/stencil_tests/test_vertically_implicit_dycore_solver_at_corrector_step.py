@@ -11,6 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.config.utils as config_utils
 from icon4py.model.atmosphere.dycore.stencils.vertically_implicit_dycore_solver import (
     vertically_implicit_solver_at_corrector_step,
 )
@@ -104,7 +105,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         iau_wgt_dyn: float,
         dtime: float,
         is_iau_active: bool,
-        rayleigh_type: int,
+        rayleigh_type: config_utils.RayleighType,
         at_first_substep: bool,
         at_last_substep: bool,
         end_index_of_damping_layer: int,
@@ -272,7 +273,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         )
 
         w_1 = next_w[:, 0]
-        if rayleigh_type == constants.RayleighType.KLEMP:
+        if rayleigh_type == config_utils.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (horizontal_start <= horz_idx)
                 & (horz_idx < horizontal_end)

@@ -9,11 +9,13 @@
 import dataclasses
 import enum
 import pathlib
-from typing import Optional
+from typing import TypeVar
 
 import omegaconf as oc
 import pytest
+from gt4py.eve import utils as eve_utils
 
+import icon4py.model.common.utils._common
 from icon4py.model.common.config import reader as config_reader
 
 
@@ -31,9 +33,15 @@ class Foo:
     c: list[int]
 
 
-class Meridiem(enum.Enum):
+class Meridiem(icon4py.model.common.utils._common.NamespaceMixin, enum.Enum):
     AM = 1
     PM = 2
+
+
+def test_namespace():
+    namespace = Meridiem.namespace()
+    assert namespace.AM == 1
+    assert namespace.PM == 2
 
 
 @dataclasses.dataclass
@@ -42,6 +50,11 @@ class Time:
     minutes: int = 0
     seconds: int = 0
     meridiem: Meridiem = Meridiem.AM
+
+
+def test_frozen_namespace_mixin():
+    namespace = Meridiem.namespace()
+    assert isinstance(namespace, eve_utils.FrozenNamepsace)
 
 
 def test_config_reader_validate_default_config() -> None:
