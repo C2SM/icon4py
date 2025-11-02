@@ -1395,7 +1395,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.10+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp#c11cd461f18016aa2ef2acf2e701f5c8dfdcb105" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp#8680f51d05d176a7ad677e6c5b91e425062e4270" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
