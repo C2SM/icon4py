@@ -56,7 +56,7 @@ jobs:
           NUM_PROCESSES: auto
           ICON4PY_ENABLE_GRID_DOWNLOAD: false
           ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
-          GT4PY_BUILD_JOBS: 0
+          GT4PY_BUILD_JOBS: 0 # Ok, as parallization is done on pytest level
         run: |
           uvx nox -s "test_model-${{matrix.python-version}}(basic, ${{ matrix.component }})" -- --backend=${{ matrix.backend }}
 
