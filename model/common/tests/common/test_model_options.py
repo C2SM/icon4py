@@ -60,11 +60,17 @@ def test_custom_backend_device() -> None:
 @pytest.mark.parametrize(
     "backend",
     [
-        model_backends.make_custom_dace_backend(device=model_backends.CPU),  # conrete backend
+        model_backends.make_custom_dace_backend(
+            cached=False, device=model_backends.CPU
+        ),  # conrete backend
         model_backends.CPU,
-        {"backend_factory": model_backends.make_custom_dace_backend, "device": model_backends.CPU},
-        {"backend_factory": model_backends.make_custom_dace_backend},
-        {"device": model_backends.CPU},
+        {
+            "backend_factory": model_backends.make_custom_dace_backend,
+            "cached": False,
+            "device": model_backends.CPU,
+        },
+        {"backend_factory": model_backends.make_custom_dace_backend, "cached": False},
+        {"cached": False, "device": model_backends.CPU},
     ],
 )
 def test_setup_program_defaults(
@@ -74,7 +80,10 @@ def test_setup_program_defaults(
     | None,
 ) -> None:
     testee = setup_program(backend=backend, program=program_return_field)
-    expected_backend = model_backends.make_custom_dace_backend(device=model_backends.CPU)
+    expected_cached = backend == model_backends.CPU
+    expected_backend = model_backends.make_custom_dace_backend(
+        cached=expected_cached, device=model_backends.CPU
+    )
     expected_program = functools.partial(
         program_return_field.with_backend(expected_backend).compile(
             enable_jit=False,
@@ -114,6 +123,8 @@ def test_setup_program_specify_inputs(
     | None,
     expected_backend: gtx_typing.Backend | None,
 ) -> None:
+    backend_id = expected_backend.name if expected_backend is not None else "embedded"
+    program_return_field.gtir.id = f"{program_return_field.gtir.id}_{backend_id}"
     testee = setup_program(backend=backend_params, program=program_return_field)
     if expected_backend is None:
         expected_program = functools.partial(
