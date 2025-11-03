@@ -61,7 +61,9 @@ def _get_grid_from_preset(
 
 
 @pytest.fixture(scope="session")
-def grid(request: pytest.FixtureRequest, backend: gtx_typing.Backend | None) -> base_grid.Grid:
+def grid(
+    request: pytest.FixtureRequest, backend: gtx_typing.Backend | None = None
+) -> base_grid.Grid:
     """
     Fixture for providing a grid instance.
 
