@@ -22,7 +22,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install libboost-all-dev
       - name: install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           version: "0.6.16"
           enable-cache: true

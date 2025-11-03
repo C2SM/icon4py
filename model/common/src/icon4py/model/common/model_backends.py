@@ -10,17 +10,11 @@ import typing
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
-from gt4py.next.program_processors.runners.gtfn import GTFNBackendFactory
+from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
 
 DEFAULT_BACKEND: typing.Final = "embedded"
 
-BACKENDS: dict[str, gtx_typing.Backend | None] = {
-    "embedded": None,
-    "roundtrip": gtx.itir_python,
-    "gtfn_cpu": gtx.gtfn_cpu,
-    "gtfn_gpu": gtx.gtfn_gpu,
-}
 
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
 DeviceType: typing.TypeAlias = gtx.DeviceType
@@ -50,82 +44,57 @@ def get_allocator(
     raise ValueError(f"Cannot get allocator from {backend}")
 
 
-try:
-    from gt4py.next.program_processors.runners.dace import make_dace_backend
+def make_custom_dace_backend(
+    device: DeviceType,
+    cached: bool = True,
+    auto_optimize: bool = True,
+    async_sdfg_call: bool = True,
+    optimization_args: dict[str, typing.Any] | None = None,
+    use_metrics: bool = True,
+    **_,
+) -> gtx_typing.Backend:
+    """Customize the dace backend with the given configuration parameters.
 
-    def make_custom_dace_backend(
-        device: DeviceType,
-        auto_optimize: bool = True,
-        cached: bool = True,
-        blocking_dim: gtx.Dimension | None = None,
-        blocking_size: int | None = None,
-        **_,
-    ) -> gtx_typing.Backend:
-        """Customize the dace backend with the following configuration.
+    Args:
+        device: The target device.
+        cached: Cache the lowered SDFG as a JSON file and the compiled programs.
+        auto_optimize: Enable the SDFG auto-optimize pipeline.
+        async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
+            of GPU kernel execution with the Python driver code.
+        optimization_args: A `dict` containing configuration parameters for
+            the SDFG auto-optimize pipeline.
+        use_metrics: Add SDFG instrumentation to collect the metric for stencil
+            compute time.
 
-        async_sdfg_call:
-            In icon4py we want to make an asynchronous SDFG call on gpu to allow
-            overlapping of gpu kernel execution with the Python driver code.
-        blocking_dim:
-            Apply loop-blocking on the vertical dimension `KDim`.
-        make_persistent:
-            Allocate temporary arrays at SDFG initialization, when it is loaded
-            from the binary library. The memory will be persistent across all SDFG
-            calls and released only at application exit.
-        use_memory_pool:
-            Allocate temporaries in memory pool, currently only supported for GPU
-            (based on CUDA memory pool).
-        use_zero_origin:
-            When set to `True`, the SDFG lowering will not generate the start symbol
-            of the field range. Select this option if all fields have zero origin.
-        blocking_dim: The dimension on which loop blocking should be performed.
-            If `None` then disabled. If set the `blocking_size` must also be specified.
-        blocking_size: The loop blocking size, if `blocking_dim` is specified a value
-            must be specified.
-
-        Args:
-            gpu: Specify if the target device is GPU.
-            enable_loop_blocking: Flag to enable loop-blocking transformation on
-                the vertical dimension, default `False`.
-
-        Returns:
-            A dace backend with custom configuration for the target device.
-        """
-        on_gpu = device == GPU
-        if (blocking_dim is None) ^ (blocking_size is None):
-            raise ValueError(
-                f"Undefined behavior for `blocking_dim`={blocking_dim} `blocking_size`={blocking_size}."
-            )
-
-        return make_dace_backend(
-            auto_optimize=auto_optimize,
-            cached=cached,
-            gpu=on_gpu,
-            async_sdfg_call=True,
-            blocking_dim=blocking_dim,
-            blocking_size=blocking_size,
-            make_persistent=False,
-            use_memory_pool=on_gpu,
-            use_zero_origin=True,
-        )
-
-    BACKENDS.update(
-        {
-            "dace_cpu": make_custom_dace_backend(device=CPU),
-            "dace_gpu": make_custom_dace_backend(device=GPU),
-        }
+    Returns:
+        A dace backend with custom configuration for the target device.
+    """
+    on_gpu = device == GPU
+    return gtx_dace.make_dace_backend(
+        gpu=on_gpu,
+        cached=cached,
+        auto_optimize=auto_optimize,
+        async_sdfg_call=async_sdfg_call,
+        optimization_args=optimization_args,
+        use_metrics=use_metrics,
+        use_zero_origin=True,
     )
-
-except ImportError:
-    # dace module not installed, thus the dace backends are not available
-    def make_custom_dace_backend(device: str, **options) -> gtx_typing.Backend:
-        raise NotImplementedError("Depends on dace module, which is not installed.")
 
 
 def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gtx_typing.Backend:
     on_gpu = device == GPU
-    return GTFNBackendFactory(
+    return gtfn.GTFNBackendFactory(
         gpu=on_gpu,
         cached=cached,
         otf_workflow__cached_translation=cached,
     )
+
+
+BACKENDS: dict[str, gtx_typing.Backend | None] = {
+    "embedded": None,
+    "roundtrip": gtx.itir_python,
+    "gtfn_cpu": gtx.gtfn_cpu,
+    "gtfn_gpu": gtx.gtfn_gpu,
+    "dace_cpu": make_custom_dace_backend(device=CPU),
+    "dace_gpu": make_custom_dace_backend(device=GPU),
+}
