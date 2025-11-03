@@ -207,6 +207,7 @@ def construct_diffusion_config(
     elif experiment == Experiments.EXCLAIM_APE:
         config = diffusion_config.DiffusionConfig(
             diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
+            apply_zdiffusion_t=False,
             type_t_diffu=2,
             type_vn_diffu=1,
             hdiff_efdt_ratio=24.0,
