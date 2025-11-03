@@ -196,7 +196,6 @@ class Pair(Generic[T]):
         """Read-only property descriptor for the second element of the pair (mainly for subclassing)."""
         return self.__second
 
-    assert hasattr(first, "_pair_accessor_id_") and hasattr(second, "_pair_accessor_id_")
     assert hasattr(frozen_first, "_pair_accessor_id_") and hasattr(
         frozen_second, "_pair_accessor_id_"
     )
