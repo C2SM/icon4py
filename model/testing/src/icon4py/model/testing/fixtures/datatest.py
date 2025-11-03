@@ -133,7 +133,7 @@ def download_ser_data(
     request: pytest.FixtureRequest,
     processor_props: decomposition.ProcessProperties,
     ranked_data_path: pathlib.Path,
-    experiment: str | definitions.Experiment,
+    experiment: definitions.Experiment,
     pytestconfig: pytest.Config,
 ) -> None:
     """
@@ -144,10 +144,6 @@ def download_ser_data(
     # we don't want to run this ever if we are not running datatests
     if "not datatest" in request.config.getoption("-k", ""):
         return
-
-    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
-    if isinstance(experiment, str):
-        experiment = dt_utils.experiment_from_name(experiment)
 
     _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
 
@@ -169,8 +165,7 @@ def grid_savepoint(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> serialbox.IconGridSavepoint:
     grid_shape = dt_utils.guess_grid_shape(experiment)
-    grid_id = str(dt_utils.get_grid_id_for_experiment(experiment))
-    return data_provider.from_savepoint_grid(grid_id, grid_shape)
+    return data_provider.from_savepoint_grid(experiment.name, grid_shape)
 
 
 @pytest.fixture
@@ -190,9 +185,8 @@ def decomposition_info(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
     grid_shape = dt_utils.guess_grid_shape(experiment)
-    grid_id = str(dt_utils.get_grid_id_for_experiment(experiment))
     return data_provider.from_savepoint_grid(
-        grid_id=grid_id, grid_shape=grid_shape
+        grid_id=experiment.name, grid_shape=grid_shape
     ).construct_decomposition_info()
 
 
