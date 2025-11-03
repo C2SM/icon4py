@@ -31,7 +31,7 @@ def interpolate_edge_field_to_half_levels_vp_numpy(
     return interpolation_to_half_levels_vp
 
 
-@pytest.mark.skip_value_error
+@pytest.mark.embedded_only
 class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
     PROGRAM = interpolate_edge_field_to_half_levels_vp
     OUTPUTS = ("interpolation_to_half_levels_vp",)
