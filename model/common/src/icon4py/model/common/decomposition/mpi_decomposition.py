@@ -43,7 +43,7 @@ try:
 
 except ImportError:
     mpi4py = None
-    ghex = None  # type: ignore [assignment] # ghex optional
+    ghex = None
     unstructured = None
 
 
