@@ -23,7 +23,7 @@ class NonHydrostaticConfig:
     """
 
     # number of dynamics substep -> TODO (@halungge): should this really be here?
-    ndyn_substep: int = 5
+    ndyn_substeps: int = 5
 
     itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
 

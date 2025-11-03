@@ -8,47 +8,47 @@
 
 import pathlib
 
-import icon4py.model.atmosphere.diffusion.config as diffusion_config
+import icon4py.model.atmosphere.dycore.config as dycore_config
 import icon4py.model.common.config.reader as config
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import experiment
 
 
-def test_diffusion_default_config(tmp_path: pathlib.Path) -> None:
-    default_config = diffusion_config.init_config()
+def test_non_hydrostatic_default_config(tmp_path: pathlib.Path) -> None:
+    default_config = dycore_config.init_config()
     file = tmp_path.joinpath("default.yaml")
     default_config.to_yaml(file, config.ConfigType.DEFAULT)
-    reference_file = pathlib.Path(__file__).parent.joinpath("references/diffusion_default.yaml")
+
+    reference_file = pathlib.Path(__file__).parent.joinpath("references/dycore_default.yaml")
     assert test_utils.diff(reference_file, file)
 
 
-def test_diffusion_experiment_config(
+def test_dycore_experiment_config(
     tmp_path: pathlib.Path, experiment: definitions.Experiment
 ) -> None:
-    configuration = diffusion_config.init_config()
-    exp_config = definitions.construct_diffusion_config(experiment)
+    configuration = dycore_config.init_config()
+    exp_config = definitions.construct_nonhydrostatic_config(experiment)
+
     configuration.update(exp_config)
     overwrites = {
         definitions.Experiments.EXCLAIM_APE.name: (
-            "hdiff_efdt_ratio",
-            "smagorinski_scaling_factor",
-            "apply_zdiffusion_t",
+            "divdamp_order",
+            "rayleigh_coeff",
             "ndyn_substeps",
         ),
         definitions.Experiments.MCH_CH_R04B09.name: (
-            "hdiff_efdt_ratio",
-            "smagorinski_scaling_factor",
+            "divdamp_order",
+            "iau_wgt_dyn",
+            "fourth_order_divdamp_factor",
             "max_nudging_coefficient",
-            "shear_type",
-            "thhgtd_zdiffu",
-            "thslp_zdiffu",
-            "velocity_boundary_diffusion_denominator",
             "ndyn_substeps",
         ),
     }
 
-    file = tmp_path.joinpath(f"diffusion_{experiment.name}.yaml")
+    file = tmp_path.joinpath(f"dycore_{experiment.name}.yaml")
     configuration.to_yaml(file, config.ConfigType.USER)
+    reference_file = definitions.config_reference_path().joinpath(f"dycore_{experiment.name}.yaml")
+    assert test_utils.diff(reference_file, file)
     test_utils.assert_same_except(
         overwrites[experiment.name], configuration.config_as_type, configuration.default
     )
