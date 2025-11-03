@@ -8,12 +8,14 @@
 import functools
 from typing import TYPE_CHECKING
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import constants
+from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_lin_e,
     compute_cells_aw_verts,
@@ -40,10 +42,6 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     ranked_data_path,
 )
-
-from icon4py.model.common.grid import base as base_grid
-
-import gt4py.next.typing as gtx_typing
 
 
 cell_domain = h_grid.domain(dims.CellDim)
