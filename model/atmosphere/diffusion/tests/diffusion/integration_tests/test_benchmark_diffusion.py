@@ -20,8 +20,8 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common.config.utils import RayleighType
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, config as diffusion_config
+
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -165,7 +165,7 @@ def test_run_diffusion_benchmark(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=RayleighType.KLEMP,
+        rayleigh_type=diffusion_config.RayleighType.KLEMP,
         rayleigh_coeff=5.0,
         exner_expol=0.333,
         vwind_offctr=0.2,

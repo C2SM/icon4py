@@ -18,7 +18,7 @@ from gt4py.next import allocators as gtx_allocators
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.dycore import config, dycore_states, dycore_utils
+from icon4py.model.atmosphere.dycore import config as dycore_config, dycore_states, dycore_utils
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
@@ -141,9 +141,9 @@ class IntermediateFields:
 
 
 class NonHydrostaticParams:
-    """Calculates derived quantities depending on the NonHydrostaticConfig."""
+    """Calculates derived quantities depending on the NonHydrostaticdycore_config."""
 
-    def __init__(self, config: config.NonHydrostaticConfig):
+    def __init__(self, config: dycore_config.NonHydrostaticConfig):
         #: Weighting coefficients for velocity advection if tendency averaging is used
         #: The off-centering specified here turned out to be beneficial to numerical
         #: stability in extreme situations
@@ -175,7 +175,7 @@ class SolveNonhydro:
     def __init__(
         self,
         grid: icon_grid.IconGrid,
-        config: config.NonHydrostaticConfig,
+        config: dycore_config.NonHydrostaticConfig,
         params: NonHydrostaticParams,
         metric_state_nonhydro: dycore_states.MetricStateNonHydro,
         interpolation_state: dycore_states.InterpolationState,
