@@ -28,7 +28,7 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_pos_on_tplane_e_x_y,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, serialbox as sb
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -41,12 +41,9 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+from icon4py.model.common.grid import base as base_grid
 
-if TYPE_CHECKING:
-    import gt4py.next.typing as gtx_typing
-
-    from icon4py.model.common.grid import base as base_grid
-    from icon4py.model.testing import serialbox as sb
+import gt4py.next.typing as gtx_typing
 
 
 cell_domain = h_grid.domain(dims.CellDim)
