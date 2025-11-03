@@ -196,11 +196,9 @@ class Pair(Generic[T]):
         """Read-only property descriptor for the second element of the pair (mainly for subclassing)."""
         return self.__second
 
-    assert hasattr(frozen_first, "_pair_accessor_id_") and hasattr(
-        frozen_second, "_pair_accessor_id_"
-    )
-    first._pair_accessor_id_ = frozen_first._pair_accessor_id_ = _FIRST_ACCESSOR_ID
-    second._pair_accessor_id_ = frozen_second._pair_accessor_id_ = _SECOND_ACCESSOR_ID
+    if hasattr(frozen_first, "_pair_accessor_id_") and hasattr(frozen_second, "_pair_accessor_id_"):
+        first._pair_accessor_id_ = frozen_first._pair_accessor_id_ = _FIRST_ACCESSOR_ID
+        second._pair_accessor_id_ = frozen_second._pair_accessor_id_ = _SECOND_ACCESSOR_ID
 
     def __eq__(self, other: object) -> bool:
         assert hasattr(other, "__first") and hasattr(other, "__second")
