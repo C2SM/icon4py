@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Literal, Protocol, overload, runtime_checkable
 
-import dace
+import dace  # type: ignore[import-untyped]
 import numpy as np
 from gt4py.next import Dimension
 

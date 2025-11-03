@@ -163,7 +163,7 @@ def test_rbf_interpolation_coeffs_cell(
     )
     assert horizontal_start < grid.num_cells
 
-    rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_coeffs_cell(
+    rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_coeffs_cell(  # type: ignore[misc] # function returns two vars
         geometry.get(geometry_attrs.CELL_LAT).ndarray,
         geometry.get(geometry_attrs.CELL_LON).ndarray,
         geometry.get(geometry_attrs.CELL_CENTER_X).ndarray,

@@ -14,7 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
-import dace
+import dace  # type: ignore[import-untyped]
 import numpy as np
 from gt4py import next as gtx
 
@@ -26,7 +26,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import ghex  # type: ignore [import-not-found]
+    import ghex
     import mpi4py  # type: ignore [import-not-found]
     from ghex.context import make_context  # type: ignore [import-not-found]
     from ghex.unstructured import (  # type: ignore [import-not-found]
@@ -43,10 +43,10 @@ try:
 
 except ImportError:
     mpi4py = None
-    ghex = None
+    ghex = None  # type: ignore [assignment] # ghex optional
     unstructured = None
 
-    
+
 if TYPE_CHECKING:
     import mpi4py.MPI  # type: ignore [import-not-found]
 
@@ -293,6 +293,8 @@ class GHexMultiNodeExchange:
             self.__sdfg_signature__()[0][i]: arg for i, arg in enumerate(args)
         }  # Field name : Data Descriptor
 
+        assert isinstance(dim, gtx.Dimension)
+        assert isinstance(wait, bool)
         halo_exchange.add_halo_tasklet(
             sdfg, state, global_buffers, self, dim, id(self), wait, self.num_of_halo_tasklets
         )
@@ -354,7 +356,7 @@ class HaloExchangeWait:
         state.add_edge(
             buffer, None, tasklet, "IN_" + buffer_name, dace.Memlet(buffer_name, subset="0")
         )
-        
+
         """
         # noqa: ERA001
 
