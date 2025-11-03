@@ -15,7 +15,7 @@ from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 from mesh_generator import mesh_generator
 
 from icon4py.model.atmosphere.advection import advection, advection_states
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.fixtures.datatest import (
 #    backend,
@@ -59,8 +59,6 @@ from icon4py.model.common.interpolation import (
 )
 from icon4py.model.common.states import factory
 import icon4py.model.common.grid.states as grid_states
-
-from model.testing.src.icon4py.model.testing import grid_utils
 
 # ntracer legend for the serialization data used here in test_advection:
 # ------------------------------------
@@ -107,6 +105,7 @@ neighbor_tables = {
   dims.E2V: e2v_table,
   dims.V2C: v2c_table,
   dims.C2V: c2v_table,
+  dims.E2C2E: e2c2e_table,
 #  v2e2v_table
   dims.C2E2C2E: c2e2c2e_table
 }
@@ -144,6 +143,7 @@ area = gtx.as_field((dims.CellDim,), area)
 geofac_div = interpolation_fields.compute_geofac_div(primal_edge_length, edge_orientation, area, out= geofac_div, offset_provider={"C2E": mesh.get_connectivity("C2E")})
 backend = gtx_backend
 backend = None
+backend = model_backends.BACKENDS["gtfn_cpu"]
 _xp = data_alloc.import_array_ns(backend)
 characteristic_length = 11.1
 _config = {
@@ -166,8 +166,6 @@ _config = {
             ),
 }
 edge_domain = h_grid.domain(dims.EdgeDim)
-from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
-grid_geometry = grid_utils.get_grid_geometry(backend=None, experiment=REGIONAL_EXPERIMENT, grid_file=REGIONAL_EXPERIMENT)
 rbf_vec_coeff_e = factory.NumpyFieldsProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=_xp),
             fields=(attrs.RBF_VEC_COEFF_E,),
@@ -188,7 +186,9 @@ rbf_vec_coeff_e = factory.NumpyFieldsProvider(
             params={
                 "rbf_kernel": _config["rbf_kernel_edge"].value,
                 "scale_factor": _config["rbf_scale_edge"],
-                "horizontal_start": grid_geometry.grid.start_index(domain=edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+                "horizontal_start": icon.IconGrid.start_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    domain=(dims.CellDim, dims.E2C2EDim)),
             },
 )
 pos_on_tplane_e_x = cartesian_edge_centers[:, 0]
@@ -215,6 +215,7 @@ metric_state = advection_states.AdvectionMetricState(
         ddqz_z_full=None,
 )
 tangent_orientation = None
+tangent_orientation = edge_orientation
 inverse_primal_edge_lengths = f"inverse_of_{geometry_attrs.EDGE_LENGTH}"
 inverse_dual_edge_lengths = f"inverse_of_{geometry_attrs.DUAL_EDGE_LENGTH}"
 inverse_vertex_vertex_lengths = geometry_attrs.INVERSE_VERTEX_VERTEX_LENGTH
@@ -232,11 +233,11 @@ edge_center_lat = None
 edge_center_lon = None
 primal_normal_x = None
 primal_normal_y = None
-coriolis_frequency = 0e0
-edge_center_lat = 0e0
-edge_center_lon = 0e0
-primal_normal_x = 0e0
-primal_normal_y = 0e0
+#coriolis_frequency = 0e0
+#edge_center_lat = 0e0
+#edge_center_lon = 0e0
+#primal_normal_x = 0e0
+#primal_normal_y = 0e0
 edge_params = grid_states.EdgeParams (
             tangent_orientation=tangent_orientation,
             inverse_primal_edge_lengths=inverse_primal_edge_lengths,
