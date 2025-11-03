@@ -196,7 +196,6 @@ class Experiments:
 # TODO(havogt): the following configs should be part of the serialized experiment
 def construct_diffusion_config(experiment: Experiment) -> diffusion_config.DiffusionConfig:
     config = diffusion_config.init_config()
-
     experiment_config = config_reference_path().joinpath(f"diffusion_{experiment.name}.yaml")
     try:
         config.update(experiment_config)

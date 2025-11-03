@@ -8,9 +8,13 @@
 import gt4py.next as gtx
 from gt4py.next import abs, broadcast, maximum  # noqa: A004
 
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.type_alias import wpfloat
+
+
+divdamp_order_options = dycore_states.DivergenceDampingOrder.namespace()
 
 
 @gtx.field_operator
@@ -56,7 +60,7 @@ def _calculate_fourth_order_divdamp_scaling_coeff(
 ) -> fa.KField[float]:
     interpolated_fourth_order_divdamp_factor = (
         maximum(0.0, interpolated_fourth_order_divdamp_factor - 0.25 * second_order_divdamp_factor)
-        if divdamp_order == 24
+        if divdamp_order == divdamp_order_options.COMBINED
         else interpolated_fourth_order_divdamp_factor
     )
     return -interpolated_fourth_order_divdamp_factor * mean_cell_area**2

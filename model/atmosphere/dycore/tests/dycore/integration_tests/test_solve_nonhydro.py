@@ -13,8 +13,7 @@ from typing import TYPE_CHECKING
 import gt4py.next as gtx
 import pytest
 
-import icon4py.model.atmosphere.dycore.config
-import icon4py.model.common.grid.states as grid_states
+import icon4py.model.atmosphere.dycore.config as dycore_config
 from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils, solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
@@ -48,7 +47,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    config = icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig()
+    config = dycore_config.init_config().config_as_type
     second_order_divdamp_factor = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
@@ -991,7 +990,7 @@ def test_run_solve_nonhydro_multi_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
-    config = icon4py.model.atmosphere.dycore.config.NonHydrostaticConfig()
+    config = dycore_config.init_config().config_as_type
     params = solve_nh.NonHydrostaticParams(config)
 
     assert params.advection_implicit_weight_parameter == savepoint_nonhydro_init.wgt_nnew_vel()
@@ -1023,8 +1022,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     experiment,
     step_date_init,
     step_date_exit,
-    *,
-    ndyn_substeps,
     icon_grid,
     lowest_layer_thickness,
     model_top_height,
@@ -1032,9 +1029,6 @@ def test_compute_perturbed_quantities_and_interpolation(
     damping_height,
     grid_savepoint,
     metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
     savepoint_nonhydro_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_nonhydro_exit,
@@ -1239,17 +1233,8 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    grid_savepoint,
     metrics_savepoint,
-    interpolation_savepoint,
-    substep_init,
-    substep_exit,
     savepoint_nonhydro_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_nonhydro_exit,
@@ -1381,7 +1366,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     step_date_init,
     step_date_exit,
     *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -1392,9 +1376,6 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    substep_init,
-    substep_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
@@ -1600,16 +1581,11 @@ def test_apply_divergence_damping_and_update_vn(
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
-    savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     backend,
 ):
     sp_nh_init = savepoint_nonhydro_init
@@ -1722,15 +1698,10 @@ def test_apply_divergence_damping_and_update_vn(
     ],
 )
 def test_compute_horizontal_velocity_quantities_and_fluxes(
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
     icon_grid,
-    ndyn_substeps,
     grid_savepoint,
     lowest_layer_thickness,
     model_top_height,
@@ -1740,8 +1711,6 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -1904,21 +1873,17 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
 def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     istep_init,
     istep_exit,
-    substep_init,
-    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
     icon_grid,
     ndyn_substeps,
     at_first_substep,
-    grid_savepoint,
     savepoint_dycore_30_to_38_init,
     savepoint_dycore_30_to_38_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -2026,8 +1991,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     experiment,
     step_date_init,
     step_date_exit,
-    *,
-    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -2038,9 +2001,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    istep_init,
-    istep_exit,
-    substep_exit,
     savepoint_vertically_implicit_dycore_solver_init,
     backend,
 ):
@@ -2231,7 +2191,6 @@ def test_vertically_implicit_solver_at_corrector_step(
     experiment,
     step_date_init,
     step_date_exit,
-    *,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
