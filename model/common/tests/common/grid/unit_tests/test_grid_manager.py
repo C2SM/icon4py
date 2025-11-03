@@ -39,6 +39,7 @@ except ImportError:
 
 from icon4py.model.testing.fixtures import (
     backend,
+    cpu_allocator,
     data_provider,
     download_ser_data,
     experiment,

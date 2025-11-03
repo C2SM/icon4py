@@ -17,7 +17,7 @@ from icon4py.model.common.grid import base, simple
 from icon4py.model.common.math import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.fixtures.datatest import backend
+from icon4py.model.testing.fixtures.datatest import backend, backend_like
 from icon4py.model.testing.fixtures.stencil_tests import grid
 
 

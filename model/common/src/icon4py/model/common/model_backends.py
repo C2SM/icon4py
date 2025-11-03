@@ -85,7 +85,8 @@ def make_custom_dace_backend(
     Returns:
         A dace backend with custom configuration for the target device.
     """
-    assert device is not None
+    if device is None:
+        device = CPU
     on_gpu = device == GPU
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,
