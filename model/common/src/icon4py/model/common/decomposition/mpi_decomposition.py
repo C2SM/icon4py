@@ -26,7 +26,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import ghex
+    import ghex  # type: ignore [import-not-found]
     import mpi4py  # type: ignore [import-not-found]
     from ghex.context import make_context  # type: ignore [import-not-found]
     from ghex.unstructured import (  # type: ignore [import-not-found]
