@@ -161,7 +161,7 @@ class StencilTest:
     def _properly_allocated_input_data(
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        backend: gtx_typing.Backend | None,
+        backend: gtx_typing.Backend | None = None,
     ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
         # TODO(havogt): this is a workaround,
         # because in the `input_data` fixture provided by the user
