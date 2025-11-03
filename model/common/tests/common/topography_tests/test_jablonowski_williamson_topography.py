@@ -14,6 +14,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.initialization import jablonowski_williamson_topography as topography
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 
 from ..fixtures import *  # noqa: F403
@@ -35,10 +36,11 @@ def test_jablonowski_williamson_topography(
     topography_savepoint: sb.TopographySavepoint,
 ):
     cell_center_lat = grid_savepoint.lat(dims.CellDim).ndarray
+    xp = data_alloc.import_array_ns(backend)
     topo_c = topography.jablonowski_williamson_topography(
         cell_lat=cell_center_lat,
         u0=35.0,
-        allocator=backend,
+        array_ns=xp,
     )
 
     topo_c_ref = topography_savepoint.topo_c().asnumpy()

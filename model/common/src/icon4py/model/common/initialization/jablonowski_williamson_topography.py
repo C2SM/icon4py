@@ -7,26 +7,22 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import math
-
-from gt4py.next import typing as gtx_typing
+from types import ModuleType
 
 from icon4py.model.common import constants as phy_const
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def jablonowski_williamson_topography(
-    cell_lat: data_alloc.NDArray,
-    u0: float,
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
+    cell_lat: data_alloc.NDArray, u0: float, array_ns: ModuleType
 ) -> data_alloc.NDArray:
     """Function to initialize topography."""
-    xp = data_alloc.import_array_ns(allocator)
-    sin_lat = xp.sin(cell_lat)
-    cos_lat = xp.cos(cell_lat)
+    sin_lat = array_ns.sin(cell_lat)
+    cos_lat = array_ns.cos(cell_lat)
 
     eta_0 = 0.252
 
-    fac1 = u0 * xp.cos((1.0 - eta_0) * (math.pi / 2)) ** 1.5
+    fac1 = u0 * array_ns.cos((1.0 - eta_0) * (math.pi / 2)) ** 1.5
     fac2 = (-2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0) + 1.0 / 6.3) * fac1
     fac3 = (
         (1.6 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.5 * (math.pi / 2))

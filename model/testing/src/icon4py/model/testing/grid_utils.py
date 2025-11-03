@@ -10,7 +10,7 @@ import pathlib
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry,
@@ -29,7 +29,7 @@ grid_geometries: dict[str, geometry.GridGeometry] = {}
 def get_grid_manager_from_experiment(
     experiment: definitions.Experiment,
     keep_skip_values: bool,
-    allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
     return get_grid_manager_from_identifier(
         experiment.grid,
@@ -43,7 +43,7 @@ def get_grid_manager_from_identifier(
     grid: definitions.GridDescription,
     num_levels: int,
     keep_skip_values: bool,
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
     grid_file = _download_grid_file(grid)
     return get_grid_manager(
@@ -55,7 +55,7 @@ def get_grid_manager(
     grid_file: pathlib.Path,
     num_levels: int,
     keep_skip_values: bool,
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
     """
     Construct a GridManager instance for an ICON grid file.
@@ -131,7 +131,7 @@ def get_grid_geometry(
             experiment.grid,
             keep_skip_values=True,
             num_levels=experiment.num_levels,
-            allocator=backend,
+            allocator=model_backends.get_allocator(backend),
         )
         grid = gm.grid
         decomposition_info = construct_decomposition_info(grid, backend)

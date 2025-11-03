@@ -33,7 +33,7 @@ def _get_grid_from_preset(
     grid_preset: str,
     *,
     num_levels: int = DEFAULT_NUM_LEVELS,
-    allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> base_grid.Grid:
     match grid_preset:
         case "icon_regional":

@@ -16,12 +16,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.grid import base, gridfile, horizontal as h_grid, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
+    cpu_allocator,
     data_provider,
     download_ser_data,
     grid_savepoint,
@@ -48,9 +49,13 @@ def experiment() -> definitions.Experiment:
 
 
 @functools.cache
-def grid_from_limited_area_grid_file() -> icon.IconGrid:
+def grid_from_limited_area_grid_file(
+    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+) -> icon.IconGrid:
     return gridtest_utils.get_grid_manager_from_experiment(
-        definitions.Experiments.MCH_CH_R04B09, keep_skip_values=True, allocator=None
+        definitions.Experiments.MCH_CH_R04B09,
+        keep_skip_values=True,
+        allocator=cpu_allocator,
     ).grid
 
 

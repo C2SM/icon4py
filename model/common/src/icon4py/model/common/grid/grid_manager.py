@@ -117,9 +117,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(
-        self, allocator: gtx_typing.FieldBufferAllocationUtil | None, keep_skip_values: bool
-    ):
+    def __call__(self, allocator: gtx_typing.FieldBufferAllocationUtil, keep_skip_values: bool):
         if not self._reader:
             self.open()
         self._geometry = self._read_geometry_fields(allocator)
@@ -232,8 +230,9 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self,
+        *,
         decomposition_info: decomposition.DecompositionInfo | None = None,
-        allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.

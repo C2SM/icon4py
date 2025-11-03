@@ -295,7 +295,7 @@ class VerticalGrid:
 
 
 def _read_vct_a_and_vct_b_from_file(
-    file_path: pathlib.Path, num_levels: int, allocator: gtx_typing.FieldBufferAllocationUtil | None
+    file_path: pathlib.Path, num_levels: int, allocator: gtx_typing.FieldBufferAllocationUtil
 ) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
@@ -341,7 +341,7 @@ def _read_vct_a_and_vct_b_from_file(
 
 
 def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
-    vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil | None
+    vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil
 ) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
@@ -530,7 +530,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
 
 
 def get_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil | None
+    vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil
 ) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.

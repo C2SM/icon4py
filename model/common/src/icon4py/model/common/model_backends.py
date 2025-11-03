@@ -35,9 +35,15 @@ def is_backend_descriptor(
 
 def get_allocator(
     backend: BackendLike,
-) -> gtx_typing.Backend | None:
-    if backend is None or isinstance(backend, gtx_backend.Backend):
+) -> gtx_typing.Backend:
+    if isinstance(backend, gtx_backend.Backend):
         return backend
+    if backend is None:
+        # TODO(havogt): currently the testing infrastructure doesn't allow to specify
+        # embedded backend aka `None` for cupy, as there is no separation
+        # of allocator and backend.
+        return gtx_allocators.device_allocators[CPU]
+
     if is_backend_descriptor(backend):
         backend = backend["device"]
     if isinstance(backend, DeviceType):

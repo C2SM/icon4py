@@ -82,6 +82,11 @@ def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
     return model_options.customize_backend(None, backend_like)
 
 
+@pytest.fixture
+def cpu_allocator() -> gtx_typing.FieldBufferAllocationUtil:
+    return model_backends.get_allocator(None)
+
+
 @pytest.fixture(
     params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
     ids=lambda r: r.name,
