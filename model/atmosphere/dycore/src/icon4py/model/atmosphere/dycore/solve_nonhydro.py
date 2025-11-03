@@ -848,10 +848,6 @@ class SolveNonhydro:
                 "horizontal_start": self._start_cell_lateral_boundary,
                 "horizontal_end": self._end_cell_local,
             },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": self._grid.num_levels + 1,
-            },
         )
         self._ibm_set_bcs_dvndz = setup_program(
             backend=backend,
@@ -1119,21 +1115,29 @@ class SolveNonhydro:
                 mask=self._ibm_masks.half_cell_mask,
                 dir_value=ibm.DIRICHLET_VALUE_W,
                 field=prognostic_states.current.w,
+                vertical_start=gtx.int32(0),
+                vertical_end=self._grid.num_levels + 1,
             )
             self._ibm_set_dirichlet_value_cells(
                 mask=self._ibm_masks.full_cell_mask,
                 dir_value=ibm.DIRICHLET_VALUE_RHO,
                 field=prognostic_states.current.rho,
+                vertical_start=gtx.int32(0),
+                vertical_end=self._grid.num_levels,
             )
             self._ibm_set_dirichlet_value_cells(
                 mask=self._ibm_masks.full_cell_mask,
                 dir_value=ibm.DIRICHLET_VALUE_EXNER,
                 field=prognostic_states.current.exner,
+                vertical_start=gtx.int32(0),
+                vertical_end=self._grid.num_levels,
             )
             self._ibm_set_dirichlet_value_cells(
                 mask=self._ibm_masks.full_cell_mask,
                 dir_value=ibm.DIRICHLET_VALUE_THETA_V,
                 field=prognostic_states.current.theta_v,
+                vertical_start=gtx.int32(0),
+                vertical_end=self._grid.num_levels,
             )
             plots.pickle_data(prognostic_states.current, "initial_condition_ibm")
 
@@ -1332,7 +1336,8 @@ class SolveNonhydro:
         # NOTE: 1. vn_on_half_levels is actually not used after being computed here?
         # NOTE: 2. vn_on_half_levels is already computed in velocity_advection (where it is actually used)
         self._ibm_set_bcs_dvndz(
-            vn=prognostic_states.next.vn, vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels,
+            vn=prognostic_states.next.vn,
+            vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels,
         )
         # Set to zero the fluxes through edges of vertical surfaces of the IBM
         # region.
