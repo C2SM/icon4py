@@ -925,7 +925,7 @@ class SolveNonhydro:
         )
         # using GT4Py internal API to create a 1D field from the (num_edges, 1)-sized field
         self.hydrostatic_correction_on_lowest_level_1d_view = gtx_common._field(
-            self.hydrostatic_correction_on_lowest_level.ndarray,
+            self.hydrostatic_correction_on_lowest_level.ndarray[:, 0],
             domain={dims.EdgeDim: (0, self._grid.num_edges)},
         )
         """
