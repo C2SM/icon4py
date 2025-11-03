@@ -1394,8 +1394,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post569+e46dff9d"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=canonicalized_memlet_trees#e46dff9d54e23a0654d6350cbe4b9821ff90bd4a" }
+version = "1.0.4.post572+6cb11faf"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=canonicalized_memlet_trees#6cb11faf44cbad1c0c486ecbbc1f94d10259b54f" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
