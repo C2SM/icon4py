@@ -296,7 +296,7 @@ class VelocityAdvection:
                 self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
             ].ravel(order="K")
         )
-        diagnostic_state.max_vertical_cfl = self.vertical_cfl.maximum(
+        diagnostic_state.max_vertical_cfl = self.vertical_cfl.array_ns.maximum(
             max_vertical_cfl, diagnostic_state.max_vertical_cfl
         )
 
@@ -367,7 +367,7 @@ class VelocityAdvection:
             ].ravel(order="K")
         )
 
-        diagnostic_state.max_vertical_cfl = self.vertical_cfl.maximum(
+        diagnostic_state.max_vertical_cfl = self.vertical_cfl.array_ns.maximum(
             max_vertical_cfl, diagnostic_state.max_vertical_cfl
         )
 
