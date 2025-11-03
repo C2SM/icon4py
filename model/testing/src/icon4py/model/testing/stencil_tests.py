@@ -129,10 +129,10 @@ class StencilTest:
     @pytest.fixture
     def _configured_program(
         self,
-        backend: gtx_typing.Backend | None,
         static_variant: Sequence[str],
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         grid: base.Grid,
+        backend: gtx_typing.Backend | None = None,
     ) -> Callable[..., None]:
         unused_static_params = set(static_variant) - set(input_data.keys())
         if unused_static_params:
