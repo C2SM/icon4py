@@ -25,10 +25,10 @@ classifiers = [
 dependencies = [
   'gt4py==1.0.10',
   'packaging>=20.0',
-  'packaging>=20.0',
   'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
-  'scipy>=1.14.1'
+  'scipy>=1.14.1',
+  "dace>=1.0"
 ]
 description = "Shared code for the icon4py model."
 license = {text = "BSD-3 License"}
@@ -39,10 +39,9 @@ requires-python = ">=3.10"
 version = "0.0.6"
 
 [project.optional-dependencies]
-all = ["icon4py-common[dace,distributed,io]"]
+all = ["icon4py-common[distributed,io]"]
 cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
-dace = ["dace>=1.0", "gt4py[next]"]
 distributed = ["ghex>=0.3.0", "mpi4py>=3.1.5"]
 io = [
   # external dependencies
