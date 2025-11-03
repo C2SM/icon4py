@@ -906,8 +906,8 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "2025.10.28"
-source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_10_28#9ee52794117a5293c44c22e10d4c19b685e5247c" }
+version = "2025.10.30"
+source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_10_30#6ff7bf16174434ba7d842f2a176789829440c131" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1395,7 +1395,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.10+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp#8680f51d05d176a7ad677e6c5b91e425062e4270" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration#fe3ea9f21725fe03917f0ed931925e730258e649" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1740,7 +1740,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1757,7 +1757,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1774,7 +1774,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1791,7 +1791,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1808,7 +1808,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1870,12 +1870,12 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_10_28" },
+    { name = "dace", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_10_30" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1911,7 +1911,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1939,7 +1939,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1985,9 +1985,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace-scan_remove_temp-integration" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
