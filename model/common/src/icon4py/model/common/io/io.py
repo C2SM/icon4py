@@ -14,15 +14,14 @@ import logging
 import pathlib
 import uuid
 from collections.abc import Sequence
-from typing import Any, TypedDict
-
-from typing_extensions import Required
+from typing import Any
 
 from icon4py.model.common import exceptions
 from icon4py.model.common.components import monitor
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGrid
 from icon4py.model.common.io import cf_utils, ugrid, writers
+from icon4py.model.common.io.writers import GlobalFileAttributes
 
 
 log = logging.getLogger(__name__)
@@ -203,42 +202,6 @@ class IOMonitor(monitor.Monitor):
     def close(self) -> None:
         for m in self._group_monitors:
             m.close()
-
-
-class GlobalFileAttributes(TypedDict, total=False):
-    """
-    Global file attributes of  a ICON generated netCDF file.
-
-    Attribute map what ICON produces, (including the upper, lower case pattern).
-    Omissions (possibly incomplete):
-    - 'CDI' used for the supported CDI version (http://mpimet.mpg.de/cdi) since we do not support it
-
-    Additions:
-    - 'external_variables': variable used by CF conventions if cell_measure variables are used from an external file'
-    """
-
-    #: version of the supported CF conventions
-    Conventions: Required[str]  # TODO(halungge): check changelog? latest version is 1.11
-
-    #: unique id of the horizontal grid used in the simulation (from grid file)
-    uuidOfHGrid: Required[uuid.UUID]
-
-    #: institution name
-    institution: Required[str]
-
-    #: title of the file or simulation
-    title: Required[str]
-
-    #: source code repository
-    source: Required[str]
-
-    #: path of the binary and generation time stamp of the file
-    history: Required[str]
-
-    #: references for publication # TODO(halungge): check if this is the right reference
-    references: str
-    comment: str
-    external_variables: str
 
 
 class FieldGroupMonitor(monitor.Monitor):

@@ -11,17 +11,18 @@ import datetime as dt
 import functools
 import logging
 import pathlib
-from typing import Final
+import uuid
+from typing import Final, TypedDict
 
 import netCDF4 as nc
 import numpy as np
 import xarray as xr
+from typing_extensions import Required
 
 import icon4py.model.common.states.metadata
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, vertical as v_grid
 from icon4py.model.common.io import cf_utils
-from icon4py.model.common.io.io import GlobalFileAttributes
 
 
 EDGE: Final[str] = "edge"
@@ -33,6 +34,42 @@ TIME: Final[str] = "time"
 
 log = logging.getLogger(__name__)
 processor_properties = decomposition.SingleNodeProcessProperties()
+
+
+class GlobalFileAttributes(TypedDict, total=False):
+    """
+    Global file attributes of a ICON generated netCDF file.
+
+    Attribute map what ICON produces, (including the upper, lower case pattern).
+    Omissions (possibly incomplete):
+    - 'CDI' used for the supported CDI version (http://mpimet.mpg.de/cdi) since we do not support it
+
+    Additions:
+    - 'external_variables': variable used by CF conventions if cell_measure variables are used from an external file'
+    """
+
+    #: version of the supported CF conventions
+    Conventions: Required[str]  # TODO(halungge): check changelog? latest version is 1.11
+
+    #: unique id of the horizontal grid used in the simulation (from grid file)
+    uuidOfHGrid: Required[uuid.UUID]
+
+    #: institution name
+    institution: Required[str]
+
+    #: title of the file or simulation
+    title: Required[str]
+
+    #: source code repository
+    source: Required[str]
+
+    #: path of the binary and generation time stamp of the file
+    history: Required[str]
+
+    #: references for publication # TODO(halungge): check if this is the right reference
+    references: str
+    comment: str
+    external_variables: str
 
 
 @dataclasses.dataclass
