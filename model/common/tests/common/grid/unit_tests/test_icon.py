@@ -49,13 +49,11 @@ def experiment() -> definitions.Experiment:
 
 
 @functools.cache
-def grid_from_limited_area_grid_file(
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
-) -> icon.IconGrid:
+def grid_from_limited_area_grid_file() -> icon.IconGrid:
     return gridtest_utils.get_grid_manager_from_experiment(
         definitions.Experiments.MCH_CH_R04B09,
         keep_skip_values=True,
-        allocator=cpu_allocator,
+        allocator=model_backends.get_allocator(None),
     ).grid
 
 
@@ -94,7 +92,10 @@ INTERIOR_IDX = {
 
 
 @pytest.fixture(params=["serialbox", "file"])
-def grid(icon_grid: base_grid.Grid, request: pytest.FixtureRequest) -> base_grid.Grid:
+def grid(
+    icon_grid: base_grid.Grid,
+    request: pytest.FixtureRequest,
+) -> base_grid.Grid:
     if request.param == "serialbox":
         return icon_grid
     else:
