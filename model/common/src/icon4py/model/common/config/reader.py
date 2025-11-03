@@ -14,6 +14,8 @@ from typing import Generic, TypeVar
 
 import omegaconf as oc
 
+from icon4py.model.common import exceptions
+
 
 # TODO (@halungge): address
 #  - interpolation
@@ -79,7 +81,9 @@ class Configuration(Generic[T]):
             oc.OmegaConf.set_readonly(self._config, read_only)
         except (oc.ValidationError, ValueError) as e:
             log.error(f"patch {patch} does not validate against configuration {self._schema}")
-            raise e
+            raise exceptions.InvalidConfigError(
+                f"patch {patch} does not validate against configuration {self._schema}"
+            ) from e
 
     def as_type(self) -> T:
         mode = (
@@ -90,9 +94,13 @@ class Configuration(Generic[T]):
         )
 
     def to_yaml(self, file: str | pathlib.Path, config_type=ConfigType.USER) -> None:
+        if isinstance(file, str):
+            file = pathlib.Path(file)
+
         config = self._config if config_type == ConfigType.USER else self.default
         stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
-        with open(file, "w", encoding="utf-8") as f:
+
+        with file.open("w", encoding="utf-8") as f:
             f.write(stream)
 
     @property

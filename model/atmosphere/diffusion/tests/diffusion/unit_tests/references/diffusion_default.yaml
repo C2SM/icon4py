@@ -1,4 +1,3 @@
-_nudge_max_coeff:
 apply_to_horizontal_wind: true
 apply_to_temperature: true
 apply_to_vertical_wind: true

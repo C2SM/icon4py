@@ -8,7 +8,6 @@
 
 import dataclasses
 
-import icon4py.model.common.config.utils as config_utils
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import constants
 from icon4py.model.common.config import reader as config_reader
@@ -38,7 +37,7 @@ class NonHydrostaticConfig:
     )
 
     #: type of Rayleigh damping
-    rayleigh_type: config_utils.RayleighType = config_utils.RayleighType.KLEMP
+    rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP
 
     #: Rayleigh coefficient
     #: used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90

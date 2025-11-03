@@ -13,18 +13,19 @@ from typing import TYPE_CHECKING, Any
 import gt4py.next as gtx
 import pytest
 
-import icon4py.model.atmosphere.diffusion.config as diffusion_config
-
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-import icon4py.model.common.dimension as dims
-import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, config as diffusion_config
-
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion,
+    diffusion_states,
+)
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
+    states as grid_states,
     vertical as v_grid,
 )
 from icon4py.model.common.initialization.jablonowski_williamson_topography import (
@@ -43,7 +44,7 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
-    "grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
+    "grid", [definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL]
 )
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
@@ -54,23 +55,7 @@ def test_run_diffusion_benchmark(
 ) -> None:
     dtime = 10.0
 
-    config = diffusion.DiffusionConfig(
-        diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        type_t_diffu=2,
-        type_vn_diffu=1,
-        hdiff_efdt_ratio=24.0,
-        hdiff_w_efdt_ratio=15.0,
-        smagorinski_scaling_factor=0.025,
-        zdiffu_t=False,
-        thslp_zdiffu=0.02,
-        thhgtd_zdiffu=125.0,
-        velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coefficient=0.375,
-        n_substeps=5,
-        shear_type=diffusion_config.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
-    )
+    config = diffusion_config.init_config().config_as_type
 
     diffusion_parameters = diffusion.DiffusionParams(config)
 
@@ -165,7 +150,7 @@ def test_run_diffusion_benchmark(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=diffusion_config.RayleighType.KLEMP,
+        rayleigh_type=constants.RayleighType.KLEMP,
         rayleigh_coeff=5.0,
         exner_expol=0.333,
         vwind_offctr=0.2,

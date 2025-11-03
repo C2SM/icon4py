@@ -42,7 +42,7 @@ def solve_nh_init(
     itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-    rayleigh_type = config_utils.RayleighType.KLEMP
+    rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False
@@ -296,7 +296,7 @@ def test_dycore_wrapper_granule_inputs(
     itime_scheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
-    rayleigh_type = config_utils.RayleighType.KLEMP
+    rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False

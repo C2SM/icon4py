@@ -16,6 +16,7 @@ from typing import Final, Literal
 
 import icon4py.model.atmosphere.dycore.config as dycore_config
 from icon4py.model.atmosphere.diffusion import config as diffusion_config
+from icon4py.model.common import exceptions
 from icon4py.model.testing import config
 
 
@@ -39,6 +40,10 @@ def serialized_data_path() -> pathlib.Path:
 
 def grids_path() -> pathlib.Path:
     return get_test_data_root_path().joinpath("grids")
+
+
+def config_reference_path() -> pathlib.Path:
+    return pathlib.Path(__file__).parent.joinpath("datatests/configs")
 
 
 class GridKind(enum.Enum):
@@ -189,36 +194,17 @@ class Experiments:
 
 
 # TODO(havogt): the following configs should be part of the serialized experiment
-def construct_diffusion_config(
-    experiment: Experiment, ndyn_substeps: int = 5
-) -> diffusion_config.DiffusionConfig:
-    if experiment == Experiments.MCH_CH_R04B09:
-        config = diffusion_config.DiffusionConfig(
-            hdiff_efdt_ratio=24.0,
-            smagorinski_scaling_factor=0.025,
-            thslp_zdiffu=0.02,
-            thhgtd_zdiffu=125.0,
-            velocity_boundary_diffusion_denominator=150.0,
-            max_nudging_coefficient=0.375,
-            shear_type=diffusion_config.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
-        )
-        config.ndyn_substeps = ndyn_substeps
-        return config
-    elif experiment == Experiments.EXCLAIM_APE:
-        config = diffusion_config.DiffusionConfig(
-            diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
-            apply_zdiffusion_t=False,
-            type_t_diffu=2,
-            type_vn_diffu=1,
-            hdiff_efdt_ratio=24.0,
-            smagorinski_scaling_factor=0.025,
-        )
-        config.ndyn_substeps = ndyn_substeps
-        return config
-    else:
+def construct_diffusion_config(experiment: Experiment) -> diffusion_config.DiffusionConfig:
+    config = diffusion_config.init_config()
+
+    experiment_config = config_reference_path().joinpath(f"diffusion_{experiment.name}.yaml")
+    try:
+        config.update(experiment_config)
+        return config.config_as_type
+    except exceptions.InvalidConfigError as e:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."
-        )
+        ) from e
 
 
 def construct_nonhydrostatic_config(

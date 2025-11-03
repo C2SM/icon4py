@@ -130,7 +130,9 @@ class DiffusionConfig:
     #: Note: The user can pass the ICON namelist paramter `nudge_max_coeff` as `_nudge_max_coeff` or
     #: the properly scaled one as `max_nudging_coefficient`,
     #: see the comment in mo_interpol_nml.f90
-    _nudge_max_coeff: float | None = None
+    _nudge_max_coeff: float | None = dataclasses.field(
+        default=None, metadata={"omegaconf_ignore": True}
+    )
     max_nudging_coefficient: float | None = 0.1
 
     #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients

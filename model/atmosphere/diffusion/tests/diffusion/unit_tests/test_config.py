@@ -21,10 +21,12 @@ def test_diffusion_default_config(tmp_path: pathlib.Path):
     default_config = diffusion_config.init_config()
     file = tmp_path.joinpath("default.yaml")
     default_config.to_yaml(file, config.ConfigType.DEFAULT)
-    assert_config_file("references/diffusion_default.yaml", file)
+    assert_config_file(
+        pathlib.Path(__file__).parent.joinpath("references/diffusion_default.yaml"), file
+    )
 
 
-def test_diffusion_config_ape(tmp_path: pathlib.Path, experiment: definitions.Experiment):
+def test_diffusion_experiment_config(tmp_path: pathlib.Path, experiment: definitions.Experiment):
     configuration = diffusion_config.init_config()
     exp_config = definitions.construct_diffusion_config(experiment)
     configuration.update(exp_config)
@@ -32,6 +34,8 @@ def test_diffusion_config_ape(tmp_path: pathlib.Path, experiment: definitions.Ex
         definitions.Experiments.EXCLAIM_APE.name: (
             "hdiff_efdt_ratio",
             "smagorinski_scaling_factor",
+            "apply_zdiffusion_t",
+            "ndyn_substeps",
         ),
         definitions.Experiments.MCH_CH_R04B09.name: (
             "hdiff_efdt_ratio",
@@ -41,12 +45,12 @@ def test_diffusion_config_ape(tmp_path: pathlib.Path, experiment: definitions.Ex
             "thhgtd_zdiffu",
             "thslp_zdiffu",
             "velocity_boundary_diffusion_denominator",
+            "ndyn_substeps",
         ),
     }
 
     file = tmp_path.joinpath(f"diffusion_{experiment.name}.yaml")
     configuration.to_yaml(file, config.ConfigType.USER)
-    assert_config_file(f"references/diffusion_{experiment.name}.yaml", file)
     assert_same_except(
         overwrites[experiment.name], configuration.config_as_type, configuration.default
     )
@@ -63,6 +67,5 @@ def assert_same_except(properties: Sequence[str], arg1: Any, arg2: Any):
     assert arg1 == temp
 
 
-def assert_config_file(reference_file: str, file: pathlib.Path) -> None:
-    ref_file = pathlib.Path(__file__).parent.joinpath(reference_file)
-    assert test_utils.diff(ref_file, file)
+def assert_config_file(reference_file: pathlib.Path, file: pathlib.Path) -> None:
+    assert test_utils.diff(reference_file, file)

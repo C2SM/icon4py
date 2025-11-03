@@ -12,7 +12,6 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast
 from gt4py.next.experimental import concat_where
 
-import icon4py.model.common.config.utils as config_utils
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     _add_analysis_increments_from_data_assimilation,
 )
@@ -59,7 +58,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 dycore_consts: Final = constants.PhysicsConstants()
-rayleigh_damping_options: Final = config_utils.RayleighType.namespace()
+rayleigh_damping_options: Final = constants.RayleighType.namespace()
 
 
 @gtx.field_operator
