@@ -9,13 +9,12 @@
 import dataclasses
 import enum
 import pathlib
-from typing import TypeVar
 
 import omegaconf as oc
 import pytest
 from gt4py.eve import utils as eve_utils
 
-import icon4py.model.common.utils._common
+from icon4py.model.common import exceptions, utils
 from icon4py.model.common.config import reader as config_reader
 
 
@@ -33,7 +32,7 @@ class Foo:
     c: list[int]
 
 
-class Meridiem(icon4py.model.common.utils._common.NamespaceMixin, enum.Enum):
+class Meridiem(utils.NamespaceMixin, enum.Enum):
     AM = 1
     PM = 2
 
@@ -54,7 +53,7 @@ class Time:
 
 def test_frozen_namespace_mixin():
     namespace = Meridiem.namespace()
-    assert isinstance(namespace, eve_utils.FrozenNamepsace)
+    assert isinstance(namespace, eve_utils.FrozenNamespace)
 
 
 def test_config_reader_validate_default_config() -> None:
@@ -80,7 +79,7 @@ def test_config_reader_raises_for_missing() -> None:
 def test_config_reader_type_validates() -> None:
     reader = config_reader.Configuration(Foo)
     wrong_foo = Foo("a", "b", [1, 2, 3])
-    with pytest.raises(oc.ValidationError):
+    with pytest.raises(exceptions.InvalidConfigError):
         reader.update(wrong_foo)
 
 
