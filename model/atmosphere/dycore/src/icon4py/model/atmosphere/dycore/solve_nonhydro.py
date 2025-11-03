@@ -13,7 +13,7 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators
+from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -923,6 +923,11 @@ class SolveNonhydro:
             allocator=allocator,
             dtype=ta.vpfloat,
         )
+        # using GT4Py internal API to create a 1D field from the (num_edges, 1)-sized field
+        self.hydrostatic_correction_on_lowest_level_1d_view = gtx_common._field(
+            self.hydrostatic_correction_on_lowest_level.ndarray,
+            domain={dims.EdgeDim: (0, self._grid.num_edges)},
+        )
         """
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
@@ -1168,7 +1173,7 @@ class SolveNonhydro:
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level,
+            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level_1d_view,
             predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
             normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
