@@ -196,9 +196,9 @@ class Experiments:
 # TODO(havogt): the following configs should be part of the serialized experiment
 def construct_diffusion_config(experiment: Experiment) -> diffusion_config.DiffusionConfig:
     config = diffusion_config.init_config()
-    experiment_config = config_reference_path().joinpath(f"diffusion_{experiment.name}.yaml")
+    experiment_config_file = config_reference_path().joinpath(f"diffusion_{experiment.name}.yaml")
     try:
-        config.update(experiment_config)
+        config.update(experiment_config_file)
         return config.config_as_type
     except exceptions.InvalidConfigError as e:
         raise NotImplementedError(
@@ -209,21 +209,12 @@ def construct_diffusion_config(experiment: Experiment) -> diffusion_config.Diffu
 def construct_nonhydrostatic_config(
     experiment: Experiment,
 ) -> dycore_config.NonHydrostaticConfig:
-    from icon4py.model.atmosphere.dycore import dycore_states
-
-    if experiment == Experiments.MCH_CH_R04B09:
-        return dycore_config.NonHydrostaticConfig(
-            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
-            iau_wgt_dyn=1.0,
-            fourth_order_divdamp_factor=0.004,
-            max_nudging_coefficient=0.375,
-        )
-    elif experiment == Experiments.EXCLAIM_APE:
-        return dycore_config.NonHydrostaticConfig(
-            rayleigh_coeff=0.1,
-            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
-        )
-    else:
+    config = dycore_config.init_config()
+    experiment_config_file = config_reference_path().joinpath(f"dycore_{experiment.name}.yaml")
+    try:
+        config.update(experiment_config_file)
+        return config.config_as_type
+    except exceptions.InvalidConfigError as e:
         raise NotImplementedError(
-            f"NonHydrostaticConfig for experiment {experiment.name} not implemented."
-        )
+            f"DiffusionConfig for experiment {experiment.name} not implemented."
+        ) from e
