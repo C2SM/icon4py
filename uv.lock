@@ -1395,7 +1395,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.10+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace-fix_program_cache#787c5f5b51713ab9fe19196a6a980ff45dfad0ea" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace-fix_program_cache#d7f37452d87d213bce169b12ecebbdb0ed68ea9c" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
