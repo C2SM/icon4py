@@ -1,6 +1,12 @@
+import importlib
+from icon4py.tools.py2fgen import runtime_config
+
+for module in runtime_config.EXTRA_MODULES:
+    importlib.import_module(module)
+
 import logging
 from dycore import ffi
-from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
+from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -133,6 +139,7 @@ def solve_nh_run_wrapper(
     idyn_timestep,
     on_gpu,
 ):
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("solve_nh_run")
     try:
         if __debug__:
             logger.info("Python execution of solve_nh_run started.")
@@ -1141,6 +1148,7 @@ def solve_nh_run_wrapper(
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("solve_nh_run")
     return 0
 
 
@@ -1325,6 +1333,7 @@ def solve_nh_init_wrapper(
     backend,
     on_gpu,
 ):
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("solve_nh_init")
     try:
         if __debug__:
             logger.info("Python execution of solve_nh_init started.")
@@ -2719,4 +2728,5 @@ def solve_nh_init_wrapper(
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("solve_nh_init")
     return 0

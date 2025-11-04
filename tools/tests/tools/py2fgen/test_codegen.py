@@ -254,9 +254,15 @@ end module
 
 def test_python_wrapper(dummy_plugin):
     interface = generate_python_wrapper(dummy_plugin)
-    expected = """import logging
+    expected = """import importlib
+from icon4py.tools.py2fgen import runtime_config
+
+for module in runtime_config.EXTRA_MODULES:
+    importlib.import_module(module)
+
+import logging
 from libtest_plugin import ffi
-from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
+from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -274,6 +280,7 @@ from libtest import bar
 
 @ffi.def_extern()
 def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("foo")
     try:
         if __debug__:
             logger.info("Python execution of foo started.")
@@ -346,11 +353,13 @@ def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("foo")
     return 0
 
 
 @ffi.def_extern()
 def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("bar")
     try:
         if __debug__:
             logger.info("Python execution of bar started.")
@@ -423,6 +432,7 @@ def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("bar")
     return 0
 
 """

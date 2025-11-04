@@ -1,6 +1,12 @@
+import importlib
+from icon4py.tools.py2fgen import runtime_config
+
+for module in runtime_config.EXTRA_MODULES:
+    importlib.import_module(module)
+
 import logging
 from grid import ffi
-from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
+from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
 
 logger = logging.getLogger(__name__)
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -128,6 +134,7 @@ def grid_init_wrapper(
     backend,
     on_gpu,
 ):
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("grid_init")
     try:
         if __debug__:
             logger.info("Python execution of grid_init started.")
@@ -1080,4 +1087,5 @@ def grid_init_wrapper(
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("grid_init")
     return 0
