@@ -906,8 +906,8 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "2025.10.30"
-source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_10_30#6ff7bf16174434ba7d842f2a176789829440c131" }
+version = "25.11.4"
+source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_11_04#4f9c76f91de70b99a3ed483c349af30c25648ec1" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1870,7 +1870,7 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_10_30" },
+    { name = "dace", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_11_04" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
     { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-fix_program_cache" },
