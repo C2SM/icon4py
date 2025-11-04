@@ -27,9 +27,9 @@ def test_configuration_manager_access_component_configs(
 ) -> None:
     assert len(config.get_configured_modules()) == 2
     assert "diffusion" in config.get_configured_modules()
-    assert config.config.diffusion.temperature_boundary_diffusion_denom == 45.0
+    assert config.config.diffusion.temperature_boundary_diffusion_denominator == 45.0
     assert config.config.diffusion.type_vn_diffu == 1
-    assert config.config.dycore.ndyn_substep == 4
+    assert config.config.dycore.ndyn_substeps == 4
     assert config.config.dycore.divdamp_type == dycore_states.DivergenceDampingType.COMBINED
 
 
@@ -38,7 +38,7 @@ def test_configuration_manager_access_component_configs(
 def test_configuration_manager_access_components_default(
     config: configuration_manager.ConfigurationManager,
 ) -> None:
-    assert config.default.dycore.ndyn_substep == 5
+    assert config.default.dycore.ndyn_substeps == 5
     assert (
         config.default.dycore.divdamp_type == dycore_states.DivergenceDampingType.THREE_DIMENSIONAL
     )
@@ -48,5 +48,5 @@ def test_configuration_manager_resolve_interpolations(
     config: configuration_manager.ConfigurationManager,
 ) -> None:
     assert config.config.model.nsubsteps == 4
-    assert config.config.dycore.ndyn_substep == 4
-    assert config.config.diffusion.n_substeps == 4
+    assert config.config.dycore.ndyn_substeps == 4
+    assert config.config.diffusion.ndyn_substeps == 4

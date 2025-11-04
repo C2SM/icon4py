@@ -17,12 +17,6 @@ import omegaconf as oc
 from icon4py.model.common import exceptions
 
 
-# TODO (@halungge): address
-#  - interpolation
-#  - extract protocol
-#  - error cases
-
-
 log = logging.getLogger(__file__)
 
 
@@ -32,8 +26,10 @@ class ConfigType(enum.Enum):
 
 
 T = TypeVar("T")
-""" T is a data class to which needs to have all its members type anotated with types that
+"""
+Type variable used in the Generic ConfigurationHandler: T is a data class which _needs to have all its property type-annotated_ with types that
 OmegaConf supports in structured configs: https://omegaconf.readthedocs.io/en/2.3_branch/structured_config.html
+If a type annotation is missing the property will be missing from the resulting Configuration.
 """
 
 _CT = TypeVar("_CT", int, str, float, enum.Enum, bool, bytes, dict, list, pathlib.Path)
@@ -41,11 +37,22 @@ _CT = TypeVar("_CT", int, str, float, enum.Enum, bool, bytes, dict, list, pathli
 
 
 def resolve_or_else(key: str, value: _CT) -> _CT:
+    """Convenience function to be used for value interpolation in configs. For example: if a given configuration
+    data class has a property that is managed by another module it should be declared as:
+    >>> @dataclass
+    >>> class FooConfig:
+    >>>   foreign_x: int = field(
+    >>>    init=False, default=reader.resolve_or_else("x", 5)
+    >>>    )
+
+    If the config class is used on its own, the default value will be picked, if it is used in the context of a larger
+    configuration that declares `x` it will interpolate to that value.
+    """
     interpolation = f"oc.select:{key}, {value}"
     return oc.II(interpolation)
 
 
-class Configuration(Generic[T]):
+class ConfigurationHandler(Generic[T]):
     def __init__(self, schema: T | type[T]):
         self._schema: type[T] = schema if isinstance(schema, type) else type(schema)
         self._default_config: oc.DictConfig = oc.OmegaConf.create(
@@ -117,5 +124,5 @@ class Configuration(Generic[T]):
         return oc.OmegaConf.to_object(self._default_config)
 
 
-def init_config() -> Configuration[dict]:
-    return Configuration(dict())
+def init_config() -> ConfigurationHandler[dict]:
+    return ConfigurationHandler(dict())

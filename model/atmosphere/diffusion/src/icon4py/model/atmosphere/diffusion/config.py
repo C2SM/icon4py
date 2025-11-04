@@ -11,7 +11,7 @@ import enum
 import functools
 
 from icon4py.model.common import constants
-from icon4py.model.common.config import reader as config_reader
+from icon4py.model.common.config import config as common_config
 
 
 class DiffusionType(enum.IntEnum):
@@ -98,7 +98,7 @@ class DiffusionConfig:
 
     # from mo_nonhydrostatic_nml.f90
     ndyn_substeps: int = dataclasses.field(
-        init=False, default=config_reader.resolve_or_else("nsubsteps", 5)
+        init=False, default=common_config.resolve_or_else("nsubsteps", 5)
     )
 
     #: If True, apply truly horizontal temperature diffusion over steep slopes
@@ -192,5 +192,5 @@ class DiffusionConfig:
         return float(self.ndyn_substeps)
 
 
-def init_config() -> config_reader.Configuration[DiffusionConfig]:
-    return config_reader.Configuration(DiffusionConfig())
+def init_config() -> common_config.ConfigurationHandler[DiffusionConfig]:
+    return common_config.ConfigurationHandler(DiffusionConfig())

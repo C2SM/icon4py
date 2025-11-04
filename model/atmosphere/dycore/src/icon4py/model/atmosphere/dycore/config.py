@@ -10,7 +10,7 @@ import dataclasses
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import constants
-from icon4py.model.common.config import reader as config_reader
+from icon4py.model.common.config import config as common_config
 
 
 @dataclasses.dataclass
@@ -22,7 +22,7 @@ class NonHydrostaticConfig:
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
     """
 
-    # number of dynamics substep -> TODO (@halungge): should this really be here?
+    # number of dynamics substeps
     ndyn_substeps: int = 5
 
     itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
@@ -171,5 +171,5 @@ class NonHydrostaticConfig:
             )
 
 
-def init_config() -> config_reader.Configuration[NonHydrostaticConfig]:
-    return config_reader.Configuration(NonHydrostaticConfig())
+def init_config() -> common_config.ConfigurationHandler[NonHydrostaticConfig]:
+    return common_config.ConfigurationHandler(NonHydrostaticConfig())

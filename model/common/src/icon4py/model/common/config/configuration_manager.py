@@ -15,7 +15,7 @@ from types import ModuleType
 
 import omegaconf as oc
 
-from icon4py.model.common.config import reader
+from icon4py.model.common.config import config as common_config
 
 
 MODEL_NODE = "model"
@@ -23,10 +23,8 @@ log = logging.getLogger(__file__)
 
 
 # TODO (halungge): address
-# [ ]  interpolation of values
-# [-] set all configs to readonly when updated and interpolations done - > does not work for OmegaConf.to_object
 
-# [ ] TODO (halungge): dump configuration (should be done from recursively from ConfigReader as we want to be able
+# [ ] dump configuration (should be done from recursively from ConfigReader as we want to be able
 #      to do that standalone as well (additional change name if it writes as well)
 # [ ] create configs that do not have their own setup or are mostly configured from "Other" components (for example metrics)?
 # [ ] generally handle exceptions.. wrong keys, missing keys, wrong value types...
@@ -38,18 +36,18 @@ class ModelConfig:
     components: dict[str, str] = dataclasses.field(default_factory=dict)
 
 
-def load_reader(module: ModuleType, update: oc.DictConfig) -> reader.Configuration:
+def load_reader(module: ModuleType, update: oc.DictConfig) -> common_config.ConfigurationHandler:
     if hasattr(module, "init_config"):
         log.warning(f" module {module.__name__} has no `init_config` function")
         default_reader = module.init_config()
         default_reader.update(update)
     else:
-        default_reader = reader.init_config()
+        default_reader = common_config.init_config()
         default_reader.update(update)
     return default_reader
 
 
-class ConfigurationManager(reader.Configuration):
+class ConfigurationManager(common_config.ConfigurationHandler):
     def __init__(self, model_config: pathlib.Path | str):
         if isinstance(model_config, str):
             model_config = pathlib.Path(model_config)
@@ -63,7 +61,7 @@ class ConfigurationManager(reader.Configuration):
         except OSError as e:
             log.error(f"Could not resolve path to {model_config} - {e}")
             sys.exit()
-        model_config_reader = reader.Configuration(ModelConfig())
+        model_config_reader = common_config.ConfigurationHandler(ModelConfig())
         self._config = model_config_reader.config
 
     def read_config(self):
