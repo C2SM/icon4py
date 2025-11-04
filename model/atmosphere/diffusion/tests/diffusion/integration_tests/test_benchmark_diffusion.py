@@ -40,7 +40,6 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.parametrize(
     "grid", [definitions.Grids.MCH_OPR_R04B07_DOMAIN01, definitions.Grids.R02B07_GLOBAL]
 )
-@pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
 def test_run_diffusion_benchmark(
     grid: definitions.GridDescription,
@@ -219,3 +218,11 @@ def test_run_diffusion_benchmark(
     )
 
     benchmark(diffusion_granule.run, diagnostic_state, prognostic_state, dtime)
+
+
+@pytest.mark.continuous_benchmarking
+def test_run_diffusion_benchmark_continuous_benchmarking(
+    backend: gtx_typing.Backend | None,
+    benchmark: Any,
+) -> None:
+    test_run_diffusion_benchmark(definitions.Grids.MCH_OPR_R19B08_DOMAIN01, backend, benchmark)
