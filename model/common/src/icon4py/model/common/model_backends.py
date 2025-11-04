@@ -51,6 +51,7 @@ def make_custom_dace_backend(
     async_sdfg_call: bool = True,
     optimization_args: dict[str, typing.Any] | None = None,
     use_metrics: bool = True,
+    use_zero_origin: bool = False,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
@@ -77,7 +78,7 @@ def make_custom_dace_backend(
         async_sdfg_call=async_sdfg_call,
         optimization_args=optimization_args,
         use_metrics=use_metrics,
-        use_zero_origin=True,
+        use_zero_origin=use_zero_origin,
     )
 
 
