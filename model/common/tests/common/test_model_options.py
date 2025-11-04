@@ -67,9 +67,6 @@ def test_custom_backend_device() -> None:
         {"device": model_backends.CPU},
     ],
 )
-@pytest.mark.skip(
-    "dace segfault when loading the same compiled SDFG multiple times for customized backends"
-)
 def test_setup_program_defaults(
     backend: gtx_typing.Backend
     | model_backends.DeviceType
@@ -109,9 +106,6 @@ def test_setup_program_defaults(
             model_backends.make_custom_dace_backend(device=model_backends.GPU),
         ),
     ],
-)
-@pytest.mark.skip(
-    "dace segfault when loading the same compiled SDFG multiple times for customized backends"
 )
 def test_setup_program_specify_inputs(
     backend_params: gtx_typing.Backend
