@@ -67,7 +67,7 @@ item_marker_filters: dict[str, ItemFilter] = {
     ),
     pytest.mark.uses_concat_where.name: ItemFilter(
         condition=lambda item: test_utils.is_embedded(
-            test_utils.get_fixture_value("backend", item)
+            test_utils.get_fixture_value("backend_like", item)
         ),
         action=functools.partial(pytest.xfail, "Embedded backend does not support concat_where."),
     ),
