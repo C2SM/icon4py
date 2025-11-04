@@ -915,7 +915,7 @@ class SolveNonhydro:
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
         """
-        self.hydrostatic_correction_on_lowest_level = gtx.constructors.empty(
+        self.hydrostatic_correction_on_lowest_level = gtx.constructors.zeros(
             domain={
                 dims.EdgeDim: (0, self._grid.num_edges),
                 dims.KDim: (self._grid.num_levels - 1, self._grid.num_levels),
