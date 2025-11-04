@@ -166,7 +166,7 @@ from {{ module_name }} import {{ func.name }}
 def {{ func.name }}_wrapper(
 {{render_params(func)}}
 ):
-    runtime_config.HOOK_FUNCTION_ENTER("{{ func.name }}") 
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("{{ func.name }}") 
     try:
         if __debug__:
             logger.info("Python execution of {{ func.name }} started.")
@@ -229,7 +229,7 @@ def {{ func.name }}_wrapper(
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
-    runtime_config.HOOK_FUNCTION_EXIT("{{ func.name }}") 
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("{{ func.name }}") 
     return 0
 {% endfor %}
 """

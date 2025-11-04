@@ -182,7 +182,9 @@ def test_testing(session: nox.Session, selection: ModelTestsSubset) -> None:
 )
 def test_tools(session: nox.Session, datatest: bool) -> None:
     """Run tests for the Fortran integration tools."""
-    _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
+    _install_session_venv(
+        session, extras=["fortran", "io", "testing", "profiling"], groups=["test"]
+    )
 
     with session.chdir("tools"):
         session.run(

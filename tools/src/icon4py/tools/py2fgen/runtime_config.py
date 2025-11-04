@@ -76,6 +76,5 @@ Modules should be specified as a comma-separated list of module paths ('my.path.
 
 # CUSTOMIZATION HOOKS
 
-# TODO: str == function name or pass the function that we are wrapping as identifier?
-HOOK_FUNCTION_ENTER: Callable[[str], None] = lambda func_name: None  # noqa: E731
-HOOK_FUNCTION_EXIT: Callable[[str], None] = lambda func_name: None  # noqa: E731
+HOOK_BINDINGS_FUNCTION_ENTER: Callable[[str], None] = lambda func_name: None  # noqa: E731
+HOOK_BINDINGS_FUNCTION_EXIT: Callable[[str], None] = lambda func_name: None  # noqa: E731
