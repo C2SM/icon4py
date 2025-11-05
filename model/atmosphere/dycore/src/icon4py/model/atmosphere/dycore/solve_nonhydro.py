@@ -13,7 +13,7 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators
+from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -915,11 +915,18 @@ class SolveNonhydro:
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
         """
-        self.hydrostatic_correction_on_lowest_level = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dtype=ta.vpfloat, allocator=allocator
+        self.hydrostatic_correction_on_lowest_level = gtx.constructors.zeros(
+            domain={
+                dims.EdgeDim: (0, self._grid.num_edges),
+                dims.KDim: (self._grid.num_levels - 1, self._grid.num_levels),
+            },
+            allocator=allocator,
+            dtype=ta.vpfloat,
         )
-        self.hydrostatic_correction = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+        # using GT4Py internal API to create a 1D field view from the (num_edges, 1)-sized field
+        self.hydrostatic_correction_on_lowest_level_1d_view = gtx_common._field(
+            self.hydrostatic_correction_on_lowest_level.ndarray[:, 0],
+            domain={dims.EdgeDim: (0, self._grid.num_edges)},
         )
         """
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
@@ -1148,12 +1155,8 @@ class SolveNonhydro:
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-            z_hydro_corr=self.hydrostatic_correction,
+            z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
-
-        self.hydrostatic_correction_on_lowest_level[...] = self.hydrostatic_correction.ndarray[
-            :, self._grid.num_levels - 1
-        ]
 
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
@@ -1167,7 +1170,7 @@ class SolveNonhydro:
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level,
+            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level_1d_view,
             predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
             normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
