@@ -12,17 +12,12 @@ import dataclasses
 import enum
 import pathlib
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Final, Literal
+from typing import Final, Literal
 
 import icon4py.model.atmosphere.dycore.config as dycore_config
 from icon4py.model.atmosphere.diffusion import config as diffusion_config
 from icon4py.model.common import exceptions
 from icon4py.model.testing import config
-
-
-if TYPE_CHECKING:
-    from icon4py.model.atmosphere.diffusion import diffusion
-    from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 
 
 DEFAULT_TEST_DATA_FOLDER: Final = "testdata"
@@ -204,7 +199,7 @@ def construct_diffusion_config(experiment: Experiment) -> diffusion_config.Diffu
     experiment_config_file = config_reference_path().joinpath(f"diffusion_{experiment.name}.yaml")
     try:
         config.update(experiment_config_file)
-        return config.config_as_type
+        return config.as_type()
     except exceptions.InvalidConfigError as e:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."
@@ -218,7 +213,7 @@ def construct_nonhydrostatic_config(
     experiment_config_file = config_reference_path().joinpath(f"dycore_{experiment.name}.yaml")
     try:
         config.update(experiment_config_file)
-        return config.config_as_type
+        return config.as_type()
     except exceptions.InvalidConfigError as e:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."

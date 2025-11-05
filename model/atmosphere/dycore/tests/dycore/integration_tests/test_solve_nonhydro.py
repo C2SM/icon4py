@@ -47,7 +47,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend,
 ) -> None:
-    config = dycore_config.init_config().config_as_type
+    config = dycore_config.init_config().as_type()
     second_order_divdamp_factor = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
@@ -990,7 +990,7 @@ def test_run_solve_nonhydro_multi_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
-    config = dycore_config.init_config().config_as_type
+    config = dycore_config.init_config().as_type()
     params = solve_nh.NonHydrostaticParams(config)
 
     assert params.advection_implicit_weight_parameter == savepoint_nonhydro_init.wgt_nnew_vel()

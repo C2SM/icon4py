@@ -55,7 +55,7 @@ def test_diffusion_benchmark(
 ) -> None:
     dtime = 10.0
 
-    config = diffusion_config.init_config().config_as_type
+    config = diffusion_config.init_config().as_type()
 
     diffusion_parameters = diffusion.DiffusionParams(config)
 

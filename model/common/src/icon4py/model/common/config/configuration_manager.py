@@ -45,33 +45,12 @@ class RunConfig:
     end_date: str = common_config.MISSING  # TODO (halungge): use datetime.datetime
 
 
-# TODO (halungge): could go to icon4py.common
 @dataclasses.dataclass
 class ModelConfig:
     ndyn_substeps: int = 5
-    vertical: v_grid.VerticalGridConfig = v_grid.VerticalGridConfig()
+    vertical: v_grid.VerticalGridConfig = dataclasses.field(default=v_grid.VerticalGridConfig())
     grid: pathlib.Path = common_config.MISSING
     components: dict[str, str] = dataclasses.field(default_factory=dict)
-
-
-# TODO remove the init=False and constructor?
-@dataclasses.dataclass(init=False)
-class Icon4pyConfig:
-    run: RunConfig = RunConfig()
-    model: ModelConfig = ModelConfig()
-
-    def __init__(self, run: RunConfig, model: ModelConfig):
-        self.run = run
-        self.model = model
-        # self._add_model_components(model)
-
-    # def _add_model_components(self, model: ModelConfig):
-    #     model_components = model.components
-    #     for name, package in model_components:
-    #         config_module = package + ".config"
-    #         module = importlib.import_module(config_module).config
-    #         config = init_reader(module).default
-    #         setattr(self, name, config)
 
 
 def load_reader(module: ModuleType, update: oc.DictConfig) -> common_config.ConfigurationHandler:
@@ -96,6 +75,7 @@ def init_reader(module: ModuleType) -> common_config.ConfigurationHandler:
 
 class ConfigurationManager:
     def __init__(self, model_config: pathlib.Path | str):
+        self._handlers = {}
         if isinstance(model_config, str):
             model_config = pathlib.Path(model_config)
         if not model_config.exists():
@@ -109,29 +89,34 @@ class ConfigurationManager:
             log.error(f"Could not resolve path to {model_config} - {e}")
             sys.exit()
 
-        self._default_config = common_config.ConfigurationHandler(Icon4pyConfig).config
-
     def read_config(self):
         # lets assume the configuration is all in one file
-        config_file = oc.OmegaConf.load(self._config_path.joinpath(self._config_file))
-
-        # merged = oc.OmegaConf.merge(icon4py_default_config, config_file)
-        # merge Icon4pyConfig part
-        self._config = config_file
-        # if self was a reader we could call update
-        self._initialize_components(self._config)
+        user_config = (
+            common_config.init_config().update(self._config_path.joinpath(self._config_file)).config
+        )
+        model_config = common_config.ConfigurationHandler(ModelConfig())
+        model_config.update(user_config.model)
+        self._handlers["model"] = model_config
+        run_config = common_config.ConfigurationHandler(RunConfig())
+        run_config.update(user_config.run)
+        self._handlers["run"] = run_config
+        self._initialize_components(user_config)
 
     @property
-    def config(self):
-        return self._config
+    def config(self) -> oc.DictConfig:
+        merged = oc.OmegaConf.create({})
+        for name, h in self._handlers.items():
+            merged[name] = h.config
+        oc.OmegaConf.set_readonly(merged, True)
+        return merged
 
     @property
     def default(self):
         return self._default_config
 
     def _initialize_components(self, config: oc.DictConfig):
-        model_components = config.model.components
-        for name, package in model_components.items():
+        model_components = config.model.components.items()
+        for name, package in model_components:
             module_config = config.get(name)
             try:
                 config_module = package + ".config"
@@ -140,7 +125,7 @@ class ConfigurationManager:
                 reader = load_reader(module, module_config)
             except ModuleNotFoundError:
                 log.warning(
-                    f"no config module in package {package}, instanatiating general dict-config instead"
+                    f"no config module in package {package}, instantiating general dict-config instead"
                 )
                 reader = common_config.init_config()
                 if module_config is None:
@@ -149,7 +134,9 @@ class ConfigurationManager:
                     )
                 else:
                     reader.update(module_config)
-            self._config[name] = reader.config
+            self._handlers[name] = reader
 
-    def get_configured_modules(self):
-        return self._config.model.components
+    def get_configured_modules(self) -> dict:
+        return oc.OmegaConf.to_container(
+            self._handlers["model"].config.components, structured_config_mode=oc.SCMode.DICT
+        )

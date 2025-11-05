@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import dataclasses
+
 import pathlib
 
 import pytest
@@ -36,7 +36,7 @@ def test_configuration_manager_run_config(
 ) -> None:
     assert config.config.run.dtime == 10
     assert config.config.run.start_date == "2021-06-20T12:00:10.000"
-    assert config.config.run.output_path == "model_out"
+    assert config.config.run.output_path == pathlib.Path("model_out")
 
 
 def test_configuration_manager_access_component_configs(

@@ -1916,7 +1916,6 @@ dependencies = [
     { name = "icon4py-common" },
     { name = "icon4py-testing" },
     { name = "numpy" },
-    { name = "omegaconf" },
     { name = "packaging" },
 ]
 
@@ -1930,7 +1929,6 @@ requires-dist = [
     { name = "icon4py-common", editable = "model/common" },
     { name = "icon4py-testing", editable = "model/testing" },
     { name = "numpy", specifier = ">=1.23.3" },
-    { name = "omegaconf", specifier = ">=2.3.0" },
     { name = "packaging", specifier = ">=20.0" },
 ]
 

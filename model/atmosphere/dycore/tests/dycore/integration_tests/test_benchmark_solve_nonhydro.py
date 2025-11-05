@@ -20,7 +20,11 @@ if TYPE_CHECKING:
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import (
+    config as dycore_config,
+    dycore_states,
+    solve_nonhydro as solve_nh,
+)
 from icon4py.model.common import utils as common_utils
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
@@ -51,9 +55,9 @@ def solve_nonhydro(
 ) -> solve_nh.SolveNonhydro:
     mesh = geometry_field_source.grid
 
-    config = solve_nh.NonHydrostaticConfig(
+    config = dycore_config.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
-        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type]
+        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coefficient=0.375,

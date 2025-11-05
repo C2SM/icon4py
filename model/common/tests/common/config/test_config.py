@@ -201,11 +201,36 @@ def test_dtime_resolver():
     assert config.b == datetime.timedelta(seconds=10)
 
 
+def test_datetime_resolver():
+    handler = common_config.ConfigurationHandler(
+        dict(a=12, time="${datetime:2021-06-21T12:00:10.000}")
+    )
+    config = handler.config
+    assert config.a == 12
+    assert config.time == datetime.datetime(
+        year=2021, month=6, day=21, hour=12, minute=0, second=10, microsecond=0
+    )
+
+
 def test_dtime_resolver_in_structured_config():
     @dataclasses.dataclass
     class TimeDiff:
-        seconds: int = dataclasses.field(default=common_config.timedelta(10))
+        seconds: datetime.timedelta = dataclasses.field(default=common_config.to_timedelta(10))
 
     handler = common_config.ConfigurationHandler(TimeDiff())
     config = handler.config
     assert config.seconds == datetime.timedelta(10)
+
+
+def test_datetime_resolver_in_structured_config():
+    @dataclasses.dataclass
+    class Time:
+        time: datetime.datetime = dataclasses.field(
+            default=common_config.to_datetime("2021-06-21T12:00:10.000")
+        )
+
+    handler = common_config.ConfigurationHandler(Time())
+    config = handler.as_type()
+    assert config.time == datetime.datetime(
+        year=2021, month=6, day=21, hour=12, minute=0, second=10, microsecond=0
+    )

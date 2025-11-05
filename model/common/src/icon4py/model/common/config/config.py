@@ -22,8 +22,13 @@ log = logging.getLogger(__file__)
 MISSING = oc.MISSING
 
 
-def timedelta(secs: int | float):
+def to_timedelta(secs: int | float) -> str:
     interpolation = f"dtime:{secs}"
+    return oc.II(interpolation)
+
+
+def to_datetime(time_str: str) -> str:
+    interpolation = f"datetime:{time_str}"
     return oc.II(interpolation)
 
 
@@ -31,7 +36,12 @@ def _timedelta_resolver(secs: int | float):
     return datetime.timedelta(seconds=secs)
 
 
+def _datetime_resolver(time_str: str) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(time_str)
+
+
 oc.OmegaConf.register_new_resolver("dtime", _timedelta_resolver)
+oc.OmegaConf.register_new_resolver("datetime", _datetime_resolver)
 
 
 class ConfigType(enum.Enum):
@@ -66,6 +76,13 @@ def resolve_or_else(key: str, value: _CT) -> _CT:
     return oc.II(interpolation)
 
 
+# PROTOCOL should contain
+# - as_type(self, configType) -> T:
+# - update (atch: T | oc.DictConfig | dict | str | pathlib.Path)->None
+# - config(configType) -> DictConfig or dict
+# - to_yaml(self, file: str | pathlib.Path, config_type=ConfigType.USER) -> None
+
+
 class ConfigurationHandler(Generic[T]):
     def __init__(self, schema: T | type[T]):
         self._schema: type[T] = schema if isinstance(schema, type) else type(schema)
@@ -89,7 +106,9 @@ class ConfigurationHandler(Generic[T]):
                 f"wrong type for config, expected {self._schema} or 'str' but got {type(patch)}"
             )
 
-    def update(self, patch: T | oc.DictConfig | str | pathlib.Path | dict, read_only=False):
+    def update(
+        self, patch: T | oc.DictConfig | str | pathlib.Path | dict, read_only=False
+    ) -> "ConfigurationHandler[T]":
         try:
             update = self._load_update(patch)
             if self._name in update:
@@ -98,6 +117,7 @@ class ConfigurationHandler(Generic[T]):
                 oc.OmegaConf.set_readonly(self._config, False)
             self._config = oc.OmegaConf.merge(self._config, update)
             oc.OmegaConf.set_readonly(self._config, read_only)
+            return self
         except (oc.ValidationError, ValueError) as e:
             log.error(f"patch {patch} does not validate against configuration {self._schema}")
             raise exceptions.InvalidConfigError(
@@ -126,10 +146,6 @@ class ConfigurationHandler(Generic[T]):
     def config(self) -> oc.DictConfig:
         oc.OmegaConf.set_readonly(self._config, True)
         return self._config
-
-    @property
-    def config_as_type(self) -> T:
-        return oc.DictConfig._to_object(self._config)
 
     @property
     def default(self) -> oc.DictConfig:
