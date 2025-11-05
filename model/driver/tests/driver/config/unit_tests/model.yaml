@@ -1,12 +1,22 @@
+run:
+    input_path:
+    output_path:
+    dtime: 10
+    start_date: "2021-06-20T12:00:10.000"
+    end_date: "2021-06-21T12:00:10.000"
+
 model:
-  nsubsteps: "${dycore.ndyn_substeps}"
+  ndyn_substeps: "${model.ndyn_substeps}" # this should be the master
+  grid: grids/icon_grid_0012_R02B04_g.nc
+  vertical:
+      num_levels: 80
+      htop_moist: 3400.0
   components:
     diffusion: icon4py.model.atmosphere.diffusion
     dycore: icon4py.model.atmosphere.dycore
+    microphysics: icon4py.model.atmosphere.subgrid_scale_physics.microphysics
 
-vertical:
-  nlev: 80
-  htop_moist: 3400.0
+
 
 diffusion:
   temperature_boundary_diffusion_denominator: 45.0

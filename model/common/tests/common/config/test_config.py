@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+import datetime
 import enum
 import pathlib
 
@@ -20,7 +21,7 @@ from icon4py.model.common.config import config as common_config
 
 @dataclasses.dataclass
 class OptionalFoo:
-    a: int = oc.MISSING
+    a: int = common_config.MISSING
     b: str | None = None
     c: list[int] = dataclasses.field(default_factory=list)
 
@@ -30,6 +31,7 @@ class Foo:
     a: int
     b: str
     c: list[int]
+
 
 
 class Meridiem(utils.NamespaceMixin, enum.Enum):
@@ -57,7 +59,7 @@ def test_frozen_namespace_mixin():
 
 
 def test_config_reader_validate_default_config() -> None:
-    reader = config_reader.ConfigurationHandler(Foo(1, "b", [1, 2, 3]))
+    reader = common_config.ConfigurationHandler(Foo(1, "b", [1, 2, 3]))
     foo = reader.as_type()
     assert foo.a == 1
     assert foo.b == "b"
@@ -65,26 +67,26 @@ def test_config_reader_validate_default_config() -> None:
 
 
 def test_config_reader_raises_missing_value() -> None:
-    reader = config_reader.ConfigurationHandler(Foo)
+    reader = common_config.ConfigurationHandler(Foo)
     with pytest.raises(oc.MissingMandatoryValue):
         reader.as_type()
 
 
 def test_config_reader_raises_for_missing() -> None:
-    reader = config_reader.ConfigurationHandler(OptionalFoo)
+    reader = common_config.ConfigurationHandler(OptionalFoo)
     with pytest.raises(oc.MissingMandatoryValue):
         reader.as_type()
 
 
 def test_config_reader_type_validates() -> None:
-    reader = config_reader.ConfigurationHandler(Foo)
+    reader = common_config.ConfigurationHandler(Foo)
     wrong_foo = Foo("a", "b", [1, 2, 3])
     with pytest.raises(exceptions.InvalidConfigError):
         reader.update(wrong_foo)
 
 
 def test_config_reader_supports_optional() -> None:
-    reader = config_reader.ConfigurationHandler(OptionalFoo(a=3))
+    reader = common_config.ConfigurationHandler(OptionalFoo(a=3))
     config = reader.as_type()
     assert len(config.c) == 0
     assert config.a == 3
@@ -92,13 +94,13 @@ def test_config_reader_supports_optional() -> None:
 
 
 def test_config_reader_config_equals_default_without_update() -> None:
-    reader = config_reader.ConfigurationHandler(Foo(1, "b", [1, 2, 3]))
+    reader = common_config.ConfigurationHandler(Foo(1, "b", [1, 2, 3]))
     foo = reader.as_type()
     assert reader.default == foo
 
 
 def test_config_reader_update_from_dataclass() -> None:
-    reader = config_reader.ConfigurationHandler(Foo(1, "b", [1, 2]))
+    reader = common_config.ConfigurationHandler(Foo(1, "b", [1, 2]))
     original_config = reader.as_type()
     assert original_config.a == 1
     assert original_config.b == "b"
@@ -112,7 +114,7 @@ def test_config_reader_update_from_dataclass() -> None:
 
 
 def test_config_reader_update_from_file() -> None:
-    reader = config_reader.ConfigurationHandler(Foo(1, "b", [1, 2]))
+    reader = common_config.ConfigurationHandler(Foo(1, "b", [1, 2]))
     original_config = reader.as_type()
     file = pathlib.Path(__file__).parent.joinpath("foo_update.yaml")
     reader.update(file)
@@ -123,7 +125,7 @@ def test_config_reader_update_from_file() -> None:
 
 
 def test_configuration_update_from_dict() -> None:
-    reader = config_reader.ConfigurationHandler(Time(13, 12, 0))
+    reader = common_config.ConfigurationHandler(Time(13, 12, 0))
     assert reader.config.minutes == 12
     assert reader.config.seconds == 0
     reader.update(dict(seconds=23, minutes=10))
@@ -132,13 +134,13 @@ def test_configuration_update_from_dict() -> None:
 
 
 def test_configuration_config_read_only() -> None:
-    reader = config_reader.ConfigurationHandler(Foo(a=1, b="foo", c=[1, 2]))
+    reader = common_config.ConfigurationHandler(Foo(a=1, b="foo", c=[1, 2]))
     with pytest.raises(oc.ReadonlyConfigError):
         reader.config.b = "bar"
 
 
 def test_config_enum_parsing_from_value_and_name() -> None:
-    reader = config_reader.ConfigurationHandler(Time)
+    reader = common_config.ConfigurationHandler(Time)
     assert reader.as_type().meridiem == Meridiem.AM
     reader.update({"meridiem": 2})
     assert reader.as_type().meridiem == Meridiem.PM
@@ -147,7 +149,7 @@ def test_config_enum_parsing_from_value_and_name() -> None:
 
 
 def test_config_enum_creation() -> None:
-    reader = config_reader.ConfigurationHandler(Time())
+    reader = common_config.ConfigurationHandler(Time())
     file = pathlib.Path(__file__).parent.joinpath("time.yaml")
     reader.update(file)
     config = reader.as_type()
@@ -159,12 +161,12 @@ def test_config_enum_creation() -> None:
 
 
 def test_resolve_or_default():
-    value = config_reader.resolve_or_else("foo", 42)
+    value = common_config.resolve_or_else("foo", 42)
     assert oc.II("oc.select:foo, 42") == value
 
 
 def test_configuration_to_yaml(tmpdir):
-    reader = config_reader.ConfigurationHandler(
+    reader = common_config.ConfigurationHandler(
         Time(hours=2, minutes=11, seconds=23, meridiem="PM")
     )
     reader.update(dict(seconds=1))
@@ -180,10 +182,10 @@ seconds: 1
 
 
 def test_configuration_default_to_yaml(tmpdir):
-    reader = config_reader.ConfigurationHandler(Time())
+    reader = common_config.ConfigurationHandler(Time())
     reader.update(dict(seconds=1))
     fname = tmpdir.join("time_default.yaml")
-    reader.to_yaml(fname, config_reader.ConfigType.DEFAULT)
+    reader.to_yaml(fname, common_config.ConfigType.DEFAULT)
     expected = """hours: 0
 meridiem: AM
 minutes: 0
@@ -191,3 +193,20 @@ seconds: 0
 """
     assert fname.exists()
     assert fname.read_text(encoding="utf-8") == expected
+
+
+def test_dtime_resolver():
+    handler = common_config.ConfigurationHandler(dict(a = 12, b="${dtime:10}"))
+    config = handler.config
+    assert config.a == 12
+    assert config.b == datetime.timedelta(seconds=10)
+
+
+def test_dtime_resolver_in_structured_config():
+    @dataclasses.dataclass
+    class TimeDiff:
+        seconds: int = dataclasses.field(default=common_config.timedelta(10))
+
+    handler = common_config.ConfigurationHandler(TimeDiff())
+    config = handler.config
+    assert config.seconds == datetime.timedelta(10)

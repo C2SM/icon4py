@@ -71,7 +71,7 @@ def domain(dim: gtx.Dimension):
     return _domain
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass()
 class VerticalGridConfig:
     """
     Contains necessary parameter to configure vertical grid.

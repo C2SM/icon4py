@@ -33,8 +33,6 @@ def test_configuration_manager_access_component_configs(
     assert config.config.dycore.divdamp_type == dycore_states.DivergenceDampingType.COMBINED
 
 
-@pytest.mark.skip
-# TODO (halungge): not sure that should even be possible
 def test_configuration_manager_access_components_default(
     config: configuration_manager.ConfigurationManager,
 ) -> None:

@@ -16,7 +16,8 @@ from types import ModuleType
 import omegaconf as oc
 
 from icon4py.model.common.config import config as common_config
-
+from icon4py.model.common.grid import vertical
+from icon4py.model.common.grid.vertical import VerticalGridConfig
 
 MODEL_NODE = "model"
 log = logging.getLogger(__file__)
@@ -31,9 +32,37 @@ log = logging.getLogger(__file__)
 # [ ] what if a package does not have the `config.py`
 
 
+
+# TODO (halungge): could go to icon4py.common
+@dataclasses.dataclass
+class RunConfig:
+    input_path: pathlib.Path = common_config.MISSING
+    output_path: pathlib.Path = common_config.MISSING
+    #dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)
+    #start_date: datetime.datetime = common_config.MISSING
+    #end_date: datetime.datetime = common_config.MISSING
+    dtime: int = 600    # TODO (halungge): use datetime.timedelta
+    start_date:str = common_config.MISSING # TODO (halungge): use datetime.datetime
+    end_date:str = common_config.MISSING   # TODO (halungge): use datetime.datetime
+
+
+# TODO (halungge): could go to icon4py.common
 @dataclasses.dataclass
 class ModelConfig:
+    ndyn_substeps: int = 5
+    vertical: vertical.VerticalGridConfig = VerticalGridConfig()
+    grid: pathlib.Path = common_config.MISSING
     components: dict[str, str] = dataclasses.field(default_factory=dict)
+
+@dataclasses.dataclass(init=False)
+class Icon4pyConfig:
+    run: RunConfig  = RunConfig()
+    model: ModelConfig =  ModelConfig()
+
+    def __init__(self, run:RunConfig, model:ModelConfig, **kwargs:Any):
+        self.run = run
+        self.model = model
+
 
 
 def load_reader(module: ModuleType, update: oc.DictConfig) -> common_config.ConfigurationHandler:
@@ -47,7 +76,7 @@ def load_reader(module: ModuleType, update: oc.DictConfig) -> common_config.Conf
     return default_reader
 
 
-class ConfigurationManager(common_config.ConfigurationHandler):
+class ConfigurationManager:
     def __init__(self, model_config: pathlib.Path | str):
         if isinstance(model_config, str):
             model_config = pathlib.Path(model_config)
@@ -61,19 +90,21 @@ class ConfigurationManager(common_config.ConfigurationHandler):
         except OSError as e:
             log.error(f"Could not resolve path to {model_config} - {e}")
             sys.exit()
-        model_config_reader = common_config.ConfigurationHandler(ModelConfig())
-        self._config = model_config_reader.config
+
+        self._config = None # TODO where should this be set??
 
     def read_config(self):
         # lets assume the configuration is all in one file
-        config = oc.OmegaConf.load(self._config_path.joinpath(self._config_file))
-        self._config = config
+        config_file = oc.OmegaConf.load(self._config_path.joinpath(self._config_file))
+
+        icon4py_default_config = common_config.ConfigurationHandler(Icon4pyConfig)
+
+        self._config = oc.OmegaConf.merge(icon4py_default_config, config_file)
 
         # if self was a reader we could call update
-        self._config = oc.OmegaConf.merge(self._config, config.model)
-        self.initialize_configs(config)
+        self._initialize_components(config)
 
-    def initialize_configs(self, config: oc.DictConfig):
+    def _initialize_components(self, config: oc.DictConfig):
         model_components = config.model.components
         for name, package in model_components.items():
             config_module = package + ".config"

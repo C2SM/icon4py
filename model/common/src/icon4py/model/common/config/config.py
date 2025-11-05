@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import datetime
 import enum
 import functools
 import logging
@@ -19,6 +19,16 @@ from icon4py.model.common import exceptions
 
 log = logging.getLogger(__file__)
 
+MISSING = oc.MISSING
+
+def timedelta(secs: int|float):
+    interpolation = f"dtime:{secs}"
+    return oc.II(interpolation)
+
+def _timedelta_resolver(secs: int|float):
+    return datetime.timedelta(seconds=secs)
+
+oc.OmegaConf.register_new_resolver("dtime", _timedelta_resolver)
 
 class ConfigType(enum.Enum):
     DEFAULT = enum.auto()
@@ -57,7 +67,7 @@ class ConfigurationHandler(Generic[T]):
         self._schema: type[T] = schema if isinstance(schema, type) else type(schema)
         self._default_config: oc.DictConfig = oc.OmegaConf.create(
             schema
-        )  # TODO (halungge): should this use create?
+        )
         self._config: oc.DictConfig = self._default_config.copy()
         oc.OmegaConf.set_readonly(self._default_config, True)
 

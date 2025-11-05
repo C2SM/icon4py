@@ -9,7 +9,7 @@
 import pathlib
 
 import icon4py.model.atmosphere.diffusion.config as diffusion_config
-import icon4py.model.common.config.reader as config
+from icon4py.model.common.config import config
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import experiment
 
