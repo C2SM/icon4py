@@ -124,22 +124,25 @@ def test_run_timeloop_single_step(
     )
     DO_CHANNEL = False
     DO_IBM = False
+    DO_VERT_DIFFU = False
     if experiment == definitions.Experiments.GAUSS3D:
-        os.environ["ICON4PY_NUM_LEVELS"] = "35"
-        os.environ["ICON4PY_END_DATE"] = "0001-01-01T00:00:04"
-        os.environ["ICON4PY_DTIME"] = "4.0"
-        os.environ["ICON4PY_DIFFU_COEFF"] = "0.001"
+        DO_CHANNEL = False
+        DO_IBM = False
+        DO_VERT_DIFFU = False
         os.environ["ICON4PY_CHANNEL_SPONGE_LENGTH"] = "5000.0"
         os.environ["ICON4PY_CHANNEL_PERTURBATION"] = "0.0"
-        DO_CHANNEL = True
-        DO_IBM = True
-        config = icon4py_configuration.read_config(
-            experiment_type=driver_init.ExperimentType.GAUSS3D,
+        diffusion_config = diffusion.DiffusionConfig(
+            zdiffu_wind=DO_VERT_DIFFU,
+            zdiffu_wind_multfac=0.001,
+        )
+        nonhydro_config = solve_nh.NonHydrostaticConfig()
+        icon4pyrun_config = icon4py_configuration.Icon4pyRunConfig(
+            dtime=timedelta(seconds=4.0),
+            end_date=datetime(1, 1, 1, 0, 0, 4),
+            apply_initial_stabilization=False,
+            n_substeps=ndyn_substeps,
             backend=backend,
         )
-        diffusion_config = config.diffusion_config
-        nonhydro_config = config.solve_nonhydro_config
-        icon4pyrun_config = config.run_config
 
     else:
         diffusion_config = definitions.construct_diffusion_config(
@@ -442,7 +445,8 @@ def test_run_timeloop_single_step(
         do_prep_adv,
     )
 
-    if experiment == definitions.Experiments.GAUSS3D:
+    if experiment == definitions.Experiments.GAUSS3D and DO_CHANNEL and DO_IBM and DO_VERT_DIFFU:
+        print("Using data for GAUSS3D *** with *** CHANNEL and IBM and VDIFFU")
         # I cannot create serialized data for this from fortran for now
         _download_ser_data(1, ranked_data_path, definitions.Experiments.CHANNEL_IBM)
         fname = "end_of_timestep_000000000.pkl"
@@ -455,6 +459,7 @@ def test_run_timeloop_single_step(
             rho_sp = state["rho"]
             exner_sp = state["exner"]
     else:
+        print("Using data for GAUSS3D *** withOUT *** CHANNEL and IBM and VDIFFU")
         rho_sp = savepoint_nonhydro_exit.rho_new().asnumpy()
         exner_sp = timeloop_diffusion_savepoint_exit.exner().asnumpy()
         theta_sp = timeloop_diffusion_savepoint_exit.theta_v().asnumpy()
