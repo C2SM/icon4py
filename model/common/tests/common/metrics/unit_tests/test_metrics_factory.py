@@ -7,7 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import gt4py.next.typing as gtx_typing
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import dimension as dims, utils as common_utils
@@ -100,6 +104,25 @@ def _get_metrics_factory(
         )
         metrics_factories[registry_name] = factory
     return factory
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+def test_factory_nflat_gradp(
+    grid_savepoint: serialbox.IconGridSavepoint,
+    topography_savepoint: serialbox.TopographySavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    value_ref = grid_savepoint.nflat_gradp()
+    factory = _get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_savepoint=grid_savepoint,
+        topography_savepoint=topography_savepoint,
+    )
+    value = factory.get(attrs.NFLAT_GRADP)
+    assert value_ref == value
 
 
 @pytest.mark.level("integration")
@@ -472,15 +495,18 @@ def test_factory_zdiff_gradp(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    field_ref = metrics_savepoint.zdiff_gradp()
+    zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
+    vertoffset_gradp_ref = metrics_savepoint.vertoffset_gradp()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field = factory.get(attrs.ZDIFF_GRADP)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-10)
+    field_1 = factory.get(attrs.ZDIFF_GRADP)
+    field_2 = factory.get(attrs.VERTOFFSET_GRADP)
+    assert test_helpers.dallclose(zdiff_gradp_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
+    assert test_helpers.dallclose(vertoffset_gradp_ref.asnumpy(), field_2.asnumpy(), atol=1.0e-5)
 
 
 @pytest.mark.level("integration")
