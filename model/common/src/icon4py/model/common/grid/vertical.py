@@ -71,7 +71,7 @@ def domain(dim: gtx.Dimension):
     return _domain
 
 
-@dataclasses.dataclass()
+@dataclasses.dataclass
 class VerticalGridConfig:
     """
     Contains necessary parameter to configure vertical grid.
@@ -82,42 +82,42 @@ class VerticalGridConfig:
     """
 
     #: Number of full levels.
-    num_levels: int
+    num_levels: int = 31
     #: Defined as max_lay_thckn in ICON namelist mo_sleve_nml. Maximum thickness of grid cells below top_height_limit_for_maximal_layer_thickness.
-    maximal_layer_thickness: Final[ta.wpfloat] = 25000.0
+    maximal_layer_thickness: float = 25000.0
     #: Defined as htop_thcknlimit in ICON namelist mo_sleve_nml. Height below which thickness of grid cells must not exceed maximal_layer_thickness.
-    top_height_limit_for_maximal_layer_thickness: Final[ta.wpfloat] = 15000.0
+    top_height_limit_for_maximal_layer_thickness: float = 15000.0
     #: Defined as min_lay_thckn in ICON namelist mo_sleve_nml. Thickness of lowest level grid cells.
-    lowest_layer_thickness: Final[ta.wpfloat] = 50.0
+    lowest_layer_thickness: float = 50.0
     #: Model top height in ICON namelist mo_sleve_nml.
-    model_top_height: Final[ta.wpfloat] = 23500.0
+    model_top_height: float = 23500.0
     #: Defined in ICON namelist mo_sleve_nml. Height above which coordinate surfaces are flat
-    flat_height: Final[ta.wpfloat] = 16000.0
+    flat_height: float = 16000.0
     #: Defined as stretch_fac in ICON namelist mo_sleve_nml. Scaling factor for stretching/squeezing the model layer distribution.
-    stretch_factor: Final[ta.wpfloat] = 1.0
+    stretch_factor: float = 1.0
     #: Defined as damp_height in ICON namelist nonhydrostatic_nml. Height [m] at which Rayleigh damping of vertical wind starts.
-    rayleigh_damping_height: Final[ta.wpfloat] = 45000.0
+    rayleigh_damping_height: float = 45000.0
     #: Defined in ICON namelist nonhydrostatic_nml. Height [m] above which moist physics and advection of cloud and precipitation variables are turned off.
-    htop_moist_proc: Final[ta.wpfloat] = 22500.0
+    htop_moist_proc: float = 22500.0
     #: file name containing vct_a and vct_b table
     file_path: pathlib.Path | None = None
 
     # Parameters for setting up the decay function of the topographic signal for
     # SLEVE. Default values from mo_sleve_nml.
     #: Decay scale for large-scale topography component
-    SLEVE_decay_scale_1: Final[ta.wpfloat] = 4000.0
+    SLEVE_decay_scale_1: float = 4000.0
     #: Decay scale for small-scale topography component
-    SLEVE_decay_scale_2: Final[ta.wpfloat] = 2500.0
+    SLEVE_decay_scale_2: float = 2500.0
     #: Exponent for decay function
-    SLEVE_decay_exponent: Final[ta.wpfloat] = 1.2
+    SLEVE_decay_exponent: float = 1.2
     #: minimum absolute layer thickness 1 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_1: Final[ta.wpfloat] = 100.0
+    SLEVE_minimum_layer_thickness_1: float = 100.0
     #: minimum absolute layer thickness 2 for SLEVE coordinates
-    SLEVE_minimum_layer_thickness_2: Final[ta.wpfloat] = 500.0
+    SLEVE_minimum_layer_thickness_2: float = 500.0
     #: minimum relative layer thickness for nominal thicknesses <= SLEVE_minimum_layer_thickness_1
-    SLEVE_minimum_relative_layer_thickness_1: Final[ta.wpfloat] = 1.0 / 3.0
+    SLEVE_minimum_relative_layer_thickness_1: float = 1.0 / 3.0
     #: minimum relative layer thickness for a nominal thickness of SLEVE_minimum_layer_thickness_2
-    SLEVE_minimum_relative_layer_thickness_2: Final[ta.wpfloat] = 0.5
+    SLEVE_minimum_relative_layer_thickness_2: float = 0.5
 
 
 @dataclasses.dataclass(frozen=True)

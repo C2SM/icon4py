@@ -23,7 +23,9 @@ class NonHydrostaticConfig:
     """
 
     # number of dynamics substeps
-    ndyn_substeps: int = 5
+    ndyn_substeps: int = dataclasses.field(
+        init=False, default=common_config.resolve_or_else("model.ndyn_substeps", 5)
+    )
 
     itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT
 

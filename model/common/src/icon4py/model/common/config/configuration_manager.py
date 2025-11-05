@@ -16,8 +16,8 @@ from types import ModuleType
 import omegaconf as oc
 
 from icon4py.model.common.config import config as common_config
-from icon4py.model.common.grid import vertical
-from icon4py.model.common.grid.vertical import VerticalGridConfig
+from icon4py.model.common.grid import vertical as v_grid
+
 
 MODEL_NODE = "model"
 log = logging.getLogger(__file__)
@@ -32,37 +32,46 @@ log = logging.getLogger(__file__)
 # [ ] what if a package does not have the `config.py`
 
 
-
 # TODO (halungge): could go to icon4py.common
 @dataclasses.dataclass
 class RunConfig:
     input_path: pathlib.Path = common_config.MISSING
     output_path: pathlib.Path = common_config.MISSING
-    #dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)
-    #start_date: datetime.datetime = common_config.MISSING
-    #end_date: datetime.datetime = common_config.MISSING
-    dtime: int = 600    # TODO (halungge): use datetime.timedelta
-    start_date:str = common_config.MISSING # TODO (halungge): use datetime.datetime
-    end_date:str = common_config.MISSING   # TODO (halungge): use datetime.datetime
+    # dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)
+    # start_date: datetime.datetime = common_config.MISSING
+    # end_date: datetime.datetime = common_config.MISSING
+    dtime: int = 600  # TODO (halungge): use datetime.timedelta
+    start_date: str = common_config.MISSING  # TODO (halungge): use datetime.datetime
+    end_date: str = common_config.MISSING  # TODO (halungge): use datetime.datetime
 
 
 # TODO (halungge): could go to icon4py.common
 @dataclasses.dataclass
 class ModelConfig:
     ndyn_substeps: int = 5
-    vertical: vertical.VerticalGridConfig = VerticalGridConfig()
+    vertical: v_grid.VerticalGridConfig = v_grid.VerticalGridConfig()
     grid: pathlib.Path = common_config.MISSING
     components: dict[str, str] = dataclasses.field(default_factory=dict)
 
+
+# TODO remove the init=False and constructor?
 @dataclasses.dataclass(init=False)
 class Icon4pyConfig:
-    run: RunConfig  = RunConfig()
-    model: ModelConfig =  ModelConfig()
+    run: RunConfig = RunConfig()
+    model: ModelConfig = ModelConfig()
 
-    def __init__(self, run:RunConfig, model:ModelConfig, **kwargs:Any):
+    def __init__(self, run: RunConfig, model: ModelConfig):
         self.run = run
         self.model = model
+        # self._add_model_components(model)
 
+    # def _add_model_components(self, model: ModelConfig):
+    #     model_components = model.components
+    #     for name, package in model_components:
+    #         config_module = package + ".config"
+    #         module = importlib.import_module(config_module).config
+    #         config = init_reader(module).default
+    #         setattr(self, name, config)
 
 
 def load_reader(module: ModuleType, update: oc.DictConfig) -> common_config.ConfigurationHandler:
@@ -73,6 +82,15 @@ def load_reader(module: ModuleType, update: oc.DictConfig) -> common_config.Conf
     else:
         default_reader = common_config.init_config()
         default_reader.update(update)
+    return default_reader
+
+
+def init_reader(module: ModuleType) -> common_config.ConfigurationHandler:
+    if hasattr(module, "init_config"):
+        log.warning(f" module {module.__name__} has no `init_config` function")
+        default_reader = module.init_config()
+    else:
+        default_reader = common_config.init_config()
     return default_reader
 
 
@@ -91,28 +109,46 @@ class ConfigurationManager:
             log.error(f"Could not resolve path to {model_config} - {e}")
             sys.exit()
 
-        self._config = None # TODO where should this be set??
+        self._default_config = common_config.ConfigurationHandler(Icon4pyConfig).config
 
     def read_config(self):
         # lets assume the configuration is all in one file
         config_file = oc.OmegaConf.load(self._config_path.joinpath(self._config_file))
 
-        icon4py_default_config = common_config.ConfigurationHandler(Icon4pyConfig)
-
-        self._config = oc.OmegaConf.merge(icon4py_default_config, config_file)
-
+        # merged = oc.OmegaConf.merge(icon4py_default_config, config_file)
+        # merge Icon4pyConfig part
+        self._config = config_file
         # if self was a reader we could call update
-        self._initialize_components(config)
+        self._initialize_components(self._config)
+
+    @property
+    def config(self):
+        return self._config
+
+    @property
+    def default(self):
+        return self._default_config
 
     def _initialize_components(self, config: oc.DictConfig):
         model_components = config.model.components
         for name, package in model_components.items():
-            config_module = package + ".config"
-            module = importlib.import_module(config_module)
-            module_config = config[name]
-            # TODO (halungge): what happens if there is no config block for this module??
-            # merge the default of the package with the section configured in the file
-            reader = load_reader(module, module_config)
+            module_config = config.get(name)
+            try:
+                config_module = package + ".config"
+                module = importlib.import_module(config_module)
+                # merge the default of the package with the section configured in the file
+                reader = load_reader(module, module_config)
+            except ModuleNotFoundError:
+                log.warning(
+                    f"no config module in package {package}, instanatiating general dict-config instead"
+                )
+                reader = common_config.init_config()
+                if module_config is None:
+                    log.warning(
+                        f"No default configuration and no user-configuration for component {name} defined in file {self._config_file}"
+                    )
+                else:
+                    reader.update(module_config)
             self._config[name] = reader.config
 
     def get_configured_modules(self):

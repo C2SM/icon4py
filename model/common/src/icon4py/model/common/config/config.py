@@ -21,14 +21,18 @@ log = logging.getLogger(__file__)
 
 MISSING = oc.MISSING
 
-def timedelta(secs: int|float):
+
+def timedelta(secs: int | float):
     interpolation = f"dtime:{secs}"
     return oc.II(interpolation)
 
-def _timedelta_resolver(secs: int|float):
+
+def _timedelta_resolver(secs: int | float):
     return datetime.timedelta(seconds=secs)
 
+
 oc.OmegaConf.register_new_resolver("dtime", _timedelta_resolver)
+
 
 class ConfigType(enum.Enum):
     DEFAULT = enum.auto()
@@ -65,9 +69,7 @@ def resolve_or_else(key: str, value: _CT) -> _CT:
 class ConfigurationHandler(Generic[T]):
     def __init__(self, schema: T | type[T]):
         self._schema: type[T] = schema if isinstance(schema, type) else type(schema)
-        self._default_config: oc.DictConfig = oc.OmegaConf.create(
-            schema
-        )
+        self._default_config: oc.DictConfig = oc.OmegaConf.create(schema)
         self._config: oc.DictConfig = self._default_config.copy()
         oc.OmegaConf.set_readonly(self._default_config, True)
 

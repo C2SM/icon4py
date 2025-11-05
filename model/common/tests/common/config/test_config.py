@@ -33,7 +33,6 @@ class Foo:
     c: list[int]
 
 
-
 class Meridiem(utils.NamespaceMixin, enum.Enum):
     AM = 1
     PM = 2
@@ -196,7 +195,7 @@ seconds: 0
 
 
 def test_dtime_resolver():
-    handler = common_config.ConfigurationHandler(dict(a = 12, b="${dtime:10}"))
+    handler = common_config.ConfigurationHandler(dict(a=12, b="${dtime:10}"))
     config = handler.config
     assert config.a == 12
     assert config.b == datetime.timedelta(seconds=10)
