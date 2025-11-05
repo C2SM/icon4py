@@ -251,6 +251,11 @@ class NonHydrostaticConfig:
         Declared as divdamp_z4 in ICON. The upper limit in height where divergence damping factor decreases
         quadratically with height.
         """
+        self.dtime_previous_substep: float = 0.0
+        """
+        Dynamic substep length of previous substep in order to track if rayleigh damping coefficients need to be
+        recomputed or not. The substep length should only change in case of high CFL condition.
+        """
 
         #: parameters from other namelists:
 
@@ -1042,6 +1047,13 @@ class SolveNonhydro:
                 self.intermediate_fields.horizontal_gradient_of_normal_wind_divergence,
             )
 
+        #  Precompute Rayleigh damping factor
+        if dtime != self._config.dtime_previous_substep:
+            self._compute_rayleigh_damping_factor(
+                rayleigh_damping_factor=self.rayleigh_damping_factor,
+                dtime=dtime,
+            )
+
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
@@ -1086,6 +1098,8 @@ class SolveNonhydro:
             theta_v_new=prognostic_states.next.theta_v,
         )
 
+        self._config.dtime_previous_substep = dtime
+
     # flake8: noqa: C901
     def run_predictor_step(
         self,
@@ -1121,12 +1135,6 @@ class SolveNonhydro:
                 dtime=dtime,
                 cell_areas=self._cell_params.area,
             )
-
-        #  Precompute Rayleigh damping factor
-        self._compute_rayleigh_damping_factor(
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
-            dtime=dtime,
-        )
 
         self._compute_perturbed_quantities_and_interpolation(
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
@@ -1303,10 +1311,6 @@ class SolveNonhydro:
             cell_areas=self._cell_params.area,
         )
 
-        self._compute_rayleigh_damping_factor(
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
-            dtime=dtime,
-        )
         log.debug("corrector: start stencil 10")
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
