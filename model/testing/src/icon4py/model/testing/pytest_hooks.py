@@ -106,7 +106,7 @@ def pytest_collection_modifyitems(config, items):
     test_grid = config.getoption("--grid")
     for item in items:
         if (marker := item.get_closest_marker("continuous_benchmarking")) is not None:
-            if not test_grid.startswith("icon_benchmark"):
+            if test_grid is not None and not test_grid.startswith("icon_benchmark"):
                 item.add_marker(
                     pytest.mark.skip(
                         reason="Continuous benchmarking tests only run with --grid icon_benchmark_{regional,global}."
