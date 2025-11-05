@@ -22,7 +22,6 @@ from icon4py.model.testing.fixtures.datatest import backend
 from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
 
 
-
 def test_cross_product(backend: gtx_typing.Backend | None) -> None:
     mesh = simple.simple_grid(backend=backend)
     x1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
