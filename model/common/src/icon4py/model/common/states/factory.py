@@ -593,7 +593,7 @@ class NumpyDataProvider(FieldProvider):
         params: dict[str, state_utils.ScalarType] | None = None,
     ):
         self._func = func
-        self._dims = domain
+        self._dims = tuple(map(replace_khalfdim, domain))
         self._fields: dict[str, state_utils.ScalarType | state_utils.FieldType | None] = {
             name: None for name in fields
         }
@@ -718,3 +718,8 @@ def dtype_or_default(
     field_name: str, metadata: dict[str, model.FieldMetaData]
 ) -> state_utils.ScalarType:
     return metadata[field_name].get("dtype", ta.wpfloat)
+
+
+def replace_khalfdim(dim: gtx.Dimension) -> gtx.Dimension:
+    """workaround to have consistent definitions. Remove once gt4py supports vertically staggered dimension"""
+    return dims.KDim if dim == dims.KHalfDim else dim
