@@ -15,6 +15,7 @@ import pytest
 from icon4py.model.common.grid import geometry, geometry_attributes, gridfile, vertical
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.testing import serialbox
 from icon4py.model.testing.definitions import metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -38,7 +39,6 @@ from icon4py.model.testing.fixtures.datatest import (
     ndyn_substeps,
     processor_props,
     ranked_data_path,
-    serialbox,
     stretch_factor,
     topography_savepoint,
 )
