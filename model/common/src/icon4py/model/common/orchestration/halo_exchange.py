@@ -13,12 +13,7 @@ import sys
 from collections.abc import Sequence
 from typing import Any, ClassVar, Final
 
-
-try:
-    import dace
-except ImportError as e:
-    raise ImportError("DaCe is required for this module") from e
-
+import dace
 import gt4py.next as gtx
 from dace import dtypes
 
