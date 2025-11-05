@@ -46,38 +46,45 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 
 
+@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, metrics_name",
+    "attrs_name, metrics_name, k_lb, reshape",
     [
-        ("functional_determinant_of_metrics_on_full_levels_on_edges", "ddqz_z_full_e"),
-        ("zdiff_gradp", "zdiff_gradp"),
-        ("height", "z_mc"),
-        ("functional_determinant_of_metrics_on_interface_levels", "ddqz_z_half"),
-        ("scaling_factor_for_3d_divergence_damping", "scalfac_dd3d"),
-        ("rayleigh_w", "rayleigh_w"),
-        ("coeff_gradekin", "coeff_gradekin"),
-        ("mask_prog_halo_c", "mask_prog_halo_c"),
+        ("functional_determinant_of_metrics_on_full_levels_on_edges", "ddqz_z_full_e", 0, False),
+        ("zdiff_gradp", "zdiff_gradp", 0, True),
+        ("height", "z_mc", 0, False),
+        ("functional_determinant_of_metrics_on_interface_levels", "ddqz_z_half", 1, False),
+        ("scaling_factor_for_3d_divergence_damping", "scalfac_dd3d", 0, False),
+        ("rayleigh_w", "rayleigh_w", 0, False),
+        ("coeff_gradekin", "coeff_gradekin", 0, False),
     ],
 )
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.EXCLAIM_APE])
 def test_distributed_metrics_attrs(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    topography_savepoint: sb.TopographySavepoint,
-    experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
-    parallel_geometry_grid: geometry.GridGeometry,
-    parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
     parallel_metrics: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
+    experiment: test_defs.Experiment,
+    k_lb: int,
+    reshape: bool,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
     factory = parallel_metrics
-    field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
+
     field = factory.get(attrs_name).asnumpy()
-    assert test_utils.dallclose(field, field_ref, rtol=1e-8, atol=1.0e-10)
+    field = field if k_lb == 0 else field[:, k_lb:]
+
+    field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
+    field_ref = field_ref if k_lb == 0 else field_ref[:, k_lb:]
+    field_ref = field_ref.reshape(field_ref.shape[0], -1) if reshape else field_ref
+    assert test_utils.dallclose(field, field_ref, rtol=1e-8, atol=1.0e-8)

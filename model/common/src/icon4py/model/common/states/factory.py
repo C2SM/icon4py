@@ -53,6 +53,7 @@ from typing import Any, Literal, Protocol, TypeVar, overload
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import xarray as xa
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -193,7 +194,15 @@ class FieldSource(GridProvider, Protocol):
                 buffer = provider(field_name, self._sources, self.backend, self)
                 if hasattr(buffer, "domain"):
                     first_dim = buffer.domain.dims[0]
-                    if first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
+                    # reshape 3d field into 2d as hot fix for ghex processing
+                    if len(buffer.shape) > 2:
+                        original_dims = buffer._domain.dims
+                        buffer = buffer.asnumpy().reshape(buffer.shape[0], -1)
+                        buffer = gtx.as_field(original_dims[:-1], buffer)
+                    if (
+                        first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+                        and buffer.dtype.scalar_type != np.bool_
+                    ):
                         self._exchange.exchange_and_wait(first_dim, buffer)
                 return (
                     buffer

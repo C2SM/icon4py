@@ -116,7 +116,7 @@ def test_distributed_interpolation_attrs_reordered(
     "attrs_name, intrp_name, dim, atol",
     [
         ("rbf_interpolation_coefficient_cell_1", "rbf_vec_coeff_c1", dims.CellDim, 3e-2),
-        ("rbf_interpolation_coefficient_edge", "rbf_vec_coeff_e", dims.EdgeDim, 9e-1),
+        ("rbf_interpolation_coefficient_edge", "rbf_vec_coeff_e", dims.EdgeDim, 7e-1),
         ("rbf_interpolation_coefficient_vertex_1", "rbf_vec_coeff_v1", dims.VertexDim, 3e-3),
     ],
 )
