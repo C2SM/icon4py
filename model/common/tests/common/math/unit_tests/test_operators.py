@@ -18,7 +18,7 @@ from icon4py.model.common.math.stencils.compute_nabla2_on_cell_k import compute_
 from icon4py.model.common.utils.data_allocation import constant_field, zero_field
 from icon4py.model.testing import reference_funcs
 from icon4py.model.testing.fixtures.datatest import backend
-from icon4py.model.testing.fixtures.stencil_tests import grid
+from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
