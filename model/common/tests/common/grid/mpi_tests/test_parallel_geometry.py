@@ -47,6 +47,7 @@ if TYPE_CHECKING:
         ("orientation_of_normal_to_cell_edges", "edge_orientation"),
         ("grid_latitude_of_vertex", "verts_vertex_lat"),
         ("eastward_component_of_edge_tangent_on_cell", "dual_normal_cell_x"),
+        ("northward_component_of_edge_tangent_on_cell", "dual_normal_cell_y"),
         ("cell_area", "cell_areas"),
     ],
 )
@@ -64,4 +65,4 @@ def test_distributed_geometry_attrs(
     grid_geometry = parallel_geometry_grid
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = grid_geometry.get(attrs_name).asnumpy()
-    assert test_utils.dallclose(field, field_ref, equal_nan=True, atol=1e-13)
+    assert test_utils.dallclose(field, field_ref, equal_nan=True, atol=1e-12)

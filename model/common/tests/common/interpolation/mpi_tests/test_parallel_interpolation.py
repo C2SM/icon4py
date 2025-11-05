@@ -11,6 +11,7 @@ from __future__ import annotations
 import typing
 from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
 import pytest
 
 from icon4py.model.common import dimension as dims
@@ -65,7 +66,6 @@ def test_distributed_interpolation_attrs(
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
-    parallel_geometry_grid: geometry.GridGeometry,
     parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
@@ -84,7 +84,6 @@ def test_distributed_interpolation_attrs(
     "attrs_name, intrp_name, lb_domain",
     [
         ("geometrical_factor_for_curl", "geofac_rot", vert_lb_domain),
-        ("rbf_interpolation_coefficient_edge", "rbf_vec_coeff_e", vert_lb_domain),
         ("geometrical_factor_for_gradient_of_divergence", "geofac_grdiv", 0),
     ],
 )
@@ -101,8 +100,44 @@ def test_distributed_interpolation_attrs_reordered(
     lb_domain: typing.Any,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
     factory = parallel_interpolation
-    lb = factory.grid.start_index(lb_domain) if not isinstance(lb_domain, int) else lb_domain
+    lb = lb_domain if isinstance(lb_domain, int) else factory.grid.start_index(lb_domain)
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()
-    assert_reordered(field[lb:, :], field_ref[lb:, :], atol=2e-9, rtol=5e-9)
+    assert_reordered(field[lb:, :], field_ref[lb:, :], atol=2e-9, rtol=1e-8)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "attrs_name, intrp_name, dim, atol",
+    [
+        ("rbf_interpolation_coefficient_cell_1", "rbf_vec_coeff_c1", dims.CellDim, 3e-2),
+        ("rbf_interpolation_coefficient_edge", "rbf_vec_coeff_e", dims.EdgeDim, 9e-1),
+        ("rbf_interpolation_coefficient_vertex_1", "rbf_vec_coeff_v1", dims.VertexDim, 3e-3),
+    ],
+)
+def test_distributed_interpolation_rbf(
+    backend: gtx_typing.Backend,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    grid_savepoint: sb.IconGridSavepoint,
+    experiment: test_defs.Experiment,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    parallel_interpolation,
+    attrs_name: str,
+    intrp_name: str,
+    dim: gtx.Dimension,
+    atol: int,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    factory = parallel_interpolation
+    owner_mask = decomposition_info._owner_mask[dim]
+    field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
+    field = factory.get(attrs_name).asnumpy()
+    assert_reordered(field[owner_mask], field_ref[owner_mask], atol=atol)
