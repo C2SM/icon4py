@@ -12,12 +12,17 @@ import dataclasses
 import enum
 import pathlib
 from collections.abc import Mapping
-from typing import Final, Literal
+from typing import TYPE_CHECKING, Final, Literal
 
 import icon4py.model.atmosphere.dycore.config as dycore_config
 from icon4py.model.atmosphere.diffusion import config as diffusion_config
 from icon4py.model.common import exceptions
 from icon4py.model.testing import config
+
+
+if TYPE_CHECKING:
+    from icon4py.model.atmosphere.diffusion import diffusion
+    from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 
 
 DEFAULT_TEST_DATA_FOLDER: Final = "testdata"
@@ -86,7 +91,7 @@ class Grids:
         sizes={"cell": 327680, "vertex": 163842, "edge": 491520},
         kind=GridKind.GLOBAL,
         file_name="icon_grid_0021_R02B06_G.nc",
-        uri="TODO",
+        uri="https://polybox.ethz.ch/index.php/s/WsHr5e2MKpHkkmp/download",
     )
     R19_B07_MCH_LOCAL: Final = GridDescription(
         name="mch_opr_r19b07_icon_ch2",

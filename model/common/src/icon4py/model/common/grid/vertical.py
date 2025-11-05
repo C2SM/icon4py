@@ -169,6 +169,8 @@ class VerticalGrid:
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.end_index_of_damping_layer} ")
+        log.info(f"number of levels: {self.num_levels}")
+        log.info(f"start of flat levels: {self.nflatlev}")
 
     def __str__(self) -> str:
         vertical_params_properties = ["Model interface height properties:"]
@@ -240,10 +242,6 @@ class VerticalGrid:
     def end_index_of_damping_layer(self) -> gtx.int32:
         """Vertical index where damping ends."""
         return self.index(Domain(dims.KDim, Zone.DAMPING))
-
-    @property
-    def nflat_gradp(self) -> gtx.int32:
-        return self._min_index_flat_horizontal_grad_pressure
 
     @property
     def vct_a(self) -> fa.KField:

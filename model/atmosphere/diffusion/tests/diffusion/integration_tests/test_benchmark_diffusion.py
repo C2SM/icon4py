@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import gt4py.next as gtx
 import pytest
 
 
@@ -25,31 +24,32 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
+    grid_manager as gm,
     states as grid_states,
     vertical as v_grid,
-)
-from icon4py.model.common.initialization.jablonowski_williamson_topography import (
-    jablonowski_williamson_topography,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, grid_utils
-from icon4py.model.testing.grid_utils import construct_decomposition_info
-
-from ..fixtures import *  # noqa: F403
+from icon4py.model.testing.fixtures.benchmark import (
+    geometry_field_source,
+    interpolation_field_source,
+    metrics_field_source,
+)
+from icon4py.model.testing.fixtures.datatest import backend
+from icon4py.model.testing.fixtures.stencil_tests import grid_manager
 
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.benchmark
-@pytest.mark.parametrize(
-    "grid", [definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL]
-)
 @pytest.mark.continuous_benchmarking
 @pytest.mark.benchmark_only
-def test_run_diffusion_benchmark(
-    grid: definitions.GridDescription,
+def test_diffusion_benchmark(
+    geometry_field_source: grid_geometry.GridGeometry,
+    grid_manager: gm.GridManager,
+    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
+    metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx_typing.Backend | None,
     benchmark: Any,
 ) -> None:
@@ -59,24 +59,7 @@ def test_run_diffusion_benchmark(
 
     diffusion_parameters = diffusion.DiffusionParams(config)
 
-    grid_manager = grid_utils.get_grid_manager_from_identifier(
-        grid, num_levels=85, keep_skip_values=True, backend=backend
-    )
-
     mesh = grid_manager.grid
-    coordinates = grid_manager.coordinates
-    geometry_input_fields = grid_manager.geometry_fields
-
-    decomposition_info = construct_decomposition_info(mesh, backend)
-
-    geometry_field_source = grid_geometry.GridGeometry(
-        grid=mesh,
-        decomposition_info=decomposition_info,
-        backend=backend,
-        coordinates=coordinates,
-        extra_fields=geometry_input_fields,
-        metadata=geometry_meta.attrs,
-    )
 
     cell_geometry = grid_states.CellParams(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
@@ -112,12 +95,6 @@ def test_run_diffusion_benchmark(
         dual_normal_vert_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
     )
 
-    topo_c = jablonowski_williamson_topography(
-        cell_lat=cell_geometry.cell_center_lat.ndarray,
-        u0=35.0,
-        backend=backend,
-    )
-
     vertical_config = v_grid.VerticalGridConfig(
         mesh.num_levels,
         lowest_layer_thickness=50,
@@ -131,29 +108,6 @@ def test_run_diffusion_benchmark(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-    )
-
-    interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        grid=mesh,
-        decomposition_info=decomposition_info,
-        geometry_source=geometry_field_source,
-        backend=backend,
-        metadata=interpolation_attributes.attrs,
-    )
-
-    metrics_field_source = metrics_factory.MetricsFieldsFactory(
-        grid=mesh,
-        vertical_grid=vertical_grid,
-        decomposition_info=decomposition_info,
-        geometry_source=geometry_field_source,
-        topography=gtx.as_field((dims.CellDim,), data=topo_c),
-        interpolation_source=interpolation_field_source,
-        backend=backend,
-        metadata=metrics_attributes.attrs,
-        rayleigh_type=constants.RayleighType.KLEMP,
-        rayleigh_coeff=5.0,
-        exner_expol=0.333,
-        vwind_offctr=0.2,
     )
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(

@@ -887,20 +887,17 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
-
         if self._grid.limited_area:
             self._compute_theta_and_exner(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-
             self._compute_exner_from_rhotheta(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-
         self._update_theta_v(
             rho_now=prognostic_states.current.rho,
             theta_v_now=prognostic_states.current.theta_v,
@@ -1131,7 +1128,6 @@ class SolveNonhydro:
             rayleigh_damping_factor=self.rayleigh_damping_factor,
             dtime=dtime,
         )
-        log.debug("corrector: start stencil 10")
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
@@ -1239,7 +1235,6 @@ class SolveNonhydro:
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 )
-            log.debug(" corrector: start stencil 65")
             self._update_mass_flux_weighted(
                 rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
                 w_now=prognostic_states.current.w,
