@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging as log
 from types import ModuleType
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -31,8 +31,19 @@ try:
 except ImportError:
     import numpy as xp
 
+# TODO(havogt): improve typing to support dtype and shape
 NDArray: TypeAlias = np.ndarray | xp.ndarray
 NDArrayInterface: TypeAlias = np.ndarray | xp.ndarray | gtx.Field
+
+Rank0NDArray: TypeAlias = NDArray
+
+
+def is_ndarray(obj: Any) -> TypeGuard[NDArray]:
+    return isinstance(obj, (np.ndarray, xp.ndarray))
+
+
+def is_rank0_ndarray(obj: Any) -> TypeGuard[Rank0NDArray]:
+    return is_ndarray(obj) and obj.ndim == 0
 
 
 def backend_name(backend: gtx_typing.Backend | None) -> str:

@@ -546,7 +546,7 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Expected objects that form inputs into run function ---
     expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=max_vertical_cfl,
+        max_vertical_cfl=data_alloc.import_array_ns(backend).asarray(max_vertical_cfl),
         tangential_wind=sp.vt(),
         vn_on_half_levels=sp.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp.w_concorr_c(),

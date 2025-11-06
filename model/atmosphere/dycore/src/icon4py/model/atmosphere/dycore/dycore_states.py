@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 from gt4py.eve.utils import FrozenNamespace
@@ -21,10 +20,7 @@ from icon4py.model.common import (
     type_alias as ta,
     utils as common_utils,
 )
-
-
-if TYPE_CHECKING:
-    from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TimeSteppingScheme(enum.IntEnum):
@@ -85,8 +81,7 @@ class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
     # `max_vertical_cfl` stored as 0-d array of type ta.wpfloat (to be able to avoid cupy synchronization)
-    # TODO(havogt): improve type annotation to something like `NDArray[ta.wpfloat, [()]]`
-    max_vertical_cfl: data_alloc.NDArray
+    max_vertical_cfl: data_alloc.Rank0NDArray
     """
     Declared as max_vcfl_dyn in ICON. Maximum vertical CFL number over all substeps.
     """
@@ -169,6 +164,12 @@ class DiagnosticStateNonHydro:
     """
     Declared as exner_dyn_incr in ICON.
     """
+
+    def __post_init__(self):
+        if not data_alloc.is_rank0_ndarray(self.max_vertical_cfl):
+            raise TypeError(
+                "'max_vertical_cfl' must be initialized as a 0-d array for performance reasons."
+            )
 
 
 @dataclasses.dataclass
