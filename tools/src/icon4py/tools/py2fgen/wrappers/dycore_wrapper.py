@@ -16,6 +16,7 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 
+import atexit
 import dataclasses
 from collections.abc import Callable
 from typing import Annotated, TypeAlias
@@ -397,8 +398,12 @@ def solve_nh_run(
         at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
     )
 
-    # TODO(havogt): create separate bindings for writing the timers
+    max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl  # pass back to Fortran
+
+
+def _save_gt4py_timers():
     if gtx_config.COLLECT_METRICS_LEVEL > 0:
         gtx_metrics.dump_json("gt4py_timers.json")
 
-    max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl  # pass back to Fortran
+
+atexit.register(_save_gt4py_timers)

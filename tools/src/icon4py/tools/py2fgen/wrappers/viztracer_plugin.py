@@ -16,6 +16,7 @@ To enable this plugin
   function_name1:start1:stop1,function_name2:start2:stop2,...
 """
 
+import atexit
 import dataclasses
 import os
 from collections.abc import Callable
@@ -41,13 +42,6 @@ class _FunctionTracer:
         if self.start < self._counter <= self.stop:
             # "flush_as_finish" to avoid incomplete calls to `disable` which would visualize as nested calls
             self._tracer.stop(stop_option="flush_as_finish")
-        if self._counter == self.stop:
-            # This is writing the file always when a range is finished,
-            # but we care only of the last one.
-            # The cleaner solution would be to do something on interpreter shutdown,
-            # but that would also delay getting the trace in case we only trace the first
-            # few steps on a longer run.
-            self._tracer.save("viztracer.json")
 
 
 def function_tracer(
@@ -80,3 +74,5 @@ def init() -> None:
         enter, exit_ = function_tracer(tracer, start, stop)
         runtime_config.HOOK_BINDINGS_FUNCTION_ENTER[name] = enter
         runtime_config.HOOK_BINDINGS_FUNCTION_EXIT[name] = exit_
+
+    atexit.register(tracer.save, "viztracer.json")
