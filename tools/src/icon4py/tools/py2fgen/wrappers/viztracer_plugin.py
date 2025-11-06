@@ -16,7 +16,6 @@ To enable this plugin
   function_name1:start1:stop1,function_name2:start2:stop2,...
 """
 
-import atexit
 import dataclasses
 import os
 from collections.abc import Callable
@@ -51,28 +50,31 @@ def function_tracer(
     return ft.enter, ft.exit
 
 
-def init() -> None:
-    """Initialize the VizTracer plugin."""
+class Init:
+    def __init__(self) -> None:
+        """Initialize the VizTracer plugin."""
 
-    tracer = viztracer.VizTracer()
+        self.tracer = viztracer.VizTracer()
 
-    if "ICON4PY_TRACING_RANGES" in os.environ:
-        tracing_ranges_str = os.environ["ICON4PY_TRACING_RANGES"]
-        tracing_ranges = {
-            name: (int(start), int(stop))
-            for range_spec in tracing_ranges_str.split(",")
-            for name, start, stop in [range_spec.split(":")]
-        }
-    else:
-        # Some useful defaults for the ICON4Py dycore and diffusion granules
-        tracing_ranges = {
-            "solve_nh_run": (10, 15),
-            "diffusion_run": (2, 4),
-        }
+        if "ICON4PY_TRACING_RANGES" in os.environ:
+            tracing_ranges_str = os.environ["ICON4PY_TRACING_RANGES"]
+            tracing_ranges = {
+                name: (int(start), int(stop))
+                for range_spec in tracing_ranges_str.split(",")
+                for name, start, stop in [range_spec.split(":")]
+            }
+        else:
+            # Some useful defaults for the ICON4Py dycore and diffusion granules
+            tracing_ranges = {
+                "solve_nh_run": (10, 15),
+                "diffusion_run": (2, 4),
+            }
 
-    for name, (start, stop) in tracing_ranges.items():
-        enter, exit_ = function_tracer(tracer, start, stop)
-        runtime_config.HOOK_BINDINGS_FUNCTION_ENTER[name] = enter
-        runtime_config.HOOK_BINDINGS_FUNCTION_EXIT[name] = exit_
+        for name, (start, stop) in tracing_ranges.items():
+            enter, exit_ = function_tracer(self.tracer, start, stop)
+            runtime_config.HOOK_BINDINGS_FUNCTION_ENTER[name] = enter
+            runtime_config.HOOK_BINDINGS_FUNCTION_EXIT[name] = exit_
 
-    atexit.register(tracer.save, "viztracer.json")
+    def __del__(self) -> None:
+        """Save the VizTracer trace on program exit."""
+        self.tracer.save("viztracer.json")
