@@ -817,7 +817,7 @@ class SolveNonhydro:
             enh_smag_fac=self.interpolated_fourth_order_divdamp_factor,
         )
 
-        self.p_test_run = True
+        self.p_test_run = False
 
     def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
@@ -1063,20 +1063,17 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
-
         if self._grid.limited_area:
             self._compute_theta_and_exner(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-
             self._compute_exner_from_rhotheta(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-
         self._update_theta_v(
             rho_now=prognostic_states.current.rho,
             theta_v_now=prognostic_states.current.theta_v,
@@ -1240,13 +1237,14 @@ class SolveNonhydro:
                 dtime=dtime,
             )
 
-        if self._config.divdamp_type >= 3:
+        if self._grid.limited_area and self._config.divdamp_type >= 3:
             self._compute_dwdz_for_divergence_damping(
                 w=prognostic_states.next.w,
                 w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
             )
 
+        if self._config.divdamp_type >= 3:
             log.debug(
                 "exchanging prognostic field 'w' and local field 'dwdz_at_cells_on_model_levels'"
             )
@@ -1289,7 +1287,7 @@ class SolveNonhydro:
             interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
             fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
             reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            second_order_divdamp_factor=second_order_divdamp_scaling_coeff,
+            second_order_divdamp_factor=second_order_divdamp_factor,
         )
 
         log.debug("corrector run velocity advection")
@@ -1306,7 +1304,6 @@ class SolveNonhydro:
             rayleigh_damping_factor=self.rayleigh_damping_factor,
             dtime=dtime,
         )
-        log.debug("corrector: start stencil 10")
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
@@ -1414,7 +1411,6 @@ class SolveNonhydro:
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 )
-            log.debug(" corrector: start stencil 65")
             self._update_mass_flux_weighted(
                 rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
                 w_now=prognostic_states.current.w,

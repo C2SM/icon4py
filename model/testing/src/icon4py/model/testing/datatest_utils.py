@@ -10,25 +10,12 @@ from __future__ import annotations
 
 import pathlib
 import re
-import uuid
 
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, icon
 from icon4py.model.testing import definitions, serialbox
-
-
-# TODO(havogt): is this still needed?
-GRID_IDS = {
-    definitions.Experiments.EXCLAIM_APE.name: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
-    definitions.Experiments.MCH_CH_R04B09.name: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
-    definitions.Experiments.JW.name: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
-    definitions.Experiments.GAUSS3D.name: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
-    definitions.Experiments.WEISMAN_KLEMP_TORUS.name: uuid.UUID(
-        "80ae276e-ec54-11ee-bf58-e36354187f08"
-    ),
-}
 
 
 def guess_grid_shape(experiment: definitions.Experiment) -> icon.GridShape:
@@ -53,19 +40,6 @@ def guess_grid_shape(experiment: definitions.Experiment) -> icon.GridShape:
         raise ValueError(
             f"Could not parse grid_root and grid_level from experiment: {experiment.name} no 'rXbY'pattern."
         ) from err
-
-
-def get_grid_id_for_experiment(experiment: definitions.Experiment) -> uuid.UUID:
-    """Get the unique id of the grid used in the experiment.
-
-    These ids are encoded in the original grid file that was used to run the simulation, but not serialized when generating the test data. So we duplicate the information here.
-
-    TODO(halungge): this becomes obsolete once we get the connectivities from the grid files.
-    """
-    try:
-        return GRID_IDS[experiment.name]
-    except KeyError as err:
-        raise ValueError(f"Experiment '{experiment}' has no grid id ") from err
 
 
 def get_processor_properties_for_run(
@@ -97,11 +71,3 @@ def create_icon_serial_data_provider(
         mpi_rank=rank,
         do_print=True,
     )
-
-
-# TODO(havogt): this function should disappear after the refactoring from raw string to Experiment is completed
-def experiment_from_name(experiment_name: str) -> definitions.Experiment:
-    for item in vars(definitions.Experiments).values():
-        if isinstance(item, definitions.Experiment) and item.name == experiment_name:
-            return item
-    raise ValueError(f"No such experiment: {experiment_name}")
