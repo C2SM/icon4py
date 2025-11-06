@@ -1141,6 +1141,7 @@ class SolveNonhydro:
             )
             plots.pickle_data(prognostic_states.current, "initial_condition_ibm")
 
+        plots.pickle_data(prognostic_states.current, "debug_before_predictor")
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
@@ -1149,6 +1150,7 @@ class SolveNonhydro:
             at_initial_timestep=at_initial_timestep,
             at_first_substep=at_first_substep,
         )
+        plots.pickle_data(prognostic_states.next, "debug_after_predictor")
 
         (
             prognostic_states.next.vn,
@@ -1164,6 +1166,7 @@ class SolveNonhydro:
             prognostic_states.next.theta_v,
         )
 
+        plots.pickle_data(prognostic_states.next, "debug_before_corrector")
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
@@ -1176,6 +1179,7 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
+        plots.pickle_data(prognostic_states.next, "debug_after_corrector")
 
         (
             prognostic_states.next.vn,
