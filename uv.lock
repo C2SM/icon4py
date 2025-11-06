@@ -1394,8 +1394,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post599+edc7f1ba"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=double_write_elimination#edc7f1bac1e22593ef5709e92b65586e087e3180" }
+version = "1.0.4.post601+c2a5b94f"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=double_write_elimination#c2a5b94f47a9f3f0f42339f87ffa04a2769256c4" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
