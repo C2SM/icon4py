@@ -969,7 +969,7 @@ def compute_pos_on_tplane_e_x_y(
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
-) -> data_alloc.NDArray:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Compute pos_on_tplane_e_x_y.
     get geographical coordinates of edge midpoint
