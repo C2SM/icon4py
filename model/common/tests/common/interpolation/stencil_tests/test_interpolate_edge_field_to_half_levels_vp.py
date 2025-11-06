@@ -38,6 +38,7 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
 
     @staticmethod
     def reference(
+        grid: base_grid.Grid,
         wgtfac_e: np.ndarray,
         interpolant: np.ndarray,
     ) -> dict:
