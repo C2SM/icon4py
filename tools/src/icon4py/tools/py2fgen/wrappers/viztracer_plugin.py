@@ -64,9 +64,18 @@ def init() -> None:
             for name, start, stop in [range_spec.split(":")]
         }
     else:
-        # Some useful defaults for the ICON4Py dycore and diffusion granules
+        # Some useful defaults for the ICON4Py dycore and diffusion granules.
+        # The traces can be combined with `viztracer --combine`.
+
+        # The following measures around the 3rd timestep (assuming a typical setup):
+        # - diffusion
+        # - 5 dycore substeps
+        # - diffusion
+        # - 1 substep after
+        # The last substep should be neglected as inbetween there in a combined trace as it
+        # contains the overhead of saving the diffusion trace.
         tracing_ranges = {
-            "solve_nh_run": (10, 15),
+            "solve_nh_run": (10, 16),
             "diffusion_run": (2, 4),
         }
 
