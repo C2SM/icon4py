@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -38,9 +40,7 @@ class TestInterpolateToHalfLevelsVp(test_helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid: base_grid.Grid,
-        wgtfac_e: np.ndarray,
-        interpolant: np.ndarray,
+        grid: base_grid.Grid, wgtfac_e: np.ndarray, interpolant: np.ndarray, **kwargs: Any
     ) -> dict:
         interpolation_to_half_levels_vp = interpolate_edge_field_to_half_levels_vp_numpy(
             wgtfac_e=wgtfac_e, interpolant=interpolant
