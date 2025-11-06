@@ -35,11 +35,11 @@ RBF_STENCIL_SIZE: dict[RBFDimension, int] = {
 
 
 class InterpolationKernel(enum.Enum):
-    GAUSSIAN = 1
-    INVERSE_MULTIQUADRATIC = 3
+    GAUSSIAN: int = 1
+    INVERSE_MULTIQUADRATIC: int = 3
 
 
-DEFAULT_RBF_KERNEL: dict[RBFDimension, InterpolationKernel] = {
+DEFAULT_RBF_KERNEL: dict[RBFDimension, int] = {
     RBFDimension.CELL: InterpolationKernel.GAUSSIAN,
     RBFDimension.EDGE: InterpolationKernel.INVERSE_MULTIQUADRATIC,
     RBFDimension.VERTEX: InterpolationKernel.GAUSSIAN,
@@ -223,7 +223,7 @@ def _compute_rbf_interpolation_coeffs(
     edge_normal_z: data_alloc.NDArray,
     uv: tuple[tuple[data_alloc.NDArray, data_alloc.NDArray], ...],
     rbf_offset: data_alloc.NDArray,
-    rbf_kernel: InterpolationKernel,
+    rbf_kernel: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
@@ -371,7 +371,7 @@ def compute_rbf_interpolation_coeffs_cell(
     edge_normal_z: data_alloc.NDArray,
     rbf_offset: data_alloc.NDArray,
     # TODO(): Can't pass enum as "params" in NumpyFieldsProvider?
-    rbf_kernel: InterpolationKernel,
+    rbf_kernel: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
@@ -412,7 +412,7 @@ def compute_rbf_interpolation_coeffs_edge(
     edge_dual_normal_u: data_alloc.NDArray,
     edge_dual_normal_v: data_alloc.NDArray,
     rbf_offset: data_alloc.NDArray,
-    rbf_kernel: InterpolationKernel,
+    rbf_kernel: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
@@ -451,7 +451,7 @@ def compute_rbf_interpolation_coeffs_vertex(
     edge_normal_y: data_alloc.NDArray,
     edge_normal_z: data_alloc.NDArray,
     rbf_offset: data_alloc.NDArray,
-    rbf_kernel: InterpolationKernel,
+    rbf_kernel: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
