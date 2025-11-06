@@ -23,7 +23,7 @@ except ImportError:
 
 def is_cupy_device(
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-) -> TypeGuard[gtx_allocators.FieldBufferAllocationUtil]:
+) -> bool:
     if allocator is None:
         return False
     return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)  # type: ignore [type-var]
