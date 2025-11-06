@@ -59,7 +59,7 @@ def test_frozen_namespace_mixin():
 
 def test_config_reader_validate_default_config() -> None:
     reader = common_config.ConfigurationHandler(Foo(1, "b", [1, 2, 3]))
-    foo = reader.as_type()
+    foo = reader.get()
     assert foo.a == 1
     assert foo.b == "b"
     assert foo.c == [1, 2, 3]
@@ -68,13 +68,13 @@ def test_config_reader_validate_default_config() -> None:
 def test_config_reader_raises_missing_value() -> None:
     reader = common_config.ConfigurationHandler(Foo)
     with pytest.raises(oc.MissingMandatoryValue):
-        reader.as_type()
+        reader.get()
 
 
 def test_config_reader_raises_for_missing() -> None:
     reader = common_config.ConfigurationHandler(OptionalFoo)
     with pytest.raises(oc.MissingMandatoryValue):
-        reader.as_type()
+        reader.get()
 
 
 def test_config_reader_type_validates() -> None:
@@ -86,7 +86,7 @@ def test_config_reader_type_validates() -> None:
 
 def test_config_reader_supports_optional() -> None:
     reader = common_config.ConfigurationHandler(OptionalFoo(a=3))
-    config = reader.as_type()
+    config = reader.get()
     assert len(config.c) == 0
     assert config.a == 3
     assert config.b is None
@@ -94,18 +94,18 @@ def test_config_reader_supports_optional() -> None:
 
 def test_config_reader_config_equals_default_without_update() -> None:
     reader = common_config.ConfigurationHandler(Foo(1, "b", [1, 2, 3]))
-    foo = reader.as_type()
+    foo = reader.get()
     assert reader.default == foo
 
 
 def test_config_reader_update_from_dataclass() -> None:
     reader = common_config.ConfigurationHandler(Foo(1, "b", [1, 2]))
-    original_config = reader.as_type()
+    original_config = reader.get()
     assert original_config.a == 1
     assert original_config.b == "b"
     assert original_config.c == [1, 2]
     reader.update(Foo(2, "b*", [8, 7]))
-    update = reader.as_type()
+    update = reader.get()
     assert update.a == 2
     assert update.b == "b*"
     # TODO (@halungge): should Sequences replace or append?, same question for general dicts
@@ -114,10 +114,10 @@ def test_config_reader_update_from_dataclass() -> None:
 
 def test_config_reader_update_from_file() -> None:
     reader = common_config.ConfigurationHandler(Foo(1, "b", [1, 2]))
-    original_config = reader.as_type()
+    original_config = reader.get()
     file = pathlib.Path(__file__).parent.joinpath("foo_update.yaml")
     reader.update(file)
-    config = reader.as_type()
+    config = reader.get()
     assert config.a == 42
     assert config.b == "this is the update"
     assert config.c == original_config.c
@@ -140,18 +140,18 @@ def test_configuration_config_read_only() -> None:
 
 def test_config_enum_parsing_from_value_and_name() -> None:
     reader = common_config.ConfigurationHandler(Time)
-    assert reader.as_type().meridiem == Meridiem.AM
+    assert reader.get().meridiem == Meridiem.AM
     reader.update({"meridiem": 2})
-    assert reader.as_type().meridiem == Meridiem.PM
+    assert reader.get().meridiem == Meridiem.PM
     reader.update({"meridiem": "AM"})
-    assert reader.as_type().meridiem == Meridiem.AM
+    assert reader.get().meridiem == Meridiem.AM
 
 
 def test_config_enum_creation() -> None:
     reader = common_config.ConfigurationHandler(Time())
     file = pathlib.Path(__file__).parent.joinpath("time.yaml")
     reader.update(file)
-    config = reader.as_type()
+    config = reader.get()
     assert config.hours == 12
     assert config.seconds == 0
     assert config.minutes == 33
@@ -230,7 +230,7 @@ def test_datetime_resolver_in_structured_config():
         )
 
     handler = common_config.ConfigurationHandler(Time())
-    config = handler.as_type()
+    config = handler.get()
     assert config.time == datetime.datetime(
         year=2021, month=6, day=21, hour=12, minute=0, second=10, microsecond=0
     )

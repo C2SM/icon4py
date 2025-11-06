@@ -73,7 +73,7 @@ def init_reader(module: ModuleType) -> common_config.ConfigurationHandler:
     return default_reader
 
 
-class ConfigurationManager:
+class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
     def __init__(self, model_config: pathlib.Path | str):
         self._handlers = {}
         if isinstance(model_config, str):
@@ -92,7 +92,7 @@ class ConfigurationManager:
     def read_config(self):
         # lets assume the configuration is all in one file
         user_config = (
-            common_config.init_config().update(self._config_path.joinpath(self._config_file)).config
+            common_config.init_config().update(self._config_path.joinpath(self._config_file)).get()
         )
         model_config = common_config.ConfigurationHandler(ModelConfig())
         model_config.update(user_config.model)
@@ -101,6 +101,9 @@ class ConfigurationManager:
         run_config.update(user_config.run)
         self._handlers["run"] = run_config
         self._initialize_components(user_config)
+
+
+
 
     @property
     def config(self) -> oc.DictConfig:

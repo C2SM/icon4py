@@ -199,7 +199,7 @@ def construct_diffusion_config(experiment: Experiment) -> diffusion_config.Diffu
     experiment_config_file = config_reference_path().joinpath(f"diffusion_{experiment.name}.yaml")
     try:
         config.update(experiment_config_file)
-        return config.as_type()
+        return config.get()
     except exceptions.InvalidConfigError as e:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."
@@ -213,7 +213,7 @@ def construct_nonhydrostatic_config(
     experiment_config_file = config_reference_path().joinpath(f"dycore_{experiment.name}.yaml")
     try:
         config.update(experiment_config_file)
-        return config.as_type()
+        return config.get()
     except exceptions.InvalidConfigError as e:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."

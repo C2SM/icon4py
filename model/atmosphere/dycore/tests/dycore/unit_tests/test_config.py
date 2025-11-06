@@ -50,5 +50,5 @@ def test_dycore_experiment_config(
     reference_file = definitions.config_reference_path().joinpath(f"dycore_{experiment.name}.yaml")
     assert test_utils.diff(reference_file, file)
     test_utils.assert_same_except(
-        overwrites[experiment.name], configuration.as_type(), configuration.default
+        overwrites[experiment.name], configuration.get(), configuration.default
     )

@@ -50,5 +50,5 @@ def test_diffusion_experiment_config(
     file = tmp_path.joinpath(f"diffusion_{experiment.name}.yaml")
     configuration.to_yaml(file, config.ConfigType.USER)
     test_utils.assert_same_except(
-        overwrites[experiment.name], configuration.as_type(), configuration.default
+        overwrites[experiment.name], configuration.get(), configuration.default
     )
