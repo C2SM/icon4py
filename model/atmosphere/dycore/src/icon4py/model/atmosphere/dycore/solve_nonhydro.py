@@ -251,7 +251,7 @@ class NonHydrostaticConfig:
         Declared as divdamp_z4 in ICON. The upper limit in height where divergence damping factor decreases
         quadratically with height.
         """
-        self.dtime_previous_substep: float = 0.0
+        self._dtime_previous_substep: float = 0.0
         """
         Dynamic substep length of previous substep in order to track if rayleigh damping coefficients need to be
         recomputed or not. The substep length should only change in case of high CFL condition.
@@ -1048,7 +1048,7 @@ class SolveNonhydro:
             )
 
         #  Precompute Rayleigh damping factor
-        if dtime != self._config.dtime_previous_substep:
+        if dtime != self._config._dtime_previous_substep:
             self._compute_rayleigh_damping_factor(
                 rayleigh_damping_factor=self.rayleigh_damping_factor,
                 dtime=dtime,
@@ -1095,7 +1095,7 @@ class SolveNonhydro:
             theta_v_new=prognostic_states.next.theta_v,
         )
 
-        self._config.dtime_previous_substep = dtime
+        self._config._dtime_previous_substep = dtime
 
     # flake8: noqa: C901
     def run_predictor_step(
