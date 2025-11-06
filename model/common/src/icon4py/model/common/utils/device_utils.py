@@ -8,7 +8,7 @@
 
 import functools
 from collections.abc import Callable
-from typing import Any, ParamSpec, TypeGuard, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 import gt4py.next as gtx
 import gt4py.next.allocators as gtx_allocators
