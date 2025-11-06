@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import collections
+import functools
 import os
 from collections.abc import Callable
 from typing import TypeVar
@@ -64,17 +66,33 @@ LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", Py2fgenLogLevels, Py2fgenL
 def _split_and_strip(s: str | None, sep: str = ",") -> list[str]:
     if not s:
         return []
-    return [part.strip() for part in s.split(sep) if part.strip()]
+    return [stripped_part for part in s.split(sep) if (stripped_part := part.strip())]
 
 
-EXTRA_MODULES: list[str] = _split_and_strip(os.environ.get("PY2FGEN_EXTRA_MODULES", ""))
+EXTRA_CALLABLES: list[str] = _split_and_strip(os.environ.get("PY2FGEN_EXTRA_CALLABLES", ""))
 """
-Extra Python modules to be loaded when the PY2FGEN bindings are initialized.
+Extra Python callables to be loaded and executed when the PY2FGEN bindings are initialized.
 
-Modules should be specified as a comma-separated list of module paths ('my.path.to.module').
+The Callables should be
+- of the form `Callable[[], None]`,
+- and specified as a comma-separated list of strings in the format ('my.path.to.module:object')
+which will be loaded with `pkgutil.resolved_name` and executed.
 """
 
 # CUSTOMIZATION HOOKS
 
-HOOK_BINDINGS_FUNCTION_ENTER: Callable[[str], None] = lambda func_name: None  # noqa: E731
-HOOK_BINDINGS_FUNCTION_EXIT: Callable[[str], None] = lambda func_name: None  # noqa: E731
+
+def _noop() -> None:
+    pass
+
+
+_hook_dict: Callable[[], dict[str, Callable[[], None]]] = functools.partial(
+    collections.defaultdict, lambda: _noop
+)
+"""Creates a dictionary where a hook can be registered for each function name.
+
+The default hook is a no-op.
+"""
+
+HOOK_BINDINGS_FUNCTION_ENTER = _hook_dict()
+HOOK_BINDINGS_FUNCTION_EXIT = _hook_dict()

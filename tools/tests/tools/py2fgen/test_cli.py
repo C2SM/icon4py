@@ -217,7 +217,7 @@ def test_py2fgen_compilation_and_profiling(
         test_temp_dir,
         extra_compiler_flags=extra_flags,
         env_vars={
-            "PY2FGEN_EXTRA_MODULES": "icon4py.tools.py2fgen.wrappers.viztracer_plugin",
+            "PY2FGEN_EXTRA_CALLABLES": "icon4py.tools.py2fgen.wrappers.viztracer_plugin:init",
             "ICON4PY_TRACING_RANGES": "square_from_function:0:50",
         },
     )
