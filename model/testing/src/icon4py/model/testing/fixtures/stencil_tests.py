@@ -72,7 +72,7 @@ def _get_grid_manager_from_preset(
 
 @pytest.fixture(scope="session")
 def grid_manager(
-    request: pytest.FixtureRequest, backend: gtx_typing.Backend | None = None
+    request: pytest.FixtureRequest, backend: gtx_typing.Backend | None
 ) -> gm.GridManager | None:
     """
     Fixture for providing a grid_manager instance.
