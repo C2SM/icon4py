@@ -172,6 +172,7 @@ class Grid:
         For a given dimension, returns the start index of the
         horizontal region in a field given by the marker.
         """
+        return gtx.int32(0)
         if domain.is_local:
             # special treatment because this value is not set properly in the underlying data.
             return gtx.int32(0)
@@ -184,6 +185,7 @@ class Grid:
         For a given dimension, returns the end index of the
         horizontal region in a field given by the marker.
         """
+        return gtx.int32(self.size[domain.dim])
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return gtx.int32(self.size[domain.dim])

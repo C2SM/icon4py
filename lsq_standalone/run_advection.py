@@ -27,7 +27,7 @@ from icon4py.model.testing.fixtures.datatest import (
     interpolation_savepoint,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
+    ranked_data_path
 )
 
 from model.atmosphere.advection.tests.advection.fixtures import advection_exit_savepoint, advection_init_savepoint
@@ -40,7 +40,7 @@ from model.atmosphere.advection.tests.advection.utils import (
     construct_metric_state,
     construct_prep_adv,
     log_serialized,
-    verify_advection_fields,
+    verify_advection_fields
 )
 from icon4py.model.common.grid.base import HorizontalGridSize, GridConfig
 from icon4py.model.common.grid import (
@@ -49,13 +49,13 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
     refinement,
-    base,
+    base
 )
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_fields,
     rbf_interpolation as rbf,
-    interpolation_attributes as interpolation_attrs,
+    interpolation_attributes as interpolation_attrs
 )
 from icon4py.model.common.states import factory
 import icon4py.model.common.grid.states as grid_states
@@ -117,10 +117,10 @@ grid_config = base.GridConfig(
             horizontal_config=base.HorizontalGridSize(
                 num_cells=2048,
                 num_vertices=1024,
-                num_edges=3072,
+                num_edges=3072
             ),
             vertical_size=65,
-            limited_area=False,
+            limited_area=False
         )
 start_indices= Mapping[h_grid_domain_start, gtx.int32()]
 end_indices= Mapping[h_grid_domain_end, gtx.int32()]
@@ -134,7 +134,7 @@ mesh = icon.icon_grid(
     start_indices= start_indices,
     end_indices= end_indices,
     global_properties= global_properties,
-    refinement_control= None,
+    refinement_control= None
 )
 geofac_div = data_alloc.zero_field(mesh, dims.CellDim, dims.C2EDim)
 primal_edge_length = gtx.as_field((dims.EdgeDim,), primal_edge_length)
@@ -163,12 +163,11 @@ _config = {
             ),
             "rbf_scale_vertex": rbf.compute_default_rbf_scale(
                 characteristic_length, rbf.RBFDimension.VERTEX
-            ),
+            )
 }
-edge_domain = h_grid.domain(dims.EdgeDim)
 rbf_vec_coeff_e = factory.NumpyFieldsProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=_xp),
-            fields=(attrs.RBF_VEC_COEFF_E,),
+            fields=(attrs.RBF_VEC_COEFF_E),
             domain=(dims.CellDim, dims.E2C2EDim),
             deps={
                 "edge_lat": geometry_attrs.EDGE_LAT,
@@ -180,16 +179,17 @@ rbf_vec_coeff_e = factory.NumpyFieldsProvider(
                 "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
                 "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
                 "edge_dual_normal_u": geometry_attrs.EDGE_DUAL_U,
-                "edge_dual_normal_v": geometry_attrs.EDGE_DUAL_V,
+                "edge_dual_normal_v": geometry_attrs.EDGE_DUAL_V
             },
             connectivities={"rbf_offset": dims.E2C2EDim},
             params={
                 "rbf_kernel": _config["rbf_kernel_edge"].value,
                 "scale_factor": _config["rbf_scale_edge"],
-                "horizontal_start": icon.IconGrid.start_index(
-                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    domain=(dims.CellDim, dims.E2C2EDim)),
-            },
+                "horizontal_start": mesh.start_index(
+                    domain=h_grid.Domain(dims.EdgeDim, h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                )
+#                    domain=(dims.CellDim, dims.E2C2EDim))
+            }
 )
 pos_on_tplane_e_x = cartesian_edge_centers[:, 0]
 pos_on_tplane_e_y = cartesian_edge_centers[:, 1]
@@ -197,11 +197,11 @@ interpolation_state = advection_states.AdvectionInterpolationState(
     geofac_div=geofac_div,
     rbf_vec_coeff_e=rbf_vec_coeff_e,
     pos_on_tplane_e_1=pos_on_tplane_e_x,
-    pos_on_tplane_e_2=pos_on_tplane_e_y,
+    pos_on_tplane_e_2=pos_on_tplane_e_y
 )
 least_squares_state = advection_states.AdvectionLeastSquaresState(
         lsq_pseudoinv_1=1,
-        lsq_pseudoinv_2=2,
+        lsq_pseudoinv_2=2
 )
 constant_f = data_alloc.constant_field(mesh, 1.0, dims.KDim)
 #ddqz_z_full_np = numpy.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
@@ -212,7 +212,7 @@ metric_state = advection_states.AdvectionMetricState(
         deepatmo_divzl=constant_f,
         deepatmo_divzu=constant_f,
 #        ddqz_z_full=gtx.as_field((dims.CellDim, dims.KDim), ddqz_z_full_np, allocator=backend),
-        ddqz_z_full=None,
+        ddqz_z_full=None
 )
 tangent_orientation = None
 tangent_orientation = edge_orientation
@@ -256,14 +256,14 @@ edge_params = grid_states.EdgeParams (
             edge_center_lat=edge_center_lat,
             edge_center_lon=edge_center_lon,
             primal_normal_x=primal_normal_x,
-            primal_normal_y=primal_normal_y,
+            primal_normal_y=primal_normal_y
 )
 cell_center_lat = geometry_attrs.CELL_LAT
 cell_center_lon = geometry_attrs.CELL_LON
 cell_params = grid_states.CellParams (
             cell_center_lat=cell_center_lat,
             cell_center_lon=cell_center_lon,
-            area=area,
+            area=area
 )
 
 advection_granule = advection.convert_config_to_advection(
@@ -274,7 +274,7 @@ advection_granule = advection.convert_config_to_advection(
     metric_state=metric_state,
     edge_params=edge_params,
     cell_params=cell_params,
-    backend=backend,
+    backend=backend
 )
 
 diagnostic_state = advection_states.AdvectionDiagnosticState (
@@ -284,12 +284,12 @@ diagnostic_state = advection_states.AdvectionDiagnosticState (
         hfl_tracer=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
         vfl_tracer=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
-        ),
+        )
 )
 prep_adv = advection_states.AdvectionPrepAdvState(
         vn_traj=data_alloc.zero_field(mesh, dims.EdgeDim, dims.KDim, backend=backend),
         mass_flx_me=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend),
-        mass_flx_ic=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend),
+        mass_flx_ic=data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend)
 )
 p_tracer_now = data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend)
 p_tracer_new = data_alloc.zero_field(mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend)
@@ -300,5 +300,5 @@ advection_granule.run(
     prep_adv=prep_adv,
     p_tracer_now=p_tracer_now,
     p_tracer_new=p_tracer_new,
-    dtime=dtime,
+    dtime=dtime
 )
