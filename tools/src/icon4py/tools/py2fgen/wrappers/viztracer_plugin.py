@@ -78,3 +78,12 @@ class Init:
     def __del__(self) -> None:
         """Save the VizTracer trace on program exit."""
         self.tracer.save("viztracer.json")
+
+
+keep_alive: Init | None = None
+
+
+def init() -> None:
+    """Initialize the VizTracer plugin."""
+    global keep_alive  # noqa: PLW0603
+    keep_alive = Init()
