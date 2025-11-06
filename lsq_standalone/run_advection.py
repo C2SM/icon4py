@@ -165,39 +165,61 @@ _config = {
                 characteristic_length, rbf.RBFDimension.VERTEX
             )
 }
-rbf_vec_coeff_e = factory.NumpyFieldsProvider(
-            func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=_xp),
-            fields=(attrs.RBF_VEC_COEFF_E),
-            domain=(dims.CellDim, dims.E2C2EDim),
-            deps={
-                "edge_lat": geometry_attrs.EDGE_LAT,
-                "edge_lon": geometry_attrs.EDGE_LON,
-                "edge_center_x": geometry_attrs.EDGE_CENTER_X,
-                "edge_center_y": geometry_attrs.EDGE_CENTER_Y,
-                "edge_center_z": geometry_attrs.EDGE_CENTER_Z,
-                "edge_normal_x": geometry_attrs.EDGE_NORMAL_X,
-                "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
-                "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
-                "edge_dual_normal_u": geometry_attrs.EDGE_DUAL_U,
-                "edge_dual_normal_v": geometry_attrs.EDGE_DUAL_V
-            },
-            connectivities={"rbf_offset": dims.E2C2EDim},
-            params={
-                "rbf_kernel": _config["rbf_kernel_edge"].value,
-                "scale_factor": _config["rbf_scale_edge"],
-                "horizontal_start": mesh.start_index(
+#rbf_vec_coeff_e = factory.NumpyFieldsProvider(
+#            func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=_xp),
+#            fields=(attrs.RBF_VEC_COEFF_E),
+#            domain=(dims.CellDim, dims.E2C2EDim),
+#            deps={
+#                "edge_lat": geometry_attrs.EDGE_LAT,
+#                "edge_lon": geometry_attrs.EDGE_LON,
+#                "edge_center_x": geometry_attrs.EDGE_CENTER_X,
+#                "edge_center_y": geometry_attrs.EDGE_CENTER_Y,
+#                "edge_center_z": geometry_attrs.EDGE_CENTER_Z,
+#                "edge_normal_x": geometry_attrs.EDGE_NORMAL_X,
+#                "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
+#                "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
+#                "edge_dual_normal_u": geometry_attrs.EDGE_DUAL_U,
+#                "edge_dual_normal_v": geometry_attrs.EDGE_DUAL_V
+#            },
+#            connectivities={"rbf_offset": dims.E2C2EDim},
+#            params={
+#                "rbf_kernel": _config["rbf_kernel_edge"].value,
+#                "scale_factor": _config["rbf_scale_edge"],
+#                "horizontal_start": mesh.start_index(
+#                    domain=h_grid.Domain(dims.EdgeDim, h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+#                )
+##                    domain=(dims.CellDim, dims.E2C2EDim))
+#            }
+#)
+rbf_vec_coeff_e = rbf.compute_rbf_interpolation_coeffs_edge(
+            edge_lat = geometry_attrs.EDGE_LAT,
+            edge_lon = geometry_attrs.EDGE_LON,
+            edge_center_x = geometry_attrs.EDGE_CENTER_X,
+            edge_center_y = geometry_attrs.EDGE_CENTER_Y,
+            edge_center_z = geometry_attrs.EDGE_CENTER_Z,
+            edge_normal_x = geometry_attrs.EDGE_NORMAL_X,
+            edge_normal_y = geometry_attrs.EDGE_NORMAL_Y,
+            edge_normal_z = geometry_attrs.EDGE_NORMAL_Z,
+            edge_dual_normal_u = geometry_attrs.EDGE_DUAL_U,
+            edge_dual_normal_v = geometry_attrs.EDGE_DUAL_V,
+#            rbf_offset = rbf.construct_rbf_matrix_offsets_tables_for_edges(mesh),
+            rbf_offset = dims.E2C2EDim,
+            rbf_kernel = _config["rbf_kernel_edge"].value,
+            scale_factor = _config["rbf_scale_edge"],
+            horizontal_start = mesh.start_index(
                     domain=h_grid.Domain(dims.EdgeDim, h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-                )
-#                    domain=(dims.CellDim, dims.E2C2EDim))
-            }
+            )
 )
+#rbf_vec_coeff_e = data_alloc.random_field(mesh, dims.EdgeDim, dims.E2C2EDim)
 pos_on_tplane_e_x = cartesian_edge_centers[:, 0]
 pos_on_tplane_e_y = cartesian_edge_centers[:, 1]
+pos_on_tplane_e_1 = cartesian_vertex_coordinates[e2v_table[:, 0], :]
+pos_on_tplane_e_2 = cartesian_vertex_coordinates[e2v_table[:, 1], :]
 interpolation_state = advection_states.AdvectionInterpolationState(
     geofac_div=geofac_div,
     rbf_vec_coeff_e=rbf_vec_coeff_e,
-    pos_on_tplane_e_1=pos_on_tplane_e_x,
-    pos_on_tplane_e_2=pos_on_tplane_e_y
+    pos_on_tplane_e_1=pos_on_tplane_e_1,
+    pos_on_tplane_e_2=pos_on_tplane_e_2
 )
 least_squares_state = advection_states.AdvectionLeastSquaresState(
         lsq_pseudoinv_1=1,
