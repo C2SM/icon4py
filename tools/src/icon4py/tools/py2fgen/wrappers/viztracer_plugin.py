@@ -26,8 +26,7 @@ from icon4py.tools.py2fgen import runtime_config
 
 
 @dataclasses.dataclass
-class _FunctionTracer:
-    name: str
+class _Tracer:
     start: int
     stop: int
     _tracer: viztracer.VizTracer = dataclasses.field(default_factory=viztracer.VizTracer)
@@ -43,43 +42,36 @@ class _FunctionTracer:
             # "flush_as_finish" to avoid incomplete calls to `disable` which would visualize as nested calls
             self._tracer.stop(stop_option="flush_as_finish")
         if self._counter == self.stop:
-            self._tracer.save(f"viztracer_{self.name}.json")
+            self._tracer.save("viztracer.json")
 
 
-def function_tracer(
-    name: str, start: int, stop: int
-) -> tuple[Callable[[], None], Callable[[], None]]:
-    ft = _FunctionTracer(name, start, stop)
+def tracer(start: int, stop: int) -> tuple[Callable[[], None], Callable[[], None]]:
+    ft = _Tracer(start, stop)
     return ft.enter, ft.exit
 
 
 def init() -> None:
     """Initialize the VizTracer plugin."""
 
-    if "ICON4PY_TRACING_RANGES" in os.environ:
-        tracing_ranges_str = os.environ["ICON4PY_TRACING_RANGES"]
-        tracing_ranges = {
-            name: (int(start), int(stop))
-            for range_spec in tracing_ranges_str.split(",")
-            for name, start, stop in [range_spec.split(":")]
-        }
+    if "ICON4PY_TRACING_RANGE" in os.environ:
+        tracing_range_str = os.environ["ICON4PY_TRACING_RANGE"]
+        tracing_range = tracing_range_str.split(":")
+        if len(tracing_range) != 2:
+            raise ValueError(
+                "Invalid format for 'ICON4PY_TRACING_RANGE'. Expected format: 'start:stop'."
+            )
+        start, stop = int(tracing_range[0]), int(tracing_range[1])
     else:
-        # Some useful defaults for the ICON4Py dycore and diffusion granules.
-        # The traces can be combined with `viztracer --combine`.
+        # 2 timesteps for a standard setup (with tracing for `solve_nh_run` and `diffusion_run`)
+        start, stop = 12, 24
 
-        # The following measures around the 3rd timestep (assuming a typical setup):
-        # - diffusion
-        # - 5 dycore substeps
-        # - diffusion
-        # - 1 substep after
-        # The last substep should be neglected as inbetween there in a combined trace as it
-        # contains the overhead of saving the diffusion trace.
-        tracing_ranges = {
-            "solve_nh_run": (10, 16),
-            "diffusion_run": (2, 4),
-        }
+    if "ICON4PY_TRACING_NAMES" in os.environ:
+        tracing_functions = os.environ["ICON4PY_TRACING_NAMES"].split(",")
+    else:
+        tracing_functions = ["solve_nh_run", "diffusion_run"]
 
-    for name, (start, stop) in tracing_ranges.items():
-        enter, exit_ = function_tracer(name, start, stop)
+    enter, exit_ = tracer(start, stop)
+
+    for name in tracing_functions:
         runtime_config.HOOK_BINDINGS_FUNCTION_ENTER[name] = enter
         runtime_config.HOOK_BINDINGS_FUNCTION_EXIT[name] = exit_
