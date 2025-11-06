@@ -78,8 +78,11 @@ item_marker_filters: dict[str, ItemFilter] = {
         action=functools.partial(pytest.skip, "GTFN compilation is too slow for this test."),
     ),
     pytest.mark.skip_value_error.name: ItemFilter(
-        condition=lambda item: (grid := test_utils.get_fixture_value("grid", item)).limited_area
-        or grid.geometry_type == base.GeometryType.ICOSAHEDRON,
+        condition=lambda item: (
+            (grid := test_utils.get_fixture_value("grid", item)).limited_area
+            or grid.geometry_type == base.GeometryType.ICOSAHEDRON
+        )
+        and not test_utils.should_benchmark_only(item),
         action=functools.partial(
             pytest.skip,
             "Stencil does not support domain containing skip values. Consider shrinking domain.",

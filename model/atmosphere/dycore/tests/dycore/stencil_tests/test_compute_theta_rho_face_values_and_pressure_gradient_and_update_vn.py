@@ -567,6 +567,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
 
 
 @pytest.mark.continuous_benchmarking
+@pytest.mark.benchmark_only
 class TestComputeThetaRhoPressureGradientAndUpdateVnContinuousBenchmarking(
     TestComputeThetaRhoPressureGradientAndUpdateVn
 ):
@@ -576,7 +577,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVnContinuousBenchmarking(
             self, grid
         )
         base_data["is_iau_active"] = False
-        base_data["limited_area"] = False
+        base_data["limited_area"] = grid.limited_area
         base_data["nflatlev"] = 6
         base_data["nflat_gradp"] = 35
         return base_data
