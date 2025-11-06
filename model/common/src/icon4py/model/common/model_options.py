@@ -43,8 +43,10 @@ def get_dace_options(
                     validate_all=False,
                 )
             )
-    optimization_args["optimization_hooks"] = optimization_hooks
-    backend_descriptor["optimization_args"] = optimization_args
+    if optimization_hooks:
+        optimization_args["optimization_hooks"] = optimization_hooks
+    if optimization_args:
+        backend_descriptor["optimization_args"] = optimization_args
     return backend_descriptor
 
 
