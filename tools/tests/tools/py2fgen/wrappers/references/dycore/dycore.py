@@ -1,8 +1,8 @@
-import importlib
+import pkgutil
 from icon4py.tools.py2fgen import runtime_config
 
-for module in runtime_config.EXTRA_MODULES:
-    importlib.import_module(module)
+for callable_ in runtime_config.EXTRA_CALLABLES:
+    pkgutil.resolve_name(callable_)()
 
 import logging
 from dycore import ffi
@@ -139,7 +139,7 @@ def solve_nh_run_wrapper(
     idyn_timestep,
     on_gpu,
 ):
-    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("solve_nh_run")
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER["solve_nh_run"]()
     try:
         if __debug__:
             logger.info("Python execution of solve_nh_run started.")
@@ -1148,7 +1148,7 @@ def solve_nh_run_wrapper(
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
-    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("solve_nh_run")
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT["solve_nh_run"]()
     return 0
 
 
@@ -1333,7 +1333,7 @@ def solve_nh_init_wrapper(
     backend,
     on_gpu,
 ):
-    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("solve_nh_init")
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER["solve_nh_init"]()
     try:
         if __debug__:
             logger.info("Python execution of solve_nh_init started.")
@@ -2728,5 +2728,5 @@ def solve_nh_init_wrapper(
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
-    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("solve_nh_init")
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT["solve_nh_init"]()
     return 0

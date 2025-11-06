@@ -1,8 +1,8 @@
-import importlib
+import pkgutil
 from icon4py.tools.py2fgen import runtime_config
 
-for module in runtime_config.EXTRA_MODULES:
-    importlib.import_module(module)
+for callable_ in runtime_config.EXTRA_CALLABLES:
+    pkgutil.resolve_name(callable_)()
 
 import logging
 from grid import ffi
@@ -134,7 +134,7 @@ def grid_init_wrapper(
     backend,
     on_gpu,
 ):
-    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("grid_init")
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER["grid_init"]()
     try:
         if __debug__:
             logger.info("Python execution of grid_init started.")
@@ -1087,5 +1087,5 @@ def grid_init_wrapper(
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
-    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("grid_init")
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT["grid_init"]()
     return 0

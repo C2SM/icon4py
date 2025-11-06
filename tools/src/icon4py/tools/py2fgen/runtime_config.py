@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import collections
-import functools
 import os
 from collections.abc import Callable
 from typing import TypeVar
@@ -76,7 +75,7 @@ Extra Python callables to be loaded and executed when the PY2FGEN bindings are i
 The Callables should be
 - of the form `Callable[[], None]`,
 - and specified as a comma-separated list of strings in the format ('my.path.to.module:object')
-which will be loaded with `pkgutil.resolved_name` and executed.
+which will be loaded with `pkgutil.resolve_name` and executed.
 """
 
 # CUSTOMIZATION HOOKS
@@ -86,13 +85,7 @@ def _noop() -> None:
     pass
 
 
-_hook_dict: Callable[[], dict[str, Callable[[], None]]] = functools.partial(
-    collections.defaultdict, lambda: _noop
-)
-"""Creates a dictionary where a hook can be registered for each function name.
-
-The default hook is a no-op.
-"""
-
-HOOK_BINDINGS_FUNCTION_ENTER = _hook_dict()
-HOOK_BINDINGS_FUNCTION_EXIT = _hook_dict()
+HOOK_BINDINGS_FUNCTION_ENTER: dict[str, Callable[[], None]] = collections.defaultdict(lambda: _noop)
+"""Hook per function entry. The default is a no-op."""
+HOOK_BINDINGS_FUNCTION_EXIT: dict[str, Callable[[], None]] = collections.defaultdict(lambda: _noop)
+"""Hook per function exit. The default is a no-op."""

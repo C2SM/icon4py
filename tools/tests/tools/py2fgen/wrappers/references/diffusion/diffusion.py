@@ -1,8 +1,8 @@
-import importlib
+import pkgutil
 from icon4py.tools.py2fgen import runtime_config
 
-for module in runtime_config.EXTRA_MODULES:
-    importlib.import_module(module)
+for callable_ in runtime_config.EXTRA_CALLABLES:
+    pkgutil.resolve_name(callable_)()
 
 import logging
 from diffusion import ffi
@@ -55,7 +55,7 @@ def diffusion_run_wrapper(
     linit,
     on_gpu,
 ):
-    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("diffusion_run")
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER["diffusion_run"]()
     try:
         if __debug__:
             logger.info("Python execution of diffusion_run started.")
@@ -325,7 +325,7 @@ def diffusion_run_wrapper(
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
-    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("diffusion_run")
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT["diffusion_run"]()
     return 0
 
 
@@ -401,7 +401,7 @@ def diffusion_init_wrapper(
     backend,
     on_gpu,
 ):
-    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER("diffusion_init")
+    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER["diffusion_init"]()
     try:
         if __debug__:
             logger.info("Python execution of diffusion_init started.")
@@ -879,5 +879,5 @@ def diffusion_init_wrapper(
         logger.exception(f"A Python error occurred: {e}")
         return 1
 
-    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT("diffusion_init")
+    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT["diffusion_init"]()
     return 0
