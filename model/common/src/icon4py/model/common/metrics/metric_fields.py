@@ -19,9 +19,7 @@ from gt4py.next import (
     abs,  # noqa: A004
     astype,
     broadcast,
-    exp,
     int32,
-    log,
     maximum,
     minimum,
     neighbor_sum,
@@ -592,61 +590,49 @@ def compute_wgtfac_e(
     )
 
 
-@gtx.field_operator
-def _compute_flat_idx(
-    z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    k_lev: fa.KField[gtx.int32],
-) -> fa.EdgeKField[gtx.int32]:
-    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
-    z_ifc_e_0 = z_ifc(E2C[0])
-    z_ifc_e_k_0 = z_ifc_e_0(Koff[1])
-    z_ifc_e_1 = z_ifc(E2C[1])
-    z_ifc_e_k_1 = z_ifc_e_1(Koff[1])
-    flat_idx = where(
+def compute_flat_max_idx(
+    e2c: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    k_lev: data_alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    k_lev_minus1 = k_lev[:-1]
+    coeff_ = np.expand_dims(c_lin_e, axis=-1)
+    z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
+    z_ifc_e_0 = z_ifc[e2c[:, 0], :-1]
+    z_ifc_e_k_0 = z_ifc[e2c[:, 0], 1:]
+    z_ifc_e_1 = z_ifc[e2c[:, 1], :-1]
+    z_ifc_e_k_1 = z_ifc[e2c[:, 1], 1:]
+    k_lev_minus1_expand = array_ns.expand_dims(k_lev_minus1, axis=0).repeat(z_me.shape[0], axis=0)
+    flat_edge_index = array_ns.where(
         (z_me <= z_ifc_e_0) & (z_me >= z_ifc_e_k_0) & (z_me <= z_ifc_e_1) & (z_me >= z_ifc_e_k_1),
-        k_lev,
+        k_lev_minus1_expand,
         0,
     )
-    return flat_idx
+    flat_idx_max = array_ns.amax(flat_edge_index, axis=1)
+    return flat_idx_max
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_flat_idx(
-    z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    k_lev: fa.KField[int32],
-    flat_idx: fa.EdgeKField[int32],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _compute_flat_idx(
-        z_mc=z_mc,
-        c_lin_e=c_lin_e,
-        z_ifc=z_ifc,
-        k_lev=k_lev,
-        out=flat_idx,
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+def compute_nflat_gradp(
+    flat_idx_max: data_alloc.NDArray,
+    e_owner_mask: data_alloc.NDArray,
+    lateral_boundary_level: int,
+    nlev: int,
+    array_ns: ModuleType = np,
+) -> int:
+    """
+    compute the nflat_gradp value as the minimum value of the flat_idx_max array.
+    """
+    boundary_mask = array_ns.arange(flat_idx_max.shape[0]) >= lateral_boundary_level
+    mask_array = array_ns.where(
+        e_owner_mask & boundary_mask,
+        flat_idx_max,
+        nlev,
     )
-
-
-def compute_max_index(
-    flat_idx: data_alloc.NDArray, array_ns: ModuleType = np
-) -> data_alloc.NDArray:
-    """
-    Reduces a 2d array to a 1d array by taking the maximum value along axis 1.
-
-    Usage example in ICON: to compute the max index of flat levels along a horizontal dimension.
-    """
-    max_idx = array_ns.amax(flat_idx, axis=1)
-    return max_idx
+    nflat_gradp = array_ns.min(mask_array)
+    return nflat_gradp.item()
 
 
 @gtx.field_operator
@@ -1027,68 +1013,6 @@ def _compute_z_ifc_off_koff(
     return n
 
 
-@gtx.field_operator
-def _compute_theta_exner_ref_mc(
-    z_mc: fa.CellKField[wpfloat],
-    t0sl_bg: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
-    grav: wpfloat,
-    rd: wpfloat,
-    p0sl_bg: wpfloat,
-    rd_o_cpd: wpfloat,
-    p0ref: wpfloat,
-):
-    z_aux1 = p0sl_bg * exp(
-        -grav
-        / rd
-        * h_scal_bg
-        / (t0sl_bg - del_t_bg)
-        * log((exp(z_mc / h_scal_bg) * (t0sl_bg - del_t_bg) + del_t_bg) / t0sl_bg)
-    )
-    exner_ref_mc = (z_aux1 / p0ref) ** rd_o_cpd
-    z_temp = (t0sl_bg - del_t_bg) + del_t_bg * exp(-z_mc / h_scal_bg)
-    theta_ref_mc = z_temp / exner_ref_mc
-    return exner_ref_mc, theta_ref_mc
-
-
-# TODO @halungge: duplicate program - see reference_atmosphere.py
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_theta_exner_ref_mc(
-    z_mc: fa.CellKField[wpfloat],
-    exner_ref_mc: fa.CellKField[wpfloat],
-    theta_ref_mc: fa.CellKField[wpfloat],
-    t0sl_bg: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
-    grav: wpfloat,
-    rd: wpfloat,
-    p0sl_bg: wpfloat,
-    rd_o_cpd: wpfloat,
-    p0ref: wpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _compute_theta_exner_ref_mc(
-        z_mc=z_mc,
-        t0sl_bg=t0sl_bg,
-        del_t_bg=del_t_bg,
-        h_scal_bg=h_scal_bg,
-        grav=grav,
-        rd=rd,
-        p0sl_bg=p0sl_bg,
-        rd_o_cpd=rd_o_cpd,
-        p0ref=p0ref,
-        out=(exner_ref_mc, theta_ref_mc),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 def compute_exner_w_implicit_weight_parameter(
     c2e: data_alloc.NDArray,
     vct_a: data_alloc.NDArray,
@@ -1108,7 +1032,8 @@ def compute_exner_w_implicit_weight_parameter(
     stacked = array_ns.concatenate((zn_off, zt_off), axis=1)
     maxslope = 0.425 * array_ns.amax(stacked, axis=1) ** (0.75)
     diff = array_ns.minimum(
-        0.25, 0.00025 * (np.amax(np.abs(zn_off * dual_edge_length[c2e]), axis=1) - 250.0)
+        0.25,
+        0.00025 * (np.amax(np.abs(zn_off * dual_edge_length[c2e]), axis=1) - 250.0),
     )
     offctr = array_ns.minimum(
         factor, array_ns.maximum(vwind_offctr, array_ns.maximum(maxslope, diff))
