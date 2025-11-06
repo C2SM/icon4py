@@ -5,9 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
@@ -18,10 +19,10 @@ from icon4py.model.common.math import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 from icon4py.model.testing.fixtures.datatest import backend
-from icon4py.model.testing.fixtures.stencil_tests import grid
+from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
 
 
-def test_cross_product(backend):
+def test_cross_product(backend: gtx_typing.Backend | None) -> None:
     mesh = simple.simple_grid(backend=backend)
     x1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
     y1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
