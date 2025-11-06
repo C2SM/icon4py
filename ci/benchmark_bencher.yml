@@ -27,7 +27,6 @@ include:
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
     GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE: true
     PYTHONOPTIMIZE: 2
-    SLURM_TIMELIMIT: '04:00:00' # DaCe compilation takes long time so we increase the time limit
 
 benchmark_bencher_aarch64:
   extends: [.benchmark_model_stencils, .test_template_aarch64]
