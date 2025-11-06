@@ -61,7 +61,7 @@ def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gt
 
 
 def make_custom_dace_backend(
-    device: DeviceType | None,
+    device: DeviceType,
     cached: bool = True,
     auto_optimize: bool = True,
     async_sdfg_call: bool = True,
@@ -85,8 +85,6 @@ def make_custom_dace_backend(
     Returns:
         A dace backend with custom configuration for the target device.
     """
-    if device is None:
-        device = CPU
     on_gpu = device == GPU
     return gtx_dace.make_dace_backend(
         gpu=on_gpu,

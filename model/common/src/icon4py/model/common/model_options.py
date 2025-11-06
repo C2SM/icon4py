@@ -56,7 +56,7 @@ def customize_backend(
     | None,
 ) -> gtx_typing.Backend | None:
     program_name = program.__name__ if program is not None else ""
-    if isinstance(backend, gtx_backend.Backend) or backend is None:
+    if backend is None or isinstance(backend, gtx_backend.Backend):
         backend_name = backend.name if backend is not None else "embedded"
         log.info(f"Using non-custom backend '{backend_name}' for '{program_name}'.")
         return backend  # type: ignore[return-value]

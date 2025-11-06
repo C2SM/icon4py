@@ -36,11 +36,10 @@ def test_jablonowski_williamson_topography(
     topography_savepoint: sb.TopographySavepoint,
 ):
     cell_center_lat = grid_savepoint.lat(dims.CellDim).ndarray
-    xp = data_alloc.import_array_ns(backend)
     topo_c = topography.jablonowski_williamson_topography(
         cell_lat=cell_center_lat,
         u0=35.0,
-        array_ns=xp,
+        array_ns=data_alloc.import_array_ns(backend),
     )
 
     topo_c_ref = topography_savepoint.topo_c().asnumpy()
