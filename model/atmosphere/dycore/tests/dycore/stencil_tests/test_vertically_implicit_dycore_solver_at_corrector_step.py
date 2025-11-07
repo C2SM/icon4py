@@ -104,7 +104,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         iau_wgt_dyn: float,
         dtime: float,
         is_iau_active: bool,
-        rayleigh_type: constants.RayleighType,
+        rayleigh_type: int,
         at_first_substep: bool,
         at_last_substep: bool,
         end_index_of_damping_layer: int,
