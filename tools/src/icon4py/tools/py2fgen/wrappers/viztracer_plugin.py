@@ -18,9 +18,11 @@ To enable this plugin
   Note that the calling range is global, i.e., the tracer will trace all functions in the specified range.
 """
 
+import contextlib
 import dataclasses
 import os
-from collections.abc import Callable
+import pathlib
+from types import TracebackType
 
 import viztracer  # type: ignore[import-not-found]
 
@@ -29,34 +31,35 @@ from icon4py.tools.py2fgen.wrappers import grid_wrapper
 
 
 @dataclasses.dataclass
-class _Tracer:
+class _Tracer(contextlib.AbstractContextManager):
     start: int
     stop: int
+    output_dir: pathlib.Path
     _tracer: viztracer.VizTracer = dataclasses.field(default_factory=viztracer.VizTracer)
     _counter: int = 0
 
-    def enter(self) -> None:
+    def __enter__(self) -> None:
         if self.start <= self._counter < self.stop:
             self._tracer.start()
         self._counter += 1
 
-    def exit(self) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
+    ) -> None:
         if self.start < self._counter <= self.stop:
             # "flush_as_finish" to avoid incomplete calls to `disable` which would visualize as nested calls
             self._tracer.stop(stop_option="flush_as_finish")
         if self._counter == self.stop:
-            assert grid_wrapper.grid_state is not None
             rank = (
                 ""
-                if grid_wrapper.grid_state.exchange_runtime.get_size() == 1
+                if grid_wrapper.grid_state is None
+                or grid_wrapper.grid_state.exchange_runtime.get_size() == 1
                 else f"_rank{grid_wrapper.grid_state.exchange_runtime.my_rank()}"
             )
-            self._tracer.save(f"viztracer{rank}.json")
-
-
-def tracer(start: int, stop: int) -> tuple[Callable[[], None], Callable[[], None]]:
-    ft = _Tracer(start, stop)
-    return ft.enter, ft.exit
+            self._tracer.save(f"{self.output_dir}/viztracer{rank}.json")
 
 
 def init() -> None:
@@ -79,8 +82,7 @@ def init() -> None:
     else:
         tracing_functions = ["solve_nh_run", "diffusion_run"]
 
-    enter, exit_ = tracer(start, stop)
-
+    output_dir = os.environ.get("ICON4PY_TRACING_OUTPUT_DIR", ".")
+    tracer = _Tracer(start, stop, output_dir=pathlib.Path(output_dir))
     for name in tracing_functions:
-        runtime_config.HOOK_BINDINGS_FUNCTION_ENTER[name] = enter
-        runtime_config.HOOK_BINDINGS_FUNCTION_EXIT[name] = exit_
+        runtime_config.HOOK_BINDINGS_FUNCTION[name] = tracer

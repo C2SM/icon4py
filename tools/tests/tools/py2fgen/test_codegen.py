@@ -257,8 +257,8 @@ def test_python_wrapper(dummy_plugin):
     expected = """import pkgutil
 from icon4py.tools.py2fgen import runtime_config
 
-for callable_ in runtime_config.EXTRA_CALLABLES:
-    pkgutil.resolve_name(callable_)()
+for callable_name in runtime_config.EXTRA_CALLABLES:
+    pkgutil.resolve_name(callable_name)()
 
 import logging
 from libtest_plugin import ffi
@@ -280,159 +280,161 @@ from libtest import bar
 
 @ffi.def_extern()
 def foo_wrapper(one, two, two_size_0, two_size_1, on_gpu):
-    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER["foo"]()
-    try:
-        if __debug__:
-            logger.info("Python execution of foo started.")
+    with runtime_config.HOOK_BINDINGS_FUNCTION["foo"]:
+        try:
+            if __debug__:
+                logger.info("Python execution of foo started.")
 
-        if __debug__:
-            if runtime_config.PROFILING:
-                unpack_start_time = _runtime.perf_counter()
+            if __debug__:
+                if runtime_config.PROFILING:
+                    unpack_start_time = _runtime.perf_counter()
 
-        # ArrayInfos
+            # ArrayInfos
 
-        two = (
-            two,
-            (
-                two_size_0,
-                two_size_1,
-            ),
-            on_gpu,
-            False,
-        )
+            two = (
+                two,
+                (
+                    two_size_0,
+                    two_size_1,
+                ),
+                on_gpu,
+                False,
+            )
 
-        if __debug__:
-            if runtime_config.PROFILING:
-                allocate_end_time = _runtime.perf_counter()
-                logger.info(
-                    "foo constructing `ArrayInfos` time: %s"
-                    % str(allocate_end_time - unpack_start_time)
-                )
+            if __debug__:
+                if runtime_config.PROFILING:
+                    allocate_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "foo constructing `ArrayInfos` time: %s"
+                        % str(allocate_end_time - unpack_start_time)
+                    )
 
-                func_start_time = _runtime.perf_counter()
+                    func_start_time = _runtime.perf_counter()
 
-        if __debug__ and runtime_config.PROFILING:
-            perf_counters = {}
-        else:
-            perf_counters = None
-        foo(
-            ffi=ffi,
-            perf_counters=perf_counters,
-            one=one,
-            two=two,
-        )
+            if __debug__ and runtime_config.PROFILING:
+                perf_counters = {}
+            else:
+                perf_counters = None
+            foo(
+                ffi=ffi,
+                perf_counters=perf_counters,
+                one=one,
+                two=two,
+            )
 
-        if __debug__:
-            if runtime_config.PROFILING:
-                func_end_time = _runtime.perf_counter()
-                logger.info(
-                    "foo convert time: %s"
-                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
-                )
-                logger.info("foo execution time: %s" % str(func_end_time - func_start_time))
+            if __debug__:
+                if runtime_config.PROFILING:
+                    func_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "foo convert time: %s"
+                        % str(
+                            perf_counters["convert_end_time"] - perf_counters["convert_start_time"]
+                        )
+                    )
+                    logger.info("foo execution time: %s" % str(func_end_time - func_start_time))
 
-        if __debug__:
-            if logger.isEnabledFor(logging.DEBUG):
+            if __debug__:
+                if logger.isEnabledFor(logging.DEBUG):
 
-                two_arr = (
-                    _conversion.as_array(ffi, two, _definitions.FLOAT64)
-                    if two is not None
-                    else None
-                )
-                msg = "shape of two after computation = %s" % str(
-                    two_arr.shape if two is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "two after computation: %s" % str(two_arr) if two is not None else "None"
-                logger.debug(msg)
+                    two_arr = (
+                        _conversion.as_array(ffi, two, _definitions.FLOAT64)
+                        if two is not None
+                        else None
+                    )
+                    msg = "shape of two after computation = %s" % str(
+                        two_arr.shape if two is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "two after computation: %s" % str(two_arr) if two is not None else "None"
+                    logger.debug(msg)
 
-        if __debug__:
-            logger.info("Python execution of foo completed.")
+            if __debug__:
+                logger.info("Python execution of foo completed.")
 
-    except Exception as e:
-        logger.exception(f"A Python error occurred: {e}")
-        return 1
+        except Exception as e:
+            logger.exception(f"A Python error occurred: {e}")
+            return 1
 
-    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT["foo"]()
     return 0
 
 
 @ffi.def_extern()
 def bar_wrapper(one, one_size_0, one_size_1, two, on_gpu):
-    runtime_config.HOOK_BINDINGS_FUNCTION_ENTER["bar"]()
-    try:
-        if __debug__:
-            logger.info("Python execution of bar started.")
+    with runtime_config.HOOK_BINDINGS_FUNCTION["bar"]:
+        try:
+            if __debug__:
+                logger.info("Python execution of bar started.")
 
-        if __debug__:
-            if runtime_config.PROFILING:
-                unpack_start_time = _runtime.perf_counter()
+            if __debug__:
+                if runtime_config.PROFILING:
+                    unpack_start_time = _runtime.perf_counter()
 
-        # ArrayInfos
+            # ArrayInfos
 
-        one = (
-            one,
-            (
-                one_size_0,
-                one_size_1,
-            ),
-            on_gpu,
-            False,
-        )
+            one = (
+                one,
+                (
+                    one_size_0,
+                    one_size_1,
+                ),
+                on_gpu,
+                False,
+            )
 
-        if __debug__:
-            if runtime_config.PROFILING:
-                allocate_end_time = _runtime.perf_counter()
-                logger.info(
-                    "bar constructing `ArrayInfos` time: %s"
-                    % str(allocate_end_time - unpack_start_time)
-                )
+            if __debug__:
+                if runtime_config.PROFILING:
+                    allocate_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "bar constructing `ArrayInfos` time: %s"
+                        % str(allocate_end_time - unpack_start_time)
+                    )
 
-                func_start_time = _runtime.perf_counter()
+                    func_start_time = _runtime.perf_counter()
 
-        if __debug__ and runtime_config.PROFILING:
-            perf_counters = {}
-        else:
-            perf_counters = None
-        bar(
-            ffi=ffi,
-            perf_counters=perf_counters,
-            one=one,
-            two=two,
-        )
+            if __debug__ and runtime_config.PROFILING:
+                perf_counters = {}
+            else:
+                perf_counters = None
+            bar(
+                ffi=ffi,
+                perf_counters=perf_counters,
+                one=one,
+                two=two,
+            )
 
-        if __debug__:
-            if runtime_config.PROFILING:
-                func_end_time = _runtime.perf_counter()
-                logger.info(
-                    "bar convert time: %s"
-                    % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"])
-                )
-                logger.info("bar execution time: %s" % str(func_end_time - func_start_time))
+            if __debug__:
+                if runtime_config.PROFILING:
+                    func_end_time = _runtime.perf_counter()
+                    logger.info(
+                        "bar convert time: %s"
+                        % str(
+                            perf_counters["convert_end_time"] - perf_counters["convert_start_time"]
+                        )
+                    )
+                    logger.info("bar execution time: %s" % str(func_end_time - func_start_time))
 
-        if __debug__:
-            if logger.isEnabledFor(logging.DEBUG):
+            if __debug__:
+                if logger.isEnabledFor(logging.DEBUG):
 
-                one_arr = (
-                    _conversion.as_array(ffi, one, _definitions.FLOAT32)
-                    if one is not None
-                    else None
-                )
-                msg = "shape of one after computation = %s" % str(
-                    one_arr.shape if one is not None else "None"
-                )
-                logger.debug(msg)
-                msg = "one after computation: %s" % str(one_arr) if one is not None else "None"
-                logger.debug(msg)
+                    one_arr = (
+                        _conversion.as_array(ffi, one, _definitions.FLOAT32)
+                        if one is not None
+                        else None
+                    )
+                    msg = "shape of one after computation = %s" % str(
+                        one_arr.shape if one is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = "one after computation: %s" % str(one_arr) if one is not None else "None"
+                    logger.debug(msg)
 
-        if __debug__:
-            logger.info("Python execution of bar completed.")
+            if __debug__:
+                logger.info("Python execution of bar completed.")
 
-    except Exception as e:
-        logger.exception(f"A Python error occurred: {e}")
-        return 1
+        except Exception as e:
+            logger.exception(f"A Python error occurred: {e}")
+            return 1
 
-    runtime_config.HOOK_BINDINGS_FUNCTION_EXIT["bar"]()
     return 0
 
 """

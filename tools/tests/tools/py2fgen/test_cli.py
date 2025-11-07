@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
+import pathlib
 import subprocess
 
 import pytest
@@ -204,9 +205,10 @@ def test_py2fgen_compilation_and_execution_gpu(
     ],
 )
 def test_py2fgen_compilation_and_profiling(
-    cli_runner, samples_path, square_wrapper_module, extra_flags, test_temp_dir
+    cli_runner, samples_path, square_wrapper_module, extra_flags, test_temp_dir, tmp_path
 ):
     """Test profiling using cProfile of the generated wrapper."""
+
     run_test_case(
         cli_runner,
         square_wrapper_module,
@@ -218,9 +220,12 @@ def test_py2fgen_compilation_and_profiling(
         extra_compiler_flags=extra_flags,
         env_vars={
             "PY2FGEN_EXTRA_CALLABLES": "icon4py.tools.py2fgen.wrappers.viztracer_plugin:init",
-            "ICON4PY_TRACING_RANGES": "square_from_function:0:50",
+            "ICON4PY_TRACING_RANGE": "0:50",
+            "ICON4PY_TRACING_NAMES": "square_from_function",
+            "ICON4PY_TRACING_OUTPUT_DIR": str(tmp_path),
         },
     )
+    assert (tmp_path / "viztracer.json").exists()
 
 
 @pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")

@@ -7,8 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import collections
+import contextlib
 import os
-from collections.abc import Callable
+from types import TracebackType
 from typing import TypeVar
 
 from gt4py import eve
@@ -81,11 +82,20 @@ which will be loaded with `pkgutil.resolve_name` and executed.
 # CUSTOMIZATION HOOKS
 
 
-def _noop() -> None:
-    pass
+class _NoopContextManager(contextlib.AbstractContextManager):
+    def __enter__(self) -> None:
+        pass
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
+    ) -> None:
+        pass
 
 
-HOOK_BINDINGS_FUNCTION_ENTER: dict[str, Callable[[], None]] = collections.defaultdict(lambda: _noop)
-"""Hook per function entry. The default is a no-op."""
-HOOK_BINDINGS_FUNCTION_EXIT: dict[str, Callable[[], None]] = collections.defaultdict(lambda: _noop)
-"""Hook per function exit. The default is a no-op."""
+HOOK_BINDINGS_FUNCTION: dict[str, contextlib.AbstractContextManager] = collections.defaultdict(
+    lambda: _NoopContextManager()
+)
+"""Hook to register a ContextManager per function that wraps the function. The default is a no-op."""
