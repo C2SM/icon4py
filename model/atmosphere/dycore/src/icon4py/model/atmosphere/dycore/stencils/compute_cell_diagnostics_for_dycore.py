@@ -59,7 +59,7 @@ def _calculate_pressure_buoyancy_acceleration_at_cells_on_half_levels(
     exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
-    ddqz_z_half: fa.CellKField[wpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
     perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[vpfloat],
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
 ) -> fa.CellKField[wpfloat]:
@@ -75,13 +75,13 @@ def _calculate_pressure_buoyancy_acceleration_at_cells_on_half_levels(
 @gtx.field_operator
 def _compute_perturbed_quantities_and_interpolation(
     current_rho: fa.CellKField[wpfloat],
-    reference_rho_at_cells_on_model_levels: fa.CellKField[wpfloat],
+    reference_rho_at_cells_on_model_levels: fa.CellKField[vpfloat],
     current_theta_v: fa.CellKField[wpfloat],
-    reference_theta_at_cells_on_model_levels: fa.CellKField[wpfloat],
+    reference_theta_at_cells_on_model_levels: fa.CellKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     exner_w_explicit_weight_parameter: fa.CellField[wpfloat],
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[wpfloat],
-    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[wpfloat],
+    ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
     ddqz_z_half: fa.CellKField[vpfloat],
     pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[wpfloat],
@@ -175,7 +175,7 @@ def _compute_perturbed_quantities_and_interpolation(
 
 @gtx.field_operator
 def _surface_computations(
-    wgtfacq_c: fa.CellKField[wpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
     igradp_method: gtx.int32,
 ) -> tuple[
@@ -302,7 +302,7 @@ def compute_perturbed_quantities_and_interpolation(
     time_extrapolation_parameter_for_exner: fa.CellKField[vpfloat],
     current_exner: fa.CellKField[wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    inv_ddqz_z_full: fa.CellKField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
     d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
     d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
     igradp_method: gtx.int32,

@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.dycore_utils import (
-    _broadcast_zero_to_three_edge_kdim_fields_wp,
+    _broadcast_zero_to_three_edge_kdim_fields_2wp1vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
@@ -21,7 +21,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperat
     _compute_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_kdim_field_with_zero_wp,
+    _init_cell_kdim_field_with_zero_wp, _init_cell_kdim_field_with_zero_vp
 )
 from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
     _update_density_exner_wind,
@@ -35,8 +35,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def init_test_fields(
     z_rho_e: fa.EdgeKField[wpfloat],
     z_theta_v_e: fa.EdgeKField[wpfloat],
-    z_dwdz_dd: fa.CellKField[wpfloat],
-    z_graddiv_vn: fa.EdgeKField[wpfloat],
+    z_dwdz_dd: fa.CellKField[vpfloat],
+    z_graddiv_vn: fa.EdgeKField[vpfloat],
     edges_start: gtx.int32,
     edges_end: gtx.int32,
     cells_start: gtx.int32,
@@ -44,11 +44,11 @@ def init_test_fields(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _broadcast_zero_to_three_edge_kdim_fields_wp(
+    _broadcast_zero_to_three_edge_kdim_fields_2wp1vp(
         out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
         domain={dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
     )
-    _init_cell_kdim_field_with_zero_wp(
+    _init_cell_kdim_field_with_zero_vp(
         out=z_dwdz_dd,
         domain={dims.CellDim: (cells_start, cells_end), dims.KDim: (vertical_start, vertical_end)},
     )

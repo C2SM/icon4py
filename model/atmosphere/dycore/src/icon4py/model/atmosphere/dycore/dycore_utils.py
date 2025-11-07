@@ -10,7 +10,7 @@ from gt4py.next import abs, broadcast, maximum  # noqa: A004
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import wpfloat, vpfloat
 
 
 @gtx.field_operator
@@ -24,17 +24,17 @@ def scale_k(field: fa.KField[wpfloat], factor: wpfloat, scaled_field: fa.KField[
 
 
 @gtx.field_operator
-def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
+def _broadcast_zero_to_three_edge_kdim_fields_2wp1vp() -> (
     tuple[
         fa.EdgeKField[wpfloat],
         fa.EdgeKField[wpfloat],
-        fa.EdgeKField[wpfloat],
+        fa.EdgeKField[vpfloat],
     ]
 ):
     return (
         broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
         broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
-        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(vpfloat("0.0"), (EdgeDim, KDim)),
     )
 
 

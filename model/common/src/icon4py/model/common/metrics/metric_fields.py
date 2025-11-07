@@ -73,7 +73,7 @@ def _compute_ddqz_z_half(
 def compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
-    ddqz_z_half: fa.CellKField[wpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

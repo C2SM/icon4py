@@ -9,8 +9,12 @@ import gt4py.next as gtx
 from gt4py.next import broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import wpfloat, vpfloat
 
+@gtx.field_operator
+def _init_cell_kdim_field_with_zero_vp() -> fa.CellKField[vpfloat]:
+    """Formerly known as _mo_solve_nonhydro_stencil_57 or _mo_solve_nonhydro_stencil_64."""
+    return broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
 
 @gtx.field_operator
 def _init_cell_kdim_field_with_zero_wp() -> fa.CellKField[wpfloat]:
