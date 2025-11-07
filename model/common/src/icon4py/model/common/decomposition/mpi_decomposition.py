@@ -252,7 +252,7 @@ class GHexMultiNodeExchange:
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
-    def __call__(self, *args: Any, **kwargs: dict[str, Any]) -> MultiNodeResult | None:
+    def __call__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> MultiNodeResult | None:
         """Perform a halo exchange operation.
 
         Args:
