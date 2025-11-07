@@ -50,7 +50,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
     backend: gtx_typing.Backend | None,
 ) -> None:
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
-        experiment.grid, 1, True, backend
+        experiment.grid, 1, True, model_backends.get_allocator(backend)
     )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
