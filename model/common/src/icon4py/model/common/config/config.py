@@ -103,7 +103,7 @@ class Configuration(Protocol[T_co]):
         if isinstance(file, str):
             file = pathlib.Path(file)
 
-        stream = oc.OmegaConf.to_yaml(config, resolve=False, sort_keys=True)
+        stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
 
         with file.open("w", encoding="utf-8") as f:
             f.write(stream)

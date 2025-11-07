@@ -24,12 +24,10 @@ from collections.abc import Callable
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.diffusion.config import TurbulenceShearForcingType
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionConfig, DiffusionParams
-from icon4py.model.atmosphere.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
-    DiffusionInterpolationState,
-    DiffusionMetricState,
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion as diffusion_module,
+    diffusion_states,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
@@ -44,7 +42,7 @@ logger = setup_logger(__name__)
 
 @dataclasses.dataclass
 class DiffusionGranule:
-    diffusion: Diffusion
+    diffusion: diffusion_module.Diffusion
     dummy_field_factory: Callable
     profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
@@ -115,26 +113,26 @@ def diffusion_init(
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
     # Diffusion parameters
-    config = DiffusionConfig(
+    config = diffusion_config.DiffusionConfig(
         diffusion_type=diffusion_type,
-        hdiff_w=hdiff_w,
-        hdiff_vn=hdiff_vn,
-        zdiffu_t=zdiffu_t,
+        apply_to_vertical_wind=hdiff_w,
+        apply_to_horizontal_wind=hdiff_vn,
+        apply_zdiffusion_t=zdiffu_t,
         type_t_diffu=type_t_diffu,
         type_vn_diffu=type_vn_diffu,
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
-        hdiff_temp=hdiff_temp,
-        n_substeps=ndyn_substeps,
+        apply_to_temperature=hdiff_temp,
+        ndyn_substeps=ndyn_substeps,
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
-        velocity_boundary_diffusion_denom=denom_diffu_v,
+        velocity_boundary_diffusion_denominator=denom_diffu_v,
         max_nudging_coefficient=nudge_max_coeff,
-        shear_type=TurbulenceShearForcingType(itype_sher),
+        shear_type=diffusion_config.TurbulenceShearForcingType(itype_sher),
         ltkeshs=ltkeshs,
     )
 
-    diffusion_params = DiffusionParams(config)
+    diffusion_params = diffusion_module.DiffusionParams(config)
 
     # Vertical grid config
     vertical_config = VerticalGridConfig(
@@ -170,7 +168,7 @@ def diffusion_init(
     if zd_vertoffset is None:
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
     # Metric state
-    metric_state = DiffusionMetricState(
+    metric_state = diffusion_states.DiffusionMetricState(
         mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
@@ -180,7 +178,7 @@ def diffusion_init(
     )
 
     # Interpolation state
-    interpolation_state = DiffusionInterpolationState(
+    interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
@@ -194,7 +192,7 @@ def diffusion_init(
     # Initialize the diffusion granule
     global granule  # noqa: PLW0603 [global-statement]
     granule = DiffusionGranule(
-        diffusion=Diffusion(
+        diffusion=diffusion_module.Diffusion(
             grid=grid_wrapper.grid_state.grid,
             config=config,
             params=diffusion_params,
@@ -246,7 +244,7 @@ def diffusion_run(
         dwdx = granule.dummy_field_factory("dwdx", domain=w.domain, dtype=w.dtype)
     if dwdy is None:
         dwdy = granule.dummy_field_factory("dwdy", domain=w.domain, dtype=w.dtype)
-    diagnostic_state = DiffusionDiagnosticState(
+    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=hdef_ic,
         div_ic=div_ic,
         dwdx=dwdx,

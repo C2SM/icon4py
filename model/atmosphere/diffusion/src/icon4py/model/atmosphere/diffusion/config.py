@@ -98,7 +98,7 @@ class DiffusionConfig:
 
     # from mo_nonhydrostatic_nml.f90
     ndyn_substeps: int = dataclasses.field(
-        init=False, default=common_config.resolve_or_else("model.ndyn_substeps", 5)
+        default=common_config.resolve_or_else("model.ndyn_substeps", 5)
     )
 
     #: If True, apply truly horizontal temperature diffusion over steep slopes

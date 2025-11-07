@@ -95,7 +95,6 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
         run_config.update(user_config.run)
         self._handlers["run"] = run_config
         self._initialize_components(user_config)
-        self.to_yaml()
 
     def get(
         self,
