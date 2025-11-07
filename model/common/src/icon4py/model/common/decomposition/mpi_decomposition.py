@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 import dace
 import numpy as np
 from gt4py import next as gtx
-from gt4py.eve import utils
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
@@ -49,7 +48,6 @@ except ImportError:
 
 if TYPE_CHECKING:
     import mpi4py.MPI
-    from gt4py.next.embedded import nd_array_field
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -121,15 +119,6 @@ class MPICommProcessProperties(definitions.ProcessProperties):
     @functools.cached_property
     def comm_size(self):
         return self.comm.Get_size()
-
-
-def _field_buffer_key(
-    field: nd_array_field.NdArrayField,
-):  # TODO(havogt): make NDArrayField public?
-    return field.__gt_buffer_info__.hash_key
-
-
-hashable_by_field_buffer = utils.hashable_by(_field_buffer_key)
 
 
 class GHexMultiNodeExchange:
@@ -225,7 +214,7 @@ class GHexMultiNodeExchange:
 
     def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field):
         # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
-        key = hashable_by_field_buffer(f)
+        key = f.__gt_buffer_info__.hash_key
         try:
             return self._applied_patterns_cache[key]
         except KeyError:
