@@ -345,5 +345,5 @@ def create_exchange(props: ProcessProperties, decomp_info: DecompositionInfo) ->
 @create_exchange.register(SingleNodeProcessProperties)
 def create_single_node_exchange(
     props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
-) -> SingleNodeExchange:
+) -> ExchangeRuntime:
     return SingleNodeExchange()
