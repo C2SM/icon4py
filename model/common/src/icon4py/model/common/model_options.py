@@ -6,29 +6,74 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-import typing
+import logging
+from collections.abc import Callable
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import model_backends
 
 
-def dict_values_to_list(d: dict[str, typing.Any]) -> dict[str, list]:
+log = logging.getLogger(__name__)
+
+
+def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
+def get_dace_options(
+    program_name: str, **backend_descriptor: Any
+) -> model_backends.BackendDescriptor:
+    return backend_descriptor
+
+
+def get_gtfn_options(
+    program_name: str, **backend_descriptor: Any
+) -> model_backends.BackendDescriptor:
+    return backend_descriptor
+
+
+def get_options(program_name: str, **backend_descriptor: Any) -> model_backends.BackendDescriptor:
+    if "backend_factory" not in backend_descriptor:
+        # here we could set a backend_factory per program
+        backend_descriptor["backend_factory"] = model_backends.make_custom_dace_backend
+    if backend_descriptor["backend_factory"] == model_backends.make_custom_dace_backend:
+        backend_descriptor = get_dace_options(program_name, **backend_descriptor)
+    if backend_descriptor["backend_factory"] == model_backends.make_custom_gtfn_backend:
+        backend_descriptor = get_gtfn_options(program_name, **backend_descriptor)
+
+    return backend_descriptor
+
+
 def customize_backend(
-    backend: model_backends.DeviceType | model_backends.BackendDescriptor,
-) -> gtx_typing.Backend:
-    if isinstance(backend, model_backends.DeviceType):
-        backend = {"device": backend}
-    # TODO(havogt): implement the lookup function as below
-    # options = get_options(program_name, arch, **backend) # noqa: ERA001
-    backend_func = backend.get("backend_factory", model_backends.make_custom_gtfn_backend)
-    device = backend.get("device", model_backends.DeviceType.CPU)
-    custom_backend = backend_func(
-        device=device,
+    program: gtx_typing.Program | gtx.typing.FieldOperator | None,
+    backend: gtx_typing.Backend
+    | model_backends.DeviceType
+    | model_backends.BackendDescriptor
+    | None,
+) -> gtx_typing.Backend | None:
+    program_name = program.__name__ if program is not None else ""
+    if backend is None or isinstance(backend, gtx_backend.Backend):
+        backend_name = backend.name if backend is not None else "embedded"
+        log.info(f"Using non-custom backend '{backend_name}' for '{program_name}'.")
+        return backend  # type: ignore[return-value]
+
+    backend_descriptor = (
+        {"device": backend} if isinstance(backend, model_backends.DeviceType) else backend
+    )
+    backend_descriptor = get_options(program_name, **backend_descriptor)
+    backend_descriptor["device"] = backend_descriptor.get(
+        "device", model_backends.DeviceType.CPU
+    )  # set default device
+    backend_factory = backend_descriptor.pop(
+        "backend_factory", model_backends.make_custom_dace_backend
+    )
+    custom_backend = backend_factory(**backend_descriptor)
+    log.info(
+        f"Using custom backend '{custom_backend.name}' for '{program_name}' with options: {backend_descriptor}."
     )
     return custom_backend
 
@@ -44,7 +89,7 @@ def setup_program(
     horizontal_sizes: dict[str, gtx.int32] | None = None,
     vertical_sizes: dict[str, gtx.int32] | None = None,
     offset_provider: gtx_typing.OffsetProvider | None = None,
-) -> typing.Callable[..., None]:
+) -> Callable[..., None]:
     """
     This function processes arguments to the GT4Py program. It
     - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', "vertical_sizes');
@@ -64,8 +109,7 @@ def setup_program(
     vertical_sizes = {} if vertical_sizes is None else vertical_sizes
     offset_provider = {} if offset_provider is None else offset_provider
 
-    if isinstance(backend, gtx.DeviceType) or model_backends.is_backend_descriptor(backend):
-        backend = customize_backend(backend)
+    backend = customize_backend(program, backend)
 
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend)

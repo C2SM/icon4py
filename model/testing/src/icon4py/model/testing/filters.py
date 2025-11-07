@@ -33,47 +33,39 @@ class ItemFilter(NamedTuple):
 item_marker_filters: dict[str, ItemFilter] = {
     pytest.mark.cpu_only.name: ItemFilter(
         condition=lambda item: device_utils.is_cupy_device(
-            test_utils.get_fixture_value("backend", item)
+            test_utils.get_backend_fixture_value(item)
         ),
         action=functools.partial(pytest.skip, "currently only runs on CPU"),
     ),
     pytest.mark.embedded_only.name: ItemFilter(
         condition=lambda item: not test_utils.is_embedded(
-            test_utils.get_fixture_value("backend", item)
+            test_utils.get_backend_fixture_value(item)
         ),
         action=functools.partial(pytest.skip, "stencil runs only on embedded backend"),
     ),
     pytest.mark.embedded_remap_error.name: ItemFilter(
-        condition=lambda item: test_utils.is_embedded(
-            test_utils.get_fixture_value("backend", item)
-        ),
+        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
         action=functools.partial(
             pytest.xfail, "Embedded backend currently fails in remap function."
         ),
     ),
     pytest.mark.embedded_static_args.name: ItemFilter(
-        condition=lambda item: test_utils.is_embedded(
-            test_utils.get_fixture_value("backend", item)
-        ),
+        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
         action=functools.partial(
             pytest.xfail, " gt4py _compiled_programs returns error when backend is None."
         ),
     ),
     pytest.mark.uses_as_offset.name: ItemFilter(
-        condition=lambda item: test_utils.is_embedded(
-            test_utils.get_fixture_value("backend", item)
-        ),
+        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
         action=functools.partial(pytest.xfail, "Embedded backend does not support as_offset."),
     ),
     pytest.mark.uses_concat_where.name: ItemFilter(
-        condition=lambda item: test_utils.is_embedded(
-            test_utils.get_fixture_value("backend", item)
-        ),
+        condition=lambda item: test_utils.is_embedded(test_utils.get_backend_fixture_value(item)),
         action=functools.partial(pytest.xfail, "Embedded backend does not support concat_where."),
     ),
     pytest.mark.gtfn_too_slow.name: ItemFilter(
         condition=lambda item: test_utils.is_gtfn_backend(
-            test_utils.get_fixture_value("backend", item)
+            test_utils.get_backend_fixture_value(item)
         ),
         action=functools.partial(pytest.skip, "GTFN compilation is too slow for this test."),
     ),
