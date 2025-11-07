@@ -36,7 +36,7 @@ class ProcessProperties(Protocol):
 
 @dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):
-    comm: Any
+    comm: None
     rank: int
     comm_name: str
     comm_size: int
