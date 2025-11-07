@@ -12,8 +12,10 @@ VizTracer plugin for PY2FGEN generated bindings.
 To enable this plugin
 - install `viztracer` ('pip install viztracer') or `icon4py-tools[profiling]`
 - set the environment variable `PY2FGEN_EXTRA_CALLABLES=icon4py.tools.py2fgen.wrappers.viztracer_plugin:init`
-- set the environment variable `ICON4PY_TRACING_RANGES` to specify the tracing ranges in the format:
-  function_name1:start1:stop1,function_name2:start2:stop2,...
+- set the environment variable
+   - `ICON4PY_TRACING_RANGE` in the format 'start:stop' to define the range of calls to be traced, and
+   - `ICON4PY_TRACING_NAMES` to specify the names of the functions to be traced (comma-separated)
+  Note that the calling range is global, i.e., the tracer will trace all functions in the specified range.
 """
 
 import dataclasses
@@ -23,6 +25,7 @@ from collections.abc import Callable
 import viztracer  # type: ignore[import-not-found]
 
 from icon4py.tools.py2fgen import runtime_config
+from icon4py.tools.py2fgen.wrappers import grid_wrapper
 
 
 @dataclasses.dataclass
@@ -42,7 +45,13 @@ class _Tracer:
             # "flush_as_finish" to avoid incomplete calls to `disable` which would visualize as nested calls
             self._tracer.stop(stop_option="flush_as_finish")
         if self._counter == self.stop:
-            self._tracer.save("viztracer.json")
+            assert grid_wrapper.grid_state is not None
+            rank = (
+                ""
+                if grid_wrapper.grid_state.exchange_runtime.get_size() == 1
+                else f"_rank{grid_wrapper.grid_state.exchange_runtime.my_rank()}"
+            )
+            self._tracer.save(f"viztracer{rank}.json")
 
 
 def tracer(start: int, stop: int) -> tuple[Callable[[], None], Callable[[], None]]:
