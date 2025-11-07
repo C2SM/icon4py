@@ -505,6 +505,10 @@ def graupel_run(
     pi: fa.CellKField[ta.wpfloat],  # Precipitation of ice
     pg: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
     pre: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _graupel_run(
         last_lev,
@@ -521,4 +525,8 @@ def graupel_run(
         dt,
         qnc,
         out=(t_out, qv_out, qc_out, qr_out, qs_out, qi_out, qg_out, pflx, pr, ps, pi, pg, pre),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

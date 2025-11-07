@@ -371,8 +371,13 @@ graupel_run_program = setup_program(
     backend=backend,
     program=graupel_run,
     constant_args={},
-    horizontal_sizes={},
+    horizontal_sizes={
+        "horizontal_start": gtx.int32(0),
+        "horizontal_end": data.ncells,
+    },
     vertical_sizes={
+        "vertical_start": gtx.int32(0),
+        "vertical_end": gtx.int32(data.nlev),
         "last_lev": ksize - 1,
     },
     offset_provider={"Koff": dims.KDim},

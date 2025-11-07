@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import exp, maximum, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, t_d
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
 @gtx.field_operator
@@ -414,7 +414,23 @@ def saturation_adjustment(
     te_out: fa.CellKField[ta.wpfloat],  # Temperature
     qve_out: fa.CellKField[ta.wpfloat],  # Specific humidity
     qce_out: fa.CellKField[ta.wpfloat],  # Specific cloud water content
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _saturation_adjustment(
-        te, qve, qce, qre, qse, qie, qge, rho, out=(te_out, qve_out, qce_out)
+        te,
+        qve,
+        qce,
+        qre,
+        qse,
+        qie,
+        qge,
+        rho,
+        out=(te_out, qve_out, qce_out),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
