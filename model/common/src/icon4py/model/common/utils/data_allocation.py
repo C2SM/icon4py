@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging as log
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, TypeVar
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -31,19 +31,23 @@ try:
 except ImportError:
     import numpy as xp
 
-# TODO(havogt): improve typing to support dtype and shape
-NDArray: TypeAlias = np.ndarray | xp.ndarray
+ScalarT = TypeVar("ScalarT", bound=np.generic)
+NDArray: TypeAlias = (
+    np.ndarray[tuple[int, ...], np.dtype[ScalarT]] | xp.ndarray[tuple[int, ...], np.dtype[ScalarT]]
+)
 NDArrayInterface: TypeAlias = np.ndarray | xp.ndarray | gtx.Field
 
-Rank0NDArray: TypeAlias = NDArray
+ScalarLikeArray: TypeAlias = (
+    np.ndarray[tuple[()], np.dtype[ScalarT]] | xp.ndarray[tuple[()], np.dtype[ScalarT]]
+)
 
 
 def is_ndarray(obj: Any) -> TypeGuard[NDArray]:
     return isinstance(obj, (np.ndarray, xp.ndarray))
 
 
-def is_rank0_ndarray(obj: Any) -> TypeGuard[Rank0NDArray]:
-    return is_ndarray(obj) and obj.ndim == 0
+def is_rank0_ndarray(obj: Any) -> TypeGuard[ScalarLikeArray]:
+    return is_ndarray(obj) and obj.shape == ()
 
 
 def backend_name(backend: gtx_typing.Backend | None) -> str:

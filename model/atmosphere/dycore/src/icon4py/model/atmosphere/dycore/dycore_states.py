@@ -81,7 +81,7 @@ class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
     # `max_vertical_cfl` stored as 0-d array of type ta.wpfloat (to be able to avoid cupy synchronization)
-    max_vertical_cfl: data_alloc.Rank0NDArray
+    max_vertical_cfl: data_alloc.ScalarLikeArray[ta.wpfloat]
     """
     Declared as max_vcfl_dyn in ICON. Maximum vertical CFL number over all substeps.
     """
@@ -167,6 +167,7 @@ class DiagnosticStateNonHydro:
 
     def __post_init__(self):
         if not data_alloc.is_rank0_ndarray(self.max_vertical_cfl):
+            # TODO(havogt): instead of this check, we could refactor to a special dataclass-like which promotes to 0-d array on assignment
             raise TypeError(
                 "'max_vertical_cfl' must be initialized as a 0-d array for performance reasons."
             )
