@@ -21,21 +21,19 @@ except ImportError:
     cp = None
 
 
-def is_cupy_device(
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-) -> bool:
+def is_cupy_device(allocator: gtx_typing.FieldBufferAllocationUtil | None) -> bool:
     if allocator is None:
         return False
     return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)  # type: ignore [type-var] #gt4py-related typing
 
 
-def sync(backend: gtx_typing.Backend | None = None) -> None:
+def sync(allocator: gtx_typing.FieldBufferAllocationUtil | None = None) -> None:
     """
     Synchronize the device if appropriate for the given backend.
 
     Note: this is and ad-hoc interface, maybe the function should get the device to sync for.
     """
-    if backend is not None and is_cupy_device(backend.allocator):
+    if allocator is not None and is_cupy_device(allocator):
         cp.cuda.runtime.deviceSynchronize()
 
 
@@ -44,7 +42,7 @@ _R = TypeVar("_R")
 
 
 def synchronized_function(
-    func: Callable[_P, _R], *, backend: gtx_typing.Backend | None
+    func: Callable[_P, _R], *, allocator: gtx_typing.FieldBufferAllocationUtil | None
 ) -> Callable[_P, _R]:
     """
     Wraps a function and synchronizes after execution
@@ -53,16 +51,16 @@ def synchronized_function(
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> _R:
         result = func(*args, **kwargs)
-        sync(backend=backend)
+        sync(allocator=allocator)
         return result
 
     return wrapper
 
 
 def synchronized(
-    backend: gtx_typing.Backend | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil | None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator that synchronizes the device after the function execution.
     """
-    return functools.partial(synchronized_function, backend=backend)
+    return functools.partial(synchronized_function, allocator=allocator)

@@ -402,11 +402,7 @@ def test_compute_pos_on_tplane_e(
     cells_lat = grid_savepoint.cell_center_lat().ndarray
     edges_lon = grid_savepoint.edges_center_lon().ndarray
     edges_lat = grid_savepoint.edges_center_lat().ndarray
-    verts_lon = grid_savepoint.verts_vertex_lon().ndarray
-    verts_lat = grid_savepoint.verts_vertex_lat().ndarray
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
-    e2v = icon_grid.get_connectivity(dims.E2V).ndarray
-    e2c2e = icon_grid.get_connectivity(dims.E2C2E).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
         sphere_radius,
@@ -418,12 +414,8 @@ def test_compute_pos_on_tplane_e(
         cells_lat,
         edges_lon,
         edges_lat,
-        verts_lon,
-        verts_lat,
         owner_mask,
         e2c,
-        e2v,
-        e2c2e,
         horizontal_start,
         array_ns=xp,
     )
