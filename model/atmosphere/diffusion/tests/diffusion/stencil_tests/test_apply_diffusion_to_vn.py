@@ -14,9 +14,9 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
-from icon4py.model.common.type_alias import wpfloat, vpfloat
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -40,6 +40,8 @@ class TestApplyDiffusionToVn(StencilTest):
             "vertical_start",
             "vertical_end",
             "limited_area",
+            "nudgezone_diff",
+            "fac_bdydiff_v",
         ),
         # StandardStaticVariants.COMPILE_TIME_VERTICAL: (
         #     "vertical_start",
@@ -121,8 +123,12 @@ class TestApplyDiffusionToVn(StencilTest):
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
 
-        primal_normal_vert_v1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
-        primal_normal_vert_v2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_v1 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
+        )
+        primal_normal_vert_v2 = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
+        )
 
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
