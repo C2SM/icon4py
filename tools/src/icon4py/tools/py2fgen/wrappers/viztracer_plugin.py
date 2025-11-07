@@ -15,6 +15,7 @@ To enable this plugin
 - set the environment variable
    - `ICON4PY_TRACING_RANGE` in the format 'start:stop' to define the range of calls to be traced, and
    - `ICON4PY_TRACING_NAMES` to specify the names of the functions to be traced (comma-separated)
+   - optionally `ICON4PY_TRACING_OUTPUT_DIR` to specify the output directory for the trace files (default is current directory).
   Note that the calling range is global, i.e., the tracer will trace all functions in the specified range.
 """
 
