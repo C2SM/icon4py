@@ -28,9 +28,7 @@ log = logging.getLogger(__file__)
 
 # [ ] dump configuration (should be done from recursively from ConfigReader as we want to be able
 #      to do that standalone as well (additional change name if it writes as well)
-# [ ] create configs that do not have their own setup or are mostly configured from "Other" components (for example metrics)?
-# [ ] generally handle exceptions.. wrong keys, missing keys, wrong value types...
-# [ ] what if a package does not have the `config.py`
+#       - TEST
 
 
 @dataclasses.dataclass
@@ -52,28 +50,20 @@ class ModelConfig:
 
 def load_reader(module: ModuleType, update: oc.DictConfig) -> common_config.ConfigurationHandler:
     if hasattr(module, "init_config"):
-        log.warning(f" module {module.__name__} has no `init_config` function")
         default_reader = module.init_config()
         default_reader.update(update)
     else:
+        log.warning(f" module {module.__name__} has no `init_config` function")
         default_reader = common_config.init_config()
         default_reader.update(update)
     return default_reader
 
 
-def init_reader(module: ModuleType) -> common_config.ConfigurationHandler:
-    if hasattr(module, "init_config"):
-        log.warning(f" module {module.__name__} has no `init_config` function")
-        default_reader = module.init_config()
-    else:
-        default_reader = common_config.init_config()
-    return default_reader
-
-
-# TODO (halungge): change T type to custom type or std lib dict
+# TODO (halungge): change T type to custom type or std lib dict in oder to not expose omegaconf stuff
 class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
     def __init__(self, model_config: pathlib.Path | str):
         self._handlers = {}
+
         if isinstance(model_config, str):
             model_config = pathlib.Path(model_config)
         if not model_config.exists():
@@ -87,7 +77,7 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
             log.error(f"Could not resolve path to {model_config} - {e}")
             sys.exit()
 
-    def read_config(self):
+    def __call__(self):
         # lets assume the configuration is all in one file
         # this should do direct merging fo the config then the interpolation will work again....
         handler = common_config.init_config()
@@ -105,6 +95,7 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
         run_config.update(user_config.run)
         self._handlers["run"] = run_config
         self._initialize_components(user_config)
+        self.to_yaml()
 
     def get(
         self,

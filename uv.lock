@@ -1833,6 +1833,7 @@ dependencies = [
     { name = "numpy" },
     { name = "omegaconf" },
     { name = "packaging" },
+    { name = "pyyaml" },
     { name = "scipy" },
     { name = "typing-extensions" },
 ]
@@ -1895,6 +1896,7 @@ requires-dist = [
     { name = "numpy", marker = "extra == 'io'", specifier = ">=1.23.3" },
     { name = "omegaconf", specifier = ">=2.3.0" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "pyyaml", specifier = ">=6.0.0" },
     { name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0" },
     { name = "scipy", specifier = ">=1.14.1" },
     { name = "typing-extensions", specifier = ">=4.11.0" },

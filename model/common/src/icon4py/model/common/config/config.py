@@ -10,9 +10,10 @@ import enum
 import functools
 import logging
 import pathlib
-from typing import Protocol, TypeAlias, TypeVar
+from typing import Any, Protocol, TypeAlias, TypeVar
 
 import omegaconf as oc
+import yaml
 
 from icon4py.model.common import exceptions
 
@@ -20,6 +21,14 @@ from icon4py.model.common import exceptions
 log = logging.getLogger(__file__)
 
 MISSING = oc.MISSING
+
+
+def simple_str_representer(dumper: yaml.Dumper, data: Any) -> yaml.nodes.ScalarNode:
+    """represent pathlib.Path as str"""
+    return dumper.represent_scalar("tag:yaml.org,2002:str", str(data))
+
+
+yaml.add_multi_representer(pathlib.PurePath, simple_str_representer)
 
 
 def to_timedelta(secs: int | float) -> str:
@@ -94,7 +103,7 @@ class Configuration(Protocol[T_co]):
         if isinstance(file, str):
             file = pathlib.Path(file)
 
-        stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
+        stream = oc.OmegaConf.to_yaml(config, resolve=False, sort_keys=True)
 
         with file.open("w", encoding="utf-8") as f:
             f.write(stream)

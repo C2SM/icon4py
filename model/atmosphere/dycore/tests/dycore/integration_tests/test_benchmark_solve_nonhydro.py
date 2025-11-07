@@ -57,11 +57,13 @@ def solve_nonhydro(
     mesh = geometry_field_source.grid
 
     config_handler = dycore_config.init_config()
-    config_handler.update(dict(
-        rayleigh_coeff=0.1,
-        iau_wgt_dyn=1.0,
-        max_nudging_coefficient=0.375,
-    ))
+    config_handler.update(
+        dict(
+            rayleigh_coeff=0.1,
+            iau_wgt_dyn=1.0,
+            max_nudging_coefficient=0.375,
+        )
+    )
     config = config_handler.get()
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
