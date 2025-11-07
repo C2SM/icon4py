@@ -19,6 +19,8 @@ import numpy.typing as npt
 import pytest
 from typing_extensions import Buffer
 
+from icon4py.model.common import model_options
+
 
 logger = logging.getLogger(__file__)
 
@@ -42,6 +44,16 @@ def get_fixture_value(name: str, item: pytest.Item) -> Any:
         # Get the fixture value using the item's fixture manager
         return item._request.getfixturevalue(name)  # type: ignore[attr-defined]
 
+    return None
+
+
+def get_backend_fixture_value(item: pytest.Item) -> gtx_typing.Backend | None:
+    backend = get_fixture_value("backend", item)
+    if backend is not None:
+        return backend
+    backend_like = get_fixture_value("backend_like", item)
+    if backend_like is not None:
+        return model_options.customize_backend(None, backend_like)
     return None
 
 

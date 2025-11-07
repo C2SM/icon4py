@@ -14,6 +14,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions
 from icon4py.model.testing.fixtures.datatest import (
     backend,
+    backend_like,
     data_provider,
     download_ser_data,
     experiment,

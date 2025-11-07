@@ -10,12 +10,12 @@ import datetime
 import functools
 import logging
 
-import gt4py.next.typing as gtx_typing
 from gt4py.next import metrics as gtx_metrics
 
 import icon4py.model.atmosphere.dycore.config as dycore_config
 from icon4py.model.atmosphere.diffusion import config as diffusion_config, diffusion
 from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.common import model_backends
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.driver import initialization_utils as driver_init
 
@@ -27,7 +27,7 @@ n_substeps_reduced = 2
 
 @dataclasses.dataclass(frozen=True)
 class Icon4pyRunConfig:
-    backend: gtx_typing.Backend
+    backend: model_backends.BackendLike
     dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
@@ -60,7 +60,7 @@ class Icon4pyConfig:
 
 def read_config(
     experiment_type: driver_init.ExperimentType,
-    backend: gtx_typing.Backend,
+    backend: model_backends.BackendLike,
 ) -> Icon4pyConfig:
     def _mch_ch_r04b09_vertical_config():
         return v_grid.VerticalGridConfig(
