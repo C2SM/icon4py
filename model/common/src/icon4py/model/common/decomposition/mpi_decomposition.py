@@ -211,7 +211,7 @@ class GHexMultiNodeExchange:
         else:
             raise ValueError(f"Unknown dimension {dim}")
 
-    def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> MultiNodeResult:
+    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> MultiNodeResult:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
 
@@ -225,7 +225,7 @@ class GHexMultiNodeExchange:
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
 
         # Slice the fields based on the dimension
-        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
+        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]  # type: ignore[arg-type] # f is one field extracted from the sequence in fields
 
         # Create field descriptors and perform the exchange
         applied_patterns = [
@@ -247,7 +247,7 @@ class GHexMultiNodeExchange:
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None:
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple) -> None:
         res = self.exchange(dim, *fields)
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
@@ -407,7 +407,7 @@ class MultiNodeResult:
 @definitions.create_exchange.register(MPICommProcessProperties)
 def create_multinode_node_exchange(
     props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
-) -> definitions.ExchangeRuntime
+) -> definitions.ExchangeRuntime:
     if props.comm_size > 1:
         return GHexMultiNodeExchange(props, decomp_info)
     else:
