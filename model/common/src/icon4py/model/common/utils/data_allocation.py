@@ -31,7 +31,7 @@ try:
 except ImportError:
     import numpy as xp
 
-ScalarT = TypeVar("ScalarT", bound=np.generic)
+ScalarT = TypeVar("ScalarT", bound=gtx_typing.Scalar)
 NDArray: TypeAlias = (
     np.ndarray[tuple[int, ...], np.dtype[ScalarT]] | xp.ndarray[tuple[int, ...], np.dtype[ScalarT]]
 )
@@ -81,6 +81,14 @@ def array_ns(try_cupy: bool) -> ModuleType:
 def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
     return array_ns(device_utils.is_cupy_device(allocator))
+
+
+def scalar_like_array(
+    value: ScalarT,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+) -> ScalarLikeArray[ScalarT]:
+    """Create a 0-d array (scalar-like) with given value on specified backend."""
+    return import_array_ns(allocator).asarray(value)
 
 
 def as_field(
