@@ -20,8 +20,9 @@ from icon4py.model.common.config import config as common_config
 from icon4py.model.common.grid import vertical as v_grid
 
 
-MODEL_NODE = "model"
 log = logging.getLogger(__file__)
+MODEL_NODE = "model"
+RUN_NODE = "run"
 
 
 # TODO (halungge): address
@@ -62,14 +63,14 @@ def load_reader(module: ModuleType, update: oc.DictConfig) -> common_config.Conf
 # TODO (halungge): change T type to custom type or std lib dict in oder to not expose omegaconf stuff
 class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
     def __init__(self, model_config: pathlib.Path | str):
-        self._handlers = {}
+        self._handlers: dict[str, common_config.ConfigurationHandler] = {}
 
         if isinstance(model_config, str):
             model_config = pathlib.Path(model_config)
         if not model_config.exists():
             log.error(f"Configuration path {model_config} does not exist. Exiting")
             sys.exit()
-        self._config_file = model_config.name if model_config.is_file() else None
+        self._config_file = model_config.name
         path = model_config.parent if model_config.is_file() else model_config
         try:
             self._config_path = path.resolve(strict=True)
@@ -77,7 +78,7 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
             log.error(f"Could not resolve path to {model_config} - {e}")
             sys.exit()
 
-    def __call__(self):
+    def __call__(self) -> None:
         # lets assume the configuration is all in one file
         # this should do direct merging fo the config then the interpolation will work again....
         handler = common_config.init_config()
@@ -89,13 +90,14 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
         )
 
         model_config = common_config.ConfigurationHandler(ModelConfig())
-        model_config.update(user_config.model)
-        self._handlers["model"] = model_config
+        model_config.update(user_config.model)  # type: ignore [union-attr]
+        self._handlers[MODEL_NODE] = model_config
         run_config = common_config.ConfigurationHandler(RunConfig())
-        run_config.update(user_config.run)
-        self._handlers["run"] = run_config
+        run_config.update(user_config.run)  # type: ignore [union-attr]
+        self._handlers[RUN_NODE] = run_config
         self._initialize_components(user_config)
 
+    # TODO (halungge): have this return a std dict to hide away omegaconf
     def get(
         self,
         is_default: bool = False,
@@ -114,7 +116,7 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
         oc.OmegaConf.set_readonly(merged, True)
         return merged
 
-    def _initialize_components(self, config: oc.DictConfig):
+    def _initialize_components(self, config: oc.DictConfig) -> None:
         model_components = config.model.components.items()
         for name, package in model_components:
             module_config = config.get(name)
@@ -137,17 +139,8 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
             self._handlers[name] = reader
 
     def get_configured_modules(self) -> dict:
-        return oc.OmegaConf.to_container(
-            self._handlers["model"]
-            ._get(
-                format_=common_config.Format.DICT,
-                type_=common_config.ConfigType.CUSTOM,
-                read_only=True,
-            )
-            .components,
-            structured_config_mode=oc.SCMode.DICT,
-        )
+        return self.get().model.components
 
-    def to_yaml(self, file: str | pathlib.Path, is_default: bool = False):
+    def to_yaml(self, file: str | pathlib.Path, is_default: bool = False) -> None:
         config = self.get(is_default)
         self._write_to_yaml(config, file)

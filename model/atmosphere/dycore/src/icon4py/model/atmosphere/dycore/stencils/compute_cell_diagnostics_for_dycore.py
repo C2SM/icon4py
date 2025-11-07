@@ -51,9 +51,7 @@ from icon4py.model.common.math.derivative import _compute_first_vertical_derivat
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-horzpres_discr_type: Final = (
-    dycore_states.HorizontalPressureDiscretizationType.namespace()
-)
+horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType.namespace()
 
 
 @gtx.field_operator

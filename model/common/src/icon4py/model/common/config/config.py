@@ -99,7 +99,8 @@ def resolve_or_else(key: str, value: _CT) -> _CT:
 
 class Configuration(Protocol[T_co]):
     def to_yaml(self, file: str, is_default: bool = False) -> None: ...
-    def _write_to_yaml(self, config: oc.DictConfig, file: str | pathlib.Path):
+
+    def _write_to_yaml(self, config: oc.DictConfig, file: str | pathlib.Path) -> None:
         if isinstance(file, str):
             file = pathlib.Path(file)
 
@@ -192,7 +193,7 @@ class ConfigurationHandler(Configuration[T], Updatable[T]):
 
     def get(self, *, is_default: bool = False) -> T:
         config_type = ConfigType.DEFAULT if is_default else ConfigType.CUSTOM
-        return self._get(type_=config_type, format_=Format.CLASS, read_only=True)
+        return self._get(type_=config_type, format_=Format.CLASS, read_only=True)  # type: ignore  [return-value]
 
 
 def init_config() -> ConfigurationHandler[dict]:

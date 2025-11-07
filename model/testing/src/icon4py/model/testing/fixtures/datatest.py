@@ -602,7 +602,6 @@ def vwind_offctr(experiment: definitions.Experiment) -> float:
         return 0.2
 
 
-
 @pytest.fixture
 def top_height_limit_for_maximal_layer_thickness() -> float:
     return 15000.0

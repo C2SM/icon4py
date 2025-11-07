@@ -1595,6 +1595,7 @@ dev = [
     { name = "tach" },
     { name = "texsoup" },
     { name = "types-cffi" },
+    { name = "types-pyyaml" },
     { name = "typing-extensions" },
     { name = "validate-pyproject-schema-store", extra = ["all"] },
     { name = "wget" },
@@ -1636,6 +1637,7 @@ test = [
 typing = [
     { name = "mypy", extra = ["faster-cache"] },
     { name = "types-cffi" },
+    { name = "types-pyyaml" },
     { name = "typing-extensions" },
 ]
 
@@ -1694,6 +1696,7 @@ dev = [
     { name = "tach", specifier = ">=0.23.0" },
     { name = "texsoup", specifier = ">=0.3.1" },
     { name = "types-cffi", specifier = ">=1.16.0" },
+    { name = "types-pyyaml" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
     { name = "validate-pyproject-schema-store", extras = ["all"], specifier = ">=2025.6.13" },
     { name = "wget", specifier = ">=3.2" },
@@ -1735,6 +1738,7 @@ test = [
 typing = [
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
     { name = "types-cffi", specifier = ">=1.16.0" },
+    { name = "types-pyyaml" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
 ]
 
@@ -4476,6 +4480,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/91/c8/81e5699160b91f0f91eea852d84035c412bfb4b3a29389701044400ab379/types-cffi-1.16.0.20240331.tar.gz", hash = "sha256:b8b20d23a2b89cfed5f8c5bc53b0cb8677c3aac6d970dbc771e28b9c698f5dee", size = 11318, upload-time = "2024-03-31T02:18:47.099Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/69/7a/98f5d2493a652cec05d3b09be59202d202004a41fca9c70d224782611365/types_cffi-1.16.0.20240331-py3-none-any.whl", hash = "sha256:a363e5ea54a4eb6a4a105d800685fde596bc318089b025b27dee09849fe41ff0", size = 14550, upload-time = "2024-03-31T02:18:46.097Z" },
+]
+
+[[package]]
+name = "types-pyyaml"
+version = "6.0.12.20250915"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7e/69/3c51b36d04da19b92f9e815be12753125bd8bc247ba0470a982e6979e71c/types_pyyaml-6.0.12.20250915.tar.gz", hash = "sha256:0f8b54a528c303f0e6f7165687dd33fafa81c807fcac23f632b63aa624ced1d3", size = 17522, upload-time = "2025-09-15T03:01:00.728Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bd/e0/1eed384f02555dde685fff1a1ac805c1c7dcb6dd019c916fe659b1c1f9ec/types_pyyaml-6.0.12.20250915-py3-none-any.whl", hash = "sha256:e7d4d9e064e89a3b3cae120b4990cd370874d2bf12fa5f46c97018dd5d3c9ab6", size = 20338, upload-time = "2025-09-15T03:00:59.218Z" },
 ]
 
 [[package]]
