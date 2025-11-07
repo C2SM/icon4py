@@ -408,7 +408,7 @@ class MultiNodeResult:
 @definitions.create_exchange.register(MPICommProcessProperties)
 def create_multinode_node_exchange(
     props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
-) -> GHexMultiNodeExchange | SingleNodeExchange:
+) -> definitions.ExchangeRuntime:
     if props.comm_size > 1:
         return GHexMultiNodeExchange(props, decomp_info)
     else:
