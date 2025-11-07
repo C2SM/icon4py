@@ -22,7 +22,6 @@ diffusion:
   temperature_boundary_diffusion_denominator: 45.0
 
 dycore:
-  divdamp_order: 4
   divdamp_type: 32
   divdamp_trans_start: 1560
   divdamp_trans_end: 34000

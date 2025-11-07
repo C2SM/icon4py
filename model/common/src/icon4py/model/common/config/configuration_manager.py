@@ -32,7 +32,7 @@ log = logging.getLogger(__file__)
 # [ ] what if a package does not have the `config.py`
 
 
-# TODO (halungge): could go to icon4py.common
+# TODO (halungge): unused
 @dataclasses.dataclass
 class RunConfig:
     input_path: pathlib.Path = common_config.MISSING
@@ -73,6 +73,7 @@ def init_reader(module: ModuleType) -> common_config.ConfigurationHandler:
     return default_reader
 
 
+# TODO (halungge): change T type to custom type or std lib dict
 class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
     def __init__(self, model_config: pathlib.Path | str):
         self._handlers = {}
@@ -91,9 +92,15 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
 
     def read_config(self):
         # lets assume the configuration is all in one file
-        user_config = (
-            common_config.init_config().update(self._config_path.joinpath(self._config_file)).get()
+        # this should do direct merging fo the config then the interpolation will work again....
+        handler = common_config.init_config()
+        handler.update(self._config_path.joinpath(self._config_file))
+        user_config = handler._get(
+            format_=common_config.Format.DICT,
+            type_=common_config.ConfigType.CUSTOM,
+            read_only=False,
         )
+
         model_config = common_config.ConfigurationHandler(ModelConfig())
         model_config.update(user_config.model)
         self._handlers["model"] = model_config
@@ -102,20 +109,23 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
         self._handlers["run"] = run_config
         self._initialize_components(user_config)
 
-
-
-
-    @property
-    def config(self) -> oc.DictConfig:
+    def get(
+        self,
+        is_default: bool = False,
+    ) -> oc.DictConfig:
+        config_type = (
+            common_config.ConfigType.DEFAULT if is_default else common_config.ConfigType.CUSTOM
+        )
         merged = oc.OmegaConf.create({})
+        oc.OmegaConf.set_readonly(merged, False)
         for name, h in self._handlers.items():
-            merged[name] = h.config
+            merged[name] = h._get(
+                type_=config_type, format_=common_config.Format.DICT, read_only=False
+            )
+
+        oc.OmegaConf.resolve(merged)
         oc.OmegaConf.set_readonly(merged, True)
         return merged
-
-    @property
-    def default(self):
-        return self._default_config
 
     def _initialize_components(self, config: oc.DictConfig):
         model_components = config.model.components.items()
@@ -141,5 +151,12 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
 
     def get_configured_modules(self) -> dict:
         return oc.OmegaConf.to_container(
-            self._handlers["model"].config.components, structured_config_mode=oc.SCMode.DICT
+            self._handlers["model"]
+            ._get(
+                format_=common_config.Format.DICT,
+                type_=common_config.ConfigType.CUSTOM,
+                read_only=True,
+            )
+            .components,
+            structured_config_mode=oc.SCMode.DICT,
         )

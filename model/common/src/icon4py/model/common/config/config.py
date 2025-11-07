@@ -10,8 +10,7 @@ import enum
 import functools
 import logging
 import pathlib
-from typing import Generic, TypeVar, Protocol, overload, TypeAlias, TypeGuard
-from typing_extensions import Self
+from typing import Protocol, TypeAlias, TypeVar
 
 import omegaconf as oc
 
@@ -33,7 +32,7 @@ def to_datetime(time_str: str) -> str:
     return oc.II(interpolation)
 
 
-def _timedelta_resolver(secs: int | float)->datetime.timedelta:
+def _timedelta_resolver(secs: int | float) -> datetime.timedelta:
     return datetime.timedelta(seconds=secs)
 
 
@@ -49,11 +48,15 @@ class ConfigType(enum.Enum):
     DEFAULT = enum.auto()
     CUSTOM = enum.auto()
 
+
 class Format(enum.Enum):
     DICT = enum.auto()
     CLASS = enum.auto()
 
-T = TypeVar("T", covariant=True)
+
+T_co = TypeVar("T_co", covariant=True)
+T_contra = TypeVar("T_contra", contravariant=True)
+T = TypeVar("T")
 """
 Type variable used in the Generic ConfigurationHandler: T is a data class which _needs to have all its property type-annotated_ with types that
 OmegaConf supports in structured configs: https://omegaconf.readthedocs.io/en/2.3_branch/structured_config.html
@@ -62,10 +65,12 @@ If a type annotation is missing the property will be missing from the resulting 
 
 _CT = TypeVar("_CT", int, str, float, enum.Enum, bool, bytes, dict, list, pathlib.Path)
 """ TypeVar denoting possible value types in OmegaConf DictConfig"""
-OCDictType:TypeAlias = oc.DictConfig|oc.ListConfig
+OCConfigType: TypeAlias = oc.DictConfig | oc.ListConfig
 
-def dict_config(c: OCDictType)-> TypeGuard[oc.DictConfig]:
-    return  isinstance(c, oc.DictConfig)
+
+def as_dict(c: OCConfigType) -> oc.DictConfig:
+    return c if isinstance(c, oc.DictConfig) else oc.DictConfig({i: v for i, v in enumerate(c)})
+
 
 def resolve_or_else(key: str, value: _CT) -> _CT:
     """Convenience function to be used for value interpolation in configs. For example: if a given configuration
@@ -83,91 +88,101 @@ def resolve_or_else(key: str, value: _CT) -> _CT:
     return oc.II(interpolation)
 
 
-# PROTOCOL should contain
-# - update (atch: T | oc.DictConfig | dict | str | pathlib.Path)->None
-# - to_yaml(self, file: str | pathlib.Path, config_type=ConfigType.USER) -> None
-# - get(ConfigType, FORMAT)
+class Configuration(Protocol[T_co]):
+    def to_yaml(self, file: str, config_type: ConfigType) -> None: ...
+    def get(
+        self,
+        *,
+        is_default: bool = False,
+    ) -> T_co: ...
 
-class Configuration(Protocol[T]):
-    def to_yaml(self, file: str, config_type:ConfigType) -> None: ...
-    def get(self, type_:ConfigType, format_:Format)-> oc.DictConfig | T: ...
 
-class Updatable(Protocol[T]):
-    def update(self, patch: T | oc.DictConfig | str | pathlib.Path | dict, read_only: bool) -> Self: ...
+class Updatable(Protocol[T_contra]):
+    def update(self, patch: T_contra | oc.DictConfig | str | pathlib.Path | dict) -> None: ...
+
 
 class ConfigurationHandler(Configuration[T], Updatable[T]):
     def __init__(self, schema: T):
         self._schema: type[T] = schema if isinstance(schema, type) else type(schema)
-        self._default_config: oc.DictConfig = oc.OmegaConf.create(schema)
+        self._default_config: oc.DictConfig = oc.OmegaConf.structured(schema)
         self._config: oc.DictConfig = self._default_config.copy()
         oc.OmegaConf.set_readonly(self._default_config, True)
 
     @functools.cached_property
-    def _name(self)->str:
+    def _name(self) -> str:
         return self._schema.__name__.lower()
 
-
-    def _load_update(self, patch: T | oc.DictConfig | dict | str | pathlib.Path)->oc.DictConfig:
+    def _load_update(self, patch: T | oc.DictConfig | dict | str | pathlib.Path) -> oc.DictConfig:
         if isinstance(patch, (pathlib.Path, str)):
-            cfg = oc.OmegaConf.load(patch)
+            return as_dict(oc.OmegaConf.load(patch))
+
         if isinstance(patch, dict):
-            cfg= oc.OmegaConf.create(patch)
+            return oc.OmegaConf.create(patch)
         elif isinstance(patch, (self._schema, oc.DictConfig)):
-            cfg= oc.OmegaConf.structured(patch)
+            return oc.OmegaConf.structured(patch)
         else:
             raise ValueError(
                 f"wrong type for config, expected {self._schema} or 'str' but got {type(patch)}"
             )
-        return cfg
 
-    def update(
-        self, patch: T | oc.DictConfig | str | pathlib.Path | dict, read_only:bool=False
-    ) -> "ConfigurationHandler[T]":
+    def update(self, patch: T | oc.DictConfig | str | pathlib.Path | dict) -> None:
         try:
             update = self._load_update(patch)
             if self._name in update:
-                if dict_config(update):
-                    update = update.get(self._name)
+                update = update.get(self._name)
             if oc.OmegaConf.is_readonly(self._config):
                 oc.OmegaConf.set_readonly(self._config, False)
-            self._config = oc.OmegaConf.merge(self._config, update)
-            oc.OmegaConf.set_readonly(self._config, read_only)
-            return self
+            self._config = as_dict(oc.OmegaConf.merge(self._config, update))
+
         except (oc.ValidationError, ValueError) as e:
             log.error(f"patch {patch} does not validate against configuration {self._schema}")
             raise exceptions.InvalidConfigError(
                 f"patch {patch} does not validate against configuration {self._schema}"
             ) from e
 
-    def _as_type(self, config:oc.DictConfig) -> T:
+    def _as_type(self, config: oc.DictConfig, raise_on_missing: bool) -> T:
         mode = (
-            oc.SCMode.INSTANTIATE if not isinstance(self._schema, oc.DictConfig) else oc.SCMode.DICT
+            oc.SCMode.INSTANTIATE
+            if not isinstance(self._schema, (oc.DictConfig, dict))
+            else oc.SCMode.DICT
         )
-        return oc.OmegaConf.to_container(
-            config, resolve=True, throw_on_missing=True, structured_config_mode=mode
+        return oc.OmegaConf.to_container(  # type: ignore  [return-value]
+            config, resolve=True, throw_on_missing=raise_on_missing, structured_config_mode=mode
         )
 
-    def to_yaml(self, file: str | pathlib.Path, config_type:ConfigType=ConfigType.CUSTOM) -> None:
+    def to_yaml(
+        self, file: str | pathlib.Path, config_type: ConfigType = ConfigType.CUSTOM
+    ) -> None:
         if isinstance(file, str):
             file = pathlib.Path(file)
 
-        config = self._config if config_type == ConfigType.CUSTOM else self._default_config
+        config = (
+            self._config if config_type == ConfigType.CUSTOM else self._default_config
+        )  # ignore SIM210
         stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
 
         with file.open("w", encoding="utf-8") as f:
             f.write(stream)
 
-
-    def get(self, type_: ConfigType=ConfigType.CUSTOM, format_: Format=Format.CLASS)->oc.DictConfig|T:
+    def _get(
+        self,
+        *,
+        type_: ConfigType,
+        format_: Format,
+        read_only: bool,
+    ) -> oc.DictConfig | T:
         config = self._config if type_ == ConfigType.CUSTOM else self._default_config
+        raise_on_missing = type_ == ConfigType.CUSTOM
         match format_:
             case Format.CLASS:
-                return self._as_type(config)
+                return self._as_type(config, raise_on_missing)
             case Format.DICT:
-                oc.OmegaConf.set_readonly(config, True)
-                return config # TODO (halungge): change to std dict
+                oc.OmegaConf.set_readonly(config, read_only)
+                return config  # TODO (halungge): change to std dict?
 
-
+    def get(self, *, is_default: bool = False):
+        config_type = ConfigType.DEFAULT if is_default else ConfigType.CUSTOM
+        return self._get(type_=config_type, format_=Format.CLASS, read_only=True)
 
 
 def init_config() -> ConfigurationHandler[dict]:
