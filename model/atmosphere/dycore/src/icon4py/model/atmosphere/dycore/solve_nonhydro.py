@@ -1058,8 +1058,6 @@ class SolveNonhydro:
                 self.intermediate_fields.horizontal_gradient_of_normal_wind_divergence,
             )
 
-        self.rayleigh_damping_factor = self._get_rayleigh_damping_factor(dtime)
-
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
@@ -1230,7 +1228,7 @@ class SolveNonhydro:
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
+            rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             dtime=dtime,
             at_first_substep=at_first_substep,
         )
@@ -1401,7 +1399,7 @@ class SolveNonhydro:
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
+            rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(ndyn_substeps_var),

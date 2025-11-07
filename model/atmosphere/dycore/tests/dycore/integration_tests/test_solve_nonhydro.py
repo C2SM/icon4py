@@ -222,11 +222,6 @@ def test_nonhydro_predictor_step(
     if not at_first_substep:
         diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
-    solve_nonhydro._compute_rayleigh_damping_factor(
-        rayleigh_damping_factor=solve_nonhydro.rayleigh_damping_factor,
-        dtime=dtime,
-    )
-
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_states=prognostic_states,
@@ -576,11 +571,6 @@ def test_nonhydro_corrector_step(
         diagnostic_state_nh.vertical_wind_advective_tendency.swap()
     if not at_first_substep:
         diagnostic_state_nh.normal_wind_advective_tendency.swap()
-
-    solve_nonhydro._compute_rayleigh_damping_factor(
-        rayleigh_damping_factor=solve_nonhydro.rayleigh_damping_factor,
-        dtime=dtime,
-    )
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
