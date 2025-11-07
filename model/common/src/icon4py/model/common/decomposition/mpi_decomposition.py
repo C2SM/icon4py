@@ -225,7 +225,7 @@ class GHexMultiNodeExchange:
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
 
         # Slice the fields based on the dimension
-        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]  # type: ignore[arg-type] # mypy fails to type check correctly, f is already a field
+        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
 
         # Create field descriptors and perform the exchange
         applied_patterns = [
@@ -247,12 +247,12 @@ class GHexMultiNodeExchange:
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple) -> None:
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None:
         res = self.exchange(dim, *fields)
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
-    def __call__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> MultiNodeResult | None:
+    def __call__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> MultiNodeResult | None:  # type: ignore[return] # return statment in else condition
         """Perform a halo exchange operation.
 
         Args:
@@ -262,11 +262,8 @@ class GHexMultiNodeExchange:
             dim: The dimension along which the exchange is performed.
             wait: If True, the operation will block until the exchange is completed (default: True).
         """
-        dim = kwargs.get("dim")
-        assert isinstance(dim, gtx.Dimension)
         if dim is None:
             raise ValueError("Need to define a dimension.")
-        wait = kwargs.get("wait", True)
 
         res = self.exchange(dim, *args)
         if wait:
@@ -275,15 +272,15 @@ class GHexMultiNodeExchange:
             return res
 
     # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
+    def dace__sdfg__(
+        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+    ) -> dace.sdfg.sdfg.SDFG:
         if len(args) > GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace:
             raise ValueError(
                 f"Maximum number of fields to communicate is {GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace}. Adapt the max number accordingly."
             )
-        dim = kwargs.get("dim")
         if dim is None:
             raise ValueError("Need to define a dimension.")
-        wait = kwargs.get("wait", True)
 
         # Build the halo exchange SDFG and return it
         sdfg = dace.SDFG("_halo_exchange_")
@@ -331,7 +328,9 @@ class HaloExchangeWait:
         communication_handle.wait()
 
     # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
+    def dace__sdfg__(
+        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+    ) -> dace.sdfg.sdfg.SDFG:
         sdfg = dace.SDFG("_halo_exchange_wait_")
         state = sdfg.add_state()
 
@@ -408,7 +407,7 @@ class MultiNodeResult:
 @definitions.create_exchange.register(MPICommProcessProperties)
 def create_multinode_node_exchange(
     props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
-) -> definitions.ExchangeRuntime:
+) -> definitions.ExchangeRuntime | GHexMultiNodeExchange:
     if props.comm_size > 1:
         return GHexMultiNodeExchange(props, decomp_info)
     else:

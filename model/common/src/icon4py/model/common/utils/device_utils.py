@@ -24,6 +24,10 @@ except ImportError:
 def is_cupy_device(allocator: gtx_typing.FieldBufferAllocationUtil | None) -> bool:
     if allocator is None:
         return False
+
+    if gtx.CUPY_DEVICE_TYPE is None:
+        return False
+
     return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)  # type: ignore [type-var] #gt4py-related typing
 
 

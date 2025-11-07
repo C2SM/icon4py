@@ -75,7 +75,6 @@ class named_property(property, Generic[C, T]):
         result = type(self)(
             fget=standard_property.fget, fset=standard_property.fset, fdel=standard_property.fdel
         )
-        assert hasattr(result, "name")
         result.name = getattr(self, "name", None)
         return result
 
@@ -92,7 +91,6 @@ class named_property(property, Generic[C, T]):
         result = type(self)(
             fget=standard_property.fget, fset=standard_property.fset, fdel=standard_property.fdel
         )
-        assert hasattr(result, "name")
         result.name = getattr(self, "name", None)
         return result
 

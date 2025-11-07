@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
@@ -82,7 +82,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
     backend: gtx_typing.Backend | None,
 ) -> None:
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
-        experiment.grid, 1, True, backend
+        experiment.grid, 1, True, model_backends.get_allocator(backend)
     )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
@@ -112,7 +112,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     backend: gtx_typing.Backend | None,
 ) -> None:
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
-        experiment.grid, 1, True, backend
+        experiment.grid, 1, True, model_backends.get_allocator(backend)
     )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)

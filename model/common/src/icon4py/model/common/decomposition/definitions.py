@@ -179,7 +179,7 @@ class SingleNodeExchange:
     def get_size(self) -> int:
         return 1
 
-    def __call__(self, *args: Any, **kwargs: dict[str, Any]) -> ExchangeResult | None:
+    def __call__(self, *args: Any, dim: Dimension, wait: bool = True) -> ExchangeResult | None:  # type: ignore[return] # return statment in else condition
         """Perform a halo exchange operation.
 
         Args:
@@ -189,10 +189,7 @@ class SingleNodeExchange:
             dim: The dimension along which the exchange is performed.
             wait: If True, the operation will block until the exchange is completed (default: True).
         """
-        dim = kwargs.get("dim")
-        wait = kwargs.get("wait", True)
 
-        assert isinstance(dim, Dimension)
         res = self.exchange(dim, *args)
         if wait:
             res.wait()
@@ -201,7 +198,7 @@ class SingleNodeExchange:
 
     # Implementation of DaCe SDFGConvertible interface
     # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
-    def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
+    def dace__sdfg__(self, *args: Any, dim: Dimension, wait: bool = True) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
         sdfg.name = "_halo_exchange_"
         return sdfg
@@ -245,7 +242,7 @@ class HaloExchangeWait:
         communication_handle.wait()
 
     # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
+    def dace__sdfg__(self, *args: Any, dim: Dimension, wait: bool = True) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
         sdfg.name = "_halo_exchange_wait_"
         return sdfg
