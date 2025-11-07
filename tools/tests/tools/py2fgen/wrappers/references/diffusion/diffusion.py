@@ -8,7 +8,7 @@ logging.basicConfig(
     level=getattr(logging, runtime_config.LOG_LEVEL),
     format=log_format,
     datefmt="%Y-%m-%d %H:%M:%S",
-    )
+)
 
 
 # embedded function imports

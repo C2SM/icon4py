@@ -17,6 +17,7 @@ import pytest
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import constants, dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils as testing_test_utils
@@ -528,7 +529,7 @@ def test_dycore_wrapper_granule_inputs(
         coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
-    expected_vertical_config = v_grid.VerticalGridConfig(
+    expected_vertical_config = VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
