@@ -85,10 +85,11 @@ def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) 
 
 def scalar_like_array(
     value: ScalarT,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    allocator: ModuleType | gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> ScalarLikeArray[ScalarT]:
-    """Create a 0-d array (scalar-like) with given value on specified backend."""
-    return import_array_ns(allocator).asarray(value)
+    """Create a 0-d array (scalar-like) with given value on specified array namespace or allocator."""
+    array_ns = allocator if allocator in (np, xp) else import_array_ns(allocator)
+    return array_ns.asarray(value)
 
 
 def as_field(
