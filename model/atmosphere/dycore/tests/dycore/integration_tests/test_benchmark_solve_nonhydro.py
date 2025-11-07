@@ -56,13 +56,13 @@ def solve_nonhydro(
     allocator = model_backends.get_allocator(backend_like)
     mesh = geometry_field_source.grid
 
-    config = dycore_config.NonHydrostaticConfig(
+    config_handler = dycore_config.init_config()
+    config_handler.update(dict(
         rayleigh_coeff=0.1,
-        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
-        fourth_order_divdamp_factor=0.004,
         max_nudging_coefficient=0.375,
-    )
+    ))
+    config = config_handler.get()
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
