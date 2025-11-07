@@ -27,9 +27,11 @@ RUN_NODE = "run"
 
 # TODO (halungge): address
 
-# [ ] dump configuration (should be done from recursively from ConfigReader as we want to be able
-#      to do that standalone as well (additional change name if it writes as well)
-#       - TEST
+# [ ] dump configuration  in __call__
+#   - dump to $output_path/run_<some_generated_timestamp>/xxxx.yaml
+#   - needs ProcessProperties to only dump on single node
+# [ ] should this be here or rather live in common.config?
+# [ ] dependent fields in the Config classes should get init=False, but that does not work for the wrapper?
 
 
 @dataclasses.dataclass
@@ -60,7 +62,6 @@ def load_reader(module: ModuleType, update: oc.DictConfig) -> common_config.Conf
     return default_reader
 
 
-# TODO (halungge): change T type to custom type or std lib dict in oder to not expose omegaconf stuff
 class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
     def __init__(self, model_config: pathlib.Path | str):
         self._handlers: dict[str, common_config.ConfigurationHandler] = {}

@@ -11,7 +11,7 @@ import pathlib
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common.config import configuration_manager
+from icon4py.model.driver.config import configuration_manager
 from icon4py.model.testing import test_utils
 
 
