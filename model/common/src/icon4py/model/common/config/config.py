@@ -113,7 +113,9 @@ class Updatable(Protocol[T_contra]):
 class ConfigurationHandler(Configuration[T], Updatable[T]):
     def __init__(self, schema: T):
         self._schema: type[T] = schema if isinstance(schema, type) else type(schema)
-        self._default_config: oc.DictConfig = oc.OmegaConf.structured(schema)
+        self._default_config: oc.DictConfig = oc.OmegaConf.structured(
+            schema, flags={"allow_objects": True}
+        )
         self._config: oc.DictConfig = self._default_config.copy()
         oc.OmegaConf.set_readonly(self._default_config, True)
 
@@ -162,7 +164,6 @@ class ConfigurationHandler(Configuration[T], Updatable[T]):
     def to_yaml(self, file: str | pathlib.Path, is_default: bool = False) -> None:
         config = self._default_config if is_default else self._config
         self._write_to_yaml(config, file)
-
 
     def _get(
         self,

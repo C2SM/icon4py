@@ -232,8 +232,6 @@ def test_datetime_resolver():
     )
 
 
-# TODO (halungge): Fix
-@pytest.mark.xfail
 def test_dtime_resolver_in_structured_config():
     @dataclasses.dataclass
     class TimeDiff:
@@ -241,16 +239,14 @@ def test_dtime_resolver_in_structured_config():
 
     handler = common_config.ConfigurationHandler(TimeDiff())
     config = handler.get()
-    assert config.seconds == datetime.timedelta(10)
+    assert config.seconds == datetime.timedelta(seconds=10)
 
 
-# TODO (halungge): Fix
-@pytest.mark.xfail
 def test_datetime_resolver_in_structured_config():
     @dataclasses.dataclass
     class Time:
         time: datetime.datetime = dataclasses.field(
-            default=common_config.to_datetime("2021-06-21T12:00:10.000")
+            default=common_config.to_datetime("2021-06-21T12:00:10.000"),
         )
 
     handler = common_config.ConfigurationHandler(Time())

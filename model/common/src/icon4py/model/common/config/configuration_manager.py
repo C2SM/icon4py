@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+import datetime
 import importlib
 import logging
 import pathlib
@@ -32,17 +33,13 @@ log = logging.getLogger(__file__)
 # [ ] what if a package does not have the `config.py`
 
 
-# TODO (halungge): unused
 @dataclasses.dataclass
 class RunConfig:
     input_path: pathlib.Path = common_config.MISSING
     output_path: pathlib.Path = common_config.MISSING
-    # dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)
-    # start_date: datetime.datetime = common_config.MISSING
-    # end_date: datetime.datetime = common_config.MISSING
-    dtime: int = 600  # TODO (halungge): use datetime.timedelta
-    start_date: str = common_config.MISSING  # TODO (halungge): use datetime.datetime
-    end_date: str = common_config.MISSING  # TODO (halungge): use datetime.datetime
+    dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)
+    start_date: datetime.datetime = common_config.MISSING
+    end_date: datetime.datetime = common_config.MISSING
 
 
 @dataclasses.dataclass
