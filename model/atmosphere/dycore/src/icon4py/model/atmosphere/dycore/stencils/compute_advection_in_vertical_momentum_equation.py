@@ -194,8 +194,8 @@ def _compute_contravariant_corrected_w_and_cfl(
 def _compute_advective_vertical_wind_tendency(
     vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.wpfloat],
-    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
+    contravariant_corrected_w_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     cfl_clipping: fa.CellKField[bool],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
@@ -453,7 +453,7 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
 def _compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
     vertical_wind_advective_tendency: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.wpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
@@ -539,7 +539,7 @@ def compute_contravariant_correction_and_advection_in_vertical_momentum_equation
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     vertical_cfl: fa.CellKField[ta.vpfloat],
     w: fa.CellKField[ta.wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.wpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     coeff1_dwdz: fa.CellKField[ta.vpfloat],
     coeff2_dwdz: fa.CellKField[ta.vpfloat],
