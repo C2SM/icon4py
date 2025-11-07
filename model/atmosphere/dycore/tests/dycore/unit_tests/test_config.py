@@ -9,7 +9,6 @@
 import pathlib
 
 import icon4py.model.atmosphere.dycore.config as dycore_config
-from icon4py.model.common.config import config
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import experiment
 
@@ -17,7 +16,7 @@ from icon4py.model.testing.fixtures.datatest import experiment
 def test_non_hydrostatic_default_config(tmp_path: pathlib.Path) -> None:
     default_config = dycore_config.init_config()
     file = tmp_path.joinpath("default.yaml")
-    default_config.to_yaml(file, config.ConfigType.DEFAULT)
+    default_config.to_yaml(file, is_default=True)
 
     reference_file = pathlib.Path(__file__).parent.joinpath("references/dycore_default.yaml")
     assert test_utils.diff(reference_file, file)
@@ -46,9 +45,9 @@ def test_dycore_experiment_config(
     }
 
     file = tmp_path.joinpath(f"dycore_{experiment.name}.yaml")
-    configuration.to_yaml(file, config.ConfigType.USER)
+    configuration.to_yaml(file)
     reference_file = definitions.config_reference_path().joinpath(f"dycore_{experiment.name}.yaml")
     assert test_utils.diff(reference_file, file)
     test_utils.assert_same_except(
-        overwrites[experiment.name], configuration.get(), configuration.default
+        overwrites[experiment.name], configuration.get(), configuration.get(is_default=True)
     )

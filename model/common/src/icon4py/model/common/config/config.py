@@ -89,7 +89,16 @@ def resolve_or_else(key: str, value: _CT) -> _CT:
 
 
 class Configuration(Protocol[T_co]):
-    def to_yaml(self, file: str, config_type: ConfigType) -> None: ...
+    def to_yaml(self, file: str, is_default: bool = False) -> None: ...
+    def _write_to_yaml(self, config: oc.DictConfig, file: str | pathlib.Path):
+        if isinstance(file, str):
+            file = pathlib.Path(file)
+
+        stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
+
+        with file.open("w", encoding="utf-8") as f:
+            f.write(stream)
+
     def get(
         self,
         *,
@@ -150,19 +159,10 @@ class ConfigurationHandler(Configuration[T], Updatable[T]):
             config, resolve=True, throw_on_missing=raise_on_missing, structured_config_mode=mode
         )
 
-    def to_yaml(
-        self, file: str | pathlib.Path, config_type: ConfigType = ConfigType.CUSTOM
-    ) -> None:
-        if isinstance(file, str):
-            file = pathlib.Path(file)
+    def to_yaml(self, file: str | pathlib.Path, is_default: bool = False) -> None:
+        config = self._default_config if is_default else self._config
+        self._write_to_yaml(config, file)
 
-        config = (
-            self._config if config_type == ConfigType.CUSTOM else self._default_config
-        )  # ignore SIM210
-        stream = oc.OmegaConf.to_yaml(config, resolve=True, sort_keys=True)
-
-        with file.open("w", encoding="utf-8") as f:
-            f.write(stream)
 
     def _get(
         self,
@@ -180,7 +180,7 @@ class ConfigurationHandler(Configuration[T], Updatable[T]):
                 oc.OmegaConf.set_readonly(config, read_only)
                 return config  # TODO (halungge): change to std dict?
 
-    def get(self, *, is_default: bool = False):
+    def get(self, *, is_default: bool = False) -> T:
         config_type = ConfigType.DEFAULT if is_default else ConfigType.CUSTOM
         return self._get(type_=config_type, format_=Format.CLASS, read_only=True)
 

@@ -160,3 +160,7 @@ class ConfigurationManager(common_config.Configuration[oc.DictConfig]):
             .components,
             structured_config_mode=oc.SCMode.DICT,
         )
+
+    def to_yaml(self, file: str | pathlib.Path, is_default: bool = False):
+        config = self.get(is_default)
+        self._write_to_yaml(config, file)
