@@ -17,7 +17,7 @@ from typing import Any, Literal, Protocol, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
 import numpy as np
-from gt4py.next import Dimension
+from gt4py.next import Dimension, Field
 
 from icon4py.model.common import utils
 from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
@@ -156,9 +156,9 @@ class ExchangeResult(Protocol):
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult: ...
+    def exchange(self, dim: Dimension, *fields: Field) -> ExchangeResult: ...
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple) -> None: ...
+    def exchange_and_wait(self, dim: Dimension, *fields: Field) -> None: ...
 
     def get_size(self) -> int: ...
 
@@ -167,10 +167,10 @@ class ExchangeRuntime(Protocol):
 
 @dataclass
 class SingleNodeExchange:
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
+    def exchange(self, dim: Dimension, *fields: Field) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple) -> None:
+    def exchange_and_wait(self, dim: Dimension, *fields: Field) -> None:
         return
 
     def my_rank(self) -> int:
