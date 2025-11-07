@@ -295,7 +295,10 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
                 perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
                 perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
             ),
-            (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
+            (
+                np.zeros_like(rho_at_edges_on_model_levels),
+                np.zeros_like(theta_v_at_edges_on_model_levels),
+            ),
         )
 
         # Remaining computations at edge points
@@ -578,6 +581,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVnContinuousBenchmarking(
         )
         base_data["is_iau_active"] = False
         base_data["limited_area"] = grid.limited_area
-        base_data["nflatlev"] = 6
-        base_data["nflat_gradp"] = 35
+        base_data["nflatlev"] = 5
+        base_data["nflat_gradp"] = 34
+        base_data["start_edge_lateral_boundary"] = 0
         return base_data
