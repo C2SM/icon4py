@@ -87,8 +87,8 @@ class DecompositionInfo:
         num_edges: int | None = None,
         num_vertices: int | None = None,
     ):
-        self._global_index: dict = {}
-        self._owner_mask: dict = {}
+        self._global_index: dict[Dimension, data_alloc.NDArray] = {}
+        self._owner_mask: dict[Dimension, data_alloc.NDArray] = {}
         self._num_vertices = num_vertices
         self._num_cells = num_cells
         self._num_edges = num_edges
