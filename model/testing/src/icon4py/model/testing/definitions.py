@@ -216,5 +216,5 @@ def construct_nonhydrostatic_config(
         return config.get()
     except exceptions.InvalidConfigError as e:
         raise NotImplementedError(
-            f"DiffusionConfig for experiment {experiment.name} not implemented."
+            f"NonHydrostaticConfig for experiment {experiment.name} not implemented."
         ) from e

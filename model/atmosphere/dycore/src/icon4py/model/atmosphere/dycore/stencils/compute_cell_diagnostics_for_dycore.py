@@ -51,7 +51,7 @@ from icon4py.model.common.math.derivative import _compute_first_vertical_derivat
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-horizontal_pressure_discretization_options: Final = (
+horzpres_discr_type: Final = (
     dycore_states.HorizontalPressureDiscretizationType.namespace()
 )
 
@@ -110,7 +110,7 @@ def _compute_perturbed_quantities_and_interpolation(
             ),
             exner_at_cells_on_half_levels,
         )
-        if igradp_method == horizontal_pressure_discretization_options.TAYLOR_HYDRO
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
         else exner_at_cells_on_half_levels
     )
 
@@ -190,7 +190,7 @@ def _surface_computations(
         _interpolate_to_surface(
             wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
         )
-        if igradp_method == horizontal_pressure_discretization_options.TAYLOR_HYDRO
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
         else exner_at_cells_on_half_levels
     )
 
@@ -225,7 +225,7 @@ def _compute_first_and_second_vertical_derivative_of_exner(
             ),
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
-        if igradp_method == horizontal_pressure_discretization_options.TAYLOR_HYDRO
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
         else ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     )
 
@@ -243,7 +243,7 @@ def _compute_first_and_second_vertical_derivative_of_exner(
             ),
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
-        if igradp_method == horizontal_pressure_discretization_options.TAYLOR_HYDRO
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
         else d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     )
 
