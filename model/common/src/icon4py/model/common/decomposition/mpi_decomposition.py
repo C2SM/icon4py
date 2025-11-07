@@ -290,8 +290,6 @@ class GHexMultiNodeExchange:
             self.__sdfg_signature__()[0][i]: arg for i, arg in enumerate(args)
         }  # Field name : Data Descriptor
 
-        assert isinstance(dim, gtx.Dimension)
-        assert isinstance(wait, bool)
         halo_exchange.add_halo_tasklet(
             sdfg, state, global_buffers, self, dim, id(self), wait, self.num_of_halo_tasklets
         )
