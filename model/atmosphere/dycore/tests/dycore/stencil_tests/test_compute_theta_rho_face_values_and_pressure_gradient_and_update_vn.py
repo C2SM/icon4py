@@ -12,8 +12,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.type_alias as ta
-import icon4py.model.testing.stencil_tests as test_helpers
+from icon4py.model.common.type_alias import wpfloat, vpfloat, precision
 from icon4py.model.atmosphere.dycore.dycore_states import (
     HorizontalPressureDiscretizationType,
     RhoThetaAdvectionType,
@@ -24,6 +23,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import stencil_tests
 
 
 rhotheta_avd_type = RhoThetaAdvectionType()
@@ -121,10 +121,11 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
     return rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels
 
 
-@pytest.mark.embedded_remap_error
-@pytest.mark.skip_value_error
+@pytest.mark.single_precision_ready
+# @pytest.mark.embedded_remap_error #TODO(pstark): find out why this deselects
+# @pytest.mark.skip_value_error
 @pytest.mark.uses_as_offset
-class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
+class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
     PROGRAM = compute_theta_rho_face_values_and_pressure_gradient_and_update_vn
     OUTPUTS = (
         "rho_at_edges_on_model_levels",
@@ -132,6 +133,41 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         "horizontal_pressure_gradient",
         "next_vn",
     )
+    STATIC_PARAMS = {
+        # stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            # "iau_wgt_dyn",
+            "is_iau_active",
+            "limited_area",
+            "start_edge_lateral_boundary",
+            "start_edge_lateral_boundary_level_7",
+            "start_edge_nudging_level_2",
+            "end_edge_nudging",
+            "end_edge_halo",
+            "nflatlev",
+            "nflat_gradp",
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+        ),
+        # stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        #     "end_index_of_damping_layer",
+        #     "kstart_moist",
+        #     "flat_level_index_plus1",
+        #     "vertical_start_index_model_top",
+        #     "vertical_end_index_model_surface",
+        #     "divdamp_type",
+        #     "rayleigh_type",
+        #     "is_iau_active",
+        #     "at_first_substep",
+        # ),
+    }
+    # TODO(pstark): rm this again:
+    FIND_RTOL = True
+    if precision == "single":
+        RTOL = 3e-2
+        ATOL = 1e-2
 
     @staticmethod
     def reference(
@@ -169,8 +205,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
         ipeidx_dsl: np.ndarray,
         pg_exdist: np.ndarray,
         inv_dual_edge_length: np.ndarray,
-        dtime: ta.wpfloat,
-        iau_wgt_dyn: ta.wpfloat,
+        dtime: wpfloat,
+        iau_wgt_dyn: wpfloat,
         is_iau_active: gtx.int32,
         limited_area: gtx.int32,
         start_edge_lateral_boundary: gtx.int32,
@@ -406,132 +442,26 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(test_helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
-        geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
-        current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        tangential_wind = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        pos_on_tplane_e_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        reference_rho_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
-        )
-        reference_theta_at_edges_on_model_levels = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
-        )
-        perturbed_rho_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
-        )
-        perturbed_theta_v_at_cells_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
-        )
-        ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        temporal_extrapolation_of_perturbed_exner = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
-        )
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim
-        )
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-            data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        )
-        hydrostatic_correction_on_lowest_level = data_alloc.random_field(grid, dims.EdgeDim)
-        zdiff_gradp = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim)
-        ipeidx_dsl = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim)
-        pg_exdist = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        predictor_normal_wind_advective_tendency = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
-        )
-        normal_wind_tendency_due_to_slow_physics_process = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim
-        )
-        normal_wind_iau_increment = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        grf_tend_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        next_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        theta_v_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        horizontal_pressure_gradient = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        rho_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        random_fields = data_alloc.get_random_fields(grid, ['geofac_grg_x', 'geofac_grg_y', 'current_vn', 'tangential_wind', 'pos_on_tplane_e_x', 'pos_on_tplane_e_y', 'primal_normal_cell_x', 'dual_normal_cell_x', 'primal_normal_cell_y', 'dual_normal_cell_y', 'reference_rho_at_edges_on_model_levels', 'reference_theta_at_edges_on_model_levels', 'perturbed_rho_at_cells_on_model_levels', 'perturbed_theta_v_at_cells_on_model_levels', 'ddxn_z_full', 'c_lin_e', 'ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels', 'd2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels', 'hydrostatic_correction_on_lowest_level', 'zdiff_gradp', 'pg_exdist', 'inv_dual_edge_length', 'predictor_normal_wind_advective_tendency', 'normal_wind_tendency_due_to_slow_physics_process', 'normal_wind_iau_increment', 'grf_tend_vn'])
 
-        ikoffset = data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
-        )
-        rng = np.random.default_rng()
-        k_levels = grid.num_levels
+        zero_fields = data_alloc.get_zero_fields(grid, ['next_vn', 'theta_v_at_edges_on_model_levels', 'horizontal_pressure_gradient', 'rho_at_edges_on_model_levels'])
 
-        for k in range(k_levels):
-            # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-            ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]
-                low=0 - k,
-                high=k_levels - k - 1,
-                size=(ikoffset.shape[0], ikoffset.shape[1]),
-            )
-
-        dtime = 0.9
-        iau_wgt_dyn = 1.0
-        is_iau_active = True
-        limited_area = True
         edge_domain = h_grid.domain(dims.EdgeDim)
-
-        start_edge_lateral_boundary = grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
-        start_edge_lateral_boundary_level_7 = grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
-        )
-        start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
-        end_edge_nudging = grid.end_index(edge_domain(h_grid.Zone.NUDGING))
-        end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
-        nflatlev = 4
-        nflat_gradp = 27
-
-        return dict(
-            rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
-            theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
-            horizontal_pressure_gradient=horizontal_pressure_gradient,
-            next_vn=next_vn,
-            current_vn=current_vn,
-            tangential_wind=tangential_wind,
-            reference_rho_at_edges_on_model_levels=reference_rho_at_edges_on_model_levels,
-            reference_theta_at_edges_on_model_levels=reference_theta_at_edges_on_model_levels,
-            perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
-            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
-            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            hydrostatic_correction_on_lowest_level=hydrostatic_correction_on_lowest_level,
-            predictor_normal_wind_advective_tendency=predictor_normal_wind_advective_tendency,
-            normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
-            normal_wind_iau_increment=normal_wind_iau_increment,
-            grf_tend_vn=grf_tend_vn,
-            geofac_grg_x=geofac_grg_x,
-            geofac_grg_y=geofac_grg_y,
-            pos_on_tplane_e_x=pos_on_tplane_e_x,
-            pos_on_tplane_e_y=pos_on_tplane_e_y,
-            primal_normal_cell_x=primal_normal_cell_x,
-            dual_normal_cell_x=dual_normal_cell_x,
-            primal_normal_cell_y=primal_normal_cell_y,
-            dual_normal_cell_y=dual_normal_cell_y,
-            ddxn_z_full=ddxn_z_full,
-            c_lin_e=c_lin_e,
-            ikoffset=ikoffset,
-            zdiff_gradp=zdiff_gradp,
-            ipeidx_dsl=ipeidx_dsl,
-            pg_exdist=pg_exdist,
-            inv_dual_edge_length=inv_dual_edge_length,
-            dtime=dtime,
-            iau_wgt_dyn=iau_wgt_dyn,
-            is_iau_active=is_iau_active,
-            limited_area=limited_area,
-            nflatlev=nflatlev,
-            nflat_gradp=nflat_gradp,
-            start_edge_lateral_boundary=start_edge_lateral_boundary,
-            start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
-            start_edge_nudging_level_2=start_edge_nudging_level_2,
-            end_edge_nudging=end_edge_nudging,
-            end_edge_halo=end_edge_halo,
+        return random_fields | zero_fields | dict(
+            temporal_extrapolation_of_perturbed_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim),
+            ipeidx_dsl = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim),
+            ikoffset = data_alloc.random_ikoffset(grid, dims.EdgeDim, dims.E2CDim, dims.KDim),
+            dtime = wpfloat(0.9),
+            iau_wgt_dyn = wpfloat(1.0),
+            is_iau_active = True,
+            limited_area = True,
+            start_edge_lateral_boundary = grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY)),
+            start_edge_lateral_boundary_level_7 = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)),
+            start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2)),
+            end_edge_nudging = grid.end_index(edge_domain(h_grid.Zone.NUDGING)),
+            end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO)),
+            nflatlev = 4,
+            nflat_gradp = 27,
             horizontal_start=0,
             horizontal_end=grid.num_edges,
             vertical_start=0,

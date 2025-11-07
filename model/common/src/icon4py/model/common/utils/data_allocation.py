@@ -8,7 +8,9 @@
 
 from __future__ import annotations
 
+import json
 import logging as log
+from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, TypeAlias
 
@@ -18,7 +20,8 @@ import numpy.typing as npt
 from gt4py import next as gtx
 from gt4py.next import allocators as gtx_allocators
 
-from icon4py.model.common import type_alias as ta
+from icon4py.model.common import dimension as dims # noqa: F401
+from icon4py.model.common.type_alias import wpfloat, vpfloat # noqa: F401
 from icon4py.model.common.utils import device_utils
 
 
@@ -80,44 +83,43 @@ def as_field(
 
 def random_field(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
+    *dimensions: gtx.Dimension,
     low: float = -1.0,
     high: float = 1.0,
-    dtype: npt.DTypeLike | None = None,
+    dtype: npt.DTypeLike = wpfloat,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     arr = np.random.default_rng().uniform(
-        low=low, high=high, size=_shape(grid, *dims, extend=extend)
+        low=low, high=high, size=_shape(grid, *dimensions, extend=extend)
     )
-    if dtype:
-        arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)
+    arr = arr.astype(dtype)
+    return gtx.as_field(dimensions, arr, allocator=allocator)
 
 
 def random_sign(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
+    *dimensions: gtx.Dimension,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     """Generate a random field with values -1 or 1."""
-    arr = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dims, extend=extend))
+    arr = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dimensions, extend=extend))
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)
+    return gtx.as_field(dimensions, arr, allocator=allocator)
 
 
 def random_mask(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
+    *dimensions: gtx.Dimension,
     dtype: npt.DTypeLike | None = None,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_typing.Backend | None = None,
 ) -> gtx.Field:
     rng = np.random.default_rng()
-    shape = _shape(grid, *dims, extend=extend)
+    shape = _shape(grid, *dimensions, extend=extend)
     arr = np.full(shape, False).flatten()
     num_true = int(arr.size * 0.5)
     arr[:num_true] = True
@@ -125,41 +127,69 @@ def random_mask(
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)
+    return gtx.as_field(dimensions, arr, allocator=allocator)
+
+
+def random_ikoffset(
+    grid: grid_base.Grid,
+    *dimensions: gtx.Dimension,
+    dtype=gtx.int32,
+    extend: dict[gtx.Dimension, int] | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    rng=np.random.default_rng()):
+
+    ikoffset = empty_field(grid, *dimensions, dtype=dtype, extend=extend, allocator=allocator)
+    for k in range(grid.num_levels):
+        # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
+        ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]
+            low=0 - k,
+            high=grid.num_levels - k - 1,
+            size=(ikoffset.shape[0], ikoffset.shape[1]),
+        )
+    return ikoffset
+
+
+def empty_field(
+    grid: grid_base.Grid,
+    *dimensions: gtx.Dimension,
+    dtype=wpfloat,
+    extend: dict[gtx.Dimension, int] | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+) -> gtx.Field:
+    field_domain = {dim: (0, stop) for dim, stop in zip(dimensions, _shape(grid, *dimensions, extend=extend))}
+    return gtx.constructors.empty(field_domain, dtype=dtype, allocator=allocator)
 
 
 def zero_field(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
-    dtype=ta.wpfloat,
+    *dimensions: gtx.Dimension,
+    dtype=wpfloat,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
-    field_domain = {dim: (0, stop) for dim, stop in zip(dims, _shape(grid, *dims, extend=extend))}
+    field_domain = {dim: (0, stop) for dim, stop in zip(dimensions, _shape(grid, *dimensions, extend=extend))}
     return gtx.constructors.zeros(field_domain, dtype=dtype, allocator=allocator)
 
 
 def constant_field(
     grid: grid_base.Grid,
     value: float,
-    *dims: gtx.Dimension,
-    dtype=ta.wpfloat,
+    *dimensions: gtx.Dimension,
+    dtype=wpfloat,
+    extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
-    return gtx.as_field(
-        dims,
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
-        allocator=allocator,
-    )
+    field_domain = {dim: (0, stop) for dim, stop in zip(dimensions, _shape(grid, *dimensions, extend=extend))}
+    return gtx.constructors.full(field_domain, value, dtype=dtype, allocator=allocator)
 
 
 def _shape(
     grid: grid_base.Grid,
-    *dims: gtx.Dimension,
+    *dimensions: gtx.Dimension,
     extend: dict[gtx.Dimension, int] | None = None,
 ) -> tuple[int, ...]:
     extend = extend or {}
-    return tuple(grid.size[dim] + extend.get(dim, 0) for dim in dims)
+    return tuple(grid.size[dim] + extend.get(dim, 0) for dim in dimensions)
 
 
 def index_field(
@@ -172,3 +202,37 @@ def index_field(
     xp = import_array_ns(allocator)
     shapex = _shape(grid, dim, extend=extend)[0]
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=allocator)
+
+
+
+# load variable properties (dtype, field dimensions and extend) from json
+p = Path(__file__).resolve().parent / "variable_properties.json"
+with p.open("r", encoding="utf-8") as fh:
+    _variable_properties = json.load(fh)
+
+
+def make_fields(varnames, gen_fct, *args, **kwargs) -> dict[str, gtx.Field]:
+    fields = {}
+    for var in varnames:
+        dtype, dimensions, extend = eval(_variable_properties[var])
+        this_field = gen_fct(*args, *dimensions, dtype=dtype, extend=extend, **kwargs)
+        fields[var] = this_field
+    return fields
+
+def get_random_fields(grid: grid_base.Grid,
+                     varnames: list,
+                     low: float = -1.0,
+                     high: float = 1.0,
+                     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None) -> dict[str, gtx.Field]:
+    return make_fields(varnames, random_field, grid, low=low, high=high, allocator=allocator)
+
+def get_zero_fields(grid,
+                    varnames: list,
+                    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None) -> dict[str, gtx.Field]:
+    return make_fields(varnames, zero_field, grid, allocator=allocator)
+
+def get_const_fields(grid: grid_base.Grid,
+                     varnames: list,
+                     value,
+                     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None) -> dict[str, gtx.Field]:
+    return make_fields(varnames, constant_field, grid, value, allocator=allocator)

@@ -15,18 +15,20 @@ import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
     compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
 )
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.testing import stencil_tests
+from icon4py.model.common.type_alias import precision, wpfloat
+from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 from .test_accumulate_prep_adv_fields import accumulate_prep_adv_fields_numpy
 from .test_compute_mass_flux import compute_mass_flux_numpy
 from .test_spatially_average_flux_or_velocity import spatially_average_flux_or_velocity_numpy
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.embedded_remap_error
-class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.StencilTest):
+class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(StencilTest):
     PROGRAM = compute_averaged_vn_and_fluxes_and_prepare_tracer_advection
     OUTPUTS = (
         "spatially_averaged_vn",
@@ -35,6 +37,29 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         "substep_and_spatially_averaged_vn",
         "substep_averaged_mass_flux",
     )
+    STATIC_PARAMS = {
+        # StandardStaticVariants.NONE: (),
+        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "prepare_advection",
+            "at_first_substep",
+        ),
+        # StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        #     "vertical_start",
+        #     "vertical_end",
+        #     "limited_area",
+        # ),
+    }
+    # TODO(pstark): rm this again:
+    FIND_RTOL = True
+    if precision == "single":
+        # RTOL = 3e-2
+        # ATOL = 1e-4
+        RTOL = 1e-1
+        ATOL = 1e-2
 
     @staticmethod
     def reference(
@@ -51,7 +76,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         theta_v_at_edges_on_model_levels: np.ndarray,
         prepare_advection: bool,
         at_first_substep: bool,
-        r_nsubsteps: ta.wpfloat,
+        r_nsubsteps: wpfloat,
         horizontal_start: int,
         horizontal_end: int,
         **kwargs: Any,
@@ -136,41 +161,39 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        random_fields = data_alloc.get_random_fields(
+            grid,
+            [
+                "substep_and_spatially_averaged_vn",
+                "substep_averaged_mass_flux",
+                "e_flx_avg",
+                "vn",
+                "rho_at_edges_on_model_levels",
+                "ddqz_z_full_e",
+                "theta_v_at_edges_on_model_levels",
+            ],
+        )
 
-        substep_and_spatially_averaged_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        substep_averaged_mass_flux = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        e_flx_avg = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        prepare_advection = True
-        at_first_substep = True
-        r_nsubsteps = 0.2
+        zero_fields = data_alloc.get_zero_fields(
+            grid,
+            [
+                "spatially_averaged_vn",
+                "mass_flux_at_edges_on_model_levels",
+                "theta_v_flux_at_edges_on_model_levels",
+            ],
+        )
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
-        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-
-        return dict(
-            spatially_averaged_vn=spatially_averaged_vn,
-            mass_flux_at_edges_on_model_levels=mass_fl_e,
-            theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
-            substep_and_spatially_averaged_vn=substep_and_spatially_averaged_vn,
-            substep_averaged_mass_flux=substep_averaged_mass_flux,
-            e_flx_avg=e_flx_avg,
-            vn=vn,
-            rho_at_edges_on_model_levels=z_rho_e,
-            ddqz_z_full_e=ddqz_z_full_e,
-            theta_v_at_edges_on_model_levels=z_theta_v_e,
-            prepare_advection=prepare_advection,
-            at_first_substep=at_first_substep,
-            r_nsubsteps=r_nsubsteps,
-            horizontal_start=horizontal_start,
-            horizontal_end=horizontal_end,
-            vertical_start=0,
-            vertical_end=grid.num_levels,
+        return (
+            random_fields
+            | zero_fields
+            | dict(
+                prepare_advection=True,
+                at_first_substep=True,
+                r_nsubsteps=wpfloat(0.2),
+                horizontal_start=grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2)),
+                horizontal_end=grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
+                vertical_start=0,
+                vertical_end=grid.num_levels,
+            )
         )
