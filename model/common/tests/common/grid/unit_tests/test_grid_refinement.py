@@ -12,11 +12,11 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils
-from icon4py.model.testing.fixtures import backend
+from icon4py.model.testing.fixtures import backend, cpu_allocator
 
 from .. import utils
 
@@ -38,7 +38,9 @@ def test_is_local_area_grid_for_grid_files(
     dim: gtx.Dimension,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    grid = grid_utils.get_grid_manager_from_identifier(grid_file, 1, True, backend).grid
+    grid = grid_utils.get_grid_manager_from_identifier(
+        grid_file, 1, True, model_backends.get_allocator(backend)
+    ).grid
     xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     refinement_field = grid.refinement_control[dim]
     limited_area = refinement.is_limited_area_grid(refinement_field.ndarray, array_ns=xp)
@@ -94,10 +96,12 @@ vertex_bounds: dict[h_grid.Zone, tuple[int, int]] = {
     [(dims.CellDim, cell_bounds), (dims.EdgeDim, edge_bounds), (dims.VertexDim, vertex_bounds)],
 )
 def test_compute_start_index_for_limited_area_grid(
-    dim: gtx.Dimension, expected: dict[h_grid.Zone, tuple[int, int]]
+    dim: gtx.Dimension,
+    expected: dict[h_grid.Zone, tuple[int, int]],
+    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(
-        test_defs.Grids.MCH_OPR_R04B07_DOMAIN01, 1, True, None
+        test_defs.Grids.MCH_OPR_R04B07_DOMAIN01, 1, True, cpu_allocator
     ).grid
     refinement_field = grid.refinement_control
     start_index, end_index = refinement.compute_domain_bounds(dim, refinement_field, array_ns=np)
@@ -118,9 +122,11 @@ def test_compute_start_index_for_limited_area_grid(
 @pytest.mark.parametrize("file", (test_defs.Grids.R02B04_GLOBAL,))
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_compute_domain_bounds_for_global_grid(
-    file: test_defs.GridDescription, dim: gtx.Dimension
+    file: test_defs.GridDescription,
+    dim: gtx.Dimension,
+    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> None:
-    grid = grid_utils.get_grid_manager_from_identifier(file, 1, True, None).grid
+    grid = grid_utils.get_grid_manager_from_identifier(file, 1, True, cpu_allocator).grid
     refinement_fields = grid.refinement_control
     start_index, end_index = refinement.compute_domain_bounds(dim, refinement_fields, array_ns=np)
     for k, v in start_index.items():
