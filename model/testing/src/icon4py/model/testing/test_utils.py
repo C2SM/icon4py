@@ -71,10 +71,3 @@ def is_dace(backend: gtx_typing.Backend | None) -> bool:
 
 def is_gtfn_backend(backend: gtx_typing.Backend | None) -> bool:
     return "gtfn" in backend.name if backend else False
-
-
-def should_benchmark_only(item: pytest.Item) -> bool:
-    """Check if the test item is marked as benchmark_only."""
-    return item.get_closest_marker("benchmark_only") is not None or item._request.getfixturevalue(  # type: ignore[attr-defined]
-        "pytestconfig"
-    ).getoption("benchmark_only")
