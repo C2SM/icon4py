@@ -9,100 +9,96 @@
 import sys
 from typing import Final
 
-import gt4py.next as gtx
+import dace
+from gt4py.next import Field, common, int32, int64, float32, float64
+
+from icon4py.model.common import type_alias
 
 
-try:
-    import dace
-except ImportError:
-    from types import ModuleType
+CellDim_sym = dace.symbol("CellDim_sym")
+EdgeDim_sym = dace.symbol("EdgeDim_sym")
+VertexDim_sym = dace.symbol("VertexDim_sym")
+KDim_sym = dace.symbol("KDim_sym")
 
-    dace: ModuleType | None = None  # type: ignore[no-redef]
+ICON4PY_PRIMITIVE_DTYPES: Final = (
+    float32,
+    float64,
+    float,
+    bool,
+    int32,
+    int64,
+    int,
+)
+
+DACE_PRIMITIVE_DTYPES: Final = (
+    dace.float32,
+    dace.float64,
+    dace.float64,
+    dace.bool,
+    dace.int32,
+    dace.int64,
+    dace.int64 if sys.maxsize > 2**32 else dace.int32,
+)
+
+def stride_symbol_name_from_field(cls: type, field_name: str, stride: int) -> str:
+    return f"{cls.__name__}_{field_name}_s{stride}_sym"
+
+def gt4py_dim_to_dace_symbol(dim: common.Dimension) -> dace.symbol:
+    # See dims.global_dimensions.values()
+    # TODO(kotsaloscv): generalize this
+    if "cell" in dim.value.lower():
+        return CellDim_sym
+    elif "edge" in dim.value.lower():
+        return EdgeDim_sym
+    elif "vertex" in dim.value.lower():
+        return VertexDim_sym
+    elif dim.value.lower() == "k":
+        return KDim_sym
+    else:
+        raise ValueError(f"The dimension [{dim}] is not supported.")
 
 
-if dace:
-    CellDim_sym = dace.symbol("CellDim_sym")
-    EdgeDim_sym = dace.symbol("EdgeDim_sym")
-    VertexDim_sym = dace.symbol("VertexDim_sym")
-    KDim_sym = dace.symbol("KDim_sym")
+def dace_structure_dict(cls: type) -> dict[str, dace.data.Array]:
+    """
+    Function that returns a dictionary to be used to define DaCe Structures based on the provided data class.
+    The function extracts the GT4Py field members of the data class and builds the dictionary accordingly.
+    """
+    if not hasattr(cls, "__dataclass_fields__"):
+        raise ValueError("The provided class is not a data class.")
 
-    ICON4PY_PRIMITIVE_DTYPES: Final = (
-        gtx.float32,
-        gtx.float64,
-        float,
-        bool,
-        gtx.int32,
-        gtx.int64,
-        int,
-    )
-    DACE_PRIMITIVE_DTYPES: Final = (
-        dace.float32,
-        dace.float64,
-        dace.float64,
-        dace.bool,
-        dace.int32,
-        dace.int64,
-        dace.int64 if sys.maxsize > 2**32 else dace.int32,
-    )
+    dace_structure_dict = {}
 
-    def stride_symbol_name_from_field(cls: type, field_name: str, stride: int) -> str:
-        return f"{cls.__name__}_{field_name}_s{stride}_sym"
+    for member_name, dataclass_field in cls.__dataclass_fields__.items():
+        if not hasattr(dataclass_field, "type"):
+            continue
+        type_ = dataclass_field.type
+        if not hasattr(type_, "__origin__"):
+            continue
+        # TODO(kotsaloscv): DaCe Structure with GT4Py Fields. Disregard the rest of the fields.
+        if type_.__origin__ is not Field:
+            continue
 
-    def gt4py_dim_to_dace_symbol(dim: gtx.common.Dimension) -> dace.symbol:
-        # See dims.global_dimensions.values()
-        # TODO(kotsaloscv): generalize this
-        if "cell" in dim.value.lower():
-            return CellDim_sym
-        elif "edge" in dim.value.lower():
-            return EdgeDim_sym
-        elif "vertex" in dim.value.lower():
-            return VertexDim_sym
-        elif dim.value.lower() == "k":
-            return KDim_sym
-        else:
-            raise ValueError(f"The dimension [{dim}] is not supported.")
+        dims_ = type_.__args__[0].__args__  # dimensions of the field
+        dtype_ = type_.__args__[1]  # data type of the field
 
-    def dace_structure_dict(cls: type) -> dict[str, dace.data.Array]:
-        """
-        Function that returns a dictionary to be used to define DaCe Structures based on the provided data class.
-        The function extracts the GT4Py field members of the data class and builds the dictionary accordingly.
-        """
-        if not hasattr(cls, "__dataclass_fields__"):
-            raise ValueError("The provided class is not a data class.")
+        dace_dims = [gt4py_dim_to_dace_symbol(dim_) for dim_ in dims_]
 
-        dace_structure_dict = {}
-
-        for member_name, dataclass_field in cls.__dataclass_fields__.items():
-            if not hasattr(dataclass_field, "type"):
-                continue
-            type_ = dataclass_field.type
-            if not hasattr(type_, "__origin__"):
-                continue
-            # TODO(kotsaloscv): DaCe Structure with GT4Py Fields. Disregard the rest of the fields.
-            if type_.__origin__ is not gtx.Field:
-                continue
-
-            dims_ = type_.__args__[0].__args__  # dimensions of the field
-            dtype_ = type_.__args__[1]  # data type of the field
-
-            dace_dims = [gt4py_dim_to_dace_symbol(dim_) for dim_ in dims_]
-
-            # Define DaCe Symbols: Field Sizes and Strides
-            dace_symbols = {
-                stride_symbol_name_from_field(cls, member_name, stride): dace.symbol(
-                    stride_symbol_name_from_field(cls, member_name, stride)
-                )
-                for stride in range(len(dims_))
-            }
-
-            # TODO(kotsaloscv): how about StorageType (?)
-            dace_structure_dict[member_name] = dace.data.Array(
-                dtype=DACE_PRIMITIVE_DTYPES[ICON4PY_PRIMITIVE_DTYPES.index(dtype_)],
-                shape=dace_dims,
-                strides=[
-                    dace_symbols[f"{cls.__name__}_{member_name}_s{0}_sym"],
-                    dace_symbols[f"{cls.__name__}_{member_name}_s{1}_sym"],
-                ],
+        # Define DaCe Symbols: Field Sizes and Strides
+        dace_symbols = {
+            stride_symbol_name_from_field(cls, member_name, stride): dace.symbol(
+                stride_symbol_name_from_field(cls, member_name, stride)
             )
+            for stride in range(len(dims_))
+        }
 
-        return dace_structure_dict
+        # TODO(kotsaloscv): how about StorageType (?)
+        dace_structure_dict[member_name] = dace.data.Array(
+            dtype=DACE_PRIMITIVE_DTYPES[ICON4PY_PRIMITIVE_DTYPES.index(dtype_)],
+            shape=dace_dims,
+            strides=[
+                dace_symbols[f"{cls.__name__}_{member_name}_s{0}_sym"],
+                dace_symbols[f"{cls.__name__}_{member_name}_s{1}_sym"],
+            ],
+        )
+
+    return dace_structure_dict

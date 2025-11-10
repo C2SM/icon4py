@@ -14,7 +14,7 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import (
@@ -32,6 +32,36 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox
 
 
+def _get_backend_like(spec: str) -> model_backends.BackendLike:
+    if spec.count(":") > 1:
+        raise ValueError(
+            "Invalid backend spec in '--backend' option (spec: <backend_name> or <path.to.module>:<symbol>)"
+        )
+
+    if ":" in spec:
+        backend_like = pkgutil.resolve_name(spec)
+    elif spec in model_backends.BACKENDS:
+        backend_like = model_backends.BACKENDS[spec]
+    else:
+        raise ValueError(
+            f"Invalid backend name in '--backend' option. It should be one of {[*model_backends.BACKENDS.keys()]}"
+        )
+
+    return backend_like
+
+
+@pytest.fixture(scope="session")
+def backend_like(request: pytest.FixtureRequest) -> model_backends.BackendLike:
+    """
+    Fixture to provide a GT4Py backend or an ICON4Py BackendDescriptor for the tests.
+
+    See `backend` fixture for details.
+    """
+    spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
+    assert isinstance(spec, str), "Backend spec must be a string"
+    return _get_backend_like(spec)
+
+
 @pytest.fixture(scope="session")
 def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
     """
@@ -42,23 +72,19 @@ def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
     an gt4py backend instance defined in an arbitrary location, by using the
     notation `path.to.module:backend_symbol`.
     """
+    # TODO(havogt): eventually all tests should support `backend_like`,
+    # then `backend_like` should probably be renamed to `backend`.
+
     spec = request.config.getoption("backend", model_backends.DEFAULT_BACKEND)
     assert isinstance(spec, str), "Backend spec must be a string"
-    if spec.count(":") > 1:
-        raise ValueError(
-            "Invalid backend spec in '--backend' option (spec: <backend_name> or <path.to.module>:<symbol>)"
-        )
+    backend_like = _get_backend_like(spec)
+    # We create a generic concrete backend (no program specific customization).
+    return model_options.customize_backend(None, backend_like)
 
-    if ":" in spec:
-        backend = pkgutil.resolve_name(spec)
-    elif spec in model_backends.BACKENDS:
-        backend = model_backends.BACKENDS[spec]
-    else:
-        raise ValueError(
-            f"Invalid backend name in '--backend' option. It should be one of {[*model_backends.BACKENDS.keys()]}"
-        )
 
-    return backend
+@pytest.fixture
+def cpu_allocator() -> gtx_typing.FieldBufferAllocationUtil:
+    return model_backends.get_allocator(None)
 
 
 @pytest.fixture(
@@ -122,7 +148,7 @@ def download_ser_data(
     request: pytest.FixtureRequest,
     processor_props: decomposition.ProcessProperties,
     ranked_data_path: pathlib.Path,
-    experiment: str | definitions.Experiment,
+    experiment: definitions.Experiment,
     pytestconfig: pytest.Config,
 ) -> None:
     """
@@ -133,10 +159,6 @@ def download_ser_data(
     # we don't want to run this ever if we are not running datatests
     if "not datatest" in request.config.getoption("-k", ""):
         return
-
-    # TODO(havogt): after refactoring is complete this should only accept `Experiment`
-    if isinstance(experiment, str):
-        experiment = dt_utils.experiment_from_name(experiment)
 
     _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
 
@@ -158,8 +180,7 @@ def grid_savepoint(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> serialbox.IconGridSavepoint:
     grid_shape = dt_utils.guess_grid_shape(experiment)
-    grid_id = str(dt_utils.get_grid_id_for_experiment(experiment))
-    return data_provider.from_savepoint_grid(grid_id, grid_shape)
+    return data_provider.from_savepoint_grid(experiment.name, grid_shape)
 
 
 @pytest.fixture
@@ -179,9 +200,8 @@ def decomposition_info(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
     grid_shape = dt_utils.guess_grid_shape(experiment)
-    grid_id = str(dt_utils.get_grid_id_for_experiment(experiment))
     return data_provider.from_savepoint_grid(
-        grid_id=grid_id, grid_shape=grid_shape
+        grid_id=experiment.name, grid_shape=grid_shape
     ).construct_decomposition_info()
 
 
