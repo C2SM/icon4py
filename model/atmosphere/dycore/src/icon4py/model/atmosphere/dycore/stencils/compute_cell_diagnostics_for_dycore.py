@@ -6,6 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from typing import Final
 
 import gt4py.next as gtx
@@ -60,12 +73,7 @@ def _calculate_pressure_buoyancy_acceleration_at_cells_on_half_levels(
 
 
 @gtx.field_operator
-def _combined_field_operator(
-    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
-    wgtfacq_c: fa.CellKField[ta.wpfloat],
-    exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+def _compute_perturbed_quantities_and_interpolation(
     current_rho: fa.CellKField[ta.wpfloat],
     reference_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     current_theta_v: fa.CellKField[ta.wpfloat],
@@ -77,51 +85,24 @@ def _combined_field_operator(
     ddqz_z_half: fa.CellKField[ta.vpfloat],
     pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
-    inv_ddqz_z_full: fa.CellKField[ta.vpfloat],
-    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
-    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
-    d2dexdz2_fac1_mc: fa.CellKField[ta.vpfloat],
-    d2dexdz2_fac2_mc: fa.CellKField[ta.vpfloat],
-    reference_theta_at_cells_on_half_levels: fa.CellKField[vpfloat],
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
-    nflat_gradp: gtx.int32,
-    nlev: gtx.int32,
 ) -> tuple[
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
 ]:
-    temporal_extrapolation_of_perturbed_exner = concat_where(
-        dims.KDim >= nlev - 1,
-        _init_cell_kdim_field_with_zero_wp(),
-        temporal_extrapolation_of_perturbed_exner,
-    )
-
-    # _compute_perturbed_quantities_and_interpolation
     exner_at_cells_on_half_levels = (
         concat_where(
-            (dims.KDim >= nlev - 1),
-            _interpolate_cell_field_to_half_levels_vp(
-                wgtfac_c=wgtfac_c, interpolant=temporal_extrapolation_of_perturbed_exner
-            ),
-            exner_at_cells_on_half_levels,
-        )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
-        else exner_at_cells_on_half_levels
-    )
-
-    exner_at_cells_on_half_levels = (
-        concat_where(
-            (maximum(1, nflatlev) <= dims.KDim) & (dims.KDim < nlev - 1),
+            maximum(1, nflatlev) <= dims.KDim,
             _interpolate_cell_field_to_half_levels_vp(
                 wgtfac_c=wgtfac_c, interpolant=temporal_extrapolation_of_perturbed_exner
             ),
@@ -134,19 +115,15 @@ def _combined_field_operator(
     (
         perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels,
-    ) = concat_where(
-        dims.KDim < nlev - 1,
-        _compute_perturbation_of_rho_and_theta(
-            current_rho,
-            reference_rho_at_cells_on_model_levels,
-            current_theta_v,
-            reference_theta_at_cells_on_model_levels,
-        ),
-        (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
+    ) = _compute_perturbation_of_rho_and_theta(
+        current_rho,
+        reference_rho_at_cells_on_model_levels,
+        current_theta_v,
+        reference_theta_at_cells_on_model_levels,
     )
 
     rho_at_cells_on_half_levels = concat_where(
-        (dims.KDim >= 1) & (dims.KDim < nlev - 1),
+        dims.KDim >= 1,
         _interpolate_cell_field_to_half_levels_wp(wgtfac_c, current_rho),
         rho_at_cells_on_half_levels,
     )
@@ -154,7 +131,7 @@ def _combined_field_operator(
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
     perturbed_theta_v_at_cells_on_half_levels = concat_where(
-        (dims.KDim >= 1) & (dims.KDim < nlev - 1),
+        dims.KDim >= 1,
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
         ),
@@ -162,7 +139,7 @@ def _combined_field_operator(
     )
 
     theta_v_at_cells_on_half_levels = concat_where(
-        (dims.KDim >= 1) & (dims.KDim < nlev - 1),
+        dims.KDim >= 1,
         _interpolate_cell_field_to_half_levels_wp(
             wgtfac_c=wgtfac_c_wp, interpolant=current_theta_v
         ),
@@ -172,7 +149,7 @@ def _combined_field_operator(
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
     pressure_buoyancy_acceleration_at_cells_on_half_levels = concat_where(
-        (dims.KDim >= 1) & (dims.KDim < nlev - 1),
+        dims.KDim >= 1,
         _calculate_pressure_buoyancy_acceleration_at_cells_on_half_levels(
             exner_w_explicit_weight_parameter,
             theta_v_at_cells_on_half_levels,
@@ -184,32 +161,158 @@ def _combined_field_operator(
         pressure_buoyancy_acceleration_at_cells_on_half_levels,
     )
 
-    perturbed_theta_v_at_cells_on_half_levels = concat_where(
-        dims.KDim >= nlev - 1,
-        _interpolate_to_surface(
-            wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
-        ),
+    return (
+        perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels,
+        perturbed_exner_at_cells_on_model_levels,
+        rho_at_cells_on_half_levels,
+        exner_at_cells_on_half_levels,
         perturbed_theta_v_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels,
+        pressure_buoyancy_acceleration_at_cells_on_half_levels,
     )
 
-    theta_v_at_cells_on_half_levels = concat_where(
-        dims.KDim >= nlev - 1,
-        reference_theta_at_cells_on_half_levels + perturbed_theta_v_at_cells_on_half_levels,
-        theta_v_at_cells_on_half_levels,
+
+@gtx.field_operator
+def _surface_computations(
+    wgtfacq_c: fa.CellKField[ta.wpfloat],
+    exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
+    time_extrapolation_parameter_for_exner: fa.CellKField[ta.vpfloat],
+    current_exner: fa.CellKField[ta.vpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
+    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
+    igradp_method: gtx.int32,
+    surface_level: gtx.int32,
+) -> tuple[
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+]:
+    (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = (
+        concat_where(
+            dims.KDim < surface_level - 1,
+            _init_two_cell_kdim_fields_with_zero_vp(),
+            (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
+        )
+    )
+
+    (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels) = (
+        concat_where(
+            dims.KDim < surface_level - 1,
+            _extrapolate_temporally_exner_pressure(
+                exner_exfac=time_extrapolation_parameter_for_exner,
+                exner=current_exner,
+                exner_ref_mc=reference_exner_at_cells_on_model_levels,
+                exner_pr=perturbed_exner_at_cells_on_model_levels,
+            ),
+            (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
+        )
+    )
+
+    temporal_extrapolation_of_perturbed_exner = concat_where(
+        dims.KDim == surface_level - 1,
+        _init_cell_kdim_field_with_zero_wp(),
+        temporal_extrapolation_of_perturbed_exner,
     )
 
     exner_at_cells_on_half_levels = concat_where(
-        dims.KDim >= nlev - 1,
+        dims.KDim == surface_level - 1,
         _interpolate_to_surface(
             wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
-        ),
+        )
+        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
+        else exner_at_cells_on_half_levels,
         exner_at_cells_on_half_levels,
     )
 
-    # _compute_first_and_second_vertical_derivative_of_exner
+    return (
+        temporal_extrapolation_of_perturbed_exner,
+        exner_at_cells_on_half_levels,
+        temporal_extrapolation_of_perturbed_exner,
+        perturbed_exner_at_cells_on_model_levels,
+        perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels,
+    )
+
+
+@gtx.field_operator
+def _set_theta_v_and_exner_on_surface_level(
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    reference_theta_at_cells_on_half_levels: fa.CellKField[vpfloat],
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat], fa.CellKField[vpfloat]]:
+    perturbed_theta_v_at_cells_on_half_levels = _interpolate_to_surface(
+        wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
+    )
+    theta_v_at_cells_on_half_levels = (
+        reference_theta_at_cells_on_half_levels + perturbed_theta_v_at_cells_on_half_levels
+    )
+
+    exner_at_cells_on_half_levels = _interpolate_to_surface(
+        wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
+    )
+
+    return (
+        perturbed_theta_v_at_cells_on_half_levels,
+        astype(theta_v_at_cells_on_half_levels, wpfloat),
+        exner_at_cells_on_half_levels,
+    )
+
+
+@gtx.field_operator
+def _compute_first_and_second_vertical_derivative_of_exner(
+    exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
+    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
+    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
+    d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
+    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
+    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
+    reference_theta_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    theta_v_at_cells_on_half_levels: fa.CellKField[vpfloat],
+    igradp_method: gtx.int32,
+    nflatlev: gtx.int32,
+    nflat_gradp: gtx.int32,
+    surface_level: gtx.int32,
+) -> tuple[
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+]:
+    (
+        perturbed_theta_v_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels,
+        exner_at_cells_on_half_levels,
+    ) = concat_where(
+        dims.KDim == surface_level - 1,
+        _set_theta_v_and_exner_on_surface_level(
+            temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+            wgtfacq_c=wgtfacq_c,
+            perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+            reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
+        ),
+        (
+            perturbed_theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels,
+            exner_at_cells_on_half_levels,
+        ),
+    )
+
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
         concat_where(
-            (nflatlev <= dims.KDim) & (dims.KDim < nlev - 1),
+            (nflatlev <= dims.KDim) & (dims.KDim < surface_level - 1),
             _compute_first_vertical_derivative_at_cells(
                 exner_at_cells_on_half_levels, inv_ddqz_z_full
             ),
@@ -221,7 +324,7 @@ def _combined_field_operator(
 
     d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
         concat_where(
-            (nflat_gradp <= dims.KDim) & (dims.KDim < nlev - 1),
+            (nflat_gradp <= dims.KDim) & (dims.KDim < surface_level - 1),
             -vpfloat("0.5")
             * (
                 (
@@ -238,16 +341,11 @@ def _combined_field_operator(
     )
 
     return (
-        perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels,
-        perturbed_exner_at_cells_on_model_levels,
-        rho_at_cells_on_half_levels,
-        exner_at_cells_on_half_levels,
-        perturbed_theta_v_at_cells_on_half_levels,
-        theta_v_at_cells_on_half_levels,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels,
         ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        perturbed_theta_v_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels,
+        exner_at_cells_on_half_levels,
     )
 
 
@@ -349,36 +447,33 @@ def compute_perturbed_quantities_and_interpolation(
         - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level
         - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
-
-    # Init perturbed quantities to zero on lateral boundary
-    _init_two_cell_kdim_fields_with_zero_vp(
-        out=(perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
-        domain={
-            dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
-            dims.KDim: (model_top, surface_level - 1),
-        },
-    )
-
-    # Compute temporal extrapolation of perturbed exner, needs to be output for future program
-
-    _extrapolate_temporally_exner_pressure(
-        exner_exfac=time_extrapolation_parameter_for_exner,
-        exner=current_exner,
-        exner_ref_mc=reference_exner_at_cells_on_model_levels,
-        exner_pr=perturbed_exner_at_cells_on_model_levels,
-        out=(temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
-        domain={
-            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (model_top, surface_level - 1),
-        },
-    )
-
-    _combined_field_operator(
-        perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
-        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+    _surface_computations(
         wgtfacq_c=wgtfacq_c,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
+        time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
+        current_exner=current_exner,
+        reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+        perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+        igradp_method=igradp_method,
+        surface_level=surface_level,
+        out=(
+            temporal_extrapolation_of_perturbed_exner,
+            exner_at_cells_on_half_levels,
+            temporal_extrapolation_of_perturbed_exner,
+            perturbed_exner_at_cells_on_model_levels,
+            perturbed_rho_at_cells_on_model_levels,
+            perturbed_theta_v_at_cells_on_model_levels,
+        ),
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+            dims.KDim: (model_top, surface_level),
+        },
+    )
+
+    _compute_perturbed_quantities_and_interpolation(
         current_rho=current_rho,
         reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
         current_theta_v=current_theta_v,
@@ -390,17 +485,11 @@ def compute_perturbed_quantities_and_interpolation(
         ddqz_z_half=ddqz_z_half,
         pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+        exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-        inv_ddqz_z_full=inv_ddqz_z_full,
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
-        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
-        reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
         igradp_method=igradp_method,
         nflatlev=nflatlev,
-        nflat_gradp=nflat_gradp,
-        nlev=surface_level,
         out=(
             perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels,
@@ -410,8 +499,36 @@ def compute_perturbed_quantities_and_interpolation(
             perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
             pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        ),
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+            dims.KDim: (model_top, surface_level - 1),
+        },
+    )
+
+    _compute_first_and_second_vertical_derivative_of_exner(
+        exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+        perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
+        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+        wgtfacq_c=wgtfacq_c,
+        reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        igradp_method=igradp_method,
+        nflatlev=nflatlev,
+        nflat_gradp=nflat_gradp,
+        surface_level=surface_level,
+        out=(
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
+            perturbed_theta_v_at_cells_on_half_levels,
+            theta_v_at_cells_on_half_levels,
+            exner_at_cells_on_half_levels,
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
@@ -419,7 +536,6 @@ def compute_perturbed_quantities_and_interpolation(
         },
     )
 
-    # Init perturbed quantities to zero on 2nd halo layer
     _compute_perturbation_of_rho_and_theta(
         rho=current_rho,
         rho_ref_mc=reference_rho_at_cells_on_model_levels,
@@ -513,11 +629,9 @@ def _interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_accele
     time_averaged_perturbed_theta_v_vp, time_averaged_perturbed_theta_v_kup_vp = astype(
         (time_averaged_perturbed_theta_v, time_averaged_perturbed_theta_v_kup), vpfloat
     )
-    perturbed_theta_v_at_cells_on_half_levels = concat_where(
-        dims.KDim == 0,
+    perturbed_theta_v_at_cells_on_half_levels = (
         wgtfac_c * time_averaged_perturbed_theta_v_vp
-        + (vpfloat("1.0") - wgtfac_c) * time_averaged_perturbed_theta_v_kup_vp,
-        broadcast(0.0, (dims.CellDim, dims.KDim)),
+        + (vpfloat("1.0") - wgtfac_c) * time_averaged_perturbed_theta_v_kup_vp
     )
 
     theta_v_at_cells_on_half_levels = (
