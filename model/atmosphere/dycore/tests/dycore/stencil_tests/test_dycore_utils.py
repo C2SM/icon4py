@@ -98,11 +98,19 @@ def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
 ) -> None:
     grid = simple_grid.simple_grid(backend=backend)
     fourth_order_divdamp_scaling_coeff = data_alloc.random_field(grid, dims.KDim, allocator=backend)
-    reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(grid, dims.KDim, allocator=backend)
+    reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
+        grid, dims.KDim, allocator=backend
+    )
     coeff = 0.3
     dycore_utils._calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary.with_backend(
         backend
-    )(fourth_order_divdamp_scaling_coeff, coeff, constants.WP_EPS, out=reduced_fourth_order_divdamp_coeff_at_nest_boundary, offset_provider={})
+    )(
+        fourth_order_divdamp_scaling_coeff,
+        coeff,
+        constants.WP_EPS,
+        out=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+        offset_provider={},
+    )
     assert test_utils.dallclose(
         reduced_fourth_order_divdamp_coeff_at_nest_boundary.asnumpy(),
         calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(

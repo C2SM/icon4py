@@ -20,8 +20,8 @@ import numpy.typing as npt
 from gt4py import next as gtx
 from gt4py.next import allocators as gtx_allocators
 
-from icon4py.model.common import dimension as dims # noqa: F401
-from icon4py.model.common.type_alias import wpfloat, vpfloat # noqa: F401
+from icon4py.model.common import dimension as dims  # noqa: F401
+from icon4py.model.common.type_alias import vpfloat, wpfloat  # noqa: F401
 from icon4py.model.common.utils import device_utils
 
 
@@ -135,10 +135,10 @@ def random_ikoffset(
     *dimensions: gtx.Dimension,
     dtype=gtx.int32,
     extend: dict[gtx.Dimension, int] | None = None,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
-    rng=np.random.default_rng()):
-
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None
+):
     ikoffset = empty_field(grid, *dimensions, dtype=dtype, extend=extend, allocator=allocator)
+    rng=np.random.default_rng()
     for k in range(grid.num_levels):
         # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
         ikoffset.ndarray[:, :, k] = rng.integers(  # type: ignore[index]
@@ -156,7 +156,9 @@ def empty_field(
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
-    field_domain = {dim: (0, stop) for dim, stop in zip(dimensions, _shape(grid, *dimensions, extend=extend))}
+    field_domain = {
+        dim: (0, stop) for dim, stop in zip(dimensions, _shape(grid, *dimensions, extend=extend))
+    }
     return gtx.constructors.empty(field_domain, dtype=dtype, allocator=allocator)
 
 
@@ -167,7 +169,9 @@ def zero_field(
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
-    field_domain = {dim: (0, stop) for dim, stop in zip(dimensions, _shape(grid, *dimensions, extend=extend))}
+    field_domain = {
+        dim: (0, stop) for dim, stop in zip(dimensions, _shape(grid, *dimensions, extend=extend))
+    }
     return gtx.constructors.zeros(field_domain, dtype=dtype, allocator=allocator)
 
 
@@ -179,7 +183,9 @@ def constant_field(
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
-    field_domain = {dim: (0, stop) for dim, stop in zip(dimensions, _shape(grid, *dimensions, extend=extend))}
+    field_domain = {
+        dim: (0, stop) for dim, stop in zip(dimensions, _shape(grid, *dimensions, extend=extend))
+    }
     return gtx.constructors.full(field_domain, value, dtype=dtype, allocator=allocator)
 
 
@@ -204,7 +210,6 @@ def index_field(
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=allocator)
 
 
-
 # load variable properties (dtype, field dimensions and extend) from json
 p = Path(__file__).resolve().parent / "variable_properties.json"
 with p.open("r", encoding="utf-8") as fh:
@@ -219,20 +224,27 @@ def make_fields(varnames, gen_fct, *args, **kwargs) -> dict[str, gtx.Field]:
         fields[var] = this_field
     return fields
 
-def get_random_fields(grid: grid_base.Grid,
-                     varnames: list,
-                     low: float = -1.0,
-                     high: float = 1.0,
-                     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None) -> dict[str, gtx.Field]:
+
+def get_random_fields(
+    grid: grid_base.Grid,
+    varnames: list,
+    low: float = -1.0,
+    high: float = 1.0,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+) -> dict[str, gtx.Field]:
     return make_fields(varnames, random_field, grid, low=low, high=high, allocator=allocator)
 
-def get_zero_fields(grid,
-                    varnames: list,
-                    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None) -> dict[str, gtx.Field]:
+
+def get_zero_fields(
+    grid, varnames: list, allocator: gtx_allocators.FieldBufferAllocationUtil | None = None
+) -> dict[str, gtx.Field]:
     return make_fields(varnames, zero_field, grid, allocator=allocator)
 
-def get_const_fields(grid: grid_base.Grid,
-                     varnames: list,
-                     value,
-                     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None) -> dict[str, gtx.Field]:
+
+def get_const_fields(
+    grid: grid_base.Grid,
+    varnames: list,
+    value,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+) -> dict[str, gtx.Field]:
     return make_fields(varnames, constant_field, grid, value, allocator=allocator)

@@ -33,7 +33,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-
 from icon4py.model.testing import definitions, serialbox, test_utils
 from icon4py.model.testing.test_utils import vp_eps, wp_eps
 

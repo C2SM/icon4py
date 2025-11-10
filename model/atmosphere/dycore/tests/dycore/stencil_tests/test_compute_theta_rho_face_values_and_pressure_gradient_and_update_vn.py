@@ -12,7 +12,6 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common.type_alias import wpfloat, vpfloat, precision
 from icon4py.model.atmosphere.dycore.dycore_states import (
     HorizontalPressureDiscretizationType,
     RhoThetaAdvectionType,
@@ -22,6 +21,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
+from icon4py.model.common.type_alias import precision, vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
@@ -442,28 +442,78 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
-        random_fields = data_alloc.get_random_fields(grid, ['geofac_grg_x', 'geofac_grg_y', 'current_vn', 'tangential_wind', 'pos_on_tplane_e_x', 'pos_on_tplane_e_y', 'primal_normal_cell_x', 'dual_normal_cell_x', 'primal_normal_cell_y', 'dual_normal_cell_y', 'reference_rho_at_edges_on_model_levels', 'reference_theta_at_edges_on_model_levels', 'perturbed_rho_at_cells_on_model_levels', 'perturbed_theta_v_at_cells_on_model_levels', 'ddxn_z_full', 'c_lin_e', 'ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels', 'd2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels', 'hydrostatic_correction_on_lowest_level', 'zdiff_gradp', 'pg_exdist', 'inv_dual_edge_length', 'predictor_normal_wind_advective_tendency', 'normal_wind_tendency_due_to_slow_physics_process', 'normal_wind_iau_increment', 'grf_tend_vn'])
+        random_fields = data_alloc.get_random_fields(
+            grid,
+            [
+                "geofac_grg_x",
+                "geofac_grg_y",
+                "current_vn",
+                "tangential_wind",
+                "pos_on_tplane_e_x",
+                "pos_on_tplane_e_y",
+                "primal_normal_cell_x",
+                "dual_normal_cell_x",
+                "primal_normal_cell_y",
+                "dual_normal_cell_y",
+                "reference_rho_at_edges_on_model_levels",
+                "reference_theta_at_edges_on_model_levels",
+                "perturbed_rho_at_cells_on_model_levels",
+                "perturbed_theta_v_at_cells_on_model_levels",
+                "ddxn_z_full",
+                "c_lin_e",
+                "ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
+                "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
+                "hydrostatic_correction_on_lowest_level",
+                "zdiff_gradp",
+                "pg_exdist",
+                "inv_dual_edge_length",
+                "predictor_normal_wind_advective_tendency",
+                "normal_wind_tendency_due_to_slow_physics_process",
+                "normal_wind_iau_increment",
+                "grf_tend_vn",
+            ],
+        )
 
-        zero_fields = data_alloc.get_zero_fields(grid, ['next_vn', 'theta_v_at_edges_on_model_levels', 'horizontal_pressure_gradient', 'rho_at_edges_on_model_levels'])
+        zero_fields = data_alloc.get_zero_fields(
+            grid,
+            [
+                "next_vn",
+                "theta_v_at_edges_on_model_levels",
+                "horizontal_pressure_gradient",
+                "rho_at_edges_on_model_levels",
+            ],
+        )
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        return random_fields | zero_fields | dict(
-            temporal_extrapolation_of_perturbed_exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim),
-            ipeidx_dsl = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim),
-            ikoffset = data_alloc.random_ikoffset(grid, dims.EdgeDim, dims.E2CDim, dims.KDim),
-            dtime = wpfloat(0.9),
-            iau_wgt_dyn = wpfloat(1.0),
-            is_iau_active = True,
-            limited_area = True,
-            start_edge_lateral_boundary = grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY)),
-            start_edge_lateral_boundary_level_7 = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)),
-            start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2)),
-            end_edge_nudging = grid.end_index(edge_domain(h_grid.Zone.NUDGING)),
-            end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO)),
-            nflatlev = 4,
-            nflat_gradp = 27,
-            horizontal_start=0,
-            horizontal_end=grid.num_edges,
-            vertical_start=0,
-            vertical_end=grid.num_levels,
+        return (
+            random_fields
+            | zero_fields
+            | dict(
+                temporal_extrapolation_of_perturbed_exner=data_alloc.random_field(
+                    grid, dims.CellDim, dims.KDim
+                ),
+                ipeidx_dsl=data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim),
+                ikoffset=data_alloc.random_ikoffset(grid, dims.EdgeDim, dims.E2CDim, dims.KDim),
+                dtime=wpfloat(0.9),
+                iau_wgt_dyn=wpfloat(1.0),
+                is_iau_active=True,
+                limited_area=True,
+                start_edge_lateral_boundary=grid.end_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
+                ),
+                start_edge_lateral_boundary_level_7=grid.start_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
+                ),
+                start_edge_nudging_level_2=grid.start_index(
+                    edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
+                ),
+                end_edge_nudging=grid.end_index(edge_domain(h_grid.Zone.NUDGING)),
+                end_edge_halo=grid.end_index(edge_domain(h_grid.Zone.HALO)),
+                nflatlev=4,
+                nflat_gradp=27,
+                horizontal_start=0,
+                horizontal_end=grid.num_edges,
+                vertical_start=0,
+                vertical_end=grid.num_levels,
+            )
         )

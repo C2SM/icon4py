@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
+import warnings
 from collections.abc import Callable, Sequence
 from typing import Any, ClassVar
 
@@ -21,12 +22,11 @@ from gt4py.next import constructors, typing as gtx_typing
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
 
+from icon4py.model.common.constants import VP_EPS
 from icon4py.model.common.grid import base
-from icon4py.model.common.utils import device_utils
-from icon4py.model.common.constants import WP_EPS, VP_EPS
 from icon4py.model.common.type_alias import precision
+from icon4py.model.common.utils import device_utils
 
-import warnings
 
 def allocate_data(
     backend: gtx_typing.Backend | None,
@@ -131,10 +131,18 @@ class StencilTest:
     RTOL = 1e-7
     ATOL = 0.0
 
-    #TODO(pstark): rm this again:
-    FIND_RTOL=False
-       
-    def try_allclose(self, actual, desired, rtol=RTOL, atol=ATOL, equal_nan=True, err_msg="Verification failed for <NAME>"):
+    # TODO(pstark): rm this again:
+    FIND_RTOL = False
+
+    def try_allclose(
+        self,
+        actual,
+        desired,
+        rtol=RTOL,
+        atol=ATOL,
+        equal_nan=True,
+        err_msg="Verification failed for <NAME>",
+    ):
         try:
             np.testing.assert_allclose(
                 actual,
@@ -149,14 +157,21 @@ class StencilTest:
                 raise e
             elif precision == "single":
                 # Because these stencil_tests are ran with input fields in unrealistic ranges the single precision version is not required to pass them. The tolerances can be changed s.t. they would pass but they are not very meaningful.
-                warnings.warn("As expected the stencil test did not pass for single: " + str(e), UserWarning)
-                if self.FIND_RTOL:    
+                warnings.warn(
+                    "As expected the stencil test did not pass for single: " + str(e), UserWarning
+                )
+                if self.FIND_RTOL:
                     err = np.abs(actual - desired)
                     sel1 = err > atol
                     desired_magnitude = np.abs(desired[sel1])
-                    rel_dev_max = np.nanmax((err - atol)[sel1] / np.where(desired_magnitude < VP_EPS, 1e5, desired_magnitude))
-                    warnings.warn(f"With ATOL={atol:2e}: RTOL_MIN = {rel_dev_max:2e}, (min magn. of desired: {np.min(desired_magnitude):2e})", UserWarning)
-
+                    rel_dev_max = np.nanmax(
+                        (err - atol)[sel1]
+                        / np.where(desired_magnitude < VP_EPS, 1e5, desired_magnitude)
+                    )
+                    warnings.warn(
+                        f"With ATOL={atol:2e}: RTOL_MIN = {rel_dev_max:2e}, (min magn. of desired: {np.min(desired_magnitude):2e})",
+                        UserWarning,
+                    )
 
     reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
@@ -217,7 +232,6 @@ class StencilTest:
             input_data_name = input_data[name]  # for mypy
             if isinstance(input_data_name, tuple):
                 for i_out_field, out_field in enumerate(input_data_name):
-
                     self.try_allclose(
                         out_field.asnumpy()[gtslice],
                         reference_outputs[name][i_out_field][refslice],

@@ -10,7 +10,7 @@ from gt4py.next import abs, broadcast, maximum  # noqa: A004
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.type_alias import wpfloat, vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator

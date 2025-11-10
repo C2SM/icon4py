@@ -21,7 +21,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperat
     _compute_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_kdim_field_with_zero_wp, _init_cell_kdim_field_with_zero_vp
+    _init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
     _update_density_exner_wind,
