@@ -9,6 +9,7 @@
 import datetime
 import logging
 import pathlib
+import statistics
 from collections.abc import Callable
 from typing import Annotated, NamedTuple
 
@@ -62,7 +63,7 @@ class Icon4pyDriver:
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
         self._xp = data_alloc.import_array_ns(self.config.backend)
-        self._log = logging.getLogger(self._full_name)
+        self._log = logging.getLogger("Icon4PyDriver")
 
         self._initialize_timeloop_parameters()
         self._validate_config()
@@ -84,10 +85,10 @@ class Icon4pyDriver:
                                                                              //          
                                                                 = = = = = = //           
         """
-        boundary_line = "*+*" * 33
+        boundary_line = ["*" * 91]
         icon4py_signature = []
         icon4py_signature += boundary_line
-        empty_line = "*" + 97 * " " + "+"
+        empty_line = ["*" + 89 * " " + "*"]
         for _ in range(3):
             icon4py_signature += empty_line
 
@@ -104,13 +105,13 @@ class Icon4pyDriver:
             "*              | |       __      _ _        _ _       //  ||    ||___/                    *"
         ]
         icon4py_signature += [
-            "*              | |     //       /   \     |/   \     //_ _||_   ||        \\      //      *"
+            "*              | |     //       /   \     |/   \     //_ _||_   ||        \\\\      //      *"
         ]
         icon4py_signature += [
-            "*              | |    ||       |     |    |     |    --------   ||         \\    //       *"
+            "*              | |    ||       |     |    |     |    --------   ||         \\\\    //       *"
         ]
         icon4py_signature += [
-            "*              | |     \\__     \_ _/     |     |         ||    ||          \\  //        *"
+            "*              | |     \\\\__     \_ _/     |     |         ||    ||          \\\\  //        *"
         ]
         icon4py_signature += [
             "*            -------                                                           //         *"
@@ -134,8 +135,9 @@ class Icon4pyDriver:
         Create a log file and two log formats for debug and other logging levels. When debug level is used for
         a message, an ascii time stamp and the function name are appended to the beginning of the message.
         """
+        current_time = datetime.datetime.now(datetime.timezone.utc)
         file_handler = logging.FileHandler(
-            filename=f"log_{self.config.experiment_name}_statistics_{datetime.now(datetime.timezone.utc)}.txt"
+            filename=f"log_{self.config.experiment_name}_statistics_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s.txt"
         )
         default_log_format = "{message}"
         debug_log_format = "{asctime} {funcName:<20} : {message}"
@@ -153,7 +155,7 @@ class Icon4pyDriver:
             (self.config.end_date - self.config.start_date) / self.config.dtime
         )
         self._dtime_in_seconds: ta.wpfloat = self.config.dtime.total_seconds()
-        self._ndyn_substeps_var: int = self._update_ndyn_substeps(self.config.ndyn_substeps)
+        self._ndyn_substeps_var: int = self.config.ndyn_substeps
         self._max_ndyn_substeps: int = self.config.ndyn_substeps + 7
         self._substep_timestep: ta.wpfloat = ta.wpfloat(
             self._dtime_in_seconds / self._ndyn_substeps_var
@@ -173,6 +175,7 @@ class Icon4pyDriver:
 
     def _update_ndyn_substeps(self, new_ndyn_substeps: int) -> None:
         self._ndyn_substeps_var = new_ndyn_substeps
+        self._substep_timestep = ta.wpfloat(self._dtime_in_seconds / self._ndyn_substeps_var)
 
     def re_initialization(self) -> None:
         """
@@ -181,6 +184,10 @@ class Icon4pyDriver:
         """
         self._initialize_timeloop_parameters()
         self._validate_config()
+
+    @property
+    def simulation_date(self) -> datetime.datetime:
+        return self._simulation_date
 
     @property
     def first_step_in_simulation(self) -> bool:
@@ -195,7 +202,7 @@ class Icon4pyDriver:
 
     def _next_simulation_date(self) -> None:
         self._simulation_date += self.config.dtime
-        self._elapse_time_in_seconds += self.config.dtime
+        self._elapse_time_in_seconds += self.config.dtime.total_seconds()
 
     @property
     def n_time_steps(self) -> int:
@@ -217,18 +224,63 @@ class Icon4pyDriver:
         """
         if self.config.enable_statistics_output:
             # TODO (Chia Rui): Do global max when multinode is ready
-            rho_arg_max = self._xp.abs(prognostic_states.current.rho.ndarray).max()
-            vn_arg_max = self._xp.abs(prognostic_states.current.vn.ndarray).max()
-            w_arg_max = self._xp.abs(prognostic_states.current.w.ndarray).max()
+            rho_arg_max = self._xp.unravel_index(
+                self._xp.abs(prognostic_states.current.rho.ndarray).argmax(),
+                prognostic_states.current.rho.ndarray.shape,
+            )
+            vn_arg_max = self._xp.unravel_index(
+                self._xp.abs(prognostic_states.current.vn.ndarray).argmax(),
+                prognostic_states.current.vn.ndarray.shape,
+            )
+            w_arg_max = self._xp.unravel_index(
+                self._xp.abs(prognostic_states.current.w.ndarray).argmax(),
+                prognostic_states.current.w.ndarray.shape,
+            )
             self._log.info(
                 f"substep / n_substeps : {current_dyn_substep} / {self._ndyn_substeps_var} == "
                 f" MAX RHO, VN, and W: {prognostic_states.current.rho.ndarray[rho_arg_max]:.5e} / {prognostic_states.current.vn.ndarray[vn_arg_max]:.5e} / {prognostic_states.current.w.ndarray[w_arg_max]:.5e}, "
-                f"at levels: {self._xp.unravel_index(rho_arg_max, prognostic_states.current.rho.ndarray.shape)[1]} / {self._xp.unravel_index(vn_arg_max, prognostic_states.current.vn.ndarray.shape)[1]} / {self._xp.unravel_index(w_arg_max, prognostic_states.current.w.ndarray.shape)[1]}"
+                f"at levels: {rho_arg_max[1]} / {vn_arg_max[1]} / {w_arg_max[1]}"
             )
         else:
             self._log.info(
                 f"substep / n_substeps : {current_dyn_substep} / {self._ndyn_substeps_var}"
             )
+
+    def _compute_mean_at_final_time_step(
+        self, prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState]
+    ):
+        if self.config.enable_statistics_output:
+            rho_ndarray = prognostic_states.current.rho.ndarray
+            vn_ndarray = prognostic_states.current.vn.ndarray
+            w_ndarray = prognostic_states.current.w.ndarray
+            theta_v_ndarray = prognostic_states.current.theta_v.ndarray
+            exner_ndarray = prognostic_states.current.exner.ndarray
+            interface_physical_height_ndarray = (
+                self.solve_nonhydro._vertical_params.interface_physical_height.ndarray
+            )
+            self._log.info("")
+            self._log.info(
+                "Global mean of    rho         vn          w       theta_v     exner   :"
+            )
+            for k in range(rho_ndarray.shape[1]):
+                self._log.info(
+                    f"{interface_physical_height_ndarray[k]:12.3f}: {self._xp.mean(rho_ndarray[:, k]):.5e} "
+                    f"{self._xp.mean(vn_ndarray[:, k]):.5e} "
+                    f"{self._xp.mean(w_ndarray[:, k+1]):.5e} "
+                    f"{self._xp.mean(theta_v_ndarray[:, k]):.5e} "
+                    f"{self._xp.mean(exner_ndarray[:, k]):.5e} "
+                )
+
+    def _show_timer_report(self, timer: Timer, timer_title: str):
+        timer_summary = timer.summary(False)
+        self._log.info(
+            f"{timer_title} timer summary:"
+            f"{len(timer_summary)} times: "
+            f"mean={statistics.mean(timer_summary):0.8f}s "
+            f"stdev={statistics.stdev(timer_summary) if len(timer_summary) > 1 else 0:0.8f}s "
+            f"min={min(timer_summary):0.8f}s "
+            f"max={max(timer_summary):0.8f}s"
+        )
 
     def time_integration(
         self,
@@ -278,9 +330,12 @@ class Icon4pyDriver:
 
             # TODO(OngChia): simple IO enough for JW test
 
-        timer_first_timestep.summary(True)
+        self._compute_mean_at_final_time_step(prognostic_states)
+
+        self._show_timer_report(timer_first_timestep, "First time step")
         if self.n_time_steps > 1:  # in case only one time step was run
-            timer_after_first_timestep.summary(True)
+            self._show_timer_report(timer_after_first_timestep, "After first time step")
+
         if (
             self.config.profiling_stats is not None
             and self.config.profiling_stats.gt4py_metrics_level > gtx_metrics.DISABLED
@@ -425,17 +480,23 @@ class Icon4pyDriver:
             )
 
             if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:
-                ndyn_substeps_increment = max(
-                    1,
-                    round(
-                        self._ndyn_substeps_var
-                        * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)
-                        / vertical_cfl_threshold_for_increment
-                    ),
-                )
-                new_ndyn_substeps_var = min(
-                    self._ndyn_substeps_var + ndyn_substeps_increment, self._max_ndyn_substeps
-                )
+                if self._xp.isfinite(global_max_vertical_cfl):
+                    ndyn_substeps_increment = max(
+                        1,
+                        round(
+                            self._ndyn_substeps_var
+                            * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)
+                            / vertical_cfl_threshold_for_increment
+                        ),
+                    )
+                    new_ndyn_substeps_var = min(
+                        self._ndyn_substeps_var + ndyn_substeps_increment, self._max_ndyn_substeps
+                    )
+                else:
+                    self._log.info(
+                        f"WARNING: max cfl {global_max_vertical_cfl} is not a number! Number of substeps is set to the max value! "
+                    )
+                    new_ndyn_substeps_var = self._max_ndyn_substeps
                 self._update_ndyn_substeps(new_ndyn_substeps_var)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
                 self._log.info(
@@ -509,7 +570,7 @@ def initialize(
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
-    backend: str,
+    backend_name: str,
 ) -> tuple[Icon4pyDriver, DriverStates]:
     """
     Initialize the driver run.
@@ -538,51 +599,52 @@ def initialize(
         decomposition.get_runtype(with_mpi=False)
     )
     # TODO (Chia Rui): experiment name should be in driver config
-    driver_init.configure_logging(output_path, log_level, "Jablownoski-Williamson", parallel_props)
+    driver_init.configure_logging(output_path, "Jablonowski_Williamson", log_level, parallel_props)
 
     log.info("initialize parallel runtime")
-    log.info("reading configuration: experiment Jablownoski-Williamson")
+    log.info("reading configuration: experiment Jablonowski_Williamson")
     driver_config, vertical_grid_config, diffusion_config, solve_nh_config = (
         driver_configure.read_config(
             configuration_file_path=configuration_file_path,
             output_path=output_path,
             grid_file_path=grid_file_path,
-            backend=backend,
+            backend_name=backend_name,
+            enable_profiling=False,
         )
     )
 
     log.info(f"initializing the grid from '{grid_file_path}'")
-    (grid, decomposition_info) = driver_init.create_mesh(
-        grid_file=grid_file_path,
+    (grid_manager, decomposition_info) = driver_init.create_grid_manager_and_decomp_info(
+        grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
-        backend=backend,
+        backend=driver_config.backend,
     )
     vertical_grid = driver_init.create_vertical_grid(
         vertical_grid_config=vertical_grid_config,
-        backend=backend,
+        backend=driver_config.backend,
     )
 
     geometry_field_source = driver_init.create_geometry_factory(
-        mesh=grid,
+        grid_manager=grid_manager,
         decomposition_info=decomposition_info,
-        backend=backend,
+        backend=driver_config.backend,
     )
 
     topo_c = driver_init.create_topography(
         geometry_field_source=geometry_field_source,
-        backend=backend,
+        backend=driver_config.backend,
     )
 
     (
         interpolation_field_source,
         metrics_field_source,
     ) = driver_init.create_interpolation_metrics_factories(
-        mesh=grid,
+        grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         geometry_field_source=geometry_field_source,
         vertical_grid=vertical_grid,
         topo_c=topo_c,
-        backend=backend,
+        backend=driver_config.backend,
     )
 
     log.info(f"reading input fields from '{grid_file_path}'")
@@ -593,7 +655,7 @@ def initialize(
         diffusion_granule,
         solve_nonhydro_granule,
     ) = driver_init.initialize_granule(
-        mesh=grid,
+        grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         vertical_grid=vertical_grid,
         diffusion_config=diffusion_config,
@@ -602,7 +664,7 @@ def initialize(
         interpolation_field_source=interpolation_field_source,
         metrics_field_source=metrics_field_source,
         exchange=exchange,
-        backend=backend,
+        backend=driver_config.backend,
     )
 
     (
@@ -613,15 +675,15 @@ def initialize(
         prognostic_state_now,
         prognostic_state_next,
     ) = driver_init.read_initial_state(
-        grid=grid,
+        grid=grid_manager.grid,
         geometry_field_source=geometry_field_source,
-        path=grid_file_path,
-        backend=backend,
-        rank=parallel_props.rank,
+        interpolation_field_source=interpolation_field_source,
+        metrics_field_source=metrics_field_source,
+        backend=driver_config.backend,
     )
 
     icon4py_driver = Icon4pyDriver(
-        run_config=driver_config,
+        config=driver_config,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
     )
@@ -642,24 +704,22 @@ def initialize(
 # TODO (Chia Rui): Ultimately, these arguments and options should be read from a config file and the only argument should be the path to the config file
 def run_icon4py_driver(
     configuration_file_path: Annotated[str, typer.Argument(help="Configuration file path.")],
-    grid_file_path: Annotated[str, typer.Argument(help="Grid file path.")],
-    icon4py_driver_backend: Annotated[
+    grid_file_path: Annotated[str, typer.Option(help="Grid file path.")],
+    icon4py_backend: Annotated[
         str,
-        typer.Argument(
-            "--backend",
+        typer.Option(
             help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([k for k in model_backends.BACKENDS])}",
         ),
     ],
     output_path: Annotated[
-        str, typer.Option(help="Folder path that holds the output and log files.", default="./")
-    ],
+        str, typer.Option(help="Folder path that holds the output and log files.")
+    ] = "./",
     log_level: Annotated[
         str,
         typer.Option(
             help=f"Logging level of log files. Possible options are {' / '.join([k for k in driver_init._LOGGING_LEVELS])}",
-            default=next(iter(driver_init._LOGGING_LEVELS.keys())),
         ),
-    ],
+    ] = next(iter(driver_init._LOGGING_LEVELS.keys())),
 ) -> None:
     """
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
@@ -690,11 +750,11 @@ def run_icon4py_driver(
     icon4py_driver: Icon4pyDriver
     ds: DriverStates
     icon4py_driver, ds = initialize(
-        pathlib.Path(configuration_file_path).absolute(),
-        filter_output_path,
-        pathlib.Path(grid_file_path).absolute(),
-        log_level,
-        icon4py_driver_backend,
+        configuration_file_path=pathlib.Path(configuration_file_path).absolute(),
+        output_path=filter_output_path,
+        grid_file_path=pathlib.Path(grid_file_path).absolute(),
+        log_level=log_level,
+        backend_name=icon4py_backend,
     )
     log.info(f"Starting ICON dycore run: {icon4py_driver.simulation_date.isoformat()}")
     log.info(f"input args: grid_path={grid_file_path}")

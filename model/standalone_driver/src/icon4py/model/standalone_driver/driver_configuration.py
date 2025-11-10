@@ -44,7 +44,7 @@ class DriverConfig:
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
 
-    apply_extra_second_order_divdamp: bool
+    apply_extra_second_order_divdamp: bool = False
 
     vertical_cfl_threshold: ta.wpfloat = 0.85
 
@@ -67,15 +67,15 @@ class DriverConfig:
             object.__setattr__(self, name, path)
             if not path.exists():
                 log.warning(f"The path for {name} does not exist: {path}")
-            elif not path.is_file():
-                raise ValueError(f"{name} must be a file: {path}")
+            # elif not path.is_file():
+            #     raise ValueError(f"{name} must be a file: {path}")
 
 
 def read_config(
     configuration_file_path: pathlib.Path,
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
-    backend: str,
+    backend_name: str,
     enable_profiling: bool,
 ) -> tuple[
     DriverConfig,
@@ -111,7 +111,7 @@ def read_config(
 
     driver_run_config = DriverConfig(
         experiment_name="Jablonowski_Williamson",
-        backend=backend,
+        backend_name=backend_name,
         output_path=output_path,
         configuration_file_path=configuration_file_path,
         grid_file_path=grid_file_path,

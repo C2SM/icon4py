@@ -12,11 +12,11 @@ import pathlib
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from model.common.src.icon4py.model.common.constants import RayleighType
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
@@ -51,35 +51,35 @@ _LOGGING_LEVELS: dict[str, int] = {
 }
 
 
-def create_mesh(
+def create_grid_manager_and_decomp_info(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     backend: gtx_typing.Backend,
 ) -> tuple[
     decomposition_defs.DecompositionInfo,
-    icon_grid.IconGrid,
+    gm.GridManager,
 ]:
     grid_manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(),
         grid_file_path,
         vertical_grid_config,
     )
-    grid_manager(backend=backend, keep_skip_values=True)
-    mesh = grid_manager.grid
+    grid_manager(backend=backend, keep_skip_values=False)
 
     xp = data_alloc.import_array_ns(backend)
 
+    decomposition_info = decomposition_defs.DecompositionInfo()
+
     def _add_dimension(dim: gtx.Dimension) -> None:
-        indices = data_alloc.index_field(mesh, dim, allocator=backend)
-        owner_mask = xp.ones((mesh.size[dim],), dtype=bool)
+        indices = data_alloc.index_field(grid_manager.grid, dim, allocator=backend)
+        owner_mask = xp.ones((grid_manager.grid.size[dim],), dtype=bool)
         decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
-    decomposition_info = decomposition_defs.DecompositionInfo(klevels=mesh.num_levels)
     _add_dimension(dims.EdgeDim)
     _add_dimension(dims.VertexDim)
     _add_dimension(dims.CellDim)
 
-    return mesh, decomposition_info
+    return grid_manager, decomposition_info
 
 
 def create_vertical_grid(
@@ -97,16 +97,16 @@ def create_vertical_grid(
 
 
 def create_geometry_factory(
-    mesh: icon_grid.IconGrid,
+    grid_manager: gm.GridManager,
     decomposition_info: decomposition_defs.DecompositionInfo,
     backend: gtx_typing.Backend,
 ) -> grid_geometry.GridGeometry:
     geometry_field_source = grid_geometry.GridGeometry(
-        grid=mesh,
+        grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         backend=backend,
-        coordinates=mesh.coordinates,
-        extra_fields=mesh.geometry_fields,
+        coordinates=grid_manager.coordinates,
+        extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
     )
 
@@ -126,7 +126,7 @@ def create_topography(
 
 
 def create_interpolation_metrics_factories(
-    mesh: icon_grid.IconGrid,
+    grid: icon_grid.IconGrid,
     decomposition_info: decomposition_defs.DecompositionInfo,
     geometry_field_source: grid_geometry.GridGeometry,
     vertical_grid: v_grid.VerticalGrid,
@@ -137,7 +137,7 @@ def create_interpolation_metrics_factories(
     metrics_factory.MetricsFieldsFactory,
 ]:
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        grid=mesh,
+        grid=grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
         backend=backend,
@@ -145,11 +145,11 @@ def create_interpolation_metrics_factories(
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
-        grid=mesh,
+        grid=grid,
         vertical_grid=vertical_grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        topography=gtx.as_field((dims.CellDim,), data=topo_c),
+        topography=gtx.as_field((dims.CellDim,), data=topo_c, allocator=backend),
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
@@ -163,7 +163,7 @@ def create_interpolation_metrics_factories(
 
 
 def initialize_granule(
-    mesh: icon_grid.IconGrid,
+    grid: icon_grid.IconGrid,
     decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
     diffusion_config: diffusion.DiffusionConfig,
@@ -177,11 +177,15 @@ def initialize_granule(
     diffusion.Diffusion,
     solve_nh.SolveNonhydro,
 ]:
+    log.info("Start creating cell geometry")
     cell_geometry = grid_states.CellParams(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
     )
+    log.info("Finish creating cell geometry")
+
+    log.info("Start creating edge geometry")
     edge_geometry = grid_states.EdgeParams(
         tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
         inverse_primal_edge_lengths=geometry_field_source.get(
@@ -208,7 +212,9 @@ def initialize_granule(
         primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
         primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
     )
+    log.info("Finish creating edge geometry")
 
+    log.info("Start creating diffusion interpolation state")
     diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
         rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
@@ -219,6 +225,9 @@ def initialize_granule(
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
         nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
     )
+    log.info("Finish creating diffusion interpolation state")
+
+    log.info("Start creating diffusion metric state")
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
         mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
         theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
@@ -227,7 +236,9 @@ def initialize_granule(
         zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
         zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
     )
+    log.info("Finish creating diffusion metric state")
 
+    log.info("Start creating solve nonhydro interpolation state")
     solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
         c_intp=interpolation_field_source.get(interpolation_attributes.CELL_AW_VERTS),
@@ -250,7 +261,9 @@ def initialize_granule(
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
         nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
     )
+    log.info("Finish creating solve nonhydro interpolation state")
 
+    log.info("Start creating solve nonhydro metric state")
     solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
         bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
         mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
@@ -311,11 +324,12 @@ def initialize_granule(
         coeff2_dwdz=metrics_field_source.get(metrics_attributes.COEFF2_DWDZ),
         coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
     )
+    log.info("End creating solve nonhydro metric state")
 
     diffusion_params = diffusion.DiffusionParams(diffusion_config)
 
     diffusion_granule = diffusion.Diffusion(
-        grid=mesh,
+        grid=grid,
         config=diffusion_config,
         params=diffusion_params,
         vertical_grid=vertical_grid,
@@ -330,7 +344,7 @@ def initialize_granule(
     nonhydro_params = solve_nh.NonHydrostaticParams(solve_nh_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        grid=mesh,
+        grid=grid,
         backend=backend,
         config=solve_nh_config,
         params=nonhydro_params,
@@ -426,7 +440,10 @@ def configure_logging(
             f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([k for k in _LOGGING_LEVELS])}"
         )
 
-    logfile = output_path.joinpath(f"log_{experiment_name}_{datetime.now(datetime.timezone.utc)}")
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    logfile = output_path.joinpath(
+        f"log_{experiment_name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
+    )
     logfile.touch(exist_ok=False)
 
     logging.basicConfig(

@@ -76,7 +76,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     theta_ref_ic = metrics_field_source.get(metrics_attributes.THETA_REF_IC).ndarray
     exner_ref_mc = metrics_field_source.get(metrics_attributes.EXNER_REF_MC).ndarray
     d_exner_dz_ref_ic = metrics_field_source.get(metrics_attributes.D_EXNER_DZ_REF_IC).ndarray
-    geopot = metrics_field_source.get(metrics_attributes.GEOPOT).ndarray
+    geopot = phy_const.GRAV * metrics_field_source.get(metrics_attributes.Z_MC).ndarray
 
     cell_lat = geometry_field_source.get(geometry_meta.CELL_LAT).ndarray
     edge_lat = geometry_field_source.get(geometry_meta.EDGE_LAT).ndarray
@@ -125,12 +125,15 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
 
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)
-    fac1 = ta.wpfloat("1.0 / 6.3") - ta.wpfloat("2.0") * (sin_lat**6) * (
-        cos_lat**2 + ta.wpfloat("1.0 / 3.0")
+    fac1 = ta.wpfloat("1.0") / ta.wpfloat("6.3") - ta.wpfloat("2.0") * (sin_lat**6) * (
+        cos_lat**2 + ta.wpfloat("1.0") / ta.wpfloat("3.0")
     )
     fac2 = (
         (
-            ta.wpfloat("8.0 / 5.0") * (cos_lat**3) * (sin_lat**2 + ta.wpfloat("2.0 / 3.0"))
+            ta.wpfloat("8.0")
+            / ta.wpfloat("5.0")
+            * (cos_lat**3)
+            * (sin_lat**2 + ta.wpfloat("2.0") / ta.wpfloat("3.0"))
             - ta.wpfloat("0.25") * math.pi
         )
         * phy_const.EARTH_RADIUS
@@ -159,10 +162,11 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
                 - phy_const.RD
                 * dtemp
                 * (
-                    (xp.log(eta_old / eta_t) + ta.wpfloat("137.0 / 60.0")) * (eta_t**5)
+                    (xp.log(eta_old / eta_t) + ta.wpfloat("137.0") / ta.wpfloat("60.0"))
+                    * (eta_t**5)
                     - ta.wpfloat("5.0") * (eta_t**4) * eta_old
                     + ta.wpfloat("5.0") * (eta_t**3) * (eta_old**2)
-                    - ta.wpfloat("10.0 / 3.0") * (eta_t**2) * (eta_old**3)
+                    - ta.wpfloat("10.0") / ta.wpfloat("3.0") * (eta_t**2) * (eta_old**3)
                     + ta.wpfloat("1.25") * eta_t * (eta_old**4)
                     - ta.wpfloat("0.2") * (eta_old**5)
                 ),

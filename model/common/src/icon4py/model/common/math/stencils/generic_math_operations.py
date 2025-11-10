@@ -15,7 +15,7 @@ from icon4py.model.common.math.operators import _minus_operation_on_cell_k
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def minus_operation_on_cell_k(
     field_a: fa.CellKField[ta.wpfloat],
-    field_b: fa.CellKField[ta.wpfloat] | fa.CellKField[ta.vpfloat],
+    field_b: fa.CellKField[ta.vpfloat],
     output_field: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

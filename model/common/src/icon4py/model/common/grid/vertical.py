@@ -180,7 +180,7 @@ class VerticalGrid:
         vct_a_array = self._vct_a.ndarray
         dvct = vct_a_array[:-1] - vct_a_array[1:]
         array_value = [
-            f"   0   {vct_a_array[0]:12.3f}",
+            f"   0   {vct_a_array[0]:12.3f}             ",
             *(
                 f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}"
                 for k in range(vct_a_array.shape[0] - 1)
@@ -340,7 +340,7 @@ def _read_vct_a_and_vct_b_from_file(
 
 def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
     vertical_config: VerticalGridConfig, backend: gtx_typing.Backend | None
-) -> tuple[fa.KField, fa.KField]:
+) -> tuple[fa.KField[ta.wpfloat], fa.KField[ta.wpfloat]]:
     """
     Compute vct_a and vct_b.
 
@@ -529,7 +529,7 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
 
 def get_vct_a_and_vct_b(
     vertical_config: VerticalGridConfig, backend: gtx_typing.Backend | None
-) -> tuple[fa.KField, fa.KField]:
+) -> tuple[fa.KField[ta.wpfloat], fa.KField[ta.wpfloat]]:
     """
     get vct_a and vct_b.
     vct_a is an array that contains the height of grid interfaces (or half levels) from model surface to model top, before terrain-following coordinates are applied.

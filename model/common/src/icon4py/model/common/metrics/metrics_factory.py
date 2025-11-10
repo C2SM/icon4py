@@ -102,10 +102,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._backend)
         e_owner_mask = gtx.as_field(
-            (dims.EdgeDim,), self._decomposition_info.owner_mask(dims.EdgeDim)
+            (dims.EdgeDim,),
+            self._decomposition_info.owner_mask(dims.EdgeDim),
+            allocator=self._backend,
         )
         c_owner_mask = gtx.as_field(
-            (dims.CellDim,), self._decomposition_info.owner_mask(dims.CellDim)
+            (dims.CellDim,),
+            self._decomposition_info.owner_mask(dims.CellDim),
+            allocator=self._backend,
         )
         c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
 
