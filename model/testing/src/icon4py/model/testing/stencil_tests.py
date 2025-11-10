@@ -125,9 +125,8 @@ def test_and_benchmark(
             metrics_data = gtx_metrics.sources
             key = next(iter(metrics_data))
             compute_samples = metrics_data[key].metrics["compute"].samples
-            # emprically exclude first few iterations as warmup
+            # emprically exclude first few iterations run for warmup
             initial_program_iterations_to_skip = 2
-            # Exclude first sample unless running in benchmark_only mode
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:
             ]
