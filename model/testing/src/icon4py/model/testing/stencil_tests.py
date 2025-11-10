@@ -249,23 +249,30 @@ class StencilTest:
 
         pytest_prefix = "test_"
 
-        setattr(cls, f"{pytest_prefix}{cls.__name__}", test_and_benchmark)
-
-        # in case a test inherits from another test overload the test function of its parent and skip it
-        # to avoid running the tests of its parent
-        if cls.__base__ is not None and cls.__base__ != StencilTest:
-
-            def skipped_test() -> None:
-                pass
-
-            setattr(cls, f"{pytest_prefix}{cls.__base__.__name__}", pytest.mark.skip(skipped_test))
+        # only add `test_and_benchmark` to direct subclasses of `StencilTest`. Inherited tests can use the same function.
+        if cls.__base__ == StencilTest:
+            setattr(cls, f"{pytest_prefix}{cls.__name__}", test_and_benchmark)
 
         # decorate `static_variant` with parametrized fixtures, since the
         # parametrization is only available in the concrete subclass definition
-        # Check if cls.static_variant is already a pytest fixture to allow inheriting from other StencilTests
+        # Check if cls.static_variant has changes in inherited subclasses and update it accordingly
         if hasattr(cls.static_variant, "_pytestfixturefunction"):
-            # Already a fixture, do nothing
-            pass
+            base_static = getattr(cls.__base__, "STATIC_PARAMS", None)
+            if base_static != cls.STATIC_PARAMS:
+                if cls.STATIC_PARAMS is None:
+                    cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment]
+                else:
+                    # copy of `static_variant`
+                    def _new_static_variant(request: pytest.FixtureRequest) -> Sequence[str]:
+                        _, variant = request.param
+                        return () if variant is None else variant
+
+                    # replace with new parametrized fixture
+                    cls.static_variant = staticmethod(  # type: ignore[method-assign]
+                        pytest.fixture(
+                            params=cls.STATIC_PARAMS.items(), scope="class", ids=lambda p: p[0]
+                        )(_new_static_variant)
+                    )
         elif cls.STATIC_PARAMS is None:
             # not parametrized, return an empty tuple
             cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
