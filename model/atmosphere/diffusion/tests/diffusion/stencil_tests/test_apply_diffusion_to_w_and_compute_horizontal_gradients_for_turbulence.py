@@ -69,12 +69,21 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         nrdmax,
         interior_idx,
         halo_idx,
+        horizontal_start,
+        horizontal_end,
+        vertical_start,
+        vertical_end,
         **kwargs,
     ) -> dict:
         k = np.arange(w_old.shape[1])
         cell = np.arange(w_old.shape[0])
         reshaped_k = k[np.newaxis, :]
         reshaped_cell = cell[:, np.newaxis]
+        out_w, out_dwdx, out_dwdy = (
+            np.zeros_like(w_old),
+            dwdx.copy(),
+            dwdy.copy(),
+        )  # create output arrays to update only the necessary slices
         if type_shear == 2:
             dwdx, dwdy = np.where(
                 reshaped_k > 0,
@@ -102,14 +111,31 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             apply_nabla2_to_w_in_upper_damping_layer_numpy(w, diff_multfac_n2w, area, z_nabla2_c),
             w,
         )
-        return dict(w=w, dwdx=dwdx, dwdy=dwdy)
+        subset = (slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end))
+        out_w[subset] = w[subset]
+        out_dwdx[subset] = dwdx[subset]
+        out_dwdy[subset] = dwdy[subset]
+        return dict(w=out_w, dwdx=out_dwdx, dwdy=out_dwdy)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         nrdmax = 13
-        interior_idx = 1
-        halo_idx = 5
+        cell_domain = h_grid.domain(dims.CellDim)
+        interior_idx = grid.start_index(cell_domain(h_grid.Zone.INTERIOR))  # 0 for simple grid
+        halo_idx = grid.end_index(
+            cell_domain(h_grid.Zone.LOCAL)
+        )  # same as horizontal_end for simple grid
         type_shear = 2
+
+        def _get_start_index_for_w_diffusion() -> int32:
+            return (
+                grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+                if grid.limited_area
+                else grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+            )
+
+        horizontal_start = _get_start_index_for_w_diffusion()
+        horizontal_end = grid.end_index(cell_domain(h_grid.Zone.HALO))
 
         geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim)
         geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim)
@@ -138,8 +164,8 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             w=w,
             dwdx=dwdx,
             dwdy=dwdy,
-            horizontal_start=0,
-            horizontal_end=grid.num_cells,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
@@ -149,25 +175,4 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulenceContinuousBenchmarking(
     TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence
 ):
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        # Use the parent class's fixture indirectly by calling its method, not the fixture itself
-        base_data = (
-            TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence.input_data.__wrapped__(
-                self, grid
-            )
-        )
-        cell_domain = h_grid.domain(dims.CellDim)
-        base_data["interior_idx"] = grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
-        base_data["halo_idx"] = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-
-        def _get_start_index_for_w_diffusion() -> int32:
-            return (
-                grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-                if grid.limited_area
-                else grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
-            )
-
-        base_data["horizontal_start"] = _get_start_index_for_w_diffusion()
-        base_data["horizontal_end"] = grid.end_index(cell_domain(h_grid.Zone.HALO))
-        return base_data
+    pass
