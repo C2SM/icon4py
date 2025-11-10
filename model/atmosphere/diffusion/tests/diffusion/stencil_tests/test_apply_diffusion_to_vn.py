@@ -32,7 +32,7 @@ class TestApplyDiffusionToVn(StencilTest):
     PROGRAM = apply_diffusion_to_vn
     OUTPUTS = ("vn",)
     STATIC_PARAMS = {
-        # StandardStaticVariants.NONE: (),
+        StandardStaticVariants.NONE: (),
         StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
@@ -40,14 +40,14 @@ class TestApplyDiffusionToVn(StencilTest):
             "vertical_start",
             "vertical_end",
             "limited_area",
-            "nudgezone_diff",
-            "fac_bdydiff_v",
+            # "nudgezone_diff", #TODO(pstark): Why not these two?
+            # "fac_bdydiff_v",
         ),
-        # StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-        #     "vertical_start",
-        #     "vertical_end",
-        #     "limited_area",
-        # ),
+        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "limited_area",
+        ),
     }
 
     @staticmethod
@@ -171,3 +171,8 @@ class TestApplyDiffusionToVn(StencilTest):
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestApplyDiffusionToVnContinuousBenchmarking(TestApplyDiffusionToVn):
+    pass

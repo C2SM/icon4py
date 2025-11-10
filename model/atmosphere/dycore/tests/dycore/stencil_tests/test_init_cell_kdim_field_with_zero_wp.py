@@ -19,12 +19,25 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 
 class TestInitCellKdimFieldWithZeroWp(StencilTest):
     PROGRAM = init_cell_kdim_field_with_zero_wp
     OUTPUTS = ("field_with_zero_wp",)
+    STATIC_PARAMS = {
+        StandardStaticVariants.NONE: (),
+        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+        ),
+        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -46,3 +59,8 @@ class TestInitCellKdimFieldWithZeroWp(StencilTest):
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestInitCellKdimFieldWithZeroWpContinuousBenchmarking(TestInitCellKdimFieldWithZeroWp):
+    pass

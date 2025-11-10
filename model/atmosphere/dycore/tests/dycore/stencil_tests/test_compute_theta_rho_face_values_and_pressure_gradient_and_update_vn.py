@@ -122,8 +122,7 @@ def compute_theta_rho_face_value_by_miura_scheme_numpy(
 
 
 @pytest.mark.single_precision_ready
-# @pytest.mark.embedded_remap_error #TODO(pstark): find out why this deselects
-# @pytest.mark.skip_value_error
+@pytest.mark.embedded_remap_error
 @pytest.mark.uses_as_offset
 class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
     PROGRAM = compute_theta_rho_face_values_and_pressure_gradient_and_update_vn
@@ -134,9 +133,9 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         "next_vn",
     )
     STATIC_PARAMS = {
-        # stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.NONE: (),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            # "iau_wgt_dyn",
+            "iau_wgt_dyn",
             "is_iau_active",
             "limited_area",
             "start_edge_lateral_boundary",
@@ -151,20 +150,15 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             "vertical_start",
             "vertical_end",
         ),
-        # stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-        #     "end_index_of_damping_layer",
-        #     "kstart_moist",
-        #     "flat_level_index_plus1",
-        #     "vertical_start_index_model_top",
-        #     "vertical_end_index_model_surface",
-        #     "divdamp_type",
-        #     "rayleigh_type",
-        #     "is_iau_active",
-        #     "at_first_substep",
-        # ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "is_iau_active",
+            "limited_area",
+            "nflatlev",
+            "nflat_gradp",
+            "vertical_start",
+            "vertical_end",
+        ),
     }
-    # TODO(pstark): rm this again:
-    FIND_RTOL = True
     if precision == "single":
         RTOL = 3e-2
         ATOL = 1e-2
@@ -304,7 +298,10 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
                 perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
                 perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
             ),
-            (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels),
+            (
+                np.zeros_like(rho_at_edges_on_model_levels),
+                np.zeros_like(theta_v_at_edges_on_model_levels),
+            ),
         )
 
         # Remaining computations at edge points
@@ -517,3 +514,20 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
                 vertical_end=grid.num_levels,
             )
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestComputeThetaRhoPressureGradientAndUpdateVnContinuousBenchmarking(
+    TestComputeThetaRhoPressureGradientAndUpdateVn
+):
+    @pytest.fixture
+    def input_data(self, grid: base.Grid) -> dict:
+        base_data = TestComputeThetaRhoPressureGradientAndUpdateVn.input_data.__wrapped__(
+            self, grid
+        )
+        base_data["is_iau_active"] = False
+        base_data["limited_area"] = grid.limited_area
+        base_data["nflatlev"] = 5
+        base_data["nflat_gradp"] = 34
+        base_data["start_edge_lateral_boundary"] = 0
+        return base_data
