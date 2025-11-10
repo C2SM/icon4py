@@ -38,7 +38,7 @@ def get_dace_options(
             # TODO(iomaganaris): Enable this for CPU once the issue with the strides of memlets from the nested SDFG
             # to a global Access Node is resolved.
             # Enable pass that removes access node (next_w) copies for vertically implicit solver programs
-            if backend_descriptor.get("device", model_backends.CPU) == model_backends.GPU:
+            if backend_descriptor["device"] == model_backends.GPU:
                 optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
                     lambda sdfg: sdfg.apply_transformations_repeated(
                         gtx_transformations.RemoveAccessNodeCopies(),
