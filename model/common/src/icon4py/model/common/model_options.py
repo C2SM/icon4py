@@ -35,14 +35,17 @@ def get_dace_options(
         "vertically_implicit_solver_at_predictor_step",
     ]:
         if gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep not in optimization_hooks:
+            # TODO(iomaganaris): Enable this for CPU once the issue with the strides of memlets from the nested SDFG
+            # to a global Access Node is resolved.
             # Enable pass that removes access node (next_w) copies for vertically implicit solver programs
-            optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
-                lambda sdfg: sdfg.apply_transformations_repeated(
-                    gtx_transformations.RemoveAccessNodeCopies(),
-                    validate=False,
-                    validate_all=False,
+            if backend_descriptor.get("device", model_backends.CPU) == model_backends.GPU:
+                optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
+                    lambda sdfg: sdfg.apply_transformations_repeated(
+                        gtx_transformations.RemoveAccessNodeCopies(),
+                        validate=False,
+                        validate_all=False,
+                    )
                 )
-            )
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
