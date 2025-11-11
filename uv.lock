@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -173,8 +173,8 @@ dependencies = [
     { name = "packaging" },
     { name = "pathspec" },
     { name = "platformdirs" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d8/0d/cc2fb42b8c50d80143221515dd7e4766995bd07c56c9a3ed30baf080b6dc/black-24.10.0.tar.gz", hash = "sha256:846ea64c97afe3bc677b761787993be4991810ecc7a4a937816dd6bddedc4875", size = 645813, upload-time = "2024-10-07T19:20:50.361Z" }
 wheels = [
@@ -562,7 +562,7 @@ name = "click"
 version = "8.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/96/d3/f04c7bfcf5c1862a2a5b845c6b2b360488cf47af55dfa79c98f6a6bf98b5/click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de", size = 336121, upload-time = "2023-08-17T17:29:11.868Z" }
 wheels = [
@@ -917,7 +917,7 @@ dependencies = [
     { name = "numpy" },
     { name = "packaging" },
     { name = "ply" },
-    { name = "pyreadline", marker = "sys_platform == 'win32'" },
+    { name = "pyreadline", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
     { name = "pyyaml" },
     { name = "sympy" },
 ]
@@ -1394,8 +1394,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.0"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.4.post585+82ded039"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining#82ded039fcffed5e7a2953535a4a41bcddb92198" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1424,10 +1424,6 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "versioningit" },
     { name = "xxhash" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/63/a2/ef95ccb4c6676ac8b2fdcf3dd7339e1974c5e3762f8b57bb57ea5171f0bb/gt4py-1.1.0.tar.gz", hash = "sha256:4c3d5b9aa3e26ad7967c24291b8def5c6656e2be170d4972fc8d4e8c4264633c", size = 758531, upload-time = "2025-11-05T10:18:40.466Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/fe/f3/e8d6bdcd4bd28a8e21af5492b24e40135d5079b27b7f9225a29c3345c436/gt4py-1.1.0-py3-none-any.whl", hash = "sha256:d334d889c0a33e5c4e6ffc15e323795b28136158257af6bdc44730a2b5feabb9", size = 962865, upload-time = "2025-11-05T10:18:38.627Z" },
 ]
 
 [package.optional-dependencies]
@@ -1744,7 +1740,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.0" },
+    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1761,7 +1757,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.0" },
+    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1778,7 +1774,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.0" },
+    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1795,7 +1791,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.0" },
+    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1812,7 +1808,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.0" },
+    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1877,9 +1873,9 @@ requires-dist = [
     { name = "dace", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_11_05" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", specifier = "==1.1.0" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1915,7 +1911,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.0" },
+    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1943,7 +1939,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", specifier = "==1.1.0" },
+    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1989,9 +1985,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", specifier = "==1.1.0" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/philip-paul-mueller/gt4py?branch=deterministic_inlining" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
@@ -3926,7 +3922,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
     { name = "setuptools" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/4f/a4/00a9ac1b555294710d4a68d2ce8dfdf39d72aa4d769a7395d05218d88a42/setuptools_scm-8.1.0.tar.gz", hash = "sha256:42dea1b65771cba93b7a515d65a65d8246e560768a66b9106a592c8e7f26c8a7", size = 76465, upload-time = "2024-05-06T15:07:56.934Z" }
 wheels = [
@@ -4551,7 +4547,7 @@ version = "3.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5c/9b/941647e9e3616b5da7bbc4601ed9920f44a886704100fa8151406c07c149/versioningit-3.1.2.tar.gz", hash = "sha256:4db83ed99f56b07d83940bee3445ca46ca120d13b6b304cdb5fb44e5aa4edec0", size = 213047, upload-time = "2024-07-20T12:41:07.927Z" }
 wheels = [
