@@ -46,6 +46,10 @@ def get_dace_options(
                         validate_all=False,
                     )
                 )
+    if program_name == "compute_hydrostatic_correction_term":
+        # Required for correctness as the output field is only defined on lev-1.
+        # TODO(havogt): Eventually the option should be removed and the default behavior should be `use_zero_origin=False`.
+        backend_descriptor["use_zero_origin"] = False
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
