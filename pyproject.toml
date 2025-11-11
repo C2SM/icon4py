@@ -94,12 +94,13 @@ requires-python = ">=3.10"
 version = "0.0.6"
 
 [project.optional-dependencies]
-all = ["icon4py[distributed,fortran,io,testing]"]
+all = ["icon4py[distributed,fortran,io,testing,profiling]"]
 cuda11 = ["icon4py-common[cuda11]"]
 cuda12 = ["icon4py-common[cuda12]"]
 distributed = ["icon4py-common[distributed]"]
 fortran = ["icon4py-tools>=0.0.6"]
 io = ["icon4py-common[io]"]
+profiling = ['viztracer>=1.1.0']
 testing = ["icon4py-testing"]
 
 [project.urls]
@@ -316,7 +317,7 @@ name = "test.pypi"
 url = "https://test.pypi.org/simple/"
 
 [tool.uv.sources]
-dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_10_28"}
+dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_11_05"}
 # ghex = {git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}

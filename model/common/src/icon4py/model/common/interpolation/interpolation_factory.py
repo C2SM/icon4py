@@ -304,11 +304,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "cells_lat": geometry_attrs.CELL_LAT,
                 "edges_lon": geometry_attrs.EDGE_LON,
                 "edges_lat": geometry_attrs.EDGE_LAT,
-                "vertex_lon": geometry_attrs.VERTEX_LON,
-                "vertex_lat": geometry_attrs.VERTEX_LAT,
                 "owner_mask": "edge_owner_mask",
             },
-            connectivities={"e2c": dims.E2CDim, "e2v": dims.E2VDim, "e2c2e": dims.E2C2EDim},
+            connectivities={"e2c": dims.E2CDim},
             params={
                 "grid_sphere_radius": constants.EARTH_RADIUS,
                 "horizontal_start": self.grid.start_index(
@@ -372,7 +370,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         rbf_vec_coeff_e = factory.NumpyDataProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_E,),
-            domain=(dims.CellDim, dims.E2C2EDim),
+            domain=(dims.EdgeDim, dims.E2C2EDim),
             deps={
                 "edge_lat": geometry_attrs.EDGE_LAT,
                 "edge_lon": geometry_attrs.EDGE_LON,
