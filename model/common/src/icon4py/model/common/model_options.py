@@ -46,10 +46,14 @@ def get_dace_options(
                         validate_all=False,
                     )
                 )
-    if program_name == "compute_hydrostatic_correction_term":
-        # Required for correctness as the output field is only defined on lev-1.
-        # TODO(havogt): Eventually the option should be removed and the default behavior should be `use_zero_origin=False`.
-        backend_descriptor["use_zero_origin"] = False
+    # 'compute_hydrostatic_correction_term' requires use_zero_origin=False for correctness
+    # as the output field is only defined on lev-1.
+    # TODO(havogt): Eventually the option should be removed and the default behavior should be `use_zero_origin=False`.
+    # We keep it `True` for 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn' as performance drops,
+    # due to it falling into a less optimized code generation (on santis).
+    backend_descriptor["use_zero_origin"] = (
+        program_name == "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
+    )
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
