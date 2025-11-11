@@ -132,7 +132,7 @@ def model_initialization_serialbox(
         dwdy=diffusion_init_savepoint.dwdy(),
     )
     solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=0.0,
+        max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         theta_v_at_cells_on_half_levels=solve_nonhydro_init_savepoint.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=solve_nonhydro_init_savepoint.exner_pr(),
         rho_at_cells_on_half_levels=solve_nonhydro_init_savepoint.rho_ic(),
