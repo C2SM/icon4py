@@ -5,8 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import copy
+import difflib
 import hashlib
+import logging
+import pathlib
+from collections.abc import Sequence
 from typing import Any
 
 import gt4py.next.typing as gtx_typing
@@ -16,6 +20,9 @@ import pytest
 from typing_extensions import Buffer
 
 from icon4py.model.common import model_options
+
+
+logger = logging.getLogger(__file__)
 
 
 def dallclose(
@@ -71,3 +78,29 @@ def is_dace(backend: gtx_typing.Backend | None) -> bool:
 
 def is_gtfn_backend(backend: gtx_typing.Backend | None) -> bool:
     return "gtfn" in backend.name if backend else False
+
+
+def diff(reference: pathlib.Path, actual: pathlib.Path) -> bool:
+    with pathlib.Path.open(reference) as f:
+        reference_lines = f.readlines()
+    with pathlib.Path.open(actual) as f:
+        actual_lines = f.readlines()
+    result = difflib.context_diff(reference_lines, actual_lines)
+
+    clean = True
+    for line in result:
+        logger.info(f"result line: {line}")
+        clean = False
+
+    return clean
+
+
+def assert_same_except(properties: Sequence[str], arg1: Any, arg2: Any) -> None:
+    assert type(arg1) is type(arg2), f"{arg1} and {arg2} are not of the same type"
+    temp = copy.deepcopy(arg2)
+    for p in properties:
+        assert hasattr(arg1, p), f"object of type {type(arg1)} has not attribute {p} "
+        # set these attributes to the same value for comparision later on
+        arg1_attr = getattr(arg1, p)
+        setattr(temp, p, arg1_attr)
+    assert arg1 == temp

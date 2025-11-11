@@ -95,7 +95,7 @@ def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.B
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = definitions.construct_diffusion_config(experiment)
     config.hdiff_efdt_ratio = 1.0
     config.hdiff_w_efdt_ratio = 2.0
 
@@ -121,7 +121,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
 
 
 def test_smagorinski_factor_for_diffusion_type_4(experiment):
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = definitions.construct_diffusion_config(experiment)
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 4
 
@@ -134,7 +134,7 @@ def test_smagorinski_factor_for_diffusion_type_4(experiment):
 def test_smagorinski_heights_diffusion_type_5_are_consistent(
     experiment,
 ):
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
+    config = definitions.construct_diffusion_config(experiment)
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 5
 
@@ -149,9 +149,7 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
 
 
 def test_smagorinski_factor_diffusion_type_5(experiment):
-    params = diffusion.DiffusionParams(
-        definitions.construct_diffusion_config(experiment, ndyn_substeps=5)
-    )
+    params = diffusion.DiffusionParams(definitions.construct_diffusion_config(experiment))
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert all(p >= 0 for p in params.smagorinski_factor)
@@ -177,10 +175,9 @@ def test_diffusion_init(
     model_top_height,
     stretch_factor,
     damping_height,
-    ndyn_substeps,
     backend,
 ):
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment)
     additional_parameters = diffusion.DiffusionParams(config)
 
     grid = get_grid_for_experiment(experiment, backend)
@@ -300,7 +297,6 @@ def _verify_init_values_against_savepoint(
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:04.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_verify_diffusion_init_against_savepoint(
     experiment,
     step_date_init,
@@ -312,13 +308,12 @@ def test_verify_diffusion_init_against_savepoint(
     model_top_height,
     stretch_factor,
     damping_height,
-    ndyn_substeps,
     backend,
 ):
     grid = get_grid_for_experiment(experiment, backend)
     cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment)
     additional_parameters = diffusion.DiffusionParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
@@ -367,7 +362,6 @@ def test_verify_diffusion_init_against_savepoint(
         ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", [2])
 # TODO(): Enable dace orchestration, currently broken by precompiled programs
 @pytest.mark.parametrize("orchestration", [False])
 def test_run_diffusion_single_step(
@@ -418,7 +412,7 @@ def test_run_diffusion_single_step(
         vct_b=vct_b,
     )
 
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment)
     additional_parameters = diffusion.DiffusionParams(config)
 
     diffusion_granule = diffusion.Diffusion(
@@ -453,7 +447,6 @@ def test_run_diffusion_single_step(
         ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_run_diffusion_multiple_steps(
     experiment,
     step_date_init,
@@ -494,7 +487,7 @@ def test_run_diffusion_multiple_steps(
         config=vertical_config, vct_a=grid_savepoint.vct_a(), vct_b=grid_savepoint.vct_b()
     )
 
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment)
     additional_parameters = diffusion.DiffusionParams(config)
 
     ######################################################################
@@ -619,7 +612,7 @@ def test_run_diffusion_initial_step(
         dwdy=savepoint_diffusion_init.dwdy(),
     )
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=2)
+    config = definitions.construct_diffusion_config(experiment)
     params = diffusion.DiffusionParams(config)
 
     diffusion_granule = diffusion.Diffusion(
@@ -661,10 +654,10 @@ def test_run_diffusion_initial_step(
     ],
 )
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
+    savepoint_diffusion_init, experiment, icon_grid, linit, backend
 ):
     savepoint = savepoint_diffusion_init
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = definitions.construct_diffusion_config(experiment)
 
     params = diffusion.DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()

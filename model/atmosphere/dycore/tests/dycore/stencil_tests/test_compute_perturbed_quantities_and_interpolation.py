@@ -24,7 +24,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDiscretizationType
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_dycore import (
     compute_perturbed_quantities_and_interpolation,
 )
@@ -54,7 +54,7 @@ from .test_set_theta_v_prime_ic_at_lower_boundary import (
 )
 
 
-horzpres_discr_type = HorizontalPressureDiscretizationType()
+horzpres_discr_type = dycore_states.HorizontalPressureDiscretizationType.namespace()
 
 
 def compute_first_vertical_derivative_numpy(
