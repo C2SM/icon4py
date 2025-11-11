@@ -1394,8 +1394,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post583+581216e1"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=make_split_access_node_more_deterministic#581216e1cb7c4ac37861a5bc4449f9ea3868ec4c" }
+version = "1.0.4.post588+6b71dd1a"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=make_split_access_node_more_deterministic#6b71dd1a08d74916097069ff2efd15d469a089d8" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
