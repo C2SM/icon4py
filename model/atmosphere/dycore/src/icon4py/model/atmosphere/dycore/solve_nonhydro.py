@@ -13,7 +13,6 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import viztracer  # type: ignore[import-not-found]
 from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
@@ -876,7 +875,6 @@ class SolveNonhydro:
 
         self._first_half_cache = {}
         self._second_half_cache = {}
-        self._counter = 0
 
     def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
@@ -1425,9 +1423,6 @@ class SolveNonhydro:
         )
 
         # EXCHANGE OVERLAP EXPERIMENT START
-        if self._counter == 13:
-            viztracer.get_tracer().set_sync_marker()
-        self._counter += 1
         self._apply_divergence_damping_and_update_vn_first_half(
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
             next_vn=prognostic_states.next.vn,
