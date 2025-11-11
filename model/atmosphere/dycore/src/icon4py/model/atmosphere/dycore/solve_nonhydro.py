@@ -873,6 +873,9 @@ class SolveNonhydro:
 
         self.p_test_run = False
 
+        self._first_half_cache = {}
+        self._second_half_cache = {}
+
     def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
             self._grid,
@@ -1309,6 +1312,36 @@ class SolveNonhydro:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(dims.CellDim, prognostic_states.next.w)
 
+    def get_first_half_vn(self, vn: gtx.Field):
+        try:
+            return self._first_half_cache[vn.__gt_buffer_info__.hash_key]
+        except KeyError:
+            self._first_half_cache[vn.__gt_buffer_info__.hash_key] = gtx_common._field(
+                vn.ndarray[:, : self._grid.num_levels // 2],
+                domain=gtx_common.Domain(
+                    dims=vn.domain.dims,
+                    ranges=(
+                        vn.domain.ranges[0],
+                        gtx_common.UnitRange(0, self._grid.num_levels // 2),
+                    ),
+                ),
+            )
+
+    def get_second_half_vn(self, vn: gtx.Field):
+        try:
+            return self._second_half_cache[vn.__gt_buffer_info__.hash_key]
+        except KeyError:
+            self._second_half_cache[vn.__gt_buffer_info__.hash_key] = gtx_common._field(
+                vn.ndarray[:, self._grid.num_levels // 2 :],
+                domain=gtx_common.Domain(
+                    dims=vn.domain.dims,
+                    ranges=(
+                        vn.domain.ranges[0],
+                        gtx_common.UnitRange(self._grid.num_levels // 2, self._grid.num_levels),
+                    ),
+                ),
+            )
+
     def run_corrector_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
@@ -1409,16 +1442,7 @@ class SolveNonhydro:
 
         log.debug("exchanging prognostic field 'vn' first half")
 
-        first_half_vn = gtx_common._field(
-            prognostic_states.next.vn.ndarray[:, : self._grid.num_levels // 2],
-            domain=gtx_common.Domain(
-                dims=prognostic_states.next.vn.domain.dims,
-                ranges=(
-                    prognostic_states.next.vn.domain.ranges[0],
-                    gtx_common.UnitRange(0, self._grid.num_levels // 2),
-                ),
-            ),
-        )
+        first_half_vn = self.get_first_half_vn(prognostic_states.next.vn)
         first_half_exchange = self._exchange.exchange(dims.EdgeDim, first_half_vn)
 
         self._apply_divergence_damping_and_update_vn_second_half(
@@ -1443,16 +1467,7 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn' second half")
         # TODO(havogt): this wait could be after the next exchange starts, but we need to duplicate the ghex communication object
         first_half_exchange.wait()
-        second_half_vn = gtx_common._field(
-            prognostic_states.next.vn.ndarray[:, self._grid.num_levels // 2 :],
-            domain=gtx_common.Domain(
-                dims=prognostic_states.next.vn.domain.dims,
-                ranges=(
-                    prognostic_states.next.vn.domain.ranges[0],
-                    gtx_common.UnitRange(self._grid.num_levels // 2, self._grid.num_levels),
-                ),
-            ),
-        )
+        second_half_vn = self.get_second_half_vn(prognostic_states.next.vn)
         second_half_exchange = self._exchange.exchange(dims.EdgeDim, second_half_vn)
         self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first_half(
             spatially_averaged_vn=self.z_vn_avg,
