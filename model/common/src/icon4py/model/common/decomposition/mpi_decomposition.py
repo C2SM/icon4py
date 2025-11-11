@@ -237,10 +237,8 @@ class GHexMultiNodeExchange:
             the granule context where fields otherwise have length nproma.
         """
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
-        if hasattr(fields[0].array_ns, "cuda"):
-            # TODO(havogt): this is a workaround as ghex does not know that it should synchronize
-            # the GPU before the exchange. This is necessary to ensure that all data is ready for the exchange.
-            fields[0].array_ns.cuda.runtime.deviceSynchronize()
+        # With https://github.com/ghex-org/GHEX/pull/186, ghex will schedule/sync work on the default stream,
+        # otherwise we need an explicit device synchronize here.
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
