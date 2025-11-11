@@ -248,6 +248,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "divdamp_trans_end": self._config["divdamp_trans_end"],
                 "divdamp_type": self._config["divdamp_type"],
             },
+            do_exchange=False,
         )
         self.register_provider(compute_scaling_factor_for_3d_divdamp)
 
@@ -268,6 +269,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "vct_a_1": self._config["vct_a_1"],
                 "pi_const": math.pi,
             },
+            do_exchange=False,
         )
         self.register_provider(compute_rayleigh_w)
 
@@ -617,6 +619,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"flat_idx_max": attrs.FLAT_IDX_MAX},
+            do_exchange=True,
         )
         self.register_provider(max_flat_index_provider)
 
@@ -634,6 +637,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "nlev": self._grid.num_levels,
             },
             fields=(attrs.NFLAT_GRADP,),
+            do_exchange=False,
         )
         self.register_provider(nflat_gradp_provider)
 
@@ -683,6 +687,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 attrs.MASK_PROG_HALO_C: attrs.MASK_PROG_HALO_C,
                 attrs.BDY_HALO_C: attrs.BDY_HALO_C,
             },
+            do_exchange=False,
         )
         self.register_provider(compute_mask_bdy_halo_c)
 
@@ -702,6 +707,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),  # type: ignore [attr-defined]
                 "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
             },
+            do_exchange=False,
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 

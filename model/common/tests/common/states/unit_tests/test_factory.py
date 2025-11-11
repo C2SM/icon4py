@@ -16,7 +16,8 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.grid import horizontal as h_grid, icon, vertical as v_grid
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import horizontal as h_grid, icon, simple, vertical as v_grid
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -161,7 +162,13 @@ def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> N
     fields = {"x": "x", "y": "y", "z": "z"}
 
     provider = factory.EmbeddedFieldOperatorProvider(field_op, domain, fields, deps)
-    provider("x", cell_coordinate_source, cell_coordinate_source.backend, cell_coordinate_source)
+    provider(
+        "x",
+        cell_coordinate_source,
+        cell_coordinate_source.backend,
+        cell_coordinate_source,
+        exchange=decomposition.single_node_default,
+    )
     x = provider.fields["x"]
     assert isinstance(x, gtx.Field)
     assert dims.CellDim in x.domain.dims
@@ -184,6 +191,7 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
         height_coordinate_source,
         height_coordinate_source.backend,
         height_coordinate_source,
+        exchange=decomposition.single_node_default,
     )
     x = provider.fields["output_f"]
     assert isinstance(x, gtx.Field)
@@ -313,3 +321,11 @@ def test_compute_scalar_value_from_numpy_provider(
     value = height_coordinate_source.get("minimal_height", factory.RetrievalType.FIELD)
     assert np.isscalar(value)
     assert value_ref == value
+
+
+def test_pre_computed_fields_do_not_exchange() -> None:
+    grid = simple.simple_grid()
+    f1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    f2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+    precomputed_provider = factory.PrecomputedFieldProvider({"f1": f1, "f2": f2})
+    assert not precomputed_provider.needs_exchange()

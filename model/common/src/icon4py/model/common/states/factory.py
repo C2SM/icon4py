@@ -42,6 +42,7 @@ TODO: @halungge: allow to read configuration data
 from __future__ import annotations
 
 import collections
+import contextlib
 import enum
 import functools
 import logging
@@ -53,7 +54,6 @@ from typing import Any, Literal, Protocol, TypeVar, overload
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-import numpy as np
 import xarray as xa
 
 from icon4py.model.common import dimension as dims, type_alias as ta
@@ -80,7 +80,55 @@ class GridProvider(Protocol):
     def vertical_grid(self) -> v_grid.VerticalGrid | None: ...
 
 
-class FieldProvider(Protocol):
+def _reshape_to_2d(
+    f: state_utils.GTXFieldType,
+    original_shape: tuple[int, ...],
+    original_dims: tuple[gtx.Dimension, ...],
+) -> state_utils.GTXFieldType:
+    if len(original_shape) > 2:
+        buffer = f.ndarray.reshape(f.shape[0], -1)
+        f = gtx.as_field(original_dims[:-1], buffer)
+    return f
+
+
+def _reshape_to_original(
+    f: state_utils.GTXFieldType,
+    original_shape: tuple[int, ...],
+    original_dims: tuple[gtx.Dimension, ...],
+) -> state_utils.GTXFieldType:
+    if len(original_shape) > 2:
+        buffer = f.ndarray.reshape(original_shape)
+        f = gtx.as_field(original_dims, buffer)
+        return f
+
+
+@contextlib.contextmanager
+def as_exchangable_fields(fields: Sequence[state_utils.GTXFieldType]):
+    original_dims = fields[0].domain.dims
+    original_shape = fields[0].ndarray.shape
+    buffers = tuple(_reshape_to_2d(f, original_shape, original_dims) for f in fields)
+    yield buffers
+    tuple(_reshape_to_original(f, original_shape, original_dims) for f in buffers)
+
+
+class NeedsExchange(Protocol):
+    def needs_exchange(self) -> bool:
+        return False
+
+    def exchange(
+        self, fields: Mapping[str, state_utils.FieldType], exchange: decomposition.ExchangeRuntime
+    ):
+        buffers = tuple(fields.values())
+        if self.needs_exchange():
+            first_dim = buffers[0].domain.dims[0]
+            assert (
+                first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+            ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+            with as_exchangable_fields(buffers) as data:
+                exchange.exchange_and_wait(first_dim, *data)
+
+
+class FieldProvider(NeedsExchange, Protocol):
     """
     Protocol for field providers.
 
@@ -100,6 +148,7 @@ class FieldProvider(Protocol):
         field_src: FieldSource,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
+        exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | state_utils.ScalarType: ...
 
     @property
@@ -196,22 +245,7 @@ class FieldSource(GridProvider, Protocol):
                         f"Field {field_name} not provided by f{provider.func.__name__}."
                     )
 
-                buffer = provider(field_name, self._sources, self.backend, self)
-                if (
-                    hasattr(buffer, "domain")
-                    and self._exchange != decomposition.single_node_default
-                ):
-                    first_dim = buffer.domain.dims[0]
-                    # reshape 3d field into 2d as hot fix for ghex processing
-                    if len(buffer.shape) > 2:
-                        original_dims = buffer._domain.dims
-                        buffer = buffer.asnumpy().reshape(buffer.shape[0], -1)
-                        buffer = gtx.as_field(original_dims[:-1], buffer)
-                    if (
-                        first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-                        and buffer.dtype.scalar_type != np.bool_
-                    ):
-                        self._exchange.exchange_and_wait(first_dim, buffer)
+                buffer = provider(field_name, self._sources, self.backend, self, self._exchange)
                 return (
                     buffer
                     if type_ == RetrievalType.FIELD
@@ -272,7 +306,12 @@ class PrecomputedFieldProvider(FieldProvider):
         return ()
 
     def __call__(
-        self, field_name: str, field_src=None, backend=None, grid=None
+        self,
+        field_name: str,
+        field_src: FieldSource,
+        backend: gtx_typing.Backend | None,
+        grid: GridProvider,
+        exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType:
         return self.fields[field_name]
 
@@ -304,6 +343,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
         deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
         params: dict[str, state_utils.ScalarType]
         | None = None,  # keyword arg to (field_operator, field_name)
+        do_exchange: bool = True,
     ):
         self._func = func
         self._dims: (
@@ -315,6 +355,10 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
         self._fields: dict[str, gtx.Field | state_utils.ScalarType | None] = {
             name: None for name in fields.values()
         }
+        self._do_exchange = do_exchange
+
+    def needs_exchange(self) -> bool:
+        return self._do_exchange
 
     @property
     def dependencies(self) -> Sequence[str]:
@@ -334,9 +378,11 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
         field_src: FieldSource | None,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
+        exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
             self._compute(field_src, grid)
+            self.exchange(self.fields, exchange)
         return self.fields[field_name]
 
     def _compute(self, factory: FieldSource, grid_provider: GridProvider) -> None:
@@ -462,6 +508,7 @@ class ProgramFieldProvider(FieldProvider):
         fields: dict[str, str],
         deps: dict[str, str],
         params: dict[str, state_utils.ScalarType] | None = None,
+        do_exchange: bool = True,
     ):
         self._func = func
         self._compute_domain = domain
@@ -472,6 +519,7 @@ class ProgramFieldProvider(FieldProvider):
         self._fields: dict[str, gtx.Field | state_utils.ScalarType | None] = {
             name: None for name in fields.values()
         }
+        self._do_exchange = do_exchange
 
     def _allocate(
         self,
@@ -540,15 +588,20 @@ class ProgramFieldProvider(FieldProvider):
                 raise ValueError(f"DimensionKind '{dim.kind}' not supported in Program Domain")
         return domain_args
 
+    def needs_exchange(self) -> bool:
+        return self._do_exchange
+
     def __call__(
         self,
         field_name: str,
         factory: FieldSource | None,
         backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
+        exchange: decomposition.ExchangeRuntime,
     ):
         if any([f is None for f in self.fields.values()]):
             self._compute(factory, backend, grid_provider)
+            self.exchange(self.fields, exchange=exchange)
         return self.fields[field_name]
 
     def _compute(
@@ -598,6 +651,7 @@ class NumpyDataProvider(FieldProvider):
         connectivities: dict[str, Dimension] dict where the key is the variable named used in the
             function and the value the sparse Dimension of the connectivity field
         params: scalar arguments for the function
+        do_exchange: a flag that governs whether or not a halo exchange is needed after the field has been computed. Defaults to True
     """
 
     def __init__(
@@ -608,6 +662,7 @@ class NumpyDataProvider(FieldProvider):
         deps: dict[str, str],
         connectivities: dict[str, gtx.Dimension] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
+        do_exchange: bool = True,
     ):
         self._func = func
         self._dims = tuple(map(replace_khalfdim, domain))
@@ -617,6 +672,7 @@ class NumpyDataProvider(FieldProvider):
         self._dependencies = deps
         self._connectivities = connectivities if connectivities is not None else {}
         self._params = params if params is not None else {}
+        self._do_exchange = do_exchange
 
     def __call__(
         self,
@@ -624,9 +680,11 @@ class NumpyDataProvider(FieldProvider):
         factory: FieldSource,
         backend: gtx_typing.Backend | None,
         grid: GridProvider,
+        exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
             self._compute(factory, backend, grid)
+            self.exchange(self.fields, exchange)
         return self.fields[field_name]
 
     def _compute(
@@ -698,6 +756,9 @@ class NumpyDataProvider(FieldProvider):
     @property
     def fields(self) -> Mapping[str, state_utils.FieldType]:
         return self._fields
+
+    def needs_exchange(self) -> bool:
+        return self._do_exchange
 
 
 def _is_compatible_union(annotation: Any, expected: types.UnionType | typing._SpecialForm) -> bool:

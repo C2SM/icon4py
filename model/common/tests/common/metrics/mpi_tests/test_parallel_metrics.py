@@ -10,13 +10,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry, horizontal as h_grid
-from icon4py.model.common.interpolation import interpolation_factory
-from icon4py.model.common.metrics import metrics_factory
+from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
 
 from ...fixtures import (
@@ -51,15 +51,15 @@ vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, metrics_name, k_lb, reshape",
+    "attrs_name, metrics_name",
     [
-        ("functional_determinant_of_metrics_on_full_levels_on_edges", "ddqz_z_full_e", 0, False),
-        ("zdiff_gradp", "zdiff_gradp", 0, True),
-        ("height", "z_mc", 0, False),
-        ("functional_determinant_of_metrics_on_interface_levels", "ddqz_z_half", 1, False),
-        ("scaling_factor_for_3d_divergence_damping", "scalfac_dd3d", 0, False),
-        ("rayleigh_w", "rayleigh_w", 0, False),
-        ("coeff_gradekin", "coeff_gradekin", 0, False),
+        (attrs.DDQZ_Z_FULL_E, "ddqz_z_full_e"),
+        (attrs.ZDIFF_GRADP, "zdiff_gradp"),
+        (attrs.Z_MC, "z_mc"),
+        (attrs.DDQZ_Z_HALF, "ddqz_z_half"),
+        (attrs.SCALING_FACTOR_FOR_3D_DIVDAMP, "scalfac_dd3d"),
+        (attrs.RAYLEIGH_W, "rayleigh_w"),
+        (attrs.COEFF_GRADEKIN, "coeff_gradekin"),
     ],
 )
 @pytest.mark.parametrize("experiment", [test_defs.Experiments.EXCLAIM_APE])
@@ -73,8 +73,6 @@ def test_distributed_metrics_attrs(
     attrs_name: str,
     metrics_name: str,
     experiment: test_defs.Experiment,
-    k_lb: int,
-    reshape: bool,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
@@ -82,9 +80,7 @@ def test_distributed_metrics_attrs(
     factory = parallel_metrics
 
     field = factory.get(attrs_name).asnumpy()
-    field = field if k_lb == 0 else field[:, k_lb:]
-
-    field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
-    field_ref = field_ref if k_lb == 0 else field_ref[:, k_lb:]
-    field_ref = field_ref.reshape(field_ref.shape[0], -1) if reshape else field_ref
+    factory.get(attrs_name).asnumpy()
+    factory.get(attrs_name).asnumpy()
+    field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy().astype(np.float64)
     assert test_utils.dallclose(field, field_ref, rtol=1e-8, atol=1.0e-8)

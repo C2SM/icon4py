@@ -517,6 +517,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
+            do_exchange=True,
         )
         return provider
 
@@ -550,6 +551,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         target_dims: Sequence[gtx.Dimension],
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
+        do_exchange: bool = True,
     ):
         assert len(target_dims) == 2
         assert target_dims[1].kind == gtx.DimensionKind.LOCAL
@@ -557,6 +559,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         self._fields = {name: None for name in fields}
         self._func = functools.partial(as_sparse_field, target_dims)
         self._pairs = pairs
+        self._do_exchange = do_exchange
 
     def __call__(
         self,
@@ -564,15 +567,19 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         field_src: factory.FieldSource | None,
         backend: gtx_typing.Backend | None,
         grid: factory.GridProvider,
+        exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | None:
         if not self._fields.get(field_name):
             # get the fields from the wrapped provider
             input_fields = []
             for p in self._pairs:
-                t = tuple([self._wrapped_provider(name, field_src, backend, grid) for name in p])
+                t = tuple(
+                    [self._wrapped_provider(name, field_src, backend, grid, exchange) for name in p]
+                )
                 input_fields.append(t)
             sparse_fields = self.func(input_fields, backend=backend)
             self._fields = {k: sparse_fields[i] for i, k in enumerate(self.fields)}
+            self.exchange(self.fields, exchange)
         return self._fields[field_name]
 
     @property
@@ -586,6 +593,9 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
     @property
     def func(self) -> Callable:
         return self._func
+
+    def needs_exchange(self) -> bool:
+        return self._do_exchange
 
 
 def as_sparse_field(
