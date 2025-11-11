@@ -1328,6 +1328,7 @@ class SolveNonhydro:
                     ),
                 ),
             )
+            return self._first_half_cache[vn.__gt_buffer_info__.hash_key]
 
     def get_second_half_vn(self, vn: gtx.Field):
         try:
@@ -1343,6 +1344,7 @@ class SolveNonhydro:
                     ),
                 ),
             )
+            return self._second_half_cache[vn.__gt_buffer_info__.hash_key]
 
     def run_corrector_step(
         self,
