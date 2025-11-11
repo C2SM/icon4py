@@ -614,7 +614,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
-    backend: gtx_typing.Backend | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil | None,
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],
@@ -641,7 +641,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
         latitude of second neighbor
         longitude of second neighbor
     """
-    xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
+    xp = data_alloc.array_ns(device_utils.is_cupy_device(allocator))
     e2c_table = grid.get_connectivity(dims.E2C).ndarray
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
@@ -651,8 +651,8 @@ def create_auxiliary_coordinate_arrays_for_orientation(
         lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]
 
     return (
-        gtx.as_field((dims.EdgeDim,), lat[:, 0], allocator=backend),
-        gtx.as_field((dims.EdgeDim,), lon[:, 0], allocator=backend),
-        gtx.as_field((dims.EdgeDim,), lat[:, 1], allocator=backend),
-        gtx.as_field((dims.EdgeDim,), lon[:, 1], allocator=backend),
+        gtx.as_field((dims.EdgeDim,), lat[:, 0], allocator=allocator),
+        gtx.as_field((dims.EdgeDim,), lon[:, 0], allocator=allocator),
+        gtx.as_field((dims.EdgeDim,), lat[:, 1], allocator=allocator),
+        gtx.as_field((dims.EdgeDim,), lon[:, 1], allocator=allocator),
     )

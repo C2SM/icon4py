@@ -19,6 +19,7 @@ from icon4py.model.testing import serialbox
 from icon4py.model.testing.definitions import metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
+    backend_like,
     damping_height,
     data_provider,
     decomposition,
