@@ -1412,10 +1412,10 @@ class SolveNonhydro:
         first_half_vn = gtx_common._field(
             prognostic_states.next.vn.ndarray[:, : self._grid.num_levels // 2],
             domain=gtx_common.Domain(
-                prognostic_states.next.vn.domain.dims,
-                (
+                dims=prognostic_states.next.vn.domain.dims,
+                ranges=(
                     prognostic_states.next.vn.domain.ranges[0],
-                    self._grid.num_levels // 2,
+                    gtx_common.UnitRange(0, self._grid.num_levels // 2),
                 ),
             ),
         )
@@ -1444,13 +1444,10 @@ class SolveNonhydro:
         # TODO(havogt): this wait could be after the next exchange starts, but we need to duplicate the ghex communication object
         first_half_exchange.wait()
         second_half_vn = gtx_common._field(
-            prognostic_states.next.vn.ndarray[:, : self._grid.num_levels // 2],
-            domain=gtx_common.Domain(
-                prognostic_states.next.vn.domain.dims,
-                (
-                    prognostic_states.next.vn.domain.ranges[0],
-                    self._grid.num_levels - self._grid.num_levels // 2,
-                ),
+            prognostic_states.next.vn.ndarray[:, self._grid.num_levels // 2 :],
+            ranges=(
+                prognostic_states.next.vn.domain.ranges[0],
+                gtx_common.UnitRange(self._grid.num_levels // 2, self._grid.num_levels),
             ),
         )
         second_half_exchange = self._exchange.exchange(dims.EdgeDim, second_half_vn)
