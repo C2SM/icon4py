@@ -197,7 +197,10 @@ class FieldSource(GridProvider, Protocol):
                     )
 
                 buffer = provider(field_name, self._sources, self.backend, self)
-                if hasattr(buffer, "domain"):
+                if (
+                    hasattr(buffer, "domain")
+                    and self._exchange != decomposition.single_node_default
+                ):
                     first_dim = buffer.domain.dims[0]
                     # reshape 3d field into 2d as hot fix for ghex processing
                     if len(buffer.shape) > 2:
