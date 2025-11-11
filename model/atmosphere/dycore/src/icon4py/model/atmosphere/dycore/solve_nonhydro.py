@@ -1445,9 +1445,12 @@ class SolveNonhydro:
         first_half_exchange.wait()
         second_half_vn = gtx_common._field(
             prognostic_states.next.vn.ndarray[:, self._grid.num_levels // 2 :],
-            ranges=(
-                prognostic_states.next.vn.domain.ranges[0],
-                gtx_common.UnitRange(self._grid.num_levels // 2, self._grid.num_levels),
+            domain=gtx_common.Domain(
+                dims=prognostic_states.next.vn.domain.dims,
+                ranges=(
+                    prognostic_states.next.vn.domain.ranges[0],
+                    gtx_common.UnitRange(self._grid.num_levels // 2, self._grid.num_levels),
+                ),
             ),
         )
         second_half_exchange = self._exchange.exchange(dims.EdgeDim, second_half_vn)
