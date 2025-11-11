@@ -169,6 +169,8 @@ class VerticalGrid:
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.end_index_of_damping_layer} ")
+        log.info(f"number of levels: {self.num_levels}")
+        log.info(f"start of flat levels: {self.nflatlev}")
 
     def __str__(self) -> str:
         vertical_params_properties = ["Model interface height properties:"]
@@ -242,10 +244,6 @@ class VerticalGrid:
         return self.index(Domain(dims.KDim, Zone.DAMPING))
 
     @property
-    def nflat_gradp(self) -> gtx.int32:
-        return self._min_index_flat_horizontal_grad_pressure
-
-    @property
     def vct_a(self) -> fa.KField:
         return self._vct_a
 
@@ -295,7 +293,7 @@ class VerticalGrid:
 
 
 def _read_vct_a_and_vct_b_from_file(
-    file_path: pathlib.Path, num_levels: int, backend: gtx_typing.Backend | None
+    file_path: pathlib.Path, num_levels: int, allocator: gtx_typing.FieldBufferAllocationUtil
 ) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
@@ -311,7 +309,7 @@ def _read_vct_a_and_vct_b_from_file(
     Args:
         file_path: Path to the vertical grid file
         num_levels: number of cell levels
-        backend: GT4Py backend
+        allocator: GT4Py field allocator
     Returns:  one dimensional vct_a and vct_b arrays.
     """
     num_levels_plus_one = num_levels + 1
@@ -335,13 +333,13 @@ def _read_vct_a_and_vct_b_from_file(
         ) from err
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
-    return gtx.as_field((dims.KDim,), vct_a, allocator=backend), gtx.as_field(
-        (dims.KDim,), vct_b, allocator=backend
+    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator), gtx.as_field(
+        (dims.KDim,), vct_b, allocator=allocator
     )
 
 
 def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
-    vertical_config: VerticalGridConfig, backend: gtx_typing.Backend | None
+    vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil
 ) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
@@ -524,13 +522,13 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
             f" Warning. vct_a[0], {vct_a[0]}, is not equal to model top height, {vertical_config.model_top_height}, of vertical configuration. Please consider changing the vertical setting."
         )
 
-    return gtx.as_field((dims.KDim,), vct_a, allocator=backend), gtx.as_field(
-        (dims.KDim,), vct_b, allocator=backend
+    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator), gtx.as_field(
+        (dims.KDim,), vct_b, allocator=allocator
     )
 
 
 def get_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, backend: gtx_typing.Backend | None
+    vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil
 ) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.
@@ -549,10 +547,10 @@ def get_vct_a_and_vct_b(
 
     return (
         _read_vct_a_and_vct_b_from_file(
-            vertical_config.file_path, vertical_config.num_levels, backend
+            vertical_config.file_path, vertical_config.num_levels, allocator
         )
         if vertical_config.file_path
-        else _compute_vct_a_and_vct_b(vertical_config, backend)
+        else _compute_vct_a_and_vct_b(vertical_config, allocator)
     )
 
 
