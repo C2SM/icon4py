@@ -7,14 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ruff: noqa: ERA001, B008
 
-import concurrent.futures
 import dataclasses
 import logging
 from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators
+from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -68,8 +67,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
-
-_async_exchange_pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
 @dataclasses.dataclass
@@ -1411,11 +1408,18 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn' first half")
-        first_half_exchange = _async_exchange_pool.submit(
-            self._exchange.exchange_and_wait,
-            dims.EdgeDim,
-            (prognostic_states.next.vn[:, : self._grid.num_levels // 2]),
+
+        first_half_vn = gtx_common._field(
+            prognostic_states.next.vn.ndarray[:, : self._grid.num_levels // 2],
+            domain=gtx_common.Domain(
+                prognostic_states.next.vn.domain.dims,
+                (
+                    prognostic_states.next.vn.domain.ranges[0],
+                    self._grid.num_levels // 2,
+                ),
+            ),
         )
+        first_half_exchange = self._exchange.exchange(dims.EdgeDim, first_half_vn)
 
         self._apply_divergence_damping_and_update_vn_second_half(
             horizontal_gradient_of_normal_wind_divergence=z_fields.horizontal_gradient_of_normal_wind_divergence,
@@ -1437,14 +1441,19 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn' second half")
-        # TODO(havogt): this wait could be after the next exchange starts, but ghex doesn't like it: "earlier exchange operation was not finished"
-        first_half_exchange.result()
-        second_half_exchange = _async_exchange_pool.submit(
-            self._exchange.exchange_and_wait,
-            dims.EdgeDim,
-            (prognostic_states.next.vn[:, self._grid.num_levels // 2 :]),
+        # TODO(havogt): this wait could be after the next exchange starts, but we need to duplicate the ghex communication object
+        first_half_exchange.wait()
+        second_half_vn = gtx_common._field(
+            prognostic_states.next.vn.ndarray[:, : self._grid.num_levels // 2],
+            domain=gtx_common.Domain(
+                prognostic_states.next.vn.domain.dims,
+                (
+                    prognostic_states.next.vn.domain.ranges[0],
+                    self._grid.num_levels - self._grid.num_levels // 2,
+                ),
+            ),
         )
-
+        second_half_exchange = self._exchange.exchange(dims.EdgeDim, second_half_vn)
         self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first_half(
             spatially_averaged_vn=self.z_vn_avg,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
@@ -1459,7 +1468,7 @@ class SolveNonhydro:
             r_nsubsteps=r_nsubsteps,
         )
 
-        second_half_exchange.result()
+        second_half_exchange.wait()
         self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_second_half(
             spatially_averaged_vn=self.z_vn_avg,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
