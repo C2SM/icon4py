@@ -45,6 +45,19 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         "theta_v_at_cells_on_half_levels",
         "pressure_buoyancy_acceleration_at_cells_on_half_levels",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -237,3 +250,10 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             vertical_start=1,
             vertical_end=grid.num_levels,
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAccelerationContinuousBenchmarking(
+    TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
+):
+    pass

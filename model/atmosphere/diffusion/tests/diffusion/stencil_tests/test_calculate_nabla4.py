@@ -55,12 +55,11 @@ def calculate_nabla4_numpy(
     return z_nabla4_e2
 
 
-@pytest.mark.continuous_benchmarking
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
     STATIC_PARAMS = {
-        StandardStaticVariants.NONE: None,
+        StandardStaticVariants.NONE: (),
         StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
@@ -129,3 +128,8 @@ class TestCalculateNabla4(StencilTest):
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
+
+
+@pytest.mark.continuous_benchmarking
+class TestCalculateNabla4ContinuousBenchmarking(TestCalculateNabla4):
+    pass
