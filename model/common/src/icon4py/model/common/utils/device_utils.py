@@ -16,7 +16,7 @@ import gt4py.next.typing as gtx_typing
 
 
 try:
-    import cupy as cp
+    import cupy as cp  # type: ignore[import-not-found]
 except ImportError:
     cp = None
 
@@ -24,7 +24,11 @@ except ImportError:
 def is_cupy_device(allocator: gtx_typing.FieldBufferAllocationUtil | None) -> bool:
     if allocator is None:
         return False
-    return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)
+
+    if gtx.CUPY_DEVICE_TYPE is None:
+        return False
+
+    return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)  # type: ignore [type-var] #gt4py-related typing
 
 
 def sync(allocator: gtx_typing.FieldBufferAllocationUtil | None = None) -> None:
@@ -49,7 +53,7 @@ def synchronized_function(
     """
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> _R:
         result = func(*args, **kwargs)
         sync(allocator=allocator)
         return result
