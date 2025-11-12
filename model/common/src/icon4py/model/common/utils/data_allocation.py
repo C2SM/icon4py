@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging as log
 from types import ModuleType
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, TypeVar
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -31,8 +31,23 @@ try:
 except ImportError:
     import numpy as xp
 
-NDArray: TypeAlias = np.ndarray | xp.ndarray
+ScalarT = TypeVar("ScalarT", bound=gtx_typing.Scalar)
+NDArray: TypeAlias = (
+    np.ndarray[tuple[int, ...], np.dtype[ScalarT]] | xp.ndarray[tuple[int, ...], np.dtype[ScalarT]]
+)
 NDArrayInterface: TypeAlias = np.ndarray | xp.ndarray | gtx.Field
+
+ScalarLikeArray: TypeAlias = (
+    np.ndarray[tuple[()], np.dtype[ScalarT]] | xp.ndarray[tuple[()], np.dtype[ScalarT]]
+)
+
+
+def is_ndarray(obj: Any) -> TypeGuard[NDArray]:
+    return isinstance(obj, (np.ndarray, xp.ndarray))
+
+
+def is_rank0_ndarray(obj: Any) -> TypeGuard[ScalarLikeArray]:
+    return is_ndarray(obj) and obj.shape == ()
 
 
 def backend_name(backend: gtx_typing.Backend | None) -> str:
@@ -66,6 +81,15 @@ def array_ns(try_cupy: bool) -> ModuleType:
 def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
     return array_ns(device_utils.is_cupy_device(allocator))
+
+
+def scalar_like_array(
+    value: ScalarT,
+    allocator: ModuleType | gtx_allocators.FieldBufferAllocationUtil | None = None,
+) -> ScalarLikeArray[ScalarT]:
+    """Create a 0-d array (scalar-like) with given value on specified array namespace or allocator."""
+    array_ns = allocator if allocator in (np, xp) else import_array_ns(allocator)
+    return array_ns.asarray(value)
 
 
 def as_field(
