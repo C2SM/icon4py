@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any, ClassVar
 
 import gt4py.next as gtx
@@ -156,7 +156,7 @@ class StencilTest:
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
 
-    reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
+    reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
     @pytest.fixture
     def _configured_program(
@@ -205,7 +205,7 @@ class StencilTest:
     def _verify_stencil_test(
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        reference_outputs: dict[str, np.ndarray | tuple[np.ndarray, ...]],
+        reference_outputs: Mapping[str, np.ndarray | tuple[np.ndarray, ...]],
     ) -> None:
         for out in self.OUTPUTS:
             name, refslice, gtslice = (

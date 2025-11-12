@@ -6,13 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+from typing import TYPE_CHECKING
 
+import gt4py.next.typing as gtx_typing
 import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import constants
+from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_lin_e,
     compute_cells_aw_verts,
@@ -27,7 +30,7 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_pos_on_tplane_e_x_y,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, serialbox as sb
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -48,7 +51,12 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_c_lin_e(
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     xp = data_alloc.import_array_ns(backend)
     func = functools.partial(compute_c_lin_e, array_ns=xp)
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
@@ -79,7 +87,12 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
 @pytest.mark.level("unit")
 @pytest.mark.embedded_only
 @pytest.mark.datatest
-def test_compute_geofac_div(experiment, grid_savepoint, interpolation_savepoint, icon_grid):
+def test_compute_geofac_div(
+    experiment: definitions.Experiment,
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+) -> None:
     mesh = icon_grid
     primal_edge_length = grid_savepoint.primal_edge_length()
     edge_orientation = grid_savepoint.edge_orientation()
@@ -100,8 +113,12 @@ def test_compute_geofac_div(experiment, grid_savepoint, interpolation_savepoint,
 @pytest.mark.embedded_only
 @pytest.mark.datatest
 def test_compute_geofac_rot(
-    experiment, grid_savepoint, interpolation_savepoint, icon_grid, backend
-):
+    experiment: definitions.Experiment,
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     mesh = icon_grid
     dual_edge_length = grid_savepoint.dual_edge_length()
     edge_orientation = grid_savepoint.vertex_edge_orientation()
@@ -125,7 +142,12 @@ def test_compute_geofac_rot(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_geofac_n2s(
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     xp = data_alloc.import_array_ns(backend)
     dual_edge_length = grid_savepoint.dual_edge_length()
     geofac_div = interpolation_savepoint.geofac_div()
@@ -147,7 +169,12 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_geofac_grg(
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     xp = data_alloc.import_array_ns(backend)
     primal_normal_cell_x = grid_savepoint.primal_normal_cell_x().ndarray
     primal_normal_cell_y = grid_savepoint.primal_normal_cell_y().ndarray
@@ -187,7 +214,12 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid, 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_geofac_grdiv(
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     xp = data_alloc.import_array_ns(backend)
     geofac_div = interpolation_savepoint.geofac_div()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
@@ -215,7 +247,13 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
     "experiment, atol",
     [(definitions.Experiments.MCH_CH_R04B09, 1e-10), (definitions.Experiments.EXCLAIM_APE, 1e-10)],
 )
-def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, atol, backend):
+def test_compute_c_bln_avg(
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    atol: float,
+    backend: gtx_typing.Backend,
+) -> None:
     xp = data_alloc.import_array_ns(backend)
     cell_areas = grid_savepoint.cell_areas().ndarray
     # both experiment use the default value
@@ -247,7 +285,12 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, a
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_e_flx_avg(
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     xp = data_alloc.import_array_ns(backend)
     e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg().ndarray
@@ -282,7 +325,12 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_cells_aw_verts(
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     xp = data_alloc.import_array_ns(backend)
     cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
     dual_area = grid_savepoint.vertex_dual_area().ndarray
@@ -311,7 +359,12 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_e_bln_c_s(
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     e_bln_c_s_ref = interpolation_savepoint.e_bln_c_s()
     c2e = icon_grid.get_connectivity(dims.C2E).ndarray
     cells_lat = grid_savepoint.cell_center_lat().ndarray
@@ -330,7 +383,12 @@ def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid, b
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+def test_compute_pos_on_tplane_e(
+    grid_savepoint: sb.IconGridSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    backend: gtx_typing.Backend,
+) -> None:
     xp = data_alloc.import_array_ns(backend)
     pos_on_tplane_e_x_ref = interpolation_savepoint.pos_on_tplane_e_x().asnumpy()
     pos_on_tplane_e_y_ref = interpolation_savepoint.pos_on_tplane_e_y().asnumpy()
