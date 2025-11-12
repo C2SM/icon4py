@@ -7,9 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import typing
-from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pytest
@@ -171,7 +169,7 @@ def test_get_geofac_grdiv(
     assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=rtol)
 
 
-def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs: typing.Any) -> None:
+def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs: Any) -> None:
     assert val.shape == ref.shape, f"arrays do not have the same shape: {val.shape} vs {ref.shape}"
     s_val = np.argsort(val)
     s_ref = np.argsort(ref)
