@@ -13,8 +13,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry, geometry_attributes as attrs, gridfile
-from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers, test_utils
+from icon4py.model.common.grid import geometry, geometry_attributes as attrs
+from icon4py.model.testing import parallel_helpers, test_utils
 
 from ...fixtures import (
     backend,
@@ -40,15 +40,15 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "attrs_name, grid_name",
     [
-        ("edge_area", "edge_areas"),
-        ("edge_midpoint_to_cell_center_distance", "edge_cell_length"),
-        ("eastward_component_of_edge_tangent_on_vertex", "dual_normal_vert_x"),
-        ("edge_midpoint_to_vertex_distance", "edge_vert_length"),
-        ("orientation_of_normal_to_cell_edges", "edge_orientation"),
-        ("grid_latitude_of_vertex", "verts_vertex_lat"),
-        ("eastward_component_of_edge_tangent_on_cell", "dual_normal_cell_x"),
-        ("northward_component_of_edge_tangent_on_cell", "dual_normal_cell_y"),
-        ("cell_area", "cell_areas"),
+        (attrs.EDGE_AREA, "edge_areas"),
+        (attrs.EDGE_CELL_DISTANCE, "edge_cell_length"),
+        (attrs.EDGE_TANGENT_VERTEX_U, "dual_normal_vert_x"),
+        (attrs.EDGE_VERTEX_DISTANCE, "edge_vert_length"),
+        (attrs.CELL_NORMAL_ORIENTATION, "edge_orientation"),
+        (attrs.VERTEX_LAT, "verts_vertex_lat"),
+        (attrs.EDGE_TANGENT_CELL_U, "dual_normal_cell_x"),
+        (attrs.EDGE_TANGENT_CELL_V, "dual_normal_cell_y"),
+        (attrs.CELL_AREA, "cell_areas"),
     ],
 )
 def test_distributed_geometry_attrs(

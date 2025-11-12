@@ -16,8 +16,11 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry, horizontal as h_grid
-from icon4py.model.common.interpolation import interpolation_factory
+from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.interpolation import (
+    interpolation_attributes as attrs,
+    interpolation_factory,
+)
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
 
 from ...fixtures import (
@@ -52,11 +55,11 @@ vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 @pytest.mark.parametrize(
     "attrs_name, intrp_name",
     [
-        ("interpolation_coefficient_from_cell_to_edge", "c_lin_e"),
-        ("nudging_coefficients_for_edges", "nudgecoeff_e"),
-        ("bilinear_edge_cell_weight", "e_bln_c_s"),
-        ("geometrical_factor_for_nabla_2_scalar", "geofac_n2s"),
-        ("cell_to_vertex_interpolation_factor_by_area_weighting", "c_intp"),
+        (attrs.C_LIN_E, "c_lin_e"),
+        (attrs.NUDGECOEFFS_E, "nudgecoeff_e"),
+        (attrs.E_BLN_C_S, "e_bln_c_s"),
+        (attrs.GEOFAC_N2S, "geofac_n2s"),
+        (attrs.CELL_AW_VERTS, "c_intp"),
     ],
 )
 def test_distributed_interpolation_attrs(
@@ -74,7 +77,7 @@ def test_distributed_interpolation_attrs(
     intp_factory = parallel_interpolation
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
-    assert test_utils.dallclose(field, field_ref, rtol=5e-9)
+    assert test_utils.dallclose(field, field_ref, rtol=5e-9), f"comparison of {attrs_name} failed"
 
 
 @pytest.mark.datatest
@@ -83,8 +86,8 @@ def test_distributed_interpolation_attrs(
 @pytest.mark.parametrize(
     "attrs_name, intrp_name, lb_domain",
     [
-        ("geometrical_factor_for_curl", "geofac_rot", vert_lb_domain),
-        ("geometrical_factor_for_gradient_of_divergence", "geofac_grdiv", 0),
+        (attrs.GEOFAC_ROT, "geofac_rot", vert_lb_domain),
+        (attrs.GEOFAC_GRDIV, "geofac_grdiv", 0),
     ],
 )
 def test_distributed_interpolation_attrs_reordered(
@@ -115,9 +118,9 @@ def test_distributed_interpolation_attrs_reordered(
 @pytest.mark.parametrize(
     "attrs_name, intrp_name, dim, atol",
     [
-        ("rbf_interpolation_coefficient_cell_1", "rbf_vec_coeff_c1", dims.CellDim, 3e-2),
-        ("rbf_interpolation_coefficient_edge", "rbf_vec_coeff_e", dims.EdgeDim, 7e-1),
-        ("rbf_interpolation_coefficient_vertex_1", "rbf_vec_coeff_v1", dims.VertexDim, 3e-3),
+        (attrs.RBF_VEC_COEFF_C1, "rbf_vec_coeff_c1", dims.CellDim, 3e-2),
+        (attrs.RBF_VEC_COEFF_E, "rbf_vec_coeff_e", dims.EdgeDim, 7e-1),
+        (attrs.RBF_VEC_COEFF_V1, "rbf_vec_coeff_v1", dims.VertexDim, 3e-3),
     ],
 )
 def test_distributed_interpolation_rbf(
