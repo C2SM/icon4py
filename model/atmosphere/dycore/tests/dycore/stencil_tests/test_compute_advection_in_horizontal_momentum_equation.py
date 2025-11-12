@@ -146,11 +146,13 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
             "end_index_of_damping_layer",
             "vertical_start",
             "vertical_end",
+            "apply_extra_diffusion_on_vn",
         ),
         stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "end_index_of_damping_layer",
             "vertical_start",
             "vertical_end",
+            "apply_extra_diffusion_on_vn",
         ),
     }
 
