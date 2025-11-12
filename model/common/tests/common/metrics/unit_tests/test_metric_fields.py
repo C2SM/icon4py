@@ -176,7 +176,7 @@ def test_compute_coeff_dwdz(
     coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),
-        1 / metrics_savepoint.inv_ddqz_z_full().asnumpy(),
+        1 / metrics_savepoint.inv_ddqz_z_full().ndarray,
         allocator=backend,
     )
 
@@ -381,9 +381,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, allocator=backend)
     edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, allocator=backend)
 
-    flat_idx = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=backend
-    )
     edge_mask = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, allocator=backend
     )
@@ -391,9 +388,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
 
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
-    horizontal_start_edge = icon_grid.start_index(
-        edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
-    )
+
     xp = data_alloc.import_array_ns(backend)
     flat_idx_max = mf.compute_flat_max_idx(
         e2c=icon_grid.get_connectivity("E2C").ndarray,
@@ -401,16 +396,15 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        array_ns=xp)
-
-
+        array_ns=xp,
+    )
 
     mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
         z_mc=z_mc,
         topography=topography,
         c_lin_e=c_lin_e,
         e_owner_mask=grid_savepoint.e_owner_mask(),
-        flat_idx_max=gtx.as_field((dims.EdgeDim, ), data=flat_idx_max,allocator=backend),
+        flat_idx_max=gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend),  # type: ignore [arg-type]
         e_lev=edges,
         k_lev=k,
         pg_edgeidx_dsl=edge_mask,
