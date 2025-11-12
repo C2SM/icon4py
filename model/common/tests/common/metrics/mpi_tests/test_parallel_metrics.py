@@ -55,6 +55,7 @@ vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     [
         (attrs.DDQZ_Z_FULL_E, "ddqz_z_full_e"),
         (attrs.ZDIFF_GRADP, "zdiff_gradp"),
+        (attrs.VERTOFFSET_GRADP, "vertoffset_gradp"),
         (attrs.Z_MC, "z_mc"),
         (attrs.DDQZ_Z_HALF, "ddqz_z_half"),
         (attrs.SCALING_FACTOR_FOR_3D_DIVDAMP, "scalfac_dd3d"),
@@ -80,7 +81,5 @@ def test_distributed_metrics_attrs(
     factory = parallel_metrics
 
     field = factory.get(attrs_name).asnumpy()
-    factory.get(attrs_name).asnumpy()
-    factory.get(attrs_name).asnumpy()
-    field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy().astype(np.float64)
+    field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
     assert test_utils.dallclose(field, field_ref, rtol=1e-8, atol=1.0e-8)

@@ -48,13 +48,14 @@ import functools
 import logging
 import types
 import typing
-from collections.abc import Callable, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
 from types import ModuleType
 from typing import Any, Literal, Protocol, TypeVar, overload
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import xarray as xa
+from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -80,35 +81,18 @@ class GridProvider(Protocol):
     def vertical_grid(self) -> v_grid.VerticalGrid | None: ...
 
 
-def _reshape_to_2d(
-    f: state_utils.GTXFieldType,
-    original_shape: tuple[int, ...],
-    original_dims: tuple[gtx.Dimension, ...],
-) -> state_utils.GTXFieldType:
-    if len(original_shape) > 2:
-        buffer = f.ndarray.reshape(f.shape[0], -1)
-        f = gtx.as_field(original_dims[:-1], buffer)
-    return f
-
-
-def _reshape_to_original(
-    f: state_utils.GTXFieldType,
-    original_shape: tuple[int, ...],
-    original_dims: tuple[gtx.Dimension, ...],
-) -> state_utils.GTXFieldType:
-    if len(original_shape) > 2:
-        buffer = f.ndarray.reshape(original_shape)
-        f = gtx.as_field(original_dims, buffer)
-        return f
-
-
 @contextlib.contextmanager
-def as_exchangable_fields(fields: Sequence[state_utils.GTXFieldType]):
-    original_dims = fields[0].domain.dims
-    original_shape = fields[0].ndarray.shape
-    buffers = tuple(_reshape_to_2d(f, original_shape, original_dims) for f in fields)
-    yield buffers
-    tuple(_reshape_to_original(f, original_shape, original_dims) for f in buffers)
+def as_exchangeable_field(field: state_utils.GTXFieldType) -> Iterator[state_utils.GTXFieldType]:
+    """Create a 2d View of the field that can be passed to GHEX."""
+    original_dims = field.domain.dims
+    if len(original_dims) > 2:
+        original_shape = field.ndarray.shape
+        tail_size = original_shape[1] * original_shape[2]
+        field = gtx_common._field(
+            field.ndarray.reshape(original_shape[0], -1),
+            domain={original_dims[0]: (0, original_shape[0]), original_dims[1]: (0, tail_size)},
+        )
+    yield field
 
 
 class NeedsExchange(Protocol):
@@ -117,15 +101,17 @@ class NeedsExchange(Protocol):
 
     def exchange(
         self, fields: Mapping[str, state_utils.FieldType], exchange: decomposition.ExchangeRuntime
-    ):
-        buffers = tuple(fields.values())
+    ) -> None:
         if self.needs_exchange():
-            first_dim = buffers[0].domain.dims[0]
-            assert (
-                first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-            ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
-            with as_exchangable_fields(buffers) as data:
-                exchange.exchange_and_wait(first_dim, *data)
+            # ghex assumes all fields to in one call to have the same `dtype`, this is not the case for all producer functions in icon4py,
+            # hence as a simple workaround we loop over the fields
+            for field in fields.values():
+                first_dim = field.domain.dims[0]
+                assert (
+                    first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+                ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
+                with as_exchangeable_field(field) as buffer:
+                    exchange.exchange_and_wait(first_dim, buffer)
 
 
 class FieldProvider(NeedsExchange, Protocol):
