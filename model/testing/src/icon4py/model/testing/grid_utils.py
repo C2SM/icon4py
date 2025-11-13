@@ -122,8 +122,7 @@ def construct_decomposition_info(
 
 
 def get_grid_geometry(
-    backend: gtx_typing.Backend | None,
-    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None, experiment: definitions.Experiment
 ) -> geometry.GridGeometry:
     register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
 
