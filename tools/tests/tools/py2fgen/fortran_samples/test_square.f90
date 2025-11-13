@@ -50,9 +50,7 @@ program call_square_wrapper_cffi_plugin
 #elif PROFILE_SQUARE_FROM_FUNCTION
     call square_from_function(input, result, rc)
     do n = 1, 100
-    call profile_enable(rc)
     call square_from_function(input, result, rc)
-    call profile_disable(rc)
     end do
 #else
    call square(input, result, rc)

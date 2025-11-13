@@ -16,7 +16,7 @@ from icon4py.model.testing.fixtures import backend
 
 
 def test_replace_skip_values(backend: gtx_typing.Backend) -> None:
-    grid = simple.simple_grid(backend=backend)
+    grid = simple.simple_grid(allocator=backend)
     domain = (dims.CellDim, dims.C2E2CDim)
     xp = data_alloc.import_array_ns(backend)
     neighbor_table = data_alloc.random_field(

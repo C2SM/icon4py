@@ -82,8 +82,8 @@ class Component(Protocol[Ins, Outs]):
     def __str__(self) -> str:
         return (
             f"instance of {self.__class__}(Component) uses inputs: "
-            f"{self.input_properties.keys()} \n "
-            f"produces : {self.output_properties.keys()}"
+            f"{self.inputs_properties.keys()} \n "
+            f"produces : {self.outputs_properties.keys()}"
         )
 
     def __call__(

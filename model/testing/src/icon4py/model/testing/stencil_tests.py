@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any, ClassVar
 
 import gt4py.next as gtx
@@ -21,15 +21,16 @@ from gt4py.next import constructors, typing as gtx_typing
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
 
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
 
 
 def allocate_data(
-    backend: gtx_typing.Backend | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil | None,
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
 ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
-    _allocate_field = constructors.as_field.partial(allocator=backend)  # type:ignore[attr-defined] # TODO(havogt): check why it doesn't understand the fluid_partial
+    _allocate_field = constructors.as_field.partial(allocator=allocator)  # type:ignore[attr-defined] # TODO(havogt): check why it doesn't understand the fluid_partial
     input_data = {
         k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
         if isinstance(v, tuple)
@@ -124,12 +125,12 @@ class StencilTest:
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
     STATIC_PARAMS: ClassVar[dict[str, Sequence[str]] | None] = None
 
-    reference: ClassVar[Callable[..., dict[str, np.ndarray | tuple[np.ndarray, ...]]]]
+    reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
     @pytest.fixture
     def _configured_program(
         self,
-        backend: gtx_typing.Backend | None,
+        backend_like: model_backends.BackendLike,
         static_variant: Sequence[str],
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         grid: base.Grid,
@@ -140,6 +141,7 @@ class StencilTest:
                 f"Parameter defined in 'STATIC_PARAMS' not in 'input_data': {unused_static_params}"
             )
         static_args = {name: [input_data[name]] for name in static_variant}
+        backend = model_options.customize_backend(self.PROGRAM, backend_like)
         program = self.PROGRAM.with_backend(backend)  # type: ignore[arg-type]  # TODO(havogt): gt4py should accept `None` in with_backend
         if backend is not None:
             if isinstance(program, FieldOperator):
@@ -154,24 +156,25 @@ class StencilTest:
                     **static_args,  # type: ignore[arg-type]
                 )
 
-        test_func = device_utils.synchronized_function(program, backend=backend)
+        test_func = device_utils.synchronized_function(program, allocator=backend)
         return test_func
 
     @pytest.fixture
     def _properly_allocated_input_data(
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        backend: gtx_typing.Backend | None,
+        backend_like: model_backends.BackendLike,
     ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
         # TODO(havogt): this is a workaround,
         # because in the `input_data` fixture provided by the user
         # it does not allocate for the correct device.
-        return allocate_data(backend, input_data)
+        allocator = model_backends.get_allocator(backend_like)
+        return allocate_data(allocator=allocator, input_data=input_data)
 
     def _verify_stencil_test(
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-        reference_outputs: dict[str, np.ndarray | tuple[np.ndarray, ...]],
+        reference_outputs: Mapping[str, np.ndarray | tuple[np.ndarray, ...]],
     ) -> None:
         for out in self.OUTPUTS:
             name, refslice, gtslice = (

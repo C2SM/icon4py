@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import typing
+from typing import Any, Final, TypeAlias, TypeGuard
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -13,30 +13,37 @@ from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
 from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
 
-DEFAULT_BACKEND: typing.Final = "embedded"
-
-
 # DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
-DeviceType: typing.TypeAlias = gtx.DeviceType
+DeviceType: TypeAlias = gtx.DeviceType
 CPU = DeviceType.CPU
 GPU = gtx.CUPY_DEVICE_TYPE
 
-BackendDescriptor: typing.TypeAlias = dict[str, typing.Any]
+BackendDescriptor: TypeAlias = dict[str, Any]
+BackendLike: TypeAlias = DeviceType | gtx_typing.Backend | BackendDescriptor | None
+
+
+DEFAULT_BACKEND: Final = "embedded"
 
 
 def is_backend_descriptor(
-    backend: gtx_typing.Backend | DeviceType | BackendDescriptor | None,
-) -> typing.TypeGuard[BackendDescriptor]:
+    backend: BackendLike,
+) -> TypeGuard[BackendDescriptor]:
     if isinstance(backend, dict):
         return all(isinstance(key, str) for key in backend)
     return False
 
 
 def get_allocator(
-    backend: gtx_typing.Backend | DeviceType | BackendDescriptor | None,
-) -> gtx_typing.Backend | None:
-    if backend is None or isinstance(backend, gtx_backend.Backend):
+    backend: BackendLike,
+) -> gtx_typing.Backend:
+    if isinstance(backend, gtx_backend.Backend):
         return backend
+    if backend is None:
+        # TODO(havogt): currently the testing infrastructure doesn't allow to specify
+        # embedded backend aka `None` for cupy, as there is no separation
+        # of allocator and backend.
+        return gtx_allocators.device_allocators[CPU]
+
     if is_backend_descriptor(backend):
         backend = backend["device"]
     if isinstance(backend, DeviceType):
@@ -44,13 +51,23 @@ def get_allocator(
     raise ValueError(f"Cannot get allocator from {backend}")
 
 
+def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gtx_typing.Backend:
+    on_gpu = device == GPU
+    return gtfn.GTFNBackendFactory(
+        gpu=on_gpu,
+        cached=cached,
+        otf_workflow__cached_translation=cached,
+    )
+
+
 def make_custom_dace_backend(
     device: DeviceType,
     cached: bool = True,
     auto_optimize: bool = True,
     async_sdfg_call: bool = True,
-    optimization_args: dict[str, typing.Any] | None = None,
+    optimization_args: dict[str, Any] | None = None,
     use_metrics: bool = True,
+    use_zero_origin: bool = False,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
@@ -77,24 +94,15 @@ def make_custom_dace_backend(
         async_sdfg_call=async_sdfg_call,
         optimization_args=optimization_args,
         use_metrics=use_metrics,
-        use_zero_origin=True,
+        use_zero_origin=use_zero_origin,
     )
 
 
-def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gtx_typing.Backend:
-    on_gpu = device == GPU
-    return gtfn.GTFNBackendFactory(
-        gpu=on_gpu,
-        cached=cached,
-        otf_workflow__cached_translation=cached,
-    )
-
-
-BACKENDS: dict[str, gtx_typing.Backend | None] = {
+BACKENDS: dict[str, BackendLike] = {
     "embedded": None,
     "roundtrip": gtx.itir_python,
-    "gtfn_cpu": gtx.gtfn_cpu,
-    "gtfn_gpu": gtx.gtfn_gpu,
-    "dace_cpu": make_custom_dace_backend(device=CPU),
-    "dace_gpu": make_custom_dace_backend(device=GPU),
+    "gtfn_cpu": {"backend_factory": make_custom_gtfn_backend, "device": CPU},
+    "gtfn_gpu": {"backend_factory": make_custom_gtfn_backend, "device": GPU},
+    "dace_cpu": {"backend_factory": make_custom_dace_backend, "device": CPU},
+    "dace_gpu": {"backend_factory": make_custom_dace_backend, "device": GPU},
 }
