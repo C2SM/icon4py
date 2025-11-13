@@ -694,7 +694,9 @@ def compute_e_flx_avg(
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
-    Compute edge flux average
+    Compute edge flux average.
+
+    FIXME (@halungge) the correctness of this function depends on the local order of the e2c2e connectivity fields
 
     Args:
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
@@ -760,24 +762,20 @@ def compute_e_flx_avg(
             )
 
     iie = -array_ns.ones([e2c.shape[0], 4], dtype=int)
-    iie[:, 0] = array_ns.where(e2c[e2c2e[:, 0], 0] == e2c[:, 0], 2, -1)
     iie[:, 0] = array_ns.where(
-        array_ns.logical_and(e2c[e2c2e[:, 0], 1] == e2c[:, 0], iie[:, 0] != 2), 4, iie[:, 0]
+        e2c[e2c2e[:, 0], 0] == e2c[:, 0], 2, array_ns.where(e2c[e2c2e[:, 0], 1] == e2c[:, 0], 4, -1)
     )
 
-    iie[:, 1] = array_ns.where(e2c[e2c2e[:, 1], 0] == e2c[:, 0], 1, -1)
     iie[:, 1] = array_ns.where(
-        array_ns.logical_and(e2c[e2c2e[:, 1], 1] == e2c[:, 0], iie[:, 1] != 1), 3, iie[:, 1]
+        e2c[e2c2e[:, 1], 0] == e2c[:, 0], 1, array_ns.where(e2c[e2c2e[:, 1], 1] == e2c[:, 0], 3, -1)
     )
 
-    iie[:, 2] = array_ns.where(e2c[e2c2e[:, 2], 0] == e2c[:, 1], 2, -1)
     iie[:, 2] = array_ns.where(
-        array_ns.logical_and(e2c[e2c2e[:, 2], 1] == e2c[:, 1], iie[:, 2] != 2), 4, iie[:, 2]
+        e2c[e2c2e[:, 2], 0] == e2c[:, 1], 2, array_ns.where(e2c[e2c2e[:, 2], 1] == e2c[:, 1], 4, -1)
     )
 
-    iie[:, 3] = array_ns.where(e2c[e2c2e[:, 3], 0] == e2c[:, 1], 1, -1)
     iie[:, 3] = array_ns.where(
-        array_ns.logical_and(e2c[e2c2e[:, 3], 1] == e2c[:, 1], iie[:, 3] != 1), 3, iie[:, 3]
+        e2c[e2c2e[:, 3], 0] == e2c[:, 1], 1, array_ns.where(e2c[e2c2e[:, 3], 1] == e2c[:, 1], 3, -1)
     )
 
     llb = horizontal_start_p4
@@ -823,18 +821,12 @@ def compute_e_flx_avg(
             e_flx_avg[llb:, 0],
         )
 
-    checksum = e_flx_avg[:, 0]
-    for i in range(4):
-        checksum = (
-            checksum
-            + array_ns.sum(primal_cart_normal * primal_cart_normal[e2c2e[:, i], :], axis=1)
-            * e_flx_avg[:, 1 + i]
-        )
+    d2 = array_ns.sum(primal_cart_normal[:, None, :] * primal_cart_normal[e2c2e], axis=2)
+    checksum = e_flx_avg[:, 0] + array_ns.sum(d2 * e_flx_avg[:, 1:], axis=1)
 
-    for i in range(5):
-        e_flx_avg[llb:, i] = array_ns.where(
-            owner_mask[llb:], e_flx_avg[llb:, i] / checksum[llb:], e_flx_avg[llb:, i]
-        )
+    e_flx_avg[llb:, :] = array_ns.where(
+        owner_mask[llb:, None], e_flx_avg[llb:, :] / checksum[llb:, None], e_flx_avg[llb:, :]
+    )
 
     return e_flx_avg
 
