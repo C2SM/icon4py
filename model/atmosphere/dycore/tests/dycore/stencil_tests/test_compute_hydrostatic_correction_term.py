@@ -83,7 +83,8 @@ def compute_hydrostatic_correction_term_numpy(
         / ((z_theta1 + z_theta2) ** 2)
     )
 
-    return z_hydro_corr
+    nlevels = theta_v.shape[1]
+    return z_hydro_corr[:, nlevels - 1 : nlevels]
 
 
 @pytest.mark.uses_as_offset
@@ -153,6 +154,14 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
         z_hydro_corr = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
+        z_hydro_corr = gtx.constructors.zeros(
+            domain={
+                dims.EdgeDim: (0, grid.num_edges),
+                dims.KDim: (grid.num_levels - 1, grid.num_levels),
+            },
+            dtype=ta.vpfloat,
+        )
+
         return dict(
             theta_v=theta_v,
             ikoffset=ikoffset,
@@ -164,7 +173,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
             grav_o_cpd=grav_o_cpd,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
-            vertical_start=0,
+            vertical_start=gtx.int32(grid.num_levels - 1),
             vertical_end=gtx.int32(grid.num_levels),
         )
 
