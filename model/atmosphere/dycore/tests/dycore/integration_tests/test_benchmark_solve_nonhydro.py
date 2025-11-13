@@ -252,7 +252,7 @@ def test_benchmark_solve_nonhydro(
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=0.0,
+        max_vertical_cfl=data_alloc.scalar_like_array(0.0, allocator),
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
             mesh, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         ),

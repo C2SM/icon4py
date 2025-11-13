@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 try:
-    import cupy as xp
+    import cupy as xp  # type: ignore[import-not-found]
 except ImportError:
     import numpy as xp
 
@@ -86,9 +86,10 @@ def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) 
 def scalar_like_array(
     value: ScalarT,
     allocator: ModuleType | gtx_allocators.FieldBufferAllocationUtil | None = None,
-) -> ScalarLikeArray[ScalarT]:
+) -> ScalarLikeArray[ScalarT]:  # type: ignore[type-var] # ScalarT is a subtype of already specified other types
     """Create a 0-d array (scalar-like) with given value on specified array namespace or allocator."""
     array_ns = allocator if allocator in (np, xp) else import_array_ns(allocator)
+    assert array_ns is not None and hasattr(array_ns, "asarray")
     return array_ns.asarray(value)
 
 
@@ -99,7 +100,7 @@ def as_field(
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
     data = field.asnumpy() if embedded_on_host else field.ndarray
-    return gtx.as_field(field.domain, data=data, allocator=allocator)
+    return gtx.as_field(field.domain, data=data, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def random_field(
@@ -116,7 +117,7 @@ def random_field(
     )
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def random_sign(
@@ -130,7 +131,7 @@ def random_sign(
     arr = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dims, extend=extend))
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def random_mask(
@@ -149,13 +150,13 @@ def random_mask(
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=allocator)
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def zero_field(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    dtype=ta.wpfloat,
+    dtype: npt.DTypeLike = ta.wpfloat,
     extend: dict[gtx.Dimension, int] | None = None,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
@@ -167,12 +168,12 @@ def constant_field(
     grid: grid_base.Grid,
     value: float,
     *dims: gtx.Dimension,
-    dtype=ta.wpfloat,
+    dtype: npt.DTypeLike = ta.wpfloat,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
+        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
         allocator=allocator,
     )
 
@@ -190,7 +191,7 @@ def index_field(
     grid: grid_base.Grid,
     dim: gtx.Dimension,
     extend: dict[gtx.Dimension, int] | None = None,
-    dtype=gtx.int32,
+    dtype: npt.DTypeLike = gtx.int32,  # type: ignore [attr-defined]
     allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     xp = import_array_ns(allocator)
