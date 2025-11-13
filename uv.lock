@@ -1395,7 +1395,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.0+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg#5e04c16488ea01b233fccd70d49d23bd9403087c" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where#da12bdbfe2e74b22fa077e1cd516ce896c8b97d9" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1651,7 +1651,7 @@ requires-dist = [
     { name = "icon4py-tools", marker = "extra == 'fortran'", editable = "tools" },
     { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },
 ]
-provides-extras = ["all", "cuda11", "cuda12", "distributed", "fortran", "io", "testing", "profiling"]
+provides-extras = ["all", "cuda11", "cuda12", "distributed", "fortran", "io", "profiling", "testing"]
 
 [package.metadata.requires-dev]
 build = [
@@ -1745,7 +1745,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1762,7 +1762,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1779,7 +1779,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1796,7 +1796,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1813,7 +1813,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1878,9 +1878,9 @@ requires-dist = [
     { name = "dace", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_11_05" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1916,7 +1916,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1944,7 +1944,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1993,9 +1993,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace-refactor_nested_sdfg" },
+    { name = "gt4py", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/edopao/gt4py?branch=dace-refactor_concat_where" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
