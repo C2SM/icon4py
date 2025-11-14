@@ -670,9 +670,11 @@ def _create_inverse_neighbor_index(
     for jc in range(inverse_offset.shape[0]):
         for i in range(inverse_offset.shape[1]):
             if inverse_offset[jc, i] >= 0:
-                inv_neighbor_idx[jc, i] = array_ns.argwhere(
+                inv_neigh_arr = array_ns.argwhere(
                     source_offset[inverse_offset[jc, i], :] == jc
-                )[0, 0]
+                )
+                if len(inv_neigh_arr) > 0:
+                    inv_neighbor_idx[jc, i] = inv_neigh_arr[0, 0]
 
     return inv_neighbor_idx
 

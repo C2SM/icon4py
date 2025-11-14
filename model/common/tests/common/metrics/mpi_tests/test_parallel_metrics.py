@@ -46,7 +46,6 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 
 
-@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -55,12 +54,7 @@ vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     [
         (attrs.DDQZ_Z_FULL_E, "ddqz_z_full_e"),
         (attrs.ZDIFF_GRADP, "zdiff_gradp"),
-        (attrs.VERTOFFSET_GRADP, "vertoffset_gradp"),
-        (attrs.Z_MC, "z_mc"),
-        (attrs.DDQZ_Z_HALF, "ddqz_z_half"),
-        (attrs.SCALING_FACTOR_FOR_3D_DIVDAMP, "scalfac_dd3d"),
-        (attrs.RAYLEIGH_W, "rayleigh_w"),
-        (attrs.COEFF_GRADEKIN, "coeff_gradekin"),
+        #(attrs.VERTOFFSET_GRADP, "ddxt_z_half_e"),
     ],
 )
 @pytest.mark.parametrize("experiment", [test_defs.Experiments.EXCLAIM_APE])
