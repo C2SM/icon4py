@@ -30,6 +30,7 @@ from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
@@ -169,10 +170,3 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulenceContinuousBenchmarking(
-    TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence
-):
-    pass

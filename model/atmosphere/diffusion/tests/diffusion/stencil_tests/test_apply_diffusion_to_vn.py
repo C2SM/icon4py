@@ -26,6 +26,7 @@ from .test_calculate_nabla4 import calculate_nabla4_numpy
 
 
 @pytest.mark.uses_concat_where
+@pytest.mark.continuous_benchmarking
 class TestApplyDiffusionToVn(StencilTest):
     PROGRAM = apply_diffusion_to_vn
     OUTPUTS = ("vn",)
@@ -163,8 +164,3 @@ class TestApplyDiffusionToVn(StencilTest):
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestApplyDiffusionToVnContinuousBenchmarking(TestApplyDiffusionToVn):
-    pass

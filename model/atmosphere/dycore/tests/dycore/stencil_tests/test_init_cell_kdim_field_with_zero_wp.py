@@ -22,6 +22,7 @@ from icon4py.model.common.utils.data_allocation import zero_field
 from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 
+@pytest.mark.continuous_benchmarking
 class TestInitCellKdimFieldWithZeroWp(StencilTest):
     PROGRAM = init_cell_kdim_field_with_zero_wp
     OUTPUTS = ("field_with_zero_wp",)
@@ -59,8 +60,3 @@ class TestInitCellKdimFieldWithZeroWp(StencilTest):
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestInitCellKdimFieldWithZeroWpContinuousBenchmarking(TestInitCellKdimFieldWithZeroWp):
-    pass

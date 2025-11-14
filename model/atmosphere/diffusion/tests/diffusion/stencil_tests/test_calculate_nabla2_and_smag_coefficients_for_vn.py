@@ -19,6 +19,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, stencil_tests
 
 
+@pytest.mark.continuous_benchmarking
 class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
     PROGRAM = calculate_nabla2_and_smag_coefficients_for_vn
     OUTPUTS = ("kh_smag_e", "kh_smag_ec", "z_nabla2_e")
@@ -185,6 +186,11 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         kh_smag_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         kh_smag_ec = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+        assert horizontal_start < horizontal_end
+
         return dict(
             diff_multfac_smag=diff_multfac_smag,
             tangent_orientation=tangent_orientation,
@@ -202,24 +208,8 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
             kh_smag_ec=kh_smag_ec,
             z_nabla2_e=z_nabla2_e,
             smag_offset=smag_offset,
-            horizontal_start=0,
-            horizontal_end=grid.num_edges,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestCalculateNabla2AndSmagCoefficientsForVnContinuousBenchmarking(
-    TestCalculateNabla2AndSmagCoefficientsForVn
-):
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict:
-        base_data = TestCalculateNabla2AndSmagCoefficientsForVn.input_data.__wrapped__(self, grid)
-        edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
-        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-        assert horizontal_start < horizontal_end
-        base_data["horizontal_start"] = 0
-        base_data["horizontal_end"] = grid.num_edges
-        return base_data

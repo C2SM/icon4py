@@ -494,6 +494,7 @@ class TestFusedVelocityAdvectionStencilVMomentumContinuousBenchmarking(
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.StencilTest):
     PROGRAM = compute_contravariant_correction_and_advection_in_vertical_momentum_equation
     OUTPUTS = (
@@ -709,10 +710,3 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             vertical_start=vertical_start,
             vertical_end=vertical_end,
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestFusedVelocityAdvectionStencilVMomentumAndContravariantContinuousBenchmarking(
-    TestFusedVelocityAdvectionStencilVMomentumAndContravariant
-):
-    pass
