@@ -41,14 +41,15 @@ if TYPE_CHECKING:
     "attrs_name, grid_name",
     [
         (attrs.EDGE_AREA, "edge_areas"),
-        (attrs.EDGE_CELL_DISTANCE, "edge_cell_length"),
-        (attrs.EDGE_TANGENT_VERTEX_U, "dual_normal_vert_x"),
-        (attrs.EDGE_VERTEX_DISTANCE, "edge_vert_length"),
-        (attrs.CELL_NORMAL_ORIENTATION, "edge_orientation"),
-        (attrs.VERTEX_LAT, "verts_vertex_lat"),
+        (attrs.EDGE_NORMAL_U, "primal_normal_v1"),
+        (attrs.EDGE_NORMAL_V, "primal_normal_v2"),
+        (attrs.EDGE_NORMAL_VERTEX_U, "primal_normal_vert_x"),
+        (attrs.EDGE_NORMAL_VERTEX_V, "primal_normal_vert_y"),
+        (attrs.EDGE_NORMAL_CELL_U, "primal_normal_cell_x"),
+        (attrs.EDGE_NORMAL_CELL_V, "primal_normal_cell_y"),
         (attrs.EDGE_TANGENT_CELL_U, "dual_normal_cell_x"),
-        (attrs.EDGE_TANGENT_CELL_V, "dual_normal_cell_y"),
-        (attrs.CELL_AREA, "cell_areas"),
+        (attrs.EDGE_TANGENT_VERTEX_U, "dual_normal_vert_x"),
+        (attrs.EDGE_TANGENT_VERTEX_V, "dual_normal_vert_y"),
     ],
 )
 def test_distributed_geometry_attrs(

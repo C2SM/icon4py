@@ -202,6 +202,7 @@ class GridGeometry(factory.FieldSource):
                 "vertex_lon": attrs.VERTEX_LON,
             },
             params={"radius": self._grid.global_properties.radius},
+            do_exchange=False,
         )
         self.register_provider(vertex_vertex_distance)
 
@@ -237,6 +238,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         self.register_provider(coriolis_params)
 
@@ -265,6 +267,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         self.register_provider(tangent_normal_coordinates)
 
@@ -339,6 +342,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         normal_vert_wrapper = SparseFieldProviderWrapper(
             normal_vert,
@@ -371,6 +375,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         normal_cell_wrapper = SparseFieldProviderWrapper(
             normal_cell,
@@ -405,6 +410,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         tangent_vert_wrapper = SparseFieldProviderWrapper(
             tangent_vert,
@@ -437,6 +443,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         tangent_cell_wrapper = SparseFieldProviderWrapper(
             tangent_cell,
@@ -462,6 +469,7 @@ class GridGeometry(factory.FieldSource):
                 "lat": attrs.VERTEX_LAT,
                 "lon": attrs.VERTEX_LON,
             },
+            do_exchange=False,
         )
         self.register_provider(cartesian_vertices)
         cartesian_edge_centers = factory.EmbeddedFieldOperatorProvider(
@@ -481,6 +489,7 @@ class GridGeometry(factory.FieldSource):
                 "lat": attrs.EDGE_LAT,
                 "lon": attrs.EDGE_LON,
             },
+            do_exchange=False,
         )
         self.register_provider(cartesian_edge_centers)
         cartesian_cell_centers = factory.EmbeddedFieldOperatorProvider(
@@ -500,6 +509,7 @@ class GridGeometry(factory.FieldSource):
                 "lat": attrs.CELL_LAT,
                 "lon": attrs.CELL_LON,
             },
+            do_exchange=False,
         )
         self.register_provider(cartesian_cell_centers)
 

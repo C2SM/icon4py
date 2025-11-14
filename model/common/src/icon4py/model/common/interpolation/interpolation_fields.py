@@ -24,7 +24,7 @@ from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_norm
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-MISSING = Final[int] = gridfile.GridFile.INVALID_INDEX
+MISSING: Final[int] = gridfile.GridFile.INVALID_INDEX
 
 
 def compute_c_lin_e(
@@ -674,11 +674,9 @@ def _create_inverse_neighbor_index(
     for jc in range(inverse_offset.shape[0]):
         for i in range(inverse_offset.shape[1]):
             if inverse_offset[jc, i] >= 0:
-                inv_neigh_arr = array_ns.argwhere(
+                inv_neighbor_idx[jc, i] = array_ns.argwhere(
                     source_offset[inverse_offset[jc, i], :] == jc
-                )
-                if len(inv_neigh_arr) > 0:
-                    inv_neighbor_idx[jc, i] = inv_neigh_arr[0, 0]
+                )[0, 0]
 
     return inv_neighbor_idx
 
