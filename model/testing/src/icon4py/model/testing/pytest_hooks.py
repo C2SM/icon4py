@@ -136,7 +136,7 @@ _name_from_fullname_pattern = re.compile(
     r"""
         ::(?P<class>[A-Za-z_]\w*)       # capture class name
         (?::: [A-Za-z_]\w*              # skip method name
-        (?:\[(?P<params>[^\]]+)\])? )   # optional parameterization
+        (?:\[(?P<params>.+)\])? )       # optional parameterization; allow '[' and ']' inside params
         """,
     re.VERBOSE,
 )
