@@ -489,13 +489,15 @@ def _construct_diamond_edges(
     Returns: ndarray containing the connectivity table for central edge-to- boundary edges
              on the diamond
     """
-    # used to make sure that the local neighbor hood is ordered in the same way as in ICON. At least
+    # used to make sure that the local neighborhood is ordered in the same way as in ICON. At least
     # the compute_e_flx_avg function depends on that.
     icon_edge_order = array_ns.asarray([[1, 2], [2, 0], [0, 1]])
 
-    def _determine_center_position(centers: np.ndarray, neighbors: np.ndarray) -> np.ndarray:
-        center_idx = np.where(neighbors == centers)
-        me_cell = np.zeros(centers.shape[0], dtype=np.int32)
+    def _determine_center_position(
+        centers: data_alloc.NDArray, neighbors: data_alloc.NDArray
+    ) -> data_alloc.NDArray:
+        center_idx = array_ns.where(neighbors == centers)
+        me_cell = array_ns.zeros(centers.shape[0], dtype=gtx.int32)
         me_cell[center_idx[0]] = center_idx[1]
         return me_cell
 
@@ -507,8 +509,10 @@ def _construct_diamond_edges(
     centers = array_ns.arange(n_edges, dtype=gtx.int32)[:, None]
     me_cell1 = _determine_center_position(centers, expanded[:, 0, :])
     me_cell2 = _determine_center_position(centers, expanded[:, 1, :])
-    ordered_local_index = np.hstack((icon_edge_order[me_cell1], icon_edge_order[me_cell2] + n_c2e))
-    e2c2e = np.take_along_axis(flattened, ordered_local_index, axis=1)
+    ordered_local_index = array_ns.hstack(
+        (icon_edge_order[me_cell1], icon_edge_order[me_cell2] + n_c2e)
+    )
+    e2c2e = array_ns.take_along_axis(flattened, ordered_local_index, axis=1)
     return e2c2e
 
 
