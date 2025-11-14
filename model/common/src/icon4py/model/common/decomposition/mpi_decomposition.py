@@ -216,20 +216,20 @@ class GHexMultiNodeExchange:
     def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field) -> str:
         # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
         assert hasattr(f, "__gt_buffer_info__")
-        key = f.__gt_buffer_info__.hash_key
+        buffer_key = f.__gt_buffer_info__.hash_key
         try:
-            return self._applied_patterns_cache[key]
+            return self._applied_patterns_cache[(dim, buffer_key)]
         except KeyError:
             assert dim in f.domain.dims
             array = self._slice_field_based_on_dim(f, dim)
-            self._applied_patterns_cache[key] = self._patterns[dim](
+            self._applied_patterns_cache[(dim, buffer_key)] = self._patterns[dim](
                 make_field_descriptor(
                     self._domain_descriptors[dim],
                     array,
                     arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
                 )
             )
-            return self._applied_patterns_cache[key]
+            return self._applied_patterns_cache[(dim, buffer_key)]
 
     def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> MultiNodeResult:
         """
