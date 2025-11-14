@@ -875,6 +875,11 @@ class SolveNonhydro:
 
         self._first_half_cache = {}
         self._second_half_cache = {}
+        self._dtime_previous_substep: float = 0.0
+        """
+        Dynamic substep length of previous substep in order to track if rayleigh damping coefficients need to be
+        recomputed or not. The substep length should only change in case of high CFL condition.
+        """
 
     def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
@@ -972,11 +977,18 @@ class SolveNonhydro:
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
         """
-        self.hydrostatic_correction_on_lowest_level = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dtype=ta.vpfloat, allocator=allocator
+        self.hydrostatic_correction_on_lowest_level = gtx.constructors.zeros(
+            domain={
+                dims.EdgeDim: (0, self._grid.num_edges),
+                dims.KDim: (self._grid.num_levels - 1, self._grid.num_levels),
+            },
+            allocator=allocator,
+            dtype=ta.vpfloat,
         )
-        self.hydrostatic_correction = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
+        # using GT4Py internal API to create a 1D field view from the (num_edges, 1)-sized field
+        self.hydrostatic_correction_on_lowest_level_1d_view = gtx_common._field(
+            self.hydrostatic_correction_on_lowest_level.ndarray[:, 0],
+            domain={dims.EdgeDim: (0, self._grid.num_edges)},
         )
         """
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
@@ -1059,6 +1071,16 @@ class SolveNonhydro:
             vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
+
+    def _get_rayleigh_damping_factor(self, dtime):
+        if dtime != self._dtime_previous_substep:
+            #  Precompute Rayleigh damping factor if substep magnitude changes
+            self._compute_rayleigh_damping_factor(
+                rayleigh_damping_factor=self.rayleigh_damping_factor,
+                dtime=dtime,
+            )
+            self._dtime_previous_substep = dtime
+        return self.rayleigh_damping_factor
 
     def time_step(
         self,
@@ -1176,12 +1198,6 @@ class SolveNonhydro:
                 cell_areas=self._cell_params.area,
             )
 
-        #  Precompute Rayleigh damping factor
-        self._compute_rayleigh_damping_factor(
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
-            dtime=dtime,
-        )
-
         self._compute_perturbed_quantities_and_interpolation(
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
@@ -1205,12 +1221,8 @@ class SolveNonhydro:
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-            z_hydro_corr=self.hydrostatic_correction,
+            z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
-
-        self.hydrostatic_correction_on_lowest_level[...] = self.hydrostatic_correction.ndarray[
-            :, self._grid.num_levels - 1
-        ]
 
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
@@ -1224,7 +1236,7 @@ class SolveNonhydro:
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level,
+            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level_1d_view,
             predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
             normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
@@ -1275,7 +1287,7 @@ class SolveNonhydro:
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
+            rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             dtime=dtime,
             at_first_substep=at_first_substep,
         )
@@ -1387,11 +1399,6 @@ class SolveNonhydro:
             tangential_wind_on_half_levels=z_fields.tangential_wind_on_half_levels,
             dtime=dtime,
             cell_areas=self._cell_params.area,
-        )
-
-        self._compute_rayleigh_damping_factor(
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
-            dtime=dtime,
         )
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
@@ -1526,7 +1533,7 @@ class SolveNonhydro:
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
+            rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(ndyn_substeps_var),
