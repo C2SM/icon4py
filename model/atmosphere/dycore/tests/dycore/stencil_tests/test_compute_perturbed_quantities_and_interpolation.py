@@ -420,8 +420,8 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         start_cell_halo_level_2 = grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
         end_cell_halo_level_2 = grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
-        nflatlev = 5
-        nflat_gradp = 34
+        nflatlev = 5 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        nflat_gradp = 34 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         return dict(
             temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,

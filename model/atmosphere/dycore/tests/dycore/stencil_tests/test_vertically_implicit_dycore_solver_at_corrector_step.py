@@ -474,9 +474,9 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         is_iau_active = request.param["is_iau_active"]
         at_first_substep = request.param["at_first_substep"]
         rayleigh_type = 2
-        end_index_of_damping_layer = 12
+        end_index_of_damping_layer = 12 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
         at_last_substep = request.param["at_last_substep"]
-        kstart_moist = 0
+        kstart_moist = 0 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
         dtime = 0.001
         veladv_offctr = 0.25
         advection_explicit_weight_parameter = 0.5 - veladv_offctr

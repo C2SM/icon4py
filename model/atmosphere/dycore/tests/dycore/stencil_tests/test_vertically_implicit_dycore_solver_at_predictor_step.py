@@ -465,7 +465,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         at_first_substep = request.param["at_first_substep"]
         rayleigh_type = 2
         divdamp_type = request.param["divdamp_type"]
-        end_index_of_damping_layer = 12
+        end_index_of_damping_layer = 12 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
         kstart_moist = 0
         flat_level_index_plus1 = 6
         dtime = 0.001

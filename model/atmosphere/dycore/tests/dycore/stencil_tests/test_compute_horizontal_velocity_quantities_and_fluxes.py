@@ -291,7 +291,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
 
-        nflatlev = 5
+        nflatlev = 5 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))

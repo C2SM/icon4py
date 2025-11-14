@@ -315,7 +315,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
         nlev = grid.num_levels
-        nflatlev = 5
+        nflatlev = 5 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         skip_compute_predictor_vertical_advection = request.param[
             "skip_compute_predictor_vertical_advection"
