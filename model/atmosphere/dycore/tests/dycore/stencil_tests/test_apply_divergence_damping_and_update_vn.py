@@ -187,7 +187,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
                 ),  # For benchmarking against MCH experiments
             ]
         ],
-        ids=lambda param: f"divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}__second_order_divdamp_factor[{param['second_order_divdamp_factor']}]",
+        ids=lambda param: f"divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}]__second_order_divdamp_factor[{param['second_order_divdamp_factor']}]",
     )
     def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
