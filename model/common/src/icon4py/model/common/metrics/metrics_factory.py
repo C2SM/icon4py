@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -52,7 +52,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self,
         grid: icon.IconGrid,
         vertical_grid: v_grid.VerticalGrid,
-        decomposition_info: definitions.DecompositionInfo,
+        decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
         topography: gtx.Field,
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
@@ -62,6 +62,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         rayleigh_coeff: float,
         exner_expol: float,
         vwind_offctr: float,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -72,6 +73,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
+        self._exchange = exchange
         self._interpolation_source = interpolation_source
         log.info(
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -157,6 +159,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "SLEVE_minimum_relative_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_2,
                 "lowest_layer_thickness": self._vertical_grid.config.lowest_layer_thickness,
             },
+            do_exchange=False,
         )
         self.register_provider(vertical_coordinates_on_half_levels)
 
@@ -173,6 +176,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"average": attrs.Z_MC},
             deps={"input_field": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
+            do_exchange=False,
         )
         self.register_provider(height)
 
@@ -194,6 +198,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "z_mc": attrs.Z_MC,
             },
             params={"nlev": self._grid.num_levels},
+            do_exchange=False,
         )
         self.register_provider(compute_ddqz_z_half)
 
@@ -211,6 +216,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"ddqz_z_full": attrs.DDQZ_Z_FULL, "inv_ddqz_z_full": attrs.INV_DDQZ_Z_FULL},
+            do_exchange=False,
         )
         self.register_provider(ddqz_z_full_and_inverse)
 
@@ -246,6 +252,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "divdamp_trans_end": self._config["divdamp_trans_end"],
                 "divdamp_type": self._config["divdamp_type"],
             },
+            do_exchange=False,
         )
         self.register_provider(compute_scaling_factor_for_3d_divdamp)
 
@@ -266,6 +273,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "vct_a_1": self._config["vct_a_1"],
                 "pi_const": math.pi,
             },
+            do_exchange=False,
         )
         self.register_provider(compute_rayleigh_w)
 
@@ -286,6 +294,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"coeff1_dwdz": attrs.COEFF1_DWDZ, "coeff2_dwdz": attrs.COEFF2_DWDZ},
+            do_exchange=False,
         )
         self.register_provider(compute_coeff_dwdz)
 
@@ -319,6 +328,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
             },
+            do_exchange=False,
         )
         self.register_provider(compute_theta_exner_rho_ref_mc)
 
@@ -349,6 +359,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
             },
+            do_exchange=False,
         )
         self.register_provider(compute_theta_rho_ref_me)
 
@@ -382,6 +393,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "rd_o_cpd": constants.RD_O_CPD,
                 "p0ref": constants.REFERENCE_PRESSURE,
             },
+            do_exchange=False,
         )
         self.register_provider(compute_theta_d_exner_dz_ref_ic)
 
@@ -413,6 +425,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "del_t_bg": constants.DEL_T_BG,
                 "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
             },
+            do_exchange=False,
         )
         self.register_provider(compute_d2dexdz2_fac_mc)
 
@@ -455,6 +468,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={attrs.DDXN_Z_HALF_E: attrs.DDXN_Z_HALF_E},
+            do_exchange=False,
         )
         self.register_provider(compute_ddxn_z_half_e)
 
@@ -476,6 +490,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"average": attrs.DDXN_Z_FULL},
+            do_exchange=False,
         )
         self.register_provider(compute_ddxn_z_full)
         compute_ddxt_z_full = factory.ProgramFieldProvider(
@@ -496,6 +511,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"average": attrs.DDXT_Z_FULL},
+            do_exchange=False,
         )
         self.register_provider(compute_ddxt_z_full)
 
@@ -518,6 +534,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
+            do_exchange=False,
         )
         self.register_provider(compute_exner_w_implicit_weight_parameter_np)
 
@@ -533,6 +550,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"exner_w_explicit_weight_parameter": attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER},
+            do_exchange=False,
         )
         self.register_provider(compute_exner_w_explicit_weight_parameter)
 
@@ -559,6 +577,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
+            do_exchange=False,
         )
         self.register_provider(compute_exner_exfac)
 
@@ -576,6 +595,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={attrs.WGTFAC_C: attrs.WGTFAC_C},
             params={"nlev": self._grid.num_levels},
+            do_exchange=False,
         )
         self.register_provider(wgtfac_c_provider)
 
@@ -596,6 +616,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"wgtfac_e": attrs.WGTFAC_E},
+            do_exchange=False,
         )
         self.register_provider(compute_wgtfac_e)
 
@@ -632,6 +653,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "nlev": self._grid.num_levels,
             },
             fields=(attrs.NFLAT_GRADP,),
+            do_exchange=False,
         )
         self.register_provider(nflat_gradp_provider)
 
@@ -663,6 +685,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"pg_edgeidx_dsl": attrs.PG_EDGEIDX_DSL, "pg_exdist_dsl": attrs.PG_EDGEDIST_DSL},
+            do_exchange=False,
         )
         self.register_provider(pressure_gradient_fields)
 
@@ -681,6 +704,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 attrs.MASK_PROG_HALO_C: attrs.MASK_PROG_HALO_C,
                 attrs.BDY_HALO_C: attrs.BDY_HALO_C,
             },
+            do_exchange=False,
         )
         self.register_provider(compute_mask_bdy_halo_c)
 
@@ -700,6 +724,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),  # type: ignore [attr-defined]
                 "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
             },
+            do_exchange=False,
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 
@@ -748,6 +773,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
                 "horizontal_end": self._grid.num_edges,
             },
+            do_exchange=False,
         )
         self.register_provider(coeff_gradekin)
 
@@ -757,6 +783,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields=(attrs.WGTFACQ_C,),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
             params={"nlev": self._grid.num_levels},
+            do_exchange=False,
         )
 
         self.register_provider(compute_wgtfacq_c)
@@ -772,6 +799,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             domain=(dims.EdgeDim, dims.KDim),
             fields=(attrs.WGTFACQ_E,),
             params={"n_edges": self._grid.num_edges, "nlev": self._grid.num_levels},
+            do_exchange=False,
         )
 
         self.register_provider(compute_wgtfacq_e)
@@ -793,6 +821,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={attrs.MAXSLP: attrs.MAXSLP, attrs.MAXHGTD: attrs.MAXHGTD},
+            do_exchange=False,
         )
         self.register_provider(compute_maxslp_maxhgtd)
 
@@ -814,6 +843,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={attrs.MAXSLP_AVG: attrs.MAXSLP_AVG, attrs.MAXHGTD_AVG: attrs.MAXHGTD_AVG},
+            do_exchange=False,
         )
         self.register_provider(compute_weighted_cell_neighbor_sum)
 
@@ -830,6 +860,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "nlev": self._grid.num_levels,
             },
+            do_exchange=False,
         )
         self.register_provider(compute_max_nbhgt)
 
@@ -858,6 +889,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
                 "nlev": self._grid.num_levels,
             },
+            do_exchange=False,
         )
 
         self.register_provider(compute_diffusion_mask_and_coef)
@@ -888,6 +920,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
                 "nlev": self._grid.num_levels,
             },
+            do_exchange=False,
         )
 
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)

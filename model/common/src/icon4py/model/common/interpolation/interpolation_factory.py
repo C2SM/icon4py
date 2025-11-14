@@ -13,7 +13,7 @@ import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -41,10 +41,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
         grid: icon.IconGrid,
-        decomposition_info: definitions.DecompositionInfo,
+        decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -54,6 +55,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
+        self._exchange = exchange
         characteristic_length = self._grid.global_properties.characteristic_length
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
@@ -188,7 +190,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 array_ns=self._xp,
             ),
             fields=(attrs.C_BLN_AVG,),
-            domain=(dims.CellDim, dims.C2E2CODim),
+            domain=(dims.CellDim, dims.E2CDim),
             deps={
                 "lat": geometry_attrs.CELL_LAT,
                 "lon": geometry_attrs.CELL_LON,

@@ -395,7 +395,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
 
-    mf.compute_flat_idx.with_backend(backend)(
+    mf.compute_flat_max_idx.with_backend(backend)(
         z_mc=z_mc,
         c_lin_e=c_lin_e,
         z_ifc=z_ifc,
