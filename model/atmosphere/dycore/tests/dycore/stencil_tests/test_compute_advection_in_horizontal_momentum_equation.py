@@ -281,7 +281,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         cfl_w_limit = 0.65 / dtime
         apply_extra_diffusion_on_vn = request.param["apply_extra_diffusion_on_vn"]
 
-        end_index_of_damping_layer = 12 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        end_index_of_damping_layer = 12  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))

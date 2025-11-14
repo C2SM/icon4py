@@ -445,7 +445,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         dtime = 2.0
         cfl_w_limit = 0.65 / dtime
 
-        end_index_of_damping_layer = 12 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        end_index_of_damping_layer = 12  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         cell_domain = h_grid.domain(dims.CellDim)
         horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
@@ -664,8 +664,8 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             "skip_compute_predictor_vertical_advection"
         ]
 
-        nflatlev = 5 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
-        end_index_of_damping_layer = 12 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        end_index_of_damping_layer = 12  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         cell_domain = h_grid.domain(dims.CellDim)
         horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))

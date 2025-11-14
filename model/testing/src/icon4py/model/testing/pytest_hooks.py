@@ -11,11 +11,11 @@ import re
 
 import numpy as np
 import pytest
+from gt4py.next import config as gtx_config
 
 from icon4py.model.common import model_backends
 from icon4py.model.testing import filters
 
-from gt4py.next import config as gtx_config
 
 __all__ = [
     "pytest_addoption",
@@ -168,7 +168,9 @@ def pytest_benchmark_update_json(output_json):
         # to avoid reporting python overheads in `bencher` so that the results are comparable to the Fortran stencil benchmarks
         if gtx_config.COLLECT_METRICS_LEVEL > 0:
             gt4py_metrics_runtimes = bench.get("extra_info", {}).get("gtx_metrics", [])
-            assert len(gt4py_metrics_runtimes) > 0, "No GT4Py metrics collected despite COLLECT_METRICS_LEVEL > 0"
+            assert (
+                len(gt4py_metrics_runtimes) > 0
+            ), "No GT4Py metrics collected despite COLLECT_METRICS_LEVEL > 0"
             bench["stats"]["mean"] = np.mean(gt4py_metrics_runtimes)
             bench["stats"]["median"] = np.median(gt4py_metrics_runtimes)
             bench["stats"]["stddev"] = np.std(gt4py_metrics_runtimes)

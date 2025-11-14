@@ -517,8 +517,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         end_edge_nudging = grid.end_index(edge_domain(h_grid.Zone.NUDGING))
         end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
-        nflatlev = 5 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
-        nflat_gradp = 34 # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        nflat_gradp = 34  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         return dict(
             rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,

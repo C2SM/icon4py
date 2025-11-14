@@ -84,8 +84,10 @@ def test_and_benchmark(
     _configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
-    benchmark_only_option = request.config.getoption("benchmark_only") # skip verification if `--benchmark-only` CLI option is set
-    if (not benchmark_only_option):
+    benchmark_only_option = request.config.getoption(
+        "benchmark_only"
+    )  # skip verification if `--benchmark-only` CLI option is set
+    if not benchmark_only_option:
         reference_outputs = self.reference(
             _ConnectivityConceptFixer(
                 grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
@@ -113,7 +115,7 @@ def test_and_benchmark(
             _configured_program,
             args=(),
             kwargs=dict(**_properly_allocated_input_data, offset_provider=grid.connectivities),
-            rounds=3, # 30 iterations in total should be stable enough
+            rounds=3,  # 30 iterations in total should be stable enough
             warmup_rounds=warmup_rounds,
             iterations=iterations,
         )
