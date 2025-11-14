@@ -269,6 +269,7 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
     PROGRAM = compute_advection_in_vertical_momentum_equation
     OUTPUTS = (
@@ -444,7 +445,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         dtime = 2.0
         cfl_w_limit = 0.65 / dtime
 
-        end_index_of_damping_layer = 5
+        end_index_of_damping_layer = 12
 
         cell_domain = h_grid.domain(dims.CellDim)
         horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
@@ -480,17 +481,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
             vertical_start=vertical_start,
             vertical_end=vertical_end,
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestFusedVelocityAdvectionStencilVMomentumContinuousBenchmarking(
-    TestFusedVelocityAdvectionStencilVMomentum
-):
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        base_data = TestFusedVelocityAdvectionStencilVMomentum.input_data.__wrapped__(self, grid)
-        base_data["end_index_of_damping_layer"] = 12
-        return base_data
 
 
 @pytest.mark.embedded_remap_error
@@ -674,8 +664,8 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             "skip_compute_predictor_vertical_advection"
         ]
 
-        nflatlev = 3
-        end_index_of_damping_layer = 5
+        nflatlev = 5
+        end_index_of_damping_layer = 12
 
         cell_domain = h_grid.domain(dims.CellDim)
         horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
