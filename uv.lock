@@ -1352,13 +1352,12 @@ wheels = [
 
 [[package]]
 name = "ghex"
-version = "0.4.0"
-source = { registry = "https://pypi.org/simple" }
+version = "0.4.1"
+source = { git = "https://github.com/msimberg/GHEX.git?branch=async-mpi#6d896166994cedbcfc50da1873239a5edb212e3f" }
 dependencies = [
     { name = "mpi4py" },
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/4f/d6217b2afcecff78620c8d3df315b3a354820447ad48962889fe029a3b2c/ghex-0.4.0.tar.gz", hash = "sha256:65135fee88a0bea16bbcc6a48fda9065850db7af4340726c0ea804affed04890", size = 8309041, upload-time = "2024-12-18T14:40:05.407Z" }
 
 [[package]]
 name = "gitdb"
@@ -1881,7 +1880,7 @@ requires-dist = [
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "dace", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_11_05" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
-    { name = "ghex", marker = "extra == 'distributed'", specifier = ">=0.3.0" },
+    { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
     { name = "gt4py", specifier = "==1.1.0" },
     { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
     { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
