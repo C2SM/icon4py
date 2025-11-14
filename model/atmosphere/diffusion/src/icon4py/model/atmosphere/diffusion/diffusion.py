@@ -273,10 +273,12 @@ class DiffusionConfig:
 
         if self.shear_type not in (
             TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+            TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND,
             TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
         ):
             raise NotImplementedError(
                 f"Turbulence Shear only {TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND} "
+                f"and {TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND} "
                 f"and {TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND} "
                 f"implemented"
             )

@@ -15,9 +15,9 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Literal, Protocol, overload, runtime_checkable
 
-import dace
+import dace  # type: ignore[import-untyped]
 import numpy as np
-from gt4py.next import Dimension
+from gt4py.next import Dimension, Field
 
 from icon4py.model.common import utils
 from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
@@ -36,7 +36,12 @@ class ProcessProperties(Protocol):
 
 @dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):
-    def __init__(self):
+    comm: None
+    rank: int
+    comm_name: str
+    comm_size: int
+
+    def __init__(self) -> None:
         object.__setattr__(self, "comm", None)
         object.__setattr__(self, "rank", 0)
         object.__setattr__(self, "comm_name", "")
@@ -52,7 +57,7 @@ class DomainDescriptorIdGenerator:
         self._roundtrips = parallel_props.rank
         self._base = self._roundtrips * self._comm_size
 
-    def __call__(self):
+    def __call__(self) -> int:
         next_id = self._base + self._counter
         if self._counter + 1 >= self._comm_size:
             self._roundtrips = self._roundtrips + self._comm_size
@@ -72,7 +77,7 @@ class DecompositionInfo:
     @utils.chainable
     def with_dimension(
         self, dim: Dimension, global_index: data_alloc.NDArray, owner_mask: data_alloc.NDArray
-    ):
+    ) -> None:
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
 
@@ -82,25 +87,27 @@ class DecompositionInfo:
         num_edges: int | None = None,
         num_vertices: int | None = None,
     ):
-        self._global_index = {}
-        self._owner_mask = {}
+        self._global_index: dict[Dimension, data_alloc.NDArray] = {}
+        self._owner_mask: dict[Dimension, data_alloc.NDArray] = {}
         self._num_vertices = num_vertices
         self._num_cells = num_cells
         self._num_edges = num_edges
 
     @property
-    def num_cells(self):
+    def num_cells(self) -> int | None:
         return self._num_cells
 
     @property
-    def num_edges(self):
+    def num_edges(self) -> int | None:
         return self._num_edges
 
     @property
-    def num_vertices(self):
+    def num_vertices(self) -> int | None:
         return self._num_vertices
 
-    def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+    def local_index(
+        self, dim: Dimension, entry_type: EntryType = EntryType.ALL
+    ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._to_local_index(dim)
@@ -113,13 +120,13 @@ class DecompositionInfo:
                 mask = self._owner_mask[dim]
                 return index[mask]
 
-    def _to_local_index(self, dim):
+    def _to_local_index(self, dim: Dimension) -> data_alloc.NDArray:
         data = self._global_index[dim]
         assert data.ndim == 1
         if isinstance(data, np.ndarray):
             import numpy as xp
         else:
-            import cupy as xp
+            import cupy as xp  # type: ignore[import-not-found, no-redef]
 
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
@@ -127,7 +134,9 @@ class DecompositionInfo:
     def owner_mask(self, dim: Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
-    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+    def global_index(
+        self, dim: Dimension, entry_type: EntryType = EntryType.ALL
+    ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._global_index[dim]
@@ -140,37 +149,37 @@ class DecompositionInfo:
 
 
 class ExchangeResult(Protocol):
-    def wait(self): ...
+    def wait(self) -> None: ...
 
     def is_ready(self) -> bool: ...
 
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult: ...
+    def exchange(self, dim: Dimension, *fields: Field) -> ExchangeResult: ...
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple): ...
+    def exchange_and_wait(self, dim: Dimension, *fields: Field) -> None: ...
 
-    def get_size(self): ...
+    def get_size(self) -> int: ...
 
-    def my_rank(self): ...
+    def my_rank(self) -> int: ...
 
 
 @dataclass
 class SingleNodeExchange:
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
+    def exchange(self, dim: Dimension, *fields: Field) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: Dimension, *fields: Field) -> None:
         return
 
-    def my_rank(self):
+    def my_rank(self) -> int:
         return 0
 
-    def get_size(self):
+    def get_size(self) -> int:
         return 1
 
-    def __call__(self, *args, **kwargs) -> ExchangeResult | None:
+    def __call__(self, *args: Any, dim: Dimension, wait: bool = True) -> ExchangeResult | None:  # type: ignore[return] # return statment in else condition
         """Perform a halo exchange operation.
 
         Args:
@@ -180,8 +189,6 @@ class SingleNodeExchange:
             dim: The dimension along which the exchange is performed.
             wait: If True, the operation will block until the exchange is completed (default: True).
         """
-        dim = kwargs.get("dim")
-        wait = kwargs.get("wait", True)
 
         res = self.exchange(dim, *args)
         if wait:
@@ -191,7 +198,7 @@ class SingleNodeExchange:
 
     # Implementation of DaCe SDFGConvertible interface
     # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
-    def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+    def dace__sdfg__(self, *args: Any, dim: Dimension, wait: bool = True) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
         sdfg.name = "_halo_exchange_"
         return sdfg
@@ -214,7 +221,7 @@ class HaloExchangeWaitRuntime(Protocol):
         """Wait on the communication handle."""
         ...
 
-    def __sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+    def __sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
         """DaCe related: SDFGConvertible interface."""
         ...
 
@@ -235,7 +242,7 @@ class HaloExchangeWait:
         communication_handle.wait()
 
     # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+    def dace__sdfg__(self, *args: Any, dim: Dimension, wait: bool = True) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
         sdfg.name = "_halo_exchange_wait_"
         return sdfg
@@ -262,7 +269,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 
 class SingleNodeResult:
-    def wait(self):
+    def wait(self) -> None:
         pass
 
     def is_ready(self) -> bool:
@@ -270,7 +277,7 @@ class SingleNodeResult:
 
 
 class RunType:
-    """Base type for marker types used to initialize the parallel or single node properites."""
+    """Base type for marker types used to initialize the parallel or single node properties."""
 
     pass
 
