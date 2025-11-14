@@ -216,7 +216,8 @@ class GHexMultiNodeExchange:
     def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field) -> str:
         # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
         assert hasattr(f, "__gt_buffer_info__")
-        key = f.__gt_buffer_info__.hash_key
+        # dimension and buffer_info uniquely identifies the exchange pattern
+        key = (dim, f.__gt_buffer_info__.hash_key)
         try:
             return self._applied_patterns_cache[key]
         except KeyError:
