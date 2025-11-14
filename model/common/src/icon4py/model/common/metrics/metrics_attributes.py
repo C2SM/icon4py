@@ -18,6 +18,7 @@ from icon4py.model.common.states import model
 
 Z_MC: Final[str] = "height"
 DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels"
+DDQZ_Z_HALF_E: Final[str] = "functional_determinant_of_metrics_on_interface_levels_on_edges"
 DDQZ_Z_FULL: Final[str] = "functional_determinant_of_metrics_on_full_levels"
 DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on_edges"
 INV_DDQZ_Z_FULL: Final[str] = f"inverse_of_{DDQZ_Z_FULL}"
@@ -93,6 +94,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="ddqz_z_half",
+        dtype=ta.wpfloat,
+    ),
+    DDQZ_Z_HALF_E: dict(
+        standard_name=DDQZ_Z_HALF_E,
+        long_name="functional determinant on interface levels on edges",
+        units="",
+        dims=(dims.EdgeDim, dims.KHalfDim),
+        icon_var_name="ddqz_z_half_e",
         dtype=ta.wpfloat,
     ),
     DDQZ_Z_FULL: dict(

@@ -1,0 +1,51 @@
+%=======================================================================================================================
+\clearpage
+\subsection{Exner}
+\label{sub:exner}
+%=======================================================================================================================
+
+%-------------------------------------------------------------------------------
+\paragraph{Coefficients}
+
+\begin{align}
+  & \alpha_{\k??} = \WtimeVWind \density{\n}{\c}{\k-1/2} \vpotempprime{\n}{\c}{\k-1/2} \\
+  & \beta_{\k??} = \Dt \frac{\Rd}{\cvd} \frac{\Gamma^\n_\k}{\Dz{}} = \Dt \frac{\Rd}{\cvd} \frac{\exnerprime{\n}{\c}{\k}}{\density{\n}{\c}{\k}\vpotempprime{\n}{\c}{\k}} \frac{1}{\Dz{}}
+\end{align}
+
+%-------------------------------------------------------------------------------
+\paragraph{Average normal wind}\
+
+``needed to obtain a nearly 2nd order accurate divergence (Zangl 2015)''
+
+\begin{equation}
+  \zvnavg_{\e\k} = \sum_{\offProv{e2c2eo}} \Whor \vn{\n+1^*}{\e}{\k}
+\end{equation}
+
+%-------------------------------------------------------------------------------
+\paragraph{Miura scheme}\
+
+$\density{\n}{\e}{\k}$ is computed with the Miura scheme \S\ref{sub:miura}
+
+%-------------------------------------------------------------------------------
+\paragraph{Explicit term}
+
+\begin{align}
+  & \zthetavfle_{\e\k} = \massfle_{\e\k} \zthetave_{\e\k} = \density{\n}{\e}{\k} \zvnavg_{\e\k} / \Dz{} \zthetave_{\e\k} \\
+  & \zflxdivtheta_{\c\k} = \sum_{\offProv{c2e}} \Cdiv \zthetavfle_{\e\k}
+\end{align}
+
+\begin{equation}
+  \begin{split}
+    \Zexnerexpl = \exnerprime{\n}{\c}{\k} - \beta_{\k??}
+      &\left( \zflxdivtheta_{\c\k} + \vpotempprime{\n}{\c}{\k-1/2} \zcontrwfll_{\k-1/2} \right.
+      \\
+      &\left.- \vpotempprime{\n}{\c}{\k+1/2} \zcontrwfll_{\k+1/2} \right) + \Dt \ddtexnerphy
+  \end{split}
+\end{equation}
+
+%-------------------------------------------------------------------------------
+\paragraph{Final update}
+
+\begin{equation}
+  \exnerprime{\n+1^*}{\c}{\k} = \Zexnerexpl + \exnerref{\c}{\k} - \beta \left( \alpha_{\k-1/2}\w{\n+1^*}{\c}{\k-1/2} -  \alpha_{\k+1/2}\w{\n+1^*}{\c}{\k+1/2} \right)
+\end{equation}

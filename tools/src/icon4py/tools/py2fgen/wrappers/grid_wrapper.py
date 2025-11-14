@@ -14,6 +14,7 @@ from gt4py import next as gtx
 from gt4py.next.type_system import type_specifications as ts
 
 import icon4py.model.common.grid.states as grid_states
+from icon4py.model.atmosphere.dycore import ibm
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import icon as icon_grid
@@ -32,6 +33,7 @@ class GridState:
     edge_geometry: grid_states.EdgeParams
     cell_geometry: grid_states.CellParams
     exchange_runtime: decomposition_defs.ExchangeRuntime
+    ibm_masks: ibm.ImmersedBoundaryMethodMasks
 
 
 grid_state: GridState | None = None  # TODO(havogt): remove module global state
@@ -106,6 +108,9 @@ def grid_init(
     num_vertices: gtx.int32,
     num_cells: gtx.int32,
     num_edges: gtx.int32,
+    cell_x: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    cell_y: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    z_ifc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vertical_size: gtx.int32,
     limited_area: bool,
     backend: gtx.int32,
@@ -199,10 +204,25 @@ def grid_init(
             num_vertices,
         )
 
+    mask_label = "gauss3d_torus"
+    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
+        mask_label=mask_label,
+        cell_x=cell_x.ndarray,
+        cell_y=cell_y.ndarray,
+        half_level_heights=z_ifc.ndarray,
+        grid=grid,
+        num_cells=c2e.shape[0],     # use array shapes instead of
+        num_edges=e2c.shape[0],     # num_* because arrays are
+        num_vertices=v2c.shape[0],  # nproma size
+        num_levels=z_ifc.shape[1]-1,
+        backend=actual_backend,
+    )
+
     global grid_state  # noqa: PLW0603 [global-statement]
     grid_state = GridState(
         grid=grid,
         edge_geometry=edge_params,
         cell_geometry=cell_params,
         exchange_runtime=exchange_runtime,
+        ibm_masks=ibm_masks,
     )

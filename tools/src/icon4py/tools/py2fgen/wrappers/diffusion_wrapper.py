@@ -35,8 +35,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
+from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half_e
+from icon4py.model.common.model_options import customize_backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
@@ -91,6 +94,10 @@ def diffusion_init(
     lowest_layer_thickness: gtx.float64,
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,
+    ddqz_z_full: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    ddqz_z_half: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
@@ -160,6 +167,26 @@ def diffusion_init(
         zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
     if zd_vertoffset is None:
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
+
+    xp = data_alloc.import_array_ns(customize_backend("foo", actual_backend))
+    ddqz_z_half_e_np = xp.zeros(
+        (ddqz_z_full_e.ndarray.shape[0], ddqz_z_half.ndarray.shape[1]),
+        dtype=float,
+    )
+    ddqz_z_half_e = gtx.as_field(
+        (dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=customize_backend("foo", actual_backend)
+    )
+    compute_ddqz_z_half_e.with_backend(backend=customize_backend("foo", actual_backend))(
+        ddqz_z_half=ddqz_z_half,
+        c_lin_e=c_lin_e,
+        ddqz_z_half_e=ddqz_z_half_e,
+        horizontal_start=0,
+        horizontal_end=grid_wrapper.grid_state.grid.num_edges,
+        vertical_start=0,
+        vertical_end=grid_wrapper.grid_state.grid.num_levels + 1,
+        offset_provider=grid_wrapper.grid_state.grid.connectivities,
+    )
+
     # Metric state
     metric_state = DiffusionMetricState(
         mask_hdiff=mask_hdiff,
@@ -168,6 +195,10 @@ def diffusion_init(
         zd_intcoef=zd_intcoef,
         zd_vertoffset=zd_vertoffset,
         zd_diffcoef=zd_diffcoef,
+        ddqz_z_full=ddqz_z_full,
+        ddqz_z_full_e=ddqz_z_full_e,
+        ddqz_z_half=ddqz_z_half,
+        ddqz_z_half_e=ddqz_z_half_e,
     )
 
     # Interpolation state
@@ -181,6 +212,7 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
+
 
     # Initialize the diffusion granule
     global granule  # noqa: PLW0603 [global-statement]
@@ -196,6 +228,7 @@ def diffusion_init(
             cell_params=grid_wrapper.grid_state.cell_geometry,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
+            ibm_masks=grid_wrapper.grid_state.ibm_masks,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(
             model_backends.get_allocator(actual_backend)

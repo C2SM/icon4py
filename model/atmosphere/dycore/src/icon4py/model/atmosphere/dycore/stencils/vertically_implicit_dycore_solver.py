@@ -12,6 +12,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast
 from gt4py.next.experimental import concat_where
 
+from icon4py.model.atmosphere.dycore.ibm import _set_bcs_w_matrix
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     _add_analysis_increments_from_data_assimilation,
 )
@@ -245,6 +246,7 @@ def _vertically_implicit_solver_at_predictor_step(
     rayleigh_damping_factor: fa.KField[ta.wpfloat],
     reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     iau_wgt_dyn: ta.wpfloat,
+    ibm_w_matrix_mask: fa.CellKField[bool],
     dtime: ta.wpfloat,
     rayleigh_type: gtx.int32,
     divdamp_type: gtx.int32,
@@ -328,6 +330,12 @@ def _vertically_implicit_solver_at_predictor_step(
             exner_incr=exner_iau_increment,
             iau_wgt_dyn=iau_wgt_dyn,
         )
+
+    (theta_v_at_cells_on_half_levels, w_explicit_term) = _set_bcs_w_matrix(
+        mask=ibm_w_matrix_mask,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        w_explicit_term=w_explicit_term,
+    )
 
     next_w = solve_w(
         last_inner_level=n_lev,
@@ -435,6 +443,7 @@ def vertically_implicit_solver_at_predictor_step(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
+    ibm_w_matrix_mask: fa.CellKField[bool],
     iau_wgt_dyn: ta.wpfloat,
     dtime: ta.wpfloat,
     is_iau_active: bool,
@@ -501,6 +510,7 @@ def vertically_implicit_solver_at_predictor_step(
         rayleigh_damping_factor=rayleigh_damping_factor,
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
         iau_wgt_dyn=iau_wgt_dyn,
+        ibm_w_matrix_mask=ibm_w_matrix_mask,
         dtime=dtime,
         rayleigh_type=rayleigh_type,
         divdamp_type=divdamp_type,
@@ -561,6 +571,7 @@ def _vertically_implicit_solver_at_corrector_step(
     r_nsubsteps: ta.wpfloat,
     ndyn_substeps_var: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
+    ibm_w_matrix_mask: fa.CellKField[bool],
     dtime: ta.wpfloat,
     is_iau_active: bool,
     rayleigh_type: gtx.int32,
@@ -643,6 +654,12 @@ def _vertically_implicit_solver_at_corrector_step(
             exner_incr=exner_iau_increment,
             iau_wgt_dyn=iau_wgt_dyn,
         )
+
+    (theta_v_at_cells_on_half_levels, w_explicit_term) = _set_bcs_w_matrix(
+        mask=ibm_w_matrix_mask,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        w_explicit_term=w_explicit_term,
+    )
 
     next_w = solve_w(
         last_inner_level=n_lev,
@@ -779,6 +796,7 @@ def vertically_implicit_solver_at_corrector_step(
     r_nsubsteps: ta.wpfloat,
     ndyn_substeps_var: ta.wpfloat,
     iau_wgt_dyn: ta.wpfloat,
+    ibm_w_matrix_mask: fa.CellKField[bool],
     dtime: ta.wpfloat,
     is_iau_active: bool,
     rayleigh_type: gtx.int32,
@@ -833,6 +851,7 @@ def vertically_implicit_solver_at_corrector_step(
         r_nsubsteps=r_nsubsteps,
         ndyn_substeps_var=ndyn_substeps_var,
         iau_wgt_dyn=iau_wgt_dyn,
+        ibm_w_matrix_mask=ibm_w_matrix_mask,
         dtime=dtime,
         is_iau_active=is_iau_active,
         rayleigh_type=rayleigh_type,

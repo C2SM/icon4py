@@ -13,7 +13,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import allocators as gtx_allocators  # TODO(havogt): expose in gtx_typing
 
-from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.atmosphere.dycore import dycore_states, ibm
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
     compute_advection_in_horizontal_momentum_equation,
 )
@@ -50,6 +50,7 @@ class VelocityAdvection:
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
+        ibm_masks,
         backend: gtx_typing.Backend
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
@@ -67,6 +68,8 @@ class VelocityAdvection:
         self._allocate_local_fields(model_backends.get_allocator(backend))
         self._determine_local_domains()
 
+        self._ibm_masks = ibm_masks
+
         self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = setup_program(
             backend=backend,
             program=compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
@@ -80,6 +83,7 @@ class VelocityAdvection:
                 "inv_dual_edge_length": self.edge_params.inverse_dual_edge_lengths,
                 "inv_primal_edge_length": self.edge_params.inverse_primal_edge_lengths,
                 "tangent_orientation": self.edge_params.tangent_orientation,
+                "ibm_dvndz_mask": self._ibm_masks.half_edge_mask,
             },
             variants={
                 "skip_compute_predictor_vertical_advection": [True, False],
@@ -179,6 +183,22 @@ class VelocityAdvection:
                 "vertical_end": self.grid.num_levels,
             },
             offset_provider=self.grid.connectivities,
+        )
+
+        self._ibm_set_bcs_vn_gradh_w = setup_program(
+            backend=backend,
+            program=ibm.set_bcs_vn_gradh_w,
+            constant_args={
+                "mask": self._ibm_masks.half_edge_mask,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_nudging_level_2,
+                "horizontal_end": self._end_edge_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self.grid.num_levels,
+            },
         )
 
     def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
@@ -287,6 +307,10 @@ class VelocityAdvection:
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
+        )
+
+        self._ibm_set_bcs_vn_gradh_w(
+            horizontal_advection_of_w_at_edges_on_half_levels=self._horizontal_advection_of_w_at_edges_on_half_levels,
         )
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance

@@ -1,0 +1,35 @@
+%=======================================================================================================================
+\clearpage
+\subsection{Density}
+\label{sub:density}
+%=======================================================================================================================
+
+%-------------------------------------------------------------------------------
+\paragraph{Average normal wind}\
+
+``needed to obtain a nearly 2nd order accurate divergence (Zangl 2015)''
+
+\begin{equation}
+  \zvnavg_{\e\k} = \sum_{\offProv{e2c2eo}} \Whor \vn{\n+1^*}{\e}{\k}
+\end{equation}
+
+%-------------------------------------------------------------------------------
+\paragraph{Miura scheme}\
+
+$\density{\n}{\e}{\k}$ is computed with the Miura scheme \S\ref{sub:miura}
+
+%-------------------------------------------------------------------------------
+\paragraph{Explicit term}
+
+\begin{align}
+  & \massfle_{\e\k} = \density{\n}{\e}{\k} \zvnavg_{\e\k} / \Dz{} \\
+	& \zflxdivmass_{\c\k} = \sum_{\offProv{c2e}} \Cdiv \massfle_{\e\k} \\
+  & \Zdensityexpl = \density{\n}{\c}{\k} - \frac{\Dt}{\Dz{}}\left( \zflxdivmass_{\c\k} + \zcontrwfll_{\c\k-1/2} - \zcontrwfll_{\c\k+1/2}\right)
+\end{align}
+
+%-------------------------------------------------------------------------------
+\paragraph{Final update}
+
+\begin{equation}
+  \density{\n+1^*}{\c}{\k} = \Zdensityexpl - \WtimeVWind \frac{\Dt}{\Dz{}} \left(\density{\n}{\c}{\k-1/2} \w{\n+1^*}{\c}{\k-1/2} - \density{\n}{\c}{\k+1/2} \w{\n+1^*}{\c}{\k+1/2}\right)
+\end{equation}

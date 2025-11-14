@@ -12,6 +12,17 @@ testdata
 simple_mesh*.nc
 /prof
 .profile
+*.log
+ser_data
+
+### LaTeX documentation ###
+*.aux
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.bbl
+*.blg
+svg-inkscape
 
 ### Sphinx ###
 **/docs/_source/*.rst

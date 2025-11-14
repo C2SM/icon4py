@@ -18,7 +18,7 @@ from gt4py.next import allocators as gtx_allocators, common as gtx_common
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils
+from icon4py.model.atmosphere.dycore import dycore_states, dycore_utils, ibm
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_cell_diagnostics_for_dycore,
     compute_edge_diagnostics_for_dycore_and_update_vn,
@@ -60,6 +60,7 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     vertical as v_grid,
 )
+from icon4py.model.common.io import plots
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -359,6 +360,8 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
+        ibm_masks,
+        channel,
         backend: gtx_typing.Backend
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
@@ -376,6 +379,9 @@ class SolveNonhydro:
         self._edge_geometry = edge_geometry
         self._cell_params = cell_geometry
         self._determine_local_domains()
+
+        self._ibm_masks = ibm_masks
+        self._channel = channel
 
         self._compute_theta_and_exner = setup_program(
             backend=backend,
@@ -470,6 +476,7 @@ class SolveNonhydro:
                 "ipeidx_dsl": self._metric_state_nonhydro.pg_edgeidx_dsl,
                 "pg_exdist": self._metric_state_nonhydro.pg_exdist,
                 "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
+                "ibm_green_gauss_gradient_mask": self._ibm_masks.neigh_full_cell_mask,
                 "iau_wgt_dyn": self._config.iau_wgt_dyn,
                 "is_iau_active": self._config.is_iau_active,
                 "limited_area": self._grid.limited_area,
@@ -586,6 +593,7 @@ class SolveNonhydro:
                 "is_iau_active": self._config.is_iau_active,
                 "rayleigh_type": self._config.rayleigh_type,
                 "divdamp_type": self._config.divdamp_type,
+                "ibm_w_matrix_mask": self._ibm_masks.half_cell_mask,
             },
             variants={
                 "at_first_substep": [False, True],
@@ -620,6 +628,7 @@ class SolveNonhydro:
                 "iau_wgt_dyn": self._config.iau_wgt_dyn,
                 "is_iau_active": self._config.is_iau_active,
                 "rayleigh_type": self._config.rayleigh_type,
+                "ibm_w_matrix_mask": self._ibm_masks.half_cell_mask,
             },
             variants={
                 "at_first_substep": [False, True],
@@ -809,6 +818,7 @@ class SolveNonhydro:
             vertical_params,
             edge_geometry,
             owner_mask,
+            ibm_masks=self._ibm_masks,
             backend=backend,
         )
         self._allocate_local_fields(model_backends.get_allocator(backend))
@@ -819,6 +829,42 @@ class SolveNonhydro:
 
         self.p_test_run = False
 
+        self._ibm_set_dirichlet_value_edges = setup_program(
+            backend=backend,
+            program=ibm.set_dirichlet_value_edges,
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_lateral_boundary,
+                "horizontal_end": self._end_edge_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self._grid.num_levels,
+            },
+        )
+        self._ibm_set_dirichlet_value_cells = setup_program(
+            backend=backend,
+            program=ibm.set_dirichlet_value_cells,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary,
+                "horizontal_end": self._end_cell_local,
+            },
+        )
+        self._ibm_set_bcs_dvndz = setup_program(
+            backend=backend,
+            program=ibm.set_bcs_dvndz,
+            constant_args={
+                "mask": self._ibm_masks.half_edge_mask,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_lateral_boundary,
+                "horizontal_end": self._end_edge_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self._grid.num_levels,
+            },
+            offset_provider={"Koff": dims.KDim},
+        )
         self._dtime_previous_substep: float = 0.0
         """
         Dynamic substep length of previous substep in order to track if rayleigh damping coefficients need to be
@@ -1065,6 +1111,60 @@ class SolveNonhydro:
                 self.intermediate_fields.horizontal_gradient_of_normal_wind_divergence,
             )
 
+        if at_initial_timestep and at_first_substep:
+            log.info(" ***Channel fixing initial condition")
+            (
+                prognostic_states.current.vn,
+                prognostic_states.current.w,
+                prognostic_states.current.rho,
+                prognostic_states.current.exner,
+                prognostic_states.current.theta_v,
+            ) = self._channel.set_initial_conditions(
+                prognostic_states.current.vn,
+                prognostic_states.current.w,
+                prognostic_states.current.rho,
+                prognostic_states.current.exner,
+                prognostic_states.current.theta_v,
+            )
+
+            log.info(" ***IBM fixing initial conditions")
+            self._ibm_set_dirichlet_value_edges(
+                mask=self._ibm_masks.full_edge_mask,
+                dir_value=ibm.DIRICHLET_VALUE_VN,
+                field=prognostic_states.current.vn,
+            )
+            self._ibm_set_dirichlet_value_cells(
+                mask=self._ibm_masks.half_cell_mask,
+                dir_value=ibm.DIRICHLET_VALUE_W,
+                field=prognostic_states.current.w,
+                vertical_start=gtx.int32(0),
+                vertical_end=self._grid.num_levels + 1,
+            )
+            self._ibm_set_dirichlet_value_cells(
+                mask=self._ibm_masks.full_cell_mask,
+                dir_value=ibm.DIRICHLET_VALUE_RHO,
+                field=prognostic_states.current.rho,
+                vertical_start=gtx.int32(0),
+                vertical_end=self._grid.num_levels,
+            )
+            self._ibm_set_dirichlet_value_cells(
+                mask=self._ibm_masks.full_cell_mask,
+                dir_value=ibm.DIRICHLET_VALUE_EXNER,
+                field=prognostic_states.current.exner,
+                vertical_start=gtx.int32(0),
+                vertical_end=self._grid.num_levels,
+            )
+            self._ibm_set_dirichlet_value_cells(
+                mask=self._ibm_masks.full_cell_mask,
+                dir_value=ibm.DIRICHLET_VALUE_THETA_V,
+                field=prognostic_states.current.theta_v,
+                vertical_start=gtx.int32(0),
+                vertical_end=self._grid.num_levels,
+            )
+            #plots.pickle_data(prognostic_states.current, "initial_condition_ibm")
+
+        plots.pickle_data(prognostic_states.current, "debug_before_predictor")
+        plots.pickle_data(prognostic_states.next,    "debug_before_predictor_next")
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
@@ -1072,6 +1172,21 @@ class SolveNonhydro:
             dtime=dtime,
             at_initial_timestep=at_initial_timestep,
             at_first_substep=at_first_substep,
+        )
+        plots.pickle_data(prognostic_states.next, "debug_after_predictor")
+
+        (
+            prognostic_states.next.vn,
+            prognostic_states.next.w,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.theta_v,
+        ) = self._channel.set_boundary_conditions(
+            prognostic_states.next.vn,
+            prognostic_states.next.w,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.theta_v,
         )
 
         self.run_corrector_step(
@@ -1086,6 +1201,22 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
+        plots.pickle_data(prognostic_states.next, "debug_after_corrector")
+
+        (
+            prognostic_states.next.vn,
+            prognostic_states.next.w,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.theta_v,
+        ) = self._channel.set_boundary_conditions(
+            prognostic_states.next.vn,
+            prognostic_states.next.w,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.theta_v,
+        )
+
         if self._grid.limited_area:
             self._compute_theta_and_exner(
                 rho=prognostic_states.next.rho,
@@ -1188,6 +1319,12 @@ class SolveNonhydro:
             dtime=dtime,
         )
 
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_VN,
+            field=prognostic_states.next.vn,
+        )
+
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
         self._exchange.exchange_and_wait(
             dims.EdgeDim, prognostic_states.next.vn, z_fields.rho_at_edges_on_model_levels
@@ -1206,6 +1343,29 @@ class SolveNonhydro:
             vn=prognostic_states.next.vn,
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
+        )
+
+        # Set boundary conditions on d(vn)/dz by modifying the values of vn on
+        # half levels.
+        # NOTE: 1. vn_on_half_levels is actually not used after being computed here?
+        # NOTE: 2. vn_on_half_levels is already computed in velocity_advection (where it is actually used)
+        self._ibm_set_bcs_dvndz(
+            vn=prognostic_states.next.vn,
+            vn_on_half_levels=diagnostic_state_nh.vn_on_half_levels,
+        )
+        # Set to zero the fluxes through edges of vertical surfaces of the IBM
+        # region.
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_FLUXES,
+            field=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+        )
+        # Set to zero the fluxes through edges of vertical surfaces of the IBM
+        # region.
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_FLUXES,
+            field=self.theta_v_flux_at_edges_on_model_levels,
         )
 
         self._vertically_implicit_solver_at_predictor_step(
@@ -1360,6 +1520,12 @@ class SolveNonhydro:
             apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
         )
 
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_VN,
+            field=prognostic_states.next.vn,
+        )
+
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
 
@@ -1375,6 +1541,21 @@ class SolveNonhydro:
             prepare_advection=lprep_adv,
             at_first_substep=at_first_substep,
             r_nsubsteps=r_nsubsteps,
+        )
+
+        # Set to zero the fluxes through edges of vertical surfaces of the IBM
+        # region.
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_FLUXES,
+            field=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
+        )
+        # Set to zero the fluxes through edges of vertical surfaces of the IBM
+        # region.
+        self._ibm_set_dirichlet_value_edges(
+            mask=self._ibm_masks.full_edge_mask,
+            dir_value=ibm.DIRICHLET_VALUE_FLUXES,
+            field=self.theta_v_flux_at_edges_on_model_levels,
         )
 
         self._vertically_implicit_solver_at_corrector_step(
