@@ -74,16 +74,16 @@ class Icon4pyDriver:
         """
         Print out icon4py signature and some important information of the initial setup to the log file.
 
-                                                                ___                      
-            -------                                    //      ||   \                    
-              | |                                     //       ||    |                   
-              | |       __      _ _        _ _       //  ||    ||___/                    
-              | |     //       /   \     |/   \     //_ _||_   ||        \\      //      
-              | |    ||       |     |    |     |    --------   ||         \\    //       
-              | |     \\__     \_ _/     |     |         ||    ||          \\  //        
-            -------                                                           //         
-                                                                             //          
-                                                                = = = = = = //           
+                                                                ___
+            -------                                    //      ||   \
+              | |                                     //       ||    |
+              | |       __      _ _        _ _       //  ||    ||___/
+              | |     //       /   \     |/   \     //_ _||_   ||        \\      //
+              | |    ||       |     |    |     |    --------   ||         \\    //
+              | |     \\__     \_ _/     |     |         ||    ||          \\  //
+            -------                                                           //
+                                                                             //
+                                                                = = = = = = //
         """
         boundary_line = ["*" * 91]
         icon4py_signature = []
@@ -675,7 +675,7 @@ def initialize(
         prognostic_state_now,
         prognostic_state_next,
     ) = driver_init.read_initial_state(
-        grid=grid_manager.grid,
+        grid=grid_manager.grid, # TODO (Yilu) add edge_params
         geometry_field_source=geometry_field_source,
         interpolation_field_source=interpolation_field_source,
         metrics_field_source=metrics_field_source,

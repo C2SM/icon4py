@@ -154,7 +154,7 @@ def create_interpolation_metrics_factories(
         backend=backend,
         metadata=metrics_attributes.attrs,
         rayleigh_type=RayleighType.KLEMP,
-        rayleigh_coeff=5.0,
+        rayleigh_coeff=0.1,
         exner_expol=0.333,
         vwind_offctr=0.2,
     )
@@ -242,15 +242,11 @@ def initialize_granule(
     solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
         c_intp=interpolation_field_source.get(interpolation_attributes.CELL_AW_VERTS),
-        e_flx_avg=interpolation_field_source.get(interpolation_attributes.E_FLX_AVG),
+        e_flx_avg=interpolation_field_source.get(interpolation_attributes.E_FLX_AVG), # TODO (Yilu): this field is the problem
         geofac_grdiv=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRDIV),
         geofac_rot=interpolation_field_source.get(interpolation_attributes.GEOFAC_ROT),
-        pos_on_tplane_e_1=interpolation_field_source.get(
-            interpolation_attributes.POS_ON_TPLANE_E_X
-        ),
-        pos_on_tplane_e_2=interpolation_field_source.get(
-            interpolation_attributes.POS_ON_TPLANE_E_Y
-        ),
+        pos_on_tplane_e_1=interpolation_field_source.get(interpolation_attributes.POS_ON_TPLANE_E_X),
+        pos_on_tplane_e_2=interpolation_field_source.get(interpolation_attributes.POS_ON_TPLANE_E_Y),
         rbf_vec_coeff_e=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_E),
         e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
         rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
