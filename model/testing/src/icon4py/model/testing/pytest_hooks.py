@@ -177,6 +177,8 @@ def pytest_benchmark_update_json(output_json):
             bench["stats"]["q1"] = np.percentile(gt4py_metrics_runtimes, 25)
             bench["stats"]["q3"] = np.percentile(gt4py_metrics_runtimes, 75)
             bench["stats"]["iqr"] = bench["stats"]["q3"] - bench["stats"]["q1"]
+            bench["stats"]["min"] = np.min(gt4py_metrics_runtimes)
+            bench["stats"]["max"] = np.max(gt4py_metrics_runtimes)
 
 
 @pytest.hookimpl(hookwrapper=True)
