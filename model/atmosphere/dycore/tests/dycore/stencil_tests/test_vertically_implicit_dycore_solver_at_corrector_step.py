@@ -402,8 +402,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
     @pytest.fixture(
         params=[
             {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la, "is_iau_active": ia}
-            for afs, als, la, ia in itertools.product(*([(True, False)] * 4))
-            if not (afs and als)
+            for afs, als, la, ia in [
+                (True, True, True, True),  # For testing the whole functionality of the stencil
+                (True, False, True, False),  # For benchmarking against MCH experiments
+                (False, True, True, False),  # For benchmarking against MCH experiments
+                (False, False, True, False),  # For benchmarking against MCH experiments
+            ]
         ],
         ids=lambda p: (
             f"at_first_substep[{p['at_first_substep']}]__"

@@ -435,7 +435,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         )
 
     @pytest.fixture(
-        params=[{"is_iau_active": value} for value in [True, False]],
+        params=[{"is_iau_active": value} for value in [True, False]], # True for testing, False for benchmarking
         ids=lambda param: f"is_iau_active[{param['is_iau_active']}]",
     )
     def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:

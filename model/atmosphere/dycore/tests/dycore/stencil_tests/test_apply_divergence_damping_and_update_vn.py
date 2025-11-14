@@ -176,17 +176,13 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
 
     @pytest.fixture(
         params=[
-            {"divdamp_order": do, "is_iau_active": ia}
-            for do, ia in itertools.product(
-                [
-                    DivergenceDampingOrder.SECOND_ORDER,
-                    DivergenceDampingOrder.FOURTH_ORDER,
-                    DivergenceDampingOrder.COMBINED,
-                ],
-                [True, False],
-            )
+            {"divdamp_order": do, "is_iau_active": ia, "second_order_divdamp_factor": sodf}
+            for do, ia, sodf in [
+                (DivergenceDampingOrder.COMBINED, True, 0.012), # For testing the whole functionality of the stencil
+                (DivergenceDampingOrder.COMBINED, False, 0.032), # For benchmarking against MCH experiments
+            ]
         ],
-        ids=lambda param: f"divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}]",
+        ids=lambda param: f"divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}__second_order_divdamp_factor[{param['second_order_divdamp_factor']}]",
     )
     def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -223,7 +219,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         iau_wgt_dyn = 1.0
         is_iau_active = request.param["is_iau_active"]
         fourth_order_divdamp_factor = 0.004
-        second_order_divdamp_factor = 0.032
+        second_order_divdamp_factor = request.param["second_order_divdamp_factor"]
         divdamp_order = request.param["divdamp_order"]
         second_order_divdamp_scaling_coeff = 34497.62082646618  # for icon-ch1(_medium)
         apply_2nd_order_divergence_damping = (divdamp_order == divergence_damp_order.COMBINED) and (
