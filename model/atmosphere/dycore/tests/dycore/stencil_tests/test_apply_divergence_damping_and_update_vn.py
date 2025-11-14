@@ -28,6 +28,7 @@ divergence_damp_order = DivergenceDampingOrder()
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
     PROGRAM = apply_divergence_damping_and_update_vn
     OUTPUTS = ("next_vn",)
@@ -174,8 +175,18 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         return dict(next_vn=next_vn)
 
     @pytest.fixture(
-        params=[{"limited_area": la} for la in [True, False]],
-        ids=lambda param: f"limited_area[{param['limited_area']}]",
+        params=[
+            {"divdamp_order": do, "is_iau_active": ia}
+            for do, ia in itertools.product(
+                [
+                    DivergenceDampingOrder.SECOND_ORDER,
+                    DivergenceDampingOrder.FOURTH_ORDER,
+                    DivergenceDampingOrder.COMBINED,
+                ],
+                [True, False],
+            )
+        ],
+        ids=lambda param: f"divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}]",
     )
     def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -210,11 +221,11 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         advection_implicit_weight_parameter = 0.75
         advection_explicit_weight_parameter = 0.25
         iau_wgt_dyn = 1.0
-        is_iau_active = True
+        is_iau_active = request.param["is_iau_active"]
         fourth_order_divdamp_factor = 0.004
-        second_order_divdamp_factor = 0.012
-        divdamp_order = 24
-        second_order_divdamp_scaling_coeff = 194588.14247428576
+        second_order_divdamp_factor = 0.032
+        divdamp_order = request.param["divdamp_order"]
+        second_order_divdamp_scaling_coeff = 34497.62082646618  # for icon-ch1(_medium)
         apply_2nd_order_divergence_damping = (divdamp_order == divergence_damp_order.COMBINED) and (
             second_order_divdamp_scaling_coeff > 1.0e-6
         )
@@ -225,7 +236,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             and (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
         )
 
-        limited_area = request.param["limited_area"]
+        limited_area = grid.limited_area if hasattr(grid, "limited_area") else True
         edge_domain = h_grid.domain(dims.EdgeDim)
 
         start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
@@ -263,43 +274,3 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestApplyDivergenceDampingAndUpdateVnContinuousBenchmarking(
-    TestApplyDivergenceDampingAndUpdateVn
-):
-    @pytest.fixture(
-        params=[
-            {"limited_area": la, "divdamp_order": do, "is_iau_active": ia}
-            for la, do, ia in itertools.product(
-                [True, False],
-                [
-                    DivergenceDampingOrder.SECOND_ORDER,
-                    DivergenceDampingOrder.FOURTH_ORDER,
-                    DivergenceDampingOrder.COMBINED,
-                ],
-                [True, False],
-            )
-        ],
-        ids=lambda param: f"limited_area[{param['limited_area']}]__divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}]",
-    )
-    def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
-        base_data = TestApplyDivergenceDampingAndUpdateVn.input_data.__wrapped__(
-            self, request, grid
-        )
-        base_data["is_iau_active"] = False
-        fourth_order_divdamp_factor = 0.004
-        second_order_divdamp_factor = 0.032
-        divdamp_order = request.param["divdamp_order"]
-        base_data["second_order_divdamp_scaling_coeff"] = 34497.62082646618  # for icon-ch1(_medium)
-        base_data["apply_2nd_order_divergence_damping"] = (
-            divdamp_order == divergence_damp_order.COMBINED
-        ) and (base_data["second_order_divdamp_scaling_coeff"] > 1.0e-6)
-        base_data["apply_4th_order_divergence_damping"] = (
-            divdamp_order == divergence_damp_order.FOURTH_ORDER
-        ) or (
-            (divdamp_order == divergence_damp_order.COMBINED)
-            and (second_order_divdamp_factor <= (4.0 * fourth_order_divdamp_factor))
-        )
-        return base_data
