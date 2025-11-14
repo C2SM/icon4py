@@ -322,9 +322,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         ]
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
-        )
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
         horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
         vertical_start = 0
         vertical_end = nlev + 1

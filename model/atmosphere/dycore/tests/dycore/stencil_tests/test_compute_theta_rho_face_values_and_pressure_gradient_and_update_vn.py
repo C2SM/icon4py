@@ -507,12 +507,10 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         dtime = 0.9
         iau_wgt_dyn = 1.0
         is_iau_active = request.param["is_iau_active"]
-        limited_area = limited_area = grid.limited_area if hasattr(grid, "limited_area") else True
+        limited_area = grid.limited_area if hasattr(grid, "limited_area") else True
         edge_domain = h_grid.domain(dims.EdgeDim)
 
-        start_edge_lateral_boundary = grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
-        )
+        start_edge_lateral_boundary = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
         start_edge_lateral_boundary_level_7 = grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
         )
