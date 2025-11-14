@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import itertools
 from typing import Any
 
 import gt4py.next as gtx
@@ -54,6 +55,7 @@ from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
 
 
 @pytest.mark.uses_concat_where
+@pytest.mark.continuous_benchmarking
 class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_predictor_step
     OUTPUTS = (
@@ -396,8 +398,15 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         )
 
     @pytest.fixture(
-        params=[{"at_first_substep": value} for value in [True, False]],
-        ids=lambda param: f"at_first_substep[{param['at_first_substep']}]",
+        params=[
+            {"at_first_substep": afs, "is_iau_active": ia, "divdamp_type": dvdmpt}
+            for afs, ia, dvdmpt in itertools.product(
+                [True, False],
+                [True, False],
+                [3,32]
+            )
+        ],
+        ids=lambda param: f"at_first_substep[{param['at_first_substep']}]__is_iau_active[{param['is_iau_active']}]__divdamp_type[{param['divdamp_type']}]",
     )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid
@@ -456,13 +465,13 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         dwdz_at_cells_on_model_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         exner_dynamical_increment = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
-        is_iau_active = True
+        is_iau_active = request.param["is_iau_active"]
         at_first_substep = request.param["at_first_substep"]
         rayleigh_type = 2
-        divdamp_type = 3
-        end_index_of_damping_layer = 3
-        kstart_moist = 1
-        flat_level_index_plus1 = 3
+        divdamp_type = request.param["divdamp_type"]
+        end_index_of_damping_layer = 12
+        kstart_moist = 0
+        flat_level_index_plus1 = 6
         dtime = 0.001
         iau_wgt_dyn = 1.0
 
@@ -523,25 +532,3 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             vertical_start_index_model_top=gtx.int32(0),
             vertical_end_index_model_surface=gtx.int32(grid.num_levels + 1),
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestVerticallyImplicitSolverAtPredictorStepContinuousBenchmarking(
-    TestVerticallyImplicitSolverAtPredictorStep
-):
-    @pytest.fixture(
-        params=[{"at_first_substep": value} for value in [True, False]],
-        ids=lambda param: f"at_first_substep[{param['at_first_substep']}]",
-    )
-    def input_data(
-        self, request: pytest.FixtureRequest, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        base_data = TestVerticallyImplicitSolverAtPredictorStep.input_data.__wrapped__(
-            self, request, grid
-        )
-        base_data["at_first_substep"] = request.param["at_first_substep"]
-        base_data["is_iau_active"] = False
-        base_data["divdamp_type"] = 32
-        base_data["end_index_of_damping_layer"] = 12
-        base_data["kstart_moist"] = 0
-        return base_data

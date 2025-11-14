@@ -52,6 +52,7 @@ from .test_update_mass_volume_flux import update_mass_volume_flux_numpy
 
 
 @pytest.mark.uses_concat_where
+@pytest.mark.continuous_benchmarking
 class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_corrector_step
     OUTPUTS = (
@@ -400,14 +401,15 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
 
     @pytest.fixture(
         params=[
-            {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la}
-            for afs, als, la in itertools.product(*([(True, False)] * 3))
+            {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la, "is_iau_active": ia}
+            for afs, als, la, ia in itertools.product(*([(True, False)] * 4))
             if not (afs and als)
         ],
         ids=lambda p: (
             f"at_first_substep[{p['at_first_substep']}]__"
             f"at_last_substep[{p['at_last_substep']}]__"
-            f"lprep_adv[{p['lprep_adv']}]"
+            f"lprep_adv[{p['lprep_adv']}]__"
+            f"is_iau_active[{p['is_iau_active']}]"
         ),
     )
     def input_data(
@@ -469,12 +471,12 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
 
         lprep_adv = request.param["lprep_adv"]
         r_nsubsteps = 0.5
-        is_iau_active = True
+        is_iau_active = request.param["is_iau_active"]
         at_first_substep = request.param["at_first_substep"]
         rayleigh_type = 2
-        end_index_of_damping_layer = 3
+        end_index_of_damping_layer = 12
         at_last_substep = request.param["at_last_substep"]
-        kstart_moist = 1
+        kstart_moist = 0
         dtime = 0.001
         veladv_offctr = 0.25
         advection_explicit_weight_parameter = 0.5 - veladv_offctr
@@ -535,34 +537,3 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             vertical_start_index_model_top=gtx.int32(0),
             vertical_end_index_model_surface=gtx.int32(grid.num_levels + 1),
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestVerticallyImplicitSolverAtCorrectorStepContinuousBenchmarking(
-    TestVerticallyImplicitSolverAtCorrectorStep
-):
-    @pytest.fixture(
-        params=[
-            {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la}
-            for afs, als, la in itertools.product(*([(True, False)] * 3))
-            if not (afs and als)
-        ],
-        ids=lambda p: (
-            f"at_first_substep[{p['at_first_substep']}]__"
-            f"at_last_substep[{p['at_last_substep']}]__"
-            f"lprep_adv[{p['lprep_adv']}]"
-        ),
-    )
-    def input_data(
-        self, request: pytest.FixtureRequest, grid: base.Grid
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        base_data = TestVerticallyImplicitSolverAtCorrectorStep.input_data.__wrapped__(
-            self, request, grid
-        )
-        base_data["at_first_substep"] = request.param["at_first_substep"]
-        base_data["at_last_substep"] = request.param["at_last_substep"]
-        base_data["lprep_adv"] = request.param["lprep_adv"]
-        base_data["is_iau_active"] = False
-        base_data["end_index_of_damping_layer"] = 12
-        base_data["kstart_moist"] = 0
-        return base_data
