@@ -126,9 +126,7 @@ def test_run_timeloop_single_step(
     DO_IBM = False
     DO_VERT_DIFFU = False
     if experiment == definitions.Experiments.GAUSS3D:
-        DO_CHANNEL = False
-        DO_IBM = False
-        DO_VERT_DIFFU = False
+        DO_CHANNEL = DO_IBM = DO_VERT_DIFFU = True # all or none
         os.environ["ICON4PY_CHANNEL_SPONGE_LENGTH"] = "5000.0"
         os.environ["ICON4PY_CHANNEL_PERTURBATION"] = "0.0"
         diffusion_config = diffusion.DiffusionConfig(
@@ -138,7 +136,7 @@ def test_run_timeloop_single_step(
         nonhydro_config = solve_nh.NonHydrostaticConfig()
         icon4pyrun_config = icon4py_configuration.Icon4pyRunConfig(
             dtime=timedelta(seconds=4.0),
-            end_date=datetime(1, 1, 1, 0, 0, 4),
+            end_date=datetime(1, 1, 1, 0, 0, 8),
             apply_initial_stabilization=False,
             n_substeps=ndyn_substeps,
             backend=backend,

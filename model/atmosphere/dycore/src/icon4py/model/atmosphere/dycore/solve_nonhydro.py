@@ -1139,9 +1139,10 @@ class SolveNonhydro:
                 vertical_start=gtx.int32(0),
                 vertical_end=self._grid.num_levels,
             )
-            plots.pickle_data(prognostic_states.current, "initial_condition_ibm")
+            #plots.pickle_data(prognostic_states.current, "initial_condition_ibm")
 
         plots.pickle_data(prognostic_states.current, "debug_before_predictor")
+        plots.pickle_data(prognostic_states.next,    "debug_before_predictor_next")
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
@@ -1166,7 +1167,6 @@ class SolveNonhydro:
             prognostic_states.next.theta_v,
         )
 
-        plots.pickle_data(prognostic_states.next, "debug_before_corrector")
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
