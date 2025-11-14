@@ -400,10 +400,10 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     @pytest.fixture(
         params=[
             {"at_first_substep": afs, "is_iau_active": ia, "divdamp_type": dvdmpt}
-            for afs, ia, dvdmpt in [ #itertools.product([True, False], [True, False], [3, 32])
-                (True, True, 3),   # For testing the whole functionality of the stencil
-                (True, False, 32), # For benchmarking against MCH experiments
-                (False, False, 32) # For benchmarking against MCH experiments
+            for afs, ia, dvdmpt in [
+                (True, True, 3),  # For testing the whole functionality of the stencil
+                (True, False, 32),  # For benchmarking against MCH experiments
+                (False, False, 32),  # For benchmarking against MCH experiments
             ]
         ],
         ids=lambda param: f"at_first_substep[{param['at_first_substep']}]__is_iau_active[{param['is_iau_active']}]__divdamp_type[{param['divdamp_type']}]",

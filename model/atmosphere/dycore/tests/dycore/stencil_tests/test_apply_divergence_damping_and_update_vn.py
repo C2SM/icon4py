@@ -178,8 +178,16 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         params=[
             {"divdamp_order": do, "is_iau_active": ia, "second_order_divdamp_factor": sodf}
             for do, ia, sodf in [
-                (DivergenceDampingOrder.COMBINED, True, 0.012), # For testing the whole functionality of the stencil
-                (DivergenceDampingOrder.COMBINED, False, 0.032), # For benchmarking against MCH experiments
+                (
+                    DivergenceDampingOrder.COMBINED,
+                    True,
+                    0.012,
+                ),  # For testing the whole functionality of the stencil
+                (
+                    DivergenceDampingOrder.COMBINED,
+                    False,
+                    0.032,
+                ),  # For benchmarking against MCH experiments
             ]
         ],
         ids=lambda param: f"divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}__second_order_divdamp_factor[{param['second_order_divdamp_factor']}]",

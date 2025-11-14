@@ -623,7 +623,9 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         )
 
     @pytest.fixture(
-        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]],  # True for benchmarking, False for testing
+        params=[
+            {"skip_compute_predictor_vertical_advection": value} for value in [True, False]
+        ],  # True for benchmarking, False for testing
         ids=lambda param: f"skip_compute_predictor_vertical_advection[{param['skip_compute_predictor_vertical_advection']}]",
     )
     def input_data(
