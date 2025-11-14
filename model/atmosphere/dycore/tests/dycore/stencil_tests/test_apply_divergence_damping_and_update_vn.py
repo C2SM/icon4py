@@ -6,8 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import itertools
-
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -21,7 +19,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions
 
 
 divergence_damp_order = DivergenceDampingOrder()
