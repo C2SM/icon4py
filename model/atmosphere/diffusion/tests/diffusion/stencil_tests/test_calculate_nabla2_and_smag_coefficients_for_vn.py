@@ -19,6 +19,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, stencil_tests
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
 class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
     PROGRAM = calculate_nabla2_and_smag_coefficients_for_vn
