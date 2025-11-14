@@ -84,9 +84,8 @@ def test_and_benchmark(
     _configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
-    benchmark_only_option = request.config.getoption("benchmark_only")
-    benchmark_only_mark = request.node.get_closest_marker("benchmark_only") is not None
-    if (not benchmark_only_option) and (not benchmark_only_mark):
+    benchmark_only_option = request.config.getoption("benchmark_only") # skip verification if `--benchmark-only` CLI option is set
+    if (not benchmark_only_option):
         reference_outputs = self.reference(
             _ConnectivityConceptFixer(
                 grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
@@ -103,17 +102,20 @@ def test_and_benchmark(
         )
 
     if benchmark is not None and benchmark.enabled:
-        warmup_enabled = request.config.getoption("benchmark_warmup")
-        if warmup_enabled:
-            print("[WARNING] Benchmark warmup enabled, GT4Py timers include warmup iterations.")
         # Clean up GT4Py metrics from previous runs
         if gtx_config.COLLECT_METRICS_LEVEL > 0:
             gtx_metrics.sources.clear()
 
-        benchmark(
+        warmup_rounds = 1
+        iterations = 10
+
+        benchmark.pedantic(
             _configured_program,
-            **_properly_allocated_input_data,
-            offset_provider=grid.connectivities,
+            args=(),
+            kwargs=dict(**_properly_allocated_input_data, offset_provider=grid.connectivities),
+            rounds=3, # 30 iterations in total should be stable enough
+            warmup_rounds=warmup_rounds,
+            iterations=iterations,
         )
 
         # Collect GT4Py runtime metrics if enabled
@@ -125,8 +127,8 @@ def test_and_benchmark(
             metrics_data = gtx_metrics.sources
             key = next(iter(metrics_data))
             compute_samples = metrics_data[key].metrics["compute"].samples
-            # emprically exclude first few iterations run for warmup
-            initial_program_iterations_to_skip = 2
+            # exclude warmup iterations and one extra iteration for calibrating pytest-benchmark
+            initial_program_iterations_to_skip = warmup_rounds * iterations + 1
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:
             ]
