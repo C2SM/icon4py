@@ -9,11 +9,13 @@ import contextlib
 import os
 import re
 
+import numpy as np
 import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.testing import filters
 
+from gt4py.next import config as gtx_config
 
 __all__ = [
     "pytest_addoption",
@@ -162,6 +164,17 @@ def pytest_benchmark_update_json(output_json):
 
     for bench in output_json["benchmarks"]:
         bench["fullname"] = _name_from_fullname(bench["fullname"])
+        # if GT4Py metrics collection is enabled, replace the benchmark stats used by `bencher` with the GT4Py metrics stats
+        # to avoid reporting python overheads in `bencher` so that the results are comparable to the Fortran stencil benchmarks
+        if gtx_config.COLLECT_METRICS_LEVEL > 0:
+            gt4py_metrics_runtimes = bench.get("extra_info", {}).get("gtx_metrics", [])
+            assert len(gt4py_metrics_runtimes) > 0, "No GT4Py metrics collected despite COLLECT_METRICS_LEVEL > 0"
+            bench["stats"]["mean"] = np.mean(gt4py_metrics_runtimes)
+            bench["stats"]["median"] = np.median(gt4py_metrics_runtimes)
+            bench["stats"]["stddev"] = np.std(gt4py_metrics_runtimes)
+            bench["stats"]["q1"] = np.percentile(gt4py_metrics_runtimes, 25)
+            bench["stats"]["q3"] = np.percentile(gt4py_metrics_runtimes, 75)
+            bench["stats"]["iqr"] = bench["stats"]["q3"] - bench["stats"]["q1"]
 
 
 @pytest.hookimpl(hookwrapper=True)
