@@ -563,7 +563,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         backend: gtx_typing.Backend | None,
         grid: factory.GridProvider,
     ) -> state_utils.GTXFieldType | None:
-        if not self._fields.get(field_name):
+        if self._fields.get(field_name, None) is None:
             # get the fields from the wrapped provider
             input_fields = []
             for p in self._pairs:
