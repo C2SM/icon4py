@@ -563,6 +563,6 @@ class TestVerticallyImplicitSolverAtCorrectorStepContinuousBenchmarking(
         base_data["at_last_substep"] = request.param["at_last_substep"]
         base_data["lprep_adv"] = request.param["lprep_adv"]
         base_data["is_iau_active"] = False
-        base_data["end_index_of_damping_layer"] = 13
+        base_data["end_index_of_damping_layer"] = 12
         base_data["kstart_moist"] = 0
         return base_data

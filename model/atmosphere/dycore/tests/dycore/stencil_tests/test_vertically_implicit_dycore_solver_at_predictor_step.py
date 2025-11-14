@@ -542,6 +542,6 @@ class TestVerticallyImplicitSolverAtPredictorStepContinuousBenchmarking(
         base_data["at_first_substep"] = request.param["at_first_substep"]
         base_data["is_iau_active"] = False
         base_data["divdamp_type"] = 32
-        base_data["end_index_of_damping_layer"] = 13
+        base_data["end_index_of_damping_layer"] = 12
         base_data["kstart_moist"] = 0
         return base_data

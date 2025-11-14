@@ -421,7 +421,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         end_cell_halo_level_2 = grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
         nflatlev = 5
-        nflat_gradp = 35
+        nflat_gradp = 34
 
         return dict(
             temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
