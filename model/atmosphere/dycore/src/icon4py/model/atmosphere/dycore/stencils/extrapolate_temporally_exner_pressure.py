@@ -24,8 +24,8 @@ def _extrapolate_temporally_exner_pressure(
 
     z_exner_ex_pr_wp = (wpfloat("1.0") + exner_exfac_wp) * (
         exner - exner_ref_mc_wp
-    ) - exner_exfac_wp * exner_pr
-    exner_pr_wp = exner - exner_ref_mc_wp
+    ) - exner_exfac * exner_pr
+    exner_pr_wp = exner - exner_ref_mc
     return astype(z_exner_ex_pr_wp, vpfloat), exner_pr_wp
 
 

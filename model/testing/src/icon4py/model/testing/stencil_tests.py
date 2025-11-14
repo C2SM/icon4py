@@ -16,7 +16,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py import eve
-from gt4py.next import constructors, typing as gtx_typing
+from gt4py.next import (
+    config as gtx_config,
+    constructors,
+    metrics as gtx_metrics,
+    typing as gtx_typing,
+)
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
@@ -77,28 +82,54 @@ def test_and_benchmark(
     grid: base.Grid,
     _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
     _configured_program: Callable[..., None],
+    request: pytest.FixtureRequest,
 ) -> None:
-    reference_outputs = self.reference(
-        _ConnectivityConceptFixer(
-            grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-        ),
-        **{
-            k: v.asnumpy() if isinstance(v, gtx.Field) else v
-            for k, v in _properly_allocated_input_data.items()
-        },
-    )
+    benchmark_only_option = request.config.getoption("benchmark_only")
+    benchmark_only_mark = request.node.get_closest_marker("benchmark_only") is not None
+    if (not benchmark_only_option) and (not benchmark_only_mark):
+        reference_outputs = self.reference(
+            _ConnectivityConceptFixer(
+                grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+            ),
+            **{
+                k: v.asnumpy() if isinstance(v, gtx.Field) else v
+                for k, v in _properly_allocated_input_data.items()
+            },
+        )
 
-    _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
-    self._verify_stencil_test(
-        input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
-    )
+        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
+        self._verify_stencil_test(
+            input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
+        )
 
     if benchmark is not None and benchmark.enabled:
+        warmup_enabled = request.config.getoption("benchmark_warmup")
+        if warmup_enabled:
+            print("[WARNING] Benchmark warmup enabled, GT4Py timers include warmup iterations.")
+        # Clean up GT4Py metrics from previous runs
+        if gtx_config.COLLECT_METRICS_LEVEL > 0:
+            gtx_metrics.sources.clear()
+
         benchmark(
             _configured_program,
             **_properly_allocated_input_data,
             offset_provider=grid.connectivities,
         )
+
+        # Collect GT4Py runtime metrics if enabled
+        if gtx_config.COLLECT_METRICS_LEVEL > 0:
+            assert (
+                len(gtx_metrics.sources) == 1
+            ), "Expected exactly one entry in gtx_metrics.sources"
+            # Store GT4Py metrics in benchmark.extra_info
+            metrics_data = gtx_metrics.sources
+            key = next(iter(metrics_data))
+            compute_samples = metrics_data[key].metrics["compute"].samples
+            # emprically exclude first few iterations run for warmup
+            initial_program_iterations_to_skip = 2
+            benchmark.extra_info["gtx_metrics"] = compute_samples[
+                initial_program_iterations_to_skip:
+            ]
 
 
 class StencilTest:
@@ -216,11 +247,33 @@ class StencilTest:
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
 
-        setattr(cls, f"test_{cls.__name__}", test_and_benchmark)
+        pytest_prefix = "test_"
+
+        # only add `test_and_benchmark` to direct subclasses of `StencilTest`. Inherited tests can use the same function.
+        if cls.__base__ == StencilTest:
+            setattr(cls, f"{pytest_prefix}{cls.__name__}", test_and_benchmark)
 
         # decorate `static_variant` with parametrized fixtures, since the
         # parametrization is only available in the concrete subclass definition
-        if cls.STATIC_PARAMS is None:
+        # Check if cls.static_variant has changes in inherited subclasses and update it accordingly
+        if hasattr(cls.static_variant, "_pytestfixturefunction"):
+            base_static = getattr(cls.__base__, "STATIC_PARAMS", None)
+            if base_static != cls.STATIC_PARAMS:
+                if cls.STATIC_PARAMS is None:
+                    cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment]
+                else:
+                    # copy of `static_variant`
+                    def _new_static_variant(request: pytest.FixtureRequest) -> Sequence[str]:
+                        _, variant = request.param
+                        return () if variant is None else variant
+
+                    # replace with new parametrized fixture
+                    cls.static_variant = staticmethod(  # type: ignore[method-assign]
+                        pytest.fixture(
+                            params=cls.STATIC_PARAMS.items(), scope="class", ids=lambda p: p[0]
+                        )(_new_static_variant)
+                    )
+        elif cls.STATIC_PARAMS is None:
             # not parametrized, return an empty tuple
             cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
         else:
