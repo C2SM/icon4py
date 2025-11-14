@@ -242,7 +242,7 @@ def initialize_granule(
     solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
         c_intp=interpolation_field_source.get(interpolation_attributes.CELL_AW_VERTS),
-        e_flx_avg=interpolation_field_source.get(interpolation_attributes.E_FLX_AVG), # TODO (Yilu): this field is the problem
+        e_flx_avg=interpolation_field_source.get(interpolation_attributes.E_FLX_AVG),
         geofac_grdiv=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRDIV),
         geofac_rot=interpolation_field_source.get(interpolation_attributes.GEOFAC_ROT),
         pos_on_tplane_e_1=interpolation_field_source.get(interpolation_attributes.POS_ON_TPLANE_E_X),

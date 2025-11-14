@@ -675,7 +675,7 @@ def initialize(
         prognostic_state_now,
         prognostic_state_next,
     ) = driver_init.read_initial_state(
-        grid=grid_manager.grid, # TODO (Yilu) add edge_params
+        grid=grid_manager.grid,
         geometry_field_source=geometry_field_source,
         interpolation_field_source=interpolation_field_source,
         metrics_field_source=metrics_field_source,
