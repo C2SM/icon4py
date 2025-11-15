@@ -16,7 +16,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py import eve
-from gt4py.next import constructors, typing as gtx_typing
+from gt4py.next import (
+    config as gtx_config,
+    constructors,
+    metrics as gtx_metrics,
+    typing as gtx_typing,
+)
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
@@ -77,28 +82,58 @@ def test_and_benchmark(
     grid: base.Grid,
     _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
     _configured_program: Callable[..., None],
+    request: pytest.FixtureRequest,
 ) -> None:
-    reference_outputs = self.reference(
-        _ConnectivityConceptFixer(
-            grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-        ),
-        **{
-            k: v.asnumpy() if isinstance(v, gtx.Field) else v
-            for k, v in _properly_allocated_input_data.items()
-        },
-    )
+    benchmark_only_option = request.config.getoption(
+        "benchmark_only"
+    )  # skip verification if `--benchmark-only` CLI option is set
+    if not benchmark_only_option:
+        reference_outputs = self.reference(
+            _ConnectivityConceptFixer(
+                grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+            ),
+            **{
+                k: v.asnumpy() if isinstance(v, gtx.Field) else v
+                for k, v in _properly_allocated_input_data.items()
+            },
+        )
 
-    _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
-    self._verify_stencil_test(
-        input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
-    )
+        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
+        self._verify_stencil_test(
+            input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
+        )
 
     if benchmark is not None and benchmark.enabled:
-        benchmark(
+        # Clean up GT4Py metrics from previous runs
+        if gtx_config.COLLECT_METRICS_LEVEL > 0:
+            gtx_metrics.sources.clear()
+
+        warmup_rounds = 1
+        iterations = 10
+
+        benchmark.pedantic(
             _configured_program,
-            **_properly_allocated_input_data,
-            offset_provider=grid.connectivities,
+            args=(),
+            kwargs=dict(**_properly_allocated_input_data, offset_provider=grid.connectivities),
+            rounds=3,  # 30 iterations in total should be stable enough
+            warmup_rounds=warmup_rounds,
+            iterations=iterations,
         )
+
+        # Collect GT4Py runtime metrics if enabled
+        if gtx_config.COLLECT_METRICS_LEVEL > 0:
+            assert (
+                len(gtx_metrics.sources) == 1
+            ), "Expected exactly one entry in gtx_metrics.sources"
+            # Store GT4Py metrics in benchmark.extra_info
+            metrics_data = gtx_metrics.sources
+            key = next(iter(metrics_data))
+            compute_samples = metrics_data[key].metrics["compute"].samples
+            # exclude warmup iterations and one extra iteration for calibrating pytest-benchmark
+            initial_program_iterations_to_skip = warmup_rounds * iterations + 1
+            benchmark.extra_info["gtx_metrics"] = compute_samples[
+                initial_program_iterations_to_skip:
+            ]
 
 
 class StencilTest:

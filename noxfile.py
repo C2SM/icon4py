@@ -61,7 +61,6 @@ def benchmark_model(session: nox.Session) -> None:
         -m continuous_benchmarking \
         --benchmark-only \
         --benchmark-warmup=on \
-        --benchmark-warmup-iterations=30 \
         --benchmark-json=pytest_benchmark_results_{session.python}.json \
         ./model".split(),
         *session.posargs,
