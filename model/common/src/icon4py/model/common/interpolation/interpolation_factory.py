@@ -190,7 +190,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 array_ns=self._xp,
             ),
             fields=(attrs.C_BLN_AVG,),
-            domain=(dims.CellDim, dims.E2CDim),
+            domain=(dims.CellDim, dims.C2E2CODim),
             deps={
                 "lat": geometry_attrs.CELL_LAT,
                 "lon": geometry_attrs.CELL_LON,
@@ -207,6 +207,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
                 "divavg_cntrwgt": self._config["divavg_cntrwgt"],
             },
+            do_exchange=True,
         )
         self.register_provider(cell_average_weight)
 

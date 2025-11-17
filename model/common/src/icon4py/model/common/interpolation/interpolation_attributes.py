@@ -53,7 +53,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=C_BLN_AVG,
         long_name="mass conserving bilinear cell average weight",
         units="",  # TODO(halungge): check or confirm
-        dims=(dims.EdgeDim, dims.E2CDim),
+        dims=(dims.EdgeDim, dims.C2E2CODim),
         icon_var_name="c_bln_avg",
         dtype=ta.wpfloat,
     ),
