@@ -68,7 +68,7 @@ def _delete_recursive(p: pathlib.Path) -> None:
 
 
 @pytest.fixture
-def parallel_geometry_grid(
+def geometry_from_savepoint(
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend,
     decomposition_info: decomposition.DecompositionInfo,
@@ -103,14 +103,14 @@ def parallel_geometry_grid(
 
 
 @pytest.fixture
-def parallel_interpolation(
+def interpolation_factory_from_savepoint(
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend,
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
-    parallel_geometry_grid: geometry.GridGeometry,
+    geometry_from_savepoint: geometry.GridGeometry,
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory]:
-    geometry_source = parallel_geometry_grid
+    geometry_source = geometry_from_savepoint
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
     intp_factory = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry_source.grid,
@@ -124,19 +124,19 @@ def parallel_interpolation(
 
 
 @pytest.fixture
-def parallel_metrics(
+def metrics_factory_from_savepoint(
     backend: gtx_typing.Backend,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
-    parallel_geometry_grid: geometry.GridGeometry,
-    parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
+    geometry_from_savepoint: geometry.GridGeometry,
+    interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> Generator[metrics_factory.MetricsFieldsFactory]:
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
-    geometry_source = parallel_geometry_grid
-    interpolation_field_source = parallel_interpolation
+    geometry_source = geometry_from_savepoint
+    interpolation_field_source = interpolation_factory_from_savepoint
     topography = topography_savepoint.topo_c()
     (
         lowest_layer_thickness,

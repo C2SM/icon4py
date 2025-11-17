@@ -137,6 +137,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
                 array_ns=self._xp,
+                halo_exchange=self._exchange.exchange_and_wait,
             ),
             fields=(attrs.CELL_HEIGHT_ON_HALF_LEVEL,),
             domain=(dims.CellDim, dims.KHalfDim),
@@ -159,7 +160,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "SLEVE_minimum_relative_layer_thickness_2": self._vertical_grid.config.SLEVE_minimum_relative_layer_thickness_2,
                 "lowest_layer_thickness": self._vertical_grid.config.lowest_layer_thickness,
             },
-            do_exchange=False,
+            do_exchange=False,  # field exchanged internally
         )
         self.register_provider(vertical_coordinates_on_half_levels)
 
@@ -234,6 +235,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"out_field": attrs.DDQZ_Z_FULL_E},
+            do_exchange=True,
         )
         self.register_provider(ddqz_full_on_edges)
 
@@ -359,7 +361,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
             },
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_theta_rho_ref_me)
 

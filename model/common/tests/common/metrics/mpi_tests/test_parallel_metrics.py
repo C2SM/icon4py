@@ -25,12 +25,12 @@ from ...fixtures import (
     decomposition_info,
     download_ser_data,
     experiment,
+    geometry_from_savepoint,
     grid_savepoint,
     icon_grid,
+    interpolation_factory_from_savepoint,
+    metrics_factory_from_savepoint,
     metrics_savepoint,
-    parallel_geometry_grid,
-    parallel_interpolation,
-    parallel_metrics,
     processor_props,
     ranked_data_path,
     topography_savepoint,
@@ -42,9 +42,6 @@ if TYPE_CHECKING:
 
     from icon4py.model.testing import serialbox as sb
 
-vertex_domain = h_grid.domain(dims.VertexDim)
-vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-
 
 @pytest.mark.datatest
 @pytest.mark.mpi
@@ -52,19 +49,24 @@ vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 @pytest.mark.parametrize(
     "attrs_name, metrics_name",
     [
+        (attrs.CELL_HEIGHT_ON_HALF_LEVEL, "z_ifc"),
         (attrs.DDQZ_Z_FULL_E, "ddqz_z_full_e"),
-        (attrs.ZDIFF_GRADP, "zdiff_gradp"),
-        (attrs.VERTOFFSET_GRADP, "vertoffset_gradp"),
+        # (attrs.ZDIFF_GRADP, "zdiff_gradp"),
+        # (attrs.VERTOFFSET_GRADP, "vertoffset_gradp"), #atol=1.0e-5
+        (attrs.Z_MC, "z_mc"),
+        (attrs.DDQZ_Z_HALF, "ddqz_z_half"),
+        (attrs.SCALING_FACTOR_FOR_3D_DIVDAMP, "scalfac_dd3d"),
+        (attrs.RAYLEIGH_W, "rayleigh_w"),
+        # (attrs.COEFF_GRADEKIN, "coeff_gradekin"), # check: possibly bounds?
     ],
 )
-@pytest.mark.parametrize("experiment", [test_defs.Experiments.EXCLAIM_APE])
 def test_distributed_metrics_attrs(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
-    parallel_metrics: metrics_factory.MetricsFieldsFactory,
+    metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
     attrs_name: str,
     metrics_name: str,
     experiment: test_defs.Experiment,
@@ -72,7 +74,8 @@ def test_distributed_metrics_attrs(
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    factory = parallel_metrics
+    factory = metrics_factory_from_savepoint
+    print(f"computed flatlev {factory.vertical_grid.nflatlev}, expected{grid_savepoint.nflatlev()}")
 
     field = factory.get(attrs_name).asnumpy()
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()

@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
@@ -24,15 +22,11 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
+dummy: Callable[[gtx.Dimension, gtx.Field], None] = lambda dim, field: None
+
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.GAUSS3D,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 def test_topography_smoothing_with_serialized_data(
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
@@ -55,6 +49,7 @@ def test_topography_smoothing_with_serialized_data(
         c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
         num_iterations=num_iterations,
         array_ns=xp,
+        exchange=dummy,
     )
 
     assert test_utils.dallclose(topography_smoothed_ref, topography_smoothed, atol=1.0e-14)

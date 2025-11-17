@@ -32,8 +32,8 @@ from ...fixtures import (
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
-    parallel_geometry_grid,
-    parallel_interpolation,
+    geometry_from_savepoint,
+    interpolation_factory_from_savepoint,
     processor_props,
     ranked_data_path,
 )
@@ -45,9 +45,8 @@ if TYPE_CHECKING:
 
     from icon4py.model.testing import serialbox as sb
 
-vertex_domain = h_grid.domain(dims.VertexDim)
-vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 
+vert_lb_domain = h_grid.vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 
 @pytest.mark.datatest
 @pytest.mark.mpi
@@ -76,14 +75,14 @@ def test_distributed_interpolation_attrs(
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
-    parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
+    interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
     atol: int,
     ind: int | None,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
-    intp_factory = parallel_interpolation
+    intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field_ref = field_ref.asnumpy() if ind is None else field_ref[ind].asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
@@ -105,7 +104,7 @@ def test_distributed_interpolation_attrs_reordered(
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
-    parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
+    interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
     lb_domain: typing.Any,
@@ -113,7 +112,7 @@ def test_distributed_interpolation_attrs_reordered(
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    factory = parallel_interpolation
+    factory = interpolation_factory_from_savepoint
     lb = lb_domain if isinstance(lb_domain, int) else factory.grid.start_index(lb_domain)
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()
@@ -124,13 +123,13 @@ def test_distributed_interpolation_attrs_reordered(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, intrp_name, dim, atol",
+    "attrs_name, intrp_name, atol",
     [
-        (attrs.RBF_VEC_COEFF_C1, "rbf_vec_coeff_c1", dims.CellDim, 3e-2),
-        (attrs.RBF_VEC_COEFF_C2, "rbf_vec_coeff_c2", dims.CellDim, 3e-2),
-        (attrs.RBF_VEC_COEFF_E, "rbf_vec_coeff_e", dims.EdgeDim, 7e-1),
-        (attrs.RBF_VEC_COEFF_V1, "rbf_vec_coeff_v1", dims.VertexDim, 3e-3),
-        (attrs.RBF_VEC_COEFF_V2, "rbf_vec_coeff_v2", dims.VertexDim, 3e-3),
+        (attrs.RBF_VEC_COEFF_C1, "rbf_vec_coeff_c1", 3e-2),
+        (attrs.RBF_VEC_COEFF_C2, "rbf_vec_coeff_c2", 3e-2),
+        (attrs.RBF_VEC_COEFF_E, "rbf_vec_coeff_e", 3e-2),
+        (attrs.RBF_VEC_COEFF_V1, "rbf_vec_coeff_v1",3e-3),
+        (attrs.RBF_VEC_COEFF_V2, "rbf_vec_coeff_v2", 3e-3),
     ],
 )
 def test_distributed_interpolation_rbf(
@@ -140,17 +139,15 @@ def test_distributed_interpolation_rbf(
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
-    parallel_interpolation: interpolation_factory.InterpolationFieldsFactory,
+    interpolation_factory_from_savepoint:interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
-    dim: gtx.Dimension,
     atol: int,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    factory = parallel_interpolation
-    owner_mask = decomposition_info._owner_mask[dim]
+    factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()
-    assert_reordered(field[owner_mask], field_ref[owner_mask], atol=atol)
+    assert_reordered(field, field_ref, atol=atol)
