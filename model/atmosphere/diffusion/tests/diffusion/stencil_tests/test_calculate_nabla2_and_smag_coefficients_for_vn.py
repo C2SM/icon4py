@@ -19,7 +19,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, stencil_tests
 
 
-@pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
 class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
     PROGRAM = calculate_nabla2_and_smag_coefficients_for_vn
@@ -54,6 +53,10 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         vn: np.ndarray,
         smag_limit: np.ndarray,
         smag_offset: float,
+        horizontal_start: int,
+        horizontal_end: int,
+        vertical_start: int,
+        vertical_end: int,
         **kwargs,
     ) -> dict:
         e2c2v = connectivities[dims.E2C2VDim]
@@ -155,8 +158,20 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         kh_smag_ec = kh_smag_e
         kh_smag_e = np.maximum(0.0, kh_smag_e - smag_offset)
         kh_smag_e = np.minimum(kh_smag_e, smag_limit)
+        kh_smag_e_out = np.zeros_like(kh_smag_e)
+        kh_smag_ec_out = np.zeros_like(kh_smag_ec)
+        z_nabla2_e_out = np.zeros_like(z_nabla2_e)
+        kh_smag_e_out[horizontal_start:horizontal_end, vertical_start:vertical_end] = kh_smag_e[
+            horizontal_start:horizontal_end, vertical_start:vertical_end
+        ]
+        kh_smag_ec_out[horizontal_start:horizontal_end, vertical_start:vertical_end] = kh_smag_ec[
+            horizontal_start:horizontal_end, vertical_start:vertical_end
+        ]
+        z_nabla2_e_out[horizontal_start:horizontal_end, vertical_start:vertical_end] = z_nabla2_e[
+            horizontal_start:horizontal_end, vertical_start:vertical_end
+        ]
 
-        return dict(kh_smag_e=kh_smag_e, kh_smag_ec=kh_smag_ec, z_nabla2_e=z_nabla2_e)
+        return dict(kh_smag_e=kh_smag_e_out, kh_smag_ec=kh_smag_ec_out, z_nabla2_e=z_nabla2_e_out)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
