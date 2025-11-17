@@ -62,7 +62,7 @@ jobs:
       - name: run nox session - stencil tests
         shell: bash
         env:
-          NUM_PROCESSES: 1
+          NUM_PROCESSES: auto
           ICON4PY_ENABLE_GRID_DOWNLOAD: false
           ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
         run: |
