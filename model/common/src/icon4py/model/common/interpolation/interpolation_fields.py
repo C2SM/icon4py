@@ -24,7 +24,7 @@ from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_norm
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-MISSING = Final[int] = gridfile.GridFile.INVALID_INDEX
+MISSING: Final[int] = gridfile.GridFile.INVALID_INDEX
 
 
 def compute_c_lin_e(
@@ -681,7 +681,6 @@ def _create_inverse_neighbor_index(
     return inv_neighbor_idx
 
 
-# TODO(halungge): this can be simplified using only
 def compute_e_flx_avg(
     c_bln_avg: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,
@@ -723,11 +722,13 @@ def compute_e_flx_avg(
         primal_cart_normal_z,
         array_ns=array_ns,
     )
-
+    diamond_shape = e2c2e.shape[1]
+    num_edges = e2c.shape[0]
+    num_cells = c2e2c.shape[0]
     llb = 0
-    e_flx_avg = array_ns.zeros([e2c.shape[0], 5])
-    index = array_ns.arange(llb, c2e.shape[0])
-    inv_neighbor_id = -array_ns.ones([c2e.shape[0] - llb, 3], dtype=int)
+    e_flx_avg = array_ns.zeros((num_edges, diamond_shape + 1))
+    index = array_ns.arange(llb, num_cells)
+    inv_neighbor_id = MISSING * array_ns.ones((num_cells - llb, c2e2c.shape[1]), dtype=int)
     for i in range(c2e2c.shape[1]):
         for j in range(c2e2c.shape[1]):
             inv_neighbor_id[:, j] = array_ns.where(
@@ -737,7 +738,7 @@ def compute_e_flx_avg(
             )
 
     llb = horizontal_start_p3
-    index = array_ns.arange(llb, e2c.shape[0])
+    index = array_ns.arange(llb, num_edges)
     for j in range(c2e.shape[1]):
         for i in range(2):
             e_flx_avg[llb:, i + 1] = array_ns.where(
@@ -765,7 +766,7 @@ def compute_e_flx_avg(
                 e_flx_avg[llb:, i + 3],
             )
     # the icon prescribed order dependency is probably due to these magic numbers...
-    iie = -array_ns.ones([e2c.shape[0], 4], dtype=int)
+    iie = MISSING * array_ns.ones(e2c2e.shape, dtype=int)
     iie[:, 0] = array_ns.where(
         e2c[e2c2e[:, 0], 0] == e2c[:, 0],
         2,
@@ -791,7 +792,7 @@ def compute_e_flx_avg(
     )
 
     llb = horizontal_start_p4
-    index = array_ns.arange(llb, e2c.shape[0])
+    index = array_ns.arange(llb, num_edges)
     for i in range(c2e.shape[1]):
         # INVALID_INDEX
         if i <= MISSING:
