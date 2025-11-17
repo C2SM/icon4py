@@ -518,8 +518,8 @@ def _construct_diamond_edges(
     flattened = expanded.reshape(n_edges, n_e2c * n_c2e)
 
     centers = array_ns.arange(n_edges, dtype=gtx.int32)[:, None]
-    me_cell1 = _determine_center_position(centers, expanded[:, 0, :])
-    me_cell2 = _determine_center_position(centers, expanded[:, 1, :])
+    me_cell1 = _determine_center_position(centers, expanded[:, 0, :], array_ns=array_ns)
+    me_cell2 = _determine_center_position(centers, expanded[:, 1, :], array_ns=array_ns)
     ordered_local_index = array_ns.hstack(
         (icon_edge_order[me_cell1], icon_edge_order[me_cell2] + n_c2e)
     )
