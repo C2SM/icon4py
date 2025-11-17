@@ -249,7 +249,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         params=[
             {"apply_extra_diffusion_on_vn": value} for value in [True, False]
         ],  # True for testing, False for benchmarking
-        ids=lambda param: f"/[{param['apply_extra_diffusion_on_vn']}]",
+        ids=lambda param: f"apply_extra_diffusion_on_vn[{param['apply_extra_diffusion_on_vn']}]",
         scope="class",
     )
     def input_data(
