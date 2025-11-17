@@ -35,17 +35,14 @@ def get_dace_options(
         "vertically_implicit_solver_at_predictor_step",
     ]:
         if gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep not in optimization_hooks:
-            # TODO(iomaganaris): Enable this for CPU once the issue with the strides of memlets from the nested SDFG
-            # to a global Access Node is resolved.
             # Enable pass that removes access node (next_w) copies for vertically implicit solver programs
-            if backend_descriptor["device"] == model_backends.GPU:
-                optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
-                    lambda sdfg: sdfg.apply_transformations_repeated(
-                        gtx_transformations.RemoveAccessNodeCopies(),
-                        validate=False,
-                        validate_all=False,
-                    )
+            optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
+                lambda sdfg: sdfg.apply_transformations_repeated(
+                    gtx_transformations.RemoveAccessNodeCopies(),
+                    validate=False,
+                    validate_all=False,
                 )
+            )
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
