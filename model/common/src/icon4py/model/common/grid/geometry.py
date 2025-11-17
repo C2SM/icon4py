@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import enum
 import functools
 import logging
 from collections.abc import Callable, Mapping, Sequence
@@ -182,10 +183,12 @@ class GridGeometry(factory.FieldSource):
         meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
-        inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
+        inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH, h_grid.Zone.LOCAL)
         self.register_provider(inverse_edge_length)
 
-        inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
+        inverse_dual_edge_length = self._inverse_field_provider(
+            attrs.DUAL_EDGE_LENGTH, h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2
+        )
         self.register_provider(inverse_dual_edge_length)
 
         vertex_vertex_distance = factory.ProgramFieldProvider(
@@ -207,7 +210,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(vertex_vertex_distance)
 
         inverse_far_edge_distance_provider = self._inverse_field_provider(
-            attrs.VERTEX_VERTEX_LENGTH
+            attrs.VERTEX_VERTEX_LENGTH, h_grid.Zone.LOCAL
         )
         self.register_provider(inverse_far_edge_distance_provider)
 
@@ -513,7 +516,7 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(cartesian_cell_centers)
 
-    def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
+    def _inverse_field_provider(self, field_name: str, lb: enum) -> factory.FieldProvider:
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
@@ -523,7 +526,7 @@ class GridGeometry(factory.FieldSource):
             fields={"f_inverse": name},
             domain={
                 dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(lb),
                     self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },

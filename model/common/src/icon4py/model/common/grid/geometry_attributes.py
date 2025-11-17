@@ -141,7 +141,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%center%lon",
         dtype=ta.wpfloat,
     ),
-    EDGE_LENGTH: dict(  # for inverse
+    EDGE_LENGTH: dict(
         standard_name=EDGE_LENGTH,
         long_name="edge length",
         units="m",
@@ -172,7 +172,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%edge_vert_length",
         dtype=ta.wpfloat,
     ),
-    DUAL_EDGE_LENGTH: dict(  # for inverse
+    DUAL_EDGE_LENGTH: dict(
         standard_name=DUAL_EDGE_LENGTH,
         long_name="length of the dual edge",
         units="m",
@@ -180,7 +180,7 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%dual_edge_length",
         dtype=ta.wpfloat,
     ),
-    VERTEX_VERTEX_LENGTH: dict(  # for inverse
+    VERTEX_VERTEX_LENGTH: dict(
         standard_name=VERTEX_VERTEX_LENGTH,
         long_name="distance between outer vertices of adjacent cells",
         units="m",

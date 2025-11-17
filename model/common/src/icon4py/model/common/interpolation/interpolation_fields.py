@@ -674,9 +674,13 @@ def _create_inverse_neighbor_index(
     for jc in range(inverse_offset.shape[0]):
         for i in range(inverse_offset.shape[1]):
             if inverse_offset[jc, i] >= 0:
-                inv_neighbor_idx[jc, i] = array_ns.argwhere(
+                inv_neighbor_idx_jc_i = array_ns.argwhere(
                     source_offset[inverse_offset[jc, i], :] == jc
-                )[0, 0]
+                )
+                if len(inv_neighbor_idx_jc_i) == 0:
+                    inv_neighbor_idx[jc, i] = MISSING
+                else:
+                    inv_neighbor_idx[jc, i] = inv_neighbor_idx_jc_i[0, 0]
 
     return inv_neighbor_idx
 

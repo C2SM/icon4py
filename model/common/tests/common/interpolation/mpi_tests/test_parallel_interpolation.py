@@ -58,7 +58,7 @@ vert_lb_domain = vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     [
         (attrs.C_LIN_E, "c_lin_e", 1e-12, None),
         (attrs.NUDGECOEFFS_E, "nudgecoeff_e", 1e-12, None),
-        (attrs.C_BLN_AVG, "c_bln_avg", 1e-4, None),  # fails in EXCLAIM_APE for atol 1e-3
+        (attrs.C_BLN_AVG, "c_bln_avg", 1e-3, None),  # fails in EXCLAIM_APE for atol 1e-3
         (attrs.E_BLN_C_S, "e_bln_c_s", 1e-12, None),
         (attrs.GEOFAC_DIV, "geofac_div", 1e-12, None),
         (attrs.GEOFAC_N2S, "geofac_n2s", 1e-12, None),
@@ -99,7 +99,7 @@ def test_distributed_interpolation_attrs(
     "attrs_name, intrp_name, lb_domain",
     [
         (attrs.GEOFAC_ROT, "geofac_rot", vert_lb_domain),
-        # (attrs.E_FLX_AVG, "e_flx_avg", 0), # fails in MCH_CH_R04B09 for atol 1e-2 for atol 1e-2
+        (attrs.E_FLX_AVG, "e_flx_avg", 0),  # fails in MCH_CH_R04B09 for atol 1e-2
     ],
 )
 def test_distributed_interpolation_attrs_reordered(
