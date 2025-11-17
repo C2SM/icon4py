@@ -58,9 +58,9 @@ def init_mpi() -> None:
     try:
         from mpi4py import MPI
     except ImportError:
-        MPI= None
+        MPI = None
 
-    if not MPI or not MPI.Is_initialized():
+    if hasattr(MPI, "Is_initialized") and not MPI.Is_initialized():
         log.info("initializing MPI")
         MPI.Init()
 
