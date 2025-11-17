@@ -102,7 +102,7 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
     PROGRAM = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl
     OUTPUTS = ("ddt_vn_apc",)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         levelmask = data_alloc.random_mask(grid, dims.KDim, extend={dims.KDim: 1})
         c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)

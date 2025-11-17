@@ -53,7 +53,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
 
         return dict(r_m=r_m)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid) -> dict:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

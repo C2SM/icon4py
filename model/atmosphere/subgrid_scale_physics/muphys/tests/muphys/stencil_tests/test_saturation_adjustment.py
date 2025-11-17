@@ -38,7 +38,7 @@ class TestSaturationAdjustment(StencilTest):
             mask_out=np.full(te.shape, False),
         )
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             te=data_alloc.constant_field(

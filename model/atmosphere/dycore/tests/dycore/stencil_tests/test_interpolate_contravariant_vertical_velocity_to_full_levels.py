@@ -40,7 +40,7 @@ class TestInterpolateContravariantVerticalVelocityToFullLevels(StencilTest):
         z_w_con_c_full = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c)
         return dict(z_w_con_c_full=z_w_con_c_full)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_w_con_c = random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat

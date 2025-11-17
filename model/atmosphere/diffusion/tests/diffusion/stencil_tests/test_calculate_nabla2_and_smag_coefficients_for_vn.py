@@ -173,7 +173,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
 
         return dict(kh_smag_e=kh_smag_e_out, kh_smag_ec=kh_smag_ec_out, z_nabla2_e=z_nabla2_e_out)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict:
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)

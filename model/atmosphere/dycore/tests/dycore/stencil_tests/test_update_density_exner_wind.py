@@ -42,7 +42,7 @@ class TestUpdateDensityExnerWind(StencilTest):
         w_new = w_now + dtime * grf_tend_w
         return dict(rho_new=rho_new, exner_new=exner_new, w_new=w_new)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho_now = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         grf_tend_rho = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

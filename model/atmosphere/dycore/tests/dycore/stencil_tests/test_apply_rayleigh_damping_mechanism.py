@@ -49,7 +49,7 @@ class TestApplyRayleighDampingMechanism(StencilTest):
         w = apply_rayleigh_damping_mechanism_numpy(connectivities, z_raylfac, w_1, w)
         return dict(w=w)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_raylfac = random_field(grid, dims.KDim, dtype=wpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

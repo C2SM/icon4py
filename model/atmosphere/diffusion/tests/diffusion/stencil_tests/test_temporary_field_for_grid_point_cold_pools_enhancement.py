@@ -52,7 +52,7 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
 
         return dict(enh_diffu_3d=enh_diffu_3d)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict:
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
