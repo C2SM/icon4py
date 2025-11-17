@@ -216,7 +216,8 @@ class GHexMultiNodeExchange:
     def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field) -> str:
         # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
         assert hasattr(f, "__gt_buffer_info__")
-        key = f.__gt_buffer_info__.hash_key
+        # dimension and buffer_info uniquely identifies the exchange pattern
+        key = (dim, f.__gt_buffer_info__.hash_key)
         try:
             return self._applied_patterns_cache[key]
         except KeyError:
@@ -239,11 +240,8 @@ class GHexMultiNodeExchange:
             the granule context where fields otherwise have length nproma.
         """
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
-        assert hasattr(fields[0], "array_ns")
-        if hasattr(fields[0].array_ns, "cuda"):
-            # TODO(havogt): this is a workaround as ghex does not know that it should synchronize
-            # the GPU before the exchange. This is necessary to ensure that all data is ready for the exchange.
-            fields[0].array_ns.cuda.runtime.deviceSynchronize()
+        # With https://github.com/ghex-org/GHEX/pull/186, ghex will schedule/sync work on the default stream,
+        # otherwise we need an explicit device synchronize here.
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
