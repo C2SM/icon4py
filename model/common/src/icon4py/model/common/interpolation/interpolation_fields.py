@@ -8,6 +8,7 @@
 import functools
 import math
 from types import ModuleType
+from typing import Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -21,6 +22,9 @@ from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import gridfile
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+MISSING: Final[int] = gridfile.GridFile.INVALID_INDEX
 
 
 def compute_c_lin_e(
@@ -717,7 +721,7 @@ def _create_inverse_neighbor_index(
         ndarray of the same shape as target_offset
 
     """
-    inv_neighbor_idx = -1 * array_ns.ones(inverse_offset.shape, dtype=int)
+    inv_neighbor_idx = MISSING * array_ns.ones(inverse_offset.shape, dtype=int)
 
     for jc in range(inverse_offset.shape[0]):
         for i in range(inverse_offset.shape[1]):
@@ -729,7 +733,6 @@ def _create_inverse_neighbor_index(
     return inv_neighbor_idx
 
 
-# TODO(halungge): this can be simplified using only
 def compute_e_flx_avg(
     c_bln_avg: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,
@@ -746,7 +749,9 @@ def compute_e_flx_avg(
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
-    Compute edge flux average
+    Compute edge flux average.
+
+    FIXME (@halungge) the correctness of this function depends on the local order of the e2c2e connectivity fields
 
     Args:
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
@@ -769,11 +774,13 @@ def compute_e_flx_avg(
         primal_cart_normal_z,
         array_ns=array_ns,
     )
-
+    diamond_shape = e2c2e.shape[1]
+    num_edges = e2c.shape[0]
+    num_cells = c2e2c.shape[0]
     llb = 0
-    e_flx_avg = array_ns.zeros([e2c.shape[0], 5])
-    index = array_ns.arange(llb, c2e.shape[0])
-    inv_neighbor_id = -array_ns.ones([c2e.shape[0] - llb, 3], dtype=int)
+    e_flx_avg = array_ns.zeros((num_edges, diamond_shape + 1))
+    index = array_ns.arange(llb, num_cells)
+    inv_neighbor_id = MISSING * array_ns.ones((num_cells - llb, c2e2c.shape[1]), dtype=int)
     for i in range(c2e2c.shape[1]):
         for j in range(c2e2c.shape[1]):
             inv_neighbor_id[:, j] = array_ns.where(
@@ -783,7 +790,7 @@ def compute_e_flx_avg(
             )
 
     llb = horizontal_start_p3
-    index = array_ns.arange(llb, e2c.shape[0])
+    index = array_ns.arange(llb, num_edges)
     for j in range(c2e.shape[1]):
         for i in range(2):
             e_flx_avg[llb:, i + 1] = array_ns.where(
@@ -810,33 +817,37 @@ def compute_e_flx_avg(
                 ),
                 e_flx_avg[llb:, i + 3],
             )
-
-    iie = -array_ns.ones([e2c.shape[0], 4], dtype=int)
-    iie[:, 0] = array_ns.where(e2c[e2c2e[:, 0], 0] == e2c[:, 0], 2, -1)
+    # the icon prescribed order dependency is probably due to these magic numbers...
+    iie = MISSING * array_ns.ones(e2c2e.shape, dtype=int)
     iie[:, 0] = array_ns.where(
-        array_ns.logical_and(e2c[e2c2e[:, 0], 1] == e2c[:, 0], iie[:, 0] != 2), 4, iie[:, 0]
+        e2c[e2c2e[:, 0], 0] == e2c[:, 0],
+        2,
+        array_ns.where(e2c[e2c2e[:, 0], 1] == e2c[:, 0], 4, MISSING),
     )
 
-    iie[:, 1] = array_ns.where(e2c[e2c2e[:, 1], 0] == e2c[:, 0], 1, -1)
     iie[:, 1] = array_ns.where(
-        array_ns.logical_and(e2c[e2c2e[:, 1], 1] == e2c[:, 0], iie[:, 1] != 1), 3, iie[:, 1]
+        e2c[e2c2e[:, 1], 0] == e2c[:, 0],
+        1,
+        array_ns.where(e2c[e2c2e[:, 1], 1] == e2c[:, 0], 3, MISSING),
     )
 
-    iie[:, 2] = array_ns.where(e2c[e2c2e[:, 2], 0] == e2c[:, 1], 2, -1)
     iie[:, 2] = array_ns.where(
-        array_ns.logical_and(e2c[e2c2e[:, 2], 1] == e2c[:, 1], iie[:, 2] != 2), 4, iie[:, 2]
+        e2c[e2c2e[:, 2], 0] == e2c[:, 1],
+        2,
+        array_ns.where(e2c[e2c2e[:, 2], 1] == e2c[:, 1], 4, MISSING),
     )
 
-    iie[:, 3] = array_ns.where(e2c[e2c2e[:, 3], 0] == e2c[:, 1], 1, -1)
     iie[:, 3] = array_ns.where(
-        array_ns.logical_and(e2c[e2c2e[:, 3], 1] == e2c[:, 1], iie[:, 3] != 1), 3, iie[:, 3]
+        e2c[e2c2e[:, 3], 0] == e2c[:, 1],
+        1,
+        array_ns.where(e2c[e2c2e[:, 3], 1] == e2c[:, 1], 3, MISSING),
     )
 
     llb = horizontal_start_p4
-    index = array_ns.arange(llb, e2c.shape[0])
+    index = array_ns.arange(llb, num_edges)
     for i in range(c2e.shape[1]):
         # INVALID_INDEX
-        if i <= gridfile.GridFile.INVALID_INDEX:
+        if i <= MISSING:
             continue
         e_flx_avg[llb:, 0] = array_ns.where(
             owner_mask[llb:],
@@ -875,18 +886,12 @@ def compute_e_flx_avg(
             e_flx_avg[llb:, 0],
         )
 
-    checksum = e_flx_avg[:, 0]
-    for i in range(4):
-        checksum = (
-            checksum
-            + array_ns.sum(primal_cart_normal * primal_cart_normal[e2c2e[:, i], :], axis=1)
-            * e_flx_avg[:, 1 + i]
-        )
+    d2 = array_ns.sum(primal_cart_normal[:, None, :] * primal_cart_normal[e2c2e], axis=2)
+    checksum = e_flx_avg[:, 0] + array_ns.sum(d2 * e_flx_avg[:, 1:], axis=1)
 
-    for i in range(5):
-        e_flx_avg[llb:, i] = array_ns.where(
-            owner_mask[llb:], e_flx_avg[llb:, i] / checksum[llb:], e_flx_avg[llb:, i]
-        )
+    e_flx_avg[llb:, :] = array_ns.where(
+        owner_mask[llb:, None], e_flx_avg[llb:, :] / checksum[llb:, None], e_flx_avg[llb:, :]
+    )
 
     return e_flx_avg
 
@@ -924,18 +929,14 @@ def compute_cells_aw_verts(
     for jv in range(horizontal_start, cells_aw_verts.shape[0]):
         for je in range(v2e.shape[1]):
             # INVALID_INDEX
-            if v2e[jv, je] == gridfile.GridFile.INVALID_INDEX or (
-                je > 0 and v2e[jv, je] == v2e[jv, je - 1]
-            ):
+            if v2e[jv, je] == MISSING or (je > 0 and v2e[jv, je] == v2e[jv, je - 1]):
                 continue
             ile = v2e[jv, je]
             idx_ve = 0 if e2v[ile, 0] == jv else 1
             cell_offset_idx_0 = e2c[ile, 0]
             cell_offset_idx_1 = e2c[ile, 1]
             for jc in range(v2e.shape[1]):
-                if v2c[jv, jc] == gridfile.GridFile.INVALID_INDEX or (
-                    jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]
-                ):
+                if v2c[jv, jc] == MISSING or (jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]):
                     continue
                 if cell_offset_idx_0 == v2c[jv, jc]:
                     cells_aw_verts[jv, jc] = (

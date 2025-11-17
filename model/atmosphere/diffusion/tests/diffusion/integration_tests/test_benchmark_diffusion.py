@@ -17,7 +17,6 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import constants, model_backends, model_options
 from icon4py.model.common.grid import (
-    base,
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
     grid_manager as gm,

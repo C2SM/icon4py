@@ -25,7 +25,7 @@ import os
 import pathlib
 from types import TracebackType
 
-import viztracer
+import viztracer  # type: ignore[import-not-found]
 
 from icon4py.tools.py2fgen import runtime_config
 from icon4py.tools.py2fgen.wrappers import grid_wrapper
@@ -36,7 +36,7 @@ class _Tracer(contextlib.AbstractContextManager):
     start: int
     stop: int
     output_dir: pathlib.Path
-    _tracer: viztracer.VizTracer = dataclasses.field(default_factory=viztracer.VizTracer)  # type: ignore[name-defined,attr-defined]
+    _tracer: viztracer.VizTracer = dataclasses.field(default_factory=viztracer.VizTracer)
     _counter: int = 0
 
     def __enter__(self) -> None:
