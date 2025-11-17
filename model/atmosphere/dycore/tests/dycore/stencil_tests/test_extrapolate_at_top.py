@@ -51,7 +51,7 @@ class TestExtrapolateAtTop(StencilTest):
         vn_ie = extrapolate_at_top_numpy(wgtfacq_e, vn)
         return dict(vn_ie=vn_ie)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfacq_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

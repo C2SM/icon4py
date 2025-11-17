@@ -32,7 +32,7 @@ class TestVaporXIceDefault(StencilTest):
     ) -> dict:
         return dict(vapor_deposition_rate=np.full(qi.shape, 2.2106162342610385e-09))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             qi=data_alloc.constant_field(grid, 9.53048e-07, dims.CellDim, dims.KDim, dtype=wpfloat),

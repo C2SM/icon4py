@@ -42,7 +42,7 @@ class TestInitCellKdimFieldWithZeroVp(StencilTest):
         )
         return dict(field_with_zero_vp=field_with_zero_vp)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         field_with_zero_vp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 

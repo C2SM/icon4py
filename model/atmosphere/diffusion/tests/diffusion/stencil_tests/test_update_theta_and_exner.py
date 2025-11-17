@@ -50,7 +50,7 @@ class TestUpdateThetaAndExner(StencilTest):
         theta_v, exner = update_theta_and_exner_numpy(z_temp, area, theta_v, exner, rd_o_cvd)
         return dict(theta_v=theta_v, exner=exner)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict:
         z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         area = random_field(grid, dims.CellDim, dtype=wpfloat)

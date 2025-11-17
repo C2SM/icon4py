@@ -25,7 +25,7 @@ class TestCloudXIce(StencilTest):
     ) -> dict:
         return dict(freezing_rate=np.full(t.shape, -1.5008166666666666e-08))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(

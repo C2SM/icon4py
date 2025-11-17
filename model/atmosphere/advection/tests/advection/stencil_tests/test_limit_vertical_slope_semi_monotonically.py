@@ -39,7 +39,7 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
         slope = np.where(z_slope[:, 1:-1] >= 0.0, slope_l, -slope_l)
         return dict(z_slope=slope)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_slope = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

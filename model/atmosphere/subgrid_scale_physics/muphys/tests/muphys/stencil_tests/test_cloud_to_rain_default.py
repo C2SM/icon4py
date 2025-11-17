@@ -25,7 +25,7 @@ class TestCloudToRainDefault(StencilTest):
     ) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),

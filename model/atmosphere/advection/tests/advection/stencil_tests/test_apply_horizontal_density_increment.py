@@ -43,7 +43,7 @@ class TestApplyHorizontalDensityIncrement(stencil_tests.StencilTest):
         rhodz_ast2 = np.maximum(0.1 * p_rhodz_new, p_rhodz_new) - p_dtime * tmp
         return dict(rhodz_ast2=rhodz_ast2)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid) -> dict:
         p_rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(

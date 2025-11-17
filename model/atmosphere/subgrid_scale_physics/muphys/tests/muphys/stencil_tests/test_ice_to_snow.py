@@ -25,7 +25,7 @@ class TestIceToSnow(StencilTest):
     ) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 3.3262745200740486e-11))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             qi=data_alloc.constant_field(grid, 6.43223e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
