@@ -260,7 +260,7 @@ class StencilTest:
         # parametrization is only available in the concrete subclass definition
         if cls.STATIC_PARAMS is None:
             # not parametrized, return an empty tuple
-            cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
+            cls.static_variant = staticmethod(pytest.fixture(lambda: (), scope="class"))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
         else:
             cls.static_variant = staticmethod(  # type: ignore[method-assign]
                 pytest.fixture(params=cls.STATIC_PARAMS.items(), scope="class", ids=lambda p: p[0])(
