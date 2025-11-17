@@ -133,12 +133,49 @@ version = "{current_version}"
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
 explicit_package_bases = true
-# exclude = [
-# '^tests/py2fgen/*.py',
-# ]
+files = [
+  # TODO(egparedes): activate for all sources and tests
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/tests/',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/tests',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests',
+  # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
+  # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/grid',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/metrics',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/states',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/initialization',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
+  # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
+  # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
+  '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
+  # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
+  '$MYPY_CONFIG_FILE_DIR/tools/src/'
+]
 ignore_missing_imports = false
 implicit_reexport = true
-mypy_path = "model/common/src:model/testing/src:tools/src"
+mypy_path = '''
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
+$MYPY_CONFIG_FILE_DIR/model/common/src:
+$MYPY_CONFIG_FILE_DIR/model/driver/src:
+$MYPY_CONFIG_FILE_DIR/model/testing/src:
+$MYPY_CONFIG_FILE_DIR/tools/src:
+'''
 namespace_packages = true
 # install_types = true
 # non_interactive = true
@@ -318,7 +355,7 @@ url = "https://test.pypi.org/simple/"
 
 [tool.uv.sources]
 dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_11_05"}
-ghex = {git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
+ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}

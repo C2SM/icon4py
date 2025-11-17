@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import enum
 import functools
 import logging
 from collections.abc import Callable, Mapping, Sequence
@@ -182,10 +183,12 @@ class GridGeometry(factory.FieldSource):
         meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
-        inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH)
+        inverse_edge_length = self._inverse_field_provider(attrs.EDGE_LENGTH, h_grid.Zone.LOCAL)
         self.register_provider(inverse_edge_length)
 
-        inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
+        inverse_dual_edge_length = self._inverse_field_provider(
+            attrs.DUAL_EDGE_LENGTH, h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2
+        )
         self.register_provider(inverse_dual_edge_length)
 
         vertex_vertex_distance = factory.ProgramFieldProvider(
@@ -202,11 +205,12 @@ class GridGeometry(factory.FieldSource):
                 "vertex_lon": attrs.VERTEX_LON,
             },
             params={"radius": self._grid.global_properties.radius},
+            do_exchange=False,
         )
         self.register_provider(vertex_vertex_distance)
 
         inverse_far_edge_distance_provider = self._inverse_field_provider(
-            attrs.VERTEX_VERTEX_LENGTH
+            attrs.VERTEX_VERTEX_LENGTH, h_grid.Zone.LOCAL
         )
         self.register_provider(inverse_far_edge_distance_provider)
 
@@ -237,6 +241,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         self.register_provider(coriolis_params)
 
@@ -265,6 +270,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         self.register_provider(tangent_normal_coordinates)
 
@@ -339,6 +345,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         normal_vert_wrapper = SparseFieldProviderWrapper(
             normal_vert,
@@ -371,6 +378,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         normal_cell_wrapper = SparseFieldProviderWrapper(
             normal_cell,
@@ -405,6 +413,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         tangent_vert_wrapper = SparseFieldProviderWrapper(
             tangent_vert,
@@ -437,6 +446,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         tangent_cell_wrapper = SparseFieldProviderWrapper(
             tangent_cell,
@@ -462,6 +472,7 @@ class GridGeometry(factory.FieldSource):
                 "lat": attrs.VERTEX_LAT,
                 "lon": attrs.VERTEX_LON,
             },
+            do_exchange=False,
         )
         self.register_provider(cartesian_vertices)
         cartesian_edge_centers = factory.EmbeddedFieldOperatorProvider(
@@ -481,6 +492,7 @@ class GridGeometry(factory.FieldSource):
                 "lat": attrs.EDGE_LAT,
                 "lon": attrs.EDGE_LON,
             },
+            do_exchange=False,
         )
         self.register_provider(cartesian_edge_centers)
         cartesian_cell_centers = factory.EmbeddedFieldOperatorProvider(
@@ -500,10 +512,11 @@ class GridGeometry(factory.FieldSource):
                 "lat": attrs.CELL_LAT,
                 "lon": attrs.CELL_LON,
             },
+            do_exchange=False,
         )
         self.register_provider(cartesian_cell_centers)
 
-    def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
+    def _inverse_field_provider(self, field_name: str, lb: enum) -> factory.FieldProvider:
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
         name = meta["standard_name"]
         self._attrs.update({name: meta})
@@ -513,7 +526,7 @@ class GridGeometry(factory.FieldSource):
             fields={"f_inverse": name},
             domain={
                 dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(lb),
                     self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
@@ -569,7 +582,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         grid: factory.GridProvider,
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.GTXFieldType | None:
-        if not self._fields.get(field_name):
+        if self._fields.get(field_name) is None:
             # get the fields from the wrapped provider
             input_fields = []
             for p in self._pairs:

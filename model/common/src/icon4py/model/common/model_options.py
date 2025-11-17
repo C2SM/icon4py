@@ -13,6 +13,7 @@ from typing import Any
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
+from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.common import model_backends
 
@@ -27,6 +28,30 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
 def get_dace_options(
     program_name: str, **backend_descriptor: Any
 ) -> model_backends.BackendDescriptor:
+    optimization_args = backend_descriptor.get("optimization_args", {})
+    optimization_hooks = optimization_args.get("optimization_hooks", {})
+    if program_name in [
+        "vertically_implicit_solver_at_corrector_step",
+        "vertically_implicit_solver_at_predictor_step",
+    ]:
+        if gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep not in optimization_hooks:
+            # Enable pass that removes access node (next_w) copies for vertically implicit solver programs
+            optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
+                lambda sdfg: sdfg.apply_transformations_repeated(
+                    gtx_transformations.RemoveAccessNodeCopies(),
+                    validate=False,
+                    validate_all=False,
+                )
+            )
+    # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
+    # We keep it `True` for 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn' as performance drops,
+    # due to it falling into a less optimized code generation (on santis).
+    if program_name == "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn":
+        backend_descriptor["use_zero_origin"] = True
+    if optimization_hooks:
+        optimization_args["optimization_hooks"] = optimization_hooks
+    if optimization_args:
+        backend_descriptor["optimization_args"] = optimization_args
     return backend_descriptor
 
 

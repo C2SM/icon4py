@@ -190,7 +190,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 array_ns=self._xp,
             ),
             fields=(attrs.C_BLN_AVG,),
-            domain=(dims.CellDim, dims.C2E2CODim),
+            domain=(dims.CellDim, dims.E2CDim),
             deps={
                 "lat": geometry_attrs.CELL_LAT,
                 "lon": geometry_attrs.CELL_LON,

@@ -7,9 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import typing
-from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pytest
@@ -171,7 +169,7 @@ def test_get_geofac_grdiv(
     assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=rtol)
 
 
-def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs: typing.Any) -> None:
+def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs: Any) -> None:
     assert val.shape == ref.shape, f"arrays do not have the same shape: {val.shape} vs {ref.shape}"
     s_val = np.argsort(val)
     s_ref = np.argsort(ref)
@@ -284,32 +282,19 @@ def test_get_mass_conserving_cell_average_weight(
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
 
 
-## FIXME: does not validate
-#   -> connectivity order between reference from serialbox and computed value is different
-## TODO(halungge): rtol is from parametrization is overwritten in assert - function is most probably wrong
-#  TODO(halungge) global grid is not tested
-@pytest.mark.xfail(reason="Doesn't pass with reasonable threshold.")
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-    ],
-)
 @pytest.mark.datatest
 def test_e_flx_avg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref = interpolation_savepoint.e_flx_avg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.E_FLX_AVG)
     assert field.shape == (grid.num_edges, grid.get_connectivity(dims.E2C2EO).shape[1])
-    # FIXME: e2c2e constructed from grid file has different ordering than the serialized one
-    assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=rtol)
+    test_helpers.dallclose(field.asnumpy(), field_ref.asnumpy())
 
 
 @pytest.mark.level("integration")

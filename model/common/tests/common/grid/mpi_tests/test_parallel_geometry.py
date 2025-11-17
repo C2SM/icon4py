@@ -8,12 +8,14 @@
 
 from __future__ import annotations
 
+import typing
 from typing import TYPE_CHECKING
 
 import pytest
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry, geometry_attributes as attrs
+from icon4py.model.common.grid import geometry, geometry_attributes as attrs, horizontal as h_grid
 from icon4py.model.testing import parallel_helpers, test_utils
 
 from ...fixtures import (
@@ -33,6 +35,10 @@ from ...fixtures import (
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
+edge_domain = h_grid.domain(dims.EdgeDim)
+lb_local = edge_domain(h_grid.Zone.LOCAL)
+lb_lateral = edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+
 
 @pytest.mark.datatest
 @pytest.mark.mpi
@@ -41,14 +47,15 @@ if TYPE_CHECKING:
     "attrs_name, grid_name",
     [
         (attrs.EDGE_AREA, "edge_areas"),
-        (attrs.EDGE_CELL_DISTANCE, "edge_cell_length"),
-        (attrs.EDGE_TANGENT_VERTEX_U, "dual_normal_vert_x"),
-        (attrs.EDGE_VERTEX_DISTANCE, "edge_vert_length"),
-        (attrs.CELL_NORMAL_ORIENTATION, "edge_orientation"),
-        (attrs.VERTEX_LAT, "verts_vertex_lat"),
+        (attrs.EDGE_NORMAL_U, "primal_normal_v1"),
+        (attrs.EDGE_NORMAL_V, "primal_normal_v2"),
+        (attrs.EDGE_NORMAL_VERTEX_U, "primal_normal_vert_x"),
+        (attrs.EDGE_NORMAL_VERTEX_V, "primal_normal_vert_y"),
+        (attrs.EDGE_NORMAL_CELL_U, "primal_normal_cell_x"),
+        (attrs.EDGE_NORMAL_CELL_V, "primal_normal_cell_y"),
         (attrs.EDGE_TANGENT_CELL_U, "dual_normal_cell_x"),
-        (attrs.EDGE_TANGENT_CELL_V, "dual_normal_cell_y"),
-        (attrs.CELL_AREA, "cell_areas"),
+        (attrs.EDGE_TANGENT_VERTEX_U, "dual_normal_vert_x"),
+        (attrs.EDGE_TANGENT_VERTEX_V, "dual_normal_vert_y"),
     ],
 )
 def test_distributed_geometry_attrs(
@@ -66,3 +73,33 @@ def test_distributed_geometry_attrs(
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = grid_geometry.get(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, equal_nan=True, atol=1e-12)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "attrs_name, grid_name, lb_domain",
+    (
+        ("inverse_of_" + attrs.DUAL_EDGE_LENGTH, "inv_dual_edge_length", lb_lateral),
+        ("inverse_of_" + attrs.VERTEX_VERTEX_LENGTH, "inv_vert_vert_length", lb_local),
+        ("inverse_of_" + attrs.EDGE_LENGTH, "inverse_primal_edge_lengths", lb_local),
+    ),
+)
+def test_distributed_geometry_attrs_for_inverse(
+    grid_savepoint: sb.IconGridSavepoint,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    parallel_geometry_grid: geometry.GridGeometry,
+    attrs_name: str,
+    grid_name: str,
+    lb_domain: typing.Any,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    grid_geometry = parallel_geometry_grid
+    field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
+    field = grid_geometry.get(attrs_name).asnumpy()
+    lb = grid_geometry.grid.start_index(lb_domain)
+    assert test_utils.dallclose(field[lb:], field_ref[lb:], rtol=5e-10)

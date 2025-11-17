@@ -46,7 +46,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="nudging_coefficients_for_edges",
         units="",  # TODO(yiluchen1066): : need to check unit
         dims=(dims.EdgeDim,),
-        icon_var_name="nudgecoeffs_e",
+        icon_var_name="nudgecoeff_e",
         dtype=ta.wpfloat,
     ),
     C_BLN_AVG: dict(
@@ -54,7 +54,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="mass conserving bilinear cell average weight",
         units="",  # TODO(halungge): check or confirm
         dims=(dims.EdgeDim, dims.E2CDim),
-        icon_var_name="c_lin_e",
+        icon_var_name="c_bln_avg",
         dtype=ta.wpfloat,
     ),
     E_BLN_C_S: dict(
