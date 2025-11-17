@@ -93,7 +93,7 @@ def test_distributed_geometry_attrs_for_inverse(
     parallel_geometry_grid: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
-    lb_domain: typing.Any,
+    lb_domain: h_grid.Domain,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
