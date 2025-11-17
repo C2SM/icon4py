@@ -8,10 +8,11 @@
 import contextlib
 import logging
 import pathlib
+import typing
 from typing import Final
 
 import gt4py.next as gtx
-import uxarray
+import uxarray  # type: ignore[import-untyped] # mypy cannot find the corresponding uxarray type hints
 import xarray as xa
 
 import icon4py.model.common.dimension as dim
@@ -98,7 +99,7 @@ class IconUGridPatcher:
     TODO: (magdalena) should all the unnecessary data fields be removed?
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.connectivities = (
             "edge_of_cell",  # E2C connectivity
             "vertex_of_cell",  # V2C connectivity
@@ -203,7 +204,7 @@ class IconUGridPatcher:
             log.error(f"Validation of the ugrid failed with {error}>")
             raise UGridValidationError("Validation of the ugrid failed") from error
 
-    def __call__(self, ds: xa.Dataset, validate: bool = False):
+    def __call__(self, ds: xa.Dataset, validate: bool = False) -> xa.Dataset:
         self._patch_start_index(ds, with_zero_start_index=True)
         self._set_fill_value(ds)
         self._transpose_index_lists(ds)
@@ -226,7 +227,7 @@ class IconUGridWriter:
         self.original_filename = pathlib.Path(original_filename)
         self.output_path = pathlib.Path(output_path)
 
-    def __call__(self, validate: bool = False):
+    def __call__(self, validate: bool = False) -> None:
         patch = IconUGridPatcher()
         with load_data_file(self.original_filename) as ds:
             patched_ds = patch(ds, validate)
@@ -242,7 +243,7 @@ def dump_ugrid_file(
 
 
 @contextlib.contextmanager
-def load_data_file(filename: pathlib.Path | str) -> xa.Dataset:
+def load_data_file(filename: pathlib.Path | str) -> typing.Generator[xa.Dataset, None, None]:
     ds = xa.open_dataset(filename)
     try:
         yield ds

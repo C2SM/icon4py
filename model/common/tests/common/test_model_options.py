@@ -29,8 +29,14 @@ def program_return_field(field: fa.CellKField[float], factor: float):  # type: i
 @pytest.mark.parametrize(
     "backend_factory, expected_backend",
     [
-        (model_backends.make_custom_gtfn_backend, "gtfn"),
-        (model_backends.make_custom_dace_backend, "dace"),
+        (
+            model_backends.make_custom_gtfn_backend,
+            model_backends.make_custom_gtfn_backend(device=model_backends.CPU),
+        ),
+        (
+            model_backends.make_custom_dace_backend,
+            model_backends.make_custom_dace_backend(device=model_backends.CPU),
+        ),
     ],
 )
 def test_custom_backend_options(backend_factory: typing.Callable, expected_backend: str) -> None:
@@ -38,27 +44,26 @@ def test_custom_backend_options(backend_factory: typing.Callable, expected_backe
         "backend_factory": backend_factory,
         "device": model_backends.CPU,
     }
-    backend = customize_backend(backend_options)
-    backend_name = expected_backend + "_cpu"
+    backend = customize_backend(None, backend_options)
     # TODO(havogt): test should be improved to work without string comparison
-    assert repr(model_backends.BACKENDS[backend_name]) == repr(backend)
+    assert repr(expected_backend) == repr(backend)
 
 
 def test_custom_backend_device() -> None:
     device = model_backends.CPU
-    backend = customize_backend(device)
-    default_backend = "gtfn_cpu"
+    backend = customize_backend(None, device)
+    default_backend = model_backends.make_custom_dace_backend(device=device)
     # TODO(havogt): test should be improved to work without string comparison
-    assert repr(model_backends.BACKENDS[default_backend]) == repr(backend)
+    assert repr(default_backend) == repr(backend)
 
 
 @pytest.mark.parametrize(
     "backend",
     [
-        model_backends.BACKENDS["gtfn_cpu"],
+        model_backends.make_custom_dace_backend(device=model_backends.CPU),  # conrete backend
         model_backends.CPU,
-        {"backend_factory": model_backends.make_custom_gtfn_backend, "device": model_backends.CPU},
-        {"backend_factory": model_backends.make_custom_gtfn_backend},
+        {"backend_factory": model_backends.make_custom_dace_backend, "device": model_backends.CPU},
+        {"backend_factory": model_backends.make_custom_dace_backend},
         {"device": model_backends.CPU},
     ],
 )
@@ -68,33 +73,38 @@ def test_setup_program_defaults(
     | model_backends.BackendDescriptor
     | None,
 ) -> None:
-    partial_program = setup_program(backend=backend, program=program_return_field)
-    backend = model_backends.BACKENDS["gtfn_cpu"]
-    expected_partial = functools.partial(
-        program_return_field.with_backend(backend).compile(
+    testee = setup_program(backend=backend, program=program_return_field)
+    expected_backend = model_backends.make_custom_dace_backend(device=model_backends.CPU)
+    expected_program = functools.partial(
+        program_return_field.with_backend(expected_backend).compile(
             enable_jit=False,
             offset_provider={},
         ),
         offset_provider={},
     )
     # TODO(havogt): test should be improved to work without string comparison
-    assert repr(partial_program) == repr(expected_partial)
+    assert repr(testee) == repr(expected_program)
 
 
 @pytest.mark.parametrize(
     "backend_params, expected_backend",
     [
-        (model_backends.BACKENDS["gtfn_gpu"], "gtfn_gpu"),
-        (model_backends.BACKENDS["embedded"], "embedded"),
+        (model_backends.BACKENDS["embedded"], model_backends.BACKENDS["embedded"]),
         (
             {
                 "backend_factory": model_backends.make_custom_dace_backend,
                 "device": model_backends.GPU,
             },
-            "dace_gpu",
+            model_backends.make_custom_dace_backend(device=model_backends.GPU),
         ),
-        ({"backend_factory": model_backends.make_custom_dace_backend}, "dace_cpu"),
-        ({"device": model_backends.GPU}, "gtfn_gpu"),
+        (
+            {"backend_factory": model_backends.make_custom_dace_backend},
+            model_backends.make_custom_dace_backend(device=model_backends.CPU),
+        ),
+        (
+            {"device": model_backends.GPU},
+            model_backends.make_custom_dace_backend(device=model_backends.GPU),
+        ),
     ],
 )
 def test_setup_program_specify_inputs(
@@ -102,21 +112,20 @@ def test_setup_program_specify_inputs(
     | model_backends.DeviceType
     | model_backends.BackendDescriptor
     | None,
-    expected_backend: str,
+    expected_backend: gtx_typing.Backend | None,
 ) -> None:
-    partial_program = setup_program(backend=backend_params, program=program_return_field)
-    backend = model_backends.BACKENDS[expected_backend]
-    if backend is None:
-        expected_partial = functools.partial(
-            program_return_field.with_backend(backend), offset_provider={}
+    testee = setup_program(backend=backend_params, program=program_return_field)
+    if expected_backend is None:
+        expected_program = functools.partial(
+            program_return_field.with_backend(expected_backend), offset_provider={}
         )
     else:
-        expected_partial = functools.partial(
-            program_return_field.with_backend(backend).compile(
+        expected_program = functools.partial(
+            program_return_field.with_backend(expected_backend).compile(
                 enable_jit=False,
                 offset_provider={},
             ),
             offset_provider={},
         )
     # TODO(havogt): test should be improved to work without string comparison
-    assert repr(partial_program) == repr(expected_partial)
+    assert repr(testee) == repr(expected_program)

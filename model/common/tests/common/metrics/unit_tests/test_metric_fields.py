@@ -188,7 +188,7 @@ def test_compute_coeff_dwdz(
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),
         1 / metrics_savepoint.inv_ddqz_z_full().asnumpy(),
-        allocator=backend,  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+        allocator=backend,
     )
 
     mf.compute_coeff_dwdz.with_backend(backend=backend)(
@@ -401,7 +401,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     z_mc = metrics_savepoint.z_mc()
     z_ifc = metrics_savepoint.z_ifc()
     c_lin_e = interpolation_savepoint.c_lin_e()
-    topography = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+    topography = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
 
     k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, allocator=backend)
     edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, allocator=backend)
@@ -439,7 +439,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         (dims.EdgeDim,),
         xp.max(flat_idx.asnumpy(), axis=1),
         dtype=gtx.int32,
-        allocator=backend,  # type: ignore[arg-type] # TODO(havogt): needs fix in GT4Py
+        allocator=backend,
     )
 
     mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(

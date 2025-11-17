@@ -16,12 +16,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.grid import base, gridfile, horizontal as h_grid, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
+    cpu_allocator,
     data_provider,
     download_ser_data,
     grid_savepoint,
@@ -50,7 +51,9 @@ def experiment() -> definitions.Experiment:
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
     return gridtest_utils.get_grid_manager_from_experiment(
-        definitions.Experiments.MCH_CH_R04B09, keep_skip_values=True, backend=None
+        definitions.Experiments.MCH_CH_R04B09,
+        keep_skip_values=True,
+        allocator=model_backends.get_allocator(None),
     ).grid
 
 
@@ -89,7 +92,10 @@ INTERIOR_IDX = {
 
 
 @pytest.fixture(params=["serialbox", "file"])
-def grid(icon_grid: base_grid.Grid, request: pytest.FixtureRequest) -> base_grid.Grid:
+def grid(
+    icon_grid: base_grid.Grid,
+    request: pytest.FixtureRequest,
+) -> base_grid.Grid:
     if request.param == "serialbox":
         return icon_grid
     else:
@@ -351,7 +357,7 @@ def test_global_grid_params_from_fields(
         dual_edge_lengths=xp.asarray([2.0, 3.0]),
         cell_areas=xp.asarray([3.0, 4.0]),
         dual_cell_areas=xp.asarray([4.0, 5.0]),
-        backend=backend,
+        array_ns=xp,
     )
     assert pytest.approx(params.mean_edge_length) == 13.0
     assert pytest.approx(params.mean_dual_edge_length) == 14.0
@@ -367,7 +373,7 @@ def test_global_grid_params_from_fields(
         dual_edge_lengths=xp.asarray([2.0, 3.0]),
         cell_areas=xp.asarray([3.0, 4.0]),
         dual_cell_areas=xp.asarray([4.0, 5.0]),
-        backend=backend,
+        array_ns=xp,
     )
     assert pytest.approx(params.mean_edge_length) == 1.5
     assert pytest.approx(params.mean_dual_edge_length) == 2.5
@@ -525,7 +531,7 @@ def test_global_grid_params_from_grid_manager(
     grid_descriptor: definitions.GridDescription,
     backend: gtx_typing.Backend,
     geometry_type: base.GeometryType,
-    subdivision: base.GridSubdivision,
+    subdivision: icon.GridSubdivision,
     radius: float,
     domain_length: float,
     domain_height: float,

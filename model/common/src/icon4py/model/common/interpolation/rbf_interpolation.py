@@ -35,11 +35,11 @@ RBF_STENCIL_SIZE: dict[RBFDimension, int] = {
 
 
 class InterpolationKernel(enum.Enum):
-    GAUSSIAN = 1
-    INVERSE_MULTIQUADRATIC = 3
+    GAUSSIAN: int = 1
+    INVERSE_MULTIQUADRATIC: int = 3
 
 
-DEFAULT_RBF_KERNEL: dict[RBFDimension, InterpolationKernel] = {
+DEFAULT_RBF_KERNEL: dict[RBFDimension, int] = {
     RBFDimension.CELL: InterpolationKernel.GAUSSIAN,
     RBFDimension.EDGE: InterpolationKernel.INVERSE_MULTIQUADRATIC,
     RBFDimension.VERTEX: InterpolationKernel.GAUSSIAN,
@@ -279,7 +279,7 @@ def _compute_rbf_interpolation_coeffs(
     edge_normal_x: data_alloc.NDArray,
     edge_normal_y: data_alloc.NDArray,
     edge_normal_z: data_alloc.NDArray,
-    uv: list[tuple[data_alloc.NDArray, data_alloc.NDArray]],
+    uv: tuple[tuple[data_alloc.NDArray, data_alloc.NDArray], ...],
     rbf_offset: data_alloc.NDArray,
     rbf_kernel: InterpolationKernel,
     geometry_type: base_grid.GeometryType,
@@ -288,7 +288,7 @@ def _compute_rbf_interpolation_coeffs(
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, ...]:
     rbf_offset_shape_full = rbf_offset.shape
     rbf_offset = rbf_offset[horizontal_start:]
     num_elements = rbf_offset.shape[0]
@@ -447,11 +447,11 @@ def compute_rbf_interpolation_coeffs_cell(
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
-    coeffs = _compute_rbf_interpolation_coeffs(
+    return _compute_rbf_interpolation_coeffs(
         cell_center_lat,
         cell_center_lon,
         cell_center_x,
@@ -463,7 +463,7 @@ def compute_rbf_interpolation_coeffs_cell(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [(ones, zeros), (zeros, ones)],
+        ((ones, zeros), (zeros, ones)),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
         base_grid.GeometryType(geometry_type),
@@ -473,8 +473,6 @@ def compute_rbf_interpolation_coeffs_cell(
         domain_height,
         array_ns=array_ns,
     )
-    assert len(coeffs) == 2
-    return coeffs
 
 
 def compute_rbf_interpolation_coeffs_edge(
@@ -497,7 +495,7 @@ def compute_rbf_interpolation_coeffs_edge(
     domain_height: ta.wpfloat,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    coeffs = _compute_rbf_interpolation_coeffs(
+    return _compute_rbf_interpolation_coeffs(
         edge_lat,  # these should be ignored for torus
         edge_lon,  # these should be ignored for torus
         edge_center_x,
@@ -509,7 +507,7 @@ def compute_rbf_interpolation_coeffs_edge(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [(edge_dual_normal_u, edge_dual_normal_v)],
+        ((edge_dual_normal_u, edge_dual_normal_v),),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
         base_grid.GeometryType(geometry_type),
@@ -518,9 +516,7 @@ def compute_rbf_interpolation_coeffs_edge(
         domain_length,
         domain_height,
         array_ns=array_ns,
-    )
-    assert len(coeffs) == 1
-    return coeffs[0]
+    )[0]
 
 
 def compute_rbf_interpolation_coeffs_vertex(
@@ -547,7 +543,7 @@ def compute_rbf_interpolation_coeffs_vertex(
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
-    coeffs = _compute_rbf_interpolation_coeffs(
+    return _compute_rbf_interpolation_coeffs(
         vertex_lat,
         vertex_lon,
         vertex_x,
@@ -559,7 +555,7 @@ def compute_rbf_interpolation_coeffs_vertex(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [(ones, zeros), (zeros, ones)],
+        ((ones, zeros), (zeros, ones)),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
         base_grid.GeometryType(geometry_type),
@@ -569,5 +565,3 @@ def compute_rbf_interpolation_coeffs_vertex(
         domain_height,
         array_ns=array_ns,
     )
-    assert len(coeffs) == 2
-    return coeffs

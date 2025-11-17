@@ -120,22 +120,26 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: gtx_typing.Backend | None, keep_skip_values: bool):
+    def __call__(self, allocator: gtx_typing.FieldBufferAllocationUtil, keep_skip_values: bool):
         if not self._reader:
             self.open()
 
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
             geometry_type = base.GeometryType(geometry_type)
 
-        self._geometry = self._read_geometry_fields(backend, geometry_type)
+        self._geometry = self._read_geometry_fields(allocator, geometry_type)
         self._grid = self._construct_grid(
-            backend=backend, with_skip_values=keep_skip_values, geometry_type=geometry_type
+            allocator=allocator,
+            with_skip_values=keep_skip_values,
+            geometry_type=geometry_type,
         )
-        self._coordinates = self._read_coordinates(backend, geometry_type)
+        self._coordinates = self._read_coordinates(allocator, geometry_type)
         self.close()
 
     def _read_coordinates(
-        self, backend: gtx_typing.Backend | None, geometry_type: base.GeometryType | None
+        self,
+        allocator: gtx_typing.FieldBufferAllocationUtil | None,
+        geometry_type: base.GeometryType | None,
     ) -> CoordinateDict:
         coordinates = {
             dims.CellDim: {
@@ -143,13 +147,13 @@ class GridManager:
                     (dims.CellDim,),
                     self._reader.variable(gridfile.CoordinateName.CELL_LATITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
                 "lon": gtx.as_field(
                     (dims.CellDim,),
                     self._reader.variable(gridfile.CoordinateName.CELL_LONGITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
             },
             dims.EdgeDim: {
@@ -157,26 +161,26 @@ class GridManager:
                     (dims.EdgeDim,),
                     self._reader.variable(gridfile.CoordinateName.EDGE_LATITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
                 "lon": gtx.as_field(
                     (dims.EdgeDim,),
                     self._reader.variable(gridfile.CoordinateName.EDGE_LONGITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
             },
             dims.VertexDim: {
                 "lat": gtx.as_field(
                     (dims.VertexDim,),
                     self._reader.variable(gridfile.CoordinateName.VERTEX_LATITUDE),
-                    allocator=backend,
+                    allocator=allocator,
                     dtype=ta.wpfloat,
                 ),
                 "lon": gtx.as_field(
                     (dims.VertexDim,),
                     self._reader.variable(gridfile.CoordinateName.VERTEX_LONGITUDE),
-                    allocator=backend,
+                    allocator=allocator,
                     dtype=ta.wpfloat,
                 ),
             },
@@ -187,61 +191,63 @@ class GridManager:
                 (dims.CellDim,),
                 self._reader.variable(gridfile.CoordinateName.CELL_X),
                 dtype=ta.wpfloat,
-                allocator=backend,
+                allocator=allocator,
             )
             coordinates[dims.CellDim]["y"] = gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.CoordinateName.CELL_Y),
                 dtype=ta.wpfloat,
-                allocator=backend,
+                allocator=allocator,
             )
             coordinates[dims.CellDim]["z"] = gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.CoordinateName.CELL_Z),
                 dtype=ta.wpfloat,
-                allocator=backend,
+                allocator=allocator,
             )
             coordinates[dims.EdgeDim]["x"] = gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.CoordinateName.EDGE_X),
                 dtype=ta.wpfloat,
-                allocator=backend,
+                allocator=allocator,
             )
             coordinates[dims.EdgeDim]["y"] = gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.CoordinateName.EDGE_Y),
                 dtype=ta.wpfloat,
-                allocator=backend,
+                allocator=allocator,
             )
             coordinates[dims.EdgeDim]["z"] = gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.CoordinateName.EDGE_Z),
                 dtype=ta.wpfloat,
-                allocator=backend,
+                allocator=allocator,
             )
             coordinates[dims.VertexDim]["x"] = gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.CoordinateName.VERTEX_X),
                 dtype=ta.wpfloat,
-                allocator=backend,
+                allocator=allocator,
             )
             coordinates[dims.VertexDim]["y"] = gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.CoordinateName.VERTEX_Y),
                 dtype=ta.wpfloat,
-                allocator=backend,
+                allocator=allocator,
             )
             coordinates[dims.VertexDim]["z"] = gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.CoordinateName.VERTEX_Z),
                 dtype=ta.wpfloat,
-                allocator=backend,
+                allocator=allocator,
             )
 
         return coordinates
 
     def _read_geometry_fields(
-        self, backend: gtx_typing.Backend | None, geometry_type: base.GeometryType | None
+        self,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
+        geometry_type: base.GeometryType | None,
     ) -> GeometryDict:
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
@@ -249,60 +255,61 @@ class GridManager:
             gridfile.GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.GeometryName.CELL_AREA),
-                allocator=backend,
+                allocator=allocator,
             ),
             # TODO(halungge): easily computed from a neighbor_sum V2C over the cell areas?
             gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.GeometryName.DUAL_AREA),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_LENGTH.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.GeometryName.EDGE_LENGTH),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
                 self._reader.variable(gridfile.GeometryName.EDGE_CELL_DISTANCE, transpose=True),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_VERTEX_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2VDim),
                 self._reader.variable(gridfile.GeometryName.EDGE_VERTEX_DISTANCE, transpose=True),
-                allocator=backend,
+                allocator=allocator,
             ),
             # TODO(halungge): recompute from coordinates? field in gridfile contains NaN on boundary edges
             gridfile.GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.GeometryName.TANGENT_ORIENTATION),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
                 (dims.CellDim, dims.C2EDim),
                 self._reader.int_variable(
                     gridfile.GeometryName.CELL_NORMAL_ORIENTATION, transpose=True
                 ),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
                 (dims.VertexDim, dims.V2EDim),
                 self._reader.int_variable(
                     gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX, transpose=True
                 ),
-                allocator=backend,
+                allocator=allocator,
             ),
         }
 
     def _read_grid_refinement_fields(
         self,
+        *,
         decomposition_info: decomposition.DecompositionInfo | None = None,
-        backend: gtx_typing.Backend | None = None,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
@@ -312,7 +319,7 @@ class GridManager:
 
         Args:
             decomposition_info: Optional decomposition information, if not provided the grid is assumed to be a single node run.
-            backend: Optional backend to use for reading the fields, if not provided the default backend is used.
+            allocator: Optional allocator to use for reading the fields, if not provided the default backend is used.
         Returns:
             dict[gtx.Dimension, gtx.Field]: A dictionary containing the refinement control fields for each dimension.
         """
@@ -325,7 +332,7 @@ class GridManager:
             dim: gtx.as_field(
                 (dim,),
                 self._reader.int_variable(name, decomposition_info, transpose=False),
-                allocator=backend,
+                allocator=allocator,
             )
             for dim, name in refinement_control_names.items()
         }
@@ -345,7 +352,7 @@ class GridManager:
 
     def _construct_grid(
         self,
-        backend: gtx_typing.Backend | None,
+        allocator: gtx_typing.FieldBufferAllocationUtil | None,
         with_skip_values: bool,
         geometry_type: base.GeometryType | None,
     ) -> icon.IconGrid:
@@ -355,8 +362,8 @@ class GridManager:
         Icon4py from them. Adds constructed start/end index information to the grid.
 
         """
-        xp = data_alloc.import_array_ns(backend)
-        refinement_fields = self._read_grid_refinement_fields(backend=backend)
+        xp = data_alloc.import_array_ns(allocator)
+        refinement_fields = self._read_grid_refinement_fields(allocator=allocator)
         limited_area = refinement.is_limited_area_grid(
             refinement_fields[dims.CellDim].ndarray, array_ns=xp
         )
@@ -392,7 +399,7 @@ class GridManager:
         dual_cell_areas = self.geometry_fields[gridfile.GeometryName.DUAL_AREA.value].ndarray
 
         global_params = icon.GlobalGridParams.from_fields(
-            backend=backend,
+            array_ns=xp,
             grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
@@ -432,13 +439,15 @@ class GridManager:
         }
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
         domain_bounds_constructor = functools.partial(
-            refinement.compute_domain_bounds, refinement_fields=refinement_fields, array_ns=xp
+            refinement.compute_domain_bounds,
+            refinement_fields=refinement_fields,
+            array_ns=xp,
         )
         start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
         return icon.icon_grid(
             id_=uuid_,
-            allocator=backend,
+            allocator=allocator,
             config=config,
             neighbor_tables=neighbor_tables,
             start_index=start_index,
@@ -455,7 +464,8 @@ class GridManager:
 
 
 def _get_derived_connectivities(
-    neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray], array_ns: ModuleType = np
+    neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
+    array_ns: ModuleType = np,
 ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
     e2v_table = neighbor_tables[dims.E2V]
     c2v_table = neighbor_tables[dims.C2V]
@@ -574,7 +584,8 @@ def _construct_diamond_edges(
             i,
             (
                 ~array_ns.isin(
-                    flattened[i, :], array_ns.asarray([i, gridfile.GridFile.INVALID_INDEX])
+                    flattened[i, :],
+                    array_ns.asarray([i, gridfile.GridFile.INVALID_INDEX]),
                 )
             ),
         ]

@@ -1033,15 +1033,11 @@ def compute_pos_on_tplane_e_x_y(
     cells_lat: data_alloc.NDArray,
     edges_lon: data_alloc.NDArray,
     edges_lat: data_alloc.NDArray,
-    vertex_lon: data_alloc.NDArray,
-    vertex_lat: data_alloc.NDArray,
     owner_mask: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
-    e2v: data_alloc.NDArray,
-    e2c2e: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
-) -> data_alloc.NDArray:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Compute pos_on_tplane_e_x_y.
     get geographical coordinates of edge midpoint
@@ -1061,12 +1057,8 @@ def compute_pos_on_tplane_e_x_y(
         cells_lat: //
         edges_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         edges_lat: //
-        vertex_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
-        vertex_lat: //
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
         e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        e2v: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], gtx.int32]
-        e2c2e: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
         horizontal_start:
 
     Returns:
@@ -1074,7 +1066,7 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e_y: //
     """
     llb = horizontal_start
-    pos_on_tplane_e = array_ns.zeros([e2c.shape[0], 8, 2])
+    pos_on_tplane_e = array_ns.zeros([e2c.shape[0], 2, 2])
     xyloc_plane_n1 = array_ns.zeros([2, e2c.shape[0]])
     xyloc_plane_n2 = array_ns.zeros([2, e2c.shape[0]])
     xyloc_plane_n1[0, llb:], xyloc_plane_n1[1, llb:] = proj.gnomonic_proj(
@@ -1083,24 +1075,6 @@ def compute_pos_on_tplane_e_x_y(
     xyloc_plane_n2[0, llb:], xyloc_plane_n2[1, llb:] = proj.gnomonic_proj(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 1]], cells_lat[e2c[llb:, 1]]
     )
-
-    xyloc_quad = array_ns.zeros([4, 2, e2c.shape[0]])
-    xyloc_plane_quad = array_ns.zeros([4, 2, e2c.shape[0]])
-    for ne in range(4):
-        xyloc_quad[ne, 0, llb:] = edges_lon[e2c2e[llb:, ne]]
-        xyloc_quad[ne, 1, llb:] = edges_lat[e2c2e[llb:, ne]]
-        xyloc_plane_quad[ne, 0, llb:], xyloc_plane_quad[ne, 1, llb:] = proj.gnomonic_proj(
-            edges_lon[llb:], edges_lat[llb:], xyloc_quad[ne, 0, llb:], xyloc_quad[ne, 1, llb:]
-        )
-
-    xyloc_ve = array_ns.zeros([2, 2, e2c.shape[0]])
-    xyloc_plane_ve = array_ns.zeros([2, 2, e2c.shape[0]])
-    for nv in range(2):
-        xyloc_ve[nv, 0, llb:] = vertex_lon[e2v[llb:, nv]]
-        xyloc_ve[nv, 1, llb:] = vertex_lat[e2v[llb:, nv]]
-        xyloc_plane_ve[nv, 0, llb:], xyloc_plane_ve[nv, 1, llb:] = proj.gnomonic_proj(
-            edges_lon[llb:], edges_lat[llb:], xyloc_ve[nv, 0, llb:], xyloc_ve[nv, 1, llb:]
-        )
 
     pos_on_tplane_e[llb:, 0, 0] = array_ns.where(
         owner_mask[llb:],
@@ -1139,47 +1113,7 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e[llb:, 1, 1],
     )
 
-    for ne in range(4):
-        pos_on_tplane_e[llb:, 2 + ne, 0] = array_ns.where(
-            owner_mask[llb:],
-            grid_sphere_radius
-            * (
-                xyloc_plane_quad[ne, 0, llb:] * primal_normal_v1[llb:]
-                + xyloc_plane_quad[ne, 1, llb:] * primal_normal_v2[llb:]
-            ),
-            pos_on_tplane_e[llb:, 2 + ne, 0],
-        )
-        pos_on_tplane_e[llb:, 2 + ne, 1] = array_ns.where(
-            owner_mask[llb:],
-            grid_sphere_radius
-            * (
-                xyloc_plane_quad[ne, 0, llb:] * dual_normal_v1[llb:]
-                + xyloc_plane_quad[ne, 1, llb:] * dual_normal_v2[llb:]
-            ),
-            pos_on_tplane_e[llb:, 2 + ne, 1],
-        )
-
-    for nv in range(2):
-        pos_on_tplane_e[llb:, 6 + nv, 0] = array_ns.where(
-            owner_mask[llb:],
-            grid_sphere_radius
-            * (
-                xyloc_plane_ve[nv, 0, llb:] * primal_normal_v1[llb:]
-                + xyloc_plane_ve[nv, 1, llb:] * primal_normal_v2[llb:]
-            ),
-            pos_on_tplane_e[llb:, 6 + nv, 0],
-        )
-        pos_on_tplane_e[llb:, 6 + nv, 1] = array_ns.where(
-            owner_mask[llb:],
-            grid_sphere_radius
-            * (
-                xyloc_plane_ve[nv, 0, llb:] * dual_normal_v1[llb:]
-                + xyloc_plane_ve[nv, 1, llb:] * dual_normal_v2[llb:]
-            ),
-            pos_on_tplane_e[llb:, 6 + nv, 1],
-        )
-
-    return pos_on_tplane_e[:, 0:2, 0], pos_on_tplane_e[:, 0:2, 1]
+    return pos_on_tplane_e[:, :, 0], pos_on_tplane_e[:, :, 1]
 
 
 def compute_pos_on_tplane_e_x_y_torus(

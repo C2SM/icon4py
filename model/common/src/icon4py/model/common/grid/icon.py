@@ -9,6 +9,7 @@ import dataclasses
 import logging
 import math
 from collections.abc import Callable
+from types import ModuleType
 from typing import Final, TypeVar
 
 import gt4py.next as gtx
@@ -95,7 +96,7 @@ class GlobalGridParams:
     @classmethod
     def from_fields(
         cls: type[_T],
-        backend: gtx.typing.Backend | None,
+        array_ns: ModuleType,
         mean_edge_length: float | None = None,
         edge_lengths: data_alloc.NDArray | None = None,
         mean_dual_edge_length: float | None = None,
@@ -106,13 +107,11 @@ class GlobalGridParams:
         dual_cell_areas: data_alloc.NDArray | None = None,
         **kwargs,
     ) -> _T:
-        xp = data_alloc.import_array_ns(backend)
-
         def init_mean(value: float | None, data: data_alloc.NDArray | None) -> float | None:
             if value is not None:
                 return value
             if data is not None:
-                return xp.mean(data).item()
+                return array_ns.mean(data).item()
             return None
 
         mean_edge_length = init_mean(mean_edge_length, edge_lengths)
@@ -167,8 +166,8 @@ class GlobalGridParams:
             object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
 
     @property
-    def geometry_type(self) -> base.GeometryType | None:
-        return self.grid_shape.geometry_type if self.grid_shape else None
+    def geometry_type(self) -> base.GeometryType:
+        return self.grid_shape.geometry_type
 
     @property
     def subdivision(self) -> GridSubdivision | None:
