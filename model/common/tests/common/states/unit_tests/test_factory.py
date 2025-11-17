@@ -316,6 +316,7 @@ def test_compute_scalar_value_from_numpy_provider(
         deps={"ar": "height_coordinate"},
         domain=(),
         fields=("minimal_height",),
+        do_exchange=False,
     )
     height_coordinate_source.register_provider(provider)
     value = height_coordinate_source.get("minimal_height", factory.RetrievalType.FIELD)
