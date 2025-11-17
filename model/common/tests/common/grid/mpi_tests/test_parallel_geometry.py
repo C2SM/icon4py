@@ -75,6 +75,8 @@ def test_distributed_geometry_attrs(
     assert test_utils.dallclose(field, field_ref, equal_nan=True, atol=1e-12)
 
 
+@pytest.mark.datatest
+@pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, grid_name, lb_domain",
