@@ -53,7 +53,7 @@ def download_validation_grids() -> None:
     config.TEST_DATA_PATH = pathlib.Path.cwd() / definitions.DEFAULT_TEST_DATA_FOLDER
     for grid in VALIDATION_GRIDS:
         print(f"downloading and unpacking {grid.name}")
-        fname = grid_utils._download_grid_file(grid.name)
+        fname = grid_utils._download_grid_file(grid)
         print(f"done - downloaded {fname}")
 
 
