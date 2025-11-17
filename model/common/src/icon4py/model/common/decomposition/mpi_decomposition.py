@@ -12,7 +12,7 @@ import functools
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
+from typing import Any, ClassVar, Final, Union
 
 import dace  # type: ignore[import-untyped]
 import numpy as np
@@ -28,6 +28,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 try:
     import ghex  # type: ignore [import-not-found]
     import mpi4py  # type: ignore [import-not-found]
+    import mpi4py.MPI  # type: ignore [import-not-found]
     from ghex.context import make_context  # type: ignore [import-not-found]
     from ghex.unstructured import (  # type: ignore [import-not-found]
         DomainDescriptor,
@@ -47,20 +48,14 @@ except ImportError:
     unstructured = None
 
 
-if TYPE_CHECKING:
-    import mpi4py.MPI  # type: ignore [import-not-found]
-
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
 
 
 def init_mpi() -> None:
-    try:
-        from mpi4py import MPI
-    except ImportError:
-        MPI = None
+    from mpi4py import MPI
 
-    if hasattr(MPI, "Is_initialized") and not MPI.Is_initialized():
+    if not MPI.Is_initialized():
         log.info("initializing MPI")
         MPI.Init()
 
