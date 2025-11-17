@@ -9,6 +9,7 @@ import pathlib
 
 import gt4py.next.typing as gtx_typing
 
+from icon4py.model.common import model_backends
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
@@ -26,13 +27,13 @@ grid_geometries: dict[str, geometry.GridGeometry] = {}
 def get_grid_manager_from_experiment(
     experiment: definitions.Experiment,
     keep_skip_values: bool,
-    backend: gtx_typing.Backend | None = None,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
     return get_grid_manager_from_identifier(
         experiment.grid,
         num_levels=experiment.num_levels,
         keep_skip_values=keep_skip_values,
-        backend=backend,
+        allocator=allocator,
     )
 
 
@@ -40,11 +41,11 @@ def get_grid_manager_from_identifier(
     grid: definitions.GridDescription,
     num_levels: int,
     keep_skip_values: bool,
-    backend: gtx_typing.Backend | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
     grid_file = _download_grid_file(grid)
     return get_grid_manager(
-        grid_file, num_levels=num_levels, keep_skip_values=keep_skip_values, backend=backend
+        grid_file, num_levels=num_levels, keep_skip_values=keep_skip_values, allocator=allocator
     )
 
 
@@ -52,7 +53,7 @@ def get_grid_manager(
     filename: pathlib.Path,
     num_levels: int,
     keep_skip_values: bool,
-    backend: gtx_typing.Backend | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
     """
     Construct a GridManager instance for an ICON grid file.
@@ -68,7 +69,7 @@ def get_grid_manager(
         v_grid.VerticalGridConfig(num_levels=num_levels),
         gridfile.ToZeroBasedIndexTransformation(),
     )
-    manager(backend=backend, keep_skip_values=keep_skip_values)
+    manager(allocator=allocator, keep_skip_values=keep_skip_values)
     return manager
 
 
@@ -108,7 +109,7 @@ def get_grid_geometry(
             experiment.grid,
             keep_skip_values=True,
             num_levels=experiment.num_levels,
-            backend=backend,
+            allocator=model_backends.get_allocator(backend),
         )
         grid = gm.grid
         geometry_source = geometry.GridGeometry(

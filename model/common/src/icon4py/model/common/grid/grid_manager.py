@@ -97,7 +97,7 @@ class GridManager:
 
     def __call__(
         self,
-        backend: gtx_typing.Backend | None,
+        allocator: gtx_typing.FieldBufferAlocationUtil,
         keep_skip_values: bool,
         decomposer: halo.Decomposer = _single_node_decomposer,
         run_properties=_single_process_props,
@@ -105,18 +105,22 @@ class GridManager:
         if not run_properties.single_node() and isinstance(decomposer, halo.SingleNodeDecomposer):
             raise InvalidConfigError("Need a Decomposer for multi node run")
 
+        self._geometry = self._read_geometry_fields(allocator)
+        self._grid = self._construct_grid(allocator=allocator, with_skip_values=keep_skip_values)
+        self._coordinates = self._read_coordinates(allocator)
+
         if not self._reader:
             self.open()
 
         self._construct_decomposed_grid(
-            backend=backend,
+            backend=allocator,
             with_skip_values=keep_skip_values,
             decomposer=decomposer,
             run_properties=run_properties,
         )
-        self._coordinates = self._read_coordinates(backend)
-        self._geometry = self._read_geometry_fields(backend)
-        self._geometry = self._read_geometry_fields(backend)
+        self._coordinates = self._read_coordinates(allocator)
+        self._geometry = self._read_geometry_fields(allocator)
+        self._geometry = self._read_geometry_fields(allocator)
 
         self.close()
 
@@ -181,9 +185,10 @@ class GridManager:
             },
         }
 
-    def _read_geometry_fields(self, backend: gtx_typing.Backend | None):
+    def _read_geometry_fields(self, allocator: gtx_typing.FieldBufferAllocationUtil):
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
+        my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
         my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
@@ -191,23 +196,23 @@ class GridManager:
             gridfile.GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,),
                 self._reader.variable(gridfile.GeometryName.CELL_AREA, indices=my_cell_indices),
-                allocator=backend,
+                allocator=allocator,
             ),
             # TODO(halungge): easily computed from a neighbor_sum V2C over the cell areas?
             gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
                 (dims.VertexDim,),
                 self._reader.variable(gridfile.GeometryName.DUAL_AREA),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_LENGTH.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.GeometryName.EDGE_LENGTH),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
@@ -216,7 +221,7 @@ class GridManager:
                     transpose=True,
                     indices=my_edge_indices,
                 ),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_VERTEX_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2VDim),
@@ -225,7 +230,7 @@ class GridManager:
                     transpose=True,
                     indices=my_edge_indices,
                 ),
-                allocator=backend,
+                allocator=allocator,
             ),
             # TODO(halungge): recompute from coordinates? field in gridfile contains NaN on boundary edges
             gridfile.GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
@@ -233,7 +238,7 @@ class GridManager:
                 self._reader.variable(
                     gridfile.GeometryName.TANGENT_ORIENTATION, indices=my_edge_indices
                 ),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
                 (dims.CellDim, dims.C2EDim),
@@ -242,7 +247,7 @@ class GridManager:
                     transpose=True,
                     indices=my_cell_indices,
                 ),
-                allocator=backend,
+                allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
                 (dims.VertexDim, dims.V2EDim),
@@ -252,13 +257,13 @@ class GridManager:
                     apply_transformation=False,
                     indices=my_vertex_indices,
                 ),
-                allocator=backend,
+                allocator=allocator,
             ),
         }
 
     def _read_grid_refinement_fields(
         self,
-        backend: gtx_typing.Backend | None = None,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
@@ -285,7 +290,7 @@ class GridManager:
                     transpose=False,
                     apply_transformation=False,
                 ),
-                allocator=backend,
+                allocator=allocator,
             )
             for dim, name in refinement_control_names.items()
         }
@@ -363,7 +368,7 @@ class GridManager:
 
     def _construct_decomposed_grid(
         self,
-        backend: gtx_typing.Backend | None,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
         with_skip_values: bool,
         decomposer: halo.Decomposer,
         run_properties: decomposition.ProcessProperties,
@@ -374,12 +379,12 @@ class GridManager:
         Icon4py from them. Adds constructed start/end index information to the grid.
 
         """
-        xp = data_alloc.import_array_ns(backend)
+        xp = data_alloc.import_array_ns(allocator)
         ## FULL GRID PROPERTIES
 
         cell_refinement = self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         global_size = self._read_full_grid_size()
-        global_params = self._construct_global_params(backend, global_size)
+        global_params = self._construct_global_params(allocator, global_size)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
@@ -404,7 +409,7 @@ class GridManager:
             num_levels=self._vertical_config.num_levels,
             full_grid_size=global_size,
             connectivities=neighbor_tables_for_halo_construction,
-            backend=backend,
+            backend=allocator,
         )
 
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
@@ -421,7 +426,7 @@ class GridManager:
         # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
 
-        refinement_fields = self._read_grid_refinement_fields(backend)
+        refinement_fields = self._read_grid_refinement_fields(allocator)
 
         domain_bounds_constructor = functools.partial(
             refinement.compute_domain_bounds, refinement_fields=refinement_fields, array_ns=xp
@@ -437,7 +442,7 @@ class GridManager:
 
         grid = icon.icon_grid(
             self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
-            allocator=backend,
+            allocator=allocator,
             config=grid_config,
             neighbor_tables=neighbor_tables,
             start_index=start_index,

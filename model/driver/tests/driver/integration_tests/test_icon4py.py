@@ -26,7 +26,7 @@ from icon4py.model.driver import (
     initialization_utils as driver_init,
 )
 from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
-from icon4py.model.testing.fixtures.datatest import backend
+from icon4py.model.testing.fixtures.datatest import backend, backend_like
 
 from ..fixtures import *  # noqa: F403
 from ..utils import construct_icon4pyrun_config
@@ -280,7 +280,7 @@ def test_run_timeloop_single_step(
 
     current_index, next_index = (1, 0) if not linit else (0, 1)
     nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=0.0,
+        max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
         rho_at_cells_on_half_levels=sp.rho_ic(),
@@ -396,7 +396,7 @@ def test_driver(
     *,
     data_provider,
     ranked_data_path,
-    backend,
+    backend_like,
 ):
     """
     This is a only test to check if the icon4py driver runs from serialized data without verifying the end result.
@@ -410,12 +410,12 @@ def test_driver(
     gm = grid_utils.get_grid_manager_from_experiment(
         experiment=experiment,
         keep_skip_values=True,
-        backend=backend,
+        allocator=model_backends.get_allocator(backend_like),
     )
 
     backend_name = None
     for key, value in model_backends.BACKENDS.items():
-        if value == backend:
+        if value == backend_like:
             backend_name = key
 
     assert backend_name is not None

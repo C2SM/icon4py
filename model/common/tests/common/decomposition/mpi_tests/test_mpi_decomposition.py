@@ -6,9 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-from typing import Any
-
 import logging
+from typing import Any
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -28,10 +27,9 @@ import gt4py.next as gtx
 
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import parallel_helpers
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
-from icon4py.model.testing import definitions as test_defs, serialbox
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox
 from icon4py.model.testing.parallel_helpers import check_comm_size
 
 from ...fixtures import (
@@ -42,9 +40,9 @@ from ...fixtures import (
     experiment,
     grid_savepoint,
     icon_grid,
-    processor_props,
     interpolation_savepoint,
     metrics_savepoint,
+    processor_props,
     ranked_data_path,
 )
 

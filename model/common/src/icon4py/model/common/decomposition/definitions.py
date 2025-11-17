@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Literal, Protocol, overload, runtime_checkable
 
+import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
 import numpy as np
 
@@ -32,6 +33,7 @@ except ImportError:
     from types import ModuleType
 
     dace: ModuleType | None = None  # type: ignore[no-redef]
+from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
 
 
 log = logging.getLogger(__name__)
@@ -46,7 +48,7 @@ class ProcessProperties(Protocol):
     def single_node(self) -> bool:
         return self.comm_size == 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Comm name={self.comm_name}: rank = {self.rank}/{self.comm_size}"
 
 
@@ -57,7 +59,7 @@ class SingleNodeProcessProperties(ProcessProperties):
     comm_size: int
     rank: int
 
-    def __init__(self):
+    def __init__(self):  # type: ignore  [no-untyped-def]
         object.__setattr__(self, "comm", None)
         object.__setattr__(self, "rank", 0)
         object.__setattr__(self, "comm_name", "")
@@ -73,7 +75,7 @@ class DomainDescriptorIdGenerator:
         self._roundtrips = parallel_props.rank
         self._base = self._roundtrips * self._comm_size
 
-    def __call__(self):
+    def __call__(self) -> int:
         next_id = self._base + self._counter
         if self._counter + 1 >= self._comm_size:
             self._roundtrips = self._roundtrips + self._comm_size
@@ -85,6 +87,13 @@ class DomainDescriptorIdGenerator:
 
 
 class DecompositionInfo:
+    def __init__(
+        self,
+    ):
+        self._global_index: dict[gtx.Dimension, data_alloc.NDArray] = {}
+        self._halo_levels: dict[gtx.Dimension, data_alloc.NDArray] = {}
+        self._owner_mask: dict[gtx.Dimension, data_alloc.NDArray] = {}
+
     class EntryType(IntEnum):
         ALL = 0
         OWNED = 1
@@ -97,19 +106,12 @@ class DecompositionInfo:
         global_index: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
         halo_levels: data_alloc.NDArray,
-    ):
+    ) -> None:
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
         self._halo_levels[dim] = halo_levels
 
-    def __init__(
-        self,
-    ):
-        self._global_index = {}
-        self._halo_levels = {}
-        self._owner_mask = {}
-
-   def local_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
+    def local_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._to_local_index(dim)
@@ -122,13 +124,13 @@ class DecompositionInfo:
                 mask = self._owner_mask[dim]
                 return index[mask]
 
-    def _to_local_index(self, dim):
+    def _to_local_index(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         data = self._global_index[dim]
         assert data.ndim == 1
         if isinstance(data, np.ndarray):
             import numpy as xp
         else:
-            import cupy as xp
+            import cupy as xp  # type: ignore[import-not-found, no-redef]
 
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
@@ -145,7 +147,8 @@ class DecompositionInfo:
         local_neighbors[mask] = sorter[positions[mask]]
         return local_neighbors
 
-    # TODO (halungge): use for test reference? in test_definitions.py
+        # TODO (halungge): use for test reference? in test_definitions.py
+
     def global_to_local_ref(
         self, dim: gtx.Dimension, indices_to_translate: data_alloc.NDArray
     ) -> data_alloc.NDArray:
@@ -161,7 +164,11 @@ class DecompositionInfo:
     def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
-    def global_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
+    def global_index(
+        self,
+        dim: gtx.Dimension,
+        entry_type: DecompositionInfo.EntryType = DecompositionInfo.EntryType.ALL,
+    ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._global_index[dim]
@@ -194,7 +201,7 @@ class DecompositionInfo:
 
 
 class ExchangeResult(Protocol):
-    def wait(self): ...
+    def wait(self) -> None: ...
 
     def is_ready(self) -> bool: ...
 
@@ -224,7 +231,7 @@ class SingleNodeExchange:
     def get_size(self) -> int:
         return 1
 
-    def __call__(self, *args, **kwargs) -> ExchangeResult | None:
+    def __call__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> ExchangeResult | None:  # type: ignore[return] # return statment in else condition
         """Perform a halo exchange operation.
 
         Args:
@@ -234,8 +241,6 @@ class SingleNodeExchange:
             dim: The dimension along which the exchange is performed.
             wait: If True, the operation will block until the exchange is completed (default: True).
         """
-        dim = kwargs.get("dim")
-        wait = kwargs.get("wait", True)
 
         res = self.exchange(dim, *args)
         if wait:
@@ -243,36 +248,20 @@ class SingleNodeExchange:
         else:
             return res
 
-    if dace:
-        # Implementation of DaCe SDFGConvertible interface
-        # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
-            sdfg = DummyNestedSDFG().__sdfg__()
-            sdfg.name = "_halo_exchange_"
-            return sdfg
+    # Implementation of DaCe SDFGConvertible interface
+    # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
+    def dace__sdfg__(
+        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+    ) -> dace.sdfg.sdfg.SDFG:
+        sdfg = DummyNestedSDFG().__sdfg__()
+        sdfg.name = "_halo_exchange_"
+        return sdfg
 
-        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-            return DummyNestedSDFG().__sdfg_closure__()
+    def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
+        return DummyNestedSDFG().__sdfg_closure__()
 
-        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-            return DummyNestedSDFG().__sdfg_signature__()
-
-    else:
-
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
-            raise NotImplementedError(
-                "__sdfg__ is only supported when the 'dace' module is available."
-            )
-
-        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-            raise NotImplementedError(
-                "__sdfg_closure__ is only supported when the 'dace' module is available."
-            )
-
-        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-            raise NotImplementedError(
-                "__sdfg_signature__ is only supported when the 'dace' module is available."
-            )
+    def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+        return DummyNestedSDFG().__sdfg_signature__()
 
     __sdfg__ = dace__sdfg__
     __sdfg_closure__ = dace__sdfg_closure__
@@ -286,7 +275,7 @@ class HaloExchangeWaitRuntime(Protocol):
         """Wait on the communication handle."""
         ...
 
-    def __sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+    def __sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
         """DaCe related: SDFGConvertible interface."""
         ...
 
@@ -306,35 +295,17 @@ class HaloExchangeWait:
     def __call__(self, communication_handle: SingleNodeResult) -> None:
         communication_handle.wait()
 
-    if dace:
-        # Implementation of DaCe SDFGConvertible interface
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
-            sdfg = DummyNestedSDFG().__sdfg__()
-            sdfg.name = "_halo_exchange_wait_"
-            return sdfg
+    # Implementation of DaCe SDFGConvertible interface
+    def dace__sdfg__(self, *args: Any, dim: Dimension, wait: bool = True) -> dace.sdfg.sdfg.SDFG:
+        sdfg = DummyNestedSDFG().__sdfg__()
+        sdfg.name = "_halo_exchange_wait_"
+        return sdfg
 
-        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-            return DummyNestedSDFG().__sdfg_closure__()
+    def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
+        return DummyNestedSDFG().__sdfg_closure__()
 
-        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-            return DummyNestedSDFG().__sdfg_signature__()
-
-    else:
-
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
-            raise NotImplementedError(
-                "__sdfg__ is only supported when the 'dace' module is available."
-            )
-
-        def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
-            raise NotImplementedError(
-                "__sdfg_closure__ is only supported when the 'dace' module is available."
-            )
-
-        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-            raise NotImplementedError(
-                "__sdfg_signature__ is only supported when the 'dace' module is available."
-            )
+    def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+        return DummyNestedSDFG().__sdfg_signature__()
 
     __sdfg__ = dace__sdfg__
     __sdfg_closure__ = dace__sdfg_closure__
@@ -352,7 +323,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 
 class SingleNodeResult:
-    def wait(self):
+    def wait(self) -> None:
         pass
 
     def is_ready(self) -> bool:
@@ -360,7 +331,7 @@ class SingleNodeResult:
 
 
 class RunType:
-    """Base type for marker types used to initialize the parallel or single node properites."""
+    """Base type for marker types used to initialize the parallel or single node properties."""
 
     pass
 

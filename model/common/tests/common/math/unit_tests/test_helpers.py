@@ -8,6 +8,7 @@
 from typing import Any
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
@@ -17,12 +18,12 @@ from icon4py.model.common.grid import base, simple
 from icon4py.model.common.math import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.fixtures.datatest import backend
-from icon4py.model.testing.fixtures.stencil_tests import grid
+from icon4py.model.testing.fixtures.datatest import backend, backend_like
+from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
 
 
-def test_cross_product(backend):
-    mesh = simple.simple_grid(backend=backend)
+def test_cross_product(backend: gtx_typing.Backend) -> None:
+    mesh = simple.simple_grid(allocator=backend)
     x1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
     y1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
     z1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)

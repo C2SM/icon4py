@@ -7,9 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 # mypy: ignore-errors
-import cProfile
-import pstats
-
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims
@@ -17,22 +14,7 @@ from icon4py.model.common.grid.simple import simple_grid
 from icon4py.tools.py2fgen.wrappers.icon4py_export import export
 
 
-# global profiler object
-profiler = cProfile.Profile()
-
 grid = simple_grid()
-
-
-@export
-def profile_enable():
-    profiler.enable()
-
-
-@export
-def profile_disable():
-    profiler.disable()
-    stats = pstats.Stats(profiler)
-    stats.dump_stats(f"{__name__}.profile")
 
 
 @gtx.field_operator

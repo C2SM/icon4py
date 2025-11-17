@@ -458,8 +458,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def construct_decomposition_info(self):
         return (
-            decomposition.DecompositionInfo(
-            )
+            decomposition.DecompositionInfo()
             .set_dimension(*self._get_decomposition_fields(dims.CellDim))
             .set_dimension(*self._get_decomposition_fields(dims.EdgeDim))
             .set_dimension(*self._get_decomposition_fields(dims.VertexDim))

@@ -16,9 +16,7 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 
-import cProfile
 import dataclasses
-import pstats
 from collections.abc import Callable
 
 import gt4py.next as gtx
@@ -50,20 +48,9 @@ logger = setup_logger(__name__)
 class DiffusionGranule:
     diffusion: Diffusion
     dummy_field_factory: Callable
-    profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
 
 granule: DiffusionGranule | None = None
-
-
-def profile_enable():
-    granule.profiler.enable()
-
-
-def profile_disable():
-    granule.profiler.disable()
-    stats = pstats.Stats(granule.profiler)
-    stats.dump_stats(f"{__name__}.profile")
 
 
 @icon4py_export.export
@@ -115,9 +102,7 @@ def diffusion_init(
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
-    backend_name = (
-        actual_backend.name if hasattr(actual_backend, "name") else actual_backend.__name__
-    )
+    backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
     # Diffusion parameters
