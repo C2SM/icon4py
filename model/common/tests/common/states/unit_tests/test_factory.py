@@ -301,7 +301,7 @@ def test_compute_scalar_value_from_numpy_provider(
     metrics_savepoint: serialbox.MetricSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    value_ref = np.min(metrics_savepoint.z_ifc())
+    value_ref = np.min(metrics_savepoint.z_ifc().asnumpy())
     sample_func = functools.partial(reduce_scalar_min, xp=data_alloc.import_array_ns(backend))
     provider = factory.NumpyDataProvider(
         func=sample_func,
