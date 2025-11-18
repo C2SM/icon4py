@@ -11,11 +11,12 @@ from gt4py._core import definitions as gt_coredefs
 from gt4py.next import common as gt_common
 
 from icon4py.model.common.io.ugrid import dimension_mapping, ugrid_attributes
+from icon4py.model.common.states.model import FieldMetaData
 
 
 def to_data_array(
     field: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT],
-    attrs=None,
+    attrs: FieldMetaData | dict | None = None,
     is_on_interface: bool = False,
 ) -> xa.DataArray:
     """Convert a gt4py field to a xarray data array.
@@ -30,7 +31,8 @@ def to_data_array(
     dims = tuple(dimension_mapping(d, is_on_interface) for d in field.domain.dims)
     horizontal_dim = next(filter(lambda d: _is_horizontal(d), field.domain.dims))
     uxgrid_attrs = ugrid_attributes(horizontal_dim)
-    attrs.update(uxgrid_attrs)
+    assert isinstance(attrs, dict)
+    attrs.update(uxgrid_attrs)  # type: ignore [typeddict-item] # mypy does not accept the dict types flexibility
     return xa.DataArray(data=field.ndarray, dims=dims, attrs=attrs)
 
 
