@@ -280,4 +280,4 @@ class NamespaceMixin:
 
     @classmethod
     def namespace(cls) -> eve_utils.FrozenNamespace:
-        return eve_utils.FrozenNamespace(**{m: v.value for m, v in cls.__members__.items()})
+        return eve_utils.FrozenNamespace(**{m: v.value for m, v in cls.__members__.items()})  # type: ignore  [attr-defined]
