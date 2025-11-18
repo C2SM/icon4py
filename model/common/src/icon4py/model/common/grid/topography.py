@@ -45,7 +45,7 @@ def smooth_topography(
     """
     # as field _will_ do a copy. The call to ndarray.copy here is to make it explicit that we need a copy.
     topo_as_field = gtx.as_field((dims.CellDim,), topography.copy(), dtype=topography.dtype)
-    # TODO(@halungge if the input topopgraphy is properly exchanged, which it should this is not needed here.
+    # TODO(@halungge): if the input topopgraphy is properly exchanged, which it should this is not needed here.
     exchange(topo_as_field.domain.dims[0], topo_as_field)
 
     for _ in range(num_iterations):

@@ -6,10 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
-import gt4py.next.typing as gtx_typing
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -264,7 +265,8 @@ def test_compute_c_bln_avg(
 
     c2e2c0 = icon_grid.get_connectivity(dims.C2E2CO).ndarray
 
-    dummy_exchange: Callable[[gtx.Dimension, gtx.Field], None] = lambda dim, field: None
+    def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
+        return None
 
     c_bln_avg = functools.partial(
         compute_mass_conserving_bilinear_cell_average_weight,

@@ -51,13 +51,13 @@ if TYPE_CHECKING:
     [
         (attrs.CELL_HEIGHT_ON_HALF_LEVEL, "z_ifc"),
         (attrs.DDQZ_Z_FULL_E, "ddqz_z_full_e"),
-        # (attrs.ZDIFF_GRADP, "zdiff_gradp"),
-        # (attrs.VERTOFFSET_GRADP, "vertoffset_gradp"), #atol=1.0e-5
+        (attrs.ZDIFF_GRADP, "zdiff_gradp"),
+        (attrs.VERTOFFSET_GRADP, "vertoffset_gradp"),  # atol=1.0e-5
         (attrs.Z_MC, "z_mc"),
         (attrs.DDQZ_Z_HALF, "ddqz_z_half"),
         (attrs.SCALING_FACTOR_FOR_3D_DIVDAMP, "scalfac_dd3d"),
         (attrs.RAYLEIGH_W, "rayleigh_w"),
-        # (attrs.COEFF_GRADEKIN, "coeff_gradekin"), # check: possibly bounds?
+        (attrs.COEFF_GRADEKIN, "coeff_gradekin"),  # check: possibly bounds?
     ],
 )
 def test_distributed_metrics_attrs(

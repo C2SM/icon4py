@@ -9,6 +9,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
+import pytest
+
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
@@ -22,7 +25,8 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-dummy: Callable[[gtx.Dimension, gtx.Field], None] = lambda dim, field: None
+def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
+    return None
 
 
 @pytest.mark.embedded_remap_error
@@ -49,7 +53,7 @@ def test_topography_smoothing_with_serialized_data(
         c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
         num_iterations=num_iterations,
         array_ns=xp,
-        exchange=dummy,
+        exchange=dummy_exchange,
     )
 
     assert test_utils.dallclose(topography_smoothed_ref, topography_smoothed, atol=1.0e-14)

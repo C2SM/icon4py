@@ -618,7 +618,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
         # remove condition or do (inefficient) global reduction, practically
         # the convergence criteria is never reached before the niter
-        # max_ = array_ns.max(residual)
+        # for max_ = array_ns.max(residual)
         max_ = 1.0
         if iteration >= (niter - 1) or max_ < 1e-9:
             print(f"number of iterations: {iteration} - max residual={max_}")
@@ -645,14 +645,13 @@ def _force_mass_conservation_to_c_bln_avg(
 def compute_mass_conserving_bilinear_cell_average_weight(
     c2e2c0: data_alloc.NDArray,
     lat: data_alloc.NDArray,
-
     lon: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    halo_exchange: Callable[[[gtx.Dimension, gtx.Field]], None],
+    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(

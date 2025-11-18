@@ -349,6 +349,10 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     assert test_utils.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
 
 
+def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
+    return None
+
+
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -407,7 +411,7 @@ def test_compute_vertical_coordinate(
         )
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()
-    dummy_exchange: Callable[[gtx.Dimension, gtx.Field], None] = lambda dim, field: None
+
     vertical_coordinates_on_half_levels = v_grid.compute_vertical_coordinate(
         vct_a=vct_a.ndarray,
         topography=topography.ndarray,

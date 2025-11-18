@@ -566,7 +566,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     SLEVE_decay_scale_1: ta.wpfloat,
     SLEVE_decay_exponent: ta.wpfloat,
     SLEVE_decay_scale_2: ta.wpfloat,
-    exchange: Callable[[gtx.Dimension, tuple], None],
+    exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -752,7 +752,7 @@ def compute_vertical_coordinate(
     SLEVE_minimum_layer_thickness_2: ta.wpfloat,
     SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
     lowest_layer_thickness: ta.wpfloat,
-    halo_exchange: Callable[[[gtx.Dimension, tuple]], None],
+    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
