@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -52,6 +52,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/ee/67/531ea369ba64dcff5
 wheels = [
     { url = "https://files.pythonhosted.org/packages/78/b6/6307fbef88d9b5ee7421e68d78a9f162e0da4900bc5f5793f6d3d0e34fb8/annotated_types-0.7.0-py3-none-any.whl", hash = "sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53", size = 13643, upload-time = "2024-05-20T21:33:24.1Z" },
 ]
+
+[[package]]
+name = "antlr4-python3-runtime"
+version = "4.9.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/38/7859ff46355f76f8d19459005ca000b6e7012f2f1ca597746cbcd1fbfe5e/antlr4-python3-runtime-4.9.3.tar.gz", hash = "sha256:f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b", size = 117034, upload-time = "2021-11-06T17:52:23.524Z" }
 
 [[package]]
 name = "apeye"
@@ -173,8 +179,8 @@ dependencies = [
     { name = "packaging" },
     { name = "pathspec" },
     { name = "platformdirs" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d8/0d/cc2fb42b8c50d80143221515dd7e4766995bd07c56c9a3ed30baf080b6dc/black-24.10.0.tar.gz", hash = "sha256:846ea64c97afe3bc677b761787993be4991810ecc7a4a937816dd6bddedc4875", size = 645813, upload-time = "2024-10-07T19:20:50.361Z" }
 wheels = [
@@ -562,7 +568,7 @@ name = "click"
 version = "8.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/96/d3/f04c7bfcf5c1862a2a5b845c6b2b360488cf47af55dfa79c98f6a6bf98b5/click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de", size = 336121, upload-time = "2023-08-17T17:29:11.868Z" }
 wheels = [
@@ -917,7 +923,7 @@ dependencies = [
     { name = "numpy" },
     { name = "packaging" },
     { name = "ply" },
-    { name = "pyreadline", marker = "sys_platform == 'win32'" },
+    { name = "pyreadline", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
     { name = "pyyaml" },
     { name = "sympy" },
 ]
@@ -1592,6 +1598,7 @@ dev = [
     { name = "tach" },
     { name = "texsoup" },
     { name = "types-cffi" },
+    { name = "types-pyyaml" },
     { name = "typing-extensions" },
     { name = "validate-pyproject-schema-store", extra = ["all"] },
     { name = "wget" },
@@ -1633,6 +1640,7 @@ test = [
 typing = [
     { name = "mypy", extra = ["faster-cache"] },
     { name = "types-cffi" },
+    { name = "types-pyyaml" },
     { name = "typing-extensions" },
 ]
 
@@ -1692,6 +1700,7 @@ dev = [
     { name = "tach", specifier = ">=0.23.0" },
     { name = "texsoup", specifier = ">=0.3.1" },
     { name = "types-cffi", specifier = ">=1.16.0" },
+    { name = "types-pyyaml" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
     { name = "validate-pyproject-schema-store", extras = ["all"], specifier = ">=2025.6.13" },
     { name = "wget", specifier = ">=3.2" },
@@ -1733,6 +1742,7 @@ test = [
 typing = [
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
     { name = "types-cffi", specifier = ">=1.16.0" },
+    { name = "types-pyyaml" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
 ]
 
@@ -1829,7 +1839,9 @@ dependencies = [
     { name = "dace" },
     { name = "gt4py" },
     { name = "numpy" },
+    { name = "omegaconf" },
     { name = "packaging" },
+    { name = "pyyaml" },
     { name = "scipy" },
     { name = "typing-extensions" },
 ]
@@ -1890,7 +1902,9 @@ requires-dist = [
     { name = "netcdf4", marker = "extra == 'io'", specifier = ">=1.6.1" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "numpy", marker = "extra == 'io'", specifier = ">=1.23.3" },
+    { name = "omegaconf", specifier = ">=2.3.0" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "pyyaml", specifier = ">=6.0.0" },
     { name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0" },
     { name = "scipy", specifier = ">=1.14.1" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
@@ -1912,6 +1926,7 @@ dependencies = [
     { name = "icon4py-common" },
     { name = "icon4py-testing" },
     { name = "numpy" },
+    { name = "omegaconf" },
     { name = "packaging" },
 ]
 
@@ -1925,6 +1940,7 @@ requires-dist = [
     { name = "icon4py-common", editable = "model/common" },
     { name = "icon4py-testing", editable = "model/testing" },
     { name = "numpy", specifier = ">=1.23.3" },
+    { name = "omegaconf", specifier = ">=2.3.0" },
     { name = "packaging", specifier = ">=20.0" },
 ]
 
@@ -2830,6 +2846,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/81/b8/c10e96120f1585824a1992655334b49da3924edfb364e84a26cc0ecdb89b/objprint-0.3.0.tar.gz", hash = "sha256:b5d83f9d62db5b95353bb42959106e1cd43010dcaa3eed1ad8d7d0b2df9b2d5a", size = 47481, upload-time = "2024-11-09T00:05:16.73Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/af/572825252f16f36eeecbc8e3b721913d2640d69b984fdb8907aa8b4b0975/objprint-0.3.0-py3-none-any.whl", hash = "sha256:489083bfc8baf0526f8fd6af74673799511532636f0ce4141133255ded773405", size = 41619, upload-time = "2024-11-09T00:05:14.852Z" },
+]
+
+[[package]]
+name = "omegaconf"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "antlr4-python3-runtime" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/09/48/6388f1bb9da707110532cb70ec4d2822858ddfb44f1cdf1233c20a80ea4b/omegaconf-2.3.0.tar.gz", hash = "sha256:d5d4b6d29955cc50ad50c46dc269bcd92c6e00f5f90d23ab5fee7bfca4ba4cc7", size = 3298120, upload-time = "2022-12-08T20:59:22.753Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/94/1843518e420fa3ed6919835845df698c7e27e183cb997394e4a670973a65/omegaconf-2.3.0-py3-none-any.whl", hash = "sha256:7b4df175cdb08ba400f45cae3bdcae7ba8365db4d165fc65fd04b050ab63b46b", size = 79500, upload-time = "2022-12-08T20:59:19.686Z" },
 ]
 
 [[package]]
@@ -3943,7 +3972,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
     { name = "setuptools" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/4f/a4/00a9ac1b555294710d4a68d2ce8dfdf39d72aa4d769a7395d05218d88a42/setuptools_scm-8.1.0.tar.gz", hash = "sha256:42dea1b65771cba93b7a515d65a65d8246e560768a66b9106a592c8e7f26c8a7", size = 76465, upload-time = "2024-05-06T15:07:56.934Z" }
 wheels = [
@@ -4473,6 +4502,15 @@ wheels = [
 ]
 
 [[package]]
+name = "types-pyyaml"
+version = "6.0.12.20250915"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7e/69/3c51b36d04da19b92f9e815be12753125bd8bc247ba0470a982e6979e71c/types_pyyaml-6.0.12.20250915.tar.gz", hash = "sha256:0f8b54a528c303f0e6f7165687dd33fafa81c807fcac23f632b63aa624ced1d3", size = 17522, upload-time = "2025-09-15T03:01:00.728Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bd/e0/1eed384f02555dde685fff1a1ac805c1c7dcb6dd019c916fe659b1c1f9ec/types_pyyaml-6.0.12.20250915-py3-none-any.whl", hash = "sha256:e7d4d9e064e89a3b3cae120b4990cd370874d2bf12fa5f46c97018dd5d3c9ab6", size = 20338, upload-time = "2025-09-15T03:00:59.218Z" },
+]
+
+[[package]]
 name = "types-setuptools"
 version = "75.6.0.20241126"
 source = { registry = "https://pypi.org/simple" }
@@ -4568,7 +4606,7 @@ version = "3.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "tomli", marker = "python_full_version < '3.11' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5c/9b/941647e9e3616b5da7bbc4601ed9920f44a886704100fa8151406c07c149/versioningit-3.1.2.tar.gz", hash = "sha256:4db83ed99f56b07d83940bee3445ca46ca120d13b6b304cdb5fb44e5aa4edec0", size = 213047, upload-time = "2024-07-20T12:41:07.927Z" }
 wheels = [
