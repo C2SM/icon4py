@@ -166,7 +166,10 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(geofac_n2s)
 
         geofac_grdiv = factory.NumpyDataProvider(
-            func=functools.partial(interpolation_fields.compute_geofac_grdiv, array_ns=self._xp),
+            func=functools.partial(
+                interpolation_fields.compute_geofac_grdiv,
+                array_ns=self._xp,
+            ),
             fields=(attrs.GEOFAC_GRDIV,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
             deps={
@@ -188,6 +191,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
                 array_ns=self._xp,
+                halo_exchange=self._exchange.exchange_and_wait,
             ),
             fields=(attrs.C_BLN_AVG,),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -207,7 +211,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
                 "divavg_cntrwgt": self._config["divavg_cntrwgt"],
             },
-            do_exchange=True,
+            do_exchange=False,  # field exchanged internally
         )
         self.register_provider(cell_average_weight)
 

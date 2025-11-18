@@ -6,9 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 import gt4py.next.typing as gtx_typing
+import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -243,15 +244,10 @@ def test_compute_geofac_grdiv(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, atol",
-    [(definitions.Experiments.MCH_CH_R04B09, 1e-10), (definitions.Experiments.EXCLAIM_APE, 1e-10)],
-)
 def test_compute_c_bln_avg(
     grid_savepoint: sb.IconGridSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
-    atol: float,
     backend: gtx_typing.Backend,
 ) -> None:
     xp = data_alloc.import_array_ns(backend)
@@ -268,8 +264,12 @@ def test_compute_c_bln_avg(
 
     c2e2c0 = icon_grid.get_connectivity(dims.C2E2CO).ndarray
 
+    dummy_exchange: Callable[[gtx.Dimension, gtx.Field], None] = lambda dim, field: None
+
     c_bln_avg = functools.partial(
-        compute_mass_conserving_bilinear_cell_average_weight, array_ns=xp
+        compute_mass_conserving_bilinear_cell_average_weight,
+        array_ns=xp,
+        halo_exchange=dummy_exchange,
     )(
         c2e2c0,
         lat,
@@ -280,7 +280,7 @@ def test_compute_c_bln_avg(
         horizontal_start,
         horizontal_start_p2,
     )
-    assert test_helpers.dallclose(data_alloc.as_numpy(c_bln_avg), c_bln_avg_ref, atol=atol)
+    assert test_helpers.dallclose(data_alloc.as_numpy(c_bln_avg), c_bln_avg_ref, rtol=1e-11)
 
 
 @pytest.mark.level("unit")

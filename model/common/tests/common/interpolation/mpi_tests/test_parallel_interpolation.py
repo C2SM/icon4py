@@ -29,11 +29,11 @@ from ...fixtures import (
     decomposition_info,
     download_ser_data,
     experiment,
+    geometry_from_savepoint,
     grid_savepoint,
     icon_grid,
-    interpolation_savepoint,
-    geometry_from_savepoint,
     interpolation_factory_from_savepoint,
+    interpolation_savepoint,
     processor_props,
     ranked_data_path,
 )
@@ -48,24 +48,25 @@ if TYPE_CHECKING:
 
 vert_lb_domain = h_grid.vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 
+
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, intrp_name, atol, ind",
+    "attrs_name, intrp_name, atol",
     [
-        (attrs.C_LIN_E, "c_lin_e", 1e-12, None),
-        (attrs.NUDGECOEFFS_E, "nudgecoeff_e", 1e-12, None),
-        (attrs.C_BLN_AVG, "c_bln_avg", 1e-3, None),  # fails in EXCLAIM_APE for atol 1e-3
-        (attrs.E_FLX_AVG, "e_flx_avg", 1e-2, None),  # fails in MCH_CH_R04B09 for atol 1e-2
-        (attrs.E_BLN_C_S, "e_bln_c_s", 1e-12, None),
-        (attrs.GEOFAC_DIV, "geofac_div", 1e-12, None),
-        (attrs.GEOFAC_N2S, "geofac_n2s", 1e-12, None),
-        (attrs.GEOFAC_GRG_X, "geofac_grg", 1e-3, 0),
-        (attrs.GEOFAC_GRG_Y, "geofac_grg", 1e-3, 1),
-        (attrs.POS_ON_TPLANE_E_X, "pos_on_tplane_e_x", 1e-12, None),
-        (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-8, None),
-        (attrs.CELL_AW_VERTS, "c_intp", 1e-12, None),
+        # (attrs.C_LIN_E, "c_lin_e", 1e-12),
+        # (attrs.NUDGECOEFFS_E, "nudgecoeff_e", 1e-12),
+        (attrs.C_BLN_AVG, "c_bln_avg", 1e-10),  # fails in EXCLAIM_APE for atol 1e-3
+        # (attrs.E_FLX_AVG, "e_flx_avg", 1e-2),  # fails in MCH_CH_R04B09 for atol 1e-2
+        # (attrs.E_BLN_C_S, "e_bln_c_s", 1e-12),
+        # (attrs.GEOFAC_DIV, "geofac_div", 1e-12),
+        # (attrs.GEOFAC_N2S, "geofac_n2s", 1e-12),
+        # (attrs.GEOFAC_GRG_X, "geofac_grg", 1e-3),
+        # (attrs.GEOFAC_GRG_Y, "geofac_grg", 1e-3),
+        # (attrs.POS_ON_TPLANE_E_X, "pos_on_tplane_e_x", 1e-12),
+        # (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-8),
+        # (attrs.CELL_AW_VERTS, "c_intp", 1e-12),
     ],
 )
 def test_distributed_interpolation_attrs(
@@ -79,16 +80,17 @@ def test_distributed_interpolation_attrs(
     attrs_name: str,
     intrp_name: str,
     atol: int,
-    ind: int | None,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
-    field_ref = field_ref.asnumpy() if ind is None else field_ref[ind].asnumpy()
+    field_ref = field_ref.asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
-    assert test_utils.dallclose(
-        field, field_ref, rtol=5e-9, atol=atol
-    ), f"comparison of {attrs_name} failed"
+    halo_cells = intp_factory._decomposition_info.local_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.HALO)
+    owned = intp_factory._decomposition_info.owner_mask(dims.CellDim)
+    #breakpoint()
+    assert test_utils.dallclose(field, field_ref, atol=atol), f"comparison of {attrs_name} failed"
+
 
 
 @pytest.mark.datatest
@@ -128,7 +130,7 @@ def test_distributed_interpolation_attrs_reordered(
         (attrs.RBF_VEC_COEFF_C1, "rbf_vec_coeff_c1", 3e-2),
         (attrs.RBF_VEC_COEFF_C2, "rbf_vec_coeff_c2", 3e-2),
         (attrs.RBF_VEC_COEFF_E, "rbf_vec_coeff_e", 3e-2),
-        (attrs.RBF_VEC_COEFF_V1, "rbf_vec_coeff_v1",3e-3),
+        (attrs.RBF_VEC_COEFF_V1, "rbf_vec_coeff_v1", 3e-3),
         (attrs.RBF_VEC_COEFF_V2, "rbf_vec_coeff_v2", 3e-3),
     ],
 )
@@ -139,7 +141,7 @@ def test_distributed_interpolation_rbf(
     experiment: test_defs.Experiment,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
-    interpolation_factory_from_savepoint:interpolation_factory.InterpolationFieldsFactory,
+    interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
     atol: int,

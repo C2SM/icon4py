@@ -259,19 +259,11 @@ def test_get_geofac_grg(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-    ],
-)
 @pytest.mark.datatest
 def test_get_mass_conserving_cell_average_weight(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref = interpolation_savepoint.c_bln_avg()
     factory = _get_interpolation_factory(backend, experiment)
@@ -279,7 +271,7 @@ def test_get_mass_conserving_cell_average_weight(
     field = factory.get(attrs.C_BLN_AVG)
 
     assert field.shape == (grid.num_cells, 4)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-11)
 
 
 @pytest.mark.level("integration")

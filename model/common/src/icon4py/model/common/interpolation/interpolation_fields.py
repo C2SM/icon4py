@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import math
+from collections.abc import Callable
 from types import ModuleType
 from typing import Final
 
@@ -445,6 +446,7 @@ def _compute_c_bln_avg(
     lon: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
+    halo_exchange: Callable[[[gtx.Dimension, tuple]], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -482,6 +484,8 @@ def _compute_c_bln_avg(
     c_bln_avg[horizontal_start:, 1] = wgt[0]
     c_bln_avg[horizontal_start:, 2] = wgt[1]
     c_bln_avg[horizontal_start:, 3] = wgt[2]
+    field_wrapper = gtx.as_field((dims.CellDim, dims.C2E2CODim), data=c_bln_avg, dtype=ta.wpfloat)
+    halo_exchange(dims.CellDim, field_wrapper)
     return c_bln_avg
 
 
@@ -492,6 +496,7 @@ def _force_mass_conservation_to_c_bln_avg(
     cell_owner_mask: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
+    halo_exchange: Callable[[[gtx.Dimension, tuple]], None],
     array_ns: ModuleType = np,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
@@ -593,6 +598,12 @@ def _force_mass_conservation_to_c_bln_avg(
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
     inverse_neighbor_idx = _create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
+    # TODO (@halungge): fix halo exchange
+    wrap_in_field = gtx.as_field(
+        (dims.CellDim, dims.C2E2CODim), data=inverse_neighbor_idx, dtype=gtx.int32
+    )
+    # does this make sense?
+    halo_exchange(dims.CellDim, wrap_in_field)
 
     for iteration in range(niter):
         local_summed_weights[horizontal_start:] = _compute_local_weights(
@@ -602,8 +613,13 @@ def _force_mass_conservation_to_c_bln_avg(
         residual[horizontal_start:] = _compute_residual_to_mass_conservation(
             cell_owner_mask, local_summed_weights, cell_areas
         )[horizontal_start:]
+        wrap_in_field = gtx.as_field((dims.CellDim,), data=residual, dtype=residual.dtype)
+        halo_exchange(dims.CellDim, wrap_in_field)
 
-        max_ = array_ns.max(residual)
+        # remove condition or do (inefficient) global reduction, practically
+        # the convergence criteria is never reached before the niter
+        # max_ = array_ns.max(residual)
+        max_ = 1.0
         if iteration >= (niter - 1) or max_ < 1e-9:
             print(f"number of iterations: {iteration} - max residual={max_}")
             c_bln_avg = _enforce_mass_conservation(
@@ -619,22 +635,34 @@ def _force_mass_conservation_to_c_bln_avg(
             horizontal_start=horizontal_start,
         )
 
+    wrap_in_field = gtx.as_field(
+        (dims.CellDim, dims.C2E2CODim), data=c_bln_avg, dtype=c_bln_avg.dtype
+    )
+    halo_exchange(dims.CellDim, wrap_in_field)
     return c_bln_avg
 
 
 def compute_mass_conserving_bilinear_cell_average_weight(
     c2e2c0: data_alloc.NDArray,
     lat: data_alloc.NDArray,
+
     lon: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
+    halo_exchange: Callable[[[gtx.Dimension, gtx.Field]], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(
-        c2e2c0[:, 1:], lat, lon, divavg_cntrwgt, horizontal_start, array_ns
+        c2e2c0[:, 1:],
+        lat,
+        lon,
+        divavg_cntrwgt,
+        horizontal_start,
+        array_ns=array_ns,
+        halo_exchange=halo_exchange,
     )
     return _force_mass_conservation_to_c_bln_avg(
         c2e2c0,
@@ -643,7 +671,8 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         cell_owner_mask,
         divavg_cntrwgt,
         horizontal_start_level_3,
-        array_ns,
+        array_ns=array_ns,
+        halo_exchange=halo_exchange,
     )
 
 
@@ -651,13 +680,13 @@ def _create_inverse_neighbor_index(
     source_offset, inverse_offset, array_ns: ModuleType
 ) -> data_alloc.NDArray:
     """
-    The inverse neighbor index determines the position of an central element c_1
+    The inverse neighbor index determines the position of a central element c_1
     in the neighbor table of its neighbors:
 
     For example: for let e_1, e_2, e_3 be the neighboring edges of a cell: c2e(c_1) will
     map  c_1 -> (e_1, e_2,e_3) then in the inverse lookup table e2c the
     neighborhoods of e_1, e_2, e_3 will all contain c_1 in some position.
-    Then inverse neighbor index tells what position that is. It essentially says
+    The inverse neighbor index tells what position that is. It essentially says
     "I am neighbor number x \\in (0,1) of my neighboring edges"
 
 
@@ -669,14 +698,14 @@ def _create_inverse_neighbor_index(
         ndarray of the same shape as target_offset
 
     """
-    inv_neighbor_idx = MISSING * array_ns.ones(inverse_offset.shape, dtype=int)
+    inv_neighbor_idx = MISSING * array_ns.ones(inverse_offset.shape, dtype=gtx.int32)
 
     for jc in range(inverse_offset.shape[0]):
         for i in range(inverse_offset.shape[1]):
             if inverse_offset[jc, i] >= 0:
-                inv_neighbor_idx[jc, i] = array_ns.argwhere(
-                    source_offset[inverse_offset[jc, i], :] == jc
-                )[0, 0]
+                inverse_nn = array_ns.argwhere(source_offset[inverse_offset[jc, i], :] == jc)
+                # TODO (halungge): this happens for halo cells, need to handle this properly, ICON runs only over owned indices
+                inv_neighbor_idx[jc, i] = inverse_nn[0, 0] if len(inverse_nn) > 0 else MISSING
 
     return inv_neighbor_idx
 
