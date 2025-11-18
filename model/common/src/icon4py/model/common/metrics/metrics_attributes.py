@@ -429,7 +429,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="mask_hdiff",
-        dtype=ta.wpfloat,
+        dtype=bool,
     ),
     ZD_DIFFCOEF_DSL: dict(
         standard_name=ZD_DIFFCOEF_DSL,
