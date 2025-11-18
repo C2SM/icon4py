@@ -19,6 +19,7 @@ from icon4py.model.common import (
     type_alias as ta,
     utils as common_utils,
 )
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TimeSteppingScheme(enum.IntEnum):
@@ -78,7 +79,8 @@ class RhoThetaAdvectionType(common_utils.NamespaceMixin, enum.IntEnum):
 class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
-    max_vertical_cfl: ta.wpfloat
+    # `max_vertical_cfl` stored as 0-d array of type ta.wpfloat (to be able to avoid cupy synchronization)
+    max_vertical_cfl: data_alloc.ScalarLikeArray[ta.wpfloat]
     """
     Declared as max_vcfl_dyn in ICON. Maximum vertical CFL number over all substeps.
     """
@@ -161,6 +163,13 @@ class DiagnosticStateNonHydro:
     """
     Declared as exner_dyn_incr in ICON.
     """
+
+    def __post_init__(self):
+        if not data_alloc.is_rank0_ndarray(self.max_vertical_cfl):
+            # TODO(havogt): instead of this check, we could refactor to a special dataclass-like which promotes to 0-d array on assignment
+            raise TypeError(
+                "'max_vertical_cfl' must be initialized as a 0-d array for performance reasons."
+            )
 
 
 @dataclasses.dataclass
