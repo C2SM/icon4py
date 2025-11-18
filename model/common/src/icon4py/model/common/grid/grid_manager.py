@@ -461,6 +461,25 @@ def _construct_diamond_vertices(
     return array_ns.hstack((e2v, far_indices))
 
 
+def _determine_center_position(
+    centers: data_alloc.NDArray, neighbors: data_alloc.NDArray, array_ns: ModuleType = np
+) -> data_alloc.NDArray:
+    """Determine the position of the values in `center` in the local neighbor array `neighbors`
+    Args:
+        centers: 1d array with shape (n, )
+        neighbors: 2d array with shape (n, x)
+
+    Returns:
+         array of shape (n, ) for each row containing either the position of the `center` value along the second axis
+         of neighbors or 0
+
+    """
+    center_idx = array_ns.where(neighbors == centers)
+    me_cell = array_ns.zeros(centers.shape[0], dtype=gtx.int32)
+    me_cell[center_idx[0]] = center_idx[1]
+    return me_cell
+
+
 def _construct_diamond_edges(
     e2c: data_alloc.NDArray, c2e: data_alloc.NDArray, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
@@ -493,22 +512,14 @@ def _construct_diamond_edges(
     # the compute_e_flx_avg function depends on that.
     icon_edge_order = array_ns.asarray([[1, 2], [2, 0], [0, 1]])
 
-    def _determine_center_position(
-        centers: data_alloc.NDArray, neighbors: data_alloc.NDArray
-    ) -> data_alloc.NDArray:
-        center_idx = array_ns.where(neighbors == centers)
-        me_cell = array_ns.zeros(centers.shape[0], dtype=gtx.int32)
-        me_cell[center_idx[0]] = center_idx[1]
-        return me_cell
-
     dummy_c2e = _patch_with_dummy_lastline(c2e, array_ns=array_ns)
     expanded = dummy_c2e[e2c[:, :], :]
     n_edges, n_e2c, n_c2e = expanded.shape
     flattened = expanded.reshape(n_edges, n_e2c * n_c2e)
 
     centers = array_ns.arange(n_edges, dtype=gtx.int32)[:, None]
-    me_cell1 = _determine_center_position(centers, expanded[:, 0, :])
-    me_cell2 = _determine_center_position(centers, expanded[:, 1, :])
+    me_cell1 = _determine_center_position(centers, expanded[:, 0, :], array_ns=array_ns)
+    me_cell2 = _determine_center_position(centers, expanded[:, 1, :], array_ns=array_ns)
     ordered_local_index = array_ns.hstack(
         (icon_edge_order[me_cell1], icon_edge_order[me_cell2] + n_c2e)
     )
