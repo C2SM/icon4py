@@ -238,7 +238,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             tangent_orientation=tangent_orientation,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
             nflatlev=nflatlev,
-            nlevp1=nflatlev,
+            nlevp1=vertical_end,
             vertical_start=vertical_start,
         )
 
