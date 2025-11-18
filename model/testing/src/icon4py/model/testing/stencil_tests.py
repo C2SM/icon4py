@@ -154,7 +154,7 @@ class StencilTest:
                     **static_args,  # type: ignore[arg-type]
                 )
 
-        test_func = device_utils.synchronized_function(program, backend=backend)
+        test_func = device_utils.synchronized_function(program, allocator=backend)
         return test_func
 
     @pytest.fixture

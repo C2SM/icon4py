@@ -33,7 +33,7 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
         ptr_coeff_1: np.ndarray,
         ptr_coeff_2: np.ndarray,
         **kwargs: Any,
-    ) -> dict[str, np.ndarray]:
+    ) -> dict:
         v2e = connectivities[dims.V2EDim]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         p_u_out = np.sum(p_e_in[v2e] * ptr_coeff_1, axis=1)
