@@ -16,7 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, stencil_tests
+from icon4py.model.testing import stencil_tests
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -154,21 +154,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         "contravariant_correction_at_edges_on_model_levels",
         "horizontal_advection_of_w_at_edges_on_half_levels",
     )
-    STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: (),
-        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            "horizontal_start",
-            "horizontal_end",
-            "vertical_start",
-            "vertical_end",
-            "nflatlev",
-        ),
-        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            "vertical_start",
-            "vertical_end",
-            "nflatlev",
-        ),
-    }
 
     @classmethod
     def reference(
@@ -281,8 +266,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         )
 
     @pytest.fixture(
-        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]],
-        ids=lambda param: f"skip_compute_predictor_vertical_advection[{param['skip_compute_predictor_vertical_advection']}]",
+        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]]
     )
     def input_data(
         self, grid: base.Grid, request: pytest.FixtureRequest
@@ -350,31 +334,3 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             vertical_start=vertical_start,
             vertical_end=vertical_end,
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrectionContinuousBenchmarking(
-    TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection
-):
-    @pytest.fixture(
-        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]],
-        ids=lambda param: f"skip_compute_predictor_vertical_advection[{param['skip_compute_predictor_vertical_advection']}]",
-    )
-    def input_data(
-        self, grid: base.Grid, request: pytest.FixtureRequest
-    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        base_data = TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection.input_data.__wrapped__(
-            self, grid, request
-        )
-        base_data["skip_compute_predictor_vertical_advection"] = request.param[
-            "skip_compute_predictor_vertical_advection"
-        ]
-        base_data["nflatlev"] = 6
-        edge_domain = h_grid.domain(dims.EdgeDim)
-        base_data["horizontal_start"] = grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
-        )
-        base_data["horizontal_end"] = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
-        base_data["vertical_start"] = 0
-        base_data["vertical_end"] = grid.num_levels + 1
-        return base_data

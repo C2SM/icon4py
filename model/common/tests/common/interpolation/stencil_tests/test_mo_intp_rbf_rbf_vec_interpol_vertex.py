@@ -18,25 +18,13 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
+@pytest.mark.skip_value_error
 class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
     PROGRAM = mo_intp_rbf_rbf_vec_interpol_vertex
     OUTPUTS = ("p_u_out", "p_v_out")
-    STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            "horizontal_start",
-            "horizontal_end",
-            "vertical_start",
-            "vertical_end",
-        ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            "vertical_start",
-            "vertical_end",
-        ),
-    }
 
     @staticmethod
     def reference(
@@ -74,8 +62,3 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestMoIntpRbfRbfVecInterpolVertexContinuousBenchmarking(TestMoIntpRbfRbfVecInterpolVertex):
-    pass

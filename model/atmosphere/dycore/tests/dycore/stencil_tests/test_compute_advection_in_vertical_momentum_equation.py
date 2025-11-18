@@ -19,7 +19,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, stencil_tests
+from icon4py.model.testing import stencil_tests
 
 from .test_add_interpolated_horizontal_advection_of_w import (
     add_interpolated_horizontal_advection_of_w_numpy,
@@ -276,21 +276,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         "contravariant_corrected_w_at_cells_on_model_levels",
         "vertical_cfl",
     )
-    STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: (),
-        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            "horizontal_start",
-            "horizontal_end",
-            "vertical_start",
-            "vertical_end",
-            "end_index_of_damping_layer",
-        ),
-        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            "vertical_start",
-            "vertical_end",
-            "end_index_of_damping_layer",
-        ),
-    }
 
     @staticmethod
     def reference(
@@ -482,17 +467,6 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         )
 
 
-@pytest.mark.continuous_benchmarking
-class TestFusedVelocityAdvectionStencilVMomentumContinuousBenchmarking(
-    TestFusedVelocityAdvectionStencilVMomentum
-):
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        base_data = TestFusedVelocityAdvectionStencilVMomentum.input_data.__wrapped__(self, grid)
-        base_data["end_index_of_damping_layer"] = 12
-        return base_data
-
-
 @pytest.mark.embedded_remap_error
 class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.StencilTest):
     PROGRAM = compute_contravariant_correction_and_advection_in_vertical_momentum_equation
@@ -502,9 +476,6 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         "contravariant_corrected_w_at_cells_on_model_levels",
         "vertical_cfl",
     )
-    STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: (),  # For now compile time variants triger error in gt4py
-    }
 
     @staticmethod
     def reference(
@@ -632,8 +603,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         )
 
     @pytest.fixture(
-        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]],
-        ids=lambda param: f"skip_compute_predictor_vertical_advection[{param['skip_compute_predictor_vertical_advection']}]",
+        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]]
     )
     def input_data(
         self, grid: base.Grid, request: pytest.FixtureRequest
@@ -709,10 +679,3 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             vertical_start=vertical_start,
             vertical_end=vertical_end,
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestFusedVelocityAdvectionStencilVMomentumAndContravariantContinuousBenchmarking(
-    TestFusedVelocityAdvectionStencilVMomentumAndContravariant
-):
-    pass

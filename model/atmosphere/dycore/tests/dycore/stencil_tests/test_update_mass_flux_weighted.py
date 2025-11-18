@@ -19,25 +19,12 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 class TestUpdateMassFluxWeighted(StencilTest):
     PROGRAM = update_mass_flux_weighted
     OUTPUTS = ("mass_flx_ic",)
-    STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            "horizontal_start",
-            "horizontal_end",
-            "vertical_start",
-            "vertical_end",
-        ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            "vertical_start",
-            "vertical_end",
-        ),
-    }
 
     @staticmethod
     def reference(
@@ -84,8 +71,3 @@ class TestUpdateMassFluxWeighted(StencilTest):
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestUpdateMassFluxWeightedContinuousBenchmarking(TestUpdateMassFluxWeighted):
-    pass

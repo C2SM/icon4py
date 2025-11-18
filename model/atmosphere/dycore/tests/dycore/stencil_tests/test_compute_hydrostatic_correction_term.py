@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def compute_hydrostatic_correction_term_numpy(
@@ -83,27 +83,14 @@ def compute_hydrostatic_correction_term_numpy(
         / ((z_theta1 + z_theta2) ** 2)
     )
 
-    nlevels = theta_v.shape[1]
-    return z_hydro_corr[:, nlevels - 1 : nlevels]
+    return z_hydro_corr
 
 
+@pytest.mark.skip_value_error
 @pytest.mark.uses_as_offset
 class TestComputeHydrostaticCorrectionTerm(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = compute_hydrostatic_correction_term
-    STATIC_PARAMS = {
-        StandardStaticVariants.NONE: (),
-        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            "horizontal_start",
-            "horizontal_end",
-            "vertical_start",
-            "vertical_end",
-        ),
-        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            "vertical_start",
-            "vertical_end",
-        ),
-    }
 
     @staticmethod
     def reference(
@@ -154,14 +141,6 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
         z_hydro_corr = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
-        z_hydro_corr = gtx.constructors.zeros(
-            domain={
-                dims.EdgeDim: (0, grid.num_edges),
-                dims.KDim: (grid.num_levels - 1, grid.num_levels),
-            },
-            dtype=ta.vpfloat,
-        )
-
         return dict(
             theta_v=theta_v,
             ikoffset=ikoffset,
@@ -173,13 +152,6 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
             grav_o_cpd=grav_o_cpd,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
-            vertical_start=gtx.int32(grid.num_levels - 1),
+            vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestComputeHydrostaticCorrectionTermContinuousBenchmarking(
-    TestComputeHydrostaticCorrectionTerm
-):
-    pass

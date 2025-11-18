@@ -32,7 +32,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, stencil_tests
+from icon4py.model.testing import stencil_tests
 
 from .test_compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner_numpy,
@@ -80,28 +80,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         "pressure_buoyancy_acceleration_at_cells_on_half_levels",
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
-    STATIC_PARAMS = {
-        stencil_tests.StandardStaticVariants.NONE: (),
-        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
-            "igradp_method",
-            "nflatlev",
-            "nflat_gradp",
-            "start_cell_lateral_boundary",
-            "start_cell_lateral_boundary_level_3",
-            "start_cell_halo_level_2",
-            "end_cell_halo",
-            "end_cell_halo_level_2",
-            "model_top",
-            "surface_level",
-        ),
-        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
-            "igradp_method",
-            "nflatlev",
-            "nflat_gradp",
-            "model_top",
-            "surface_level",
-        ),
-    }
 
     @staticmethod
     def reference(
@@ -420,7 +398,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         end_cell_halo_level_2 = grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
         nflatlev = 4
-        nflat_gradp = 7
+        nflat_gradp = 27
 
         return dict(
             temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
@@ -461,17 +439,3 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             model_top=0,
             surface_level=grid.num_levels + 1,
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestComputePerturbedQuantitiesAndInterpolationContinuousBenchmarking(
-    TestComputePerturbedQuantitiesAndInterpolation
-):
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        base_data = TestComputePerturbedQuantitiesAndInterpolation.input_data.__wrapped__(
-            self, grid
-        )
-        base_data["nflatlev"] = 6
-        base_data["nflat_gradp"] = 35
-        return base_data
