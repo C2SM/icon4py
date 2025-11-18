@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 vert_lb_domain = h_grid.vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 
 
+@pytest.mark.level("integration")
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
