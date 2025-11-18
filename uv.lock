@@ -1951,6 +1951,8 @@ source = { editable = "model/testing" }
 dependencies = [
     { name = "filelock" },
     { name = "gt4py" },
+    { name = "icon4py-atmosphere-diffusion" },
+    { name = "icon4py-atmosphere-dycore" },
     { name = "icon4py-common", extra = ["io"] },
     { name = "numpy" },
     { name = "packaging" },
@@ -1964,6 +1966,8 @@ dependencies = [
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
     { name = "gt4py", specifier = "==1.1.1" },
+    { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
+    { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },

@@ -25,6 +25,8 @@ classifiers = [
 dependencies = [
   # workspace members
   'icon4py-common[io]>=0.0.6',
+  'icon4py-atmosphere-dycore>=0.0.6',  # TODO @halungge not sure that is ok
+  'icon4py-atmosphere-diffusion>=0.0.6',  # TODO @halungge not sure that is ok
   # external dependencies
   "filelock>=3.18.0",
   "gt4py==1.1.1",
