@@ -11,8 +11,8 @@ from collections.abc import Callable
 from types import ModuleType
 from typing import Final
 
-import gt4py.next as gtx
 import numpy as np
+from gt4py import next as gtx
 from gt4py.next import where
 
 import icon4py.model.common.field_type_aliases as fa
@@ -488,7 +488,7 @@ def _compute_c_bln_avg(
 
 def _force_mass_conservation_to_c_bln_avg(
     c2e2c0: data_alloc.NDArray,
-    c_bln_avg: data_alloc.NDArray,
+    c_bln_avg_field: gtx.Field,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
@@ -592,6 +592,7 @@ def _force_mass_conservation_to_c_bln_avg(
         )
         return c_bln_avg
 
+    c_bln_avg = c_bln_avg_field.ndarray
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
     inverse_neighbor_idx = _create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
@@ -604,9 +605,10 @@ def _force_mass_conservation_to_c_bln_avg(
         residual[horizontal_start:] = _compute_residual_to_mass_conservation(
             cell_owner_mask, local_summed_weights, cell_areas
         )[horizontal_start:]
-        wrap_in_field = gtx.as_field((dims.CellDim,), data=residual, dtype=residual.dtype)
-        halo_exchange(dims.CellDim, wrap_in_field)
-        residual = wrap_in_field.ndarray
+
+        residual_field_wrap = gtx.as_field((dims.CellDim,), data=residual, dtype=residual.dtype)
+        halo_exchange(dims.CellDim, residual_field_wrap)
+        residual = residual_field_wrap.ndarray
 
         # remove condition or do (inefficient) global reduction, practically
         # the convergence criteria is never reached before the niter
@@ -626,11 +628,7 @@ def _force_mass_conservation_to_c_bln_avg(
                 horizontal_start=horizontal_start,
             )
 
-        wrap_in_field = gtx.as_field(
-            (dims.CellDim, dims.C2E2CODim), data=c_bln_avg, dtype=c_bln_avg.dtype
-        )
-        halo_exchange(dims.CellDim, wrap_in_field)
-        c_bln_avg = wrap_in_field.ndarray
+        halo_exchange(dims.CellDim, c_bln_avg_field)
 
     return c_bln_avg
 
@@ -662,7 +660,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
 
     return _force_mass_conservation_to_c_bln_avg(
         c2e2c0,
-        c_bln_avg.ndarray,
+        c_bln_avg,
         cell_areas,
         cell_owner_mask,
         divavg_cntrwgt,
