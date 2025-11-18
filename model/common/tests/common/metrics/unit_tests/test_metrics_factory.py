@@ -505,8 +505,12 @@ def test_factory_zdiff_gradp(
     )
     field_1 = factory.get(attrs.ZDIFF_GRADP)
     field_2 = factory.get(attrs.VERTOFFSET_GRADP)
-    assert test_helpers.dallclose(zdiff_gradp_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
-    assert test_helpers.dallclose(vertoffset_gradp_ref.asnumpy(), field_2.asnumpy(), atol=1.0e-5)
+    assert test_helpers.dallclose(
+        zdiff_gradp_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-10, rtol=1e-9
+    )
+    assert test_helpers.dallclose(
+        vertoffset_gradp_ref.asnumpy(), field_2.asnumpy(), atol=1.0e-10, rtol=1e-9
+    )
 
 
 @pytest.mark.level("integration")

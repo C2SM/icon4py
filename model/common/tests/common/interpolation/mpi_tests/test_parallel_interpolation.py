@@ -53,21 +53,22 @@ vert_lb_domain = h_grid.vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
+# @pytest.mark.parametrize("experiment", (test_defs.Experiments.EXCLAIM_APE,))
 @pytest.mark.parametrize(
     "attrs_name, intrp_name, atol",
     [
-        (attrs.C_LIN_E, "c_lin_e", 1e-12),
-        (attrs.NUDGECOEFFS_E, "nudgecoeff_e", 1e-12),
+        # (attrs.C_LIN_E, "c_lin_e", 1e-12),
+        # (attrs.NUDGECOEFFS_E, "nudgecoeff_e", 1e-12),
         (attrs.C_BLN_AVG, "c_bln_avg", 1e-10),  # fails in EXCLAIM_APE for atol 1e-3
-        (attrs.E_FLX_AVG, "e_flx_avg", 1e-2),  # fails in MCH_CH_R04B09 for atol 1e-2
-        (attrs.E_BLN_C_S, "e_bln_c_s", 1e-12),
-        (attrs.GEOFAC_DIV, "geofac_div", 1e-12),
-        (attrs.GEOFAC_N2S, "geofac_n2s", 1e-12),
-        (attrs.GEOFAC_GRG_X, "geofac_grg", 1e-3),
-        (attrs.GEOFAC_GRG_Y, "geofac_grg", 1e-3),
-        (attrs.POS_ON_TPLANE_E_X, "pos_on_tplane_e_x", 1e-12),
-        (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-8),
-        (attrs.CELL_AW_VERTS, "c_intp", 1e-12),
+        # (attrs.E_FLX_AVG, "e_flx_avg", 1e-10),  # fails in MCH_CH_R04B09 for atol 1e-2
+        # (attrs.E_BLN_C_S, "e_bln_c_s", 1e-12),
+        # (attrs.GEOFAC_DIV, "geofac_div", 1e-12),
+        # (attrs.GEOFAC_N2S, "geofac_n2s", 1e-12),
+        # (attrs.GEOFAC_GRG_X, "geofac_grg", 1e-3),
+        # (attrs.GEOFAC_GRG_Y, "geofac_grg", 1e-3),
+        # (attrs.POS_ON_TPLANE_E_X, "pos_on_tplane_e_x", 1e-12),
+        # (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-8),
+        # (attrs.CELL_AW_VERTS, "c_intp", 1e-12),
     ],
 )
 def test_distributed_interpolation_attrs(

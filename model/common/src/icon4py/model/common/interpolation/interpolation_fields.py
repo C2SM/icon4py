@@ -446,7 +446,6 @@ def _compute_c_bln_avg(
     lon: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
-    halo_exchange: Callable[[[gtx.Dimension, tuple]], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -484,8 +483,6 @@ def _compute_c_bln_avg(
     c_bln_avg[horizontal_start:, 1] = wgt[0]
     c_bln_avg[horizontal_start:, 2] = wgt[1]
     c_bln_avg[horizontal_start:, 3] = wgt[2]
-    field_wrapper = gtx.as_field((dims.CellDim, dims.C2E2CODim), data=c_bln_avg, dtype=ta.wpfloat)
-    halo_exchange(dims.CellDim, field_wrapper)
     return c_bln_avg
 
 
@@ -598,12 +595,6 @@ def _force_mass_conservation_to_c_bln_avg(
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
     inverse_neighbor_idx = _create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
-    # TODO (@halungge): fix halo exchange
-    wrap_in_field = gtx.as_field(
-        (dims.CellDim, dims.C2E2CODim), data=inverse_neighbor_idx, dtype=gtx.int32
-    )
-    # does this make sense?
-    halo_exchange(dims.CellDim, wrap_in_field)
 
     for iteration in range(niter):
         local_summed_weights[horizontal_start:] = _compute_local_weights(
@@ -615,6 +606,7 @@ def _force_mass_conservation_to_c_bln_avg(
         )[horizontal_start:]
         wrap_in_field = gtx.as_field((dims.CellDim,), data=residual, dtype=residual.dtype)
         halo_exchange(dims.CellDim, wrap_in_field)
+        residual = wrap_in_field.ndarray
 
         # remove condition or do (inefficient) global reduction, practically
         # the convergence criteria is never reached before the niter
@@ -625,20 +617,21 @@ def _force_mass_conservation_to_c_bln_avg(
             c_bln_avg = _enforce_mass_conservation(
                 c_bln_avg, residual, cell_owner_mask, horizontal_start
             )
-            return c_bln_avg
+        else:
+            c_bln_avg = _apply_correction(
+                c_bln_avg=c_bln_avg,
+                residual=residual,
+                c2e2c0=c2e2c0,
+                divavg_cntrwgt=divavg_cntrwgt,
+                horizontal_start=horizontal_start,
+            )
 
-        c_bln_avg = _apply_correction(
-            c_bln_avg=c_bln_avg,
-            residual=residual,
-            c2e2c0=c2e2c0,
-            divavg_cntrwgt=divavg_cntrwgt,
-            horizontal_start=horizontal_start,
+        wrap_in_field = gtx.as_field(
+            (dims.CellDim, dims.C2E2CODim), data=c_bln_avg, dtype=c_bln_avg.dtype
         )
+        halo_exchange(dims.CellDim, wrap_in_field)
+        c_bln_avg = wrap_in_field.ndarray
 
-    wrap_in_field = gtx.as_field(
-        (dims.CellDim, dims.C2E2CODim), data=c_bln_avg, dtype=c_bln_avg.dtype
-    )
-    halo_exchange(dims.CellDim, wrap_in_field)
     return c_bln_avg
 
 
@@ -654,18 +647,22 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    c_bln_avg = _compute_c_bln_avg(
+    c_bln_avg_buffer = _compute_c_bln_avg(
         c2e2c0[:, 1:],
         lat,
         lon,
         divavg_cntrwgt,
         horizontal_start,
         array_ns=array_ns,
-        halo_exchange=halo_exchange,
     )
+    c_bln_avg = gtx.as_field(
+        (dims.CellDim, dims.C2E2CODim), data=c_bln_avg_buffer, dtype=ta.wpfloat
+    )
+    halo_exchange(dims.CellDim, c_bln_avg)
+
     return _force_mass_conservation_to_c_bln_avg(
         c2e2c0,
-        c_bln_avg,
+        c_bln_avg.ndarray,
         cell_areas,
         cell_owner_mask,
         divavg_cntrwgt,
@@ -676,7 +673,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
 
 
 def _create_inverse_neighbor_index(
-    source_offset, inverse_offset, array_ns: ModuleType
+    source_offset: data_alloc.NDArray, inverse_offset: data_alloc.NDArray, array_ns: ModuleType
 ) -> data_alloc.NDArray:
     """
     The inverse neighbor index determines the position of a central element c_1
@@ -698,7 +695,7 @@ def _create_inverse_neighbor_index(
 
     """
     inv_neighbor_idx = MISSING * array_ns.ones(inverse_offset.shape, dtype=gtx.int32)
-
+    source_offset[inverse_offset]
     for jc in range(inverse_offset.shape[0]):
         for i in range(inverse_offset.shape[1]):
             if inverse_offset[jc, i] >= 0:

@@ -278,6 +278,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
                 ),
             },
+            do_exchange=True,
         )
         self.register_provider(e_flx_avg)
 
