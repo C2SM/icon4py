@@ -23,7 +23,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import (
     driver_configuration as driver_configure,
     initialization_utils as driver_init,
-    standalone_driver as driver,
+    standalone_driver as standalone_driver,
 )
 from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
@@ -38,27 +38,15 @@ if TYPE_CHECKING:
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", definitions.Experiments.JW)
 def test_standalone_driver(
     experiment,
-    experiment_type,
-    *,
-    data_provider,
-    ranked_data_path,
     backend,
 ):
     """
     Currently, this is a only test to check if the driver runs from a grid file without verifying the end result.
     TODO(anyone): Modify this test for scientific validation after IO is ready.
     """
-    data_path = dt_utils.get_datapath_for_experiment(
-        ranked_base_path=ranked_data_path,
-        experiment=experiment,
-    )
-    gm = grid_utils.get_grid_manager_from_experiment(
-        experiment=experiment,
-        keep_skip_values=True,
-        backend=backend,
-    )
 
     backend_name = None
     for key, value in model_backends.BACKENDS.items():
@@ -67,15 +55,11 @@ def test_standalone_driver(
 
     assert backend_name is not None
 
-    driver.run_icon4py_driver(
-        [
-            str(data_path),
-            "--experiment_type",
-            experiment_type,
-            "--grid_file",
-            str(gm._file_name),
-            "--icon4py_driver_backend",
-            backend_name,
-        ],
-        standalone_mode=False,
+    grid_file_path = grid_utils._download_grid_file(experiment.grid)
+
+    standalone_driver.run_icon4py_driver(
+        configuration_file_path="./",
+        grid_file_path=grid_file_path,
+        icon4py_backend=backend_name,
+        output_path="./",
     )

@@ -453,7 +453,7 @@ class Icon4pyDriver:
     ) -> None:
         skip_checking_watch_mode_quit = False
         # TODO (Chia Rui): perform a global max operation in multinode run
-        global_max_vertical_cfl = solve_nonhydro_diagnostic_state.max_vertical_cfl
+        global_max_vertical_cfl = solve_nonhydro_diagnostic_state.max_vertical_cfl.item()
 
         if (
             global_max_vertical_cfl > ta.wpfloat("0.81") * self.config.vertical_cfl_threshold
@@ -525,7 +525,7 @@ class Icon4pyDriver:
             self._cfl_watch_mode = False
 
         # reset max_vertical_cfl to zero
-        solve_nonhydro_diagnostic_state.max_vertical_cfl = ta.wpfloat("0.0")
+        solve_nonhydro_diagnostic_state.max_vertical_cfl = data_alloc.scalar_like_array(0.0, self.config.backend)
 
     def _update_spinup_second_order_divergence_damping(
         self, fourth_order_divdamp_factor: ta.wpfloat
@@ -614,14 +614,15 @@ def initialize(
     )
 
     log.info(f"initializing the grid from '{grid_file_path}'")
+
     (grid_manager, decomposition_info) = driver_init.create_grid_manager_and_decomp_info(
         grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
-        backend=driver_config.backend,
+        allocator=driver_config.backend, # TODO should be real backend
     )
     vertical_grid = driver_init.create_vertical_grid(
         vertical_grid_config=vertical_grid_config,
-        backend=driver_config.backend,
+        allocator=driver_config.backend,
     )
 
     geometry_field_source = driver_init.create_geometry_factory(
@@ -632,7 +633,7 @@ def initialize(
 
     topo_c = driver_init.create_topography(
         geometry_field_source=geometry_field_source,
-        backend=driver_config.backend,
+        allocator=driver_config.backend,
     )
 
     (

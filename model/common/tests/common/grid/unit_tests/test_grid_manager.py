@@ -39,6 +39,7 @@ except ImportError:
 
 from icon4py.model.testing.fixtures import (
     backend,
+    cpu_allocator,
     data_provider,
     download_ser_data,
     experiment,
@@ -325,13 +326,15 @@ def assert_up_to_order(
 
 
 @pytest.mark.with_netcdf
-def test_gridmanager_given_file_not_found_then_abort() -> None:
+def test_gridmanager_given_file_not_found_then_abort(
+    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+) -> None:
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:
         manager = gm.GridManager(
             gm.NoTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
         )
-        manager(backend=None, keep_skip_values=True)
+        manager(allocator=cpu_allocator, keep_skip_values=True)
         assert error.value == 1
 
 

@@ -54,7 +54,7 @@ _LOGGING_LEVELS: dict[str, int] = {
 def create_grid_manager_and_decomp_info(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
-    backend: gtx_typing.Backend,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> tuple[
     decomposition_defs.DecompositionInfo,
     gm.GridManager,
@@ -64,14 +64,14 @@ def create_grid_manager_and_decomp_info(
         grid_file_path,
         vertical_grid_config,
     )
-    grid_manager(backend=backend, keep_skip_values=False)
+    grid_manager(allocator=allocator, keep_skip_values=False)
 
-    xp = data_alloc.import_array_ns(backend)
+    xp = data_alloc.import_array_ns(allocator)
 
     decomposition_info = decomposition_defs.DecompositionInfo()
 
     def _add_dimension(dim: gtx.Dimension) -> None:
-        indices = data_alloc.index_field(grid_manager.grid, dim, allocator=backend)
+        indices = data_alloc.index_field(grid_manager.grid, dim, allocator=allocator)
         owner_mask = xp.ones((grid_manager.grid.size[dim],), dtype=bool)
         decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
@@ -84,9 +84,9 @@ def create_grid_manager_and_decomp_info(
 
 def create_vertical_grid(
     vertical_grid_config: v_grid.VerticalGridConfig,
-    backend: gtx_typing.Backend,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> v_grid.VerticalGrid:
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, backend)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, allocator)
 
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_grid_config,
@@ -115,12 +115,13 @@ def create_geometry_factory(
 
 def create_topography(
     geometry_field_source: grid_geometry.GridGeometry,
-    backend: gtx_typing.Backend,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> data_alloc.NDArray:
+    xp = data_alloc.import_array_ns(allocator)
     topo_c = jablonowski_williamson_topography(
         cell_lat=geometry_field_source.get(geometry_meta.CELL_LAT).ndarray,
         u0=35.0,
-        backend=backend,
+        array_ns=xp,
     )
     return topo_c
 

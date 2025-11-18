@@ -154,6 +154,11 @@ class FieldSource(GridProvider, Protocol):
     ) -> state_utils.GTXFieldType: ...
 
     @overload
+    def get(
+        self, field_name: str, type_: Literal[RetrievalType.FIELD] = RetrievalType.FIELD
+    ) -> state_utils.ScalarType: ...
+
+    @overload
     def get(self, field_name: str, type_: Literal[RetrievalType.DATA_ARRAY]) -> xa.DataArray: ...
 
     @overload

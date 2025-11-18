@@ -58,7 +58,9 @@ class DriverConfig:
                 f"Invalid driver backend: {backend_name}. \n"
                 f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS])}"
             )
-        object.__setattr__(self, "backend", model_backends.BACKENDS[backend_name])
+        backend_factory = model_backends.BACKENDS[backend_name]["backend_factory"]
+        device = model_backends.BACKENDS[backend_name]["device"]
+        object.__setattr__(self, "backend", backend_factory(device))
 
         for name in ["grid_file_path", "configuration_file_path", "output_path"]:
             path = (
@@ -71,7 +73,7 @@ class DriverConfig:
             #     raise ValueError(f"{name} must be a file: {path}")
 
 
-def read_config(
+def  read_config(
     configuration_file_path: pathlib.Path,
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,

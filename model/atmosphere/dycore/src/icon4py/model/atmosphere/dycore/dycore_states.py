@@ -87,7 +87,8 @@ class RhoThetaAdvectionType(FrozenNamespace[int]):
 class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
-    max_vertical_cfl: ta.wpfloat
+    # `max_vertical_cfl` stored as 0-d array of type ta.wpfloat (to be able to avoid cupy synchronization)
+    max_vertical_cfl: data_alloc.ScalarLikeArray[ta.wpfloat]
     """
     Declared as max_vcfl_dyn in ICON. Maximum vertical CFL number over all substeps.
     """
@@ -170,6 +171,13 @@ class DiagnosticStateNonHydro:
     """
     Declared as exner_dyn_incr in ICON.
     """
+
+    def __post_init__(self):
+        if not data_alloc.is_rank0_ndarray(self.max_vertical_cfl):
+            # TODO(havogt): instead of this check, we could refactor to a special dataclass-like which promotes to 0-d array on assignment
+            raise TypeError(
+                "'max_vertical_cfl' must be initialized as a 0-d array for performance reasons."
+            )
 
 
 @dataclasses.dataclass
@@ -345,7 +353,7 @@ def initialize_solve_nonhydro_diagnostic_state(
         ),
     )
     return DiagnosticStateNonHydro(
-        max_vertical_cfl=0.0,
+        max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         theta_v_at_cells_on_half_levels=data_alloc.zero_field(
             grid,
             dims.CellDim,

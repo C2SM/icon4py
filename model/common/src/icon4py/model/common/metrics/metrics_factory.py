@@ -26,9 +26,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
-from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
-    compute_cell_2_vertex_interpolation,
-)
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
@@ -422,26 +419,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(compute_d2dexdz2_fac_mc)
-
-        compute_cell_to_vertex_interpolation = factory.ProgramFieldProvider(
-            func=compute_cell_2_vertex_interpolation.with_backend(self._backend),
-            deps={
-                "cell_in": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
-                "c_int": interpolation_attributes.CELL_AW_VERTS,
-            },
-            domain={
-                dims.VertexDim: (
-                    vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    vertex_domain(h_grid.Zone.INTERIOR),
-                ),
-                dims.KHalfDim: (
-                    vertical_half_domain(v_grid.Zone.TOP),
-                    vertical_half_domain(v_grid.Zone.BOTTOM),
-                ),
-            },
-            fields={attrs.VERT_OUT: attrs.VERT_OUT},
-        )
-        self.register_provider(compute_cell_to_vertex_interpolation)
 
         compute_ddxt_z_half_e = factory.ProgramFieldProvider(
             func=mf.compute_ddxt_z_half_e.with_backend(self._backend),
