@@ -227,7 +227,7 @@ class GHexMultiNodeExchange:
                     self._domain_descriptors[dim],
                     array,
                     arch=Architecture.CPU
-                    if isinstance(f, (np.ndarray, gtx._nd_array_field.NumPyArrayField))
+                    if isinstance(f.ndarray, np.ndarray)
                     else Architecture.GPU,
                 )
             )
