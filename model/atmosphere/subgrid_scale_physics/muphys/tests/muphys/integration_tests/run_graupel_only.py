@@ -483,5 +483,6 @@ from cdo import Cdo
 cdo = Cdo()
 
 for varname in ['ta','hus','clw','cli','qr','qs','qg']:
-    cdo.diffn(input=f' -selname,{varname} junk.nc -selname,{varname}',
+    cdo.diffn('abslim=3e-13',
+              input=f' -selname,{varname} junk.nc -selname,{varname}',
               output='../../MUPHYS/muphys/build_apple/new_fields.nc')
