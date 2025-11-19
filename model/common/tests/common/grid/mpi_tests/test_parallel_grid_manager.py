@@ -85,7 +85,7 @@ def run_grid_manager_for_singlenode(
     return manager
 
 
-@pytest.mark.mpi
+#@pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "experiment",
@@ -103,6 +103,7 @@ def test_start_end_index(
     dim: gtx.Dimension,
     icon_grid: base.Grid,
 ) -> None:
+    processor_props =
     caplog.set_level(logging.INFO)
     grid_file = experiment.grid
     file = grid_utils.resolve_full_grid_file_name(grid_file)

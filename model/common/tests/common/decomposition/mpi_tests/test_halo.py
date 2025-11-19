@@ -33,14 +33,9 @@ from gt4py.next import common as gtx_common
 
 from icon4py.model.common.decomposition import halo
 from icon4py.model.common.grid import base as base_grid, simple
-from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs
 
 
-UGRID_FILE = (
-    test_defs.grids_path()
-    .joinpath(dt_utils.R02B04_GLOBAL)
-    .joinpath("icon_grid_0013_R02B04_R_ugrid.nc")
-)
+
 backend = None
 
 

@@ -15,7 +15,6 @@ import pytest
 
 from icon4py.model.common.grid import horizontal as h_grid, icon
 from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
@@ -31,7 +30,7 @@ from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox
 from icon4py.model.testing.parallel_helpers import check_comm_size
-
+from ..utils import dummy_four_ranks
 from ...fixtures import (
     backend,
     data_provider,
@@ -47,14 +46,6 @@ from ...fixtures import (
 )
 
 
-try:
-    import mpi4py  # import mpi4py to check for optional mpi dependency
-
-    from icon4py.model.common.decomposition import mpi_decomposition
-
-    mpi_decomposition.init_mpi()
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
 
 _log = logging.getLogger(__name__)
@@ -262,7 +253,7 @@ def test_create_single_node_runtime_without_mpi(
     assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
-@pytest.mark.mpi
+#@pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
 def test_exchange_on_dummy_data(
@@ -275,7 +266,7 @@ def test_exchange_on_dummy_data(
     exchange = definitions.create_exchange(processor_props, decomposition_info)
     grid = grid_savepoint.construct_icon_grid()
 
-    number = processor_props.rank + 10.0
+    number = processor_props.rank + 10
     input_field = data_alloc.constant_field(
         grid,
         number,
@@ -289,8 +280,8 @@ def test_exchange_on_dummy_data(
     local_points = decomposition_info.local_index(
         dimension, definitions.DecompositionInfo.EntryType.OWNED
     )
-    assert np.all(input_field == number)
-    exchange.exchange_and_wait(dimension, (input_field,))
+    assert np.all(input_field.asnumpy() == number)
+    exchange.exchange_and_wait(dimension, input_field)
     result = input_field.asnumpy()
     _log.info(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
     _log.info(

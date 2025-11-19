@@ -100,7 +100,7 @@ def get_multinode_properties(
     return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
-@dataclass(frozen=False)
+@dataclass(frozen=True)
 class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm
 
@@ -213,7 +213,7 @@ class GHexMultiNodeExchange:
             trim_length = self._field_size[dim]
             return field.ndarray[:trim_length, :]
         except KeyError:
-            log.warn(f"Trying to trim field of invalid dimension {dim} for exchange. Not trimming.")
+            log.warning(f"Trying to trim field of invalid dimension {dim} for exchange. Not trimming.")
 
     def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field) -> str:
         # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
@@ -229,9 +229,7 @@ class GHexMultiNodeExchange:
                 unstructured.make_field_descriptor(
                     self._domain_descriptors[dim],
                     array,
-                    arch=util.Architecture.CPU
-                    if isinstance(f, np.ndarray)
-                    else util.Architecture.GPU,
+                    arch=unstructured.Architecture.CPU if isinstance(f.ndarray, np.ndarray) else unstructured.Architecture.GPU,
                 )
             )
             return self._applied_patterns_cache[key]
@@ -250,7 +248,7 @@ class GHexMultiNodeExchange:
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]) -> None:
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None:
         res = self.exchange(dim, *fields)
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
