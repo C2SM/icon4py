@@ -35,10 +35,11 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 
+import gt4py.next as gtx
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", definitions.Experiments.JW)
+@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_standalone_driver(
     experiment,
     backend,
@@ -49,11 +50,29 @@ def test_standalone_driver(
     """
 
     backend_name = None
-    for key, value in model_backends.BACKENDS.items():
-        if value == backend:
-            backend_name = key
+    for name, entry in model_backends.BACKENDS.items():
 
-    assert backend_name is not None
+        # embedded
+        if entry is None and backend is None:
+            backend_name = name
+            break
+
+        # roundtrip
+        if entry is gtx.itir_python and backend is gtx.itir_python:
+            backend_name = name
+            break
+
+        # factory-based backends
+        if isinstance(entry, dict):
+            factory = entry["backend_factory"]
+            device = entry["device"]
+            trial_backend = factory(device)
+
+            if type(trial_backend) is type(backend):
+                backend_name = name
+                break
+
+    assert backend_name is not None, f"Unknown backend instance: {backend}"
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
