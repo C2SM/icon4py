@@ -249,12 +249,26 @@ def compute_geofac_grg(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
+    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    primal_normal_ec_u, primal_normal_ec_v = functools.partial(
-        _compute_primal_normal_ec, array_ns=array_ns
-    )(primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c)
-    return functools.partial(_compute_geofac_grg, array_ns=array_ns)(
+    primal_normal_ec_u, primal_normal_ec_v = _compute_primal_normal_ec(
+        primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c, array_ns=array_ns
+    )
+
+    wrap_in_field_1 = gtx.as_field(
+        (dims.CellDim, dims.C2EDim), data=primal_normal_ec_u, dtype=primal_normal_ec_u.dtype
+    )
+    halo_exchange(dims.CellDim, wrap_in_field_1)
+    primal_normal_ec_u = wrap_in_field_1.ndarray
+
+    wrap_in_field_2 = gtx.as_field(
+        (dims.CellDim, dims.C2EDim), data=primal_normal_ec_v, dtype=primal_normal_ec_v.dtype
+    )
+    halo_exchange(dims.CellDim, wrap_in_field_2)
+    primal_normal_ec_v = wrap_in_field_2.ndarray
+
+    geofac_grg_x, geofac_grg_y = _compute_geofac_grg(
         primal_normal_ec_u,
         primal_normal_ec_v,
         geofac_div,
@@ -263,7 +277,21 @@ def compute_geofac_grg(
         e2c,
         c2e2c,
         horizontal_start,
+        array_ns=array_ns,
     )
+    wrap_in_field_1 = gtx.as_field(
+        (dims.CellDim, dims.C2E2CODim), data=geofac_grg_x, dtype=geofac_grg_x.dtype
+    )
+    halo_exchange(dims.CellDim, wrap_in_field_1)
+    geofac_grg_x = wrap_in_field_1.ndarray
+
+    wrap_in_field_2 = gtx.as_field(
+        (dims.CellDim, dims.C2E2CODim), data=geofac_grg_y, dtype=geofac_grg_y.dtype
+    )
+    halo_exchange(dims.CellDim, wrap_in_field_2)
+    geofac_grg_y = wrap_in_field_2.ndarray
+
+    return geofac_grg_x, geofac_grg_y
 
 
 def compute_geofac_grdiv(
@@ -493,7 +521,7 @@ def _force_mass_conservation_to_c_bln_avg(
     cell_owner_mask: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
-    halo_exchange: Callable[[[gtx.Dimension, tuple]], None],
+    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
@@ -717,7 +745,7 @@ def compute_e_flx_avg(
     e2c2e: data_alloc.NDArray,
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
-    halo_exchange,
+    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """

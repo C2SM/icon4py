@@ -233,7 +233,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(c_lin_e)
 
         geofac_grg = factory.NumpyDataProvider(
-            func=functools.partial(interpolation_fields.compute_geofac_grg, array_ns=self._xp),
+            func=functools.partial(
+                interpolation_fields.compute_geofac_grg,
+                array_ns=self._xp,
+                halo_exchange=self._exchange.exchange_and_wait,
+            ),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
             domain=(dims.CellDim, dims.C2E2CODim),
             deps={
@@ -249,6 +253,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=False,
         )
         self.register_provider(geofac_grg)
 
