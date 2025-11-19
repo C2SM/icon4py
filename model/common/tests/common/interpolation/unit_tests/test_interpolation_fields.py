@@ -51,6 +51,10 @@ edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
 
 
+def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
+    return None
+
+
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_compute_c_lin_e(
@@ -265,9 +269,6 @@ def test_compute_c_bln_avg(
 
     c2e2c0 = icon_grid.get_connectivity(dims.C2E2CO).ndarray
 
-    def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
-        return None
-
     c_bln_avg = functools.partial(
         compute_mass_conserving_bilinear_cell_average_weight,
         array_ns=xp,
@@ -321,6 +322,7 @@ def test_compute_e_flx_avg(
         e2c2e,
         horizontal_start_1,
         horizontal_start_2,
+        halo_exchange=dummy_exchange,
     )
     assert test_helpers.dallclose(data_alloc.as_numpy(e_flx_avg), e_flx_avg_ref)
 

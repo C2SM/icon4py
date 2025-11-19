@@ -253,7 +253,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(geofac_grg)
 
         e_flx_avg = factory.NumpyDataProvider(
-            func=functools.partial(interpolation_fields.compute_e_flx_avg, array_ns=self._xp),
+            func=functools.partial(
+                interpolation_fields.compute_e_flx_avg,
+                array_ns=self._xp,
+                halo_exchange=self._exchange.exchange_and_wait,
+            ),
             fields=(attrs.E_FLX_AVG,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
             deps={
@@ -278,7 +282,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
                 ),
             },
-            do_exchange=True,
+            do_exchange=False,
         )
         self.register_provider(e_flx_avg)
 

@@ -717,6 +717,7 @@ def compute_e_flx_avg(
     e2c2e: data_alloc.NDArray,
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
+    halo_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -788,6 +789,11 @@ def compute_e_flx_avg(
                 ),
                 e_flx_avg[llb:, i + 3],
             )
+    wrap_in_field = gtx.as_field(
+        (dims.EdgeDim, dims.E2C2EODim), data=e_flx_avg, dtype=e_flx_avg.dtype
+    )
+    halo_exchange(dims.EdgeDim, wrap_in_field)
+    e_flx_avg = wrap_in_field.ndarray
     # the icon prescribed order dependency is probably due to these magic numbers...
     iie = MISSING * array_ns.ones(e2c2e.shape, dtype=int)
     iie[:, 0] = array_ns.where(
@@ -863,6 +869,11 @@ def compute_e_flx_avg(
     e_flx_avg[llb:, :] = array_ns.where(
         owner_mask[llb:, None], e_flx_avg[llb:, :] / checksum[llb:, None], e_flx_avg[llb:, :]
     )
+    wrap_in_field = gtx.as_field(
+        (dims.EdgeDim, dims.E2C2EODim), data=e_flx_avg, dtype=e_flx_avg.dtype
+    )
+    halo_exchange(dims.EdgeDim, wrap_in_field)
+    e_flx_avg = wrap_in_field.ndarray
 
     return e_flx_avg
 

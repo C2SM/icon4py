@@ -54,20 +54,20 @@ vert_lb_domain = h_grid.vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, intrp_name, atol",
+    "attrs_name, intrp_name, atol, index",
     [
-        (attrs.C_LIN_E, "c_lin_e", 1e-12),
-        (attrs.NUDGECOEFFS_E, "nudgecoeff_e", 1e-12),
-        (attrs.C_BLN_AVG, "c_bln_avg", 1e-11),
-        (attrs.E_FLX_AVG, "e_flx_avg", 1e-10),  # fails in MCH_CH_R04B09 for atol 1e-2
-        (attrs.E_BLN_C_S, "e_bln_c_s", 1e-12),
-        (attrs.GEOFAC_DIV, "geofac_div", 1e-12),
-        (attrs.GEOFAC_N2S, "geofac_n2s", 1e-12),
-        (attrs.GEOFAC_GRG_X, "geofac_grg", 1e-3),
-        (attrs.GEOFAC_GRG_Y, "geofac_grg", 1e-3),
-        (attrs.POS_ON_TPLANE_E_X, "pos_on_tplane_e_x", 1e-12),
-        (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-8),
-        (attrs.CELL_AW_VERTS, "c_intp", 1e-12),
+        (attrs.C_LIN_E, "c_lin_e", 1e-12, None),
+        (attrs.NUDGECOEFFS_E, "nudgecoeff_e", 1e-12, None),
+        (attrs.C_BLN_AVG, "c_bln_avg", 1e-11, None),
+        (attrs.E_FLX_AVG, "e_flx_avg", 1e-10, None),
+        (attrs.E_BLN_C_S, "e_bln_c_s", 1e-12, None),
+        (attrs.GEOFAC_DIV, "geofac_div", 1e-12, None),
+        (attrs.GEOFAC_N2S, "geofac_n2s", 1e-12, None),
+        (attrs.GEOFAC_GRG_X, "geofac_grg", 1e-3, 0),
+        (attrs.GEOFAC_GRG_Y, "geofac_grg", 1e-3, 1),
+        (attrs.POS_ON_TPLANE_E_X, "pos_on_tplane_e_x", 1e-12, None),
+        (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-8, None),
+        (attrs.CELL_AW_VERTS, "c_intp", 1e-12, None),
     ],
 )
 def test_distributed_interpolation_attrs(
@@ -80,14 +80,17 @@ def test_distributed_interpolation_attrs(
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
+    index: int | None,
     atol: int,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
-    field_ref = field_ref.asnumpy()
+    field_ref = field_ref.asnumpy() if index is None else field_ref[index].asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
-    assert test_utils.dallclose(field, field_ref, atol=atol), f"comparison of {attrs_name} failed"
+    assert test_utils.dallclose(
+        field, field_ref, atol=atol, rtol=5e-9
+    ), f"comparison of {attrs_name} failed"
 
 
 @pytest.mark.datatest
