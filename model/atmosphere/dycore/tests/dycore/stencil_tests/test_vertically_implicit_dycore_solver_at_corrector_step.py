@@ -111,6 +111,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         kstart_moist: int,
         **kwargs: Any,
     ) -> dict:
+        stencil_tests.print_start_frame("TestVerticallyImplicitSolverAtCorrectorStep::reference", locals())
         horizontal_start = kwargs["start_cell_index_nudging"]
         horizontal_end = kwargs["end_cell_index_local"]
         n_lev = kwargs["vertical_end_index_model_surface"] - 1
@@ -360,6 +361,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             else exner_dynamical_increment
         )
 
+        stencil_tests.print_end_frame("TestVerticallyImplicitSolverAtCorrectorStep::reference", locals())
+
         return dict(
             next_w=next_w,
             next_rho=next_rho,
@@ -372,6 +375,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+        stencil_tests.print_start_frame(f"TestVerticallyImplicitSolverAtCorrectorStep::input_data(({id(self)}))", locals())
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
@@ -444,6 +448,8 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         cell_domain = h_grid.domain(dims.CellDim)
         start_cell_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+
+        stencil_tests.print_end_frame(f"TestVerticallyImplicitSolverAtCorrectorStep::input_data(({id(self)}))", locals())
 
         return dict(
             next_w=next_w,
