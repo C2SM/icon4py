@@ -115,7 +115,7 @@ class TestApplyDiffusionToVn(StencilTest):
 
         return dict(vn=vn)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)

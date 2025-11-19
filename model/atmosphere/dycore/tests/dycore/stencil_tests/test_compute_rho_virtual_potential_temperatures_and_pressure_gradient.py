@@ -128,7 +128,7 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
             z_th_ddz_exner_c=z_th_ddz_exner_c,
         )
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = ta.wpfloat("1.0")
         wgt_nnow_rth = ta.wpfloat("2.0")

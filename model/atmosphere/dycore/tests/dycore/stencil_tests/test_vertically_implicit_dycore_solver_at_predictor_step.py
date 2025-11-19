@@ -406,7 +406,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             ]
         ],
         ids=lambda param: f"at_first_substep[{param['at_first_substep']}]__is_iau_active[{param['is_iau_active']}]__divdamp_type[{param['divdamp_type']}]",
-        scope="class",
     )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid

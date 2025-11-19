@@ -50,7 +50,7 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
         )
         return dict(interpolation_to_half_levels_vp=interpolation_to_half_levels_vp)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolant = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

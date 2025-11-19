@@ -134,7 +134,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
             substep_averaged_mass_flux=substep_averaged_mass_flux,
         )
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)

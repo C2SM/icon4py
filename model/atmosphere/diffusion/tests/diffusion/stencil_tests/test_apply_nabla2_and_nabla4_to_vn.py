@@ -42,7 +42,7 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
     PROGRAM = apply_nabla2_and_nabla4_to_vn
     OUTPUTS = ("vn",)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         area_edge = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

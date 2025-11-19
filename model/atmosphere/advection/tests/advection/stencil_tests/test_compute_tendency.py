@@ -34,7 +34,7 @@ class TestComputeTendency(stencil_tests.StencilTest):
 
         return dict(opt_ddt_tracer_adv=opt_ddt_tracer_adv)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_tracer_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

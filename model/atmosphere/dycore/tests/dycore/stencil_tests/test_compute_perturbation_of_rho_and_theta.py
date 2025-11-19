@@ -51,7 +51,7 @@ class TestComputePerturbationOfRhoAndTheta(StencilTest):
         )
         return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         rho_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

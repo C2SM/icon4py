@@ -64,7 +64,7 @@ class TestComputePpmSlope(stencil_tests.StencilTest):
         z_slope = np.where(k[1:-1] < elev, z_slope_a, z_slope_b)
         return dict(z_slope=z_slope)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         z_slope = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})

@@ -47,7 +47,7 @@ class TestDiagnoseSurfacePressure(stencil_tests.StencilTest):
             surface_pressure=surface_pressure,
         )
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         low = 1.0e-2
         exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)

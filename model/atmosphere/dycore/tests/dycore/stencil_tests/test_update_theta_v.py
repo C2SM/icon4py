@@ -51,7 +51,7 @@ class TestUpdateThetaV(StencilTest):
         )
         return dict(theta_v_new=theta_v_new)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         mask_prog_halo_c = random_mask(grid, dims.CellDim)
         rho_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

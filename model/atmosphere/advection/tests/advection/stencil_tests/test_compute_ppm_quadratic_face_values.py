@@ -42,7 +42,7 @@ class TestComputePpmQuadraticFaceValues(stencil_tests.StencilTest):
         )
         return dict(p_face=p_face)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

@@ -40,7 +40,7 @@ class TestInitTwoEdgeKdimFieldsWithZeroWp(StencilTest):
             edge_kdim_field_with_zero_wp_2=edge_kdim_field_with_zero_wp_2,
         )
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         edge_kdim_field_with_zero_wp_1 = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         edge_kdim_field_with_zero_wp_2 = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

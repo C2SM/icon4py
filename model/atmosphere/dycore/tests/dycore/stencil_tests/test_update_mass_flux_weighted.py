@@ -60,7 +60,7 @@ class TestUpdateMassFluxWeighted(StencilTest):
         )
         return dict(mass_flx_ic=mass_flx_ic)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         r_nsubsteps = wpfloat("10.0")
         rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

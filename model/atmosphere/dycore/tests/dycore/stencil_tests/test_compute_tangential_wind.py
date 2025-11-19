@@ -44,7 +44,7 @@ class TestComputeTangentialWind(StencilTest):
         vt = compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e)
         return dict(vt=vt)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)

@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable, Generator, Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any, ClassVar
 
 import gt4py.next as gtx
@@ -36,7 +36,7 @@ def allocate_data(
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
 ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
     _allocate_field = constructors.as_field.partial(allocator=allocator)  # type:ignore[attr-defined] # TODO(havogt): check why it doesn't understand the fluid_partial
-    gtx_input_data = {
+    input_data = {
         k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
         if isinstance(v, tuple)
         else _allocate_field(domain=v.domain, data=v.ndarray)
@@ -44,7 +44,7 @@ def allocate_data(
         else v
         for k, v in input_data.items()
     }
-    return gtx_input_data
+    return input_data
 
 
 @dataclasses.dataclass(frozen=True)
@@ -147,9 +147,7 @@ class StencilTest:
         ...     OUTPUTS = ("some_output",)
         ...     STATIC_PARAMS = {"category_a": ["flag0"], "category_b": ["flag0", "flag1"]}
         ...
-        ...     @pytest.fixture(
-        ...         scope="class"
-        ...     )  # make sure that input data are not allocated multiple times
+        ...     @pytest.fixture
         ...     def input_data(self):
         ...         return {"some_input": ..., "some_output": ...}
         ...
@@ -164,7 +162,7 @@ class StencilTest:
 
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def _configured_program(
         self,
         backend_like: model_backends.BackendLike,
@@ -196,18 +194,17 @@ class StencilTest:
         test_func = device_utils.synchronized_function(program, allocator=backend)
         return test_func
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def _properly_allocated_input_data(
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         backend_like: model_backends.BackendLike,
-    ) -> Generator[dict[str, gtx.Field | tuple[gtx.Field, ...]], None, None]:
+    ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
         # TODO(havogt): this is a workaround,
         # because in the `input_data` fixture provided by the user
         # it does not allocate for the correct device.
         allocator = model_backends.get_allocator(backend_like)
-        yield allocate_data(allocator=allocator, input_data=input_data)
-        input_data.clear()
+        return allocate_data(allocator=allocator, input_data=input_data)
 
     def _verify_stencil_test(
         self,

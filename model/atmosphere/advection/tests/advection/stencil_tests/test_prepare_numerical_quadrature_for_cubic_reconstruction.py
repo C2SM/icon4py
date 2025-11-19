@@ -485,7 +485,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(stencil_tests.Stencil
             p_dreg_area_out=p_dreg_area_out,
         )
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_coords_dreg_v_1_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_coords_dreg_v_2_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

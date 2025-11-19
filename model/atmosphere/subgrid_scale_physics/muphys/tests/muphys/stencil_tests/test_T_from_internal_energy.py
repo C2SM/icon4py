@@ -32,7 +32,7 @@ class TestTFromInternalEnergy(StencilTest):
     ) -> dict:
         return dict(temperature=np.full(u.shape, 255.75599999999997))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         return dict(
             u=data_alloc.constant_field(

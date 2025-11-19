@@ -26,7 +26,7 @@ class TestDepositionAutoConversion(StencilTest):
     def reference(grid, qi: np.ndarray, m_ice: np.ndarray, ice_dep: np.ndarray, **kwargs) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 6.6430804299795412e-08))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         return dict(
             qi=data_alloc.constant_field(

@@ -31,7 +31,7 @@ class TestCloudToSnow(StencilTest):
     ) -> dict:
         return dict(riming_snow_rate=np.full(t.shape, 9.5431874564438999e-10))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 256.571, dims.CellDim, dims.KDim, dtype=wpfloat),

@@ -24,7 +24,7 @@ class TestSnowLambda(StencilTest):
     def reference(grid, rho: np.ndarray, qs: np.ndarray, ns: np.ndarray, **kwargs) -> dict:
         return dict(riming_snow_rate=np.full(rho.shape, 1.0e10))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         return dict(
             rho=data_alloc.constant_field(grid, 1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),

@@ -33,7 +33,7 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
     PROGRAM = apply_nabla2_to_vn_in_lateral_boundary
     OUTPUTS = ("vn",)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid):
         fac_bdydiff_v = wpfloat("5.0")
         z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

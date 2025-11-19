@@ -251,7 +251,7 @@ class TestComputeHorizontalAvectionOfRhoAndTheta(stencil_tests.StencilTest):
         )
         return dict(out=(z_rho_e, z_theta_v_e))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)

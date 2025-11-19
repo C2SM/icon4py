@@ -85,7 +85,7 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
         )
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         dtime = ta.wpfloat("1.0")
         rho_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

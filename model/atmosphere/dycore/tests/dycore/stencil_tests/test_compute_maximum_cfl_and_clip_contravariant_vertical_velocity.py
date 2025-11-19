@@ -70,7 +70,7 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
             z_w_con_c=z_w_con_c,
         )
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

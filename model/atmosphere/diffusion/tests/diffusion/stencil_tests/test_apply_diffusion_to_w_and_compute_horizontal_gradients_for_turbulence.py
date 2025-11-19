@@ -118,7 +118,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         out_dwdy[subset] = dwdy[subset]
         return dict(w=out_w, dwdx=out_dwdx, dwdy=out_dwdy)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         nrdmax = 13
         cell_domain = h_grid.domain(dims.CellDim)

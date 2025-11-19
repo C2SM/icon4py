@@ -72,7 +72,7 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
         )
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         w_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

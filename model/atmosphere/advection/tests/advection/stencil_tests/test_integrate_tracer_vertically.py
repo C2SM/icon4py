@@ -58,7 +58,7 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
 
         return dict(tracer_new=tracer_new)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

@@ -37,7 +37,7 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
 
         return dict(p_tracer_new=p_tracer_new)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_grf_tend_tracer = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

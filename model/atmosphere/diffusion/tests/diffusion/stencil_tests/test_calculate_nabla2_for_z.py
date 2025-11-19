@@ -59,7 +59,7 @@ class TestCalculateNabla2ForZ(StencilTest):
         )
         return dict(z_nabla2_e=z_nabla2_e)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)

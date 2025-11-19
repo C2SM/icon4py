@@ -286,7 +286,6 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             {"skip_compute_predictor_vertical_advection": value} for value in [True, False]
         ],  # True for benchmarking, False for testing
         ids=lambda param: f"skip_compute_predictor_vertical_advection[{param['skip_compute_predictor_vertical_advection']}]",
-        scope="class",
     )
     def input_data(
         self, grid: base.Grid, request: pytest.FixtureRequest

@@ -34,7 +34,7 @@ class TestVaporXGraupel(StencilTest):
     ) -> dict:
         return dict(exchange_rate=np.full(t.shape, -6.8498666666666675e-13))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 278.026, dims.CellDim, dims.KDim, dtype=wpfloat),

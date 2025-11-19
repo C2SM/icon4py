@@ -45,7 +45,7 @@ class TestComputeContravariantCorrection(StencilTest):
         z_w_concorr_me = compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, vt)
         return dict(z_w_concorr_me=z_w_concorr_me)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

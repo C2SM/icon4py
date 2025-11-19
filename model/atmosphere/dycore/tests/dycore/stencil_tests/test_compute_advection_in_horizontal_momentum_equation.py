@@ -250,7 +250,6 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
             {"apply_extra_diffusion_on_vn": value} for value in [True, False]
         ],  # True for testing, False for benchmarking
         ids=lambda param: f"apply_extra_diffusion_on_vn[{param['apply_extra_diffusion_on_vn']}]",
-        scope="class",
     )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid

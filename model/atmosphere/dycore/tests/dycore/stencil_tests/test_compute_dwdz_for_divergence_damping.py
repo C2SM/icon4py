@@ -50,7 +50,7 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
         )
         return dict(out=z_dwdz_dd)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, Any]:
         inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)

@@ -54,7 +54,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
             z_tracer_min=z_tracer_min_out,
         )
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def input_data(self, grid: base.Grid) -> dict:
         hi_bound, lo_bound = 3, 1
         refin_ctrl = data_alloc.constant_field(grid, 2, dims.CellDim, dtype=gtx.int32)

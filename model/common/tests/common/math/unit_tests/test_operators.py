@@ -37,7 +37,7 @@ class TestNabla2OnCell(StencilTest):
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base_grid.Grid) -> dict:
         psi_c = constant_field(grid, 1.0, dims.CellDim)
         geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
@@ -66,7 +66,7 @@ class TestNabla2OnCellK(StencilTest):
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_k_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         psi_c = constant_field(grid, 1.0, dims.CellDim, dims.KDim)
         geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)

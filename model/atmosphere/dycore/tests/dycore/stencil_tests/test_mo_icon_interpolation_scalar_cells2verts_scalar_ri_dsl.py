@@ -49,7 +49,7 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
             p_vert_out=p_vert_out,
         )
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         p_cell_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         c_intp = random_field(grid, dims.VertexDim, dims.V2CDim, dtype=wpfloat)

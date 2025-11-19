@@ -43,7 +43,7 @@ class TestComputeThetaAndExner(StencilTest):
 
         return dict(theta_v=theta_v, exner=exner)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rd_o_cvd = ta.wpfloat("10.0")
         rd_o_p0ref = ta.wpfloat("20.0")

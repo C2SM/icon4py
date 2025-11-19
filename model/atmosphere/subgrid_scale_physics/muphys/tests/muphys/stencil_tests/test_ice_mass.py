@@ -23,7 +23,7 @@ class TestIceNumber(StencilTest):
     def reference(grid, qi: np.ndarray, ni: np.ndarray, **kwargs) -> dict:
         return dict(mass=np.full(qi.shape, 1.0e-12))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         return dict(
             qi=data_alloc.constant_field(grid, 2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),

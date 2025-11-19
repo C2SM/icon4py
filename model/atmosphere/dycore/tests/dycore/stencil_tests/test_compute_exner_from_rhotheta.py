@@ -38,7 +38,7 @@ class TestComputeExnerFromRhotheta(StencilTest):
         exner = np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * theta_v))
         return dict(out=(theta_v, exner))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, Any]:
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")

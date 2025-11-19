@@ -25,7 +25,7 @@ class TestSnowToGraupel(StencilTest):
     ) -> dict:
         return dict(conversion_rate=np.full(t.shape, 6.2696154545048011e-10))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 265.85, dims.CellDim, dims.KDim, dtype=wpfloat),

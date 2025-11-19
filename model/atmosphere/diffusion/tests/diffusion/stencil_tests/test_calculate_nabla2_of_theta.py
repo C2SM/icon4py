@@ -41,7 +41,7 @@ class TestCalculateNabla2OfTheta(stencil_tests.StencilTest):
         z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
         return dict(z_temp=z_temp)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)

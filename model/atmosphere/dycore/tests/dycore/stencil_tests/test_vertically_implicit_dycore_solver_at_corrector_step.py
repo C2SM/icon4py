@@ -414,7 +414,6 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             f"lprep_adv[{p['lprep_adv']}]__"
             f"is_iau_active[{p['is_iau_active']}]"
         ),
-        scope="class",
     )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid

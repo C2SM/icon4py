@@ -23,7 +23,7 @@ class TestSnowNumber(StencilTest):
     def reference(grid, t: np.ndarray, rho: np.ndarray, qs: np.ndarray, **kwargs) -> dict:
         return dict(number=np.full(t.shape, 3813750.0))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 276.302, dims.CellDim, dims.KDim, dtype=wpfloat),

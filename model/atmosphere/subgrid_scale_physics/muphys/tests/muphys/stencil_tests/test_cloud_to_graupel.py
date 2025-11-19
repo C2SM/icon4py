@@ -25,7 +25,7 @@ class TestCloudToGraupel(StencilTest):
     ) -> dict:
         return dict(riming_graupel_rate=np.full(t.shape, 2.7054723496793982e-10))
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 256.983, dims.CellDim, dims.KDim, dtype=wpfloat),

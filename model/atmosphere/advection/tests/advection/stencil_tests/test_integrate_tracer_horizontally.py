@@ -45,7 +45,7 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
         ) / rhodz_new
         return dict(tracer_new_hor=tracer_new_hor)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         deepatmo_divh = data_alloc.random_field(grid, dims.KDim)

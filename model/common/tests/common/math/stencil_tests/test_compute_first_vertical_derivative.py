@@ -43,7 +43,7 @@ class TestComputeFirstVerticalDerivative(StencilTest):
         )
         return dict(first_vertical_derivative=first_vertical_derivative)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         cell_kdim_field = random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat

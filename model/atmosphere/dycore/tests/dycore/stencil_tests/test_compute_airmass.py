@@ -35,7 +35,7 @@ class TestComputeAirmass(StencilTest):
         airmass_out = rho_in * ddqz_z_full_in * deepatmo_t1mc_in
         return dict(airmass_out=airmass_out)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddqz_z_full_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

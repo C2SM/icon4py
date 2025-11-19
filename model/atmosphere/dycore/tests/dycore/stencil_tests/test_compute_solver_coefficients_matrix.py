@@ -74,7 +74,7 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
         )
         return dict(z_beta=z_beta, z_alpha=z_alpha)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         exner_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_nnow = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

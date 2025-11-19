@@ -77,7 +77,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
             z_tracer_min=z_tracer_min,
         )
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid) -> dict:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

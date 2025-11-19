@@ -47,7 +47,7 @@ class TestApplyVerticalDensityIncrement(stencil_tests.StencilTest):
 
         return dict(rhodz_ast2=rhodz_ast2)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         rhodz_ast = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(

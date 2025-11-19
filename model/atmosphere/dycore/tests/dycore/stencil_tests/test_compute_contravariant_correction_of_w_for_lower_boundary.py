@@ -65,7 +65,7 @@ class TestComputeContravariantCorrectionOfWForLowerBoundary(StencilTest):
         )
         return dict(w_concorr_c=w_concorr_c)
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
         z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

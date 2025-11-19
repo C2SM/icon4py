@@ -519,7 +519,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(stencil_tests.Ste
             p_dreg_area=p_dreg_area,
         )
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
         famask_int = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_coords_dreg_v_1_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
