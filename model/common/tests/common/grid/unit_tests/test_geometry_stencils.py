@@ -15,7 +15,7 @@ from icon4py.model.common.grid.geometry_stencils import compute_edge_length
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils, serialbox
 
-from ..fixtures import backend, experiment, grid_savepoint
+from ..fixtures import backend, experiment, grid_savepoint, data_provider, download_ser_data, processor_props, ranked_data_path
 
 
 @pytest.mark.level("unit")
@@ -28,7 +28,7 @@ def test_edge_length(
     keep = True
     grid_file = experiment.grid
     gm = grid_utils.get_grid_manager_from_identifier(
-        grid_file, keep_skip_values=keep, num_levels=1, backend=backend
+        grid_file, keep_skip_values=keep, num_levels=1, allocator=backend
     )
     grid = gm.grid
     coordinates = gm.coordinates[dims.VertexDim]

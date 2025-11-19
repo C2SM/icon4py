@@ -97,7 +97,7 @@ class GridManager:
 
     def __call__(
         self,
-        allocator: gtx_typing.FieldBufferAlocationUtil,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
         keep_skip_values: bool,
         decomposer: halo.Decomposer = _single_node_decomposer,
         run_properties=_single_process_props,
@@ -105,21 +105,17 @@ class GridManager:
         if not run_properties.single_node() and isinstance(decomposer, halo.SingleNodeDecomposer):
             raise InvalidConfigError("Need a Decomposer for multi node run")
 
-        self._geometry = self._read_geometry_fields(allocator)
-        self._grid = self._construct_grid(allocator=allocator, with_skip_values=keep_skip_values)
-        self._coordinates = self._read_coordinates(allocator)
 
         if not self._reader:
             self.open()
 
         self._construct_decomposed_grid(
-            backend=allocator,
+            allocator=allocator,
             with_skip_values=keep_skip_values,
             decomposer=decomposer,
             run_properties=run_properties,
         )
         self._coordinates = self._read_coordinates(allocator)
-        self._geometry = self._read_geometry_fields(allocator)
         self._geometry = self._read_geometry_fields(allocator)
 
         self.close()
@@ -453,7 +449,7 @@ class GridManager:
         self._grid = grid
 
     def _construct_global_params(
-        self, backend: gtx_typing.Backend, global_size: base.HorizontalGridSize
+        self, allocator: gtx_typing.FieldBufferAllocationUtil, global_size: base.HorizontalGridSize
     ):
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
@@ -479,8 +475,8 @@ class GridManager:
             geometry_type=geometry_type,
             subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
         )
+        xp = data_alloc.import_array_ns(allocator)
         global_params = icon.GlobalGridParams.from_fields(
-            backend=backend,
             grid_shape=shape,
             radius=sphere_radius,
             domain_length=domain_length,
@@ -494,6 +490,7 @@ class GridManager:
             dual_edge_lengths=dual_edge_lengths,
             cell_areas=cell_areas,
             dual_cell_areas=dual_cell_areas,
+            array_ns=xp
         )
 
         return global_params

@@ -167,7 +167,7 @@ class DecompositionInfo:
     def global_index(
         self,
         dim: gtx.Dimension,
-        entry_type: DecompositionInfo.EntryType = DecompositionInfo.EntryType.ALL,
+        entry_type: DecompositionInfo.EntryType = EntryType.ALL,
     ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
@@ -296,7 +296,7 @@ class HaloExchangeWait:
         communication_handle.wait()
 
     # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(self, *args: Any, dim: Dimension, wait: bool = True) -> dace.sdfg.sdfg.SDFG:
+    def dace__sdfg__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
         sdfg.name = "_halo_exchange_wait_"
         return sdfg

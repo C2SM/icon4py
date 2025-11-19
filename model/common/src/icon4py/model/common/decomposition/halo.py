@@ -48,7 +48,7 @@ class NoHalos(HaloConstructor):
     def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         xp = data_alloc.import_array_ns(self._backend)
         create_arrays = functools.partial(_create_dummy_decomposition_arrays, array_ns=xp)
-        decomposition_info = defs.DecompositionInfo(klevels=self._num_levels)
+        decomposition_info = defs.DecompositionInfo()
 
         decomposition_info.set_dimension(dims.EdgeDim, *create_arrays(self._size.num_edges))
         decomposition_info.set_dimension(dims.CellDim, *create_arrays(self._size.num_cells))
