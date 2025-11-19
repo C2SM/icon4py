@@ -281,7 +281,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         cell_halo_levels[self._xp.isin(all_cells, second_halo_cells)] = (
             defs.DecompositionFlag.SECOND_HALO_LINE
         )
-        decomp_info = defs.DecompositionInfo(klevels=self._num_levels).set_dimension(
+        decomp_info = defs.DecompositionInfo().set_dimension(
             dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels
         )
 

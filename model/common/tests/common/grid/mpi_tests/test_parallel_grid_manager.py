@@ -40,7 +40,7 @@ from icon4py.model.testing import (
 
 from ...decomposition import utils as decomp_utils
 from .. import utils
-from ..fixtures import backend, experiment, grid_savepoint, icon_grid, processor_props
+from ..fixtures import backend, experiment, grid_savepoint, icon_grid, processor_props, data_provider, download_ser_data, ranked_data_path
 
 
 try:
@@ -62,7 +62,7 @@ def run_gridmananger_for_multinode(
 ) -> gm.GridManager:
     manager = _grid_manager(file, vertical_config)
     manager(
-        keep_skip_values=True, backend=None, run_properties=run_properties, decomposer=decomposer
+        keep_skip_values=True, allocator=None, run_properties=run_properties, decomposer=decomposer
     )
     return manager
 
@@ -80,12 +80,11 @@ def run_grid_manager_for_singlenode(
         keep_skip_values=True,
         run_properties=defs.SingleNodeProcessProperties(),
         decomposer=halo.SingleNodeDecomposer(),
-        backend=None,
+        allocator=None,
     )
     return manager
 
 
-@pytest.mark.xfail("fix test, add data for APE")
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
@@ -103,7 +102,7 @@ def test_start_end_index(
     experiment: definitions.Experiment,
     dim: gtx.Dimension,
     icon_grid: base.Grid,
-) -> None:  # fixture
+) -> None:
     caplog.set_level(logging.INFO)
     grid_file = experiment.grid
     file = grid_utils.resolve_full_grid_file_name(grid_file)
@@ -135,7 +134,7 @@ def test_grid_manager_validate_decomposer(processor_props: defs.ProcessPropertie
     with pytest.raises(exceptions.InvalidConfigError) as e:
         manager(
             keep_skip_values=True,
-            backend=None,
+            allocator=None,
             run_properties=processor_props,
             decomposer=halo.SingleNodeDecomposer(),
         )
