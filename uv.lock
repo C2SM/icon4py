@@ -1574,7 +1574,6 @@ dev = [
     { name = "pytest-benchmark" },
     { name = "pytest-cache" },
     { name = "pytest-cov" },
-    { name = "pytest-deadfixtures" },
     { name = "pytest-factoryboy" },
     { name = "pytest-mpi" },
     { name = "pytest-unused-fixtures" },
@@ -1620,7 +1619,6 @@ test = [
     { name = "pytest-benchmark" },
     { name = "pytest-cache" },
     { name = "pytest-cov" },
-    { name = "pytest-deadfixtures" },
     { name = "pytest-factoryboy" },
     { name = "pytest-mpi" },
     { name = "pytest-unused-fixtures" },
@@ -1674,7 +1672,6 @@ dev = [
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
     { name = "pytest-cache", specifier = ">=1.0" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
-    { name = "pytest-deadfixtures", specifier = ">=2.2.1" },
     { name = "pytest-factoryboy", specifier = ">=2.6.1" },
     { name = "pytest-mpi", specifier = ">=0.6" },
     { name = "pytest-unused-fixtures", specifier = ">=0.2.0" },
@@ -1720,7 +1717,6 @@ test = [
     { name = "pytest-benchmark", specifier = ">=5.0.0" },
     { name = "pytest-cache", specifier = ">=1.0" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
-    { name = "pytest-deadfixtures", specifier = ">=2.2.1" },
     { name = "pytest-factoryboy", specifier = ">=2.6.1" },
     { name = "pytest-mpi", specifier = ">=0.6" },
     { name = "pytest-unused-fixtures", specifier = ">=0.2.0" },
@@ -3510,18 +3506,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/be/45/9b538de8cef30e17c7b45ef42f538a94889ed6a16f2387a6c89e73220651/pytest-cov-6.0.0.tar.gz", hash = "sha256:fde0b595ca248bb8e2d76f020b465f3b107c9632e6a1d1705f17834c89dcadc0", size = 66945, upload-time = "2024-10-29T20:13:35.363Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/36/3b/48e79f2cd6a61dbbd4807b4ed46cb564b4fd50a76166b1c4ea5c1d9e2371/pytest_cov-6.0.0-py3-none-any.whl", hash = "sha256:eee6f1b9e61008bd34975a4d5bab25801eb31898b032dd55addc93e96fcaaa35", size = 22949, upload-time = "2024-10-29T20:13:33.215Z" },
-]
-
-[[package]]
-name = "pytest-deadfixtures"
-version = "2.2.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pytest" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c5/d5/0472e7dd4c5794cd720f8add3ba59b35e45c1bb7482e04b6d6e60ff4eed0/pytest-deadfixtures-2.2.1.tar.gz", hash = "sha256:ca15938a4e8330993ccec9c6c847383d88b3cd574729530647dc6b492daa9c1e", size = 6616, upload-time = "2020-07-23T11:58:09.465Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/c7/d8c3fa6d2de6814c92161fcce984a7d38a63186590a66238e7b749f7fe37/pytest_deadfixtures-2.2.1-py2.py3-none-any.whl", hash = "sha256:db71533f2d9456227084e00a1231e732973e299ccb7c37ab92e95032ab6c083e", size = 5059, upload-time = "2020-07-23T11:58:11.538Z" },
 ]
 
 [[package]]
