@@ -242,20 +242,8 @@ def test_get_geofac_grg(
     assert field_x.shape == (grid.num_cells, 4)
     field_y = factory.get(attrs.GEOFAC_GRG_Y)
     assert field_y.shape == (grid.num_cells, 4)
-    # TODO(halungge): tolerances are high, especially in the 0th (central) component, check stencil
-    #   this passes due to the atol which is too large for the values
-    assert test_helpers.dallclose(
-        field_ref[0].asnumpy(),
-        field_x.asnumpy(),
-        rtol=1e-7,
-        atol=1e-6,
-    )
-    assert test_helpers.dallclose(
-        field_ref[1].asnumpy(),
-        field_y.asnumpy(),
-        rtol=1e-7,
-        atol=1e-6,
-    )
+    assert test_helpers.dallclose(field_ref[0].asnumpy(), field_x.asnumpy(), atol=1e-12)
+    assert test_helpers.dallclose(field_ref[1].asnumpy(), field_y.asnumpy(), atol=1e-12)
 
 
 @pytest.mark.level("integration")
