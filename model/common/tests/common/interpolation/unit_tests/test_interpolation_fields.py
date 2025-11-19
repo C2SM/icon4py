@@ -203,7 +203,7 @@ def test_compute_geofac_grg(
         e2c,
         c2e2c,
         horizontal_start,
-        halo_exchange=dummy_exchange,  # type: ignore[arg-type]
+        halo_exchange=dummy_exchange,
     )
     assert test_helpers.dallclose(
         data_alloc.as_numpy(geofac_grg_0),
@@ -323,7 +323,7 @@ def test_compute_e_flx_avg(
         e2c2e,
         horizontal_start_1,
         horizontal_start_2,
-        halo_exchange=dummy_exchange,  # type: ignore[arg-type]
+        halo_exchange=dummy_exchange,
     )
     assert test_helpers.dallclose(data_alloc.as_numpy(e_flx_avg), e_flx_avg_ref)
 
