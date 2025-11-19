@@ -44,4 +44,4 @@ def test_standalone_driver(
         output_path=output_path,
     )
 
-    pathlib.Path(output_path).unlink()
+    pathlib.Path(output_path).rmdir()
