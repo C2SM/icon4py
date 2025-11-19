@@ -25,80 +25,6 @@ from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
 
-## -- Debug -- ##
-import gc
-import objgraph
-import rich
-import sys
-
-
-def name_to_color(name: str) -> int:
-    return 1 + ((len(name) + ord(name[0]) + ord(name[-1])) % 230)
-
-
-def print_frame(
-    header: str, locals: dict[str, object] | None = None, *, names_to_track: list[str] = []
-) -> None:
-    rich.print(header)
-    if locals is not None:
-        rich.print(f"locals ({len(locals)}): {[f'{k!s} (id={id(v)})' for k, v in locals.items()]}")
-    if names_to_track:
-        for name in names_to_track:
-            if locals is not None and name in locals:
-                ref_count = sys.getrefcount(locals[name])
-                referrers_info = [
-                    f"{type(ref).__name__} (id={id(ref)})" for ref in gc.get_referrers(locals[name])
-                ]
-                rich.print(
-                    f"- {len(referrers_info)}/{ref_count-1} referrers for '{name}' <{type(locals[name]).__name__} (id={id(locals[name])})>: {referrers_info}"
-                )
-                # objgraph.show_backrefs(
-                #     obj, filename=f'frame-{header.strip().replace(" ", "_")}-{name}-backref-graph.png'
-                # )
-
-
-def print_start_frame(
-    name: str, locals: dict[str, object] | None = None, *, names_to_track: list[str] = []
-) -> None:
-    color = name_to_color(name)
-    print_frame(
-        f"\n[bold color({color})]{name} ---- BEGIN[/bold color({color})]",
-        locals=locals,
-        names_to_track=names_to_track,
-    )
-
-
-def print_end_frame(
-    name: str, locals: dict[str, object] | None = None, *, names_to_track: list[str] = []
-) -> None:
-    color = name_to_color(name)
-    print_frame(
-        f"\n[bold color({color})]{name} ---- END[/bold color({color})]",
-        locals=locals,
-        names_to_track=names_to_track,
-    )
-
-
-@dataclasses.dataclass(frozen=True)
-class Tracer:
-    name: str
-    _counter: int = dataclasses.field(init=False)
-
-    def __post_init__(self):
-        global counter
-        object.__setattr__(self, "_counter", counter)
-        print(f"\nInit Tracer '{self.name}' count={self._counter}")
-        counter = counter + 1
-
-    def __del__(self):
-        print(f"\nDel Tracer '{self.name}' count={self._counter}")
-
-    def __str__(self):
-        return f"Tracer '{self.name}' count={self._counter}"
-
-
-## -- -- ##
-
 
 def allocate_data(
     allocator: gtx_typing.FieldBufferAllocationUtil | None,
@@ -152,11 +78,6 @@ def test_and_benchmark(
     _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
     _configured_program: Callable[..., None],
 ) -> None:
-    print_start_frame(
-        f"StencilTest::test_and_benchmark({id(self)})",
-        locals(),
-        names_to_track=["_properly_allocated_input_data", "_configured_program"],
-    )
     reference_outputs = self.reference(
         _ConnectivityConceptFixer(
             grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
@@ -178,12 +99,6 @@ def test_and_benchmark(
             **_properly_allocated_input_data,
             offset_provider=grid.connectivities,
         )
-
-    print_end_frame(
-        f"StencilTest::test_and_benchmark({id(self)})",
-        locals(),
-        names_to_track=["_properly_allocated_input_data", "_configured_program"],
-    )
 
 
 class StencilTest:
@@ -212,10 +127,6 @@ class StencilTest:
 
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
-    def __del__(self) -> None:
-        rich.print(f"Deleting {self.__class__.__name__} instance ({id(self)})\n\n")
-        assert False
-
     @pytest.fixture
     def _configured_program(
         self,
@@ -224,11 +135,6 @@ class StencilTest:
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         grid: base.Grid,
     ) -> Callable[..., None]:
-        print_start_frame(
-            f"StenctilTest::_configured_program({id(self)})",
-            locals(),
-            names_to_track=["input_data"],
-        )
         unused_static_params = set(static_variant) - set(input_data.keys())
         if unused_static_params:
             raise ValueError(
@@ -251,11 +157,6 @@ class StencilTest:
                 )
 
         test_func = device_utils.synchronized_function(program, allocator=backend)
-        print_end_frame(
-            f"StenctilTest::_configured_program({id(self)})",
-            locals(),
-            names_to_track=["input_data"],
-        )
         return test_func
 
     @pytest.fixture
@@ -267,17 +168,7 @@ class StencilTest:
         # TODO(havogt): this is a workaround,
         # because in the `input_data` fixture provided by the user
         # it does not allocate for the correct device.
-        print_start_frame(
-            f"StenctilTest::_properly_allocated_input_data({id(self)})",
-            locals(),
-            names_to_track=["input_data"],
-        )
         allocator = model_backends.get_allocator(backend_like)
-        print_end_frame(
-            f"StenctilTest::_properly_allocated_input_data({id(self)})",
-            locals(),
-            names_to_track=["input_data"],
-        )
         return allocate_data(allocator=allocator, input_data=input_data)
 
     def _verify_stencil_test(
@@ -285,11 +176,6 @@ class StencilTest:
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         reference_outputs: Mapping[str, np.ndarray | tuple[np.ndarray, ...]],
     ) -> None:
-        print_start_frame(
-            f"StenctilTest::_verify_stencil_test({id(self)})",
-            locals(),
-            names_to_track=["input_data"],
-        )
         for out in self.OUTPUTS:
             name, refslice, gtslice = (
                 (out.name, out.refslice, out.gtslice)
@@ -315,11 +201,6 @@ class StencilTest:
                     equal_nan=True,
                     err_msg=f"Verification failed for '{name}'",
                 )
-        print_end_frame(
-            f"StenctilTest::_verify_stencil_test({id(self)})",
-            locals(),
-            names_to_track=["input_data"],
-        )
 
     @staticmethod
     def static_variant(request: pytest.FixtureRequest) -> Sequence[str]:
@@ -329,9 +210,7 @@ class StencilTest:
         Note: the actual `pytest.fixture()`  decoration happens inside `__init_subclass__`,
           when all information is available.
         """
-        print_start_frame(f"StenctilTest::static_variant", locals())
         _, variant = request.param
-        print_end_frame(f"StenctilTest::static_variant", locals())
         return () if variant is None else variant
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
