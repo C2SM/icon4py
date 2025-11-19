@@ -503,7 +503,7 @@ def test_factory_mask_bdy_prog_halo_c(
     )
     field_1 = factory.get(attrs.MASK_PROG_HALO_C)
     field_2 = factory.get(attrs.BDY_HALO_C)
-    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
+    assert (field_ref_1.asnumpy() == field_1.asnumpy()).all()
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
 
 
