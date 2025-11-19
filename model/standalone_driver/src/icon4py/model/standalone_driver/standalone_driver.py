@@ -291,7 +291,7 @@ class Icon4pyDriver:
             )
             self._log.info("")
             self._log.info(
-                "Global mean of    rho         vn           w            theta_v     exner      at model levels:"
+                "Global mean of    rho         vn           w          theta_v     exner      at model levels:"
             )
             for k in range(rho_ndarray.shape[1]):
                 self._log.info(
@@ -621,7 +621,7 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 2, 0, 0, 0),
+        end_date=datetime.datetime(1, 1, 1, 3, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("0.85"),

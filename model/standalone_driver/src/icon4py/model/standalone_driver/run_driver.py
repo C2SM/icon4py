@@ -26,7 +26,7 @@ def run_icon4py_driver(
     icon4py_backend: Annotated[
         str,
         typer.Option(
-            help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([k for k in model_backends.ICON4PY_BACKENDS])}",
+            help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.ICON4PY_BACKENDS.keys()])}",
         ),
     ],
     output_path: Annotated[
@@ -35,7 +35,7 @@ def run_icon4py_driver(
     log_level: Annotated[
         str,
         typer.Option(
-            help=f"Logging level of log files. Possible options are {' / '.join([k for k in driver_utils._LOGGING_LEVELS])}",
+            help=f"Logging level of log files. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
 ) -> None:

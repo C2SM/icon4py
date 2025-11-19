@@ -361,7 +361,7 @@ def configure_logging(
     """
     if logging_level not in _LOGGING_LEVELS:
         raise ValueError(
-            f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([k for k in _LOGGING_LEVELS])}"
+            f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([*_LOGGING_LEVELS.keys()])}"
         )
 
     logfile = output_path.joinpath(f"log_general_for_{experiment_name}")
