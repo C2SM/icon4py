@@ -22,7 +22,7 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import (
     driver_configuration as driver_configure,
-    initialization_utils as driver_init,
+    driver_utils as driver_init,
     standalone_driver as standalone_driver,
 )
 from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils

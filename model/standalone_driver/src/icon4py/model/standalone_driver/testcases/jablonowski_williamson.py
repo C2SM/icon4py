@@ -12,6 +12,7 @@ import math
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
+import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
@@ -33,6 +34,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.standalone_driver import driver_states
 from icon4py.model.standalone_driver.testcases import utils as testcases_utils
 
 
@@ -44,29 +46,19 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
-    backend: gtx_typing.Backend | None,
-) -> tuple[
-    diffusion_states.DiffusionDiagnosticState,
-    dycore_states.DiagnosticStateNonHydro,
-    dycore_states.PrepAdvection,
-    diagnostics.DiagnosticState,
-    prognostics.PrognosticState,
-    prognostics.PrognosticState,
-]:
+    backend: gtx_typing.Backend,
+) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_up to values larger than 0.01 if
     you want to run baroclinic case.
 
     Args:
         grid: IconGrid
-        cell_param: cell properties
-        edge_param: edge properties
-        path: path where to find the input data
+        geometry_field_source: geometric field factory
+        interpolation_field_source: interpolation field factory
+        metrics_field_source: metric field factory
         backend: GT4Py backend
-        rank: mpi rank of the current compute node
-    Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
-        PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
-        variables (now and next).
+    Returns: driver state
     """
     xp = data_alloc.import_array_ns(backend)
 
@@ -341,11 +333,14 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     prep_adv = dycore_states.initialize_prep_advection(grid=grid, backend=backend)
     log.info("Initialization completed.")
 
-    return (
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
-        prep_adv,
-        diagnostic_state,
-        prognostic_state_now,
-        prognostic_state_next,
+    prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+
+    ds = driver_states.DriverStates(
+        prep_advection_prognostic=prep_adv,
+        solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
+        diffusion_diagnostic=diffusion_diagnostic_state,
+        prognostics=prognostics_states,
+        diagnostic=diagnostic_state,
     )
+
+    return ds

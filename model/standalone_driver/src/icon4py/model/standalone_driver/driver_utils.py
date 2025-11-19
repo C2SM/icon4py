@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import datetime
 import logging
 import pathlib
 
@@ -15,7 +14,7 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
@@ -29,17 +28,10 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.initialization.jablonowski_williamson_topography import (
-    jablonowski_williamson_topography,
-)
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-)
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver.testcases import jablonowski_williamson
+from icon4py.model.standalone_driver import driver_states
 
 
 log = logging.getLogger(__name__)
@@ -54,19 +46,21 @@ _LOGGING_LEVELS: dict[str, int] = {
 def create_grid_manager_and_decomp_info(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    backend: gtx_typing.Backend,
 ) -> tuple[
-    decomposition_defs.DecompositionInfo,
     gm.GridManager,
+    decomposition_defs.DecompositionInfo,
 ]:
     grid_manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(),
         grid_file_path,
         vertical_grid_config,
     )
-    grid_manager(allocator=allocator, keep_skip_values=False)
 
+    allocator = model_backends.get_allocator(backend)
     xp = data_alloc.import_array_ns(allocator)
+
+    grid_manager(allocator=allocator, keep_skip_values=False)
 
     decomposition_info = decomposition_defs.DecompositionInfo()
 
@@ -84,9 +78,11 @@ def create_grid_manager_and_decomp_info(
 
 def create_vertical_grid(
     vertical_grid_config: v_grid.VerticalGridConfig,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    backend: gtx_typing.Backend,
 ) -> v_grid.VerticalGrid:
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, allocator)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(
+        vertical_config=vertical_grid_config, allocator=backend
+    )
 
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_grid_config,
@@ -96,11 +92,13 @@ def create_vertical_grid(
     return vertical_grid
 
 
-def create_geometry_factory(
+def create_static_field_factories(
     grid_manager: gm.GridManager,
     decomposition_info: decomposition_defs.DecompositionInfo,
+    vertical_grid: v_grid.VerticalGrid,
+    cell_topography: data_alloc.NDArray,
     backend: gtx_typing.Backend,
-) -> grid_geometry.GridGeometry:
+) -> driver_states.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
@@ -110,35 +108,8 @@ def create_geometry_factory(
         metadata=geometry_meta.attrs,
     )
 
-    return geometry_field_source
-
-
-def create_topography(
-    geometry_field_source: grid_geometry.GridGeometry,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
-) -> data_alloc.NDArray:
-    xp = data_alloc.import_array_ns(allocator)
-    topo_c = jablonowski_williamson_topography(
-        cell_lat=geometry_field_source.get(geometry_meta.CELL_LAT).ndarray,
-        u0=35.0,
-        array_ns=xp,
-    )
-    return topo_c
-
-
-def create_interpolation_metrics_factories(
-    grid: icon_grid.IconGrid,
-    decomposition_info: decomposition_defs.DecompositionInfo,
-    geometry_field_source: grid_geometry.GridGeometry,
-    vertical_grid: v_grid.VerticalGrid,
-    topo_c: data_alloc.NDArray,
-    backend: gtx_typing.Backend,
-) -> tuple[
-    interpolation_factory.InterpolationFieldsFactory,
-    metrics_factory.MetricsFieldsFactory,
-]:
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
-        grid=grid,
+        grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
         backend=backend,
@@ -146,11 +117,11 @@ def create_interpolation_metrics_factories(
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
-        grid=grid,
+        grid=grid_manager.grid,
         vertical_grid=vertical_grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        topography=gtx.as_field((dims.CellDim,), data=topo_c, allocator=backend),
+        topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=backend),
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
@@ -160,24 +131,30 @@ def create_interpolation_metrics_factories(
         vwind_offctr=0.2,
     )
 
-    return interpolation_field_source, metrics_field_source
+    return driver_states.StaticFieldFactories(
+        geometry_field_source, interpolation_field_source, metrics_field_source
+    )
 
 
 def initialize_granule(
     grid: icon_grid.IconGrid,
+    parallel_props: decomposition_defs.ProcessProperties,
     decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
     diffusion_config: diffusion.DiffusionConfig,
     solve_nh_config: solve_nh.NonHydrostaticConfig,
-    geometry_field_source: grid_geometry.GridGeometry,
-    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
-    metrics_field_source: metrics_factory.MetricsFieldsFactory,
-    exchange: decomposition_defs.ExchangeRuntime,
+    static_field_factories: driver_states.StaticFieldFactories,
     backend: gtx_typing.Backend,
 ) -> tuple[
     diffusion.Diffusion,
     solve_nh.SolveNonhydro,
 ]:
+    exchange = decomposition_defs.create_exchange(parallel_props, decomposition_info)
+
+    geometry_field_source = static_field_factories.geometry_field_source
+    interpolation_field_source = static_field_factories.interpolation_field_source
+    metrics_field_source = static_field_factories.metrics_field_source
+
     log.info("Start creating cell geometry")
     cell_geometry = grid_states.CellParams(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
@@ -246,8 +223,12 @@ def initialize_granule(
         e_flx_avg=interpolation_field_source.get(interpolation_attributes.E_FLX_AVG),
         geofac_grdiv=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRDIV),
         geofac_rot=interpolation_field_source.get(interpolation_attributes.GEOFAC_ROT),
-        pos_on_tplane_e_1=interpolation_field_source.get(interpolation_attributes.POS_ON_TPLANE_E_X),
-        pos_on_tplane_e_2=interpolation_field_source.get(interpolation_attributes.POS_ON_TPLANE_E_Y),
+        pos_on_tplane_e_1=interpolation_field_source.get(
+            interpolation_attributes.POS_ON_TPLANE_E_X
+        ),
+        pos_on_tplane_e_2=interpolation_field_source.get(
+            interpolation_attributes.POS_ON_TPLANE_E_Y
+        ),
         rbf_vec_coeff_e=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_E),
         e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
         rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
@@ -360,60 +341,6 @@ def initialize_granule(
     return diffusion_granule, solve_nonhydro_granule
 
 
-def read_initial_state(
-    grid: icon_grid.IconGrid,
-    geometry_field_source: grid_geometry.GridGeometry,
-    interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
-    metrics_field_source: metrics_factory.MetricsFieldsFactory,
-    backend: gtx_typing.Backend,
-) -> tuple[
-    diffusion_states.DiffusionDiagnosticState,
-    dycore_states.DiagnosticStateNonHydro,
-    dycore_states.PrepAdvection,
-    diagnostics.DiagnosticState,
-    prognostics.PrognosticState,
-    prognostics.PrognosticState,
-]:
-    """
-    Read initial prognostic and diagnostic fields for the jablonowski_williamson test case.
-
-    Args:
-        grid: IconGrid
-        geometry_field_source: geometry field factory,
-        interpolation_field_source: interpolation field factory,
-        metrics_field_source: metrics field factory,
-        backend: GT4Py backend
-
-    Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
-        PrepAdvection, diagnostic variables, and two prognostic
-        variables (now and next).
-    """
-
-    (
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
-        prep_adv,
-        diagnostic_state,
-        prognostic_state_now,
-        prognostic_state_next,
-    ) = jablonowski_williamson.model_initialization_jabw(
-        grid=grid,
-        geometry_field_source=geometry_field_source,
-        interpolation_field_source=interpolation_field_source,
-        metrics_field_source=metrics_field_source,
-        backend=backend,
-    )
-
-    return (
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
-        prep_adv,
-        diagnostic_state,
-        prognostic_state_now,
-        prognostic_state_next,
-    )
-
-
 def configure_logging(
     output_path: pathlib.Path,
     experiment_name: str,
@@ -437,10 +364,7 @@ def configure_logging(
             f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([k for k in _LOGGING_LEVELS])}"
         )
 
-    current_time = datetime.datetime.now(datetime.timezone.utc)
-    logfile = output_path.joinpath(
-        f"log_{experiment_name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
-    )
+    logfile = output_path.joinpath(f"log_general_for_{experiment_name}")
     logfile.touch(exist_ok=False)
 
     logging.basicConfig(
@@ -458,3 +382,14 @@ def configure_logging(
     console_handler.setFormatter(formatter)
     console_handler.setLevel(_LOGGING_LEVELS[logging_level])
     logging.getLogger("").addHandler(console_handler)
+
+
+def get_backend_from_name(backend_name: str) -> gtx_typing.Backend:
+    if backend_name not in model_backends.ICON4PY_BACKENDS:
+        raise ValueError(
+            f"Invalid driver backend: {backend_name}. \n"
+            f"Available backends are {', '.join([f'{k}' for k in model_backends.ICON4PY_BACKENDS])}"
+        )
+    make_backend_factory = model_backends.ICON4PY_BACKENDS[backend_name]["backend_factory"]
+    device = model_backends.ICON4PY_BACKENDS[backend_name]["device"]
+    return make_backend_factory(device=device, cached=True)

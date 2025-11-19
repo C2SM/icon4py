@@ -62,7 +62,6 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     vertical as v_grid,
 )
-from icon4py.model.common.metrics import metrics_attributes as attrs
 from icon4py.model.common.states import model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -540,17 +539,10 @@ class ProgramFieldProvider(FieldProvider):
         backend: gtx_typing.Backend | None,
         grid_provider: GridProvider,
     ) -> None:
-        metadata = {}
         try:
             metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
-            log.critical(f"debug metadata: {metadata}")
-            for key in metadata.keys():
-                if key == attrs.DDXT_Z_HALF_E:
-                    for k, v in self._dependencies.items():
-                        log.critical(f"debugging driver: dependency {k} -- {v}")
             dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
         except (ValueError, KeyError):
-            log.critical(f"debug non metadata: {self._output}")
             dtype = {v: ta.wpfloat for v in self._output.values()}
 
         self._fields = self._allocate(backend, grid_provider.grid, dtype=dtype)
@@ -560,27 +552,6 @@ class ProgramFieldProvider(FieldProvider):
         dims = self._domain_args(grid_provider.grid, grid_provider.vertical_grid)
         offset_providers = self._get_offset_providers(grid_provider.grid)
         deps.update(dims)
-        if len(metadata) > 0:
-            for key in metadata.keys():
-                if key == attrs.DDXT_Z_HALF_E:
-                    # for k, v in deps.items():
-                    #     log.critical(f"debugging driver: all fields {k} -- {v}")
-                    for k, v in offset_providers.items():
-                        log.critical(f"debugging driver: all offset providers {k} -- {v}")
-                        if k == "V2C":
-                            v2c_table = v
-                            for vertex in range(v2c_table.shape[0]):
-                                if (
-                                    v2c_table[vertex].ndarray[-1] == v2c_table[vertex].ndarray[-2]
-                                    or v2c_table[vertex].ndarray[-1] == -1
-                                ):
-                                    log.critical(
-                                        f"debugging driver: V2C {vertex} {v2c_table[vertex].ndarray}   PENTAGON PENTAGON PENTAGON  "
-                                    )
-                                else:
-                                    log.critical(
-                                        f"debugging driver: V2C {vertex} {v2c_table[vertex].ndarray}"
-                                    )
         self._func.with_backend(backend)(**deps, offset_provider=offset_providers)
 
     @property
