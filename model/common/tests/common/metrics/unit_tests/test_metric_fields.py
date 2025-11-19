@@ -399,12 +399,13 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         array_ns=xp,
     )
 
+    flat_idx = gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend)  # type: ignore [arg-type]
     mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
         z_mc=z_mc,
         topography=topography,
         c_lin_e=c_lin_e,
         e_owner_mask=grid_savepoint.e_owner_mask(),
-        flat_idx_max=gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend),  # type: ignore [arg-type]
+        flat_idx_max=flat_idx,
         e_lev=edges,
         k_lev=k,
         pg_edgeidx_dsl=edge_mask,
