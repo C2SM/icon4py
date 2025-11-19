@@ -10,18 +10,14 @@ from __future__ import annotations
 
 import site
 import sys
-from typing import Any, ClassVar, Final, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any, ClassVar, Final
 
-
-try:
-    import dace
-except ImportError as e:
-    raise ImportError("DaCe is required for this module") from e
-
+import dace
 import gt4py.next as gtx
 from dace import dtypes
 
-import icon4py.model.common as common
+from icon4py.model import common
 from icon4py.model.common import dimension as dims
 
 
@@ -42,7 +38,7 @@ def add_halo_tasklet(
     state: dace.sdfg.state.SDFGState,
     global_buffers: dict[str, dace.data.Data],
     exchange: common.decomposition.mpi_decomposition.GHexMultiNodeExchange,
-    dim: gtx.ffront.fbuiltins.Dimension,
+    dim: gtx.Dimension,
     unique_id: int,
     wait: bool,
     counter: int,
@@ -305,7 +301,7 @@ class DummyNestedSDFG:
 
         return sdfg
 
-    def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
+    def __sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
         return {}
 
     def __sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:

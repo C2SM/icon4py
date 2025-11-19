@@ -8,12 +8,13 @@
 
 from types import ModuleType
 
+import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def compute_zdiff_gradp_dsl(
+def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
     e2c,
     z_mc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
@@ -21,19 +22,26 @@ def compute_zdiff_gradp_dsl(
     flat_idx: data_alloc.NDArray,
     topography: data_alloc.NDArray,
     nlev: int,
-    horizontal_start: int,
-    horizontal_start_1: int,
+    horizontal_start: gtx.int32,
+    horizontal_start_1: gtx.int32,
     array_ns: ModuleType = np,
-) -> data_alloc.NDArray:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     nedges = e2c.shape[0]
     z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
     z_aux1 = array_ns.maximum(topography[e2c[:, 0]], topography[e2c[:, 1]])
     z_aux2 = z_aux1 - 5.0  # extrapol_dist
     zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
+    jk_field = array_ns.arange(nlev, dtype=gtx.int32)
     zdiff_gradp[horizontal_start:, :, :] = (
         array_ns.expand_dims(z_me, axis=1)[horizontal_start:, :, :]
         - z_mc[e2c][horizontal_start:, :, :]
     )
+    vertidx_gradp = array_ns.expand_dims(
+        array_ns.expand_dims(jk_field, axis=0).repeat(2, axis=0), axis=0
+    ).repeat(nedges, axis=0)
+    vertoffset_gradp = array_ns.expand_dims(
+        array_ns.expand_dims(jk_field, axis=0).repeat(2, axis=0), axis=0
+    ).repeat(nedges, axis=0)
     """
     First part for loop implementation with gt4py code
 
@@ -73,7 +81,7 @@ def compute_zdiff_gradp_dsl(
                     and z_me[je, jk] >= z_ifc[e2c[je, 0], jk1 + 1]
                 ):
                     param[jk1] = True
-
+            vertidx_gradp[je, 0, jk] = array_ns.where(param)[0][0]
             zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], array_ns.where(param)[0][0]]
 
         jk_start = int(flat_idx[je])
@@ -83,6 +91,7 @@ def compute_zdiff_gradp_dsl(
                     z_me[je, jk] <= z_ifc[e2c[je, 1], jk1]
                     and z_me[je, jk] >= z_ifc[e2c[je, 1], jk1 + 1]
                 ):
+                    vertidx_gradp[je, 1, jk] = jk1
                     zdiff_gradp[je, 1, jk] = z_me[je, jk] - z_mc[e2c[je, 1], jk1]
                     jk_start = jk1
                     break
@@ -96,6 +105,7 @@ def compute_zdiff_gradp_dsl(
                         z_aux2[je] <= z_ifc[e2c[je, 0], jk1]
                         and z_aux2[je] >= z_ifc[e2c[je, 0], jk1 + 1]
                     ):
+                        vertidx_gradp[je, 0, jk] = jk1
                         zdiff_gradp[je, 0, jk] = z_aux2[je] - z_mc[e2c[je, 0], jk1]
                         jk_start = jk1
                         break
@@ -108,11 +118,12 @@ def compute_zdiff_gradp_dsl(
                         z_aux2[je] <= z_ifc[e2c[je, 1], jk1]
                         and z_aux2[je] >= z_ifc[e2c[je, 1], jk1 + 1]
                     ):
+                        vertidx_gradp[je, 1, jk] = jk1
                         zdiff_gradp[je, 1, jk] = z_aux2[je] - z_mc[e2c[je, 1], jk1]
                         jk_start = jk1
                         break
 
-    zdiff_gradp_full_field = zdiff_gradp.reshape(
-        (zdiff_gradp.shape[0] * zdiff_gradp.shape[1],) + zdiff_gradp.shape[2:]
-    )
-    return zdiff_gradp_full_field
+    vertoffset_gradp = vertidx_gradp - vertoffset_gradp
+    vertoffset_gradp[:horizontal_start_1, :, :] = 0.0
+
+    return zdiff_gradp, vertoffset_gradp

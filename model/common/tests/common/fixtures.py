@@ -1,0 +1,59 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import pathlib
+import random
+from collections.abc import Generator
+
+import pytest
+
+from icon4py.model.testing.fixtures.datatest import (
+    backend,
+    backend_like,
+    damping_height,
+    data_provider,
+    decomposition_info,
+    download_ser_data,
+    experiment,
+    flat_height,
+    grid_savepoint,
+    htop_moist_proc,
+    icon_grid,
+    interpolation_savepoint,
+    linit,
+    lowest_layer_thickness,
+    maximal_layer_thickness,
+    metrics_savepoint,
+    model_top_height,
+    ndyn_substeps,
+    processor_props,
+    ranked_data_path,
+    stretch_factor,
+    topography_savepoint,
+)
+
+
+@pytest.fixture
+def random_name() -> str:
+    return "test" + str(random.randint(0, 100000))
+
+
+@pytest.fixture
+def test_path(tmp_path: pathlib.Path) -> Generator[pathlib.Path, None, None]:
+    base_path = tmp_path.joinpath("io_tests")
+    base_path.mkdir(exist_ok=True, parents=True, mode=0o777)
+    yield base_path
+    _delete_recursive(base_path)
+
+
+def _delete_recursive(p: pathlib.Path) -> None:
+    for child in p.iterdir():
+        if child.is_file():
+            child.unlink()
+        else:
+            _delete_recursive(child)
+    p.rmdir()

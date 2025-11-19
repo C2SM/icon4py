@@ -6,33 +6,65 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Optional
+import functools
+from collections.abc import Callable
+from typing import Any, ParamSpec, TypeVar
 
-import gt4py._core.definitions as gtx_core_defs  # TODO(havogt): avoid this private import
-from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+import gt4py.next as gtx
+import gt4py.next.allocators as gtx_allocators
+import gt4py.next.typing as gtx_typing
 
 
 try:
-    import cupy as cp  # type: ignore
+    import cupy as cp  # type: ignore[import-not-found]
 except ImportError:
     cp = None
 
 
-def is_cupy_device(
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-) -> bool:
-    # TODO(havogt): Add to gt4py `gtx_allocators.is_field_buffer_allocation_util_for(...)`
-    # and consider exposing CUPY_DEVICE_TYPE or move this function to gt4py.
-    if (allocator := gtx_allocators.get_allocator(allocator, default=None)) is not None:
-        return allocator.__gt_device_type__ is gtx_core_defs.CUPY_DEVICE_TYPE
-    return False
+def is_cupy_device(allocator: gtx_typing.FieldBufferAllocationUtil | None) -> bool:
+    if allocator is None:
+        return False
+
+    if gtx.CUPY_DEVICE_TYPE is None:
+        return False
+
+    return gtx_allocators.is_field_allocation_tool_for(allocator, gtx.CUPY_DEVICE_TYPE)  # type: ignore [type-var] #gt4py-related typing
 
 
-def sync(backend: Optional[gtx_backend.Backend] = None) -> None:
+def sync(allocator: gtx_typing.FieldBufferAllocationUtil | None = None) -> None:
     """
     Synchronize the device if appropriate for the given backend.
 
     Note: this is and ad-hoc interface, maybe the function should get the device to sync for.
     """
-    if is_cupy_device(backend.allocator):
+    if allocator is not None and is_cupy_device(allocator):
         cp.cuda.runtime.deviceSynchronize()
+
+
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+
+
+def synchronized_function(
+    func: Callable[_P, _R], *, allocator: gtx_typing.FieldBufferAllocationUtil | None
+) -> Callable[_P, _R]:
+    """
+    Wraps a function and synchronizes after execution
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> _R:
+        result = func(*args, **kwargs)
+        sync(allocator=allocator)
+        return result
+
+    return wrapper
+
+
+def synchronized(
+    allocator: gtx_typing.FieldBufferAllocationUtil | None,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """
+    Decorator that synchronizes the device after the function execution.
+    """
+    return functools.partial(synchronized_function, allocator=allocator)

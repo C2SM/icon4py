@@ -6,15 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
-def _compute_mass_flux(
+def _compute_mass_and_temperature_flux(
     z_rho_e: fa.EdgeKField[wpfloat],
     z_vn_avg: fa.EdgeKField[wpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
@@ -26,7 +25,7 @@ def _compute_mass_flux(
     return mass_fl_e_wp, z_theta_v_fl_e_wp
 
 
-@gtx.program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_mass_flux(
     z_rho_e: fa.EdgeKField[wpfloat],
     z_vn_avg: fa.EdgeKField[wpfloat],
@@ -39,7 +38,7 @@ def compute_mass_flux(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _compute_mass_flux(
+    _compute_mass_and_temperature_flux(
         z_rho_e,
         z_vn_avg,
         ddqz_z_full_e,

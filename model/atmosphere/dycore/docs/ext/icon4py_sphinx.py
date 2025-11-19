@@ -295,9 +295,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                             else:
                                 # short name version
                                 vname = element
-                            split_line[
-                                i
-                            ] = f"{vname}: {self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
+                            split_line[i] = (
+                                f"{vname}: {self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
+                            )
                         elif element == ":":
                             if section == "Outputs":
                                 # Drop the colon from the bullet point line
@@ -480,7 +480,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 - 'parent_name': The name of the parent module or class.
                 - 'shortname': The short name of the method.
         """
-        if local_parent_name in self.module.__dict__.keys():
+        if local_parent_name in self.module.__dict__:
             # Importing directly from a module
             module_obj = getattr(self.module, local_parent_name)
             method_obj = getattr(module_obj, local_shortname)
@@ -495,7 +495,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 method_obj = getattr(class_obj, local_shortname)
             else:
                 # Handle the case where the method is imported and renamed in the class
-                for _, attr in vars(class_obj).items():
+                for attr in vars(class_obj).values():
                     if (
                         callable(attr)
                         and hasattr(attr, "__name__")
@@ -557,7 +557,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                         return method_obj, class_obj.__module__
                 case ast.Name():
                     original_method_name = node.value.id
-                    if original_method_name in self.module.__dict__.keys():
+                    if original_method_name in self.module.__dict__:
                         module_obj = getattr(self.module, original_method_name)
                         method_obj = getattr(module_obj, local_shortname)
                         return method_obj, module_obj.__name__
@@ -579,7 +579,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                     if len(call_chain) == 1:
                         # The method is imported directly
                         original_method_name = call_chain[0]
-                        if original_method_name in self.module.__dict__.keys() and not isinstance(
+                        if original_method_name in self.module.__dict__ and not isinstance(
                             getattr(self.module, original_method_name), types.ModuleType
                         ):
                             method_obj = getattr(self.module, original_method_name)
@@ -593,7 +593,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                         # The method is called from a module import
                         module_name = call_chain[0]
                         original_method_name = call_chain[1]
-                        if module_name in self.module.__dict__.keys() and isinstance(
+                        if module_name in self.module.__dict__ and isinstance(
                             getattr(self.module, module_name), types.ModuleType
                         ):
                             module_obj = getattr(self.module, module_name)
@@ -669,13 +669,13 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         """
         map_shortname_to_type = {}
         for arg_name, var_type in method_info["annotations"].items():
-            if arg_name in method_info["map_argname_to_shortname"].keys():
-                map_shortname_to_type[
-                    method_info["map_argname_to_shortname"][arg_name]
-                ] = self.format_type_string(var_type)
+            if arg_name in method_info["map_argname_to_shortname"]:
+                map_shortname_to_type[method_info["map_argname_to_shortname"][arg_name]] = (
+                    self.format_type_string(var_type)
+                )
         return map_shortname_to_type
 
-    def format_type_string(self, var_type: typing.Type) -> str:
+    def format_type_string(self, var_type: type) -> str:
         """
         Formats a type annotation into a string representation.
 

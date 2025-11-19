@@ -27,12 +27,15 @@ The parameter descriptors are used to generate the Fortran interface (and a priv
 **Example**
 
 ```python
-@py2fgen.export(param_descriptors={
-    'scalar': py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64),
-    'array': py2fgen.ArrayParamDescriptor(rank=2, dtype=py2fgen.FLOAT64, memory_space=py2fgen.MAYBE_DEVICE, is_optional=False)
-})
-def foo(scalar: float, array: np.ndarray):
-    ...
+@py2fgen.export(
+    param_descriptors={
+        "scalar": py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64),
+        "array": py2fgen.ArrayParamDescriptor(
+            rank=2, dtype=py2fgen.FLOAT64, memory_space=py2fgen.MAYBE_DEVICE, is_optional=False
+        ),
+    }
+)
+def foo(scalar: float, array: np.ndarray): ...
 ```
 
 Alternatively, the user can provide the parameter descriptors using `Annotated`.
@@ -41,9 +44,15 @@ Alternatively, the user can provide the parameter descriptors using `Annotated`.
 
 ```python
 @py2fgen.export()
-def foo(scalar: Annotated[float, py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64)],
-        array: Annotated[np.ndarray, py2fgen.ArrayParamDescriptor(rank=2, dtype=py2fgen.FLOAT64, memory_space=py2fgen.MAYBE_DEVICE, is_optional=False)]):
-    ...
+def foo(
+    scalar: Annotated[float, py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64)],
+    array: Annotated[
+        np.ndarray,
+        py2fgen.ArrayParamDescriptor(
+            rank=2, dtype=py2fgen.FLOAT64, memory_space=py2fgen.MAYBE_DEVICE, is_optional=False
+        ),
+    ],
+): ...
 ```
 
 The most flexible, but most complicated way is to set the `annotation_descriptor_hook`,
@@ -60,9 +69,9 @@ def my_hook(annotation: Any) -> py2fgen.ParamDescriptor | None:
         return py2fgen.ScalarParamDescriptor(py2fgen.FLOAT64)
     return None
 
+
 @py2fgen.export(annotation_descriptor_hook=my_hook)
-def foo(scalar: float, array: np.ndarray):
-    ...
+def foo(scalar: float, array: np.ndarray): ...
 ```
 
 ### Parameter descriptors
@@ -87,8 +96,7 @@ Note, this translation function is executed on each call and should be as effici
 
 ```python
 @py2fgen.export(annotation_mapping_hook=...)
-def foo(array: np.ndarray):
-    ...
+def foo(array: np.ndarray): ...
 ```
 
 ### Optimized Python

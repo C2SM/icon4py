@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.tools.py2fgen._conversion import (
-    as_array,
-)
+from icon4py.tools.py2fgen._conversion import as_array
 from icon4py.tools.py2fgen._definitions import (
     BOOL,
     FLOAT32,
@@ -21,9 +19,7 @@ from icon4py.tools.py2fgen._definitions import (
     ParamDescriptor,
     ScalarParamDescriptor,
 )
-from icon4py.tools.py2fgen._export import (
-    export,
-)
+from icon4py.tools.py2fgen._export import export
 
 
 __all__ = [

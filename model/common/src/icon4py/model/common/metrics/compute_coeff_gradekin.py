@@ -39,5 +39,4 @@ def compute_coeff_gradekin(
             edge_cell_length[e, 0] / edge_cell_length[e, 1] * inv_dual_edge_length[e]
         )
     coeff_gradekin_full = array_ns.column_stack((coeff_gradekin_0, coeff_gradekin_1))
-    shp = coeff_gradekin_full.shape
-    return coeff_gradekin_full.reshape(shp[0] * shp[1])
+    return coeff_gradekin_full

@@ -5,71 +5,104 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any, Final, TypeAlias, TypeGuard
 
-from typing import Final
+import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
+from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
-import gt4py.next.backend as gtx_backend
-from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
-from icon4py.model.common import dimension as dims
+# DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
+DeviceType: TypeAlias = gtx.DeviceType
+CPU = DeviceType.CPU
+GPU = gtx.CUPY_DEVICE_TYPE
+
+BackendDescriptor: TypeAlias = dict[str, Any]
+BackendLike: TypeAlias = DeviceType | gtx_typing.Backend | BackendDescriptor | None
 
 
 DEFAULT_BACKEND: Final = "embedded"
 
-BACKENDS: dict[str, gtx_backend.Backend | None] = {
-    "embedded": None,
-    "roundtrip": itir_python,
-    "gtfn_cpu": gtfn_cpu,
-    "gtfn_gpu": gtfn_gpu,
-}
+
+def is_backend_descriptor(
+    backend: BackendLike,
+) -> TypeGuard[BackendDescriptor]:
+    if isinstance(backend, dict):
+        return all(isinstance(key, str) for key in backend)
+    return False
 
 
-try:
-    from gt4py.next.program_processors.runners.dace import make_dace_backend
+def get_allocator(
+    backend: BackendLike,
+) -> gtx_typing.Backend:
+    if isinstance(backend, gtx_backend.Backend):
+        return backend
+    if backend is None:
+        # TODO(havogt): currently the testing infrastructure doesn't allow to specify
+        # embedded backend aka `None` for cupy, as there is no separation
+        # of allocator and backend.
+        return gtx_allocators.device_allocators[CPU]
 
-    def make_custom_dace_backend(gpu: bool) -> gtx_backend.Backend:
-        """Customize the dace backend with the following configuration.
+    if is_backend_descriptor(backend):
+        backend = backend["device"]
+    if isinstance(backend, DeviceType):
+        return gtx_allocators.device_allocators[backend]
+    raise ValueError(f"Cannot get allocator from {backend}")
 
-        async_sdfg_call:
-            In icon4py we want to make an asynchronous SDFG call on gpu to allow
-            overlapping of gpu kernel execution with the Python driver code.
-        blocking_dim:
-            Apply loop-blocking on the vertical dimension `KDim`.
-        make_persistent:
-            Allocate temporary arrays at SDFG initialization, when it is loaded
-            from the binary library. The memory will be persistent across all SDFG
-            calls and released only at application exit.
-        use_zero_origin:
-            When set to `True`, the SDFG lowering will not generate the start symbol
-            of the field range. Select this option if all fields have zero origin.
 
-        Args:
-            gpu: Specify if the target device is GPU.
-            enable_loop_blocking: Flag to enable loop-blocking transformation on
-                the vertical dimension, default `False`.
-
-        Returns:
-            A dace backend with custom configuration for the target device.
-        """
-        return make_dace_backend(
-            auto_optimize=True,
-            cached=True,
-            gpu=gpu,
-            async_sdfg_call=True,
-            blocking_dim=dims.KDim,
-            blocking_size=10,
-            make_persistent=False,
-            use_zero_origin=True,
-        )
-
-    BACKENDS.update(
-        {
-            "dace_cpu": make_custom_dace_backend(gpu=False),
-            "dace_gpu": make_custom_dace_backend(gpu=True),
-        }
+def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gtx_typing.Backend:
+    on_gpu = device == GPU
+    return gtfn.GTFNBackendFactory(
+        gpu=on_gpu,
+        cached=cached,
+        otf_workflow__cached_translation=cached,
     )
 
-except ImportError:
-    # dace module not installed, thus the dace backends are not available
-    def make_custom_dace_backend(gpu: bool) -> gtx_backend.Backend:
-        raise NotImplementedError("Depends on dace module, which is not installed.")
+
+def make_custom_dace_backend(
+    device: DeviceType,
+    cached: bool = True,
+    auto_optimize: bool = True,
+    async_sdfg_call: bool = True,
+    optimization_args: dict[str, Any] | None = None,
+    use_metrics: bool = True,
+    use_zero_origin: bool = False,
+    **_,
+) -> gtx_typing.Backend:
+    """Customize the dace backend with the given configuration parameters.
+
+    Args:
+        device: The target device.
+        cached: Cache the lowered SDFG as a JSON file and the compiled programs.
+        auto_optimize: Enable the SDFG auto-optimize pipeline.
+        async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
+            of GPU kernel execution with the Python driver code.
+        optimization_args: A `dict` containing configuration parameters for
+            the SDFG auto-optimize pipeline.
+        use_metrics: Add SDFG instrumentation to collect the metric for stencil
+            compute time.
+
+    Returns:
+        A dace backend with custom configuration for the target device.
+    """
+    on_gpu = device == GPU
+    return gtx_dace.make_dace_backend(
+        gpu=on_gpu,
+        cached=cached,
+        auto_optimize=auto_optimize,
+        async_sdfg_call=async_sdfg_call,
+        optimization_args=optimization_args,
+        use_metrics=use_metrics,
+        use_zero_origin=use_zero_origin,
+    )
+
+
+BACKENDS: dict[str, BackendLike] = {
+    "embedded": None,
+    "roundtrip": gtx.itir_python,
+    "gtfn_cpu": {"backend_factory": make_custom_gtfn_backend, "device": CPU},
+    "gtfn_gpu": {"backend_factory": make_custom_gtfn_backend, "device": GPU},
+    "dace_cpu": {"backend_factory": make_custom_dace_backend, "device": CPU},
+    "dace_gpu": {"backend_factory": make_custom_dace_backend, "device": GPU},
+}

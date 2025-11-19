@@ -14,10 +14,9 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
 
-# TODO: revise names with domain scientists
+# TODO(): revise names with domain scientists
 
 Z_MC: Final[str] = "height"
-FLAT_EDGE_INDEX: Final[str] = "flat_edge_index"
 DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels"
 DDQZ_Z_FULL: Final[str] = "functional_determinant_of_metrics_on_full_levels"
 DDQZ_Z_FULL_E: Final[str] = "functional_determinant_of_metrics_on_full_levels_on_edges"
@@ -28,29 +27,35 @@ COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
 COEFF2_DWDZ: Final[str] = "coeff2_dwdz"
 EXNER_REF_MC: Final[str] = "exner_ref_mc"
 THETA_REF_MC: Final[str] = "theta_ref_mc"
+THETA_REF_IC: Final[str] = "theta_ref_ic"
+THETA_REF_ME: Final[str] = "theta_ref_me"
+RHO_REF_MC: Final[str] = "rho_ref_mc"
+RHO_REF_ME: Final[str] = "rho_ref_me"
+D_EXNER_DZ_REF_IC: Final[str] = "d_exner_dz_ref_ic"
 D2DEXDZ2_FAC1_MC: Final[str] = "d2dexdz2_fac1_mc"
 D2DEXDZ2_FAC2_MC: Final[str] = "d2dexdz2_fac2_mc"
-VERT_OUT: Final[str] = "vert_out"
 DDXT_Z_HALF_E: Final[str] = "ddxt_z_half_e"
 DDXN_Z_HALF_E: Final[str] = "ddxn_z_half_e"
 DDXN_Z_FULL: Final[str] = "ddxn_z_full"
 DDXT_Z_FULL: Final[str] = "ddxt_z_full"
-EXNER_W_IMPLICIT_WEIGHT_PARAMETER: Final[
-    str
-] = "implicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
-EXNER_W_EXPLICIT_WEIGHT_PARAMETER: Final[
-    str
-] = "explicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+EXNER_W_IMPLICIT_WEIGHT_PARAMETER: Final[str] = (
+    "implicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+)
+EXNER_W_EXPLICIT_WEIGHT_PARAMETER: Final[str] = (
+    "explicitness_weight_for_exner_and_w_in_vertical_dycore_solver"
+)
 EXNER_EXFAC: Final[str] = "exner_exfac"
 WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
 FLAT_IDX_MAX: Final[str] = "flat_idx_max"
+NFLAT_GRADP: Final[str] = "nflat_gradp"
 PG_EDGEIDX_DSL: Final[str] = "edge_mask_for_pressure_gradient_extrapolation"
 PG_EDGEDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
 MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
 BDY_HALO_C: Final[str] = "bdy_halo_c"
 HORIZONTAL_MASK_FOR_3D_DIVDAMP: Final[str] = "horizontal_mask_for_3d_divdamp"
 ZDIFF_GRADP: Final[str] = "zdiff_gradp"
+VERTOFFSET_GRADP: Final[str] = "vertoffset_gradp"
 COEFF_GRADEKIN: Final[str] = "coeff_gradekin"
 WGTFACQ_C: Final[str] = "weighting_factor_for_quadratic_interpolation_to_cell_surface"
 WGTFACQ_E: Final[str] = "weighting_factor_for_quadratic_interpolation_to_edge_center"
@@ -67,12 +72,11 @@ CELL_HEIGHT_ON_HALF_LEVEL: Final[str] = "vertical_coordinates_on_half_levels"
 
 
 attrs: dict[str, model.FieldMetaData] = {
-    FLAT_EDGE_INDEX: dict(
-        standard_name=FLAT_EDGE_INDEX,
-        long_name="indices of flat edges",
+    NFLAT_GRADP: dict(
+        standard_name=NFLAT_GRADP,
+        long_name="number of flat edges for gradp calculation",
         units="",
-        dims=(dims.EdgeDim, dims.KDim),
-        icon_var_name="flat_idx",
+        icon_var_name="nflat_gradp",
         dtype=gtx.int32,
     ),
     Z_MC: dict(
@@ -163,6 +167,46 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="theta_ref_mc",
         dtype=ta.wpfloat,
     ),
+    RHO_REF_MC: dict(
+        standard_name=RHO_REF_MC,
+        long_name="rho_ref_mc",
+        units="",
+        dims=(dims.CellDim, dims.KDim),
+        icon_var_name="rho_ref_mc",
+        dtype=ta.wpfloat,
+    ),
+    THETA_REF_IC: dict(
+        standard_name=THETA_REF_IC,
+        long_name="theta_ref_ic",
+        units="",
+        dims=(dims.CellDim, dims.KHalfDim),
+        icon_var_name="theta_ref_ic",
+        dtype=ta.wpfloat,
+    ),
+    D_EXNER_DZ_REF_IC: dict(
+        standard_name=D_EXNER_DZ_REF_IC,
+        long_name="d_exner_dz_ref_ic",
+        units="",
+        dims=(dims.CellDim, dims.KHalfDim),
+        icon_var_name="d_exner_dz_ref_ic",
+        dtype=ta.wpfloat,
+    ),
+    THETA_REF_ME: dict(
+        standard_name=THETA_REF_ME,
+        long_name="theta_ref_me",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="theta_ref_me",
+        dtype=ta.wpfloat,
+    ),
+    RHO_REF_ME: dict(
+        standard_name=RHO_REF_ME,
+        long_name="rho_ref_me",
+        units="",
+        dims=(dims.EdgeDim, dims.KDim),
+        icon_var_name="rho_ref_me",
+        dtype=ta.wpfloat,
+    ),
     D2DEXDZ2_FAC1_MC: dict(
         standard_name=D2DEXDZ2_FAC1_MC,
         long_name="d2dexdz2_fac1_mc",
@@ -177,14 +221,6 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="d2dexdz2_fac2_mc",
-        dtype=ta.wpfloat,
-    ),
-    VERT_OUT: dict(
-        standard_name=VERT_OUT,
-        long_name="vert_out",
-        units="",
-        dims=(dims.VertexDim, dims.KHalfDim),
-        icon_var_name="vert_out",
         dtype=ta.wpfloat,
     ),
     DDXT_Z_HALF_E: dict(
@@ -247,7 +283,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=WGTFAC_C,
         long_name="wgtfac_c",
         units="",
-        dims=(dims.CellDim, dims.KDim),
+        dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="wgtfac_c",
         dtype=ta.wpfloat,
     ),
@@ -311,15 +347,23 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=ZDIFF_GRADP,
         long_name="zdiff_gradp",
         units="",
-        dims=(dims.EdgeDim, dims.KDim),
+        dims=(dims.EdgeDim, dims.E2CDim, dims.KDim),
         icon_var_name="zdiff_gradp",
         dtype=ta.wpfloat,
+    ),
+    VERTOFFSET_GRADP: dict(
+        standard_name=VERTOFFSET_GRADP,
+        long_name="vertoffset_gradp",
+        units="",
+        dims=(dims.EdgeDim, dims.E2CDim, dims.KDim),
+        icon_var_name="vertoffset_gradp",
+        dtype=gtx.int32,
     ),
     COEFF_GRADEKIN: dict(
         standard_name=COEFF_GRADEKIN,
         long_name="coeff_gradekin",
         units="",
-        dims=(dims.ECDim,),
+        dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="coeff_gradekin",
         dtype=ta.wpfloat,
     ),
@@ -344,7 +388,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="maxslp",
         units="",
         dims=(dims.CellDim, dims.KDim),
-        icon_var_name="maxslp",
+        icon_var_name="z_maxslp",
         dtype=ta.wpfloat,
     ),
     MAXHGTD: dict(
@@ -352,7 +396,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="maxhgtd",
         units="",
         dims=(dims.CellDim, dims.KDim),
-        icon_var_name="maxhgtd",
+        icon_var_name="z_maxhgtd",
         dtype=ta.wpfloat,
     ),
     MAXSLP_AVG: dict(
@@ -360,7 +404,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="maxslp_avg",
         units="",
         dims=(dims.CellDim, dims.KDim),
-        icon_var_name="maxslp_avg",
+        icon_var_name="z_maxslp_avg",
         dtype=ta.wpfloat,
     ),
     MAXHGTD_AVG: dict(
@@ -368,7 +412,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="maxhgtd_avg",
         units="",
         dims=(dims.CellDim, dims.KDim),
-        icon_var_name="maxhgtd_avg",
+        icon_var_name="z_maxhgtd_avg",
         dtype=ta.wpfloat,
     ),
     MAX_NBHGT: dict(
@@ -385,31 +429,31 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="mask_hdiff",
-        dtype=ta.wpfloat,
+        dtype=bool,
     ),
     ZD_DIFFCOEF_DSL: dict(
         standard_name=ZD_DIFFCOEF_DSL,
         long_name="zd_diffcoef_dsl",
         units="",
         dims=(dims.CellDim, dims.KDim),
-        icon_var_name="zd_diffcoef_dsl",
+        icon_var_name="zd_diffcoef",
         dtype=ta.wpfloat,
     ),
     ZD_INTCOEF_DSL: dict(
         standard_name=ZD_INTCOEF_DSL,
         long_name="zd_intcoef_dsl",
         units="",
-        dims=(dims.CellDim, dims.KDim),
-        icon_var_name="zd_intcoef_dsl",
+        dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
+        icon_var_name="zd_intcoef",
         dtype=ta.wpfloat,
     ),
     ZD_VERTOFFSET_DSL: dict(
         standard_name=ZD_VERTOFFSET_DSL,
         long_name="zd_vertoffset_dsl",
         units="",
-        dims=(dims.CellDim, dims.KDim),
+        dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
         icon_var_name="zd_vertoffset_dsl",
-        dtype=ta.wpfloat,
+        dtype=gtx.int32,
     ),
     CELL_HEIGHT_ON_HALF_LEVEL: dict(
         standard_name=CELL_HEIGHT_ON_HALF_LEVEL,

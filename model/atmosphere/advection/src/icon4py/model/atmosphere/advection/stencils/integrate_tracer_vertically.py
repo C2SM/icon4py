@@ -7,20 +7,20 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 
 
-# TODO (dastrm): k/iadv_slev_jt and vertical_start/end are redundant
+# TODO(dastrm): k/iadv_slev_jt and vertical_start/end are redundant
 
 
 @gtx.field_operator
 def _integrate_tracer_vertically_a(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
-    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
@@ -38,7 +38,7 @@ def _integrate_tracer_vertically_a(
 def _integrate_tracer_vertically(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
-    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
@@ -72,7 +72,7 @@ def _integrate_tracer_vertically(
 def integrate_tracer_vertically(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],
-    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],

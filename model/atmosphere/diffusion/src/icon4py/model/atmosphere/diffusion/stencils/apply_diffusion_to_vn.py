@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_to_vn import (
     _apply_nabla2_and_nabla4_global_to_vn,
@@ -24,12 +22,12 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _apply_diffusion_to_vn(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
-    primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
-    primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
+    primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -53,7 +51,7 @@ def _apply_diffusion_to_vn(
         inv_primal_edge_length,
     )
 
-    # TODO: Use if-else statement instead
+    # TODO(): Use if-else statement instead
     vn = (
         concat_where(
             dims.EdgeDim >= start_2nd_nudge_line_idx_e,
@@ -87,12 +85,12 @@ def _apply_diffusion_to_vn(
     return vn
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_diffusion_to_vn(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
-    primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
-    primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.ECVDim], wpfloat],
+    primal_normal_vert_v1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
+    primal_normal_vert_v2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],

@@ -13,14 +13,15 @@ import enum
 import logging
 import pathlib
 import uuid
-from typing import Optional, Sequence, TypedDict
+from collections.abc import Sequence
+from typing import Any
 
-from typing_extensions import Required
-
-import icon4py.model.common.exceptions as exceptions
+from icon4py.model.common import exceptions
 from icon4py.model.common.components import monitor
 from icon4py.model.common.grid import base, vertical as v_grid
+from icon4py.model.common.grid.vertical import VerticalGrid
 from icon4py.model.common.io import cf_utils, ugrid, writers
+from icon4py.model.common.io.writers import GlobalFileAttributes
 
 
 log = logging.getLogger(__name__)
@@ -57,11 +58,11 @@ class Config(abc.ABC):
     """
     Base class for all config classes.
 
-    # TODO (halungge) Need to visit this, when we address configuration
+    # TODO(halungge): Need to visit this, when we address configuration
     """
 
-    def __str__(self):
-        return "instance of {}(Config)".format(self.__class__)
+    def __str__(self) -> str:
+        return f"instance of {self.__class__}(Config)"
 
     @abc.abstractmethod
     def validate(self) -> None:
@@ -86,16 +87,14 @@ class FieldGroupIOConfig(Config):
     """
 
     output_interval: str
-    start_time: Optional[
-        str
-    ]  # TODO (halungge) make it possible to pass datetime.datetime objects other than strings?
+    start_time: str  # TODO(halungge): make it possible to pass datetime.datetime objects other than strings?
     filename: str
     variables: list[str]
     timesteps_per_file: int = 10
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.validate()
 
     def _validate_filename(self) -> None:
@@ -129,7 +128,7 @@ class IOConfig(Config):
     time_units = cf_utils.DEFAULT_TIME_UNIT
     calendar = cf_utils.DEFAULT_CALENDAR
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.validate()
 
     def validate(self) -> None:
@@ -180,63 +179,29 @@ class IOMonitor(monitor.Monitor):
         try:
             path.mkdir(parents=True, exist_ok=False, mode=0o777)
             self._output_path = path
-        except OSError as error:
+        except FileExistsError as error:
             log.error(
                 f"Output directory at {path} exists: {error}. Re-run with another output directory. Aborting."
             )
-            exit(1)
+            raise error
 
     def _write_ugrid(self) -> None:
         writer = ugrid.IconUGridWriter(self._grid_file, self._output_path)
         writer(validate=True)
 
     @property
-    def path(self):
+    def path(self) -> pathlib.Path:
         return self._output_path
 
-    def store(self, state: dict, model_time: dt.datetime, *args, **kwargs) -> None:
+    def store(
+        self, state: dict, model_time: dt.datetime, *args: Any, **kwargs: dict[str, Any]
+    ) -> None:
         for m in self._group_monitors:
             m.store(state, model_time, *args, **kwargs)
 
-    def close(self):
+    def close(self) -> None:
         for m in self._group_monitors:
             m.close()
-
-
-class GlobalFileAttributes(TypedDict, total=False):
-    """
-    Global file attributes of  a ICON generated netCDF file.
-
-    Attribute map what ICON produces, (including the upper, lower case pattern).
-    Omissions (possibly incomplete):
-    - 'CDI' used for the supported CDI version (http://mpimet.mpg.de/cdi) since we do not support it
-
-    Additions:
-    - 'external_variables': variable used by CF conventions if cell_measure variables are used from an external file'
-    """
-
-    #: version of the supported CF conventions
-    Conventions: Required[str]  # TODO (halungge) check changelog? latest version is 1.11
-
-    #: unique id of the horizontal grid used in the simulation (from grid file)
-    uuidOfHGrid: Required[uuid.UUID]
-
-    #: institution name
-    institution: Required[str]
-
-    #: title of the file or simulation
-    title: Required[str]
-
-    #: source code repository
-    source: Required[str]
-
-    #: path of the binary and generation time stamp of the file
-    history: Required[str]
-
-    #: references for publication # TODO (halungge) check if this is the right reference
-    references: str
-    comment: str
-    external_variables: str
 
 
 class FieldGroupMonitor(monitor.Monitor):
@@ -247,17 +212,17 @@ class FieldGroupMonitor(monitor.Monitor):
     """
 
     @property
-    def next_output_time(self):
+    def next_output_time(self) -> dt.datetime:
         return self._next_output_time
 
     @property
-    def time_delta(self):
+    def time_delta(self) -> dt.timedelta:
         return self._time_delta
 
     def __init__(
         self,
         config: FieldGroupIOConfig,
-        vertical: int,
+        vertical: VerticalGrid,
         horizontal: base.HorizontalGridSize,
         grid_id: uuid.UUID,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
@@ -265,14 +230,14 @@ class FieldGroupMonitor(monitor.Monitor):
         output_path: pathlib.Path = pathlib.Path(__file__).parent,
     ):
         self._global_attrs: GlobalFileAttributes = {
-            "Conventions": "CF-1.7",  # TODO (halungge) check changelog? latest version is 1.11
+            "Conventions": "CF-1.7",  # TODO(halungge): check changelog? latest version is 1.11
             "title": config.nc_title,
             "comment": config.nc_comment,
             "institution": "ETH Zurich and MeteoSwiss",
             "source": "https://icon4py.github.io",
             "history": output_path.absolute().as_posix()
             + " "
-            + dt.datetime.now().isoformat(),  # TODO (halungge) this is actually the path to the binary in ICON not the output path
+            + dt.datetime.now().isoformat(),  # TODO(halungge): this is actually the path to the binary in ICON not the output path
             "references": "https://icon4py.github.io",
             "uuidOfHGrid": grid_id,
         }
@@ -286,13 +251,13 @@ class FieldGroupMonitor(monitor.Monitor):
         self._time_delta = to_delta(config.output_interval)
         self._file_counter = 0
         self._current_timesteps_in_file = 0
-        self._dataset = None
+        self._dataset: writers.NETCDFWriter | None = None
 
     @property
     def output_path(self) -> pathlib.Path:
         return self._output_path
 
-    def _handle_output_path(self, output_path: pathlib.Path, filename: str):
+    def _handle_output_path(self, output_path: pathlib.Path, filename: str) -> None:
         file = output_path.joinpath(filename).absolute()
         path = file.parent
         path.mkdir(parents=True, exist_ok=True, mode=0o777)
@@ -306,7 +271,7 @@ class FieldGroupMonitor(monitor.Monitor):
     ) -> None:
         """Initialise the dataset with global attributes and dimensions.
 
-        TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical
+        TODO(halungge): as long as we have no terrain it is probably ok to take vct_a as vertical
                           coordinate once there is terrain k-heights become [horizontal, vertical ] field
 
         """
@@ -314,9 +279,9 @@ class FieldGroupMonitor(monitor.Monitor):
             self._dataset.close()
         self._file_counter += 1
         filename = generate_name(self._file_name_pattern, self._file_counter)
-        filename = self._output_path.joinpath(filename)
+        filename_path = self._output_path.joinpath(filename)
         df = writers.NETCDFWriter(
-            filename,
+            filename_path,
             vertical_params,
             horizontal_size,
             self._time_properties,
@@ -328,16 +293,18 @@ class FieldGroupMonitor(monitor.Monitor):
     def _update_fetch_times(self) -> None:
         self._next_output_time = self._next_output_time + self._time_delta
 
-    def store(self, state: dict, model_time: dt.datetime, *args, **kwargs) -> None:
+    def store(
+        self, state: dict, model_time: dt.datetime, *args: Any, **kwargs: dict[str, Any]
+    ) -> None:
         """Pick fields from the state dictionary to be written to disk.
 
         Args:
             state: dict  model state dictionary
             model_time: the current time step of the simulation
         """
-        # TODO (halungge) how to handle non time matches? That is if the model time jumps over the output time
+        # TODO(halungge): how to handle non time matches? That is if the model time jumps over the output time
         if self._at_capture_time(model_time):
-            # TODO (halungge) this should do a deep copy of the data
+            # TODO(halungge): this should do a deep copy of the data
             try:
                 state_to_store = {field: state[field] for field in self._field_names}
             except KeyError as e:
@@ -366,9 +333,10 @@ class FieldGroupMonitor(monitor.Monitor):
         return 0 < self.config.timesteps_per_file == self._current_timesteps_in_file
 
     def _append_data(self, state_to_store: dict, model_time: dt.datetime) -> None:
+        assert self._dataset is not None
         self._dataset.append(state_to_store, model_time)
 
-    def _at_capture_time(self, model_time) -> bool:
+    def _at_capture_time(self, model_time: dt.datetime) -> bool:
         return self._next_output_time == model_time
 
     def close(self) -> None:

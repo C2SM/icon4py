@@ -10,12 +10,13 @@ from __future__ import annotations
 
 import logging as log
 from types import ModuleType
-from typing import TYPE_CHECKING, Optional, TypeAlias, Union
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, TypeVar
 
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import numpy.typing as npt
 from gt4py import next as gtx
-from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.utils import device_utils
@@ -26,15 +27,30 @@ if TYPE_CHECKING:
 
 
 try:
-    import cupy as xp
+    import cupy as xp  # type: ignore[import-not-found]
 except ImportError:
     import numpy as xp
 
-NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
-NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
+ScalarT = TypeVar("ScalarT", bound=gtx_typing.Scalar)
+NDArray: TypeAlias = (
+    np.ndarray[tuple[int, ...], np.dtype[ScalarT]] | xp.ndarray[tuple[int, ...], np.dtype[ScalarT]]
+)
+NDArrayInterface: TypeAlias = np.ndarray | xp.ndarray | gtx.Field
+
+ScalarLikeArray: TypeAlias = (
+    np.ndarray[tuple[()], np.dtype[ScalarT]] | xp.ndarray[tuple[()], np.dtype[ScalarT]]
+)
 
 
-def backend_name(backend: gtx_backend.Backend | None) -> str:
+def is_ndarray(obj: Any) -> TypeGuard[NDArray]:
+    return isinstance(obj, (np.ndarray, xp.ndarray))
+
+
+def is_rank0_ndarray(obj: Any) -> TypeGuard[ScalarLikeArray]:
+    return is_ndarray(obj) and obj.shape == ()
+
+
+def backend_name(backend: gtx_typing.Backend | None) -> str:
     return "embedded" if backend is None else backend.name
 
 
@@ -67,60 +83,63 @@ def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) 
     return array_ns(device_utils.is_cupy_device(allocator))
 
 
+def scalar_like_array(
+    value: ScalarT,
+    allocator: ModuleType | gtx_allocators.FieldBufferAllocationUtil | None = None,
+) -> ScalarLikeArray[ScalarT]:  # type: ignore[type-var] # ScalarT is a subtype of already specified other types
+    """Create a 0-d array (scalar-like) with given value on specified array namespace or allocator."""
+    array_ns = allocator if allocator in (np, xp) else import_array_ns(allocator)
+    assert array_ns is not None and hasattr(array_ns, "asarray")
+    return array_ns.asarray(value)
+
+
 def as_field(
     field: gtx.Field,
-    backend: Optional[gtx_backend.Backend] = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
     embedded_on_host: bool = False,
 ) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
     data = field.asnumpy() if embedded_on_host else field.ndarray
-    return gtx.as_field(field.domain, data=data, allocator=backend)
-
-
-def flatten_first_two_dims(
-    *dims: gtx.Dimension, field: gtx.Field | NDArray, backend: Optional[gtx_backend.Backend] = None
-) -> gtx.Field:
-    """Convert a n-D sparse field or ndarray to a (n-1)-D flattened (Felix-style) sparse field."""
-    buffer = field.ndarray if isinstance(field, gtx.Field) else field
-    old_shape = buffer.shape
-    assert len(old_shape) >= 2
-    flattened_size = old_shape[0] * old_shape[1]
-    flattened_shape = (flattened_size,)
-    new_shape = flattened_shape + old_shape[2:]
-    return gtx.as_field(dims, buffer.reshape(new_shape), allocator=backend)
-
-
-def unflatten_first_two_dims(field: gtx.Field | NDArray) -> NDArray:
-    """Convert a (n-1)-D flattened (Felix-style) sparse field or ndarray to a n-D sparse NDArray."""
-    buffer = field.ndarray if isinstance(field, gtx.Field) else field
-    old_shape = buffer.shape
-    new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
-    return buffer.reshape(new_shape)
+    return gtx.as_field(field.domain, data=data, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def random_field(
-    grid,
-    *dims,
+    grid: grid_base.Grid,
+    *dims: gtx.Dimension,
     low: float = -1.0,
     high: float = 1.0,
-    dtype: Optional[npt.DTypeLike] = None,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
-    backend=None,
+    dtype: npt.DTypeLike | None = None,
+    extend: dict[gtx.Dimension, int] | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     arr = np.random.default_rng().uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=backend)
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+
+
+def random_sign(
+    grid: grid_base.Grid,
+    *dims: gtx.Dimension,
+    dtype: npt.DTypeLike | None = None,
+    extend: dict[gtx.Dimension, int] | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+) -> gtx.Field:
+    """Generate a random field with values -1 or 1."""
+    arr = np.random.default_rng().choice([-1, 1], size=_shape(grid, *dims, extend=extend))
+    if dtype:
+        arr = arr.astype(dtype)
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def random_mask(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    dtype: Optional[npt.DTypeLike] = None,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
-    backend: Optional[gtx_backend.Backend] = None,
+    dtype: npt.DTypeLike | None = None,
+    extend: dict[gtx.Dimension, int] | None = None,
+    allocator: gtx_typing.Backend | None = None,
 ) -> gtx.Field:
     rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
@@ -131,38 +150,38 @@ def random_mask(
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr, allocator=backend)
+    return gtx.as_field(dims, arr, allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
 
 
 def zero_field(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    dtype=ta.wpfloat,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
-    backend=None,
+    dtype: npt.DTypeLike = ta.wpfloat,
+    extend: dict[gtx.Dimension, int] | None = None,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     field_domain = {dim: (0, stop) for dim, stop in zip(dims, _shape(grid, *dims, extend=extend))}
-    return gtx.constructors.zeros(field_domain, dtype=dtype, allocator=backend)
+    return gtx.constructors.zeros(field_domain, dtype=dtype, allocator=allocator)
 
 
 def constant_field(
     grid: grid_base.Grid,
     value: float,
     *dims: gtx.Dimension,
-    dtype=ta.wpfloat,
-    backend=None,
+    dtype: npt.DTypeLike = ta.wpfloat,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
-        allocator=backend,
+        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),  # type: ignore [arg-type] # type "ndarray[Any, Any] | NDArrayObject"; expected "NDArrayObject"
+        allocator=allocator,
     )
 
 
 def _shape(
     grid: grid_base.Grid,
     *dims: gtx.Dimension,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
+    extend: dict[gtx.Dimension, int] | None = None,
 ) -> tuple[int, ...]:
     extend = extend or {}
     return tuple(grid.size[dim] + extend.get(dim, 0) for dim in dims)
@@ -171,10 +190,10 @@ def _shape(
 def index_field(
     grid: grid_base.Grid,
     dim: gtx.Dimension,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
-    dtype=gtx.int32,
-    backend: Optional[gtx_backend.Backend] = None,
+    extend: dict[gtx.Dimension, int] | None = None,
+    dtype: npt.DTypeLike = gtx.int32,  # type: ignore [attr-defined]
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
 ) -> gtx.Field:
-    xp = import_array_ns(backend)
+    xp = import_array_ns(allocator)
     shapex = _shape(grid, dim, extend=extend)[0]
-    return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend)
+    return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=allocator)

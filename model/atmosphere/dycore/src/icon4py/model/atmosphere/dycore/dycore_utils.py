@@ -6,11 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import (
-    abs,
-    broadcast,
-    maximum,
-)
+from gt4py.next import abs, broadcast, maximum  # noqa: A004
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
@@ -87,6 +83,31 @@ def _calculate_divdamp_fields(
         )
     )
     return (fourth_order_divdamp_scaling_coeff, reduced_fourth_order_divdamp_coeff_at_nest_boundary)
+
+
+@gtx.program
+def calculate_divdamp_fields(
+    interpolated_fourth_order_divdamp_factor: fa.KField[float],
+    fourth_order_divdamp_scaling_coeff: fa.KField[float],
+    reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[float],
+    divdamp_order: gtx.int32,
+    mean_cell_area: float,
+    second_order_divdamp_factor: float,
+    max_nudging_coefficient: float,
+    dbl_eps: float,
+):
+    _calculate_divdamp_fields(
+        interpolated_fourth_order_divdamp_factor,
+        divdamp_order,
+        mean_cell_area,
+        second_order_divdamp_factor,
+        max_nudging_coefficient,
+        dbl_eps,
+        out=(
+            fourth_order_divdamp_scaling_coeff,
+            reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+        ),
+    )
 
 
 @gtx.field_operator

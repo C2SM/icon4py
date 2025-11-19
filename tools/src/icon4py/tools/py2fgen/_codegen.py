@@ -6,7 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Any, Final, Literal, Sequence, TypeGuard, Union
+from collections.abc import Sequence
+from typing import Any, Final, Literal, TypeGuard
 
 from gt4py.eve import Node, codegen
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
@@ -45,7 +46,7 @@ def is_array(param: _definitions.ParamDescriptor) -> TypeGuard[_definitions.Arra
 
 class Func(Node):
     name: str
-    args: dict[str, Union[_definitions.ArrayParamDescriptor, _definitions.ScalarParamDescriptor]]
+    args: dict[str, _definitions.ArrayParamDescriptor | _definitions.ScalarParamDescriptor]
 
 
 class BindingsLibrary(Node):
@@ -136,16 +137,22 @@ class PythonWrapperGenerator(codegen.TemplatedGenerator):
 
     BindingsLibrary = as_jinja(
         """\
+import pkgutil
+from icon4py.tools.py2fgen import runtime_config
+for callable_name in runtime_config.EXTRA_CALLABLES:
+    pkgutil.resolve_name(callable_name)()
+
 import logging
 from {{ library_name }} import ffi
-from icon4py.tools.py2fgen import runtime_config, _runtime, _definitions, _conversion
+from icon4py.tools.py2fgen import _runtime, _definitions, _conversion
 
-if __debug__:
-    logger = logging.getLogger(__name__)
-    log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
-    logging.basicConfig(level=getattr(logging, runtime_config.LOG_LEVEL),
-                    format=log_format,
-                    datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
+log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
+logging.basicConfig(
+    level=getattr(logging, runtime_config.LOG_LEVEL),
+    format=log_format,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 # embedded function imports
@@ -159,73 +166,71 @@ from {{ module_name }} import {{ func.name }}
 def {{ func.name }}_wrapper(
 {{render_params(func)}}
 ):
-    try:
-        if __debug__:
-            logger.info("Python execution of {{ func.name }} started.")
+    with runtime_config.HOOK_BINDINGS_FUNCTION["{{ func.name }}"]:
+        try:
+            if __debug__:
+                logger.info("Python execution of {{ func.name }} started.")
 
-        if __debug__:
-            if runtime_config.PROFILING:
-                unpack_start_time = _runtime.perf_counter()
+            if __debug__:
+                if runtime_config.PROFILING:
+                    unpack_start_time = _runtime.perf_counter()
 
-        # ArrayInfos
-        {% for name, arg in func.args.items() %}
-        {% if is_array(arg) %}
-        {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
-        {% endif %}
-        {% endfor %}
+            # ArrayInfos
+            {% for name, arg in func.args.items() %}
+            {% if is_array(arg) %}
+            {{ name }} = ({{ name }}, {{ render_size_args_tuple(name, arg) }}, {% if arg.memory_space == "host" %}False{% else %}on_gpu{% endif %}, {{ arg.is_optional }})
+            {% endif %}
+            {% endfor %}
 
-        if __debug__:
-            if runtime_config.PROFILING:
-                allocate_end_time = _runtime.perf_counter()
-                logger.info('{{ func.name }} constructing `ArrayInfos` time: %s' % str(allocate_end_time - unpack_start_time))
+            if __debug__:
+                if runtime_config.PROFILING:
+                    allocate_end_time = _runtime.perf_counter()
+                    logger.info('{{ func.name }} constructing `ArrayInfos` time: %s' % str(allocate_end_time - unpack_start_time))
 
-                func_start_time = _runtime.perf_counter()
+                    func_start_time = _runtime.perf_counter()
 
-        if __debug__ and runtime_config.PROFILING:
-            perf_counters = {}
-        else:
-            perf_counters = None
-        {{ func.name }}(
-        ffi = ffi,
-        perf_counters = perf_counters,
-        {%- for name, arg in func.args.items() -%}
-        {{ name }} = {{ name }}{{ "," }}
-        {%- endfor -%}
-        )
+            if __debug__ and runtime_config.PROFILING:
+                perf_counters = {}
+            else:
+                perf_counters = None
+            {{ func.name }}(
+            ffi = ffi,
+            perf_counters = perf_counters,
+            {%- for name, arg in func.args.items() -%}
+            {{ name }} = {{ name }}{{ "," }}
+            {%- endfor -%}
+            )
 
-        if __debug__:
-            if runtime_config.PROFILING:
-                func_end_time = _runtime.perf_counter()
-                logger.info('{{ func.name }} convert time: %s' % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"]))
-                logger.info('{{ func.name }} execution time: %s' % str(func_end_time - func_start_time))
+            if __debug__:
+                if runtime_config.PROFILING:
+                    func_end_time = _runtime.perf_counter()
+                    logger.info('{{ func.name }} convert time: %s' % str(perf_counters["convert_end_time"] - perf_counters["convert_start_time"]))
+                    logger.info('{{ func.name }} execution time: %s' % str(func_end_time - func_start_time))
 
 
-        {% if func.args %}
-        if __debug__:
-            if logger.isEnabledFor(logging.DEBUG):
-                {% for name, arg in func.args.items() %}
-                {% if is_array(arg) %}
-                {{name}}_arr = _conversion.as_array(ffi, {{ name }}, _definitions.{{ arg.dtype.name }}) if {{ name }} is not None else None
-                msg = 'shape of {{ name }} after computation = %s' % str({{ name}}_arr.shape if {{name}} is not None else "None")
-                logger.debug(msg)
-                msg = '{{ name }} after computation: %s' % str({{name}}_arr) if {{ name }} is not None else "None"
-                logger.debug(msg)
-                {% endif %}
-                {% endfor %}
-        {% endif %}
+            {% if func.args %}
+            if __debug__:
+                if logger.isEnabledFor(logging.DEBUG):
+                    {% for name, arg in func.args.items() %}
+                    {% if is_array(arg) %}
+                    {{name}}_arr = _conversion.as_array(ffi, {{ name }}, _definitions.{{ arg.dtype.name }}) if {{ name }} is not None else None
+                    msg = 'shape of {{ name }} after computation = %s' % str({{ name}}_arr.shape if {{name}} is not None else "None")
+                    logger.debug(msg)
+                    msg = '{{ name }} after computation: %s' % str({{name}}_arr) if {{ name }} is not None else "None"
+                    logger.debug(msg)
+                    {% endif %}
+                    {% endfor %}
+            {% endif %}
 
-        if __debug__:
-            logger.info("Python execution of {{ func.name }} completed.")
+            if __debug__:
+                logger.info("Python execution of {{ func.name }} completed.")
 
-    except Exception as e:
-        logger.exception(f"A Python error occurred: {e}")
-        return 1
+        except Exception as e:
+            logger.exception(f"A Python error occurred: {e}")
+            return 1
 
     return 0
-
-        {% endfor %}
-
-
+{% endfor %}
 """
     )
 
@@ -320,7 +325,7 @@ class FortranBindingsFunctionGenerator(codegen.TemplatedGenerator):
                     return f"{name} = c_loc({name})"
             return f"{name} = {name}"
 
-        param_names = ", &\n ".join([name for name in func.args.keys()] + ["rc"])
+        param_names = ", &\n ".join([name for name in func.args] + ["rc"])
         args = []
         for name, param in func.args.items():
             args.append(render_args(name, param))

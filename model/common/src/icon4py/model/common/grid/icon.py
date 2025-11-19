@@ -6,17 +6,18 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
-import functools
 import logging
 import math
-import uuid
-from typing import Callable, Final, Optional
+from collections.abc import Callable
+from types import ModuleType
+from typing import Final, TypeVar
 
 import gt4py.next as gtx
-from gt4py.next import allocators as gtx_allocators, common as gtx_common
+from gt4py.next import allocators as gtx_allocators
+from typing_extensions import assert_never
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -35,64 +36,149 @@ CONNECTIVITIES_ON_BOUNDARIES = (
 CONNECTIVITIES_ON_PENTAGONS = (dims.V2EDim, dims.V2CDim, dims.V2E2VDim)
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class GridSubdivision:
+    root: int
+    level: int
+
+
+@dataclasses.dataclass(kw_only=True)
+class GridShape:
+    geometry_type: base.GeometryType
+    subdivision: GridSubdivision | None
+
+    def __init__(
+        self,
+        geometry_type: base.GeometryType | None = None,
+        subdivision: GridSubdivision | None = None,
+    ) -> None:
+        if geometry_type is None and subdivision is None:
+            raise ValueError("Either geometry_type or subdivision must be provided")
+
+        if geometry_type is None:
+            geometry_type = base.GeometryType.ICOSAHEDRON
+
+        match geometry_type:
+            case base.GeometryType.ICOSAHEDRON:
+                if subdivision is None:
+                    raise ValueError("Subdivision must be provided for icosahedron geometry type")
+
+                if subdivision.root < 1 or subdivision.level < 0:
+                    raise ValueError(
+                        f"For icosahedron geometry type, root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
+                    )
+            case base.GeometryType.TORUS:
+                subdivision = None
+            case _:
+                assert_never(geometry_type)
+
+        self.geometry_type = geometry_type
+        self.subdivision = subdivision
+
+
+_T = TypeVar("_T")
+
+
+@dataclasses.dataclass(kw_only=True, frozen=True)
 class GlobalGridParams:
-    root: Optional[int] = None
-    level: Optional[int] = None
-    _num_cells: Optional[int] = None
-    _mean_cell_area: Optional[float] = None
-    geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
+    grid_shape: Final[GridShape | None] = None
     radius: float = constants.EARTH_RADIUS
+    domain_length: float | None = None
+    domain_height: float | None = None
+    global_num_cells: int | None = None
+    num_cells: int | None = None
+    mean_edge_length: float | None = None
+    mean_dual_edge_length: float | None = None
+    mean_cell_area: float | None = None
+    mean_dual_cell_area: float | None = None
+    characteristic_length: float | None = None
 
     @classmethod
-    def from_mean_cell_area(
-        cls,
-        mean_cell_area: float,
-        root: Optional[int] = None,
-        level: Optional[int] = None,
-        num_cells: Optional[int] = None,
-        geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON,
-        radius: float = constants.EARTH_RADIUS,
-    ):
-        return cls(root, level, num_cells, mean_cell_area, geometry_type)
+    def from_fields(
+        cls: type[_T],
+        array_ns: ModuleType,
+        mean_edge_length: float | None = None,
+        edge_lengths: data_alloc.NDArray | None = None,
+        mean_dual_edge_length: float | None = None,
+        dual_edge_lengths: data_alloc.NDArray | None = None,
+        mean_cell_area: float | None = None,
+        cell_areas: data_alloc.NDArray | None = None,
+        mean_dual_cell_area: float | None = None,
+        dual_cell_areas: data_alloc.NDArray | None = None,
+        **kwargs,
+    ) -> _T:
+        def init_mean(value: float | None, data: data_alloc.NDArray | None) -> float | None:
+            if value is not None:
+                return value
+            if data is not None:
+                return array_ns.mean(data).item()
+            return None
 
-    @functools.cached_property
-    def num_cells(self):
-        if self._num_cells is None:
+        mean_edge_length = init_mean(mean_edge_length, edge_lengths)
+        mean_dual_edge_length = init_mean(mean_dual_edge_length, dual_edge_lengths)
+        mean_cell_area = init_mean(mean_cell_area, cell_areas)
+        mean_dual_cell_area = init_mean(mean_dual_cell_area, dual_cell_areas)
+
+        return cls(
+            mean_edge_length=mean_edge_length,
+            mean_dual_edge_length=mean_dual_edge_length,
+            mean_cell_area=mean_cell_area,
+            mean_dual_cell_area=mean_dual_cell_area,
+            **kwargs,
+        )
+
+    def __post_init__(self) -> None:
+        if self.geometry_type is not None:
             match self.geometry_type:
                 case base.GeometryType.ICOSAHEDRON:
-                    assert self.root is not None and self.level is not None
-                    return compute_icosahedron_num_cells(self.root, self.level)
+                    object.__setattr__(self, "domain_length", None)
+                    object.__setattr__(self, "domain_height", None)
+                    if self.radius is None:
+                        object.__setattr__(self, "radius", constants.EARTH_RADIUS)
                 case base.GeometryType.TORUS:
-                    raise NotImplementedError("TODO : lookup torus cell number computation")
+                    object.__setattr__(self, "radius", None)
                 case _:
-                    raise NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+                    ...
 
-        return self._num_cells
+        if self.global_num_cells is None and self.geometry_type is base.GeometryType.ICOSAHEDRON:
+            object.__setattr__(
+                self,
+                "global_num_cells",
+                compute_icosahedron_num_cells(self.grid_shape.subdivision),
+            )
 
-    @functools.cached_property
-    def characteristic_length(self):
-        return math.sqrt(self.mean_cell_area)
+        if self.num_cells is None and self.global_num_cells is not None:
+            object.__setattr__(self, "num_cells", self.global_num_cells)
 
-    @functools.cached_property
-    def mean_cell_area(self):
-        if self._mean_cell_area is None:
-            match self.geometry_type:
-                case base.GeometryType.ICOSAHEDRON:
-                    return compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, self.num_cells)
-                case base.GeometryType.TORUS:
-                    NotImplementedError(f"mean_cell_area not implemented for {self.geometry_type}")
-                case _:
-                    NotImplementedError(f"Unknown geometry type {self.geometry_type}")
+        if (
+            self.mean_cell_area is None
+            and self.radius is not None
+            and self.global_num_cells is not None
+            and self.geometry_type is base.GeometryType.ICOSAHEDRON
+        ):
+            object.__setattr__(
+                self,
+                "mean_cell_area",
+                compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells),
+            )
 
-        return self._mean_cell_area
+        if self.characteristic_length is None and self.mean_cell_area is not None:
+            object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
+
+    @property
+    def geometry_type(self) -> base.GeometryType | None:
+        return self.grid_shape.geometry_type if self.grid_shape else None
+
+    @property
+    def subdivision(self) -> GridSubdivision | None:
+        return self.grid_shape.subdivision if self.grid_shape else None
 
 
-def compute_icosahedron_num_cells(root: int, level: int):
-    return 20.0 * root**2 * 4.0**level
+def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:
+    return 20 * subdivision.root**2 * 4**subdivision.level
 
 
-def compute_mean_cell_area_for_sphere(radius, num_cells):
+def compute_mean_cell_area_for_sphere(radius, num_cells) -> float:
     """
     Compute the mean cell area.
 
@@ -104,7 +190,7 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
         num_cells: number of cells on the global grid
     Returns: mean area of one cell [m^2]
     """
-    return 4.0 * math.pi * radius**2 / num_cells
+    return 4.0 * math.pi * radius**2.0 / num_cells
 
 
 @dataclasses.dataclass(frozen=True)
@@ -159,19 +245,14 @@ def _should_replace_skip_values(
 
 
 def icon_grid(
-    id_: uuid.UUID,
+    id_: str,
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
-    start_indices: dict[gtx.Dimension, data_alloc.NDArray],
-    end_indices: dict[gtx.Dimension, data_alloc.NDArray],
+    start_index: Callable[[h_grid.Domain], gtx.int32],
+    end_index: Callable[[h_grid.Domain], gtx.int32],
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
-    sparse_1d_connectivity_constructor: Callable[
-        [gtx.FieldOffset, tuple[int, int], gtx_allocators.FieldBufferAllocationUtil | None],
-        gtx_common.NeighborTable,
-    ]
-    | None = None,
 ) -> IconGrid:
     connectivities = {
         offset.value: base.construct_connectivity(
@@ -187,13 +268,46 @@ def icon_grid(
     }
     return IconGrid(
         id=id_,
-        allocator=allocator,
         config=config,
         connectivities=connectivities,
         geometry_type=global_properties.geometry_type,
-        _start_indices=start_indices,
-        _end_indices=end_indices,
+        start_index=start_index,
+        end_index=end_index,
         global_properties=global_properties,
         refinement_control=refinement_control or {},
-        sparse_1d_connectivity_constructor=sparse_1d_connectivity_constructor,
     )
+
+
+def get_start_and_end_index(
+    constructor: Callable[
+        [gtx.Dimension], tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]
+    ],
+) -> tuple[Callable[[h_grid.Domain], gtx.int32], Callable[[h_grid.Domain], gtx.int32]]:
+    """
+    Return start_index and end_index functions to be passed to the Grid constructor.
+
+    This function defines a version of `start_index` and `end_index` that looks up the indeces in an internal map from [Domain](horizontal.py::Domain) -> gtx.int32
+    It takes the constructor function of this map as input.
+
+    Args:
+        constructor: function that takes a dimension as argument and constructs  a lookup table
+        dict[Domain, gtx.int32] for all domains for a given dimension
+
+    Returns:
+        tuple of functions `start_index` and `end_index` to be passed to the [Grid](./base.py::Grid)
+
+    """
+    start_indices = {}
+    end_indices = {}
+    for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
+        start_map, end_map = constructor(dim)
+        start_indices.update(start_map)
+        end_indices.update(end_map)
+
+    def start_index(domain: h_grid.Domain) -> gtx.int32:
+        return start_indices[domain]
+
+    def end_index(domain: h_grid.Domain) -> gtx.int32:
+        return end_indices[domain]
+
+    return start_index, end_index

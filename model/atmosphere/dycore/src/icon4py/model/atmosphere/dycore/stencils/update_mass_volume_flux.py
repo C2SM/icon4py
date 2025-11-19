@@ -6,14 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _update_mass_volume_flux(
     z_contr_w_fl_l: fa.CellKField[wpfloat],
     rho_ic: fa.CellKField[wpfloat],
@@ -30,7 +28,7 @@ def _update_mass_volume_flux(
     return mass_flx_ic_wp, vol_flx_ic_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_mass_volume_flux(
     z_contr_w_fl_l: fa.CellKField[wpfloat],
     rho_ic: fa.CellKField[wpfloat],

@@ -8,8 +8,8 @@
 
 import importlib
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import cffi
 
@@ -74,7 +74,7 @@ def write_c_header(build_path: Path, library_name: str, c_header: str) -> Path:
     """Write the C header file to the specified path."""
     c_header_file = library_name + ".h"
     header_file_path = build_path / c_header_file
-    with open(header_file_path, "w") as f:
+    with header_file_path.open("w") as f:
         f.write(c_header)
     return header_file_path
 
