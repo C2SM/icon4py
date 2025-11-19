@@ -14,8 +14,8 @@ import pathlib
 from collections.abc import Mapping
 from typing import Final, Literal
 
-import icon4py.model.atmosphere.dycore.config as dycore_config
 import icon4py.model.atmosphere.diffusion.config as diffusion_config
+import icon4py.model.atmosphere.dycore.config as dycore_config
 from icon4py.model.common import exceptions
 from icon4py.model.testing import config
 
