@@ -155,7 +155,8 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         )
 
     @pytest.fixture(
-        params=[{"prepare_advection": pa, "at_first_substep": afs}
+        params=[
+            {"prepare_advection": pa, "at_first_substep": afs}
             for pa, afs in [
                 (True, True),
                 (True, False),
@@ -163,7 +164,9 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         ],
         ids=lambda p: f"prepare_advection[{p['prepare_advection']}]__at_first_substep[{p['at_first_substep']}]",
     )
-    def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    def input_data(
+        self, request: pytest.FixtureRequest, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         z_theta_v_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
