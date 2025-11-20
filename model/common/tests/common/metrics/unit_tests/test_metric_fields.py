@@ -398,7 +398,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         k_lev=k.ndarray,
         array_ns=xp,
     )
-
+    # TODO (nfarabullini): fix type ignore
     flat_idx = gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend)  # type: ignore [arg-type]
     mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
         z_mc=z_mc,
