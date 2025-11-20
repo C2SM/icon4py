@@ -1394,7 +1394,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.1+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace-fix_let_lambdas#99d851b9c07ff17ced8ad52a7296913f073dca54" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace-fix_let_lambdas#f8df5ef993cb5d4a49234e5a8bba2134609a23c2" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
