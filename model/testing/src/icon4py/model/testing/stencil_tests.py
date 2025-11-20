@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
+import gc
 from collections.abc import Callable, Generator, Mapping, Sequence
 from typing import Any, ClassVar
 
@@ -33,17 +34,22 @@ from icon4py.model.common.utils import device_utils
 
 def allocate_data(
     allocator: gtx_typing.FieldBufferAllocationUtil | None,
-    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
+    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...] | None],
+) -> dict[str, gtx.Field | tuple[gtx.Field, ...] | None]:
     _allocate_field = constructors.as_field.partial(allocator=allocator)  # type:ignore[attr-defined] # TODO(havogt): check why it doesn't understand the fluid_partial
-    gtx_input_data = {
-        k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
-        if isinstance(v, tuple)
-        else _allocate_field(domain=v.domain, data=v.ndarray)
-        if not gtx.is_scalar_type(v) and k != "domain"
-        else v
-        for k, v in input_data.items()
-    }
+    gtx_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...] | None] = {}
+    for k, v in input_data.items():
+        if not gtx.is_scalar_type(v) and k != "domain" and v is not None:
+            if isinstance(v, tuple):
+                gtx_input_data[k] = tuple(
+                    _allocate_field(domain=field.domain, data=field.ndarray) for field in v
+                )
+            else:
+                gtx_input_data[k] = _allocate_field(domain=v.domain, data=v.ndarray)
+            input_data[k] = None  # free original allocation in input_data
+        else:
+            gtx_input_data[k] = v
+    gc.collect()
     return gtx_input_data
 
 
@@ -164,7 +170,7 @@ class StencilTest:
 
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture
     def _configured_program(
         self,
         backend_like: model_backends.BackendLike,
@@ -199,15 +205,17 @@ class StencilTest:
     @pytest.fixture(scope="class")
     def _properly_allocated_input_data(
         self,
-        input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+        input_data: dict[str, gtx.Field | tuple[gtx.Field, ...] | None],
         backend_like: model_backends.BackendLike,
-    ) -> Generator[dict[str, gtx.Field | tuple[gtx.Field, ...]], None, None]:
+    ) -> Generator[dict[str, gtx.Field | tuple[gtx.Field, ...] | None]]:
         # TODO(havogt): this is a workaround,
         # because in the `input_data` fixture provided by the user
         # it does not allocate for the correct device.
         allocator = model_backends.get_allocator(backend_like)
-        yield allocate_data(allocator=allocator, input_data=input_data)
-        input_data.clear()
+        gtx_allocated_data = allocate_data(allocator=allocator, input_data=input_data)
+        yield gtx_allocated_data
+        del gtx_allocated_data
+        gc.collect()
 
     def _verify_stencil_test(
         self,
@@ -260,7 +268,7 @@ class StencilTest:
         # parametrization is only available in the concrete subclass definition
         if cls.STATIC_PARAMS is None:
             # not parametrized, return an empty tuple
-            cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
+            cls.static_variant = staticmethod(pytest.fixture(lambda: (), scope="class"))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
         else:
             cls.static_variant = staticmethod(  # type: ignore[method-assign]
                 pytest.fixture(params=cls.STATIC_PARAMS.items(), scope="class", ids=lambda p: p[0])(
