@@ -11,13 +11,13 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
+import icon4py.model.common.utils as common_utils
+from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -182,29 +182,15 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     grid: icon_grid.IconGrid,
     backend: gtx_typing.Backend | None,
 ) -> tuple[
-    fa.EdgeKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.EdgeKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    common_utils.TimeStepPair[prognostics.PrognosticState],
+    diagnostics.DiagnosticState,
 ]:
     vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
     w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
     exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
     rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
     temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend)
-    virutal_temperature = gtx.as_field(
+    virtual_temperature = gtx.as_field(
         (dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend
     )
     pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=backend)
@@ -220,21 +206,30 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
     v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
 
-    return (
-        vn,
-        w,
-        exner,
-        rho,
-        theta_v,
-        vn_next,
-        w_next,
-        exner_next,
-        rho_next,
-        theta_v_next,
-        temperature,
-        virutal_temperature,
-        pressure,
-        pressure_ifc,
-        u,
-        v,
+    prognostic_state_now = prognostics.PrognosticState(
+        w=w,
+        vn=vn,
+        theta_v=theta_v,
+        rho=rho,
+        exner=exner,
     )
+    prognostic_state_next = prognostics.PrognosticState(
+        w=w_next,
+        vn=vn_next,
+        theta_v=theta_v_next,
+        rho=rho_next,
+        exner=exner_next,
+    )
+
+    prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+
+    diagnostic_state = diagnostics.DiagnosticState(
+        pressure=pressure,
+        pressure_ifc=pressure_ifc,
+        temperature=temperature,
+        virtual_temperature=virtual_temperature,
+        u=u,
+        v=v,
+    )
+
+    return prognostics_states, diagnostic_state

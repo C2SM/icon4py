@@ -12,7 +12,6 @@ import math
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
@@ -29,10 +28,6 @@ from icon4py.model.common.interpolation.stencils import (
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states
 from icon4py.model.standalone_driver.testcases import utils as testcases_utils
@@ -240,42 +235,28 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
 
     pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
     pressure_ifc_ndarray[:, -1] = p_sfc
-    (
-        vn,
-        w,
-        exner,
-        rho,
-        theta_v,
-        vn_next,
-        w_next,
-        exner_next,
-        rho_next,
-        theta_v_next,
-        temperature,
-        virtual_temperature,
-        pressure,
-        pressure_ifc,
-        u,
-        v,
-    ) = testcases_utils.create_gt4py_field_for_prognostic_and_diagnostic_variables(
-        vn_ndarray,
-        w_ndarray,
-        exner_ndarray,
-        rho_ndarray,
-        theta_v_ndarray,
-        temperature_ndarray,
-        pressure_ndarray,
-        pressure_ifc_ndarray,
-        grid=grid,
-        backend=backend,
+
+    (prognostics_states, diagnostic_state) = (
+        testcases_utils.create_gt4py_field_for_prognostic_and_diagnostic_variables(
+            vn_ndarray,
+            w_ndarray,
+            exner_ndarray,
+            rho_ndarray,
+            theta_v_ndarray,
+            temperature_ndarray,
+            pressure_ndarray,
+            pressure_ifc_ndarray,
+            grid=grid,
+            backend=backend,
+        )
     )
 
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-        vn,
+        prognostics_states.current.vn,
         rbf_vec_coeff_c1,
         rbf_vec_coeff_c2,
-        u,
-        v,
+        diagnostic_state.u,
+        diagnostic_state.v,
         end_cell_lateral_boundary_level_2,
         end_cell_end,
         0,
@@ -287,7 +268,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
 
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
     gt4py_math_op.minus_operation_on_cell_k.with_backend(backend)(
-        field_a=exner,
+        field_a=prognostics_states.current.exner,
         field_b=metrics_field_source.get(metrics_attributes.EXNER_REF_MC),
         output_field=perturbed_exner,
         horizontal_start=0,
@@ -297,30 +278,6 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
         offset_provider={},
     )
     log.info("perturbed_exner initialization completed.")
-
-    diagnostic_state = diagnostics.DiagnosticState(
-        pressure=pressure,
-        pressure_ifc=pressure_ifc,
-        temperature=temperature,
-        virtual_temperature=virtual_temperature,
-        u=u,
-        v=v,
-    )
-
-    prognostic_state_now = prognostics.PrognosticState(
-        w=w,
-        vn=vn,
-        theta_v=theta_v,
-        rho=rho,
-        exner=exner,
-    )
-    prognostic_state_next = prognostics.PrognosticState(
-        w=w_next,
-        vn=vn_next,
-        theta_v=theta_v_next,
-        rho=rho_next,
-        exner=exner_next,
-    )
 
     diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
         grid=grid, backend=backend
@@ -332,8 +289,6 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     )
     prep_adv = dycore_states.initialize_prep_advection(grid=grid, backend=backend)
     log.info("Initialization completed.")
-
-    prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
     ds = driver_states.DriverStates(
         prep_advection_prognostic=prep_adv,
