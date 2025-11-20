@@ -294,6 +294,8 @@ VERTEX_AND_CELL_ZONES = (
 
 
 EDGE_ZONES = tuple(Zone)
+def max_boundary_level(dim:gtx.Dimension)->int:
+    return max((d.level for d in _get_zones_for_dim(dim) if d.is_lateral_boundary()), default=1)
 
 _ZONE_TO_INDEX_MAPPING = {
     Zone.END: lambda dim: _icon_domain_index(_ICON_END, dim),

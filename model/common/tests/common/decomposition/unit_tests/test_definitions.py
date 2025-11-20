@@ -9,6 +9,7 @@
 import numpy as np
 import pytest
 from gt4py.next import common as gtx_common
+import gt4py.next as gtx
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils.data_allocation as data_alloc
@@ -17,6 +18,7 @@ from icon4py.model.common.grid import simple
 from icon4py.model.testing.fixtures import processor_props
 
 from .. import utils
+from ...grid import utils as grid_utils
 from ..mpi_tests.test_halo import simple_neighbor_tables
 from ..utils import dummy_four_ranks
 
@@ -78,7 +80,7 @@ def test_global_to_local_index(offset, rank):
 
 
 # TODO this duplicates and serializes a test from mpi_tests/test_halo.py
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
+@pytest.mark.parametrize("dim", grid_utils.main_horizontal_dims())
 @pytest.mark.parametrize("rank", [0, 1, 2, 3])
 def test_halo_constructor_decomposition_info_global_indices(dim, rank):
     simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
@@ -122,3 +124,15 @@ def test_horizontal_size(rank):
     assert (
         horizontal_size.num_cells == expected_cells
     ), f"local size mismatch on rank={rank}  for {dims.CellDim}: expected {expected_cells}, but was {horizontal_size.num_cells}"
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("dim", grid_utils.main_horizontal_dims())
+def test_decomposition_info_single_node_empty_halo(dim:gtx.Dimension, decomposition_info: definitions.DecompositionInfo, processor_props: definitions.ProcessProperties)->None:
+    if not processor_props.single_node():
+        pytest.xfail()
+    for level in definitions.DecompositionFlag.__values__:
+        assert decomposition_info.get_halo_size(dim, level) == 0
+        assert np.count_nonzero(decomposition_info.halo_level_mask(dim, level)) == 0
+
+
+

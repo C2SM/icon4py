@@ -19,6 +19,7 @@ from icon4py.model.common.interpolation.interpolation_fields import compute_c_li
 
 try:
     import mpi4py  # import mpi4py to check for optional mpi dependency
+    from mpi4py import MPI
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
@@ -173,6 +174,34 @@ def test_decomposition_info_local_index(
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
 
 
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim) )
+def test_decomposition_info_halo_level_mask(
+    dim:gtx.Dimension,
+    experiment:test_defs.Experiment,
+    decomposition_info:definitions.DecompositionInfo
+)->None:
+    first_halo_level = decomposition_info.halo_level_mask(dim, definitions.DecompositionFlag.FIRST_HALO_LINE)
+    assert first_halo_level.ndim == 1
+    assert np.count_nonzero(first_halo_level) == decomposition_info.get_halo_size(dim, definitions.DecompositionFlag.FIRST_HALO_LINE)
+    second_halo_level = decomposition_info.halo_level_mask(dim, definitions.DecompositionFlag.SECOND_HALO_LINE)
+    assert second_halo_level.ndim == 1
+    assert np.count_nonzero(second_halo_level) == decomposition_info.get_halo_size(dim, definitions.DecompositionFlag.SECOND_HALO_LINE)
+    assert np.count_nonzero(first_halo_level) + np.count_nonzero(second_halo_level) == np.count_nonzero(~ decomposition_info.owner_mask(dim))
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim) )
+def test_decomposition_info_third_level_is_empty(
+    dim:gtx.Dimension,
+    experiment:test_defs.Experiment,
+    decomposition_info:definitions.DecompositionInfo
+)->None:
+    level = decomposition_info.halo_level_mask(dim, definitions.DecompositionFlag.THIRD_HALO_LINE)
+    assert np.count_nonzero(level) == 0
+
+
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5, 6, 7, 8])
@@ -253,7 +282,7 @@ def test_create_single_node_runtime_without_mpi(
     assert isinstance(exchange, definitions.SingleNodeExchange)
 
 
-#@pytest.mark.mpi
+@pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
 def test_exchange_on_dummy_data(

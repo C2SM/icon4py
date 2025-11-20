@@ -179,7 +179,7 @@ class DecompositionInfo:
             case _:
                 raise NotImplementedError()
 
-    def get_horizontal_size(self):
+    def get_horizontal_size(self)->base.HorizontalGridSize:
         return base.HorizontalGridSize(
             num_cells=self.global_index(dims.CellDim, self.EntryType.ALL).shape[0],
             num_edges=self.global_index(dims.EdgeDim, self.EntryType.ALL).shape[0],
@@ -189,10 +189,10 @@ class DecompositionInfo:
     def get_halo_size(self, dim: gtx.Dimension, flag: DecompositionFlag) -> int:
         return np.count_nonzero(self.halo_level_mask(dim, flag))
 
-    def halo_levels(self, dim: gtx.Dimension):
+    def halo_levels(self, dim: gtx.Dimension)->data_alloc.NDArray:
         return self._halo_levels[dim]
 
-    def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag):
+    def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag)->data_alloc.NDArray:
         return np.where(self._halo_levels[dim] == level, True, False)
 
     # TODO (@halungge): unused - delete?
@@ -429,3 +429,5 @@ class DecompositionFlag(enum.IntEnum):
     - vertices (NOT USED)
     - edges that are only on the cell(SECOND_HALO_LINE)
     """
+
+

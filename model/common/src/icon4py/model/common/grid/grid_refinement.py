@@ -14,6 +14,7 @@ from gt4py import next as gtx
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -155,7 +156,7 @@ _LAST_BOUNDARY: dict[gtx.Dimension, h_grid.Zone] = {
 
 
 def compute_domain_bounds(
-    dim: gtx.Dimension, refinement_fields: dict[gtx.Dimension, gtx.Field], array_ns: ModuleType = np
+    dim: gtx.Dimension, refinement_fields: dict[gtx.Dimension, gtx.Field], decomposition_info: decomposition.DecompositionInfo, rank, array_ns: ModuleType = np
 ) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
     refinement_ctrl = refinement_fields[dim].ndarray
     refinement_ctrl = convert_to_non_nested_refinement_values(refinement_ctrl, dim, array_ns)
@@ -168,7 +169,7 @@ def compute_domain_bounds(
         end_index = refinement_ctrl.shape[0]
         my_zone = domain.zone
         if (
-            my_zone is h_grid.Zone.END or my_zone.is_halo()
+            my_zone is h_grid.Zone.END
         ):  # TODO(halungge): implement for distributed
             start_index = refinement_ctrl.shape[0]
             end_index = refinement_ctrl.shape[0]
@@ -194,6 +195,18 @@ def compute_domain_bounds(
             found = array_ns.where(refinement_ctrl == value)[0]
             start_index = array_ns.max(found).item() + 1 if found.size > 0 else 0
             end_index = refinement_ctrl.shape[0]
+        elif my_zone.is_halo():
+            flag = decomposition.DecompositionFlag(my_zone.level)
+            not_lateral_boundary = ((refinement_ctrl < 1) | (refinement_ctrl > h_grid.max_boundary_level(dim)))
+            halo_region = array_ns.where(decomposition_info.halo_level_mask(dim, flag) & not_lateral_boundary)[0]
+            print(f"{rank} - halo region {my_zone} {halo_region.shape} - {halo_region}")
+            if halo_region.size > 0:
+                start_index = array_ns.min(halo_region)
+                end_index = array_ns.max(halo_region) + 1
+            else:
+                start_index = refinement_ctrl.shape[0]
+                end_index = refinement_ctrl.shape[0]
+
         start_indices[domain] = gtx.int32(start_index)  # type: ignore [attr-defined]
         end_indices[domain] = gtx.int32(end_index)  # type: ignore [attr-defined]
     return start_indices, end_indices

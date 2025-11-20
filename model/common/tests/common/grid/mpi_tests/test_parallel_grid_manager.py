@@ -103,7 +103,7 @@ def test_start_end_index(
     dim: gtx.Dimension,
     icon_grid: base.Grid,
 ) -> None:
-    processor_props =
+    #decomp_utils.dummy_four_ranks(3)
     caplog.set_level(logging.INFO)
     grid_file = experiment.grid
     file = grid_utils.resolve_full_grid_file_name(grid_file)
