@@ -58,11 +58,15 @@ def compute_derived_horizontal_winds_and_ke_and_contravariant_correction_numpy(
     skip_compute_predictor_vertical_advection: bool,
     nflatlev: int,
     nlevp1: int,
+    horizontal_start: int,
+    horizontal_end: int,
     vertical_start: int,
 ) -> tuple[np.ndarray, ...]:
     k: np.ndarray = np.arange(nlevp1)
     k = k[np.newaxis, :]
     k_nlev = k[:, :-1]
+
+    initial_vn_on_half_levels = vn_on_half_levels.copy()
 
     tangential_wind = np.where(
         k_nlev >= vertical_start,
@@ -115,6 +119,9 @@ def compute_derived_horizontal_winds_and_ke_and_contravariant_correction_numpy(
         )
 
     vn_on_half_levels[:, -1] = extrapolate_to_surface_numpy(wgtfacq_e, vn)
+
+    vn_on_half_levels[:horizontal_start, :] = initial_vn_on_half_levels[:horizontal_start, :]
+    vn_on_half_levels[horizontal_end:, :] = initial_vn_on_half_levels[horizontal_end:, :]
 
     return (
         tangential_wind,
@@ -239,6 +246,8 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
             nflatlev=nflatlev,
             nlevp1=vertical_end,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
             vertical_start=vertical_start,
         )
 
