@@ -44,7 +44,7 @@ requires-python = ">=3.10"
 version = "0.0.6"
 
 [project.scripts]
-icon4py_standalone_driver = "icon4py.model.standalone_driver.standalone_driver:main"
+run_driver = "icon4py.model.standalone_driver.run_driver:main"
 
 [project.urls]
 Homepage = "https://github.com/C2SM/icon4py"

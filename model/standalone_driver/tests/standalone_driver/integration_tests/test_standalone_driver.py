@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import pathlib
+import shutil
 
 import pytest
 
@@ -44,4 +45,4 @@ def test_standalone_driver(
         output_path=output_path,
     )
 
-    pathlib.Path(output_path).rmdir()
+    shutil.rmtree(pathlib.Path(output_path))

@@ -14,10 +14,9 @@ See the general instructions in the [README.md](../../README.md) in the base fol
 
 ## Usage
 
-
 ```bash
 export ICON4PY_ROOT=<path to the icon4py clone>
-run_driver configuration/ ICON4PY_ROOT/output --grid-file-path /scratch/mch/cong/grid-generator/grids/icon_grid_0013_R02B04_R.nc --icon4py-backend gtfn_cpu
+run_driver ICON4PY_ROOT/configuration_path/ ICON4PY_ROOT/output_path --grid-file-path /scratch/mch/cong/grid-generator/grids/icon_grid_0013_R02B04_R.nc --icon4py-backend gtfn_cpu
 ```
 
 #### Remarks

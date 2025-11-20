@@ -281,18 +281,10 @@ def test_get_mass_conserving_cell_average_weight(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.EXCLAIM_APE, 5e-9),
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-    ],
-)
 @pytest.mark.datatest
 def test_e_flx_avg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    rtol: float,
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_ref = interpolation_savepoint.e_flx_avg()

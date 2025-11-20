@@ -141,7 +141,7 @@ def read_config(
             _mch_ch_r04b09_nonhydro_config(),
         )
 
-    def _jablonowski_Williamson_config():
+    def _jablonowski_williamson_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
             end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
@@ -200,7 +200,7 @@ def read_config(
             vertical_grid_config,
             diffusion_config,
             nonhydro_config,
-        ) = _jablonowski_Williamson_config()
+        ) = _jablonowski_williamson_config()
     elif experiment_type == driver_init.ExperimentType.GAUSS3D:
         (
             model_run_config,

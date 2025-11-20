@@ -26,8 +26,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 MISSING: Final[int] = gridfile.GridFile.INVALID_INDEX
 
-MISSING: Final[int] = gridfile.GridFile.INVALID_INDEX
-
 
 def compute_c_lin_e(
     edge_cell_length: data_alloc.NDArray,
