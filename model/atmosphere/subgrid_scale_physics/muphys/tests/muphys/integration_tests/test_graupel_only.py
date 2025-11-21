@@ -17,6 +17,7 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_graupel_only
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.testing import data_handling, definitions as testing_defs
 from icon4py.model.testing.fixtures.datatest import backend_like
@@ -98,24 +99,32 @@ def test_graupel_only(
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
     )
 
+    q_in = graupel.Q(
+        v=inp.qv,
+        c=inp.qc,
+        r=inp.qr,
+        s=inp.qs,
+        i=inp.qi,
+        g=inp.qg,
+    )
+
+    q_out = graupel.Q(
+        v=out.qv,
+        c=out.qc,
+        r=out.qr,
+        s=out.qs,
+        i=out.qi,
+        g=out.qg,
+    )
+
     graupel_run_program(
         dz=inp.dz,
         te=inp.t,
         p=inp.p,
         rho=inp.rho,
-        qve=inp.qv,
-        qce=inp.qc,
-        qre=inp.qr,
-        qse=inp.qs,
-        qie=inp.qi,
-        qge=inp.qg,
+        q_in=q_in,
         t_out=out.t,
-        qv_out=out.qv,
-        qc_out=out.qc,
-        qr_out=out.qr,
-        qs_out=out.qs,
-        qi_out=out.qi,
-        qg_out=out.qg,
+        q_out=q_out,
         pflx=out.pflx,
         pr=out.pr,
         ps=out.ps,
