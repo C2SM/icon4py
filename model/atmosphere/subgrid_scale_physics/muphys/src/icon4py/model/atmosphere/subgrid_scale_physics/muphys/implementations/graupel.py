@@ -49,7 +49,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import Koff
 
 
-# @gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, 0.0, False))   <=== this should work now
 @gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, 0.0, False))
 def _precip(
     state: tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat, bool],
@@ -121,38 +120,6 @@ def _temperature_update(
 
 
 @gtx.field_operator
-def _graupel_mask(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    rho: fa.CellKField[ta.wpfloat],  # Density
-    qv: fa.CellKField[ta.wpfloat],  # Q vapor content
-    qc: fa.CellKField[ta.wpfloat],  # Q cloud content
-    qg: fa.CellKField[ta.wpfloat],  # Q graupel content
-    qi: fa.CellKField[ta.wpfloat],  # Q ice content
-    qr: fa.CellKField[ta.wpfloat],  # Q rain content
-    qs: fa.CellKField[ta.wpfloat],  # Q snow content
-) -> tuple[
-    fa.CellKField[bool],
-    fa.CellKField[bool],
-    fa.CellKField[bool],
-    fa.CellKField[bool],
-    fa.CellKField[bool],
-    fa.CellKField[bool],
-]:
-    mask = where(
-        (maximum(qc, maximum(qg, maximum(qi, maximum(qr, qs)))) > g_ct.qmin)
-        | ((t < g_ct.tfrz_het2) & (qv > _qsat_ice_rho(t, rho))),
-        True,
-        False,
-    )
-    is_sig_present = maximum(qg, maximum(qi, qs)) > g_ct.qmin
-    kmin_r = where(qr > g_ct.qmin, True, False)
-    kmin_i = where(qi > g_ct.qmin, True, False)
-    kmin_s = where(qs > g_ct.qmin, True, False)
-    kmin_g = where(qg > g_ct.qmin, True, False)
-    return mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g
-
-
-@gtx.field_operator
 def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
@@ -163,8 +130,6 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     qs: fa.CellKField[ta.wpfloat],  # Q snow content
     qi: fa.CellKField[ta.wpfloat],  # Q ice content
     qg: fa.CellKField[ta.wpfloat],  # Q graupel content
-    mask: fa.CellKField[bool],
-    is_sig_present: fa.CellKField[bool],
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
 ) -> tuple[
@@ -176,6 +141,14 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
+    mask = where(
+        (maximum(qc, maximum(qg, maximum(qi, maximum(qr, qs)))) > g_ct.qmin)
+        | ((t < g_ct.tfrz_het2) & (qv > _qsat_ice_rho(t, rho))),
+        True,
+        False,
+    )
+    is_sig_present = maximum(qg, maximum(qi, qs)) > g_ct.qmin
+
     dvsw = qv - _qsat_rho(t, rho)
     qvsi = _qsat_ice_rho(t, rho)
     dvsi = qv - qvsi
@@ -197,9 +170,9 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     t_below_tmelt = t < t_d.tmelt
     t_at_least_tmelt = not t_below_tmelt
 
-    n_ice = where(t_below_tmelt, _ice_number(t, rho), 0.0)
-    m_ice = where(t_below_tmelt, _ice_mass(qi, n_ice), 0.0)
-    x_ice = where(t_below_tmelt, _ice_sticking(t), 0.0)
+    n_ice = _ice_number(t, rho)
+    m_ice = _ice_mass(qi, n_ice)
+    x_ice = _ice_sticking(t)
 
     eta = where(t_below_tmelt & is_sig_present, _deposition_factor(t, qvsi), 0.0)
     sx2x_v_i = where(
@@ -464,12 +437,11 @@ def _graupel_run(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(
-        te, rho, qve, qce, qge, qie, qre, qse
-    )
-    qv, qc, qr, qs, qi, qg, t = _q_t_update(
-        te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc
-    )
+    kmin_r = where(qre > g_ct.qmin, True, False)
+    kmin_i = where(qie > g_ct.qmin, True, False)
+    kmin_s = where(qse > g_ct.qmin, True, False)
+    kmin_g = where(qge > g_ct.qmin, True, False)
+    qv, qc, qr, qs, qi, qg, t = _q_t_update(te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
         last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt
     )
@@ -511,7 +483,7 @@ def graupel_run(
     vertical_end: gtx.int32,
 ):
     _graupel_run(
-        last_lev,
+        last_lev,  # TODO vertivcal_end - 1
         dz,
         te,
         p,
