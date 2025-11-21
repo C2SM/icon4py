@@ -14,6 +14,7 @@ import time
 import gt4py.next as gtx
 import numpy as np
 
+from icon4py.model.common import model_options
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import device_utils
 
@@ -172,7 +173,8 @@ def write_fields(
 
 
 args = get_args()
-backend = model_backends.BACKENDS[args.backend]
+backend_like = model_backends.BACKENDS[args.backend]
+backend = model_options.customize_backend(None, backend_like)
 
 set_lib_path(args.ldir)
 sys.setrecursionlimit(10**4)
