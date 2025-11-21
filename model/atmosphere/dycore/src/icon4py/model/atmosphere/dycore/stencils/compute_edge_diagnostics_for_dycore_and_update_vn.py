@@ -9,9 +9,10 @@
 
 import gt4py.next as gtx
 from gt4py.eve import utils as eve_utils
-from gt4py.next import broadcast
+from gt4py.next import broadcast, GridType
 from gt4py.next.experimental import concat_where
 
+from icon4py.model.atmosphere.dycore.dycore_utils import _calculate_divdamp_fields
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
 )
@@ -270,7 +271,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     )
 
 
-@gtx.field_operator
+@gtx.field_operator(grid_type=GridType.UNSTRUCTURED)
 def _apply_divergence_damping_and_update_vn(
     horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.vpfloat],
     next_vn: fa.EdgeKField[ta.wpfloat],
@@ -280,8 +281,6 @@ def _apply_divergence_damping_and_update_vn(
     corrector_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[ta.vpfloat],
     normal_wind_iau_increment: fa.EdgeKField[ta.vpfloat],
-    reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[ta.wpfloat],
-    fourth_order_divdamp_scaling_coeff: fa.KField[ta.wpfloat],
     second_order_divdamp_scaling_coeff: ta.wpfloat,
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat],
@@ -298,7 +297,23 @@ def _apply_divergence_damping_and_update_vn(
     limited_area: bool,
     apply_2nd_order_divergence_damping: bool,
     apply_4th_order_divergence_damping: bool,
+    interpolated_fourth_order_divdamp_factor: fa.KField[ta.wpfloat],
+    divdamp_order: gtx.int32,
+    mean_cell_area: float,
+    second_order_divdamp_factor: float,
+    max_nudging_coefficient: float,
+    dbl_eps: float,
 ) -> fa.EdgeKField[ta.wpfloat]:
+
+    (fourth_order_divdamp_scaling_coeff, reduced_fourth_order_divdamp_coeff_at_nest_boundary) = \
+        _calculate_divdamp_fields(
+            interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+            divdamp_order=divdamp_order,
+            mean_cell_area=mean_cell_area,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            max_nudging_coefficient=max_nudging_coefficient,
+            dbl_eps=dbl_eps,
+        )
     # add dw/dz for divergence damping term. In ICON, this stencil starts from k = kstart_dd3d until k = nlev - 1.
     # Since scaling_factor_for_3d_divdamp is zero when k < kstart_dd3d, it is meaningless to execute computation
     # above level kstart_dd3d. But we have decided to remove this manual optimization in icon4py.
@@ -534,8 +549,6 @@ def apply_divergence_damping_and_update_vn(
     corrector_normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     normal_wind_tendency_due_to_slow_physics_process: fa.EdgeKField[ta.vpfloat],
     normal_wind_iau_increment: fa.EdgeKField[ta.vpfloat],
-    reduced_fourth_order_divdamp_coeff_at_nest_boundary: fa.KField[ta.wpfloat],
-    fourth_order_divdamp_scaling_coeff: fa.KField[ta.wpfloat],
     second_order_divdamp_scaling_coeff: ta.wpfloat,
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat],
@@ -552,6 +565,12 @@ def apply_divergence_damping_and_update_vn(
     limited_area: bool,
     apply_2nd_order_divergence_damping: bool,
     apply_4th_order_divergence_damping: bool,
+    interpolated_fourth_order_divdamp_factor: fa.KField[ta.wpfloat],
+    divdamp_order: gtx.int32,
+    mean_cell_area: float,
+    second_order_divdamp_factor: float,
+    max_nudging_coefficient: float,
+    dbl_eps: float,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -574,8 +593,6 @@ def apply_divergence_damping_and_update_vn(
         - corrector_normal_wind_advective_tendency: horizontal advection tendency of the normal wind at corrector step [m s-2]
         - normal_wind_tendency_due_to_slow_physics_process: normal wind tendeny due to slow physics [m s-2]
         - normal_wind_iau_increment: iau increment to normal wind (data assimilation) [m s-1]
-        - reduced_fourth_order_divdamp_coeff_at_nest_boundary: fourth order divergence damping coefficient at nest boundary [m2 s2]
-        - fourth_order_divdamp_scaling_coeff: fourth order divergence damping coefficient [m2 s2]
         - second_order_divdamp_scaling_coeff: second order divergence damping coefficient [m s]
         - theta_v_at_edges_on_model_levels: virtual potential temperature at edges on model levels [K]
         - horizontal_pressure_gradient: horizontal pressure gradient at edges on model levels [Pa m-1]
@@ -611,8 +628,6 @@ def apply_divergence_damping_and_update_vn(
         normal_wind_iau_increment=normal_wind_iau_increment,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         horizontal_pressure_gradient=horizontal_pressure_gradient,
-        reduced_fourth_order_divdamp_coeff_at_nest_boundary=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-        fourth_order_divdamp_scaling_coeff=fourth_order_divdamp_scaling_coeff,
         second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
         horizontal_mask_for_3d_divdamp=horizontal_mask_for_3d_divdamp,
         scaling_factor_for_3d_divdamp=scaling_factor_for_3d_divdamp,
@@ -627,6 +642,12 @@ def apply_divergence_damping_and_update_vn(
         limited_area=limited_area,
         apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
         apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        divdamp_order=divdamp_order,
+        mean_cell_area=mean_cell_area,
+        second_order_divdamp_factor=second_order_divdamp_factor,
+        max_nudging_coefficient=max_nudging_coefficient,
+        dbl_eps=dbl_eps,
         out=next_vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
