@@ -182,3 +182,28 @@ def test_distributed_interpolation_rbf(
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()
     assert_reordered(field, field_ref, atol=atol)
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "attrs_name, intrp_name", [(attrs.GEOFAC_GRDIV, "geofac_grdiv")]
+)
+def test_distributed_interpolation_non_halo(
+    backend: gtx_typing.Backend,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    grid_savepoint: sb.IconGridSavepoint,
+    experiment: test_defs.Experiment,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
+    attrs_name: str,
+    intrp_name: str,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    factory = interpolation_factory_from_savepoint
+    field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
+    field = factory.get(attrs_name).asnumpy()
+    assert_reordered(field, field_ref, rtol=5e-9)
