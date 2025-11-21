@@ -13,7 +13,7 @@ from icon4py.model.common import dimension as dims
 
 
 def enhanced_smagorinski_factor_numpy(
-    factor_in: np.ndarray, heigths_in: np.ndarray, a_vec: np.ndarray
+    factor_in: tuple[float, ...], heigths_in: tuple[float, ...], a_vec: np.ndarray
 ) -> float:
     alin = (factor_in[1] - factor_in[0]) / (heigths_in[1] - heigths_in[0])
     df32 = factor_in[2] - factor_in[1]

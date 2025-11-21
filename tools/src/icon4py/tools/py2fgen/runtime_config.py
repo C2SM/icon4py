@@ -6,7 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import collections
+import contextlib
 import os
+from types import TracebackType
 from typing import TypeVar
 
 from gt4py import eve
@@ -58,3 +61,41 @@ class Py2fgenLogLevels(eve.StrEnum):
 
 LOG_LEVEL: str = _env_to_strenum("PY2FGEN_LOG_LEVEL", Py2fgenLogLevels, Py2fgenLogLevels.INFO)
 """Set the log level for the PY2FGEN generated bindings."""
+
+
+def _split_and_strip(s: str | None, sep: str = ",") -> list[str]:
+    if not s:
+        return []
+    return [stripped_part for part in s.split(sep) if (stripped_part := part.strip())]
+
+
+EXTRA_CALLABLES: list[str] = _split_and_strip(os.environ.get("PY2FGEN_EXTRA_CALLABLES", ""))
+"""
+Extra Python callables to be loaded and executed when the PY2FGEN bindings are initialized.
+
+The Callables should be
+- of the form `Callable[[], None]`,
+- and specified as a comma-separated list of strings in the format ('my.path.to.module:object')
+which will be loaded with `pkgutil.resolve_name` and executed.
+"""
+
+# CUSTOMIZATION HOOKS
+
+
+class _NoopContextManager(contextlib.AbstractContextManager):
+    def __enter__(self) -> None:
+        pass
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
+    ) -> None:
+        pass
+
+
+HOOK_BINDINGS_FUNCTION: dict[str, contextlib.AbstractContextManager] = collections.defaultdict(
+    lambda: _NoopContextManager()
+)
+"""Hook to register a ContextManager per function that wraps the function. The default is a no-op."""

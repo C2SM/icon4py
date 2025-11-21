@@ -39,6 +39,7 @@ except ImportError:
 
 from icon4py.model.testing.fixtures import (
     backend,
+    cpu_allocator,
     data_provider,
     download_ser_data,
     experiment,
@@ -260,9 +261,8 @@ def test_grid_manager_eval_e2c2e(
     start_index = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    # e2c2e in ICON (quad_idx) has a different neighbor ordering than the e2c2e constructed in grid_manager.py
-    assert_up_to_order(e2c2e_table, serialized_e2c2e, start_index)
-    assert_up_to_order(e2c2eO_table, serialized_e2c2eO, start_index)
+    np.allclose(e2c2e_table[start_index:, :], serialized_e2c2e[start_index:, :])
+    np.allclose(e2c2eO_table[start_index:, :], serialized_e2c2eO[start_index:, :])
 
 
 @pytest.mark.datatest
@@ -325,13 +325,15 @@ def assert_up_to_order(
 
 
 @pytest.mark.with_netcdf
-def test_gridmanager_given_file_not_found_then_abort() -> None:
+def test_gridmanager_given_file_not_found_then_abort(
+    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+) -> None:
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:
         manager = gm.GridManager(
             gm.NoTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
         )
-        manager(backend=None, keep_skip_values=True)
+        manager(allocator=cpu_allocator, keep_skip_values=True)
         assert error.value == 1
 
 
