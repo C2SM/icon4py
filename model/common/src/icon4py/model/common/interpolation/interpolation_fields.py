@@ -268,6 +268,12 @@ def compute_geofac_grg(
     # halo_exchange(dims.CellDim, wrap_in_field_2)
     # primal_normal_ec_v = wrap_in_field_2.ndarray
 
+    # wrap_in_field_1 = gtx.as_field(
+    #     (dims.CellDim, dims.C2EDim), data=geofac_div, dtype=geofac_div.dtype
+    # )
+    # halo_exchange(dims.CellDim, wrap_in_field_1)
+    # geofac_div = wrap_in_field_1.ndarray
+
     geofac_grg_x, geofac_grg_y = _compute_geofac_grg(
         primal_normal_ec_u,
         primal_normal_ec_v,

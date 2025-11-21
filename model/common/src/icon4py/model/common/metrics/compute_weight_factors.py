@@ -124,6 +124,7 @@ def compute_wgtfacq_e_dsl(
     wgtfacq_c_dsl: data_alloc.NDArray,
     n_edges: int,
     nlev: int,
+    halo_exchange,
     array_ns: ModuleType = np,
 ):
     """
@@ -150,9 +151,20 @@ def compute_wgtfacq_e_dsl(
     z_aux_c[:, 5] = z1 * z2 / (z2 - z3) / (z1 - z3)
     z_aux_c[:, 4] = (z1 - z_aux_c[:, 5] * (z1 - z3)) / (z1 - z2)
     z_aux_c[:, 3] = 1.0 - (z_aux_c[:, 4] + z_aux_c[:, 5])
+    wrap_in_field_c = gtx.as_field(
+        (dims.CellDim, dims.KDim), data=z_aux_c, dtype=z_aux_c.dtype
+    )
+    halo_exchange(dims.CellDim, wrap_in_field_c)
+    z_aux_c = wrap_in_field_c.ndarray
+
 
     c_lin_e = c_lin_e[:, :, array_ns.newaxis]
     z_aux_e = array_ns.sum(c_lin_e * z_aux_c[e2c], axis=1)
+    wrap_in_field_e = gtx.as_field(
+        (dims.EdgeDim, dims.KDim), data=z_aux_e, dtype=z_aux_e.dtype
+    )
+    halo_exchange(dims.EdgeDim, wrap_in_field_e)
+    z_aux_e = wrap_in_field_e.ndarray
 
     wgtfacq_e_dsl[:, nlev] = z_aux_e[:, 0]
     wgtfacq_e_dsl[:, nlev - 1] = z_aux_e[:, 1]

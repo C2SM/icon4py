@@ -12,12 +12,15 @@ import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+from icon4py.model.common.dimension import EdgeDim
+
 
 def compute_coeff_gradekin(
     edge_cell_length: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
+    halo_exchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -31,12 +34,16 @@ def compute_coeff_gradekin(
     """
     coeff_gradekin_0 = array_ns.zeros_like(inv_dual_edge_length)
     coeff_gradekin_1 = array_ns.zeros_like(inv_dual_edge_length)
-    for e in range(horizontal_start, horizontal_end):
-        coeff_gradekin_0[e] = (
-            edge_cell_length[e, 1] / edge_cell_length[e, 0] * inv_dual_edge_length[e]
-        )
-        coeff_gradekin_1[e] = (
-            edge_cell_length[e, 0] / edge_cell_length[e, 1] * inv_dual_edge_length[e]
-        )
+    wrap_in_field_inv_dual = gtx.as_field(
+        (EdgeDim,), data=inv_dual_edge_length, dtype=inv_dual_edge_length.dtype
+    )
+    halo_exchange(EdgeDim, wrap_in_field_inv_dual)
+    inv_dual_edge_length = wrap_in_field_inv_dual.ndarray
+    coeff_gradekin_0[horizontal_start:] = (
+        edge_cell_length[horizontal_start:, 1] / edge_cell_length[horizontal_start:, 0] * inv_dual_edge_length[horizontal_start:]
+    )
+    coeff_gradekin_1[horizontal_start:] = (
+        edge_cell_length[horizontal_start:, 0] / edge_cell_length[horizontal_start:, 1] * inv_dual_edge_length[horizontal_start:]
+    )
     coeff_gradekin_full = array_ns.column_stack((coeff_gradekin_0, coeff_gradekin_1))
     return coeff_gradekin_full
