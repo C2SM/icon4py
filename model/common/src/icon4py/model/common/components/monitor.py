@@ -8,7 +8,7 @@
 
 import abc
 import datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class Monitor(Protocol):
@@ -21,11 +21,13 @@ class Monitor(Protocol):
     Named after Sympl Monitor component: https://sympl.readthedocs.io/en/latest/monitors.html
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"instance of {self.__class__}(Monitor)"
 
     @abc.abstractmethod
-    def store(self, state: dict, model_time: datetime.datetime, *args, **kwargs) -> None:
+    def store(
+        self, state: dict, model_time: datetime.datetime, *args: Any, **kwargs: dict[str, Any]
+    ) -> None:
         """Store state and perform class specific actions on it.
 
         Args:

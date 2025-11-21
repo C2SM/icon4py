@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
@@ -48,9 +48,9 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-):
+) -> None:
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
-        experiment.grid, 1, True, backend
+        experiment.grid, 1, True, model_backends.get_allocator(backend)
     )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
@@ -80,9 +80,9 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-):
+) -> None:
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
-        experiment.grid, 1, True, backend
+        experiment.grid, 1, True, model_backends.get_allocator(backend)
     )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_edges(grid)
@@ -110,9 +110,9 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-):
+) -> None:
     grid_manager = gridtest_utils.get_grid_manager_from_identifier(
-        experiment.grid, 1, True, backend
+        experiment.grid, 1, True, model_backends.get_allocator(backend)
     )
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid)
@@ -153,7 +153,7 @@ def test_rbf_interpolation_coeffs_cell(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
-):
+) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.CELL
@@ -163,7 +163,7 @@ def test_rbf_interpolation_coeffs_cell(
     )
     assert horizontal_start < grid.num_cells
 
-    rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_coeffs_cell(
+    rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_coeffs_cell(  # type: ignore[misc] # function returns two vars
         geometry.get(geometry_attrs.CELL_LAT).ndarray,
         geometry.get(geometry_attrs.CELL_LON).ndarray,
         geometry.get(geometry_attrs.CELL_CENTER_X).ndarray,
@@ -222,7 +222,7 @@ def test_rbf_interpolation_coeffs_vertex(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
-):
+) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.VERTEX
@@ -291,7 +291,7 @@ def test_rbf_interpolation_coeffs_edge(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     atol: float,
-):
+) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
     rbf_dim = rbf.RBFDimension.EDGE
