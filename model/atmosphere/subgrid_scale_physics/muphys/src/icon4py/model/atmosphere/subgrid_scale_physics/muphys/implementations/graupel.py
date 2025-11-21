@@ -60,9 +60,16 @@ class Q(NamedTuple):
     g: fa.CellKField[ta.wpfloat]  # Specific graupel water content
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, 0.0, False))
+class PrecipState(NamedTuple):
+    q_update: ta.wpfloat
+    flx: ta.wpfloat
+    vt: ta.wpfloat
+    is_level_activated: bool
+
+
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=PrecipState(0.0, 0.0, 0.0, False))
 def _precip(
-    state: tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat, bool],
+    state: PrecipState,
     prefactor: ta.wpfloat,  # param[0] of fall_speed
     exponent: ta.wpfloat,  # param[1] of fall_speed
     offset: ta.wpfloat,  # param[1] of fall_speed
@@ -72,16 +79,15 @@ def _precip(
     q_kp1: ta.wpfloat,  # specific mass in next lower cell
     rho: ta.wpfloat,  # density
     mask: bool,  # k-level located in cloud
-) -> tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat, bool]:  # updates
-    _, flx, vt, is_level_activated = state
-    is_level_activated = is_level_activated | mask
+) -> PrecipState:
+    is_level_activated = state.is_level_activated | mask
     rho_x = q * rho
-    flx_eff = (rho_x / zeta) + 2.0 * flx
+    flx_eff = (rho_x / zeta) + 2.0 * state.flx
     #   Inlined calculation using _fall_speed_scalar
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
     if is_level_activated:
-        update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
-        update1 = (update0 * rho * vt + flx_partial) * 0.5  # flux
+        update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * state.vt) * rho)  # q update
+        update1 = (update0 * rho * state.vt + flx_partial) * 0.5  # flux
         rho_x = (update0 + q_kp1) * 0.5 * rho
         # Inlined calculation using _fall_speed_scalar
         update2 = vc * prefactor * power((rho_x + offset), exponent)  # vt
@@ -89,7 +95,9 @@ def _precip(
         update0 = q
         update1 = 0.0
         update2 = 0.0
-    return update0, update1, update2, is_level_activated
+    return PrecipState(
+        q_update=update0, flx=update1, vt=update2, is_level_activated=is_level_activated
+    )
 
 
 @gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, False))
