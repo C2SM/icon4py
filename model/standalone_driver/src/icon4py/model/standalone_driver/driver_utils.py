@@ -42,6 +42,7 @@ _LOGGING_LEVELS: dict[str, int] = {
     "critical": logging.CRITICAL,
 }
 
+
 def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
@@ -58,6 +59,7 @@ def create_grid_manager(
     grid_manager(allocator=allocator, keep_skip_values=False)
 
     return grid_manager
+
 
 def create_decomposition_info(
     grid_manager: gm.GridManager,

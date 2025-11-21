@@ -130,12 +130,10 @@ def zonalwind_2_normalwind_ndarray(
     Returns: normal wind
     """
     # TODO(OngChia): this function needs a test
-    ub = grid.end_index(
-        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
+    ub = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     mask = array_ns.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
-        0 : ub,
+        0:ub,
         :,
     ] = False
     edge_lat = array_ns.repeat(array_ns.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)

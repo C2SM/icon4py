@@ -23,13 +23,13 @@ import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.constants import PhysicsConstants
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid
 from icon4py.model.common.initialization import jablonowski_williamson_topography
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import driver_states, driver_utils
-from icon4py.model.common.constants import PhysicsConstants
 
 
 log = logging.getLogger(__name__)
@@ -306,7 +306,9 @@ class Icon4pyDriver:
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self._ndyn_substeps_var:3d}"
             )
 
-    def _compute_mean_at_final_time_step(self, prognostic_states: prognostics.PrognosticState) -> None:
+    def _compute_mean_at_final_time_step(
+        self, prognostic_states: prognostics.PrognosticState
+    ) -> None:
         if self.config.enable_statistics_output:
             rho_ndarray = prognostic_states.rho.ndarray
             vn_ndarray = prognostic_states.vn.ndarray
