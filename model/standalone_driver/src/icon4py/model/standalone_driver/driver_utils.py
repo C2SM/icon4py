@@ -42,15 +42,11 @@ _LOGGING_LEVELS: dict[str, int] = {
     "critical": logging.CRITICAL,
 }
 
-
-def create_grid_manager_and_decomp_info(
+def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     backend: gtx_typing.Backend,
-) -> tuple[
-    gm.GridManager,
-    decomposition_defs.DecompositionInfo,
-]:
+) -> gm.GridManager:
     grid_manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(),
         grid_file_path,
@@ -58,11 +54,18 @@ def create_grid_manager_and_decomp_info(
     )
 
     allocator = model_backends.get_allocator(backend)
-    xp = data_alloc.import_array_ns(allocator)
 
     grid_manager(allocator=allocator, keep_skip_values=False)
 
+    return grid_manager
+
+def create_decomposition_info(
+    grid_manager: gm.GridManager,
+    backend: gtx_typing.Backend,
+) -> decomposition_defs.DecompositionInfo:
     decomposition_info = decomposition_defs.DecompositionInfo()
+    allocator = model_backends.get_allocator(backend)
+    xp = data_alloc.import_array_ns(allocator)
 
     def _add_dimension(dim: gtx.Dimension) -> None:
         indices = data_alloc.index_field(grid_manager.grid, dim, allocator=allocator)
@@ -73,7 +76,7 @@ def create_grid_manager_and_decomp_info(
     _add_dimension(dims.VertexDim)
     _add_dimension(dims.CellDim)
 
-    return grid_manager, decomposition_info
+    return decomposition_info
 
 
 def create_vertical_grid(
@@ -144,7 +147,7 @@ def initialize_granule(
     diffusion_config: diffusion.DiffusionConfig,
     solve_nh_config: solve_nh.NonHydrostaticConfig,
     static_field_factories: driver_states.StaticFieldFactories,
-    backend: gtx_typing.Backend,
+    backend: gtx_typing.Backend | None,
 ) -> tuple[
     diffusion.Diffusion,
     solve_nh.SolveNonhydro,

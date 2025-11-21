@@ -11,6 +11,7 @@ import datetime
 import logging
 import pathlib
 import statistics
+import time
 from collections.abc import Callable
 
 import gt4py.next as gtx
@@ -28,6 +29,7 @@ from icon4py.model.common.initialization import jablonowski_williamson_topograph
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import driver_states, driver_utils
+from icon4py.model.common.constants import PhysicsConstants
 
 
 log = logging.getLogger(__name__)
@@ -96,6 +98,17 @@ class Icon4pyDriver:
         self._filter_log()
         self._display_setup_in_log_file()
 
+    def _format_physics_constants(self) -> str:
+        consts = PhysicsConstants()
+        lines = ["==== Physical Constants ===="]
+        for name, value in consts.__class__.__dict__.items():
+            if name.startswith("_"):
+                continue
+            if callable(value):
+                continue
+            lines.append(f"{name:30s}: {value}")
+        return "\n".join(lines)
+
     def _display_setup_in_log_file(self) -> None:
         """
         Print out icon4py signature and some important information of the initial setup to the log file.
@@ -154,13 +167,27 @@ class Icon4pyDriver:
         icon4py_signature += boundary_line
         icon4py_signature = "\n".join(icon4py_signature)
         self._log.info(f"{icon4py_signature}")
+
+        self._log.info("===== ICON4Py Driver Configuration =====")
+        self._log.info(f"Experiment name        : {self.config.experiment_name}")
+        self._log.info(f"Time step (dtime)      : {self.config.dtime.total_seconds()} s")
+        self._log.info(f"Number of timesteps    : {self.n_time_steps}")
+        self._log.info(f"Initial ndyn_substeps  : {self.config.ndyn_substeps}")
+        self._log.info(f"Vertical CFL threshold : {self.config.vertical_cfl_threshold}")
+        self._log.info(f"Second-order divdamp   : {self.config.apply_extra_second_order_divdamp}")
+        self._log.info(f"Statistics enabled     : {self.config.enable_statistics_output}")
+        self._log.info("")
+
+        self._log.info("==== Vertical Grid Parameters ====")
         self._log.info(self.solve_nonhydro._vertical_params)
+        self._log.info(self._format_physics_constants())
 
     def _filter_log(self) -> None:
         """
         Create a log file and two log formats for debug and other logging levels. When debug level is used for
         a message, an ascii time stamp and the function name are appended to the beginning of the message.
         """
+        logging.Formatter.converter = time.localtime
         file_handler = logging.FileHandler(
             filename=self.config.output_path.joinpath(
                 f"log_driver_statistics_for_{self.config.experiment_name}"
@@ -194,7 +221,7 @@ class Icon4pyDriver:
 
         self._is_first_step_in_simulation: bool = True
 
-        self._cfl_watch_mode = False
+        self._cfl_watch_mode: bool = False
 
     def _validate_config(self) -> None:
         if self._n_time_steps < 0:
@@ -279,7 +306,7 @@ class Icon4pyDriver:
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self._ndyn_substeps_var:3d}"
             )
 
-    def _compute_mean_at_final_time_step(self, prognostic_states: prognostics.PrognosticState):
+    def _compute_mean_at_final_time_step(self, prognostic_states: prognostics.PrognosticState) -> None:
         if self.config.enable_statistics_output:
             rho_ndarray = prognostic_states.rho.ndarray
             vn_ndarray = prognostic_states.vn.ndarray
@@ -302,7 +329,7 @@ class Icon4pyDriver:
                     f"{self._xp.mean(exner_ndarray[:, k]):.5e} "
                 )
 
-    def _show_timer_report(self, timer: Timer, timer_title: str):
+    def _show_timer_report(self, timer: Timer, timer_title: str) -> None:
         timer_summary = timer.summary(False)
         self._log.info(
             f"{timer_title} timer summary: "
@@ -677,9 +704,14 @@ def initialize_driver(
     )
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
-    (grid_manager, decomposition_info) = driver_utils.create_grid_manager_and_decomp_info(
+    grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
+        backend=backend,
+    )
+
+    decomposition_info = driver_utils.create_decomposition_info(
+        grid_manager=grid_manager,
         backend=backend,
     )
 

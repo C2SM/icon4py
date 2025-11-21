@@ -92,37 +92,41 @@ class DiffusionInterpolationState:
 def initialize_diffusion_diagnostic_state(
     grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None
 ) -> DiffusionDiagnosticState:
+    hdef_ic = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=backend,
+        dtype=ta.vpfloat,
+    )
+    div_ic = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=backend,
+        dtype=ta.vpfloat,
+    )
+    dwdx = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=backend,
+        dtype=ta.vpfloat,
+    )
+    dwdy = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=backend,
+        dtype=ta.vpfloat,
+    )
     return DiffusionDiagnosticState(
-        hdef_ic=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            extend={dims.KDim: 1},
-            allocator=backend,
-            dtype=ta.vpfloat,
-        ),
-        div_ic=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            extend={dims.KDim: 1},
-            allocator=backend,
-            dtype=ta.vpfloat,
-        ),
-        dwdx=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            extend={dims.KDim: 1},
-            allocator=backend,
-            dtype=ta.vpfloat,
-        ),
-        dwdy=data_alloc.zero_field(
-            grid,
-            dims.CellDim,
-            dims.KDim,
-            extend={dims.KDim: 1},
-            allocator=backend,
-            dtype=ta.vpfloat,
-        ),
+        hdef_ic=hdef_ic,
+        div_ic=div_ic,
+        dwdx=dwdx,
+        dwdy=dwdy,
     )

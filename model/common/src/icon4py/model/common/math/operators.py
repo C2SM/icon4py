@@ -47,7 +47,4 @@ def _minus_operation_on_cell_k(
     field_a: fa.CellKField[ta.wpfloat],
     field_b: fa.CellKField[ta.vpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
-    """
-    field_a - field_b
-    """
     return field_a - astype(field_b, wpfloat)

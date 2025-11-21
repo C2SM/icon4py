@@ -188,48 +188,49 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
             phy_const.P0REF * exner_ndarray[:, k_index] ** phy_const.CPD_O_RD
         )
         temperature_ndarray[:, k_index] = temperature_jw
-    log.info("Newton iteration completed!")
+    log.info("Newton iteration completed.")
 
     eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=backend)
     eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
-        eta_v,
-        cell_2_edge_coeff,
-        eta_v_e,
-        end_edge_lateral_boundary_level_2,
-        end_edge_end,
-        0,
-        num_levels,
+        in_field=eta_v,
+        coeff=cell_2_edge_coeff,
+        out_field=eta_v_e,
+        horizontal_start=end_edge_lateral_boundary_level_2,
+        horizontal_end=end_edge_end,
+        vertical_start=0,
+        vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
     vn_ndarray = functools.partial(testcases_utils.zonalwind_2_normalwind_ndarray, array_ns=xp)(
-        grid,
-        jw_u0,
-        jw_up,
-        lat_perturbation_center,
-        lon_perturbation_center,
-        edge_lat,
-        edge_lon,
-        primal_normal_x,
-        eta_v_e.ndarray,
+        grid=grid,
+        jw_u0=jw_u0,
+        jw_up=jw_up,
+        lat_perturbation_center=lat_perturbation_center,
+        lon_perturbation_center=lon_perturbation_center,
+        edge_lat=edge_lat,
+        edge_lon=edge_lon,
+        primal_normal_x=primal_normal_x,
+        eta_v_e=eta_v_e.ndarray,
     )
+
     log.info("U2vn computation completed.")
 
     rho_ndarray, exner_ndarray, theta_v_ndarray = functools.partial(
         testcases_utils.hydrostatic_adjustment_ndarray, array_ns=xp
     )(
-        wgtfac_c,
-        ddqz_z_half,
-        exner_ref_mc,
-        d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
-        rho_ndarray,
-        exner_ndarray,
-        theta_v_ndarray,
-        num_levels,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        rho=rho_ndarray,
+        exner=exner_ndarray,
+        theta_v=theta_v_ndarray,
+        num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
 
@@ -238,29 +239,29 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
 
     (prognostics_states, diagnostic_state) = (
         testcases_utils.create_gt4py_field_for_prognostic_and_diagnostic_variables(
-            vn_ndarray,
-            w_ndarray,
-            exner_ndarray,
-            rho_ndarray,
-            theta_v_ndarray,
-            temperature_ndarray,
-            pressure_ndarray,
-            pressure_ifc_ndarray,
+            vn_ndarray=vn_ndarray,
+            w_ndarray=w_ndarray,
+            exner_ndarray=exner_ndarray,
+            rho_ndarray=rho_ndarray,
+            theta_v_ndarray=theta_v_ndarray,
+            temperature_ndarray=temperature_ndarray,
+            pressure_ndarray=pressure_ndarray,
+            pressure_ifc_ndarray=pressure_ifc_ndarray,
             grid=grid,
             backend=backend,
         )
     )
 
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
-        prognostics_states.current.vn,
-        rbf_vec_coeff_c1,
-        rbf_vec_coeff_c2,
-        diagnostic_state.u,
-        diagnostic_state.v,
-        end_cell_lateral_boundary_level_2,
-        end_cell_end,
-        0,
-        num_levels,
+        p_e_in=prognostics_states.current.vn,
+        ptr_coeff_1=rbf_vec_coeff_c1,
+        ptr_coeff_2=rbf_vec_coeff_c2,
+        p_u_out=diagnostic_state.u,
+        p_v_out=diagnostic_state.v,
+        horizontal_start=end_cell_lateral_boundary_level_2,
+        horizontal_end=end_cell_end,
+        vertical_start=0,
+        vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
 
