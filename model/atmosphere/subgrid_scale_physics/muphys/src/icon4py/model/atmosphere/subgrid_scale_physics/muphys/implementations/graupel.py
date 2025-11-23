@@ -119,9 +119,15 @@ def _precip(
     )
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, False))
+class TempState(NamedTuple):
+    t: ta.wpfloat
+    eflx: ta.wpfloat
+    is_level_activated: bool
+
+
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=TempState(0.0, 0.0, False))
 def _temperature_update(
-    state: tuple[ta.wpfloat, ta.wpfloat, bool],
+    state: TempState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
     ei_old: ta.wpfloat,
@@ -134,11 +140,10 @@ def _temperature_update(
     dz: ta.wpfloat,
     dt: ta.wpfloat,
     mask: bool,
-) -> tuple[ta.wpfloat, ta.wpfloat, bool]:
-    _, eflx, is_level_activated = state
-    is_level_activated = is_level_activated | mask
+) -> TempState:
+    is_level_activated = state.is_level_activated | mask
     if is_level_activated:
-        e_int = ei_old + eflx
+        e_int = ei_old + state.eflx
 
         eflx = dt * (
             pr * (t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc)
@@ -153,8 +158,10 @@ def _temperature_update(
             (t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
         )  # Moist isometric specific heat
         t = (e_int + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
+    else:
+        eflx = state.eflx
 
-    return t, eflx, is_level_activated
+    return TempState(t, eflx, is_level_activated)
 
 
 @gtx.field_operator
