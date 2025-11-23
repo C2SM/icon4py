@@ -63,11 +63,22 @@ class Q(NamedTuple):
 class PrecipState(NamedTuple):
     q_update: ta.wpfloat
     flx: ta.wpfloat
-    vt: ta.wpfloat
+    rho_prev: ta.wpfloat
+    vc_prev: ta.wpfloat
     is_level_activated: bool
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=PrecipState(0.0, 0.0, 0.0, False))
+@gtx.scan_operator(
+    axis=dims.KDim,
+    forward=True,
+    init=PrecipState(
+        q_update=0.0,
+        flx=0.0,
+        rho_prev=0.0,
+        vc_prev=0.0,
+        is_level_activated=False,
+    ),
+)
 def _precip(
     state: PrecipState,
     prefactor: ta.wpfloat,  # param[0] of fall_speed
@@ -76,27 +87,35 @@ def _precip(
     zeta: ta.wpfloat,  # dt/(2dz)
     vc: ta.wpfloat,  # state dependent fall speed correction
     q: ta.wpfloat,  # specific mass of hydrometeor
-    q_kp1: ta.wpfloat,  # specific mass in next lower cell
     rho: ta.wpfloat,  # density
-    mask: bool,  # k-level located in cloud
+    mask: bool,
 ) -> PrecipState:
     is_level_activated = state.is_level_activated | mask
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0 * state.flx
     #   Inlined calculation using _fall_speed_scalar
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
-    if is_level_activated:
-        update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * state.vt) * rho)  # q update
-        update1 = (update0 * rho * state.vt + flx_partial) * 0.5  # flux
-        rho_x = (update0 + q_kp1) * 0.5 * rho
-        # Inlined calculation using _fall_speed_scalar
-        update2 = vc * prefactor * power((rho_x + offset), exponent)  # vt
+
+    rhox_prev = (state.q_update + q) * 0.5 * state.rho_prev
+
+    if state.is_level_activated:
+        # this looks weird because we are setting vt based on previous level being active. bug?
+        vt = state.vc_prev * prefactor * power((rhox_prev + offset), exponent)
     else:
-        update0 = q
-        update1 = 0.0
-        update2 = 0.0
+        vt = 0.0
+
+    if is_level_activated:
+        next_q_update = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
+        next_flx = (next_q_update * rho * vt + flx_partial) * 0.5  # flux
+    else:
+        next_q_update = q
+        next_flx = 0.0
     return PrecipState(
-        q_update=update0, flx=update1, vt=update2, is_level_activated=is_level_activated
+        q_update=next_q_update,
+        flx=next_flx,
+        rho_prev=rho,
+        vc_prev=vc,
+        is_level_activated=is_level_activated,
     )
 
 
@@ -383,21 +402,17 @@ def _precipitation_effects(
     vc_i = _vel_scale_factor_ice(xrho)
     vc_g = _vel_scale_factor_default(xrho)
 
-    q_kp1 = concat_where(dims.KDim < last_lev, q_in.r(Koff[1]), q_in.r)
-    qr, pr, _, _ = _precip(
-        idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, q_in.r, q_kp1, rho, kmin_r
+    qr, pr, _, _, _ = _precip(
+        idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, q_in.r, rho, kmin_r
     )
-    q_kp1 = concat_where(dims.KDim < last_lev, q_in.s(Koff[1]), q_in.s)
-    qs, ps, _, _ = _precip(
-        idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, q_in.s, q_kp1, rho, kmin_s
+    qs, ps, _, _, _ = _precip(
+        idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, q_in.s, rho, kmin_s
     )
-    q_kp1 = concat_where(dims.KDim < last_lev, q_in.i(Koff[1]), q_in.i)
-    qi, pi, _, _ = _precip(
-        idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, q_in.i, q_kp1, rho, kmin_i
+    qi, pi, _, _, _ = _precip(
+        idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, q_in.i, rho, kmin_i
     )
-    q_kp1 = concat_where(dims.KDim < last_lev, q_in.g(Koff[1]), q_in.g)
-    qg, pg, _, _ = _precip(
-        idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, q_in.g, q_kp1, rho, kmin_g
+    qg, pg, _, _, _ = _precip(
+        idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, q_in.g, rho, kmin_g
     )
 
     qliq = q_in.c + qr
