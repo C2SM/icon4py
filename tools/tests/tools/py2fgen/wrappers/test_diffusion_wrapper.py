@@ -12,7 +12,11 @@ import cffi
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
+from icon4py.model.atmosphere.diffusion import (
+    config as diffusion_config,
+    diffusion,
+    diffusion_states,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.testing import definitions, test_utils as testing_test_utils
@@ -35,7 +39,6 @@ from .test_grid_init import grid_init
         ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_granule_inputs(
     savepoint_diffusion_init,
@@ -50,10 +53,9 @@ def test_diffusion_wrapper_granule_inputs(
     model_top_height,
     stretch_factor,
     damping_height,
-    ndyn_substeps,
 ):
     # --- Define Diffusion Configuration ---
-    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
+    diffusion_type = diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
@@ -67,8 +69,9 @@ def test_diffusion_wrapper_granule_inputs(
     thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
     max_nudging_coefficient = 0.375
+    ndyn_substeps = 2
     itype_sher = (
-        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
+        diffusion_config.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
 
     # --- Extract Metric State Parameters ---
@@ -159,7 +162,7 @@ def test_diffusion_wrapper_granule_inputs(
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
     )
-    expected_config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
+    expected_config = definitions.construct_diffusion_config(experiment)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Mock and Test Diffusion.init ---
@@ -293,7 +296,6 @@ def test_diffusion_wrapper_granule_inputs(
         ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
 @pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
 def test_diffusion_wrapper_single_step(
     savepoint_diffusion_init,
@@ -312,7 +314,7 @@ def test_diffusion_wrapper_single_step(
     step_date_exit,
 ):
     # Hardcoded DiffusionConfig parameters
-    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
+    diffusion_type = diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
@@ -327,7 +329,7 @@ def test_diffusion_wrapper_single_step(
     denom_diffu_v = 150.0
     max_nudging_coefficient = 0.375
     itype_sher = (
-        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
+        diffusion_config.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     )
 
     # Metric state parameters

@@ -46,7 +46,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-rayleigh_damping_options: Final = constants.RayleighType()
+rayleigh_damping_options: Final = constants.RayleighType.namespace()
 
 
 # TODO(nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc

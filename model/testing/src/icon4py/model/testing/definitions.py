@@ -12,14 +12,12 @@ import dataclasses
 import enum
 import pathlib
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Final, Literal
+from typing import Final, Literal
 
+import icon4py.model.atmosphere.diffusion.config as diffusion_config
+import icon4py.model.atmosphere.dycore.config as dycore_config
+from icon4py.model.common import exceptions
 from icon4py.model.testing import config
-
-
-if TYPE_CHECKING:
-    from icon4py.model.atmosphere.diffusion import diffusion
-    from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 
 
 DEFAULT_TEST_DATA_FOLDER: Final = "testdata"
@@ -42,6 +40,10 @@ def serialized_data_path() -> pathlib.Path:
 
 def grids_path() -> pathlib.Path:
     return get_test_data_root_path().joinpath("grids")
+
+
+def config_reference_path() -> pathlib.Path:
+    return pathlib.Path(__file__).parent.joinpath("datatests/configs")
 
 
 class GridKind(enum.Enum):
@@ -192,64 +194,27 @@ class Experiments:
 
 
 # TODO(havogt): the following configs should be part of the serialized experiment
-def construct_diffusion_config(
-    experiment: Experiment, ndyn_substeps: int = 5
-) -> diffusion.DiffusionConfig:
-    from icon4py.model.atmosphere.diffusion import diffusion
-
-    if experiment == Experiments.MCH_CH_R04B09:
-        return diffusion.DiffusionConfig(
-            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
-            type_t_diffu=2,
-            type_vn_diffu=1,
-            hdiff_efdt_ratio=24.0,
-            hdiff_w_efdt_ratio=15.0,
-            smagorinski_scaling_factor=0.025,
-            zdiffu_t=True,
-            thslp_zdiffu=0.02,
-            thhgtd_zdiffu=125.0,
-            velocity_boundary_diffusion_denom=150.0,
-            max_nudging_coefficient=0.375,
-            n_substeps=ndyn_substeps,
-            shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
-        )
-    elif experiment == Experiments.EXCLAIM_APE:
-        return diffusion.DiffusionConfig(
-            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
-            zdiffu_t=False,
-            type_t_diffu=2,
-            type_vn_diffu=1,
-            hdiff_efdt_ratio=24.0,
-            smagorinski_scaling_factor=0.025,
-            hdiff_temp=True,
-            n_substeps=ndyn_substeps,
-        )
-    else:
+def construct_diffusion_config(experiment: Experiment) -> diffusion_config.DiffusionConfig:
+    config = diffusion_config.init_config()
+    experiment_config_file = config_reference_path().joinpath(f"diffusion_{experiment.name}.yaml")
+    try:
+        config.update(experiment_config_file)
+        return config.get()
+    except exceptions.InvalidConfigError as e:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."
-        )
+        ) from e
 
 
-def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydrostaticConfig:
-    from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-
-    if experiment == Experiments.MCH_CH_R04B09:
-        return solve_nh.NonHydrostaticConfig(
-            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
-            iau_wgt_dyn=1.0,
-            fourth_order_divdamp_factor=0.004,
-            max_nudging_coefficient=0.375,
-        )
-    elif experiment == Experiments.EXCLAIM_APE:
-        return solve_nh.NonHydrostaticConfig(
-            rayleigh_coeff=0.1,
-            divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
-        )
-    else:
+def construct_nonhydrostatic_config(
+    experiment: Experiment,
+) -> dycore_config.NonHydrostaticConfig:
+    config = dycore_config.init_config()
+    experiment_config_file = config_reference_path().joinpath(f"dycore_{experiment.name}.yaml")
+    try:
+        config.update(experiment_config_file)
+        return config.get()
+    except exceptions.InvalidConfigError as e:
         raise NotImplementedError(
             f"NonHydrostaticConfig for experiment {experiment.name} not implemented."
-        )
+        ) from e

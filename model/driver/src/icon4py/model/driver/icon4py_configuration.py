@@ -12,8 +12,9 @@ import logging
 
 from gt4py.next import metrics as gtx_metrics
 
-from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+import icon4py.model.atmosphere.dycore.config as dycore_config
+from icon4py.model.atmosphere.diffusion import config as diffusion_config, diffusion
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.driver import initialization_utils as driver_init
@@ -53,8 +54,8 @@ class Icon4pyRunConfig:
 class Icon4pyConfig:
     run_config: Icon4pyRunConfig
     vertical_grid_config: v_grid.VerticalGridConfig
-    diffusion_config: diffusion.DiffusionConfig
-    solve_nonhydro_config: solve_nh.NonHydrostaticConfig
+    diffusion_config: diffusion_config.DiffusionConfig
+    solve_nonhydro_config: dycore_config.NonHydrostaticConfig
 
 
 def read_config(
@@ -71,8 +72,8 @@ def read_config(
         )
 
     def _mch_ch_r04b09_diffusion_config():
-        return diffusion.DiffusionConfig(
-            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        return diffusion_config.DiffusionConfig(
+            diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
             type_t_diffu=2,
@@ -86,11 +87,11 @@ def read_config(
             velocity_boundary_diffusion_denom=150.0,
             max_nudging_coefficient=0.375,
             n_substeps=n_substeps_reduced,
-            shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+            shear_type=diffusion_config.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
         )
 
     def _mch_ch_r04b09_nonhydro_config():
-        return solve_nh.NonHydrostaticConfig(
+        return dycore_config.NonHydrostaticConfig(
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
             iau_wgt_dyn=1.0,
             fourth_order_divdamp_factor=0.004,
@@ -104,8 +105,8 @@ def read_config(
         )
 
     def _jabw_diffusion_config(n_substeps: int):
-        return diffusion.DiffusionConfig(
-            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        return diffusion_config.DiffusionConfig(
+            diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
             hdiff_temp=False,
@@ -120,7 +121,7 @@ def read_config(
         )
 
     def _jabw_nonhydro_config():
-        return solve_nh.NonHydrostaticConfig(
+        return dycore_config.NonHydrostaticConfig(
             # original igradp_method is 2
             # original divdamp_order is 4
             fourth_order_divdamp_factor=0.0025,
@@ -171,7 +172,7 @@ def read_config(
         )
 
     def _gauss3d_nonhydro_config():
-        return solve_nh.NonHydrostaticConfig(
+        return dycore_config.NonHydrostaticConfig(
             igradp_method=3,
             fourth_order_divdamp_factor=0.0025,
         )

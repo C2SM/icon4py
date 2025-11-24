@@ -15,7 +15,6 @@ import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends, model_options
-from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import (
     config,
@@ -601,11 +600,6 @@ def vwind_offctr(experiment: definitions.Experiment) -> float:
         return 0.15
     else:
         return 0.2
-
-
-@pytest.fixture
-def rayleigh_type() -> int:
-    return RayleighType.KLEMP
 
 
 @pytest.fixture

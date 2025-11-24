@@ -5,13 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import enum
 import sys
 from typing import Final
 
 from gt4py.eve import utils as eve_utils
 
-from icon4py.model.common import type_alias as ta
+from icon4py.model.common import type_alias as ta, utils
 
 
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
@@ -153,7 +153,8 @@ class PhysicsConstants(eve_utils.FrozenNamespace[ta.wpfloat]):
     eps = DBL_EPS
 
 
-class RayleighType(eve_utils.FrozenNamespace[int]):
+# TODO (halungge): is this in the right place, it is not a constant...
+class RayleighType(utils.NamespaceMixin, enum.IntEnum):
     #: classical Rayleigh damping, which makes use of a reference state.
     CLASSIC = 1
     #: Klemp (2008) type Rayleigh damping

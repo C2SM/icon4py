@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from ._common import (
     DoubleBuffering,
+    NamespaceMixin,
     Pair,
     PredictorCorrectorPair,
     TimeStepPair,
@@ -20,6 +21,7 @@ from ._common import (
 
 __all__ = [
     "DoubleBuffering",
+    "NamespaceMixin",
     "Pair",
     "PredictorCorrectorPair",
     "TimeStepPair",

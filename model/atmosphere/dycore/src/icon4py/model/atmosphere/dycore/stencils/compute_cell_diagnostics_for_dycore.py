@@ -25,7 +25,7 @@ import gt4py.next as gtx
 from gt4py.next import astype, broadcast, maximum
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDiscretizationType
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
 )
@@ -51,7 +51,7 @@ from icon4py.model.common.math.derivative import _compute_first_vertical_derivat
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-horzpres_discr_type: Final = HorizontalPressureDiscretizationType()
+horzpres_discr_type: Final = dycore_states.HorizontalPressureDiscretizationType.namespace()
 
 
 @gtx.field_operator

@@ -58,7 +58,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 dycore_consts: Final = constants.PhysicsConstants()
-rayleigh_damping_options: Final = constants.RayleighType()
+rayleigh_damping_options: Final = constants.RayleighType.namespace()
 
 
 @gtx.field_operator

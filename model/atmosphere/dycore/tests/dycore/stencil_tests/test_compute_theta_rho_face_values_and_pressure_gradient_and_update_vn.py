@@ -26,8 +26,8 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-rhotheta_avd_type = RhoThetaAdvectionType()
-horzpres_discr_type = HorizontalPressureDiscretizationType()
+rhotheta_avd_type = RhoThetaAdvectionType.namespace()
+horzpres_discr_type = HorizontalPressureDiscretizationType.namespace()
 
 
 def compute_theta_rho_face_value_by_miura_scheme_numpy(

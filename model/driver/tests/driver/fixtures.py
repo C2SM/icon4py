@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.atmosphere.diffusion import config as diffusion_config, diffusion
 from icon4py.model.driver import icon4py_configuration as driver_config
 from icon4py.model.testing.fixtures import (
     damping_height,
@@ -44,15 +44,15 @@ from icon4py.model.testing.fixtures import (
 
 # TODO(OngChia): Reuse those pytest fixtures for diffusion test instead of creating here
 @pytest.fixture
-def r04b09_diffusion_config(ndyn_substeps) -> diffusion.DiffusionConfig:
+def r04b09_diffusion_config(ndyn_substeps) -> diffusion_config.DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
-    return diffusion.DiffusionConfig(
-        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+    return diffusion_config.DiffusionConfig(
+        diffusion_type=diffusion_config.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         type_t_diffu=2,

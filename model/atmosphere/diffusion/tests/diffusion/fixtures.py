@@ -38,7 +38,6 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     ranked_data_path,
     rayleigh_coeff,
-    rayleigh_type,
     savepoint_diffusion_exit,
     savepoint_diffusion_init,
     step_date_exit,

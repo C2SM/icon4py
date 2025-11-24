@@ -25,7 +25,7 @@ import numpy as np
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
+from icon4py.model.atmosphere.dycore import config as dycore_config, dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -142,7 +142,7 @@ def solve_nh_init(
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
-    config = solve_nonhydro.NonHydrostaticConfig(
+    config = dycore_config.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
