@@ -194,14 +194,6 @@ def _surface_computations(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
-    (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels) = (
-        concat_where(
-            dims.KDim < surface_level - 1,
-            _init_two_cell_kdim_fields_with_zero_vp(),
-            (perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
-        )
-    )
-
     (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels) = (
         concat_where(
             dims.KDim < surface_level - 1,
@@ -447,6 +439,14 @@ def compute_perturbed_quantities_and_interpolation(
         - ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_level
         - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
+    _init_two_cell_kdim_fields_with_zero_vp(
+        out=(perturbed_rho_at_cells_on_model_levels, perturbed_theta_v_at_cells_on_model_levels),
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary, start_cell_lateral_boundary_level_3),
+            dims.KDim: (model_top, surface_level - 1),
+        },
+    )
+
     _surface_computations(
         wgtfacq_c=wgtfacq_c,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
