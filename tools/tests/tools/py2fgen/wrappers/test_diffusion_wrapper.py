@@ -274,10 +274,6 @@ def test_diffusion_wrapper_single_step(
     grid_savepoint,
     grid_init,  # initializes the grid as side-effect
     experiment,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     ndyn_substeps,
     step_date_init,
     step_date_exit,
@@ -302,8 +298,6 @@ def test_diffusion_wrapper_single_step(
     )
 
     # Metric state parameters
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
     mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
@@ -354,8 +348,6 @@ def test_diffusion_wrapper_single_step(
     diffusion_wrapper.diffusion_init(
         ffi=ffi,
         perf_counters=None,
-        vct_a=vct_a,
-        vct_b=vct_b,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
         e_bln_c_s=e_bln_c_s,
@@ -371,7 +363,6 @@ def test_diffusion_wrapper_single_step(
         zd_vertoffset=zd_vertoffset,
         zd_intcoef=zd_intcoef,
         ndyn_substeps=ndyn_substeps,
-        rayleigh_damping_height=damping_height,
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
         hdiff_vn=hdiff_vn,
@@ -387,9 +378,6 @@ def test_diffusion_wrapper_single_step(
         nudge_max_coeff=max_nudging_coefficient,
         itype_sher=itype_sher.value,
         ltkeshs=ltkeshs,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
         backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 
