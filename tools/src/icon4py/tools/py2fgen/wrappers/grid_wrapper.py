@@ -108,7 +108,7 @@ def grid_init(
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,
     rayleigh_damping_height: gtx.float64,
-    # TODO flat_height
+    flat_height: gtx.float64,
     mean_cell_area: gtx.float64,
     comm_id: gtx.int32,
     num_vertices: gtx.int32,
@@ -156,7 +156,9 @@ def grid_init(
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
         rayleigh_damping_height=rayleigh_damping_height,
-        # TODO add all other params
+        flat_height=flat_height,
+        # TODO(havogt): pass all other params from Fortran and ensure
+        # we don't miss new ones in the future
     )
 
     # Vertical parameters
