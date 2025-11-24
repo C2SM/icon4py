@@ -8,29 +8,35 @@
 
 import datetime
 import logging
+import os
 import pathlib
 from collections.abc import Callable
 from typing import NamedTuple
 
 import click
 import numpy as np
+import xarray as xr
 from devtools import Timer
 from gt4py.next import config as gtx_config, metrics as gtx_metrics, typing as gtx_typing
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import base, icon as icon_grid
+from icon4py.model.common.io import plots, restart
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.utils import device_utils
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
 )
+from icon4py.model.driver.testcases import channel_flow
+from icon4py.model.testing import serialbox as sb
 
 
 log = logging.getLogger(__name__)
@@ -68,6 +74,8 @@ class TimeLoop:
             self.run_config.backend
         )
 
+        self._restart = restart.RestartManager()
+
     def re_init(self):
         self._simulation_date = self.run_config.start_date
         self._is_first_step_in_simulation = True
@@ -88,8 +96,8 @@ class TimeLoop:
     def _is_first_substep(step_nr: int):
         return step_nr == 0
 
-    def _next_simulation_date(self):
-        self._simulation_date += self.run_config.dtime
+    def _next_simulation_date(self, multiplier: int = 1):
+        self._simulation_date += multiplier * self.run_config.dtime
 
     @property
     def n_substeps_var(self):
@@ -133,6 +141,15 @@ class TimeLoop:
 
         # TODO(OngChia): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
+        #---> Restart
+        start_time_step_number = 0
+        restart_time_step_number = self._restart.restore_from_restart(prognostic_states, solve_nonhydro_diagnostic_state, self.run_config.backend)
+        if restart_time_step_number is not None:
+            start_time_step_number = restart_time_step_number + 1
+            self._is_first_step_in_simulation = False
+            self._next_simulation_date(multiplier=start_time_step_number)
+        #<--- Restart
+
         if (
             self.diffusion.config.apply_to_horizontal_wind
             and self.run_config.apply_initial_stabilization
@@ -149,7 +166,7 @@ class TimeLoop:
         )
         timer_first_timestep = Timer("TimeLoop: first time step", dp=6)
         timer_after_first_timestep = Timer("TimeLoop: after first time step", dp=6)
-        for time_step in range(self._n_time_steps):
+        for time_step in range(start_time_step_number, self._n_time_steps):
             timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
             if profiling is not None:
                 if not profiling.skip_first_timestep or time_step > 0:
@@ -180,6 +197,15 @@ class TimeLoop:
             )
             device_utils.sync(self._allocator)
             timer.capture()
+
+            #---> Plots
+            if (time_step+1) % plots.PLOT_FREQUENCY == 0:
+                plots.pickle_data(prognostic_states.current, f"end_of_timestep_{time_step:09d}")
+            #<--- Plots
+            #---> Restart
+            if (time_step+1) % self._restart.RESTART_FREQUENCY == 0:
+                self._restart.write_restart(prognostic_states, solve_nonhydro_diagnostic_state, time_step)
+            #<--- Restart
 
             self._is_first_step_in_simulation = False
 
@@ -418,10 +444,90 @@ def initialize(
         ser_type=serialization_type,
     )
 
+    xp = data_alloc.import_array_ns(backend)
+    grid_file_obj = xr.open_dataset(grid_file)
+    domain_length = grid_file_obj.domain_length
+    cell_x = xp.asarray(grid_file_obj.cell_circumcenter_cartesian_x.values)
+    cell_y = xp.asarray(grid_file_obj.cell_circumcenter_cartesian_y.values)
+    edge_x = xp.asarray(grid_file_obj.edge_middle_cartesian_x.values)
+    data_provider = sb.IconSerialDataProvider(
+        backend=backend,
+        fname_prefix="icon_pydycore",
+        path=str(file_path.absolute()),
+    )
+    metrics_savepoint = data_provider.from_metrics_savepoint()
+    wgtfac_c = metrics_savepoint.wgtfac_c().ndarray
+    ddqz_z_half = metrics_savepoint.ddqz_z_half().ndarray
+    theta_ref_mc = metrics_savepoint.theta_ref_mc().ndarray
+    theta_ref_ic = metrics_savepoint.theta_ref_ic().ndarray
+    exner_ref_mc = metrics_savepoint.exner_ref_mc().ndarray
+    d_exner_dz_ref_ic = metrics_savepoint.d_exner_dz_ref_ic().ndarray
+    geopot = metrics_savepoint.geopot().ndarray
+    full_level_heights = metrics_savepoint.z_mc().ndarray
+    half_level_heights = metrics_savepoint.z_ifc().ndarray
+
+    grid_savepoint = data_provider.from_savepoint_grid(
+        grid_id="some_grid_uuid",
+        grid_shape=icon_grid.GridShape(geometry_type=base.GeometryType.TORUS),
+    )
+    edge_geometry = grid_savepoint.construct_edge_geometry()
+    primal_normal_x = edge_geometry.primal_normal[0].ndarray
+
+    mask_label = str(file_path.absolute().parent)
+    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
+        mask_label=mask_label,
+        cell_x=cell_x,
+        cell_y=cell_y,
+        half_level_heights=half_level_heights,
+        num_cells=grid.num_cells,
+        num_edges=grid.num_edges,
+        num_vertices=grid.num_vertices,
+        num_levels=grid.num_levels,
+        grid=grid,
+        backend=backend,
+    )
+    random_perturbation_magnitude = float(os.environ.get("ICON4PY_CHANNEL_PERTURBATION", "0.001"))
+    sponge_length = float(os.environ.get("ICON4PY_CHANNEL_SPONGE_LENGTH", "50.0"))
+    channel = channel_flow.ChannelFlow(
+        random_perturbation_magnitude=random_perturbation_magnitude,
+        sponge_length=sponge_length,
+        grid=grid,
+        domain_length=domain_length,
+        cell_x=cell_x,
+        edge_x=edge_x,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        geopot=geopot,
+        full_level_heights=full_level_heights,
+        half_level_heights=half_level_heights,
+        primal_normal_x=primal_normal_x,
+        num_cells=grid.num_cells,
+        num_edges=grid.num_edges,
+        num_levels=vertical_geometry.num_levels,
+        backend=backend,
+    )
+
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
     diffusion_granule = diffusion.Diffusion(
+<<<<<<< HEAD
+        grid=grid,
+        config=config.diffusion_config,
+        params=diffusion_params,
+        vertical_grid=vertical_geometry,
+        metric_state=diffusion_metric_state,
+        interpolation_state=diffusion_interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+        backend=backend,
+        exchange=exchange,
+        ibm_masks=ibm_masks,
+=======
         grid,
         config.diffusion_config,
         diffusion_params,
@@ -432,6 +538,7 @@ def initialize(
         cell_geometry,
         exchange=exchange,
         backend=backend_like,
+>>>>>>> main
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
@@ -447,6 +554,8 @@ def initialize(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
+        ibm_masks=ibm_masks,
+        channel=channel,
     )
 
     (

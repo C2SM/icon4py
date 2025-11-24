@@ -9,6 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import astype
 from gt4py.next.experimental import concat_where
 
+from icon4py.model.atmosphere.dycore.ibm import _set_bcs_dvndz
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
@@ -61,6 +62,7 @@ def _compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
+    ibm_dvndz_mask: fa.EdgeKField[bool],
     skip_compute_predictor_vertical_advection: bool,
     nflatlev: gtx.int32,
 ) -> tuple[
@@ -76,6 +78,10 @@ def _compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
         vn, tangential_wind
     )
     vn_on_half_levels = _interpolate_to_half_levels(wgtfac_e, vn)
+
+    vn_on_half_levels = _set_bcs_dvndz(
+        mask=ibm_dvndz_mask, vn=vn, vn_on_half_levels=vn_on_half_levels
+    )
 
     tangential_wind_on_half_levels = (
         _interpolate_to_half_levels(wgtfac_e, tangential_wind)
@@ -133,6 +139,7 @@ def compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     inv_primal_edge_length: fa.EdgeField[ta.wpfloat],
     tangent_orientation: fa.EdgeField[ta.wpfloat],
+    ibm_dvndz_mask: fa.EdgeKField[bool],
     skip_compute_predictor_vertical_advection: bool,
     nflatlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -196,6 +203,7 @@ def compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
         inv_dual_edge_length,
         inv_primal_edge_length,
         tangent_orientation,
+        ibm_dvndz_mask,
         skip_compute_predictor_vertical_advection,
         nflatlev,
         out=(

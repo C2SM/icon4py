@@ -43,6 +43,11 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_co
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
+from icon4py.model.atmosphere.diffusion.stencils.vertical_wind_diffusion import (
+    apply_vertical_diffusion_to_vn,
+    apply_vertical_diffusion_to_w,
+)
+from icon4py.model.atmosphere.dycore.ibm import diffu_reset_w, diffu_set_bcs_uv_vertices
 from icon4py.model.common import (
     constants,
     dimension as dims,
@@ -126,6 +131,8 @@ class DiffusionConfig:
         smagorinski_scaling_factor: float = 0.015,
         n_substeps: int = 5,
         zdiffu_t: bool = True,
+        zdiffu_wind: bool = False,
+        zdiffu_wind_multfac: float = 0.0,
         thslp_zdiffu: float = 0.025,
         thhgtd_zdiffu: float = 200.0,
         velocity_boundary_diffusion_denom: float = 200.0,
@@ -180,6 +187,12 @@ class DiffusionConfig:
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
+
+        #: If True, apply vertical diffusion to wind field
+        self.apply_zdiffusion_wind: bool = zdiffu_wind
+
+        #: Coefficient for vertical diffusion of wind field
+        self.zdiffu_wind_multfac: float = zdiffu_wind_multfac
 
         #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f90
         self.thslp_zdiffu = thslp_zdiffu
@@ -366,6 +379,7 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
+        ibm_masks,
         backend: gtx_typing.Backend
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
@@ -384,6 +398,8 @@ class Diffusion:
         self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
+
+        self._ibm_masks = ibm_masks
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
             self._exchange
@@ -406,6 +422,8 @@ class Diffusion:
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
         self._determine_horizontal_domains()
+
+        self.zdiffu_wind_multfac: float = config.zdiffu_wind_multfac
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = setup_program(
             backend=backend,
@@ -479,6 +497,62 @@ class Diffusion:
             vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
             offset_provider=self._grid.connectivities,
         )
+        self.ibm_diffu_set_bcs_uv_vertices = setup_program(
+            backend=backend,
+            program=diffu_set_bcs_uv_vertices,
+            constant_args={
+                "mask": self._ibm_masks.full_vertex_mask,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._vertex_start_lateral_boundary_level_2,
+                "horizontal_end": self._vertex_end_local,
+            },
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels},
+            offset_provider=self._grid.connectivities,
+        )
+        self.ibm_diffu_reset_w = setup_program(
+            backend=backend,
+            program=diffu_reset_w,
+            constant_args={
+                "mask": self._ibm_masks.half_cell_mask,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._horizontal_start_index_w_diffusion,
+                "horizontal_end": self._cell_end_halo,
+            },
+            vertical_sizes={"vertical_start": 0, "vertical_end": self._grid.num_levels+1},
+            offset_provider=self._grid.connectivities,
+        )
+        self.apply_vertical_diffusion_to_vn = setup_program(
+            backend=backend,
+            program=apply_vertical_diffusion_to_vn,
+            constant_args={
+                "multfac": self.zdiffu_wind_multfac,
+                "ddqz_z_half_e": self._metric_state.ddqz_z_half_e,
+                "ddqz_z_full_e": self._metric_state.ddqz_z_full_e,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._edge_start_lateral_boundary_level_5,
+                "horizontal_end": self._edge_end_local,
+            },
+            vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels-1},
+            offset_provider=self._grid.connectivities,
+        )
+        self.apply_vertical_diffusion_to_w = setup_program(
+            backend=backend,
+            program=apply_vertical_diffusion_to_w,
+            constant_args={
+                "multfac": self.zdiffu_wind_multfac,
+                "ddqz_z_half": self._metric_state.ddqz_z_half,
+                "ddqz_z_full": self._metric_state.ddqz_z_full,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._horizontal_start_index_w_diffusion,
+                "horizontal_end": self._cell_end_halo,
+            },
+            vertical_sizes={"vertical_start": 1, "vertical_end": self._grid.num_levels},
+            offset_provider=self._grid.connectivities,
+        )
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = setup_program(
             backend=backend,
             program=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
@@ -540,6 +614,7 @@ class Diffusion:
                 "area": self._cell_params.area,
                 "apply_zdiffusion_t": self.config.apply_zdiffusion_t,
                 "rd_o_cvd": self.rd_o_cvd,
+                "ibm_nabla2theta_mask": self._ibm_masks.full_edge_mask,
             },
             horizontal_sizes={
                 "horizontal_start": self._cell_start_nudging,
@@ -781,6 +856,11 @@ class Diffusion:
         )
         log.debug("communication rbf extrapolation of vn - end")
 
+        self.ibm_diffu_set_bcs_uv_vertices(
+            u_vert=self.u_vert,
+            v_vert=self.v_vert,
+        )
+
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
         self.calculate_nabla2_and_smag_coefficients_for_vn(
             diff_multfac_smag=self.diff_multfac_smag,
@@ -876,6 +956,14 @@ class Diffusion:
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
+
+        if self.config.apply_zdiffusion_wind:
+            self.apply_vertical_diffusion_to_vn(vn=prognostic_state.vn)
+            self.apply_vertical_diffusion_to_w(w=prognostic_state.w)
+
+        # NOTE: this only works as long as halungge's copying is there a few
+        # lines above, otherwise need to find another solution
+        self.ibm_diffu_reset_w(w=prognostic_state.w, w_old=self.w_tmp)
 
         if self.config.apply_to_temperature:
             log.debug(

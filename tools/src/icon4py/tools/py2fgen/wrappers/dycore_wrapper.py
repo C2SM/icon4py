@@ -29,6 +29,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.driver.testcases import channel_flow
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
@@ -130,6 +131,13 @@ def solve_nh_init(
     stretch_factor: gtx.float64,
     nflat_gradp: gtx.int32,
     num_levels: gtx.int32,
+    domain_length: gtx.float64,
+    cell_x: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    edge_x: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
+    primal_normal_x: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
+    z_ifc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    z_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    geopot: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
@@ -237,6 +245,31 @@ def solve_nh_init(
     # datatest config, vertical parameters
     vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
 
+    random_perturbation_magnitude = 0.001
+    sponge_length = 5000.0
+    channel = channel_flow.ChannelFlow(
+        random_perturbation_magnitude=random_perturbation_magnitude,
+        sponge_length=sponge_length,
+        grid=grid_wrapper.grid_state.grid,
+        domain_length=domain_length,
+        cell_x=cell_x.ndarray,
+        edge_x=edge_x.ndarray,
+        wgtfac_c=wgtfac_c.ndarray,
+        ddqz_z_half=ddqz_z_half.ndarray,
+        theta_ref_mc=theta_ref_mc.ndarray,
+        theta_ref_ic=theta_ref_ic.ndarray,
+        exner_ref_mc=exner_ref_mc.ndarray,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic.ndarray,
+        geopot=geopot.ndarray,
+        full_level_heights=z_mc.ndarray,
+        half_level_heights=z_ifc.ndarray,
+        primal_normal_x=primal_normal_x.ndarray,
+        num_cells=cell_x.ndarray.shape[0],
+        num_edges=edge_x.ndarray.shape[0],
+        num_levels=z_mc.ndarray.shape[1],
+        backend=actual_backend,
+    )
+
     global granule  # noqa: PLW0603 [global-statement]
     granule = SolveNonhydroGranule(
         solve_nh=solve_nonhydro.SolveNonhydro(
@@ -251,6 +284,8 @@ def solve_nh_init(
             owner_mask=c_owner_mask,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
+            ibm_masks=grid_wrapper.grid_state.ibm_masks,
+            channel=channel,
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(
             model_backends.get_allocator(actual_backend)

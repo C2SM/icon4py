@@ -189,6 +189,13 @@ class Experiments:
         num_levels=64,
         partitioned_data={1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download"},
     )
+    CHANNEL_IBM: Final = Experiment(
+        name="test_channel_ibm",
+        description="Channel IBM test case based on the gauss3d_torus experiment",
+        grid=Grids.TORUS_50000x5000,
+        num_levels=35,
+        partitioned_data={1: "https://polybox.ethz.ch/index.php/s/WmiMtwWZDQ4MBr4/download"},
+    )
 
 
 # TODO(havogt): the following configs should be part of the serialized experiment

@@ -9,6 +9,7 @@ import dataclasses
 import datetime
 import functools
 import logging
+import os
 
 from gt4py.next import metrics as gtx_metrics
 
@@ -161,25 +162,31 @@ def read_config(
 
     def _gauss3d_vertical_config():
         return v_grid.VerticalGridConfig(
-            num_levels=35,
-            rayleigh_damping_height=45000.0,
+            num_levels=int(os.environ.get("ICON4PY_NUM_LEVELS", 20)),
+            rayleigh_damping_height=100.0,
+            model_top_height=100.0,
+            flat_height=100.0,
+            lowest_layer_thickness=0.0,
+            stretch_factor=1.0,
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
+        diffu_coeff = float(os.environ.get("ICON4PY_DIFFU_COEFF", "0.0"))
         return diffusion.DiffusionConfig(
             n_substeps=n_substeps,
+            zdiffu_wind=True,
+            zdiffu_wind_multfac=diffu_coeff,
         )
 
     def _gauss3d_nonhydro_config():
         return solve_nh.NonHydrostaticConfig(
             igradp_method=3,
-            fourth_order_divdamp_factor=0.0025,
         )
 
     def _gauss3d_config():
         icon_run_config = Icon4pyRunConfig(
-            dtime=datetime.timedelta(seconds=4.0),
-            end_date=datetime.datetime(1, 1, 1, 0, 0, 4),
+            dtime=datetime.timedelta(seconds=float(os.environ.get("ICON4PY_DTIME", "0.04"))),
+            end_date=datetime.datetime.strptime(os.environ.get("ICON4PY_END_DATE", "0001-01-01T10:00:00"), "%Y-%m-%dT%H:%M:%S"),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend=backend,

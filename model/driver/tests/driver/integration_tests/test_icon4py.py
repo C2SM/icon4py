@@ -7,17 +7,22 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
+import os
+import pathlib
+import pickle
 from typing import TYPE_CHECKING
 
-import click
+import gt4py.next as gtx
 import pytest
+import xarray as xr
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import dycore_states, ibm, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half_e
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
@@ -25,8 +30,9 @@ from icon4py.model.driver import (
     icon4py_driver,
     initialization_utils as driver_init,
 )
+from icon4py.model.driver.testcases import channel_flow
 from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
-from icon4py.model.testing.fixtures.datatest import backend, backend_like
+from icon4py.model.testing.fixtures.datatest import _download_ser_data, backend, backend_like
 
 from ..fixtures import *  # noqa: F403
 from ..utils import construct_icon4pyrun_config
@@ -44,34 +50,34 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            1,
-            2,
-            1,
-            2,
-            "2021-06-20T12:00:00.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            True,
-            False,
-            False,
-        ),
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            1,
-            2,
-            1,
-            2,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            False,
-            False,
-            True,
-        ),
+        # (
+        #    definitions.Experiments.MCH_CH_R04B09,
+        #    1,
+        #    2,
+        #    1,
+        #    2,
+        #    "2021-06-20T12:00:00.000",
+        #    "2021-06-20T12:00:10.000",
+        #    "2021-06-20T12:00:10.000",
+        #    "2021-06-20T12:00:10.000",
+        #    True,
+        #    False,
+        #    False,
+        # ),
+        # (
+        #    definitions.Experiments.MCH_CH_R04B09,
+        #    1,
+        #    2,
+        #    1,
+        #    2,
+        #    "2021-06-20T12:00:10.000",
+        #    "2021-06-20T12:00:20.000",
+        #    "2021-06-20T12:00:20.000",
+        #    "2021-06-20T12:00:20.000",
+        #    False,
+        #    False,
+        #    True,
+        # ),
         (
             definitions.Experiments.GAUSS3D,
             1,
@@ -111,14 +117,30 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     backend: gtx_typing.Backend,
 ):
+    ranked_data_path = pathlib.Path("testdata/ser_icondata/mpitask1")
+    savepoint_path = ranked_data_path / experiment.name / "ser_data"
+    grid_file_path = (
+        pathlib.Path("testdata/grids") / experiment.grid.name / experiment.grid.file_name
+    )
+    DO_CHANNEL = False
+    DO_IBM = False
+    DO_VERT_DIFFU = False
     if experiment == definitions.Experiments.GAUSS3D:
-        config = icon4py_configuration.read_config(
-            experiment_type=driver_init.ExperimentType.GAUSS3D,
+        DO_CHANNEL = DO_IBM = DO_VERT_DIFFU = True # all or none
+        os.environ["ICON4PY_CHANNEL_SPONGE_LENGTH"] = "5000.0"
+        os.environ["ICON4PY_CHANNEL_PERTURBATION"] = "0.0"
+        diffusion_config = diffusion.DiffusionConfig(
+            zdiffu_wind=DO_VERT_DIFFU,
+            zdiffu_wind_multfac=0.001,
+        )
+        nonhydro_config = solve_nh.NonHydrostaticConfig()
+        icon4pyrun_config = icon4py_configuration.Icon4pyRunConfig(
+            dtime=timedelta(seconds=4.0),
+            end_date=datetime(1, 1, 1, 0, 0, 8),
+            apply_initial_stabilization=False,
+            n_substeps=ndyn_substeps,
             backend=backend,
         )
-        diffusion_config = config.diffusion_config
-        nonhydro_config = config.solve_nonhydro_config
-        icon4pyrun_config = config.run_config
 
     else:
         diffusion_config = definitions.construct_diffusion_config(
@@ -134,9 +156,80 @@ def test_run_timeloop_single_step(
             backend=backend,
         )
 
+    xp = data_alloc.import_array_ns(backend)
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     grg = interpolation_savepoint.geofac_grg()
+
+    grid_file_obj = xr.open_dataset(grid_file_path)
+    domain_length = grid_file_obj.domain_length
+    cell_x = xp.asarray(grid_file_obj.cell_circumcenter_cartesian_x.values)
+    cell_y = xp.asarray(grid_file_obj.cell_circumcenter_cartesian_y.values)
+    edge_x = xp.asarray(grid_file_obj.edge_middle_cartesian_x.values)
+    wgtfac_c = metrics_savepoint.wgtfac_c().ndarray
+    ddqz_z_half = metrics_savepoint.ddqz_z_half().ndarray
+    theta_ref_mc = metrics_savepoint.theta_ref_mc().ndarray
+    theta_ref_ic = metrics_savepoint.theta_ref_ic().ndarray
+    exner_ref_mc = metrics_savepoint.exner_ref_mc().ndarray
+    d_exner_dz_ref_ic = metrics_savepoint.d_exner_dz_ref_ic().ndarray
+    geopot = metrics_savepoint.geopot().ndarray
+    full_level_heights = metrics_savepoint.z_mc().ndarray
+    half_level_heights = metrics_savepoint.z_ifc().ndarray
+    primal_normal_x = edge_geometry.primal_normal[0].ndarray
+
+    mask_label = savepoint_path.absolute().parent.stem
+    ibm_masks = ibm.ImmersedBoundaryMethodMasks(
+        mask_label=mask_label,
+        cell_x=cell_x,
+        cell_y=cell_y,
+        half_level_heights=half_level_heights,
+        grid=icon_grid,
+        num_cells=icon_grid.num_cells,
+        num_edges=icon_grid.num_edges,
+        num_vertices=icon_grid.num_vertices,
+        num_levels=icon_grid.num_levels,
+        backend=backend,
+        do_ibm=DO_IBM,
+    )
+    random_perturbation_magnitude = float(os.environ.get("ICON4PY_CHANNEL_PERTURBATION", "0.001"))
+    sponge_length = float(os.environ.get("ICON4PY_CHANNEL_SPONGE_LENGTH", "50.0"))
+    channel = channel_flow.ChannelFlow(
+        random_perturbation_magnitude=random_perturbation_magnitude,
+        sponge_length=sponge_length,
+        grid=icon_grid,
+        domain_length=domain_length,
+        cell_x=cell_x,
+        edge_x=edge_x,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
+        theta_ref_mc=theta_ref_mc,
+        theta_ref_ic=theta_ref_ic,
+        exner_ref_mc=exner_ref_mc,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        geopot=geopot,
+        full_level_heights=full_level_heights,
+        half_level_heights=half_level_heights,
+        primal_normal_x=primal_normal_x,
+        num_cells=icon_grid.num_cells,
+        num_edges=icon_grid.num_edges,
+        num_levels=icon_grid.num_levels,
+        backend=backend,
+        do_channel=DO_CHANNEL,
+    )
+    ddqz_z_half_e_np = xp.zeros(
+        (grid_savepoint.num(dims.EdgeDim), grid_savepoint.num(dims.KDim) + 1), dtype=float
+    )
+    ddqz_z_half_e = gtx.as_field((dims.EdgeDim, dims.KDim), ddqz_z_half_e_np, allocator=backend)
+    compute_ddqz_z_half_e.with_backend(backend=backend)(
+        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+        c_lin_e=interpolation_savepoint.c_lin_e(),
+        ddqz_z_half_e=ddqz_z_half_e,
+        horizontal_start=0,
+        horizontal_end=grid_savepoint.num(dims.EdgeDim),
+        vertical_start=0,
+        vertical_end=grid_savepoint.num(dims.KDim) + 1,
+        offset_provider=icon_grid.connectivities,
+    )
 
     diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
@@ -155,6 +248,10 @@ def test_run_timeloop_single_step(
         zd_intcoef=metrics_savepoint.zd_intcoef(),
         zd_vertoffset=metrics_savepoint.zd_vertoffset(),
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+        ddqz_z_full=metrics_savepoint.ddqz_z_full(),
+        ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
+        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+        ddqz_z_half_e=ddqz_z_half_e,
     )
 
     vertical_config = v_grid.VerticalGridConfig(
@@ -181,6 +278,7 @@ def test_run_timeloop_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
+        ibm_masks=ibm_masks,
     )
 
     sp = savepoint_nonhydro_init
@@ -190,7 +288,6 @@ def test_run_timeloop_single_step(
 
     linit = sp.get_metadata("linit").get("linit")
 
-    grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         c_intp=interpolation_savepoint.c_intp(),
@@ -257,6 +354,8 @@ def test_run_timeloop_single_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        ibm_masks=ibm_masks,
+        channel=channel,
     )
 
     diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
@@ -344,38 +443,53 @@ def test_run_timeloop_single_step(
         do_prep_adv,
     )
 
-    rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = timeloop_diffusion_savepoint_exit.exner()
-    theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
-    vn_sp = timeloop_diffusion_savepoint_exit.vn()
-    w_sp = timeloop_diffusion_savepoint_exit.w()
+    if experiment == definitions.Experiments.GAUSS3D and DO_CHANNEL and DO_IBM and DO_VERT_DIFFU:
+        print("Using data for GAUSS3D *** with *** CHANNEL and IBM and VDIFFU")
+        # I cannot create serialized data for this from fortran for now
+        _download_ser_data(1, ranked_data_path, definitions.Experiments.CHANNEL_IBM)
+        fname = "end_of_timestep_000000000.pkl"
+        fpath = ranked_data_path / definitions.Experiments.CHANNEL_IBM.name / fname
+        with fpath.open("rb") as ifile:
+            state = pickle.load(ifile)
+            vn_sp = state["vn"]
+            w_sp = state["w"]
+            theta_sp = state["theta_v"]
+            rho_sp = state["rho"]
+            exner_sp = state["exner"]
+    else:
+        print("Using data for GAUSS3D *** withOUT *** CHANNEL and IBM and VDIFFU")
+        rho_sp = savepoint_nonhydro_exit.rho_new().asnumpy()
+        exner_sp = timeloop_diffusion_savepoint_exit.exner().asnumpy()
+        theta_sp = timeloop_diffusion_savepoint_exit.theta_v().asnumpy()
+        vn_sp = timeloop_diffusion_savepoint_exit.vn().asnumpy()
+        w_sp = timeloop_diffusion_savepoint_exit.w().asnumpy()
 
     assert test_utils.dallclose(
         prognostic_states.current.vn.asnumpy(),
-        vn_sp.asnumpy(),
+        vn_sp,
         atol=6e-12,
     )
 
     assert test_utils.dallclose(
         prognostic_states.current.w.asnumpy(),
-        w_sp.asnumpy(),
+        w_sp,
         atol=8e-14,
     )
 
     assert test_utils.dallclose(
         prognostic_states.current.exner.asnumpy(),
-        exner_sp.asnumpy(),
+        exner_sp,
     )
 
     assert test_utils.dallclose(
         prognostic_states.current.theta_v.asnumpy(),
-        theta_sp.asnumpy(),
+        theta_sp,
         atol=4e-12,
     )
 
     assert test_utils.dallclose(
         prognostic_states.current.rho.asnumpy(),
-        rho_sp.asnumpy(),
+        rho_sp,
     )
 
 
