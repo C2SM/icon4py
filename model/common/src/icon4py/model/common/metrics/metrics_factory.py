@@ -473,6 +473,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxn_z_half_e)
 
+        # ddxn_z_full is dependent only on attrs.DDXN_Z_HALF_E, which has halo exchange. That's why halo_exchange is set to True
         compute_ddxn_z_full = factory.ProgramFieldProvider(
             func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
@@ -492,10 +493,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"average": attrs.DDXN_Z_FULL},
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_ddxn_z_full)
 
+        # TODO: attrs.DDXT_Z_HALF_E has halo exchange
         compute_ddxt_z_full = factory.ProgramFieldProvider(
             func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
@@ -518,6 +520,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxt_z_full)
 
+        # TODO: ddxn_z_half_e has halo exchange
         compute_exner_w_implicit_weight_parameter_np = factory.NumpyDataProvider(
             func=functools.partial(mf.compute_exner_w_implicit_weight_parameter, array_ns=self._xp),
             domain=(dims.CellDim,),
@@ -557,6 +560,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_exner_w_explicit_weight_parameter)
 
+        #TODO: add halo exchange for DDXN_Z_FULL
         compute_exner_exfac = factory.ProgramFieldProvider(
             func=mf.compute_exner_exfac.with_backend(self._backend),
             deps={
@@ -566,6 +570,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             domain={
                 dims.CellDim: (
                     cell_domain(h_grid.Zone.LOCAL),
+                    #cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     cell_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
@@ -701,7 +706,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             domain={
                 dims.CellDim: (
                     cell_domain(h_grid.Zone.HALO),
-                    cell_domain(h_grid.Zone.HALO),
+                    # cell_domain(h_grid.Zone.HALO_LEVEL_2),
+                    cell_domain(h_grid.Zone.END),
                 ),
             },
             fields={
@@ -728,7 +734,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),  # type: ignore [attr-defined]
                 "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
             },
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 
