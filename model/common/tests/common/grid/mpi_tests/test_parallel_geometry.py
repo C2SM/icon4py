@@ -30,8 +30,11 @@ from ...fixtures import (
     processor_props,
     ranked_data_path,
 )
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.math import helpers as math_helpers
+import gt4py.next.typing as gtx_typing
 
-
+import gt4py.next as gtx
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
@@ -90,7 +93,7 @@ def test_distributed_geometry_attrs_for_inverse(
     grid_savepoint: sb.IconGridSavepoint,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
-    parallel_geometry_grid: geometry.GridGeometry,
+    geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
     lb_domain: h_grid.Domain,
@@ -98,8 +101,74 @@ def test_distributed_geometry_attrs_for_inverse(
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    grid_geometry = parallel_geometry_grid
+    grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = grid_geometry.get(attrs_name).asnumpy()
     lb = grid_geometry.grid.start_index(lb_domain)
     assert test_utils.dallclose(field[lb:], field_ref[lb:], rtol=5e-10)
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "attrs_name, grid_name",
+    [
+        (attrs.CORIOLIS_PARAMETER, "f_e"),
+        (attrs.EDGE_TANGENT_X, "dual_cart_normal_x"),
+        (attrs.EDGE_TANGENT_Y, "dual_cart_normal_y"),
+        (attrs.EDGE_TANGENT_Z, "dual_cart_normal_z"),
+        (attrs.EDGE_NORMAL_X, "primal_cart_normal_x"),
+        (attrs.EDGE_NORMAL_Y, "primal_cart_normal_y"),
+        (attrs.EDGE_NORMAL_Z, "primal_cart_normal_z"),
+
+    ],
+)
+def test_geometry_attr_no_halos(
+    grid_savepoint: sb.IconGridSavepoint,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    geometry_from_savepoint: geometry.GridGeometry,
+    attrs_name: str,
+    grid_name: str,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    grid_geometry = geometry_from_savepoint
+    field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
+    field = grid_geometry.get(attrs_name).asnumpy()
+    assert test_utils.dallclose(field, field_ref, equal_nan=True, atol=1e-12)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "x, y, z, dimension",
+    [
+        (attrs.CELL_CENTER_X, attrs.CELL_CENTER_Y, attrs.CELL_CENTER_Z, dims.CellDim),
+        (attrs.EDGE_CENTER_X, attrs.EDGE_CENTER_Y, attrs.EDGE_CENTER_Z, dims.EdgeDim),
+        (attrs.VERTEX_X, attrs.VERTEX_Y, attrs.VERTEX_Z, dims.VertexDim),
+    ],
+)
+def test_cartesian_geometry_attr_no_halos(
+    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    geometry_from_savepoint: geometry.GridGeometry,
+    x: str,
+    y: str,
+    z: str,
+    dimension: gtx.Dimensions,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    grid_geometry = geometry_from_savepoint
+    x_field = grid_geometry.get(x)
+    y_field = grid_geometry.get(y)
+    z_field = grid_geometry.get(z)
+    norm = data_alloc.zero_field(grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend)
+    math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
+    assert test_utils.dallclose(norm.asnumpy(), 1.0)
