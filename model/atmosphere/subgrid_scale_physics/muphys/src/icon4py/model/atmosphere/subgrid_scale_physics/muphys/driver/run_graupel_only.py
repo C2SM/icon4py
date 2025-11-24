@@ -234,7 +234,6 @@ def setup_graupel(inp: GraupelInput, dt: float, qnc: float, backend: model_backe
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(inp.nlev),
-                "last_lev": gtx.int32(inp.nlev - 1),
             },
             offset_provider={"Koff": dims.KDim},
         )
