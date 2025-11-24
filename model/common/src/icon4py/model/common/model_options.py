@@ -14,7 +14,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
-
+from icon4py.model.common import dimension as dims
 from icon4py.model.common import model_backends
 
 
@@ -43,6 +43,13 @@ def get_dace_options(
                     validate_all=False,
                 )
             )
+    if program_name == "compute_advection_in_horizontal_momentum_equation":
+        optimization_args["blocking_dim"] = dims.KDim
+        optimization_args["blocking_size"] = 4
+        optimization_args["gpu_block_size_2d"] = [64, 1, 1]
+        optimization_args["launch_bounds_2d"] = 1024
+        optimization_args["blocking_only_if_independent_nodes"] = False
+
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
