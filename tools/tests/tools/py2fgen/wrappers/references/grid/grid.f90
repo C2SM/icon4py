@@ -114,8 +114,8 @@ module grid
                                  lowest_layer_thickness, &
                                  model_top_height, &
                                  stretch_factor, &
-                                 rayleigh_damping_height, &
                                  flat_height, &
+                                 rayleigh_damping_height, &
                                  mean_cell_area, &
                                  comm_id, &
                                  num_vertices, &
@@ -344,9 +344,9 @@ module grid
 
          real(c_double), value, target :: stretch_factor
 
-         real(c_double), value, target :: rayleigh_damping_height
-
          real(c_double), value, target :: flat_height
+
+         real(c_double), value, target :: rayleigh_damping_height
 
          real(c_double), value, target :: mean_cell_area
 
@@ -419,8 +419,8 @@ contains
                         lowest_layer_thickness, &
                         model_top_height, &
                         stretch_factor, &
-                        rayleigh_damping_height, &
                         flat_height, &
+                        rayleigh_damping_height, &
                         mean_cell_area, &
                         comm_id, &
                         num_vertices, &
@@ -526,9 +526,9 @@ contains
 
       real(c_double), value, target :: stretch_factor
 
-      real(c_double), value, target :: rayleigh_damping_height
-
       real(c_double), value, target :: flat_height
+
+      real(c_double), value, target :: rayleigh_damping_height
 
       real(c_double), value, target :: mean_cell_area
 
@@ -925,8 +925,8 @@ contains
                              lowest_layer_thickness=lowest_layer_thickness, &
                              model_top_height=model_top_height, &
                              stretch_factor=stretch_factor, &
-                             rayleigh_damping_height=rayleigh_damping_height, &
                              flat_height=flat_height, &
+                             rayleigh_damping_height=rayleigh_damping_height, &
                              mean_cell_area=mean_cell_area, &
                              comm_id=comm_id, &
                              num_vertices=num_vertices, &
