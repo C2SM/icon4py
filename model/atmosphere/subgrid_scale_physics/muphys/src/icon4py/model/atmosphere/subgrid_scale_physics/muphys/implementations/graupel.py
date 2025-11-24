@@ -63,9 +63,9 @@ class Q(NamedTuple):
 class PrecipState(NamedTuple):
     q_update: ta.wpfloat
     flx: ta.wpfloat
-    rho_prev: ta.wpfloat
-    vc_prev: ta.wpfloat
-    is_level_activated: bool
+    rho: ta.wpfloat
+    vc: ta.wpfloat
+    activated: bool
 
 
 @gtx.scan_operator(
@@ -74,13 +74,13 @@ class PrecipState(NamedTuple):
     init=PrecipState(
         q_update=0.0,
         flx=0.0,
-        rho_prev=0.0,
-        vc_prev=0.0,
-        is_level_activated=False,
+        rho=0.0,
+        vc=0.0,
+        activated=False,
     ),
 )
 def _precip(
-    state: PrecipState,
+    previous_level: PrecipState,
     prefactor: ta.wpfloat,  # param[0] of fall_speed
     exponent: ta.wpfloat,  # param[1] of fall_speed
     offset: ta.wpfloat,  # param[1] of fall_speed
@@ -90,21 +90,21 @@ def _precip(
     rho: ta.wpfloat,  # density
     mask: bool,
 ) -> PrecipState:
-    is_level_activated = state.is_level_activated | mask
+    current_level_activated = previous_level.activated | mask
     rho_x = q * rho
-    flx_eff = (rho_x / zeta) + 2.0 * state.flx
+    flx_eff = (rho_x / zeta) + 2.0 * previous_level.flx
     #   Inlined calculation using _fall_speed_scalar
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
 
-    rhox_prev = (state.q_update + q) * 0.5 * state.rho_prev
+    rhox_prev = (previous_level.q_update + q) * 0.5 * previous_level.rho
 
-    if state.is_level_activated:
+    if previous_level.activated:
         # this looks weird because we are setting vt based on previous level being active. bug?
-        vt = state.vc_prev * prefactor * power((rhox_prev + offset), exponent)
+        vt = previous_level.vc * prefactor * power((rhox_prev + offset), exponent)
     else:
         vt = 0.0
 
-    if is_level_activated:
+    if current_level_activated:
         next_q_update = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
         next_flx = (next_q_update * rho * vt + flx_partial) * 0.5  # flux
     else:
@@ -113,21 +113,21 @@ def _precip(
     return PrecipState(
         q_update=next_q_update,
         flx=next_flx,
-        rho_prev=rho,
-        vc_prev=vc,
-        is_level_activated=is_level_activated,
+        rho=rho,
+        vc=vc,
+        activated=current_level_activated,
     )
 
 
 class TempState(NamedTuple):
     t: ta.wpfloat
     eflx: ta.wpfloat
-    is_level_activated: bool
+    activated: bool
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=TempState(0.0, 0.0, False))
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=TempState(t=0.0, eflx=0.0, activated=False))
 def _temperature_update(
-    state: TempState,
+    previous_level: TempState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
     ei_old: ta.wpfloat,
@@ -141,9 +141,9 @@ def _temperature_update(
     dt: ta.wpfloat,
     mask: bool,
 ) -> TempState:
-    is_level_activated = state.is_level_activated | mask
-    if is_level_activated:
-        e_int = ei_old + state.eflx
+    current_level_activated = previous_level.activated | mask
+    if current_level_activated:
+        e_int = ei_old + previous_level.eflx
 
         eflx = dt * (
             pr * (t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc)
@@ -159,9 +159,9 @@ def _temperature_update(
         )  # Moist isometric specific heat
         t = (e_int + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
     else:
-        eflx = state.eflx
+        eflx = previous_level.eflx
 
-    return TempState(t, eflx, is_level_activated)
+    return TempState(t=t, eflx=eflx, activated=current_level_activated)
 
 
 @gtx.field_operator
