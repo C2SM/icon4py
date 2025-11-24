@@ -151,7 +151,9 @@ class GraupelOutput:
     qr: gtx.Field[dims.CellDim, dims.KDim]
     qs: gtx.Field[dims.CellDim, dims.KDim]
     qg: gtx.Field[dims.CellDim, dims.KDim]
-
+    t_tmp: gtx.Field[dims.CellDim, dims.KDim]
+    qv_tmp: gtx.Field[dims.CellDim, dims.KDim]
+    qc_tmp: gtx.Field[dims.CellDim, dims.KDim]
     pflx: gtx.Field[dims.CellDim, dims.KDim] | None
     pr: gtx.Field[dims.CellDim, dims.KDim] | None
     ps: gtx.Field[dims.CellDim, dims.KDim] | None
@@ -177,6 +179,9 @@ class GraupelOutput:
                 qr=field_from_nc("qr"),
                 qs=field_from_nc("qs"),
                 qg=field_from_nc("qg"),
+                t_tmp=field_from_nc("ta"),
+                qv_tmp=field_from_nc("hus"),
+                qc_tmp=field_from_nc("clw"),
                 pflx=field_from_nc("pflx", optional=True),
                 pr=field_from_nc("prr_gsp", optional=True),
                 ps=field_from_nc("prs_gsp", optional=True),
@@ -292,26 +297,25 @@ def main():
             qie=inp.qie,
             qge=inp.qge,
             rho=inp.rho,
-            te_out=t_out,  # Temperature
-            qve_out=qv_out,  # Specific humidity
-            qce_out=qc_out,  # Specific cloud water content
-            mask_out=mask_out,  # Mask of interest
+            te_out=out.t,  # Temperature
+            qve_out=out.qv,  # Specific humidity
+            qce_out=out.qc,  # Specific cloud water content
         )
 
         graupel_run_program(
             dz=inp.dz,
-            te=inp.t,
+            te=out.t,        # output of sat_adj
             p=inp.p,
             rho=inp.rho,
-            qve=inp.qv,
-            qce=inp.qc,
+            qve=out.qv,      # output of sat_adj
+            qce=out.qc,      # output of sat_adj
             qre=inp.qr,
             qse=inp.qs,
             qie=inp.qi,
             qge=inp.qg,
-            t_out=out.t,
-            qv_out=out.qv,
-            qc_out=out.qc,
+            t_out=out.t_tmp,
+            qv_out=out.qv_tmp,
+            qc_out=out.qc_tmp,
             qr_out=out.qr,
             qs_out=out.qs,
             qi_out=out.qi,
@@ -325,18 +329,17 @@ def main():
         )
 
         saturation_adjustment_program(
-            te=inp.te,
-            qve=inp.qve,
-            qce=inp.qce,
-            qre=inp.qre,
-            qse=inp.qse,
-            qie=inp.qie,
-            qge=inp.qge,
+            te=out.t_tmp,    # output of graupel
+            qve=out.qv_tmp,  # output of graupel
+            qce=out.qc_tmp,  # output of graupel
+            qre=out.qr,
+            qse=out.qs,
+            qie=out.qi,
+            qge=out.qg,
             rho=inp.rho,
-            te_out=t_out,  # Temperature
-            qve_out=qv_out,  # Specific humidity
-            qce_out=qc_out,  # Specific cloud water content
-            mask_out=mask_out,  # Mask of interest
+            te_out=out.t,    # Temperature
+            qve_out=out.qv,  # Specific humidity
+            qce_out=out.qc,  # Specific cloud water content
         )
 
     device_utils.sync(backend)
