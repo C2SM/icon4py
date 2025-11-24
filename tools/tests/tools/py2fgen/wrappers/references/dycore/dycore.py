@@ -1170,10 +1170,6 @@ def solve_nh_run_wrapper(
 
 @ffi.def_extern()
 def solve_nh_init_wrapper(
-    vct_a,
-    vct_a_size_0,
-    vct_b,
-    vct_b_size_0,
     c_lin_e,
     c_lin_e_size_0,
     c_lin_e_size_1,
@@ -1317,7 +1313,6 @@ def solve_nh_init_wrapper(
     coeff_gradekin_size_1,
     c_owner_mask,
     c_owner_mask_size_0,
-    rayleigh_damping_height,
     itime_scheme,
     iadv_rhotheta,
     igradp_method,
@@ -1341,11 +1336,7 @@ def solve_nh_init_wrapper(
     divdamp_z2,
     divdamp_z3,
     divdamp_z4,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
     nflat_gradp,
-    num_levels,
     backend,
     on_gpu,
 ):
@@ -1359,10 +1350,6 @@ def solve_nh_init_wrapper(
                     unpack_start_time = _runtime.perf_counter()
 
             # ArrayInfos
-
-            vct_a = (vct_a, (vct_a_size_0,), on_gpu, False)
-
-            vct_b = (vct_b, (vct_b_size_0,), on_gpu, False)
 
             c_lin_e = (
                 c_lin_e,
@@ -1811,8 +1798,6 @@ def solve_nh_init_wrapper(
             solve_nh_init(
                 ffi=ffi,
                 perf_counters=perf_counters,
-                vct_a=vct_a,
-                vct_b=vct_b,
                 c_lin_e=c_lin_e,
                 c_intp=c_intp,
                 e_flx_avg=e_flx_avg,
@@ -1863,7 +1848,6 @@ def solve_nh_init_wrapper(
                 coeff2_dwdz=coeff2_dwdz,
                 coeff_gradekin=coeff_gradekin,
                 c_owner_mask=c_owner_mask,
-                rayleigh_damping_height=rayleigh_damping_height,
                 itime_scheme=itime_scheme,
                 iadv_rhotheta=iadv_rhotheta,
                 igradp_method=igradp_method,
@@ -1887,11 +1871,7 @@ def solve_nh_init_wrapper(
                 divdamp_z2=divdamp_z2,
                 divdamp_z3=divdamp_z3,
                 divdamp_z4=divdamp_z4,
-                lowest_layer_thickness=lowest_layer_thickness,
-                model_top_height=model_top_height,
-                stretch_factor=stretch_factor,
                 nflat_gradp=nflat_gradp,
-                num_levels=num_levels,
                 backend=backend,
             )
 
@@ -1910,38 +1890,6 @@ def solve_nh_init_wrapper(
 
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
-
-                    vct_a_arr = (
-                        _conversion.as_array(ffi, vct_a, _definitions.FLOAT64)
-                        if vct_a is not None
-                        else None
-                    )
-                    msg = "shape of vct_a after computation = %s" % str(
-                        vct_a_arr.shape if vct_a is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "vct_a after computation: %s" % str(vct_a_arr)
-                        if vct_a is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    vct_b_arr = (
-                        _conversion.as_array(ffi, vct_b, _definitions.FLOAT64)
-                        if vct_b is not None
-                        else None
-                    )
-                    msg = "shape of vct_b after computation = %s" % str(
-                        vct_b_arr.shape if vct_b is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "vct_b after computation: %s" % str(vct_b_arr)
-                        if vct_b is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
 
                     c_lin_e_arr = (
                         _conversion.as_array(ffi, c_lin_e, _definitions.FLOAT64)

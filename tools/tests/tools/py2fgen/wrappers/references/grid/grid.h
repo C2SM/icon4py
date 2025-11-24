@@ -36,6 +36,9 @@ extern int grid_init_wrapper(
     int edge_center_lat_size_0, double *edge_center_lon,
     int edge_center_lon_size_0, double *primal_normal_x,
     int primal_normal_x_size_0, double *primal_normal_y,
-    int primal_normal_y_size_0, double mean_cell_area, int comm_id,
-    int num_vertices, int num_cells, int num_edges, int vertical_size,
-    int limited_area, int backend, int on_gpu);
+    int primal_normal_y_size_0, double *vct_a, int vct_a_size_0, double *vct_b,
+    int vct_b_size_0, double lowest_layer_thickness, double model_top_height,
+    double stretch_factor, double rayleigh_damping_height, double flat_height,
+    double mean_cell_area, int comm_id, int num_vertices, int num_cells,
+    int num_edges, int vertical_size, int limited_area, int backend,
+    int on_gpu);
