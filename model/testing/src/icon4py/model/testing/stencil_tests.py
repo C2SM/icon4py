@@ -98,9 +98,7 @@ def test_and_benchmark(
             },
         )
 
-        _configured_program(
-            **_properly_allocated_input_data, offset_provider=grid.connectivities
-        )
+        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
         self._verify_stencil_test(
             input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
         )
