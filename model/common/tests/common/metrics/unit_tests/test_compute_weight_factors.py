@@ -35,6 +35,12 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 
+import gt4py.next as gtx
+
+
+def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
+    return None
+
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
@@ -89,6 +95,7 @@ def test_compute_wgtfacq_e_dsl(
         c_lin_e=interpolation_savepoint.c_lin_e().ndarray,
         n_edges=icon_grid.num_edges,
         nlev=icon_grid.num_levels,
+        halo_exchange=dummy_exchange,
         array_ns=xp,
     )
 

@@ -43,6 +43,10 @@ edge_domain = horizontal.domain(dims.EdgeDim)
 vertex_domain = horizontal.domain(dims.VertexDim)
 
 
+def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
+    return None
+
+
 @pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
@@ -396,6 +400,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
+        halo_exchange=dummy_exchange,
         array_ns=xp,
     )
     # TODO (nfarabullini): fix type ignore

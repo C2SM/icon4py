@@ -40,6 +40,10 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
+def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
+    return None
+
+
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_compute_zdiff_gradp_dsl(
@@ -69,6 +73,7 @@ def test_compute_zdiff_gradp_dsl(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k_lev.ndarray,
+        halo_exchange=dummy_exchange,
         array_ns=xp,
     )
 
@@ -82,6 +87,7 @@ def test_compute_zdiff_gradp_dsl(
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
+        halo_exchange=dummy_exchange,
         array_ns=xp,
     )
 

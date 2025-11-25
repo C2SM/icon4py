@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from types import ModuleType
 from typing import Final
 
@@ -576,16 +577,14 @@ def compute_flat_max_idx(
     c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     k_lev: data_alloc.NDArray,
-    halo_exchange,
+    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     k_lev_minus1 = k_lev[:-1]
     coeff_ = np.expand_dims(c_lin_e, axis=-1)
     z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
 
-    wrap_in_field_z_me = gtx.as_field(
-        (dims.EdgeDim, dims.KDim), data=z_me, dtype=z_me.dtype
-    )
+    wrap_in_field_z_me = gtx.as_field((dims.EdgeDim, dims.KDim), data=z_me, dtype=z_me.dtype)
     halo_exchange(dims.EdgeDim, wrap_in_field_z_me)
     z_me = wrap_in_field_z_me.ndarray
 
@@ -668,7 +667,6 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
 
     e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
     k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
-    # TODO: z_me needs halo exchange
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     downward_distance = _compute_downward_extrapolation_distance(topography)
     extrapolation_distance = concat_where(

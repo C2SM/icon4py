@@ -32,6 +32,12 @@ if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
 
+import gt4py.next as gtx
+
+
+def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
+    return None
+
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
@@ -49,6 +55,10 @@ def test_compute_coeff_gradekin(
     horizontal_end = icon_grid.num_edges
 
     coeff_gradekin_full = compute_coeff_gradekin(
-        edge_cell_length, inv_dual_edge_length, horizontal_start, horizontal_end
+        edge_cell_length,
+        inv_dual_edge_length,
+        horizontal_start,
+        horizontal_end,
+        halo_exchange=dummy_exchange,
     )
     assert test_utils.dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full)

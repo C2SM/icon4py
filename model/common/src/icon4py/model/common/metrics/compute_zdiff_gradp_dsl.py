@@ -6,13 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Callable
 from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
+
 
 def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
     e2c,
@@ -24,15 +26,13 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
     nlev: int,
     horizontal_start: gtx.int32,
     horizontal_start_1: gtx.int32,
-    halo_exchange,
+    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     nedges = e2c.shape[0]
     z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
 
-    wrap_in_field_z_me = gtx.as_field(
-        (dims.EdgeDim, dims.KDim), data=z_me, dtype=z_me.dtype
-    )
+    wrap_in_field_z_me = gtx.as_field((dims.EdgeDim, dims.KDim), data=z_me, dtype=z_me.dtype)
     halo_exchange(dims.EdgeDim, wrap_in_field_z_me)
     z_me = wrap_in_field_z_me.ndarray
 
@@ -133,19 +133,5 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
 
     vertoffset_gradp = vertidx_gradp - vertoffset_gradp
     vertoffset_gradp[:horizontal_start_1, :, :] = 0.0
-
-    # original_shape = zdiff_gradp.shape
-    # wrap_in_field_1 = gtx.as_field(
-    #     (dims.EdgeDim, dims.KDim), data=zdiff_gradp[:, 0, :], dtype=zdiff_gradp[:, 0, :].dtype
-    # )
-    # halo_exchange(dims.EdgeDim, wrap_in_field_1)
-    # zdiff_gradp_0 = wrap_in_field_1.ndarray
-    #
-    # wrap_in_field_2 = gtx.as_field(
-    #     (dims.EdgeDim, dims.KDim), data=zdiff_gradp[:, 1, :], dtype=zdiff_gradp[:, 1, :].dtype
-    # )
-    # halo_exchange(dims.EdgeDim, wrap_in_field_2)
-    # zdiff_gradp_1 = wrap_in_field_2.ndarray
-    # zdiff_gradp = np.stack((zdiff_gradp_0, zdiff_gradp_1)).reshape(original_shape)
 
     return zdiff_gradp, vertoffset_gradp
