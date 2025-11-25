@@ -31,6 +31,16 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
 
 
+class GT4PyPerformanceMetrics:
+    previous_collect_metrics_level: int = gtx_config.COLLECT_METRICS_LEVEL
+
+    def __enter__(self) -> None:
+        gtx_config.COLLECT_METRICS_LEVEL = 10
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        gtx_config.COLLECT_METRICS_LEVEL = self.previous_collect_metrics_level
+
+
 def allocate_data(
     allocator: gtx_typing.FieldBufferAllocationUtil | None,
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
@@ -84,57 +94,60 @@ def test_and_benchmark(
     _configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
-    benchmark_only_option = request.config.getoption(
-        "benchmark_only"
-    )  # skip verification if `--benchmark-only` CLI option is set
-    if not benchmark_only_option:
-        reference_outputs = self.reference(
-            _ConnectivityConceptFixer(
-                grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-            ),
-            **{
-                k: v.asnumpy() if isinstance(v, gtx.Field) else v
-                for k, v in _properly_allocated_input_data.items()
-            },
-        )
+    with GT4PyPerformanceMetrics():
+        benchmark_only_option = request.config.getoption(
+            "benchmark_only"
+        )  # skip verification if `--benchmark-only` CLI option is set
+        if not benchmark_only_option:
+            reference_outputs = self.reference(
+                _ConnectivityConceptFixer(
+                    grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+                ),
+                **{
+                    k: v.asnumpy() if isinstance(v, gtx.Field) else v
+                    for k, v in _properly_allocated_input_data.items()
+                },
+            )
 
-        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
-        self._verify_stencil_test(
-            input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
-        )
+            _configured_program(
+                **_properly_allocated_input_data, offset_provider=grid.connectivities
+            )
+            self._verify_stencil_test(
+                input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
+            )
 
-    if benchmark is not None and benchmark.enabled:
-        # Clean up GT4Py metrics from previous runs
-        if gtx_config.COLLECT_METRICS_LEVEL > 0:
-            gtx_metrics.sources.clear()
+        if benchmark is not None and benchmark.enabled:
+            # Clean up GT4Py metrics from previous runs
+            if gtx_config.COLLECT_METRICS_LEVEL > 0:
+                gtx_metrics.sources.clear()
 
-        warmup_rounds = 1
-        iterations = 10
+            warmup_rounds = 1
+            iterations = 10
 
-        # Use of `pedantic` to explicitly control warmup rounds and iterations
-        benchmark.pedantic(
-            _configured_program,
-            args=(),
-            kwargs=dict(**_properly_allocated_input_data, offset_provider=grid.connectivities),
-            rounds=3,  # 30 iterations in total should be stable enough
-            warmup_rounds=warmup_rounds,
-            iterations=iterations,
-        )
+            # Use of `pedantic` to explicitly control warmup rounds and iterations
+            benchmark.pedantic(
+                _configured_program,
+                args=(),
+                kwargs=dict(**_properly_allocated_input_data, offset_provider=grid.connectivities),
+                rounds=3,  # 30 iterations in total should be stable enough
+                warmup_rounds=warmup_rounds,
+                iterations=iterations,
+            )
 
-        # Collect GT4Py runtime metrics if enabled
-        if gtx_config.COLLECT_METRICS_LEVEL > 0:
-            assert (
-                len(gtx_metrics.sources) == 1
-            ), "Expected exactly one entry in gtx_metrics.sources"
-            # Store GT4Py metrics in benchmark.extra_info
-            metrics_data = gtx_metrics.sources
-            key = next(iter(metrics_data))
-            compute_samples = metrics_data[key].metrics["compute"].samples
-            # exclude warmup iterations and one extra iteration for calibrating pytest-benchmark
-            initial_program_iterations_to_skip = warmup_rounds * iterations + 1
-            benchmark.extra_info["gtx_metrics"] = compute_samples[
-                initial_program_iterations_to_skip:
-            ]
+            # Collect GT4Py runtime metrics if enabled
+            if gtx_config.COLLECT_METRICS_LEVEL > 0:
+                assert (
+                    len(gtx_metrics.sources) == 1
+                ), "Expected exactly one entry in gtx_metrics.sources"
+                # Store GT4Py metrics in benchmark.extra_info
+                metrics_data = gtx_metrics.sources
+                key = next(iter(metrics_data))
+                compute_samples = metrics_data[key].metrics["compute"].samples
+                # exclude warmup iterations and one extra iteration for calibrating pytest-benchmark
+                initial_program_iterations_to_skip = warmup_rounds * iterations + 1
+                benchmark.extra_info["gtx_metrics"] = compute_samples[
+                    initial_program_iterations_to_skip:
+                ]
 
 
 class StencilTest:
