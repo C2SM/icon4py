@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import nullcontext
 from typing import Any, ClassVar
 
 import gt4py.next as gtx
@@ -94,7 +95,14 @@ def test_and_benchmark(
     _configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
-    with GT4PyPerformanceMetrics():
+    # Only collect GT4Py performance metrics for continuous benchmarking tests
+    collect_metrics = any(
+        mark.name == "continuous_benchmarking" for mark in request.node.iter_markers()
+    )
+
+    context_manager = GT4PyPerformanceMetrics() if collect_metrics else nullcontext()
+
+    with context_manager:
         benchmark_only_option = request.config.getoption(
             "benchmark_only"
         )  # skip verification if `--benchmark-only` CLI option is set
