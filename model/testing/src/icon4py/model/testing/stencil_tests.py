@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 from collections.abc import Callable, Mapping, Sequence
-from contextlib import nullcontext
 from typing import Any, ClassVar
 
 import gt4py.next as gtx
@@ -30,16 +29,6 @@ from gt4py.next.ffront.decorator import FieldOperator
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
-
-
-class GT4PyPerformanceMetrics:
-    previous_collect_metrics_level: int = gtx_config.COLLECT_METRICS_LEVEL
-
-    def __enter__(self) -> None:
-        gtx_config.COLLECT_METRICS_LEVEL = 10
-
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
-        gtx_config.COLLECT_METRICS_LEVEL = self.previous_collect_metrics_level
 
 
 def allocate_data(
@@ -95,69 +84,61 @@ def test_and_benchmark(
     _configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
-    # Only collect GT4Py performance metrics for continuous benchmarking tests
-    collect_metrics = any(
-        mark.name == "continuous_benchmarking" for mark in request.node.iter_markers()
-    )
+    benchmark_only_option = request.config.getoption(
+        "benchmark_only"
+    )  # skip verification if `--benchmark-only` CLI option is set
+    if not benchmark_only_option:
+        reference_outputs = self.reference(
+            _ConnectivityConceptFixer(
+                grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
+            ),
+            **{
+                k: v.asnumpy() if isinstance(v, gtx.Field) else v
+                for k, v in _properly_allocated_input_data.items()
+            },
+        )
 
-    context_manager = GT4PyPerformanceMetrics() if collect_metrics else nullcontext()
+        _configured_program(
+            **_properly_allocated_input_data, offset_provider=grid.connectivities
+        )
+        self._verify_stencil_test(
+            input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
+        )
 
-    with context_manager:
-        benchmark_only_option = request.config.getoption(
-            "benchmark_only"
-        )  # skip verification if `--benchmark-only` CLI option is set
-        if not benchmark_only_option:
-            reference_outputs = self.reference(
-                _ConnectivityConceptFixer(
-                    grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
-                ),
-                **{
-                    k: v.asnumpy() if isinstance(v, gtx.Field) else v
-                    for k, v in _properly_allocated_input_data.items()
-                },
+    if benchmark is not None and benchmark.enabled:
+        warmup_rounds = 1
+        iterations = 10
+
+        # Use of `pedantic` to explicitly control warmup rounds and iterations
+        benchmark.pedantic(
+            _configured_program,
+            args=(),
+            kwargs=dict(**_properly_allocated_input_data, offset_provider=grid.connectivities),
+            rounds=3,  # 30 iterations in total should be stable enough
+            warmup_rounds=warmup_rounds,
+            iterations=iterations,
+        )
+
+        # Collect GT4Py runtime metrics if enabled
+        if gtx_config.COLLECT_METRICS_LEVEL > 0:
+            assert (
+                len(_configured_program._compiled_programs.compiled_programs) == 1
+            ), "Multiple compiled programs found, cannot extract metrics."
+            # Get compiled programs from the _configured_program passed to test
+            compiled_programs = _configured_program._compiled_programs.compiled_programs
+            # Get the pool key necessary to find the right metrics key. There should be only one compiled program in _configured_program
+            pool_key = next(iter(compiled_programs.keys()))
+            # Get the metrics key from the pool key to read the corresponding metrics
+            metrics_key = _configured_program._compiled_programs._metrics_key_from_pool_key(
+                pool_key
             )
-
-            _configured_program(
-                **_properly_allocated_input_data, offset_provider=grid.connectivities
-            )
-            self._verify_stencil_test(
-                input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
-            )
-
-        if benchmark is not None and benchmark.enabled:
-            warmup_rounds = 1
-            iterations = 10
-
-            # Use of `pedantic` to explicitly control warmup rounds and iterations
-            benchmark.pedantic(
-                _configured_program,
-                args=(),
-                kwargs=dict(**_properly_allocated_input_data, offset_provider=grid.connectivities),
-                rounds=3,  # 30 iterations in total should be stable enough
-                warmup_rounds=warmup_rounds,
-                iterations=iterations,
-            )
-
-            # Collect GT4Py runtime metrics if enabled
-            if gtx_config.COLLECT_METRICS_LEVEL > 0:
-                assert (
-                    len(_configured_program._compiled_programs.compiled_programs) == 1
-                ), "Multiple compiled programs found, cannot extract metrics."
-                # Get compiled programs from the _configured_program passed to test
-                compiled_programs = _configured_program._compiled_programs.compiled_programs
-                # Get the pool key necessary to find the right metrics key. There should be only one compiled program in _configured_program
-                pool_key = next(iter(compiled_programs.keys()))
-                # Get the metrics key from the pool key to read the corresponding metrics
-                metrics_key = _configured_program._compiled_programs._metrics_key_from_pool_key(
-                    pool_key
-                )
-                metrics_data = gtx_metrics.sources
-                compute_samples = metrics_data[metrics_key].metrics["compute"].samples
-                # exclude warmup iterations and one extra iteration for calibrating pytest-benchmark
-                initial_program_iterations_to_skip = warmup_rounds * iterations + 1
-                benchmark.extra_info["gtx_metrics"] = compute_samples[
-                    initial_program_iterations_to_skip:
-                ]
+            metrics_data = gtx_metrics.sources
+            compute_samples = metrics_data[metrics_key].metrics["compute"].samples
+            # exclude warmup iterations and one extra iteration for calibrating pytest-benchmark
+            initial_program_iterations_to_skip = warmup_rounds * iterations + 1
+            benchmark.extra_info["gtx_metrics"] = compute_samples[
+                initial_program_iterations_to_skip:
+            ]
 
 
 class StencilTest:
