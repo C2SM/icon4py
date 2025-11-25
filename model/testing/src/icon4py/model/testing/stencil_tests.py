@@ -111,6 +111,7 @@ def test_and_benchmark(
         warmup_rounds = 1
         iterations = 10
 
+        # Use of `pedantic` to explicitly control warmup rounds and iterations
         benchmark.pedantic(
             _configured_program,
             args=(),
