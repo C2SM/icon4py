@@ -38,7 +38,7 @@ RUN rustc --version && which rustc && cargo --version && which cargo
 
 # Install Bencher for performance monitoring
 # Update the following comment to trigger a rebuild  to update the CLI:
-# last update: 2025-09-05
+# last update: 2025-11-25
 # This is necessary because the cloud version and the CLI version have to match
 # but obviously, version changes do not register in the Dockerfile hash.
 RUN curl --proto '=https' --tlsv1.2 -sSfL https://bencher.dev/download/install-cli.sh | sh
