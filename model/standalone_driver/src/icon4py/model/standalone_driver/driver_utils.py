@@ -126,7 +126,7 @@ def create_static_field_factories(
         vertical_grid=vertical_grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=backend),
+        topography=cell_topography,
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
@@ -141,7 +141,7 @@ def create_static_field_factories(
     )
 
 
-def initialize_granule(
+def initialize_granules(
     grid: icon_grid.IconGrid,
     parallel_props: decomposition_defs.ProcessProperties,
     decomposition_info: decomposition_defs.DecompositionInfo,
@@ -160,15 +160,14 @@ def initialize_granule(
     interpolation_field_source = static_field_factories.interpolation_field_source
     metrics_field_source = static_field_factories.metrics_field_source
 
-    log.info("Start creating cell geometry")
+    log.info("creating cell geometry")
     cell_geometry = grid_states.CellParams(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
     )
-    log.info("Finish creating cell geometry")
 
-    log.info("Start creating edge geometry")
+    log.info("creating edge geometry")
     edge_geometry = grid_states.EdgeParams(
         tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
         inverse_primal_edge_lengths=geometry_field_source.get(
@@ -195,9 +194,8 @@ def initialize_granule(
         primal_normal_x=geometry_field_source.get(geometry_meta.EDGE_NORMAL_U),
         primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
     )
-    log.info("Finish creating edge geometry")
 
-    log.info("Start creating diffusion interpolation state")
+    log.info("creating diffusion interpolation state")
     diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
         rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
@@ -208,9 +206,8 @@ def initialize_granule(
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
         nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
     )
-    log.info("Finish creating diffusion interpolation state")
 
-    log.info("Start creating diffusion metric state")
+    log.info("creating diffusion metric state")
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
         mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
         theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
@@ -219,9 +216,8 @@ def initialize_granule(
         zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
         zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
     )
-    log.info("Finish creating diffusion metric state")
 
-    log.info("Start creating solve nonhydro interpolation state")
+    log.info("creating solve nonhydro interpolation state")
     solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_field_source.get(interpolation_attributes.C_LIN_E),
         c_intp=interpolation_field_source.get(interpolation_attributes.CELL_AW_VERTS),
@@ -244,9 +240,8 @@ def initialize_granule(
         geofac_grg_y=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_Y),
         nudgecoeff_e=interpolation_field_source.get(interpolation_attributes.NUDGECOEFFS_E),
     )
-    log.info("Finish creating solve nonhydro interpolation state")
 
-    log.info("Start creating solve nonhydro metric state")
+    log.info("creating solve nonhydro metric state")
     solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
         bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
         mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
@@ -307,7 +302,6 @@ def initialize_granule(
         coeff2_dwdz=metrics_field_source.get(metrics_attributes.COEFF2_DWDZ),
         coeff_gradekin=metrics_field_source.get(metrics_attributes.COEFF_GRADEKIN),
     )
-    log.info("End creating solve nonhydro metric state")
 
     diffusion_params = diffusion.DiffusionParams(diffusion_config)
 
@@ -390,11 +384,11 @@ def configure_logging(
 
 
 def get_backend_from_name(backend_name: str) -> gtx_typing.Backend:
-    if backend_name not in model_backends.ICON4PY_BACKENDS:
+    if backend_name not in model_backends.USER_BACKEND:
         raise ValueError(
             f"Invalid driver backend: {backend_name}. \n"
-            f"Available backends are {', '.join([f'{k}' for k in model_backends.ICON4PY_BACKENDS])}"
+            f"Available backends are {', '.join([f'{k}' for k in model_backends.USER_BACKEND])}"
         )
-    make_backend_factory = model_backends.ICON4PY_BACKENDS[backend_name]["backend_factory"]
-    device = model_backends.ICON4PY_BACKENDS[backend_name]["device"]
+    make_backend_factory = model_backends.USER_BACKEND[backend_name]["backend_factory"]
+    device = model_backends.USER_BACKEND[backend_name]["device"]
     return make_backend_factory(device=device, cached=True)

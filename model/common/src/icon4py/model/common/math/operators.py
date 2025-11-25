@@ -43,7 +43,7 @@ def _compute_nabla2_on_cell_k(
 
 
 @gtx.field_operator
-def _minus_operation_on_cell_k(
+def _compute_difference_on_cell_k(
     field_a: fa.CellKField[ta.wpfloat],
     field_b: fa.CellKField[ta.vpfloat],
 ) -> fa.CellKField[ta.wpfloat]:

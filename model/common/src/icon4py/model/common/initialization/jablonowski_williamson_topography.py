@@ -14,9 +14,19 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def jablonowski_williamson_topography(
-    cell_lat: data_alloc.NDArray, u0: float, array_ns: ModuleType
+    cell_lat: data_alloc.NDArray,
+    u0: float,
+    array_ns: ModuleType,
 ) -> data_alloc.NDArray:
-    """Function to initialize topography."""
+    """Function to initialize topography.
+
+    The prescribed topography is zonally symmetric and depends only on latitude.
+    It forms a smooth, broad ridge at the equator, with height controlled by the jet strength parameter u0.
+    The elevation decreases gradually toward the poles, producing an idealized annular mountain belt consistent with the analytic base state.
+
+    This topography is coupled with the Jablonowski-Williamson test case for global atmospheric models.
+
+    """
     sin_lat = array_ns.sin(cell_lat)
     cos_lat = array_ns.cos(cell_lat)
 

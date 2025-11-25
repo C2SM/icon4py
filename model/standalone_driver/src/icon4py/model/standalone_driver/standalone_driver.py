@@ -71,10 +71,6 @@ class _DriverFormatter(logging.Formatter):
 
 
 class Icon4pyDriver:
-    @classmethod
-    def name(cls):
-        return cls.__name__
-
     def __init__(
         self,
         config: DriverConfig,
@@ -479,8 +475,6 @@ class Icon4pyDriver:
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
     ):
-        # TODO(OngChia): compute airmass for prognostic_state here
-
         for dyn_substep in range(self._ndyn_substeps_var):
             self._compute_statistics(dyn_substep, prognostic_states.current)
 
@@ -674,25 +668,21 @@ def initialize_driver(
     backend: gtx_typing.Backend,
 ) -> Icon4pyDriver:
     """
-    Initialize the driver run.
-
-    This function does the following:
-    - load configuration
-    - load grid manager and decomposition info
-    - load topography
-    - create static field factories
-    - initialize components: diffusion and solve_nh
-    - create driver
-
-    Parameters:
-        configuration_file_path: Path to configuration
-        output_path: Output path
-        grid_file_path: Path to the grid file
+    Initialize the driver:
+    - load the configuration
+    - load the grid manager and decomposition info
+    - load the topography (eventually all external parameters)
+    - create the static field factories
+    - initialize the components selected by the configuration (diffusion and solve_nh)
+    - create the driver object
+    Args:
+        configuration_file_path: path to the configuration file
+        output_path: path where to store the simulation output
+        grid_file_path: path of the grid file
         log_level: logging level
         backend: GT4Py backend
-
     Returns:
-        Driver: Driver object
+        Driver: driver object
     """
     driver_config, vertical_grid_config, diffusion_config, solve_nh_config = _read_config(
         output_path=output_path,
@@ -711,6 +701,8 @@ def initialize_driver(
         vertical_grid_config=vertical_grid_config,
         backend=backend,
     )
+
+    log.info("creating the decomposition info")
 
     decomposition_info = driver_utils.create_decomposition_info(
         grid_manager=grid_manager,
@@ -735,7 +727,7 @@ def initialize_driver(
         grid_manager=grid_manager,
         decomposition_info=decomposition_info,
         vertical_grid=vertical_grid,
-        cell_topography=cell_topography,
+        cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=backend),
         backend=backend,
     )
 
@@ -743,7 +735,7 @@ def initialize_driver(
     (
         diffusion_granule,
         solve_nonhydro_granule,
-    ) = driver_utils.initialize_granule(
+    ) = driver_utils.initialize_granules(
         grid=grid_manager.grid,
         parallel_props=parallel_props,
         decomposition_info=decomposition_info,

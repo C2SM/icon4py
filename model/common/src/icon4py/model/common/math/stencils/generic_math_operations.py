@@ -9,11 +9,11 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.math.operators import _minus_operation_on_cell_k
+from icon4py.model.common.math.operators import _compute_difference_on_cell_k
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def minus_operation_on_cell_k(
+@gtx.program
+def compute_difference_on_cell_k(
     field_a: fa.CellKField[ta.wpfloat],
     field_b: fa.CellKField[ta.vpfloat],
     output_field: fa.CellKField[ta.wpfloat],
@@ -22,7 +22,7 @@ def minus_operation_on_cell_k(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _minus_operation_on_cell_k(
+    _compute_difference_on_cell_k(
         field_a,
         field_b,
         out=output_field,

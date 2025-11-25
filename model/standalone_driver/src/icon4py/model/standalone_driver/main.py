@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import datetime
 import logging
 import pathlib
 from typing import Annotated
@@ -14,19 +14,19 @@ import typer
 
 from icon4py.model.common import model_backends
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
-from icon4py.model.standalone_driver.testcases import jablonowski_williamson
+from icon4py.model.standalone_driver.testcases import initial_condition
 
 
 log = logging.getLogger(__name__)
 
 
-def run_icon4py_driver(
+def main(
     configuration_file_path: Annotated[str, typer.Argument(help="Configuration file path.")],
     grid_file_path: Annotated[str, typer.Option(help="Grid file path.")],
     icon4py_backend: Annotated[
         str,
         typer.Option(
-            help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.ICON4PY_BACKENDS.keys()])}",
+            help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.USER_BACKEND.keys()])}",
         ),
     ],
     output_path: Annotated[
@@ -50,6 +50,14 @@ def run_icon4py_driver(
     """
 
     backend = driver_utils.get_backend_from_name(icon4py_backend)
+
+    log.info("Initializing the driver")
+
+    current_time = datetime.datetime.now()
+    output_path = (
+        output_path
+        + f"_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
+    )
     absolute_output_path = pathlib.Path(output_path).absolute()
     absolute_output_path.mkdir(parents=True, exist_ok=False)
 
@@ -64,7 +72,7 @@ def run_icon4py_driver(
 
     log.info("Generating the initial condition")
     ds: driver_states.DriverStates
-    ds = jablonowski_williamson.model_initialization_jabw(
+    ds = initial_condition.Jablonowski_Williamson(
         grid=icon4py_driver.grid_manager.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
@@ -87,4 +95,4 @@ def run_icon4py_driver(
 
 
 if __name__ == "__main__":
-    typer.run(run_icon4py_driver)
+    typer.run(main)

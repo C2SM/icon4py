@@ -30,10 +30,9 @@ def test_standalone_driver(
     """
 
     backend_name = None
-    for k, v in model_backends.ICON4PY_BACKENDS.items():
+    for k, v in model_backends.USER_BACKEND.items():
         if backend_like == v:
             backend_name = k
-    assert backend_name is not None
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 

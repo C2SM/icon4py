@@ -36,7 +36,7 @@ from icon4py.model.standalone_driver.testcases import utils as testcases_utils
 log = logging.getLogger(__name__)
 
 
-def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
+def Jablonowski_Williamson(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
@@ -268,7 +268,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     log.info("U, V computation completed.")
 
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-    gt4py_math_op.minus_operation_on_cell_k.with_backend(backend)(
+    gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
         field_a=prognostics_states.current.exner,
         field_b=metrics_field_source.get(metrics_attributes.EXNER_REF_MC),
         output_field=perturbed_exner,
