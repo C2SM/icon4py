@@ -72,7 +72,7 @@ def main(
 
     log.info("Generating the initial condition")
     ds: driver_states.DriverStates
-    ds = initial_condition.Jablonowski_Williamson(
+    ds = initial_condition.jablonowski_williamson(
         grid=icon4py_driver.grid_manager.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,

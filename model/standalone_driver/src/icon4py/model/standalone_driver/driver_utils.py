@@ -8,6 +8,7 @@
 
 import logging
 import pathlib
+import sys
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -37,8 +38,11 @@ from icon4py.model.standalone_driver import driver_states
 log = logging.getLogger(__name__)
 
 _LOGGING_LEVELS: dict[str, int] = {
+    "notset": logging.NOTSET,
     "debug": logging.DEBUG,
     "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
     "critical": logging.CRITICAL,
 }
 
@@ -363,16 +367,12 @@ def configure_logging(
             f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([*_LOGGING_LEVELS.keys()])}"
         )
 
-    logfile = output_path.joinpath(f"log_general_for_{experiment_name}")
-    logfile.touch(exist_ok=False)
-
     logging.basicConfig(
-        level=_LOGGING_LEVELS[logging_level],
+        level=logging.NOTSET,
         format="%(asctime)s %(filename)-20s (%(lineno)-4d) : %(funcName)-20s:  %(levelname)-8s %(message)s",
-        filemode="w",
-        filename=logfile,
+        stream=sys.stdout,
     )
-    console_handler = logging.StreamHandler()
+    console_handler = logging.StreamHandler(stream=sys.stderr)
     # TODO(OngChia): modify here when single_dispatch is ready
     console_handler.addFilter(mpi_decomp.ParallelLogger(processor_procs))
 

@@ -36,7 +36,7 @@ from icon4py.model.standalone_driver.testcases import utils as testcases_utils
 log = logging.getLogger(__name__)
 
 
-def Jablonowski_Williamson(  # noqa: PLR0915 [too-many-statements]
+def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,

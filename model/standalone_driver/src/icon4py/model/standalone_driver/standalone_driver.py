@@ -9,9 +9,9 @@
 import dataclasses
 import datetime
 import logging
+import logging.config
 import pathlib
 import statistics
-import time
 from collections.abc import Callable
 
 import gt4py.next as gtx
@@ -58,16 +58,25 @@ class DriverConfig:
     enable_statistics_output: bool = False
 
 
-class _DriverFormatter(logging.Formatter):
-    def __init__(self, style: str, default_fmt: str, debug_fmt: str):
-        super().__init__(fmt=default_fmt, style=style)
-        self._debug_formatter = logging.Formatter(fmt=debug_fmt, style=style)
+@dataclasses.dataclass
+class _DerivedFormatter(logging.Formatter):
+    style: str
+    default_fmt: str
+    debug_fmt: str
+
+    _debug_formatter: logging.Formatter = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        super().__init__(fmt=self.default_fmt, style=self.style)
+        self._debug_formatter = logging.Formatter(
+            fmt=self.debug_fmt,
+            style=self.style,
+        )
 
     def format(self, record: logging.LogRecord) -> str:
         if record.levelno == logging.DEBUG:
             return self._debug_formatter.format(record)
-        else:
-            return super().format(record)
+        return super().format(record)
 
 
 class Icon4pyDriver:
@@ -87,20 +96,18 @@ class Icon4pyDriver:
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
         self._xp = data_alloc.import_array_ns(self.backend)
-        self._log = logging.getLogger("Icon4PyDriver")
 
+        self._make_timers()
         self._initialize_timeloop_parameters()
         self._validate_config()
-        self._filter_log()
+        self._make_logger()
         self._display_setup_in_log_file()
 
     def _format_physics_constants(self) -> str:
         consts = PhysicsConstants()
         lines = ["==== Physical Constants ===="]
         for name, value in consts.__class__.__dict__.items():
-            if name.startswith("_"):
-                continue
-            if callable(value):
+            if name.startswith("_") or callable(value):
                 continue
             lines.append(f"{name:30s}: {value}")
         return "\n".join(lines)
@@ -162,40 +169,48 @@ class Icon4pyDriver:
             icon4py_signature += empty_line
         icon4py_signature += boundary_line
         icon4py_signature = "\n".join(icon4py_signature)
-        self._log.info(f"{icon4py_signature}")
+        self._logger.info(f"{icon4py_signature}")
 
-        self._log.info("===== ICON4Py Driver Configuration =====")
-        self._log.info(f"Experiment name        : {self.config.experiment_name}")
-        self._log.info(f"Time step (dtime)      : {self.config.dtime.total_seconds()} s")
-        self._log.info(f"Number of timesteps    : {self.n_time_steps}")
-        self._log.info(f"Initial ndyn_substeps  : {self.config.ndyn_substeps}")
-        self._log.info(f"Vertical CFL threshold : {self.config.vertical_cfl_threshold}")
-        self._log.info(f"Second-order divdamp   : {self.config.apply_extra_second_order_divdamp}")
-        self._log.info(f"Statistics enabled     : {self.config.enable_statistics_output}")
-        self._log.info("")
+        self._logger.info("===== ICON4Py Driver Configuration =====")
+        self._logger.info(f"Experiment name        : {self.config.experiment_name}")
+        self._logger.info(f"Time step (dtime)      : {self.config.dtime.total_seconds()} s")
+        self._logger.info(f"Number of timesteps    : {self.n_time_steps}")
+        self._logger.info(f"Initial ndyn_substeps  : {self.config.ndyn_substeps}")
+        self._logger.info(f"Vertical CFL threshold : {self.config.vertical_cfl_threshold}")
+        self._logger.info(
+            f"Second-order divdamp   : {self.config.apply_extra_second_order_divdamp}"
+        )
+        self._logger.info(f"Statistics enabled     : {self.config.enable_statistics_output}")
+        self._logger.info("")
 
-        self._log.info("==== Vertical Grid Parameters ====")
-        self._log.info(self.solve_nonhydro._vertical_params)
-        self._log.info(self._format_physics_constants())
+        self._logger.info("==== Vertical Grid Parameters ====")
+        self._logger.info(self.solve_nonhydro._vertical_params)
+        self._logger.info(self._format_physics_constants())
 
-    def _filter_log(self) -> None:
+    def _make_timers(self) -> None:
+        self._timers: dict[str, Timer] = {}
+        self._timers["timer_solve_nh_first_step"] = Timer("Solve nh: first time step", dp=6)
+        self._timers["timer_solve_nh"] = Timer("Solve nh: after first time step", dp=6)
+        self._timers["timer_diffusion_first_step"] = Timer("Diffusion: first time step", dp=6)
+        self._timers["timer_diffusion"] = Timer("Diffusion: after first time step", dp=6)
+
+    def _make_logger(self) -> None:
         """
         Create a log file and two log formats for debug and other logging levels. When debug level is used for
         a message, an ascii time stamp and the function name are appended to the beginning of the message.
         """
-        logging.Formatter.converter = time.localtime
+        self._logger = logging.getLogger("Icon4PyDriver")
         file_handler = logging.FileHandler(
-            filename=self.config.output_path.joinpath(
-                f"log_driver_statistics_for_{self.config.experiment_name}"
-            )
+            filename=str(self.config.output_path.joinpath(f"log_{self.config.experiment_name}")),
         )
-        default_log_format = "{message}"
-        debug_log_format = "{asctime} {funcName:<20} : {message}"
-        file_handler.setFormatter(
-            _DriverFormatter(style="{", default_fmt=default_log_format, debug_fmt=debug_log_format)
+        logging_formatter = _DerivedFormatter(
+            style="{",
+            default_fmt="{message}",
+            debug_fmt="{asctime} {funcName:<20} : {message}",
         )
+        file_handler.setFormatter(logging_formatter)
         file_handler.setLevel(logging.DEBUG)
-        self._log.addHandler(file_handler)
+        self._logger.addHandler(file_handler)
 
     def _initialize_timeloop_parameters(self) -> None:
         """
@@ -232,7 +247,7 @@ class Icon4pyDriver:
         Re-initialize the time step, number of substeps, elapsed time, simulation date, and other
         time integration parameters for re-run.
         """
-        self._log.info("Reinitialize the driver")
+        self._logger.info("Reinitialize the driver")
         self._initialize_timeloop_parameters()
 
     @property
@@ -293,12 +308,12 @@ class Icon4pyDriver:
             vn_sign = _determine_sign(max_vn)
             w_sign = _determine_sign(max_w)
 
-            self._log.info(
+            self._logger.info(
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self._ndyn_substeps_var:3d} == "
                 f"MAX RHO: {rho_sign}{abs(max_rho):.5e} at lvl {rho_arg_max[1]:4d}, MAX VN: {vn_sign}{abs(max_vn):.5e} at lvl {vn_arg_max[1]:4d}, MAX W: {w_sign}{abs(max_w):.5e} at lvl {w_arg_max[1]:4d}"
             )
         else:
-            self._log.info(
+            self._logger.info(
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self._ndyn_substeps_var:3d}"
             )
 
@@ -314,12 +329,12 @@ class Icon4pyDriver:
             interface_physical_height_ndarray = (
                 self.solve_nonhydro._vertical_params.interface_physical_height.ndarray
             )
-            self._log.info("")
-            self._log.info(
+            self._logger.info("")
+            self._logger.info(
                 "Global mean of    rho         vn           w          theta_v     exner      at model levels:"
             )
             for k in range(rho_ndarray.shape[1]):
-                self._log.info(
+                self._logger.info(
                     f"{interface_physical_height_ndarray[k]:12.3f}: {self._xp.mean(rho_ndarray[:, k]):.5e} "
                     f"{self._xp.mean(vn_ndarray[:, k]):.5e} "
                     f"{self._xp.mean(w_ndarray[:, k+1]):.5e} "
@@ -327,16 +342,22 @@ class Icon4pyDriver:
                     f"{self._xp.mean(exner_ndarray[:, k]):.5e} "
                 )
 
-    def _show_timer_report(self, timer: Timer, timer_title: str) -> None:
-        timer_summary = timer.summary(False)
-        self._log.info(
-            f"{timer_title} timer summary: "
-            f"times={len(timer_summary)}, "
-            f"mean={statistics.mean(timer_summary):0.8f}s, "
-            f"stdev={statistics.stdev(timer_summary) if len(timer_summary) > 1 else 0:0.8f}s, "
-            f"min={min(timer_summary):0.8f}s, "
-            f"max={max(timer_summary):0.8f}s"
-        )
+    def _show_timer_report(
+        self,
+    ) -> None:
+        for timer_name, timer in self._timers.items():
+            try:
+                timer_summary = timer.summary(False)
+                self._logger.info(
+                    f"{timer_name} timer summary: "
+                    f"times={len(timer_summary)}, "
+                    f"mean={statistics.mean(timer_summary):0.8f}s, "
+                    f"stdev={statistics.stdev(timer_summary) if len(timer_summary) > 1 else 0:0.8f}s, "
+                    f"min={min(timer_summary):0.8f}s, "
+                    f"max={max(timer_summary):0.8f}s"
+                )
+            except RuntimeError:  # noqa: PERF203 `try`-`except` within a loop incurs performance overhead
+                self._logger.info(f"Timer {timer_name} has not started")
 
     def time_integration(
         self,
@@ -346,26 +367,22 @@ class Icon4pyDriver:
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
     ) -> None:
-        self._log.debug(
+        self._logger.debug(
             f"starting time loop for dtime = {self._dtime_in_seconds} s, substep_timestep = {self._substep_timestep} s, n_timesteps = {self.n_time_steps}, substep_timestep = {self.substep_timestep}"
         )
 
         # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
 
-        timer_first_timestep = Timer("Driver: first time step", dp=6)
-        timer_after_first_timestep = Timer("Driver: after first time step", dp=6)
-
         actual_starting_time = datetime.datetime.now()
 
         for time_step in range(self._n_time_steps):
-            timer = timer_first_timestep if time_step == 0 else timer_after_first_timestep
             if self.config.profiling_stats is not None:
                 if not self.config.profiling_stats.skip_first_timestep or time_step > 0:
                     gtx_config.COLLECT_METRICS_LEVEL = (
                         self.config.profiling_stats.gt4py_metrics_level
                     )
 
-            self._log.info(
+            self._logger.info(
                 f"\n"
                 f"simulation date : {self._simulation_date}, at run timestep : {time_step}, with actual time spent: {(datetime.datetime.now() - actual_starting_time).total_seconds()}"
                 f"\n"
@@ -373,7 +390,6 @@ class Icon4pyDriver:
 
             self._next_simulation_date()
 
-            timer.start()
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
@@ -382,7 +398,6 @@ class Icon4pyDriver:
                 do_prep_adv,
             )
             device_utils.sync(self.backend)
-            timer.capture()
 
             self._is_first_step_in_simulation = False
 
@@ -392,10 +407,7 @@ class Icon4pyDriver:
 
         self._compute_mean_at_final_time_step(prognostic_states.current)
 
-        self._show_timer_report(timer_first_timestep, "First time step")
-        if self.n_time_steps > 1:  # in case only one time step was run
-            self._show_timer_report(timer_after_first_timestep, "After first time step")
-
+        self._show_timer_report()
         if (
             self.config.profiling_stats is not None
             and self.config.profiling_stats.gt4py_metrics_level > gtx_metrics.DISABLED
@@ -411,7 +423,7 @@ class Icon4pyDriver:
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
     ):
-        self._log.debug(f"Running {self.solve_nonhydro.__class__}")
+        self._logger.debug(f"Running {self.solve_nonhydro.__class__}")
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_states,
@@ -420,12 +432,19 @@ class Icon4pyDriver:
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
-            self._log.debug(f"Running {self.diffusion.__class__}")
+            self._logger.debug(f"Running {self.diffusion.__class__}")
+            timer_diffusion = (
+                self._timers["timer_diffusion_first_step"]
+                if self._is_first_step_in_simulation
+                else self._timers["timer_diffusion"]
+            )
+            timer_diffusion.start()
             self.diffusion.run(
                 diffusion_diagnostic_state,
                 prognostic_states.next,
                 self._dtime_in_seconds,
             )
+            timer_diffusion.capture()
 
         prognostic_states.swap()
 
@@ -475,6 +494,13 @@ class Icon4pyDriver:
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
     ):
+        # TODO(OngChia): compute airmass for prognostic_state here
+
+        timer_solve_nh = (
+            self._timers["timer_solve_nh_first_step"]
+            if self._is_first_step_in_simulation
+            else self._timers["timer_solve_nh"]
+        )
         for dyn_substep in range(self._ndyn_substeps_var):
             self._compute_statistics(dyn_substep, prognostic_states.current)
 
@@ -484,6 +510,7 @@ class Icon4pyDriver:
                 at_initial_timestep=self._is_first_step_in_simulation,
             )
 
+            timer_solve_nh.start()
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
@@ -496,6 +523,7 @@ class Icon4pyDriver:
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
             )
+            timer_solve_nh.capture()
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
@@ -516,7 +544,7 @@ class Icon4pyDriver:
             global_max_vertical_cfl > ta.wpfloat("0.81") * self.config.vertical_cfl_threshold
             and not self._cfl_watch_mode
         ):
-            self._log.info(
+            self._logger.info(
                 "High CFL number for vertical advection in dynamical core, entering watch mode"
             )
             self._cfl_watch_mode = True
@@ -527,7 +555,7 @@ class Icon4pyDriver:
                 global_max_vertical_cfl * substep_fraction
                 > ta.wpfloat("0.9") * self.config.vertical_cfl_threshold
             ):
-                self._log.info(
+                self._logger.info(
                     f"Maximum vertical CFL number {global_max_vertical_cfl} is close to critical threshold"
                 )
 
@@ -550,13 +578,13 @@ class Icon4pyDriver:
                         self._ndyn_substeps_var + ndyn_substeps_increment, self._max_ndyn_substeps
                     )
                 else:
-                    self._log.info(
+                    self._logger.info(
                         f"WARNING: max cfl {global_max_vertical_cfl} is not a number! Number of substeps is set to the max value! "
                     )
                     new_ndyn_substeps_var = self._max_ndyn_substeps
                 self._update_ndyn_substeps(new_ndyn_substeps_var)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
-                self._log.info(
+                self._logger.info(
                     f"The number of dynamics substeps is increased to {self._ndyn_substeps_var}"
                 )
             if (
@@ -567,7 +595,7 @@ class Icon4pyDriver:
             ):
                 self._update_ndyn_substeps(self._ndyn_substeps_var - 1)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
-                self._log.info(
+                self._logger.info(
                     f"The number of dynamics substeps is decreased to {self._ndyn_substeps_var}"
                 )
 
@@ -576,7 +604,7 @@ class Icon4pyDriver:
                     and global_max_vertical_cfl
                     < ta.wpfloat("0.76") * self.config.vertical_cfl_threshold
                 ):
-                    self._log.info(
+                    self._logger.info(
                         "CFL number for vertical advection in dynamical core has decreased, leaving watch mode"
                     )
                     self._cfl_watch_mode = False
