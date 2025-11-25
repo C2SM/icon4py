@@ -17,6 +17,7 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import constants
+from icon4py.model.common.exceptions import dummy_exchange
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_lin_e,
@@ -49,10 +50,6 @@ from icon4py.model.testing.fixtures.datatest import (
 cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
-
-
-def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
-    return None
 
 
 @pytest.mark.level("unit")

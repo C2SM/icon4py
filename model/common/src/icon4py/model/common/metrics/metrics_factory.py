@@ -235,7 +235,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"out_field": attrs.DDQZ_Z_FULL_E},
-            do_exchange=True,
         )
         self.register_provider(ddqz_full_on_edges)
 
@@ -361,7 +360,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
             },
-            do_exchange=True,
         )
         self.register_provider(compute_theta_rho_ref_me)
 
@@ -483,7 +481,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    edge_domain(h_grid.Zone.LOCAL),
                     edge_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
@@ -492,7 +490,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"average": attrs.DDXN_Z_FULL},
-            do_exchange=True,
         )
         self.register_provider(compute_ddxn_z_full)
 
@@ -505,7 +502,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    edge_domain(h_grid.Zone.LOCAL),
                     edge_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
@@ -626,7 +623,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 mf.compute_flat_max_idx,
                 array_ns=self._xp,
-                halo_exchange=self._exchange.exchange_and_wait,
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -731,7 +727,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),  # type: ignore [attr-defined]
                 "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
             },
-            do_exchange=True,
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 

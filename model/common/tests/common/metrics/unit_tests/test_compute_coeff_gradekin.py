@@ -13,6 +13,7 @@ import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.exceptions import dummy_exchange
 from icon4py.model.common.metrics.compute_coeff_gradekin import compute_coeff_gradekin
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -31,12 +32,6 @@ from icon4py.model.testing.fixtures.datatest import (
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
     from icon4py.model.testing import serialbox as sb
-
-import gt4py.next as gtx
-
-
-def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
-    return None
 
 
 @pytest.mark.level("unit")
