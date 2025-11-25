@@ -132,8 +132,10 @@ def test_and_benchmark(
             )
             metrics_data = gtx_metrics.sources
             compute_samples = metrics_data[metrics_key].metrics["compute"].samples
-            # exclude warmup iterations and one extra iteration for calibrating pytest-benchmark
-            initial_program_iterations_to_skip = warmup_rounds * iterations + 1
+            # exclude warmup iterations, one extra iteration for calibrating pytest-benchmark and one for validation (if executed)
+            initial_program_iterations_to_skip = warmup_rounds * iterations + (
+                1 if benchmark_only_option else 2
+            )
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:
             ]
