@@ -103,11 +103,7 @@ module diffusion
 
       end function diffusion_run_wrapper
 
-      function diffusion_init_wrapper(vct_a, &
-                                      vct_a_size_0, &
-                                      vct_b, &
-                                      vct_b_size_0, &
-                                      theta_ref_mc, &
+      function diffusion_init_wrapper(theta_ref_mc, &
                                       theta_ref_mc_size_0, &
                                       theta_ref_mc_size_1, &
                                       wgtfac_c, &
@@ -151,7 +147,6 @@ module diffusion
                                       zd_intcoef_size_1, &
                                       zd_intcoef_size_2, &
                                       ndyn_substeps, &
-                                      rayleigh_damping_height, &
                                       diffusion_type, &
                                       hdiff_w, &
                                       hdiff_vn, &
@@ -167,21 +162,10 @@ module diffusion
                                       nudge_max_coeff, &
                                       itype_sher, &
                                       ltkeshs, &
-                                      lowest_layer_thickness, &
-                                      model_top_height, &
-                                      stretch_factor, &
                                       backend, &
                                       on_gpu) bind(c, name="diffusion_init_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
-
-         type(c_ptr), value, target :: vct_a
-
-         integer(c_int), value :: vct_a_size_0
-
-         type(c_ptr), value, target :: vct_b
-
-         integer(c_int), value :: vct_b_size_0
 
          type(c_ptr), value, target :: theta_ref_mc
 
@@ -271,8 +255,6 @@ module diffusion
 
          integer(c_int), value, target :: ndyn_substeps
 
-         real(c_double), value, target :: rayleigh_damping_height
-
          integer(c_int), value, target :: diffusion_type
 
          logical(c_int), value, target :: hdiff_w
@@ -302,12 +284,6 @@ module diffusion
          integer(c_int), value, target :: itype_sher
 
          logical(c_int), value, target :: ltkeshs
-
-         real(c_double), value, target :: lowest_layer_thickness
-
-         real(c_double), value, target :: model_top_height
-
-         real(c_double), value, target :: stretch_factor
 
          integer(c_int), value, target :: backend
 
@@ -508,9 +484,7 @@ contains
       !$acc end host_data
    end subroutine diffusion_run
 
-   subroutine diffusion_init(vct_a, &
-                             vct_b, &
-                             theta_ref_mc, &
+   subroutine diffusion_init(theta_ref_mc, &
                              wgtfac_c, &
                              e_bln_c_s, &
                              geofac_div, &
@@ -525,7 +499,6 @@ contains
                              zd_vertoffset, &
                              zd_intcoef, &
                              ndyn_substeps, &
-                             rayleigh_damping_height, &
                              diffusion_type, &
                              hdiff_w, &
                              hdiff_vn, &
@@ -541,16 +514,9 @@ contains
                              nudge_max_coeff, &
                              itype_sher, &
                              ltkeshs, &
-                             lowest_layer_thickness, &
-                             model_top_height, &
-                             stretch_factor, &
                              backend, &
                              rc)
       use, intrinsic :: iso_c_binding
-
-      real(c_double), dimension(:), target :: vct_a
-
-      real(c_double), dimension(:), target :: vct_b
 
       real(c_double), dimension(:, :), target :: theta_ref_mc
 
@@ -582,8 +548,6 @@ contains
 
       integer(c_int), value, target :: ndyn_substeps
 
-      real(c_double), value, target :: rayleigh_damping_height
-
       integer(c_int), value, target :: diffusion_type
 
       logical(c_int), value, target :: hdiff_w
@@ -614,19 +578,9 @@ contains
 
       logical(c_int), value, target :: ltkeshs
 
-      real(c_double), value, target :: lowest_layer_thickness
-
-      real(c_double), value, target :: model_top_height
-
-      real(c_double), value, target :: stretch_factor
-
       integer(c_int), value, target :: backend
 
       logical(c_int) :: on_gpu
-
-      integer(c_int) :: vct_a_size_0
-
-      integer(c_int) :: vct_b_size_0
 
       integer(c_int) :: theta_ref_mc_size_0
 
@@ -705,8 +659,6 @@ contains
 
       zd_intcoef_ptr = c_null_ptr
 
-      !$acc host_data use_device(vct_a)
-      !$acc host_data use_device(vct_b)
       !$acc host_data use_device(theta_ref_mc)
       !$acc host_data use_device(wgtfac_c)
       !$acc host_data use_device(e_bln_c_s)
@@ -727,10 +679,6 @@ contains
 #else
       on_gpu = .False.
 #endif
-
-      vct_a_size_0 = SIZE(vct_a, 1)
-
-      vct_b_size_0 = SIZE(vct_b, 1)
 
       theta_ref_mc_size_0 = SIZE(theta_ref_mc, 1)
       theta_ref_mc_size_1 = SIZE(theta_ref_mc, 2)
@@ -787,11 +735,7 @@ contains
          zd_intcoef_size_2 = SIZE(zd_intcoef, 3)
       end if
 
-      rc = diffusion_init_wrapper(vct_a=c_loc(vct_a), &
-                                  vct_a_size_0=vct_a_size_0, &
-                                  vct_b=c_loc(vct_b), &
-                                  vct_b_size_0=vct_b_size_0, &
-                                  theta_ref_mc=c_loc(theta_ref_mc), &
+      rc = diffusion_init_wrapper(theta_ref_mc=c_loc(theta_ref_mc), &
                                   theta_ref_mc_size_0=theta_ref_mc_size_0, &
                                   theta_ref_mc_size_1=theta_ref_mc_size_1, &
                                   wgtfac_c=c_loc(wgtfac_c), &
@@ -835,7 +779,6 @@ contains
                                   zd_intcoef_size_1=zd_intcoef_size_1, &
                                   zd_intcoef_size_2=zd_intcoef_size_2, &
                                   ndyn_substeps=ndyn_substeps, &
-                                  rayleigh_damping_height=rayleigh_damping_height, &
                                   diffusion_type=diffusion_type, &
                                   hdiff_w=hdiff_w, &
                                   hdiff_vn=hdiff_vn, &
@@ -851,13 +794,8 @@ contains
                                   nudge_max_coeff=nudge_max_coeff, &
                                   itype_sher=itype_sher, &
                                   ltkeshs=ltkeshs, &
-                                  lowest_layer_thickness=lowest_layer_thickness, &
-                                  model_top_height=model_top_height, &
-                                  stretch_factor=stretch_factor, &
                                   backend=backend, &
                                   on_gpu=on_gpu)
-      !$acc end host_data
-      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
