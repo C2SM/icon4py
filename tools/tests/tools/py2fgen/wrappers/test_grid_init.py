@@ -81,6 +81,16 @@ def grid_init(grid_savepoint):
     primal_normal_x = test_utils.array_to_array_info(grid_savepoint.primal_normal_v1().ndarray)
     primal_normal_y = test_utils.array_to_array_info(grid_savepoint.primal_normal_v2().ndarray)
 
+    # vertical grid
+    lowest_layer_thickness = 20.0
+    model_top_height = 23000.0
+    stretch_factor = 0.65
+    flat_height = 16000.0
+    rayleigh_damping_height = 12500.0
+
+    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
+    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
+
     # not running in parallel
     _dummy_int_array = np.array([], dtype=np.int32)
     _dummy_bool_array = np.array([], dtype=np.bool_)
@@ -136,6 +146,13 @@ def grid_init(grid_savepoint):
         edge_center_lon=edge_center_lon,
         primal_normal_x=primal_normal_x,
         primal_normal_y=primal_normal_y,
+        vct_a=vct_a,
+        vct_b=vct_b,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        flat_height=flat_height,
+        rayleigh_damping_height=rayleigh_damping_height,
         mean_cell_area=mean_cell_area,
         c_glb_index=c_glb_index,
         e_glb_index=e_glb_index,
