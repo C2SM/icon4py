@@ -117,10 +117,6 @@ def test_and_benchmark(
             )
 
         if benchmark is not None and benchmark.enabled:
-            # Clean up GT4Py metrics from previous runs
-            if gtx_config.COLLECT_METRICS_LEVEL > 0:
-                gtx_metrics.sources.clear()
-
             warmup_rounds = 1
             iterations = 10
 
@@ -137,12 +133,18 @@ def test_and_benchmark(
             # Collect GT4Py runtime metrics if enabled
             if gtx_config.COLLECT_METRICS_LEVEL > 0:
                 assert (
-                    len(gtx_metrics.sources) == 1
-                ), "Expected exactly one entry in gtx_metrics.sources"
-                # Store GT4Py metrics in benchmark.extra_info
+                    len(_configured_program._compiled_programs.compiled_programs) == 1
+                ), "Multiple compiled programs found, cannot extract metrics."
+                # Get compiled programs from the _configured_program passed to test
+                compiled_programs = _configured_program._compiled_programs.compiled_programs
+                # Get the pool key necessary to find the right metrics key. There should be only one compiled program in _configured_program
+                pool_key = next(iter(compiled_programs.keys()))
+                # Get the metrics key from the pool key to read the corresponding metrics
+                metrics_key = _configured_program._compiled_programs._metrics_key_from_pool_key(
+                    pool_key
+                )
                 metrics_data = gtx_metrics.sources
-                key = next(iter(metrics_data))
-                compute_samples = metrics_data[key].metrics["compute"].samples
+                compute_samples = metrics_data[metrics_key].metrics["compute"].samples
                 # exclude warmup iterations and one extra iteration for calibrating pytest-benchmark
                 initial_program_iterations_to_skip = warmup_rounds * iterations + 1
                 benchmark.extra_info["gtx_metrics"] = compute_samples[
