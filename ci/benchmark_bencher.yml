@@ -17,7 +17,7 @@ include:
   stage: benchmark
   script:
     - !reference [.bencher_setup_env, setup]
-    - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID -k "compile_time_domain"
+    - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
       - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
