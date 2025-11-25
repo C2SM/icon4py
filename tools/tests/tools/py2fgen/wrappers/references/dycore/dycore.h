@@ -38,7 +38,6 @@ extern int solve_nh_run_wrapper(
     int lprep_adv, int at_initial_timestep, double divdamp_fac_o2,
     int ndyn_substeps_var, int idyn_timestep, int on_gpu);
 extern int solve_nh_init_wrapper(
-    double *vct_a, int vct_a_size_0, double *vct_b, int vct_b_size_0,
     double *c_lin_e, int c_lin_e_size_0, int c_lin_e_size_1, double *c_intp,
     int c_intp_size_0, int c_intp_size_1, double *e_flx_avg,
     int e_flx_avg_size_0, int e_flx_avg_size_1, double *geofac_grdiv,
@@ -89,13 +88,11 @@ extern int solve_nh_init_wrapper(
     int coeff1_dwdz_size_1, double *coeff2_dwdz, int coeff2_dwdz_size_0,
     int coeff2_dwdz_size_1, double *coeff_gradekin, int coeff_gradekin_size_0,
     int coeff_gradekin_size_1, int *c_owner_mask, int c_owner_mask_size_0,
-    double rayleigh_damping_height, int itime_scheme, int iadv_rhotheta,
-    int igradp_method, int rayleigh_type, double rayleigh_coeff,
-    int divdamp_order, int is_iau_active, double iau_wgt_dyn, int divdamp_type,
-    double divdamp_trans_start, double divdamp_trans_end, int l_vert_nested,
-    double rhotheta_offctr, double veladv_offctr, double nudge_max_coeff,
-    double divdamp_fac, double divdamp_fac2, double divdamp_fac3,
-    double divdamp_fac4, double divdamp_z, double divdamp_z2, double divdamp_z3,
-    double divdamp_z4, double lowest_layer_thickness, double model_top_height,
-    double stretch_factor, int nflat_gradp, int num_levels, int backend,
-    int on_gpu);
+    int itime_scheme, int iadv_rhotheta, int igradp_method, int rayleigh_type,
+    double rayleigh_coeff, int divdamp_order, int is_iau_active,
+    double iau_wgt_dyn, int divdamp_type, double divdamp_trans_start,
+    double divdamp_trans_end, int l_vert_nested, double rhotheta_offctr,
+    double veladv_offctr, double nudge_max_coeff, double divdamp_fac,
+    double divdamp_fac2, double divdamp_fac3, double divdamp_fac4,
+    double divdamp_z, double divdamp_z2, double divdamp_z3, double divdamp_z4,
+    int nflat_gradp, int backend, int on_gpu);

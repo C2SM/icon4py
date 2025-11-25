@@ -7,7 +7,6 @@ extern int diffusion_run_wrapper(
     double *dwdx, int dwdx_size_0, int dwdx_size_1, double *dwdy,
     int dwdy_size_0, int dwdy_size_1, double dtime, int linit, int on_gpu);
 extern int diffusion_init_wrapper(
-    double *vct_a, int vct_a_size_0, double *vct_b, int vct_b_size_0,
     double *theta_ref_mc, int theta_ref_mc_size_0, int theta_ref_mc_size_1,
     double *wgtfac_c, int wgtfac_c_size_0, int wgtfac_c_size_1,
     double *e_bln_c_s, int e_bln_c_s_size_0, int e_bln_c_s_size_1,
@@ -23,10 +22,8 @@ extern int diffusion_init_wrapper(
     int zd_vertoffset_size_0, int zd_vertoffset_size_1,
     int zd_vertoffset_size_2, double *zd_intcoef, int zd_intcoef_size_0,
     int zd_intcoef_size_1, int zd_intcoef_size_2, int ndyn_substeps,
-    double rayleigh_damping_height, int diffusion_type, int hdiff_w,
-    int hdiff_vn, int zdiffu_t, int type_t_diffu, int type_vn_diffu,
-    double hdiff_efdt_ratio, double smagorinski_scaling_factor, int hdiff_temp,
-    double thslp_zdiffu, double thhgtd_zdiffu, double denom_diffu_v,
-    double nudge_max_coeff, int itype_sher, int ltkeshs,
-    double lowest_layer_thickness, double model_top_height,
-    double stretch_factor, int backend, int on_gpu);
+    int diffusion_type, int hdiff_w, int hdiff_vn, int zdiffu_t,
+    int type_t_diffu, int type_vn_diffu, double hdiff_efdt_ratio,
+    double smagorinski_scaling_factor, int hdiff_temp, double thslp_zdiffu,
+    double thhgtd_zdiffu, double denom_diffu_v, double nudge_max_coeff,
+    int itype_sher, int ltkeshs, int backend, int on_gpu);
