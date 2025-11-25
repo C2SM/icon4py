@@ -111,7 +111,9 @@ class DecompositionInfo:
         self._owner_mask[dim] = owner_mask
         self._halo_levels[dim] = halo_levels
 
-    def local_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
+    def local_index(
+        self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
+    ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._to_local_index(dim)
@@ -179,7 +181,7 @@ class DecompositionInfo:
             case _:
                 raise NotImplementedError()
 
-    def get_horizontal_size(self)->base.HorizontalGridSize:
+    def get_horizontal_size(self) -> base.HorizontalGridSize:
         return base.HorizontalGridSize(
             num_cells=self.global_index(dims.CellDim, self.EntryType.ALL).shape[0],
             num_edges=self.global_index(dims.EdgeDim, self.EntryType.ALL).shape[0],
@@ -189,15 +191,11 @@ class DecompositionInfo:
     def get_halo_size(self, dim: gtx.Dimension, flag: DecompositionFlag) -> int:
         return np.count_nonzero(self.halo_level_mask(dim, flag))
 
-    def halo_levels(self, dim: gtx.Dimension)->data_alloc.NDArray:
+    def halo_levels(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._halo_levels[dim]
 
-    def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag)->data_alloc.NDArray:
+    def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag) -> data_alloc.NDArray:
         return np.where(self._halo_levels[dim] == level, True, False)
-
-    # TODO (@halungge): unused - delete?
-    def is_on_node(self, dim, index: int, entryType: EntryType = EntryType.ALL) -> bool:
-        return np.isin(index, self.global_index(dim, entry_type=entryType)).item()
 
 
 class ExchangeResult(Protocol):
@@ -296,7 +294,9 @@ class HaloExchangeWait:
         communication_handle.wait()
 
     # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> dace.sdfg.sdfg.SDFG:
+    def dace__sdfg__(
+        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+    ) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
         sdfg.name = "_halo_exchange_wait_"
         return sdfg
@@ -429,5 +429,3 @@ class DecompositionFlag(enum.IntEnum):
     - vertices (NOT USED)
     - edges that are only on the cell(SECOND_HALO_LINE)
     """
-
-

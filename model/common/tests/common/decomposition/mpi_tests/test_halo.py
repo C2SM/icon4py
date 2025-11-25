@@ -35,7 +35,6 @@ from icon4py.model.common.decomposition import halo
 from icon4py.model.common.grid import base as base_grid, simple
 
 
-
 backend = None
 
 

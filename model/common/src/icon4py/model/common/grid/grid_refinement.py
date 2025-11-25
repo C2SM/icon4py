@@ -155,60 +155,105 @@ _LAST_BOUNDARY: dict[gtx.Dimension, h_grid.Zone] = {
 }
 
 
-def compute_domain_bounds(
-    dim: gtx.Dimension, refinement_fields: dict[gtx.Dimension, gtx.Field], decomposition_info: decomposition.DecompositionInfo, rank, array_ns: ModuleType = np
-) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
-    refinement_ctrl = refinement_fields[dim].ndarray
-    refinement_ctrl = convert_to_non_nested_refinement_values(refinement_ctrl, dim, array_ns)
+def _refinement_level_in_halo(domain: h_grid.Domain) -> int:
+    assert domain.zone.is_halo(), "Domain must be a halo Zone."
+    dim = domain.dim
+    match dim:
+        case dims.EdgeDim:
+            return 6 if domain.zone == h_grid.Zone.HALO else 4
+        case dims.CellDim | dims.VertexDim:
+            return 2 if domain.zone == h_grid.Zone.HALO else 1
+        case _:
+            raise ValueError(f"Invalid domain: {domain}, must be a HALO domain")
 
-    domains = h_grid.get_domains_for_dim(dim)
+
+def compute_domain_bounds(
+    dim: gtx.Dimension,
+    refinement_fields: dict[gtx.Dimension, gtx.Field],
+    decomposition_info: decomposition.DecompositionInfo,
+    array_ns: ModuleType = np,
+) -> tuple[dict[h_grid.Domain, gtx.int32], dict[h_grid.Domain, gtx.int32]]:  # type: ignore   [name-defined]
+    """
+    Compute the domain bounds (start_index, end_index) based on a grid Domain.
+
+    Icon orders the field arrays according to their
+
+    """
+    refinement_ctrl = convert_to_non_nested_refinement_values(
+        refinement_fields[dim].ndarray, dim, array_ns
+    )
+    owned = decomposition_info.owner_mask(dim)
+    halo_level_1 = decomposition_info.halo_level_mask(
+        dim, decomposition.DecompositionFlag.FIRST_HALO_LINE
+    )
+    halo_level_2 = decomposition_info.halo_level_mask(
+        dim, decomposition.DecompositionFlag.SECOND_HALO_LINE
+    )
+
     start_indices = {}
     end_indices = {}
-    for domain in domains:
-        start_index = 0
-        end_index = refinement_ctrl.shape[0]
-        my_zone = domain.zone
-        if (
-            my_zone is h_grid.Zone.END
-        ):  # TODO(halungge): implement for distributed
-            start_index = refinement_ctrl.shape[0]
-            end_index = refinement_ctrl.shape[0]
-        elif my_zone.is_lateral_boundary():
-            found = array_ns.where(refinement_ctrl == my_zone.level)[0]
-            start_index, end_index = (
-                (array_ns.min(found).item(), array_ns.max(found).item() + 1)
-                if found.size > 0
-                else (0, 0)
-            )
-        elif my_zone.is_nudging():
-            value = _LAST_BOUNDARY[dim].level + my_zone.level
-            found = array_ns.where(refinement_ctrl == value)[0]
-            start_index, end_index = (
-                (array_ns.min(found).item(), array_ns.max(found).item() + 1)
-                if found.size > 0
-                else (0, 0)
-            )
-        elif my_zone is h_grid.Zone.INTERIOR:
-            # for the Vertex and Edges the level after the nudging zones are not ordered anymore, so
-            # we rely on using the end index of the nudging zone for INTERIOR
-            value = get_nudging_refinement_value(dim)
-            found = array_ns.where(refinement_ctrl == value)[0]
-            start_index = array_ns.max(found).item() + 1 if found.size > 0 else 0
-            end_index = refinement_ctrl.shape[0]
-        elif my_zone.is_halo():
-            flag = decomposition.DecompositionFlag(my_zone.level)
-            not_lateral_boundary = ((refinement_ctrl < 1) | (refinement_ctrl > h_grid.max_boundary_level(dim)))
-            halo_region = array_ns.where(decomposition_info.halo_level_mask(dim, flag) & not_lateral_boundary)[0]
-            print(f"{rank} - halo region {my_zone} {halo_region.shape} - {halo_region}")
-            if halo_region.size > 0:
-                start_index = array_ns.min(halo_region)
-                end_index = array_ns.max(halo_region) + 1
-            else:
-                start_index = refinement_ctrl.shape[0]
-                end_index = refinement_ctrl.shape[0]
 
+    end_domain = h_grid.domain(dim)(h_grid.Zone.END)
+    start_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
+    end_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
+
+    halo_domains = h_grid.get_halo_domains(dim)
+    for domain in halo_domains:
+        my_flag = decomposition.DecompositionFlag(domain.zone.level)
+        upper_boundary_level_1 = _refinement_level_in_halo(h_grid.domain(dim)(h_grid.Zone.HALO))
+        not_lateral_boundary_1 = (refinement_ctrl < 1) | (
+            refinement_ctrl > upper_boundary_level_1
+        )  # edge 6
+        halo_region_1 = array_ns.where(halo_level_1 & not_lateral_boundary_1)[0]
+        not_lateral_boundary_2 = (refinement_ctrl < 1) | (
+            refinement_ctrl
+            > _refinement_level_in_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
+        )
+
+        halo_region_2 = array_ns.where(halo_level_2 & not_lateral_boundary_2)[0]
+        start_halo_2, end_halo_2 = (
+            (array_ns.min(halo_region_2), array_ns.max(halo_region_2) + 1)
+            if halo_region_2.size > 0
+            else (refinement_ctrl.size, refinement_ctrl.size)
+        )
+        if my_flag == h_grid.Zone.HALO.level:
+            start_index = array_ns.min(halo_region_1) if halo_region_1.size > 0 else start_halo_2
+            end_index = start_halo_2
+        else:
+            start_index = start_halo_2
+            end_index = end_halo_2
         start_indices[domain] = gtx.int32(start_index)  # type: ignore [attr-defined]
         end_indices[domain] = gtx.int32(end_index)  # type: ignore [attr-defined]
+
+    ordered_domains = h_grid.get_ordered_domains(dim)
+    for domain in ordered_domains:
+        value = (
+            domain.zone.level
+            if domain.zone.is_lateral_boundary()
+            else _LAST_BOUNDARY[dim].level + domain.zone.level
+        )
+        found = array_ns.where((refinement_ctrl == value) & owned)[0]
+        start_index, end_index = (
+            (array_ns.min(found).item(), array_ns.max(found).item() + 1)
+            if found.size > 0
+            else (0, 0)
+        )
+        start_indices[domain] = gtx.int32(start_index)
+        end_indices[domain] = gtx.int32(end_index)
+
+    interior_domain = h_grid.domain(dim)(h_grid.Zone.INTERIOR)
+    # for the Vertex and Edges the level after the nudging zones are not ordered anymore, so
+    # we rely on using the end index of the nudging zone for INTERIOR
+    nudging = h_grid.get_last_nudging(dim)
+    start_indices[interior_domain] = end_indices[nudging]
+    halo_1 = h_grid.domain(dim)(h_grid.Zone.HALO)
+    end_indices[interior_domain] = start_indices[halo_1]
+
+    local_domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
+    halo_1 = h_grid.domain(dim)(h_grid.Zone.HALO)
+    end_indices[local_domain] = start_indices[halo_1]
+    start_indices[local_domain] = gtx.int32(0)
+
     return start_indices, end_indices
 
 

@@ -61,6 +61,8 @@ def test_halo_zones(zone: h_grid.Zone) -> None:
         assert not zone.is_halo()
 
 
-@pytest.mark.parametrize("dim, expected", [(dims.CellDim, 4), (dims.VertexDim, 4), (dims.EdgeDim, 8)])
-def test_max_boundary_level(dim:gtx.Dimension, expected)->None:
+@pytest.mark.parametrize(
+    "dim, expected", [(dims.CellDim, 4), (dims.VertexDim, 4), (dims.EdgeDim, 8)]
+)
+def test_max_boundary_level(dim: gtx.Dimension, expected: int) -> None:
     assert expected == h_grid.max_boundary_level(dim)

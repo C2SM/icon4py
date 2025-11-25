@@ -40,7 +40,16 @@ from icon4py.model.testing import (
 
 from ...decomposition import utils as decomp_utils
 from .. import utils
-from ..fixtures import backend, experiment, grid_savepoint, icon_grid, processor_props, data_provider, download_ser_data, ranked_data_path
+from ..fixtures import (
+    backend,
+    data_provider,
+    download_ser_data,
+    experiment,
+    grid_savepoint,
+    icon_grid,
+    processor_props,
+    ranked_data_path,
+)
 
 
 try:
@@ -83,48 +92,6 @@ def run_grid_manager_for_singlenode(
         allocator=None,
     )
     return manager
-
-
-#@pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        (test_defs.Experiments.EXCLAIM_APE),
-        # (test_defs.Experiments.MCH_CH_R04B09)
-    ],
-)
-@pytest.mark.parametrize("dim", utils.horizontal_dims())
-def test_start_end_index(
-    caplog: Any,
-    backend: gtx_typing.Backend | None,
-    processor_props: defs.ProcessProperties,
-    experiment: definitions.Experiment,
-    dim: gtx.Dimension,
-    icon_grid: base.Grid,
-) -> None:
-    #decomp_utils.dummy_four_ranks(3)
-    caplog.set_level(logging.INFO)
-    grid_file = experiment.grid
-    file = grid_utils.resolve_full_grid_file_name(grid_file)
-
-    partitioner = halo.SimpleMetisDecomposer()
-    manager = gm.GridManager(
-        file,
-        v_grid.VerticalGridConfig(1),
-        icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation(),
-    )
-    manager(backend, keep_skip_values=True, decomposer=partitioner, run_properties=processor_props)
-    grid = manager.grid
-
-    domains = (h_grid.domain(dim)(z) for z in h_grid.VERTEX_AND_CELL_ZONES)
-    for domain in domains:
-        assert icon_grid.start_index(domain) == grid.start_index(
-            domain
-        ), f"start index wrong for domain {domain}"
-        assert icon_grid.end_index(domain) == grid.end_index(
-            domain
-        ), f"end index wrong for domain {domain}"
 
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -277,6 +244,7 @@ def assert_gathered_field_against_global(
 
 
 # TODO (halungge): fix non contiguous dimension for embedded in gt4py
+@pytest.mark.xfail()  #  non-contiguous dimensions in gt4py embedded: embedded/nd_array_field.py 576
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_halo_neighbor_access_c2e(

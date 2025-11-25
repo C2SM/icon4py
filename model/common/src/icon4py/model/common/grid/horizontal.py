@@ -165,27 +165,29 @@ class Zone(enum.Enum):
     | from mo_impl_constants.f90             | index   |                            |
     |:-------------------------------------- |:-------|:-------------------------- |
     | `min_rledge` (-13)                     |   0    |`END`                       |
-    | `min_rledge_int-2` (-10)               |   1    |`HALO_LEVEL_2`              |
-    | `min_rledge_int-1` (-9)                |   2    |`HALO`                      |
-    | `min_rledge_int`   (-8)                |   3    |`LOCAL`                     |
-    | (-7)                                   |   4    |                            | unused in icon4py (relevant for nesting)
-    | (-6)                                   |   5    |                            | unused in icon4py (relevant for nesting)
-    | (-5)                                   |   6    |                            | unused in icon4py (relevant for nesting)
-    | (-4)                                   |   7    |                            | unused in icon4py (relevant for nesting)
-    | (-3)                                   |   8    |                            | unused in icon4py (relevant for nesting)
-    | (-2)                                   |   9    |                            | unused in icon4py (relevant for nesting)
-    |(-1)                                    |  10    |                            | unused in icon4py (relevant for nesting)
-    | `0`                                    |  11    | `INTERIOR`                 |
-    | `1`                                    |  12    | `LATERAL_BOUNDARY`         |
-    | `2`                                    |  13    | `LATERAL_BOUNDARY_LEVEL_2` |
-    | `3`                                    |  14    |`LATERAL_BOUNDARY_LEVEL_3`  |
-    | `4`                                    |  15    |`LATERAL_BOUNDARY_LEVEL_4`  |
-    | `5`                                    |  16    |`LATERAL_BOUNDARY_LEVEL_5`  |
-    | `6`                                    |  17    |`LATERAL_BOUNDARY_LEVEL_6`  |
-    | `7`                                    |  18    | `LATERAL_BOUNDARY_LEVEL_7` |
-    | `8`                                    |  19    | `LATERAL_BOUNDARY_LEVEL_8`|
-    | `grf_bdywidth_e`   (9)                 |  20    | `NUDGING`                  |
-    | `grf_bdywidth_e+1`, `max_rledge`  (10) |  21    | `NUDGING_LEVEL_2`          |
+    |(-12)                                   |   1    |                            |
+    |(-11)                                    |  2    |                            |
+    | `min_rledge_int-2` (-10)               |   3    |`HALO_LEVEL_2`              |
+    | `min_rledge_int-1` (-9)                |   4    |`HALO`                      |
+    | `min_rledge_int`   (-8)                |   5    |`LOCAL`                     |
+    | (-7)                                   |   6    |                            | unused in icon4py (relevant for nesting)
+    | (-6)                                   |   7    |                            | unused in icon4py (relevant for nesting)
+    | (-5)                                   |   8    |                            | unused in icon4py (relevant for nesting)
+    | (-4)                                   |   9    |                            | unused in icon4py (relevant for nesting)
+    | (-3)                                   |  10    |                            | unused in icon4py (relevant for nesting)
+    | (-2)                                   |  11    |                            | unused in icon4py (relevant for nesting)
+    |(-1)                                    |  12    |                            | unused in icon4py (relevant for nesting)
+    | `0`                                    |  13    | `INTERIOR`                 |
+    | `1`                                    |  14    | `LATERAL_BOUNDARY`         |
+    | `2`                                    |  15    | `LATERAL_BOUNDARY_LEVEL_2` |
+    | `3`                                    |  16    |`LATERAL_BOUNDARY_LEVEL_3`  |
+    | `4`                                    |  17    |`LATERAL_BOUNDARY_LEVEL_4`  |
+    | `5`                                    |  18    |`LATERAL_BOUNDARY_LEVEL_5`  |
+    | `6`                                    |  18    |`LATERAL_BOUNDARY_LEVEL_6`  |
+    | `7`                                    |  20    | `LATERAL_BOUNDARY_LEVEL_7` |
+    | `8`                                    |  12    | `LATERAL_BOUNDARY_LEVEL_8`|
+    | `grf_bdywidth_e`   (9)                 |  22    | `NUDGING`                  |
+    | `grf_bdywidth_e+1`, `max_rledge`  (10) |  23    | `NUDGING_LEVEL_2`          |
 
 
     """
@@ -294,8 +296,11 @@ VERTEX_AND_CELL_ZONES = (
 
 
 EDGE_ZONES = tuple(Zone)
-def max_boundary_level(dim:gtx.Dimension)->int:
+
+
+def max_boundary_level(dim: gtx.Dimension) -> int:
     return max((d.level for d in _get_zones_for_dim(dim) if d.is_lateral_boundary()), default=1)
+
 
 _ZONE_TO_INDEX_MAPPING = {
     Zone.END: lambda dim: _icon_domain_index(_ICON_END, dim),
@@ -411,6 +416,27 @@ def get_domains_for_dim(dim: gtx.Dimension) -> Iterator[Domain]:
     get_domain = domain(dim)
     domains = (get_domain(zone) for zone in _get_zones_for_dim(dim))
     return domains
+
+
+def get_halo_domains(dim: gtx.Dimension) -> Iterator[Domain]:
+    get_domain = domain(dim)
+    domains = (get_domain(zone) for zone in _get_zones_for_dim(dim) if zone.is_halo())
+    return domains
+
+
+def get_ordered_domains(dim: gtx.Dimension) -> Iterator[Domain]:
+    get_domain = domain(dim)
+    domains = (
+        get_domain(zone)
+        for zone in _get_zones_for_dim(dim)
+        if zone.is_lateral_boundary() or zone.is_nudging()
+    )
+    return domains
+
+
+def get_last_nudging(dim):
+    zone = Zone.NUDGING if dim in (dims.VertexDim, dims.CellDim) else Zone.NUDGING_LEVEL_2
+    return domain(dim)(zone)
 
 
 def get_start_end_idx_from_icon_arrays(

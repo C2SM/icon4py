@@ -105,7 +105,6 @@ class GridManager:
         if not run_properties.single_node() and isinstance(decomposer, halo.SingleNodeDecomposer):
             raise InvalidConfigError("Need a Decomposer for multi node run")
 
-
         if not self._reader:
             self.open()
 
@@ -425,7 +424,10 @@ class GridManager:
         refinement_fields = self._read_grid_refinement_fields(allocator)
 
         domain_bounds_constructor = functools.partial(
-            refinement.compute_domain_bounds, refinement_fields=refinement_fields, array_ns=xp
+            refinement.compute_domain_bounds,
+            refinement_fields=refinement_fields,
+            decomposition_info=self._decomposition_info,
+            array_ns=xp,
         )
         start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
@@ -490,7 +492,7 @@ class GridManager:
             dual_edge_lengths=dual_edge_lengths,
             cell_areas=cell_areas,
             dual_cell_areas=dual_cell_areas,
-            array_ns=xp
+            array_ns=xp,
         )
 
         return global_params

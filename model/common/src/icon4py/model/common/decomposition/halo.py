@@ -128,7 +128,7 @@ class IconLikeHaloConstructor(HaloConstructor):
                 f"The distribution assumes more nodes than the current run is scheduled on  {self._props} ",
             )
 
-    def _assert_all_neighbor_tables(self):
+    def _assert_all_neighbor_tables(self) -> None:
         # make sure we have all connectivity arrays used in the halo construction
         relevant_dimension = [
             dims.C2E2C,

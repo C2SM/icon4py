@@ -15,7 +15,15 @@ from icon4py.model.common.grid.geometry_stencils import compute_edge_length
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils, serialbox
 
-from ..fixtures import backend, experiment, grid_savepoint, data_provider, download_ser_data, processor_props, ranked_data_path
+from ..fixtures import (
+    backend,
+    data_provider,
+    download_ser_data,
+    experiment,
+    grid_savepoint,
+    processor_props,
+    ranked_data_path,
+)
 
 
 @pytest.mark.level("unit")

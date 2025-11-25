@@ -31,7 +31,7 @@ from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox
 from icon4py.model.testing.parallel_helpers import check_comm_size
-from ..utils import dummy_four_ranks
+
 from ...fixtures import (
     backend,
     data_provider,
@@ -45,8 +45,7 @@ from ...fixtures import (
     processor_props,
     ranked_data_path,
 )
-
-
+from ..utils import dummy_four_ranks
 
 
 _log = logging.getLogger(__name__)
@@ -176,28 +175,39 @@ def test_decomposition_info_local_index(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim) )
+@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_decomposition_info_halo_level_mask(
-    dim:gtx.Dimension,
-    experiment:test_defs.Experiment,
-    decomposition_info:definitions.DecompositionInfo
-)->None:
-    first_halo_level = decomposition_info.halo_level_mask(dim, definitions.DecompositionFlag.FIRST_HALO_LINE)
+    dim: gtx.Dimension,
+    experiment: test_defs.Experiment,
+    decomposition_info: definitions.DecompositionInfo,
+) -> None:
+    first_halo_level = decomposition_info.halo_level_mask(
+        dim, definitions.DecompositionFlag.FIRST_HALO_LINE
+    )
     assert first_halo_level.ndim == 1
-    assert np.count_nonzero(first_halo_level) == decomposition_info.get_halo_size(dim, definitions.DecompositionFlag.FIRST_HALO_LINE)
-    second_halo_level = decomposition_info.halo_level_mask(dim, definitions.DecompositionFlag.SECOND_HALO_LINE)
+    assert np.count_nonzero(first_halo_level) == decomposition_info.get_halo_size(
+        dim, definitions.DecompositionFlag.FIRST_HALO_LINE
+    )
+    second_halo_level = decomposition_info.halo_level_mask(
+        dim, definitions.DecompositionFlag.SECOND_HALO_LINE
+    )
     assert second_halo_level.ndim == 1
-    assert np.count_nonzero(second_halo_level) == decomposition_info.get_halo_size(dim, definitions.DecompositionFlag.SECOND_HALO_LINE)
-    assert np.count_nonzero(first_halo_level) + np.count_nonzero(second_halo_level) == np.count_nonzero(~ decomposition_info.owner_mask(dim))
+    assert np.count_nonzero(second_halo_level) == decomposition_info.get_halo_size(
+        dim, definitions.DecompositionFlag.SECOND_HALO_LINE
+    )
+    assert np.count_nonzero(first_halo_level) + np.count_nonzero(
+        second_halo_level
+    ) == np.count_nonzero(~decomposition_info.owner_mask(dim))
+
 
 @pytest.mark.datatest
 @pytest.mark.mpi
-@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim) )
+@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_decomposition_info_third_level_is_empty(
-    dim:gtx.Dimension,
-    experiment:test_defs.Experiment,
-    decomposition_info:definitions.DecompositionInfo
-)->None:
+    dim: gtx.Dimension,
+    experiment: test_defs.Experiment,
+    decomposition_info: definitions.DecompositionInfo,
+) -> None:
     level = decomposition_info.halo_level_mask(dim, definitions.DecompositionFlag.THIRD_HALO_LINE)
     assert np.count_nonzero(level) == 0
 

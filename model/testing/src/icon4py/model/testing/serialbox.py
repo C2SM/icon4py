@@ -456,7 +456,7 @@ class IconGridSavepoint(IconSavepoint):
     def decomp_domain(self, dim):
         return self._read_field_for_dim("decomp_domain", self._read_int32, dim)
 
-    def construct_decomposition_info(self)->decomposition.DecompositionInfo:
+    def construct_decomposition_info(self) -> decomposition.DecompositionInfo:
         return (
             decomposition.DecompositionInfo()
             .set_dimension(*self._get_decomposition_fields(dims.CellDim))

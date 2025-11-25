@@ -15,10 +15,18 @@ import pytest
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import definitions as test_defs, grid_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox
 from icon4py.model.testing.fixtures import backend, cpu_allocator
 
 from .. import utils
+from ..fixtures import (
+    data_provider,
+    download_ser_data,
+    experiment,
+    grid_savepoint,
+    processor_props,
+    ranked_data_path,
+)
 
 
 _FALLBACK_FAIL = (-10, -10)
@@ -100,11 +108,15 @@ def test_compute_start_index_for_limited_area_grid(
     expected: dict[h_grid.Zone, tuple[int, int]],
     cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> None:
-    grid = grid_utils.get_grid_manager_from_identifier(
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
         test_defs.Grids.MCH_OPR_R04B07_DOMAIN01, 1, True, cpu_allocator
-    ).grid
+    )
+    grid = grid_manager.grid
     refinement_field = grid.refinement_control
-    start_index, end_index = refinement.compute_domain_bounds(dim, refinement_field, array_ns=np)
+    decomposition_info = grid_manager.decomposition_info
+    start_index, end_index = refinement.compute_domain_bounds(
+        dim, refinement_field, decomposition_info=decomposition_info, array_ns=np
+    )
 
     for d, v in start_index.items():
         expected_value = expected.get(d.zone, _FALLBACK_FAIL)[0]
@@ -126,9 +138,13 @@ def test_compute_domain_bounds_for_global_grid(
     dim: gtx.Dimension,
     cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> None:
-    grid = grid_utils.get_grid_manager_from_identifier(file, 1, True, cpu_allocator).grid
+    grid_manager = grid_utils.get_grid_manager_from_identifier(file, 1, True, cpu_allocator)
+    grid = grid_manager.grid
     refinement_fields = grid.refinement_control
-    start_index, end_index = refinement.compute_domain_bounds(dim, refinement_fields, array_ns=np)
+    decomposition_info = grid_manager.decomposition_info
+    start_index, end_index = refinement.compute_domain_bounds(
+        dim, refinement_fields, decomposition_info, array_ns=np
+    )
     for k, v in start_index.items():
         assert isinstance(v, gtx.int32)
         if k.zone.is_halo() or k.zone is h_grid.Zone.END:
@@ -146,3 +162,29 @@ def test_compute_domain_bounds_for_global_grid(
             assert (
                 v == grid.size[k.dim]
             ), f"Expected end index '{grid.size[k.dim]}' for {dim} in {k.zone}, but got '{v}'"
+
+
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+@pytest.mark.datatest
+def test_start_end_index(
+    dim: gtx.Dimension,
+    experiment: test_defs.Experiment,
+    grid_savepoint: serialbox.IconGridSavepoint,
+) -> None:
+    ref_grid = grid_savepoint.construct_icon_grid(None, keep_skip_values=True)
+    decomposition_info = grid_savepoint.construct_decomposition_info()
+    refin_ctrl = {dim: grid_savepoint.refin_ctrl(dim) for dim in utils.main_horizontal_dims()}
+    start_indices, end_indices = refinement.compute_domain_bounds(
+        dim, refin_ctrl, decomposition_info
+    )
+    for domain in h_grid.get_domains_for_dim(dim):
+        ref_start_index = ref_grid.start_index(domain)
+        ref_end_index = ref_grid.end_index(domain)
+        computed_start = start_indices[domain]
+        computed_end = end_indices[domain]
+        assert (
+            computed_start == ref_start_index
+        ), f" experiment = {experiment.name}: start_index for {domain} does not match: is {computed_start}, expected {ref_start_index}"
+        assert (
+            computed_end == ref_end_index
+        ), f"experiment = {experiment.name}: end_index for {domain} does not match: is {computed_end}, expected {ref_end_index}"

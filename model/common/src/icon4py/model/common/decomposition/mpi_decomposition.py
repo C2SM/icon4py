@@ -25,12 +25,9 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import ghex  # type: ignore [import-not-found]
-    import mpi4py  # type: ignore [import-not-found]
-    from ghex import (
-        unstructured,  # type: ignore [import-not-found]
-        util,  # type: ignore [import-not-found]
-    )
+    import ghex  # type: ignore  [no-untyped-def]
+    import mpi4py
+    from ghex import unstructured, util
     from ghex.context import make_context  # type: ignore [import-not-found]
 
     mpi4py.rc.initialize = False
@@ -43,7 +40,7 @@ except ImportError:
 
 
 if TYPE_CHECKING:
-    import mpi4py.MPI  # type: ignore [import-not-found]
+    import mpi4py.MPI
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -213,7 +210,9 @@ class GHexMultiNodeExchange:
             trim_length = self._field_size[dim]
             return field.ndarray[:trim_length, :]
         except KeyError:
-            log.warning(f"Trying to trim field of invalid dimension {dim} for exchange. Not trimming.")
+            log.warning(
+                f"Trying to trim field of invalid dimension {dim} for exchange. Not trimming."
+            )
 
     def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field) -> str:
         # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
@@ -229,7 +228,9 @@ class GHexMultiNodeExchange:
                 unstructured.make_field_descriptor(
                     self._domain_descriptors[dim],
                     array,
-                    arch=unstructured.Architecture.CPU if isinstance(f.ndarray, np.ndarray) else unstructured.Architecture.GPU,
+                    arch=unstructured.Architecture.CPU
+                    if isinstance(f.ndarray, np.ndarray)
+                    else unstructured.Architecture.GPU,
                 )
             )
             return self._applied_patterns_cache[key]

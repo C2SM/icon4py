@@ -64,9 +64,8 @@ def interpolation_field_source(
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory, None, None]:
     mesh = grid_manager.grid
 
-    allocator = model_backends.get_allocator(backend_like)
     generic_concrete_backend = model_options.customize_backend(None, backend_like)
-    decomposition_info = grid_utils.construct_decomposition_info(mesh, allocator)
+    decomposition_info = grid_manager.decomposition_info
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
         grid=mesh,
@@ -91,7 +90,7 @@ def metrics_field_source(
 
     allocator = model_backends.get_allocator(backend_like)
     generic_concrete_backend = model_options.customize_backend(None, backend_like)
-    decomposition_info = grid_utils.construct_decomposition_info(mesh, allocator)
+    decomposition_info = grid_manager.decomposition_info
 
     vertical_config = v_grid.VerticalGridConfig(
         mesh.num_levels,
