@@ -46,10 +46,6 @@ def test_diffusion_wrapper_granule_inputs(
     grid_init,  # initializes the grid as side-effect
     icon_grid,
     experiment,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     ndyn_substeps,
 ):
     # --- Define Diffusion Configuration ---
@@ -72,8 +68,6 @@ def test_diffusion_wrapper_granule_inputs(
     )
 
     # --- Extract Metric State Parameters ---
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
     mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
@@ -147,18 +141,6 @@ def test_diffusion_wrapper_granule_inputs(
         dwdy=savepoint_diffusion_init.dwdy(),
     )
     expected_prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    expected_vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    expected_vertical_params = v_grid.VerticalGrid(
-        config=expected_vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-    )
     expected_config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
@@ -169,8 +151,6 @@ def test_diffusion_wrapper_granule_inputs(
         diffusion_wrapper.diffusion_init(
             ffi=cffi.FFI(),
             perf_counters=None,
-            vct_a=vct_a,
-            vct_b=vct_b,
             theta_ref_mc=theta_ref_mc,
             wgtfac_c=wgtfac_c,
             e_bln_c_s=e_bln_c_s,
@@ -186,7 +166,6 @@ def test_diffusion_wrapper_granule_inputs(
             zd_vertoffset=zd_vertoffset,
             zd_intcoef=zd_intcoef,
             ndyn_substeps=ndyn_substeps,
-            rayleigh_damping_height=damping_height,
             diffusion_type=diffusion_type,
             hdiff_w=hdiff_w,
             hdiff_vn=hdiff_vn,
@@ -202,9 +181,6 @@ def test_diffusion_wrapper_granule_inputs(
             nudge_max_coeff=max_nudging_coefficient,
             itype_sher=itype_sher.value,
             ltkeshs=ltkeshs,
-            lowest_layer_thickness=lowest_layer_thickness,
-            model_top_height=model_top_height,
-            stretch_factor=stretch_factor,
             backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
 
@@ -231,11 +207,6 @@ def test_diffusion_wrapper_granule_inputs(
             captured_kwargs["params"], expected_additional_parameters
         )
         assert result, f"Params comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
-            captured_kwargs["vertical_grid"], expected_vertical_params
-        )
-        assert result, f"Vertical Grid comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
             captured_kwargs["metric_state"], expected_metric_state
@@ -303,10 +274,6 @@ def test_diffusion_wrapper_single_step(
     grid_savepoint,
     grid_init,  # initializes the grid as side-effect
     experiment,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     ndyn_substeps,
     step_date_init,
     step_date_exit,
@@ -331,8 +298,6 @@ def test_diffusion_wrapper_single_step(
     )
 
     # Metric state parameters
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
     mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
@@ -383,8 +348,6 @@ def test_diffusion_wrapper_single_step(
     diffusion_wrapper.diffusion_init(
         ffi=ffi,
         perf_counters=None,
-        vct_a=vct_a,
-        vct_b=vct_b,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
         e_bln_c_s=e_bln_c_s,
@@ -400,7 +363,6 @@ def test_diffusion_wrapper_single_step(
         zd_vertoffset=zd_vertoffset,
         zd_intcoef=zd_intcoef,
         ndyn_substeps=ndyn_substeps,
-        rayleigh_damping_height=damping_height,
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
         hdiff_vn=hdiff_vn,
@@ -416,9 +378,6 @@ def test_diffusion_wrapper_single_step(
         nudge_max_coeff=max_nudging_coefficient,
         itype_sher=itype_sher.value,
         ltkeshs=ltkeshs,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
         backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 

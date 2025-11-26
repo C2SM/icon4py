@@ -343,8 +343,7 @@ def _compute_rbf_interpolation_coeffs(
         for val in np.flip(rbf_offset_np[i, :]):
             if np.count_nonzero(val == rbf_offset_np[i, :]) > 1:
                 unique_values, counts = np.unique(rbf_offset_np[i, :], return_counts=True)
-                rep_values = unique_values[counts > 1]
-                rep_indices = np.where(np.isin(rbf_offset_np[i, :], rep_values))[0]
+                rep_indices = np.where(np.isin(rbf_offset_np[i, :], unique_values[counts > 1]))[0]
                 rbf_offset_np[i, rep_indices[1:]] = -1
         valid_neighbors = np.where(rbf_offset_np[i, :] >= 0)[0]
         rbfmat_np = np.squeeze(z_rbfmat_np[np.ix_([i], valid_neighbors, valid_neighbors)])

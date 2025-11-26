@@ -99,7 +99,7 @@ def test_distributed_interpolation_attrs(
     [
         (attrs.GEOFAC_GRG_X, "geofac_grg", 0),
         (attrs.GEOFAC_GRG_Y, "geofac_grg", 1),
-    ]
+    ],
 )
 def test_distributed_interpolation_grg(
     backend: gtx_typing.Backend,
@@ -119,7 +119,6 @@ def test_distributed_interpolation_grg(
     field_ref = field_ref[index].asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, atol=1e-5), f"comparison of {attrs_name} failed"
-
 
 
 @pytest.mark.datatest
@@ -183,12 +182,11 @@ def test_distributed_interpolation_rbf(
     field = factory.get(attrs_name).asnumpy()
     assert_reordered(field, field_ref, atol=atol)
 
+
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize(
-    "attrs_name, intrp_name", [(attrs.GEOFAC_GRDIV, "geofac_grdiv")]
-)
+@pytest.mark.parametrize("attrs_name, intrp_name", [(attrs.GEOFAC_GRDIV, "geofac_grdiv")])
 def test_distributed_interpolation_non_halo(
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,

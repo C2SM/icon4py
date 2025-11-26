@@ -11,11 +11,15 @@ from __future__ import annotations
 import typing
 from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry, geometry_attributes as attrs, horizontal as h_grid
+from icon4py.model.common.math import helpers as math_helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import parallel_helpers, test_utils
 
 from ...fixtures import (
@@ -30,11 +34,8 @@ from ...fixtures import (
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.math import helpers as math_helpers
-import gt4py.next.typing as gtx_typing
 
-import gt4py.next as gtx
+
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
@@ -107,6 +108,7 @@ def test_distributed_geometry_attrs_for_inverse(
     lb = grid_geometry.grid.start_index(lb_domain)
     assert test_utils.dallclose(field[lb:], field_ref[lb:], rtol=5e-10)
 
+
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -120,7 +122,6 @@ def test_distributed_geometry_attrs_for_inverse(
         (attrs.EDGE_NORMAL_X, "primal_cart_normal_x"),
         (attrs.EDGE_NORMAL_Y, "primal_cart_normal_y"),
         (attrs.EDGE_NORMAL_Z, "primal_cart_normal_z"),
-
     ],
 )
 def test_geometry_attr_no_halos(
@@ -160,7 +161,7 @@ def test_cartesian_geometry_attr_no_halos(
     x: str,
     y: str,
     z: str,
-    dimension: gtx.Dimensions,
+    dimension: gtx.Dimension,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
@@ -169,6 +170,8 @@ def test_cartesian_geometry_attr_no_halos(
     x_field = grid_geometry.get(x)
     y_field = grid_geometry.get(y)
     z_field = grid_geometry.get(z)
-    norm = data_alloc.zero_field(grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend)
+    norm = data_alloc.zero_field(
+        grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend
+    )
     math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
     assert test_utils.dallclose(norm.asnumpy(), 1.0)

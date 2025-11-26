@@ -14,6 +14,7 @@ import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.exceptions import dummy_exchange
 from icon4py.model.common.metrics.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -82,6 +83,7 @@ def test_compute_zdiff_gradp_dsl(
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
+        halo_exchange=dummy_exchange,
         array_ns=xp,
     )
 

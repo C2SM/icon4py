@@ -235,7 +235,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"out_field": attrs.DDQZ_Z_FULL_E},
-            do_exchange=True,
         )
         self.register_provider(ddqz_full_on_edges)
 
@@ -361,7 +360,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
             },
-            do_exchange=True,
         )
         self.register_provider(compute_theta_rho_ref_me)
 
@@ -483,8 +481,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.EdgeDim: (
-                    # edge_domain(h_grid.Zone.LOCAL),
-                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    edge_domain(h_grid.Zone.LOCAL),
                     edge_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
@@ -493,11 +490,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"average": attrs.DDXN_Z_FULL},
-            do_exchange=True,
         )
         self.register_provider(compute_ddxn_z_full)
 
-        # TODO: attrs.DDXT_Z_HALF_E has halo exchange
         compute_ddxt_z_full = factory.ProgramFieldProvider(
             func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
@@ -507,8 +502,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.EdgeDim: (
-                    # edge_domain(h_grid.Zone.LOCAL),
-                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    edge_domain(h_grid.Zone.LOCAL),
                     edge_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
@@ -520,7 +514,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxt_z_full)
 
-        # TODO: ddxn_z_half_e has halo exchange
         compute_exner_w_implicit_weight_parameter_np = factory.NumpyDataProvider(
             func=functools.partial(mf.compute_exner_w_implicit_weight_parameter, array_ns=self._xp),
             domain=(dims.CellDim,),
@@ -560,7 +553,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_exner_w_explicit_weight_parameter)
 
-        #TODO: add halo exchange for DDXN_Z_FULL
         compute_exner_exfac = factory.ProgramFieldProvider(
             func=mf.compute_exner_exfac.with_backend(self._backend),
             deps={
@@ -570,7 +562,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             domain={
                 dims.CellDim: (
                     cell_domain(h_grid.Zone.LOCAL),
-                    #cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     cell_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
@@ -629,7 +620,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfac_e)
 
         max_flat_index_provider = factory.NumpyDataProvider(
-            func=functools.partial(mf.compute_flat_max_idx, array_ns=self._xp, halo_exchange=self._exchange.exchange_and_wait),
+            func=functools.partial(
+                mf.compute_flat_max_idx,
+                array_ns=self._xp,
+            ),
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
@@ -706,7 +700,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             domain={
                 dims.CellDim: (
                     cell_domain(h_grid.Zone.HALO),
-                    # cell_domain(h_grid.Zone.HALO_LEVEL_2),
                     cell_domain(h_grid.Zone.END),
                 ),
             },
@@ -734,13 +727,13 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),  # type: ignore [attr-defined]
                 "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
             },
-            do_exchange=True,
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 
         compute_zdiff_gradp_dsl_np = factory.NumpyDataProvider(
             func=functools.partial(
-                compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl, array_ns=self._xp,
+                compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl,
+                array_ns=self._xp,
                 halo_exchange=self._exchange.exchange_and_wait,
             ),
             deps={
@@ -771,7 +764,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         coeff_gradekin = factory.NumpyDataProvider(
             func=functools.partial(
-                compute_coeff_gradekin.compute_coeff_gradekin, array_ns=self._xp, halo_exchange=self._exchange.exchange_and_wait,
+                compute_coeff_gradekin.compute_coeff_gradekin,
+                array_ns=self._xp,
+                halo_exchange=self._exchange.exchange_and_wait,
             ),
             domain=(dims.EdgeDim, dims.E2CDim),
             fields=(attrs.COEFF_GRADEKIN,),
@@ -801,7 +796,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_c)
 
         compute_wgtfacq_e = factory.NumpyDataProvider(
-            func=functools.partial(weight_factors.compute_wgtfacq_e_dsl, array_ns=self._xp, halo_exchange=self._exchange.exchange_and_wait),
+            func=functools.partial(
+                weight_factors.compute_wgtfacq_e_dsl,
+                array_ns=self._xp,
+                halo_exchange=self._exchange.exchange_and_wait,
+            ),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
                 "c_lin_e": interpolation_attributes.C_LIN_E,

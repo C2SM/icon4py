@@ -16,6 +16,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.exceptions import dummy_exchange
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import definitions, test_utils
@@ -347,10 +348,6 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 
     assert test_utils.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
     assert test_utils.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
-
-
-def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
-    return None
 
 
 @pytest.mark.level("unit")
