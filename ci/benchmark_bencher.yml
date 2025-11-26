@@ -1,5 +1,6 @@
 include:
   - local: 'ci/base.yml'
+  - local: 'ci/benchmark_bencher_baseline.yml'
 
 .bencher_setup_env:
   setup:
@@ -13,20 +14,32 @@ include:
     - |
       echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
 
-.benchmark_model_stencils:
+.benchmark_model_stencils_for_feature_branch:
   stage: benchmark
   script:
     - !reference [.bencher_setup_env, setup]
-    - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID
+    - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID -k "${STENCIL_TEST_SELECTION}"
   parallel:
     matrix:
       - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
         GRID: [icon_benchmark_regional, icon_benchmark_global]
+  extends: [.benchmark_model_base_variables]
   variables:
-    ICON4PY_ENABLE_GRID_DOWNLOAD: false
-    ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
-    GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE: true
-    PYTHONOPTIMIZE: 2
+    GT4PY_COLLECT_METRICS_LEVEL: 10
 
-benchmark_bencher_aarch64:
-  extends: [.benchmark_model_stencils, .test_template_aarch64]
+.benchmark_model_granules_for_feature_branch:
+  stage: benchmark
+  script:
+    - !reference [.bencher_setup_env, setup]
+    - nox -s __bencher_feature_branch_CI-3.10 -- --backend=$BACKEND --grid=$GRID -k "${GRANULE_TEST_SELECTION}"
+  parallel:
+    matrix:
+      - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+        GRID: [icon_benchmark_regional, icon_benchmark_global]
+  extends: [.benchmark_model_base_variables]
+
+benchmark_bencher_stencils_feature_aarch64:
+  extends: [.benchmark_model_stencils_for_feature_branch, .test_template_aarch64]
+
+benchmark_bencher_granules_feature_aarch64:
+  extends: [.benchmark_model_granules_for_feature_branch, .test_template_aarch64]

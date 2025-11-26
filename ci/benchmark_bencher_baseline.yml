@@ -7,11 +7,13 @@ include:
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
     GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE: true
     PYTHONOPTIMIZE: 2
+    STENCIL_TEST_SELECTION: "test_Test and compile_time_domain"
+    GRANULE_TEST_SELECTION: "test_diffusion_benchmark"
 
-.benchmark_model_stencils:
+.benchmark_model_stencils_baseline:
   stage: benchmark
   script:
-    - nox -s __bencher_baseline_CI-3.10 -- --backend=$BACKEND --grid=$GRID -k "test_Test and compile_time_domain"
+    - nox -s __bencher_baseline_CI-3.10 -- --backend=$BACKEND --grid=$GRID -k "${STENCIL_TEST_SELECTION}"
   parallel:
     matrix:
       - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
@@ -23,7 +25,7 @@ include:
 .benchmark_model_granules:
   stage: benchmark
   script:
-    - nox -s __bencher_baseline_CI-3.10 -- --backend=$BACKEND --grid=$GRID -k "test_diffusion_benchmark"
+    - nox -s __bencher_baseline_CI-3.10 -- --backend=$BACKEND --grid=$GRID -k "${GRANULE_TEST_SELECTION}"
   parallel:
     matrix:
       - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
