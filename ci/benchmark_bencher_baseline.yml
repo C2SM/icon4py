@@ -8,7 +8,7 @@ include:
     GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE: true
     PYTHONOPTIMIZE: 2
     STENCIL_TEST_SELECTION: "test_Test and compile_time_domain"
-    GRANULE_TEST_SELECTION: "test_diffusion_benchmark and test_benchmark_solve_nonhydro"
+    GRANULE_TEST_SELECTION: "test_diffusion_benchmark or test_benchmark_solve_nonhydro"
 
 .benchmark_model_baseline:
   stage: benchmark
