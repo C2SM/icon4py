@@ -107,4 +107,4 @@ BACKENDS: dict[str, BackendLike] = {
     "dace_gpu": {"backend_factory": make_custom_dace_backend, "device": GPU},
 }
 
-USER_BACKEND = {k: v for k, v in BACKENDS.items() if k not in {"roundtrip"}}
+USER_BACKENDS = {k: v for k, v in BACKENDS.items() if k not in {"roundtrip"}}
