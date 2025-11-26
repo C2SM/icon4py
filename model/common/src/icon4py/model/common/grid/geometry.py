@@ -313,6 +313,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=False,
         )
         self.register_provider(dual_uv)
 
@@ -524,7 +525,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.END),
                 )
             },
         )

@@ -360,6 +360,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
             },
+            do_exchange=False,
         )
         self.register_provider(compute_theta_rho_ref_me)
 
@@ -766,7 +767,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_coeff_gradekin.compute_coeff_gradekin,
                 array_ns=self._xp,
-                halo_exchange=self._exchange.exchange_and_wait,
             ),
             domain=(dims.EdgeDim, dims.E2CDim),
             fields=(attrs.COEFF_GRADEKIN,),
@@ -778,7 +778,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start": self._grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
-                "horizontal_end": self._grid.num_edges,
             },
             do_exchange=False,
         )

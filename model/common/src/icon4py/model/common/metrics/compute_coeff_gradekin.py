@@ -5,13 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from collections.abc import Callable
 from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -19,8 +17,6 @@ def compute_coeff_gradekin(
     edge_cell_length: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -34,11 +30,6 @@ def compute_coeff_gradekin(
     """
     coeff_gradekin_0 = array_ns.zeros_like(inv_dual_edge_length)
     coeff_gradekin_1 = array_ns.zeros_like(inv_dual_edge_length)
-    wrap_in_field_inv_dual = gtx.as_field(
-        (EdgeDim,), data=inv_dual_edge_length, dtype=inv_dual_edge_length.dtype
-    )
-    halo_exchange(EdgeDim, wrap_in_field_inv_dual)
-    inv_dual_edge_length = wrap_in_field_inv_dual.ndarray
     coeff_gradekin_0[horizontal_start:] = (
         edge_cell_length[horizontal_start:, 1]
         / edge_cell_length[horizontal_start:, 0]
