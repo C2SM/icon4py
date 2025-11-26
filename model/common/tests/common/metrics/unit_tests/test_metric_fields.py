@@ -400,7 +400,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        halo_exchange=dummy_exchange,
         array_ns=xp,
     )
     # TODO (nfarabullini): fix type ignore
