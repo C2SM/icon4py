@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import dataclasses
+import os
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, ClassVar
 
@@ -104,15 +105,17 @@ def test_and_benchmark(
         )
 
     if benchmark is not None and benchmark.enabled:
-        warmup_rounds = 1
-        iterations = 10
+        warmup_rounds = int(os.getenv("ICON4PY_STENCIL_TEST_WARMUP_ROUNDS", "1"))
+        iterations = int(os.getenv("ICON4PY_STENCIL_TEST_ITERATIONS", "10"))
 
         # Use of `pedantic` to explicitly control warmup rounds and iterations
         benchmark.pedantic(
             _configured_program,
             args=(),
             kwargs=dict(**_properly_allocated_input_data, offset_provider=grid.connectivities),
-            rounds=3,  # 30 iterations in total should be stable enough
+            rounds=int(
+                os.getenv("ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS", "3")
+            ),  # 30 iterations in total should be stable enough
             warmup_rounds=warmup_rounds,
             iterations=iterations,
         )
