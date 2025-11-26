@@ -291,60 +291,6 @@ class GridManager:
         }
         return refinement_control_fields
 
-    def _read_start_end_indices(
-        self,
-    ) -> tuple[
-        dict[gtx.Dimension, data_alloc.NDArray],
-        dict[gtx.Dimension, data_alloc.NDArray],
-    ]:
-        """ "
-        Read the start/end indices from the grid file.
-
-        This should be used for a single node run. In the case of a multi node distributed run the  start and end indices need to be reconstructed from the decomposed grid.
-        """
-        _child_dom = 0
-        grid_refinement_dimensions = {
-            dims.CellDim: gridfile.DimensionName.CELL_GRF,
-            dims.EdgeDim: gridfile.DimensionName.EDGE_GRF,
-            dims.VertexDim: gridfile.DimensionName.VERTEX_GRF,
-        }
-        max_refinement_control_values = {
-            dim: self._reader.dimension(name) for dim, name in grid_refinement_dimensions.items()
-        }
-        start_index_names = {
-            dims.CellDim: gridfile.GridRefinementName.START_INDEX_CELLS,
-            dims.EdgeDim: gridfile.GridRefinementName.START_INDEX_EDGES,
-            dims.VertexDim: gridfile.GridRefinementName.START_INDEX_VERTICES,
-        }
-
-        start_indices = {
-            dim: self._get_index_field(name, transpose=False, apply_offset=True)[_child_dom]
-            for dim, name in start_index_names.items()
-        }
-        for dim in grid_refinement_dimensions:
-            assert start_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
-
-        end_index_names = {
-            dims.CellDim: gridfile.GridRefinementName.END_INDEX_CELLS,
-            dims.EdgeDim: gridfile.GridRefinementName.END_INDEX_EDGES,
-            dims.VertexDim: gridfile.GridRefinementName.END_INDEX_VERTICES,
-        }
-        end_indices = {
-            dim: self._get_index_field(name, transpose=False, apply_offset=False)[_child_dom]
-            for dim, name in end_index_names.items()
-        }
-        for dim in grid_refinement_dimensions:
-            assert start_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
-            assert end_indices[dim].shape == (
-                max_refinement_control_values[dim],
-            ), f"start index array for {dim} has wrong shape"
-
-        return start_indices, end_indices
-
     @property
     def grid(self) -> icon.IconGrid:
         return self._grid
@@ -515,9 +461,9 @@ class GridManager:
         As the grid file contains the _full_ (non-distributed) grid, these are the sizes of prior to distribution.
 
         """
-        num_cells = self._reader.dimension(gridfile.DimensionName.CELL_NAME)
-        num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
-        num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
+        num_cells = self._reader.dimension(gridfile.DynamicDimension.CELL_NAME)
+        num_edges = self._reader.dimension(gridfile.DynamicDimension.EDGE_NAME)
+        num_vertices = self._reader.dimension(gridfile.DynamicDimension.VERTEX_NAME)
         full_grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )

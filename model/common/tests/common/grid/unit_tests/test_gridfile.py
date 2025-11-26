@@ -38,11 +38,11 @@ def test_grid_file_dimension() -> None:
     parser = gridfile.GridFile(global_grid_file, transformation=gridfile.NoTransformation())
     try:
         parser.open()
-        assert parser.dimension(gridfile.DimensionName.CELL_NAME) == grid_descriptor.sizes["cell"]
+        assert parser.dimension(gridfile.DynamicDimension.CELL_NAME) == grid_descriptor.sizes["cell"]
         assert (
-            parser.dimension(gridfile.DimensionName.VERTEX_NAME) == grid_descriptor.sizes["vertex"]
+            parser.dimension(gridfile.DynamicDimension.VERTEX_NAME) == grid_descriptor.sizes["vertex"]
         )
-        assert parser.dimension(gridfile.DimensionName.EDGE_NAME) == grid_descriptor.sizes["edge"]
+        assert parser.dimension(gridfile.DynamicDimension.EDGE_NAME) == grid_descriptor.sizes["edge"]
     except Exception:
         pytest.fail()
     finally:
@@ -58,13 +58,13 @@ def test_grid_file_vertex_cell_edge_dimensions(
     parser = gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation())
     try:
         parser.open()
-        assert parser.dimension(gridfile.DimensionName.CELL_NAME) == grid_savepoint.num(
+        assert parser.dimension(gridfile.DynamicDimension.CELL_NAME) == grid_savepoint.num(
             dims.CellDim
         )
-        assert parser.dimension(gridfile.DimensionName.VERTEX_NAME) == grid_savepoint.num(
+        assert parser.dimension(gridfile.DynamicDimension.VERTEX_NAME) == grid_savepoint.num(
             dims.VertexDim
         )
-        assert parser.dimension(gridfile.DimensionName.EDGE_NAME) == grid_savepoint.num(
+        assert parser.dimension(gridfile.DynamicDimension.EDGE_NAME) == grid_savepoint.num(
             dims.EdgeDim
         )
     except Exception as error:
@@ -80,7 +80,7 @@ def test_int_variable(
 ) -> None:
     file = gridtest_utils.resolve_full_grid_file_name(grid_descriptor)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
-        edge_dim = parser.dimension(gridfile.DimensionName.EDGE_NAME)
+        edge_dim = parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
         # use a test field that does not contain Pentagons
         test_field = parser.int_variable(
             gridfile.ConnectivityName.C2E, apply_transformation=apply_transformation
@@ -140,7 +140,6 @@ def test_index_read_for_2d_connectivity(
     file = gridtest_utils.resolve_full_grid_file_name(grid_descriptor)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
-        # TODO(halungge): grid_file.ConnectivityName.V2E:P 2 D fields
         full_field = parser.int_variable(field, transpose=True, apply_transformation=apply_offset)
         selective_field = parser.int_variable(
             field, indices=indices_to_read, transpose=True, apply_transformation=apply_offset

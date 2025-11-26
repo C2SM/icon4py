@@ -8,7 +8,7 @@
 
 import enum
 import logging
-from typing import Protocol
+from typing import Protocol, Any
 
 import numpy as np
 from gt4py import next as gtx
@@ -134,37 +134,62 @@ class MandatoryPropertyName(PropertyName):
     LEVEL = "grid_level"
     ROOT = "grid_root"
 
-
 class DimensionName(GridFileName):
+    ...
+
+class DynamicDimension(DimensionName):
     """Dimension values (sizes) used in grid file."""
 
     #: number of vertices
     VERTEX_NAME = "vertex"
-
     #: number of edges
     EDGE_NAME = "edge"
     #: number of cells
     CELL_NAME = "cell"
 
-    #: number of edges in a diamond: 4
-    DIAMOND_EDGE_SIZE = "no"
-
-    #: number of edges/cells neighboring one vertex: 6 (for regular, non pentagons)
-    NEIGHBORS_TO_VERTEX_SIZE = "ne"
-
-    #: number of cells edges, vertices and cells neighboring a cell: 3
-    NEIGHBORS_TO_CELL_SIZE = "nv"
-
-    #: number of vertices/cells neighboring an edge: 2
-    NEIGHBORS_TO_EDGE_SIZE = "nc"
-
     #: number of child domains (for nesting)
     MAX_CHILD_DOMAINS = "max_chdom"
 
+
+
+class FixedSizeDimension(DimensionName):
+    size: int
+
+    def __new__(cls, value:str, size_:int):
+        obj = str.__new__(cls)
+        obj._value_ = value
+        obj.size = size_
+        return obj
+
+    #: number of edges in a diamond: 4
+    DIAMOND_EDGE_SIZE = ("no",4)
+
+    #: number of edges/cells neighboring one vertex: 6 (for regular, non pentagons)
+    NEIGHBORS_TO_VERTEX_SIZE = ("ne",6)
+
+    #: number of cells edges, vertices and cells neighboring a cell: 3
+    NEIGHBORS_TO_CELL_SIZE = ("nv",3)
+
+    #: number of vertices/cells neighboring an edge: 2
+    NEIGHBORS_TO_EDGE_SIZE = ("nc",2)
+
     #: Grid refinement: maximal number in grid-refinement (refin_ctl) array for each dimension
-    CELL_GRF = "cell_grf"
-    EDGE_GRF = "edge_grf"
-    VERTEX_GRF = "vert_grf"
+    CELL_GRF = ("cell_grf", 14)
+    EDGE_GRF = ("edge_grf", 28)
+    VERTEX_GRF = ("vert_grf",14)
+
+
+    def __str__(self):
+        return f"{self.name}({self.name}: {self.size})"
+
+    def __hash__(self):
+        return hash((self.name, self.size))
+
+    def __eq__(self, other: Any) -> bool:
+        """Check equality based on zone name and level."""
+        if not isinstance(other, FixedSizeDimension):
+            return False
+        return (self.name, self.size) == (other.name, other.size)
 
 
 class FieldName(GridFileName): ...
@@ -327,7 +352,7 @@ class GridFile:
     ) -> np.ndarray:
         """Read a field from the grid file.
 
-        If a index array is given it only reads the values at those positions.
+        If an index array is given it only reads the values at those positions.
         Args:
             name: name of the field to read
             indices: indices to read if requesting a restricted set of indices. We assume this be a 1d array it will be applied to the 1. dimension (after transposition)
@@ -340,12 +365,18 @@ class GridFile:
 
         try:
             variable = self._dataset.variables[name]
-            slicer = [slice(None) for _ in range(variable.ndim)]
+            variable_size = variable.ndim
+            n = (variable.shape[0],) if variable_size > 1 else ()
+            target_shape = n + (-1,)
+
+
+            slicer = [slice(None) for _ in range(variable_size)]
             if indices is not None and indices.size > 0:
+                # apply the slicing to the correct dimension
                 slicer[(1 if transpose else 0)] = indices
             _log.debug(f"reading {name}: transposing = {transpose}")
             data = variable[tuple(slicer)]
-            data = np.array(data, dtype=dtype)
+            data = np.array(data, dtype=dtype).ravel(order="K").reshape(target_shape)
             return np.transpose(data) if transpose else data
         except KeyError as err:
             msg = f"{name} does not exist in dataset"

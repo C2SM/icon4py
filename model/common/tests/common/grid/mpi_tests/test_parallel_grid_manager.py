@@ -17,19 +17,20 @@ import pytest
 from gt4py import next as gtx
 from gt4py.next import typing as gtx_typing
 
-import icon4py.model.common.grid.gridfile
+
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import definitions as defs, halo, mpi_decomposition
 from icon4py.model.common.grid import (
     base,
     geometry,
+geometry_stencils,
     geometry_attributes,
     grid_manager as gm,
     gridfile,
     horizontal as h_grid,
     vertical as v_grid,
 )
-from icon4py.model.common.interpolation.interpolation_fields import compute_geofac_div
+from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
@@ -94,6 +95,7 @@ def run_grid_manager_for_singlenode(
     return manager
 
 
+
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi(min_size=2)
 def test_grid_manager_validate_decomposer(processor_props: defs.ProcessProperties) -> None:
@@ -108,6 +110,50 @@ def test_grid_manager_validate_decomposer(processor_props: defs.ProcessPropertie
         )
 
     assert "Need a Decomposer for multi" in e.value.args[0]
+
+@pytest.mark.mpi
+@pytest.mark.parametrize(
+    "field_offset",
+    [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
+)
+def test_local_connectivities(
+    processor_props: defs.ProcessProperties,
+    caplog: Iterator,
+    field_offset: gtx.FieldOffset,
+) -> None:
+    caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
+    grid = utils.run_grid_manager(
+        test_defs.Grids.R02B04_GLOBAL, keep_skip_values=True, backend=None
+    ).grid
+    partitioner = halo.SimpleMetisDecomposer()
+    face_face_connectivity = grid.get_connectivity(dims.C2E2C).ndarray
+    neighbor_tables = grid.get_neighbor_tables()
+    labels = partitioner(face_face_connectivity, num_partitions=processor_props.comm_size)
+    halo_generator = halo.IconLikeHaloConstructor(
+        connectivities=neighbor_tables,
+        run_properties=processor_props,
+        num_levels=1,
+    )
+
+    decomposition_info = halo_generator(labels)
+
+    connectivity = gm.construct_local_connectivity(
+        field_offset, decomposition_info, connectivity=grid.get_connectivity(field_offset).ndarray
+    )
+    # there is an neighbor list for each index of the target dimension on the node
+    assert (
+        connectivity.shape[0]
+        == decomposition_info.global_index(
+            field_offset.target[0], defs.DecompositionInfo.EntryType.ALL
+        ).size
+    )
+    # all neighbor indices are valid local indices
+    assert np.max(connectivity) == np.max(
+        decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
+    )
+    # TODO what else to assert?
+    # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
+
 
 
 @pytest.mark.mpi
@@ -244,14 +290,15 @@ def assert_gathered_field_against_global(
 
 
 # TODO (halungge): fix non contiguous dimension for embedded in gt4py
-@pytest.mark.xfail()  #  non-contiguous dimensions in gt4py embedded: embedded/nd_array_field.py 576
+#@pytest.mark.xfail()  #  non-contiguous dimensions in gt4py embedded: embedded/nd_array_field.py 576
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL, ))
 def test_halo_neighbor_access_c2e(
-    processor_props: defs.ProcessProperties, backend: gtx_typing.Backend | None
+    processor_props: defs.ProcessProperties, backend: gtx_typing.Backend | None, grid:definitions.GridDescription
 ) -> None:
     #    processor_props = decomp_utils.DummyProps(1)
-    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+    file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
     single_node = run_grid_manager_for_singlenode(file, vertical_config)
     single_node_grid = single_node.grid
@@ -273,7 +320,8 @@ def test_halo_neighbor_access_c2e(
     single_node_edge_orientation = single_node_geometry.get(
         geometry_attributes.CELL_NORMAL_ORIENTATION
     )
-    compute_geofac_div.with_backend(None)(
+    # has to be computed in gt4py-embedded
+    interpolation_fields.compute_geofac_div.with_backend(None)(
         primal_edge_length=single_node_edge_length,
         area=single_node_cell_area,
         edge_orientation=single_node_edge_orientation,
@@ -312,7 +360,8 @@ def test_halo_neighbor_access_c2e(
     edge_orientation = distributed_geometry.get(geometry_attributes.CELL_NORMAL_ORIENTATION)
 
     geofac_div = data_alloc.zero_field(distributed_grid, dims.CellDim, dims.C2EDim)
-    compute_geofac_div.with_backend(None)(
+    #has to be computed in gt4py-embedded
+    interpolation_fields.compute_geofac_div.with_backend(None)(
         primal_edge_length=edge_length,
         area=cell_area,
         edge_orientation=edge_orientation,
@@ -332,44 +381,161 @@ def test_halo_neighbor_access_c2e(
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize(
-    "field_offset",
-    [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
-)
-def test_local_connectivities(
-    processor_props: defs.ProcessProperties,
-    caplog: Iterator,
-    field_offset: gtx.FieldOffset,
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+#@pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL, definitions.Grids.MCH_CH_R04B09_DSL))
+@pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL, ))
+def test_halo_neighbor_access_e2v(
+    processor_props: defs.ProcessProperties, backend: gtx_typing.Backend | None, grid: definitions.GridDescription
 ) -> None:
-    caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
-    grid = utils.run_grid_manager(
-        test_defs.Grids.R02B04_GLOBAL, keep_skip_values=True, backend=None
-    ).grid
-    partitioner = halo.SimpleMetisDecomposer()
-    face_face_connectivity = grid.get_connectivity(dims.C2E2C).ndarray
-    neighbor_tables = grid.get_neighbor_tables()
-    labels = partitioner(face_face_connectivity, num_partitions=processor_props.comm_size)
-    halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=neighbor_tables,
+    print(f"running on {processor_props.comm}")
+    file = grid_utils.resolve_full_grid_file_name(grid)
+    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node_grid = single_node.grid
+    single_node_geometry = geometry.GridGeometry(
+        backend=backend,
+        grid=single_node_grid,
+        coordinates=single_node.coordinates,
+        decomposition_info=single_node.decomposition_info,
+        extra_fields=single_node.geometry_fields,
+        metadata=geometry_attributes.attrs,
+    )
+    reference_tangent_x = single_node_geometry.get(geometry_attributes.EDGE_TANGENT_X).asnumpy()
+    reference_tangent_y = single_node_geometry.get(geometry_attributes.EDGE_TANGENT_Y).asnumpy()
+    print(
+        f"rank = {processor_props.rank} : single node computed field reference has size  {reference_tangent_x.shape}"
+    )
+    multinode_grid_manager = run_gridmananger_for_multinode(
+        file=file,
+        vertical_config=vertical_config,
         run_properties=processor_props,
-        num_levels=1,
+        decomposer=halo.SimpleMetisDecomposer(),
+    )
+    distributed_grid = multinode_grid_manager.grid
+    decomposition_info = multinode_grid_manager.decomposition_info
+
+    print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
+    print(
+        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+    )
+    distributed_coordinates = multinode_grid_manager.coordinates
+    vertex_lat = distributed_coordinates.get(dims.VertexDim)["lat"]
+    vertex_lon = distributed_coordinates.get(dims.VertexDim)["lon"]
+    tangent_orientation = multinode_grid_manager.geometry_fields.get(gridfile.GeometryName.TANGENT_ORIENTATION)
+
+    #output fields
+    tangent_x = data_alloc.zero_field(distributed_grid, dims.EdgeDim)
+    tangent_y = data_alloc.zero_field(distributed_grid, dims.EdgeDim)
+    tangent_z = data_alloc.zero_field(distributed_grid, dims.EdgeDim)
+
+    geometry_stencils.cartesian_coordinates_of_edge_tangent.with_backend(backend)(
+        vertex_lat = vertex_lat,
+        vertex_lon=vertex_lon,
+        edge_orientation = tangent_orientation,
+        domain = {dims.EdgeDim:(0, distributed_grid.num_edges)},
+        offset_provider=distributed_grid.connectivities,
+     out=(tangent_x, tangent_y, tangent_z))
+
+
+   # only the computation of the tangent uses neighbor access
+    assert_gathered_field_against_global(
+        decomposition_info,
+        processor_props,
+        dims.EdgeDim,
+        global_reference_field=reference_tangent_x,
+        local_field=tangent_x.asnumpy(),
+    )
+    assert_gathered_field_against_global(
+        decomposition_info,
+        processor_props,
+        dims.EdgeDim,
+        global_reference_field=reference_tangent_y,
+        local_field=tangent_y.asnumpy(),
     )
 
-    decomposition_info = halo_generator(labels)
+    print(f"rank = {processor_props.rank} - DONE")
 
-    connectivity = gm.construct_local_connectivity(
-        field_offset, decomposition_info, connectivity=grid.get_connectivity(field_offset).ndarray
+@pytest.mark.skip
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_halo_neighbor_access_v2e(
+    processor_props: defs.ProcessProperties, backend: gtx_typing.Backend | None, experiment: definitions.Experiment
+) -> None:
+    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+    print(f"running on {processor_props.comm}")
+    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node_grid = single_node.grid
+    single_node_geometry = geometry.GridGeometry(
+        backend=backend,
+        grid=single_node_grid,
+        coordinates=single_node.coordinates,
+        decomposition_info=single_node.decomposition_info,
+        extra_fields=single_node.geometry_fields,
+        metadata=geometry_attributes.attrs,
     )
-    # there is an neighbor list for each index of the target dimension on the node
-    assert (
-        connectivity.shape[0]
-        == decomposition_info.global_index(
-            field_offset.target[0], defs.DecompositionInfo.EntryType.ALL
-        ).size
+    dual_edge_length = single_node_geometry.get(geometry_attributes.DUAL_EDGE_LENGTH)
+    edge_orientation = single_node_geometry.get(geometry_attributes.TANGENT_ORIENTATION)
+    dual_area = single_node_geometry.get(geometry_attributes.DUAL_AREA)
+    edge_owner_mask = single_node.decomposition_info.owner_mask(dims.EdgeDim)
+    reference = data_alloc.zero_field(single_node_grid, dims.EdgeDim, dims.V2EDim)
+    interpolation_fields.compute_geofac_rot.with_backend(None)(dual_edge_length=dual_edge_length,
+                                            edge_orientation=edge_orientation,
+                                            dual_area=dual_area,
+                                            owner_mask=edge_owner_mask,
+                                            out=reference,
+                                            offset_provider = single_node_grid.connectivities)
+
+
+    print(
+        f"rank = {processor_props.rank} : single node computed field reference has size  {reference.asnumpy().shape}"
     )
-    # all neighbor indices are valid local indices
-    assert np.max(connectivity) == np.max(
-        decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
+    multinode_grid_manager = run_gridmananger_for_multinode(
+        file=file,
+        vertical_config=vertical_config,
+        run_properties=processor_props,
+        decomposer=halo.SimpleMetisDecomposer(),
     )
-    # TODO what else to assert?
-    # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
+    distributed_grid = multinode_grid_manager.grid
+    decomposition_info = multinode_grid_manager.decomposition_info
+
+    print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
+    print(
+        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+    )
+    distributed_coordinates = multinode_grid_manager.coordinates
+    extra_geometry_fields = multinode_grid_manager.geometry_fields
+    distributed_geometry = geometry.GridGeometry(
+        backend=backend,
+        grid=distributed_grid,
+        coordinates=distributed_coordinates,
+        decomposition_info=decomposition_info,
+        extra_fields=extra_geometry_fields,
+        metadata=geometry_attributes.attrs,
+    )
+
+    dual_edge_length = distributed_geometry.get(geometry_attributes.DUAL_EDGE_LENGTH)
+    edge_orientation = distributed_geometry.get(geometry_attributes.CELL_NORMAL_ORIENTATION)
+    dual_area = distributed_geometry.get(geometry_attributes.DUAL_AREA)
+
+    #output fields
+    geofac_rot = data_alloc.zero_field(distributed_grid, dims.VertexDim, dims.V2EDim)
+
+    interpolation_fields.compute_geofac_rot.with_backend(None)(dual_edge_length=dual_edge_length,
+                                                               edge_orientation=edge_orientation,
+                                                               dual_area=dual_area,
+                                                               owner_mask=edge_owner_mask,
+                                                               out=geofac_rot,
+                                                               offset_provider=single_node_grid.connectivities)
+
+
+   # only the computation of the tangent uses neighbor access
+    assert_gathered_field_against_global(
+        decomposition_info,
+        processor_props,
+        dims.VertexDim,
+        global_reference_field=reference.asnumpy(),
+        local_field=geofac_rot.asnumpy(),
+    )
+
+    print(f"rank = {processor_props.rank} - DONE")
+
+def test_halo_access_c2v():

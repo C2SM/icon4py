@@ -557,6 +557,7 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("c_intp", dims.VertexDim, dims.V2CDim)
 
     def c_lin_e(self):
+
         return self._get_field("c_lin_e", dims.EdgeDim, dims.E2CDim)
 
     def e_bln_c_s(self):
