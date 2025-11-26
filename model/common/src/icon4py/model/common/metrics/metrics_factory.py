@@ -360,7 +360,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
             },
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_theta_rho_ref_me)
 
