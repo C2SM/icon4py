@@ -35,6 +35,7 @@ test_tools_datatests_aarch64:
 .test_model_datatests:
   stage: test
   script:
+    - ps -ef | grep mps
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   rules:
     - if: $BACKEND == 'dace_gpu' && $COMPONENT != 'diffusion' && $COMPONENT != 'dycore'
