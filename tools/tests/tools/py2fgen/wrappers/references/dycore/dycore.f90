@@ -355,11 +355,7 @@ module dycore
 
       end function solve_nh_run_wrapper
 
-      function solve_nh_init_wrapper(vct_a, &
-                                     vct_a_size_0, &
-                                     vct_b, &
-                                     vct_b_size_0, &
-                                     c_lin_e, &
+      function solve_nh_init_wrapper(c_lin_e, &
                                      c_lin_e_size_0, &
                                      c_lin_e_size_1, &
                                      c_intp, &
@@ -502,7 +498,6 @@ module dycore
                                      coeff_gradekin_size_1, &
                                      c_owner_mask, &
                                      c_owner_mask_size_0, &
-                                     rayleigh_damping_height, &
                                      itime_scheme, &
                                      iadv_rhotheta, &
                                      igradp_method, &
@@ -526,23 +521,11 @@ module dycore
                                      divdamp_z2, &
                                      divdamp_z3, &
                                      divdamp_z4, &
-                                     lowest_layer_thickness, &
-                                     model_top_height, &
-                                     stretch_factor, &
                                      nflat_gradp, &
-                                     num_levels, &
                                      backend, &
                                      on_gpu) bind(c, name="solve_nh_init_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
-
-         type(c_ptr), value, target :: vct_a
-
-         integer(c_int), value :: vct_a_size_0
-
-         type(c_ptr), value, target :: vct_b
-
-         integer(c_int), value :: vct_b_size_0
 
          type(c_ptr), value, target :: c_lin_e
 
@@ -830,8 +813,6 @@ module dycore
 
          integer(c_int), value :: c_owner_mask_size_0
 
-         real(c_double), value, target :: rayleigh_damping_height
-
          integer(c_int), value, target :: itime_scheme
 
          integer(c_int), value, target :: iadv_rhotheta
@@ -878,15 +859,7 @@ module dycore
 
          real(c_double), value, target :: divdamp_z4
 
-         real(c_double), value, target :: lowest_layer_thickness
-
-         real(c_double), value, target :: model_top_height
-
-         real(c_double), value, target :: stretch_factor
-
          integer(c_int), value, target :: nflat_gradp
-
-         integer(c_int), value, target :: num_levels
 
          integer(c_int), value, target :: backend
 
@@ -1495,9 +1468,7 @@ contains
       !$acc end host_data
    end subroutine solve_nh_run
 
-   subroutine solve_nh_init(vct_a, &
-                            vct_b, &
-                            c_lin_e, &
+   subroutine solve_nh_init(c_lin_e, &
                             c_intp, &
                             e_flx_avg, &
                             geofac_grdiv, &
@@ -1547,7 +1518,6 @@ contains
                             coeff2_dwdz, &
                             coeff_gradekin, &
                             c_owner_mask, &
-                            rayleigh_damping_height, &
                             itime_scheme, &
                             iadv_rhotheta, &
                             igradp_method, &
@@ -1571,18 +1541,10 @@ contains
                             divdamp_z2, &
                             divdamp_z3, &
                             divdamp_z4, &
-                            lowest_layer_thickness, &
-                            model_top_height, &
-                            stretch_factor, &
                             nflat_gradp, &
-                            num_levels, &
                             backend, &
                             rc)
       use, intrinsic :: iso_c_binding
-
-      real(c_double), dimension(:), target :: vct_a
-
-      real(c_double), dimension(:), target :: vct_b
 
       real(c_double), dimension(:, :), target :: c_lin_e
 
@@ -1684,8 +1646,6 @@ contains
 
       logical(c_int), dimension(:), target :: c_owner_mask
 
-      real(c_double), value, target :: rayleigh_damping_height
-
       integer(c_int), value, target :: itime_scheme
 
       integer(c_int), value, target :: iadv_rhotheta
@@ -1732,23 +1692,11 @@ contains
 
       real(c_double), value, target :: divdamp_z4
 
-      real(c_double), value, target :: lowest_layer_thickness
-
-      real(c_double), value, target :: model_top_height
-
-      real(c_double), value, target :: stretch_factor
-
       integer(c_int), value, target :: nflat_gradp
-
-      integer(c_int), value, target :: num_levels
 
       integer(c_int), value, target :: backend
 
       logical(c_int) :: on_gpu
-
-      integer(c_int) :: vct_a_size_0
-
-      integer(c_int) :: vct_b_size_0
 
       integer(c_int) :: c_lin_e_size_0
 
@@ -1939,8 +1887,6 @@ contains
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
-      !$acc host_data use_device(vct_a)
-      !$acc host_data use_device(vct_b)
       !$acc host_data use_device(c_lin_e)
       !$acc host_data use_device(c_intp)
       !$acc host_data use_device(e_flx_avg)
@@ -1997,10 +1943,6 @@ contains
 #else
       on_gpu = .False.
 #endif
-
-      vct_a_size_0 = SIZE(vct_a, 1)
-
-      vct_b_size_0 = SIZE(vct_b, 1)
 
       c_lin_e_size_0 = SIZE(c_lin_e, 1)
       c_lin_e_size_1 = SIZE(c_lin_e, 2)
@@ -2145,11 +2087,7 @@ contains
 
       c_owner_mask_size_0 = SIZE(c_owner_mask, 1)
 
-      rc = solve_nh_init_wrapper(vct_a=c_loc(vct_a), &
-                                 vct_a_size_0=vct_a_size_0, &
-                                 vct_b=c_loc(vct_b), &
-                                 vct_b_size_0=vct_b_size_0, &
-                                 c_lin_e=c_loc(c_lin_e), &
+      rc = solve_nh_init_wrapper(c_lin_e=c_loc(c_lin_e), &
                                  c_lin_e_size_0=c_lin_e_size_0, &
                                  c_lin_e_size_1=c_lin_e_size_1, &
                                  c_intp=c_loc(c_intp), &
@@ -2292,7 +2230,6 @@ contains
                                  coeff_gradekin_size_1=coeff_gradekin_size_1, &
                                  c_owner_mask=c_loc(c_owner_mask), &
                                  c_owner_mask_size_0=c_owner_mask_size_0, &
-                                 rayleigh_damping_height=rayleigh_damping_height, &
                                  itime_scheme=itime_scheme, &
                                  iadv_rhotheta=iadv_rhotheta, &
                                  igradp_method=igradp_method, &
@@ -2316,15 +2253,9 @@ contains
                                  divdamp_z2=divdamp_z2, &
                                  divdamp_z3=divdamp_z3, &
                                  divdamp_z4=divdamp_z4, &
-                                 lowest_layer_thickness=lowest_layer_thickness, &
-                                 model_top_height=model_top_height, &
-                                 stretch_factor=stretch_factor, &
                                  nflat_gradp=nflat_gradp, &
-                                 num_levels=num_levels, &
                                  backend=backend, &
                                  on_gpu=on_gpu)
-      !$acc end host_data
-      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
