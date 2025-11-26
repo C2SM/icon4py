@@ -30,7 +30,7 @@ def test_standalone_driver(
     """
 
     backend_name = None
-    for k, v in model_backends.USER_BACKEND.items():
+    for k, v in model_backends.USER_BACKENDS.items():
         if backend_like == v:
             backend_name = k
 

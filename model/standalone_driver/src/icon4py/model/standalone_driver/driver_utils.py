@@ -9,13 +9,14 @@
 import logging
 import pathlib
 import sys
+import time
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common import dimension as dims, model_backends, model_options
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
@@ -372,6 +373,7 @@ def configure_logging(
         format="%(asctime)s %(filename)-20s (%(lineno)-4d) : %(funcName)-20s:  %(levelname)-8s %(message)s",
         stream=sys.stdout,
     )
+    logging.Formatter.converter = time.localtime
     console_handler = logging.StreamHandler(stream=sys.stderr)
     # TODO(OngChia): modify here when single_dispatch is ready
     console_handler.addFilter(mpi_decomp.ParallelLogger(processor_procs))
@@ -381,14 +383,18 @@ def configure_logging(
     console_handler.setFormatter(formatter)
     console_handler.setLevel(_LOGGING_LEVELS[logging_level])
     logging.getLogger("").addHandler(console_handler)
+    log.info("hihihi")
+    log.debug("hihihi debug")
 
 
 def get_backend_from_name(backend_name: str) -> gtx_typing.Backend:
-    if backend_name not in model_backends.USER_BACKEND:
+    if backend_name not in model_backends.USER_BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {backend_name}. \n"
-            f"Available backends are {', '.join([f'{k}' for k in model_backends.USER_BACKEND])}"
+            f"Available backends are {', '.join([f'{k}' for k in model_backends.USER_BACKENDS])}"
         )
-    make_backend_factory = model_backends.USER_BACKEND[backend_name]["backend_factory"]
-    device = model_backends.USER_BACKEND[backend_name]["device"]
-    return make_backend_factory(device=device, cached=True)
+    backend = model_options.customize_backend(
+        program=None,
+        backend=model_backends.USER_BACKENDS[backend_name],
+    )
+    return backend

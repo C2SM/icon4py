@@ -26,7 +26,7 @@ def main(
     icon4py_backend: Annotated[
         str,
         typer.Option(
-            help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.USER_BACKEND.keys()])}",
+            help=f"GT4Py backend for running the entire driver. Possible options are: {' / '.join([*model_backends.USER_BACKENDS.keys()])}",
         ),
     ],
     output_path: Annotated[
