@@ -12,6 +12,8 @@ This is the full muphys implementation for a single muphys call
 WORK IN PROGRESS!!!!  Do not try to run this.
 """
 
+# TODO refactor similar to run_graupel_only
+
 import argparse
 import sys
 import time
@@ -385,10 +387,10 @@ def write_fields(
     pflx,
     pre_gsp,
 ):
-    ncfile  = Dataset(output_filename, mode="w")
-    ncells  = ncfile.createDimension("ncells", ncell)
-    height  = ncfile.createDimension("height", nlev)
-    height1 = ncfile.createDimension("height1", nlev+1)
+    ncfile = Dataset(output_filename, mode="w")
+    ncells = ncfile.createDimension("ncells", ncell)
+    height = ncfile.createDimension("height", nlev)
+    height1 = ncfile.createDimension("height1", nlev + 1)
     ta_var = ncfile.createVariable("ta", np.double, ("height", "ncells"))
     hus_var = ncfile.createVariable("hus", np.double, ("height", "ncells"))
     clw_var = ncfile.createVariable("clw", np.double, ("height", "ncells"))
