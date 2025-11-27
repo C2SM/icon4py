@@ -41,30 +41,30 @@ def _saturation_adjustment(
                                - Revised specific cloud water content
                                - Revised specific vapor content
     """
-    qti = q_in.s + qie + qge
-    qt = qve + qce + qre + qti
-    cvc = t_d.cvd * (1.0 - qt) + t_d.clw * qre + g_ct.ci * qti
-    cv = cvc + t_d.cvv * qve + t_d.clw * qce
-    ue = cv * te - qce * g_ct.lvc
-    Tx_hold = ue / (cv + qce * (t_d.cvv - t_d.clw))
+    qti = q_in.s + q_in.i + q_in.g
+    qt = q_in.v + q_in.c + q_in.r + qti
+    cvc = t_d.cvd * (1.0 - qt) + t_d.clw * q_in.r + g_ct.ci * qti
+    cv = cvc + t_d.cvv * q_in.v + t_d.clw * q_in.c
+    ue = cv * te - q_in.c * g_ct.lvc
+    Tx_hold = ue / (cv + q_in.c * (t_d.cvv - t_d.clw))
     qx_hold = _qsat_rho(Tx_hold, rho)
 
     Tx = te
     # Newton-Raphson iteration: 6 times the same operations
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
+    Tx = _newton_raphson(Tx, rho, q_in.v, q_in.c, cvc, ue)
+    Tx = _newton_raphson(Tx, rho, q_in.v, q_in.c, cvc, ue)
+    Tx = _newton_raphson(Tx, rho, q_in.v, q_in.c, cvc, ue)
+    Tx = _newton_raphson(Tx, rho, q_in.v, q_in.c, cvc, ue)
+    Tx = _newton_raphson(Tx, rho, q_in.v, q_in.c, cvc, ue)
+    Tx = _newton_raphson(Tx, rho, q_in.v, q_in.c, cvc, ue)
 
     # At this point we hope Tx has converged
     qx = _qsat_rho(Tx, rho)
 
     # Is it possible to unify the where for all three outputs??
-    mask = qve + qce <= qx_hold
+    mask = q_in.v + q_in.c <= qx_hold
     te = where(mask, Tx_hold, Tx)
-    qce = where(mask, 0.0, maximum(qve + qce - qx, 0.0))
+    qce = where(mask, 0.0, maximum(q_in.v + qce - qx, 0.0))
     qve = where(mask, qve + qce, qx)
 
     return te, qve, qce
