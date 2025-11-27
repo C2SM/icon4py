@@ -8,25 +8,25 @@
 
 import dataclasses
 import datetime
+import functools
 import logging
-import logging.config
 import pathlib
 import statistics
 from collections.abc import Callable
 
 import gt4py.next as gtx
-import gt4py.next.typing as gtx_typing
 from devtools import Timer
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.constants import PhysicsConstants
-from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid
+from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.grid import grid_manager as gm, gridfile, vertical as v_grid
 from icon4py.model.common.initialization import jablonowski_williamson_topography
+from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import driver_states, driver_utils
@@ -83,7 +83,7 @@ class Icon4pyDriver:
     def __init__(
         self,
         config: DriverConfig,
-        backend: gtx_typing.Backend,
+        backend: model_backends.BackendLike,
         grid_manager: gm.GridManager,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
@@ -95,13 +95,24 @@ class Icon4pyDriver:
         self.static_field_factories = static_field_factories
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
-        self._xp = data_alloc.import_array_ns(self.backend)
 
         self._make_timers()
         self._initialize_timeloop_parameters()
         self._validate_config()
         self._make_logger()
         self._display_setup_in_log_file()
+
+    @functools.cached_property
+    def _allocator(self):
+        return model_backends.get_allocator(self.backend)
+
+    @functools.cached_property
+    def _xp(self):
+        return data_alloc.import_array_ns(self._allocator)
+
+    @functools.cached_property
+    def _concrete_backend(self):
+        return model_options.customize_backend(program=None, backend=self.backend)
 
     def _format_physics_constants(self) -> str:
         consts = PhysicsConstants()
@@ -289,17 +300,13 @@ class Icon4pyDriver:
         """
         if self.config.enable_statistics_output:
             # TODO (Chia Rui): Do global max when multinode is ready
-
-            def _find_max(input_field: gtx.Field) -> tuple[tuple[int, ...], float]:
-                max_indices = self._xp.unravel_index(
-                    self._xp.abs(input_field.ndarray).argmax(),
-                    input_field.ndarray.shape,
-                )
-                return max_indices, input_field.ndarray[max_indices]
-
-            rho_arg_max, max_rho = _find_max(prognostic_states.rho)
-            vn_arg_max, max_vn = _find_max(prognostic_states.vn)
-            w_arg_max, max_w = _find_max(prognostic_states.w)
+            rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
+                self._xp, prognostic_states.rho
+            )
+            vn_arg_max, max_vn = driver_utils.find_maximum_from_field(
+                self._xp, prognostic_states.vn
+            )
+            w_arg_max, max_w = driver_utils.find_maximum_from_field(self._xp, prognostic_states.w)
 
             def _determine_sign(input_number: float) -> str:
                 return " " if input_number >= 0.0 else "-"
@@ -316,6 +323,20 @@ class Icon4pyDriver:
             self._logger.info(
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self._ndyn_substeps_var:3d}"
             )
+
+    def _compute_total_mass_and_energy(
+        self, prognostic_states: prognostics.PrognosticState
+    ) -> None:
+        if self.config.enable_statistics_output:
+            rho_ndarray = prognostic_states.rho.ndarray
+            cell_volume_ndarray = self.grid_manager.geometry_fields[
+                gridfile.GeometryName.CELL_AREA.value
+            ].ndarray
+            cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
+                metrics_attr.DDQZ_Z_FULL
+            ).ndarray
+            total_mass = self._xp.sum(rho_ndarray * cell_volume_ndarray * cell_thickness_ndarray)
+            self._logger.info(f"TOTAL MASS: {total_mass:.10e}, TOTAL ENERGY")
 
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
@@ -397,7 +418,7 @@ class Icon4pyDriver:
                 prep_adv,
                 do_prep_adv,
             )
-            device_utils.sync(self.backend)
+            device_utils.sync(self._concrete_backend)
 
             self._is_first_step_in_simulation = False
 
@@ -527,6 +548,7 @@ class Icon4pyDriver:
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
+        self._compute_total_mass_and_energy(dyn_substep, prognostic_states.next)
 
         # TODO(OngChia): compute airmass for prognostic_state here
 
@@ -544,7 +566,7 @@ class Icon4pyDriver:
             global_max_vertical_cfl > ta.wpfloat("0.81") * self.config.vertical_cfl_threshold
             and not self._cfl_watch_mode
         ):
-            self._logger.info(
+            self._logger.warning(
                 "High CFL number for vertical advection in dynamical core, entering watch mode"
             )
             self._cfl_watch_mode = True
@@ -555,7 +577,7 @@ class Icon4pyDriver:
                 global_max_vertical_cfl * substep_fraction
                 > ta.wpfloat("0.9") * self.config.vertical_cfl_threshold
             ):
-                self._logger.info(
+                self._logger.warning(
                     f"Maximum vertical CFL number {global_max_vertical_cfl} is close to critical threshold"
                 )
 
@@ -578,13 +600,13 @@ class Icon4pyDriver:
                         self._ndyn_substeps_var + ndyn_substeps_increment, self._max_ndyn_substeps
                     )
                 else:
-                    self._logger.info(
+                    self._logger.warning(
                         f"WARNING: max cfl {global_max_vertical_cfl} is not a number! Number of substeps is set to the max value! "
                     )
                     new_ndyn_substeps_var = self._max_ndyn_substeps
                 self._update_ndyn_substeps(new_ndyn_substeps_var)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
-                self._logger.info(
+                self._logger.warning(
                     f"The number of dynamics substeps is increased to {self._ndyn_substeps_var}"
                 )
             if (
@@ -595,7 +617,7 @@ class Icon4pyDriver:
             ):
                 self._update_ndyn_substeps(self._ndyn_substeps_var - 1)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
-                self._logger.info(
+                self._logger.warning(
                     f"The number of dynamics substeps is decreased to {self._ndyn_substeps_var}"
                 )
 
@@ -604,14 +626,14 @@ class Icon4pyDriver:
                     and global_max_vertical_cfl
                     < ta.wpfloat("0.76") * self.config.vertical_cfl_threshold
                 ):
-                    self._logger.info(
+                    self._logger.warning(
                         "CFL number for vertical advection in dynamical core has decreased, leaving watch mode"
                     )
                     self._cfl_watch_mode = False
 
         # reset max_vertical_cfl to zero
         solve_nonhydro_diagnostic_state.max_vertical_cfl = data_alloc.scalar_like_array(
-            0.0, self.backend
+            0.0, self._allocator
         )
 
     def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
@@ -668,7 +690,7 @@ def _read_config(
 
     profiling_stats = ProfilingStats() if enable_profiling else None
 
-    driver_run_config = DriverConfig(
+    driver_config = DriverConfig(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
@@ -681,7 +703,7 @@ def _read_config(
     )
 
     return (
-        driver_run_config,
+        driver_config,
         vertical_grid_config,
         diffusion_config,
         nonhydro_config,
@@ -693,7 +715,7 @@ def initialize_driver(
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
-    backend: gtx_typing.Backend,
+    backend: model_backends.BackendLike,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -708,46 +730,51 @@ def initialize_driver(
         output_path: path where to store the simulation output
         grid_file_path: path of the grid file
         log_level: logging level
-        backend: GT4Py backend
+        backend: GT4Py backend-like
     Returns:
         Driver: driver object
     """
+
+    allocator = model_backends.get_allocator(backend)
+
     driver_config, vertical_grid_config, diffusion_config, solve_nh_config = _read_config(
         output_path=output_path,
         enable_profiling=False,
     )
-    parallel_props = decomposition.get_processor_properties(
-        decomposition.get_runtype(with_mpi=False)
+    parallel_props = decomposition_defs.get_processor_properties(
+        decomposition_defs.get_runtype(with_mpi=False)
     )
     driver_utils.configure_logging(
-        output_path, driver_config.experiment_name, log_level, parallel_props
+        logging_level=log_level,
+        processor_procs=parallel_props,
     )
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
     grid_manager = driver_utils.create_grid_manager(
         grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
-        backend=backend,
+        allocator=allocator,
     )
 
     log.info("creating the decomposition info")
 
     decomposition_info = driver_utils.create_decomposition_info(
         grid_manager=grid_manager,
-        backend=backend,
+        allocator=allocator,
     )
+    exchange = decomposition_defs.create_exchange(parallel_props, decomposition_info)
 
     log.info("initializing the vertical grid")
     vertical_grid = driver_utils.create_vertical_grid(
         vertical_grid_config=vertical_grid_config,
-        backend=backend,
+        allocator=allocator,
     )
 
     log.info("initializing the JW topography")
     cell_topography = jablonowski_williamson_topography.jablonowski_williamson_topography(
         cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
         u0=35.0,
-        array_ns=data_alloc.import_array_ns(allocator=backend),
+        array_ns=data_alloc.import_array_ns(allocator=allocator),
     )
 
     log.info("initializing the static-field factories")
@@ -755,7 +782,7 @@ def initialize_driver(
         grid_manager=grid_manager,
         decomposition_info=decomposition_info,
         vertical_grid=vertical_grid,
-        cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=backend),
+        cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),
         backend=backend,
     )
 
@@ -765,12 +792,16 @@ def initialize_driver(
         solve_nonhydro_granule,
     ) = driver_utils.initialize_granules(
         grid=grid_manager.grid,
-        parallel_props=parallel_props,
-        decomposition_info=decomposition_info,
         vertical_grid=vertical_grid,
         diffusion_config=diffusion_config,
         solve_nh_config=solve_nh_config,
         static_field_factories=static_field_factories,
+        exchange=exchange,
+        owner_mask=gtx.as_field(
+            (dims.CellDim,),
+            decomposition_info.owner_mask(dims.CellDim),
+            allocator=allocator,  # type: ignore[arg-type]
+        ),
         backend=backend,
     )
 

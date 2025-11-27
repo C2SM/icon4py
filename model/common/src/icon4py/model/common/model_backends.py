@@ -100,11 +100,10 @@ def make_custom_dace_backend(
 
 BACKENDS: dict[str, BackendLike] = {
     "embedded": None,
-    "roundtrip": gtx.itir_python,
     "gtfn_cpu": {"backend_factory": make_custom_gtfn_backend, "device": CPU},
     "gtfn_gpu": {"backend_factory": make_custom_gtfn_backend, "device": GPU},
     "dace_cpu": {"backend_factory": make_custom_dace_backend, "device": CPU},
     "dace_gpu": {"backend_factory": make_custom_dace_backend, "device": GPU},
+    "cpu": {"device": GPU},
+    "gpu": {"device": GPU},
 }
-
-USER_BACKENDS = {k: v for k, v in BACKENDS.items() if k not in {"roundtrip"}}

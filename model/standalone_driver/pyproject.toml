@@ -43,9 +43,6 @@ requires-python = ">=3.10"
 # managed by bump-my-version:
 version = "0.0.6"
 
-[project.scripts]
-run_driver = "icon4py.model.standalone_driver.main:main"
-
 [project.urls]
 Homepage = "https://github.com/C2SM/icon4py"
 

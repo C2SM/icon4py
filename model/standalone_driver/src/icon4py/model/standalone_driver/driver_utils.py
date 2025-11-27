@@ -6,17 +6,24 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 import logging
 import pathlib
 import sys
 import time
+from types import ModuleType
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims, model_backends, model_options
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    model_backends,
+    model_options,
+)
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
@@ -51,15 +58,13 @@ _LOGGING_LEVELS: dict[str, int] = {
 def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
-    backend: gtx_typing.Backend,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
     grid_manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(),
         grid_file_path,
         vertical_grid_config,
     )
-
-    allocator = model_backends.get_allocator(backend)
 
     grid_manager(allocator=allocator, keep_skip_values=False)
 
@@ -68,10 +73,9 @@ def create_grid_manager(
 
 def create_decomposition_info(
     grid_manager: gm.GridManager,
-    backend: gtx_typing.Backend,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> decomposition_defs.DecompositionInfo:
     decomposition_info = decomposition_defs.DecompositionInfo()
-    allocator = model_backends.get_allocator(backend)
     xp = data_alloc.import_array_ns(allocator)
 
     def _add_dimension(dim: gtx.Dimension) -> None:
@@ -88,10 +92,10 @@ def create_decomposition_info(
 
 def create_vertical_grid(
     vertical_grid_config: v_grid.VerticalGridConfig,
-    backend: gtx_typing.Backend,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> v_grid.VerticalGrid:
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(
-        vertical_config=vertical_grid_config, allocator=backend
+        vertical_config=vertical_grid_config, allocator=allocator
     )
 
     vertical_grid = v_grid.VerticalGrid(
@@ -107,12 +111,13 @@ def create_static_field_factories(
     decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: data_alloc.NDArray,
-    backend: gtx_typing.Backend,
+    backend: model_backends.BackendLike,
 ) -> driver_states.StaticFieldFactories:
+    concrete_backend = model_options.customize_backend(program=None, backend=backend)
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
-        backend=backend,
+        backend=concrete_backend,
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
@@ -122,7 +127,7 @@ def create_static_field_factories(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        backend=backend,
+        backend=concrete_backend,
         metadata=interpolation_attributes.attrs,
     )
 
@@ -133,7 +138,7 @@ def create_static_field_factories(
         geometry_source=geometry_field_source,
         topography=cell_topography,
         interpolation_source=interpolation_field_source,
-        backend=backend,
+        backend=concrete_backend,
         metadata=metrics_attributes.attrs,
         rayleigh_type=RayleighType.KLEMP,
         rayleigh_coeff=0.1,
@@ -148,19 +153,17 @@ def create_static_field_factories(
 
 def initialize_granules(
     grid: icon_grid.IconGrid,
-    parallel_props: decomposition_defs.ProcessProperties,
-    decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
     diffusion_config: diffusion.DiffusionConfig,
     solve_nh_config: solve_nh.NonHydrostaticConfig,
     static_field_factories: driver_states.StaticFieldFactories,
-    backend: gtx_typing.Backend | None,
+    exchange: decomposition_defs.ExchangeRuntime,
+    owner_mask: fa.CellField[bool],
+    backend: model_backends.BackendLike,
 ) -> tuple[
     diffusion.Diffusion,
     solve_nh.SolveNonhydro,
 ]:
-    exchange = decomposition_defs.create_exchange(parallel_props, decomposition_info)
-
     geometry_field_source = static_field_factories.geometry_field_source
     interpolation_field_source = static_field_factories.interpolation_field_source
     metrics_field_source = static_field_factories.metrics_field_source
@@ -335,19 +338,23 @@ def initialize_granules(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=gtx.as_field(
-            (dims.CellDim,),
-            decomposition_info.owner_mask(dims.CellDim),
-            allocator=backend,  # type: ignore[arg-type]
-        ),
+        owner_mask=owner_mask,
     )
 
     return diffusion_granule, solve_nonhydro_granule
 
 
+def find_maximum_from_field(
+    input_field: gtx.Field, array_ns: ModuleType
+) -> tuple[tuple[int, ...], float]:
+    max_indices = array_ns.unravel_index(
+        array_ns.abs(input_field.ndarray).argmax(),
+        input_field.ndarray.shape,
+    )
+    return max_indices, input_field.ndarray[max_indices]
+
+
 def configure_logging(
-    output_path: pathlib.Path,
-    experiment_name: str,
     logging_level: str,
     processor_procs: decomposition_defs.ProcessProperties = None,
 ) -> None:
@@ -369,11 +376,12 @@ def configure_logging(
         )
 
     logging.basicConfig(
-        level=logging.NOTSET,
+        level=logging.INFO,
         format="%(asctime)s %(filename)-20s (%(lineno)-4d) : %(funcName)-20s:  %(levelname)-8s %(message)s",
         stream=sys.stdout,
     )
     logging.Formatter.converter = time.localtime
+    logging.getLogger("icon4py").setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler(stream=sys.stderr)
     # TODO(OngChia): modify here when single_dispatch is ready
     console_handler.addFilter(mpi_decomp.ParallelLogger(processor_procs))
@@ -382,19 +390,13 @@ def configure_logging(
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
     console_handler.setFormatter(formatter)
     console_handler.setLevel(_LOGGING_LEVELS[logging_level])
-    logging.getLogger("").addHandler(console_handler)
-    log.info("hihihi")
-    log.debug("hihihi debug")
+    logging.getLogger("icon4py").addHandler(console_handler)
 
 
-def get_backend_from_name(backend_name: str) -> gtx_typing.Backend:
-    if backend_name not in model_backends.USER_BACKENDS:
+def get_backend_from_name(backend_name: str) -> model_backends.BackendLike:
+    if backend_name not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {backend_name}. \n"
-            f"Available backends are {', '.join([f'{k}' for k in model_backends.USER_BACKENDS])}"
+            f"Available backends are {', '.join([*model_backends.BACKENDS.keys()])}"
         )
-    backend = model_options.customize_backend(
-        program=None,
-        backend=model_backends.USER_BACKENDS[backend_name],
-    )
-    return backend
+    return model_backends.BACKENDS[backend_name]

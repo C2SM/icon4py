@@ -11,7 +11,7 @@ import shutil
 import pytest
 
 from icon4py.model.common import model_backends
-from icon4py.model.standalone_driver import run_driver
+from icon4py.model.standalone_driver import main
 from icon4py.model.testing import definitions, grid_utils
 
 from ..fixtures import *  # noqa: F403
@@ -30,14 +30,14 @@ def test_standalone_driver(
     """
 
     backend_name = None
-    for k, v in model_backends.USER_BACKENDS.items():
+    for k, v in model_backends.BACKENDS.items():
         if backend_like == v:
             backend_name = k
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
     output_path = f"./ci_driver_output_for_backend_{backend_name}"
-    run_driver.run_icon4py_driver(
+    main.main(
         configuration_file_path="./",
         grid_file_path=grid_file_path,
         icon4py_backend=backend_name,

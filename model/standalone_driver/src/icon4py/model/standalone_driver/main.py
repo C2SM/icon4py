@@ -23,6 +23,9 @@ log = logging.getLogger(__name__)
 def main(
     configuration_file_path: Annotated[str, typer.Argument(help="Configuration file path.")],
     grid_file_path: Annotated[str, typer.Option(help="Grid file path.")],
+    # it may be better to split device from backend,
+    # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
+    # whether to automatically use gpu if cupy is installed can be discussed further
     icon4py_backend: Annotated[
         str,
         typer.Option(
