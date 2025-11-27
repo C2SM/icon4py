@@ -56,7 +56,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         reshaped_cell = cell[:, np.newaxis]
         if type_shear == 2:
             dwdx, dwdy = np.where(
-                0 < reshaped_k,
+                reshaped_k > 0,
                 calculate_horizontal_gradients_for_turbulence_numpy(
                     connectivities, w_old, geofac_grg_x, geofac_grg_y
                 ),
@@ -74,7 +74,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         )
 
         w = np.where(
-            (0 < reshaped_k)
+            (reshaped_k > 0)
             & (reshaped_k < nrdmax)
             & (interior_idx <= reshaped_cell)
             & (reshaped_cell < halo_idx),

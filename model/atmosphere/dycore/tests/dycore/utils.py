@@ -8,12 +8,9 @@
 
 from __future__ import annotations
 
-from typing import Optional
+import gt4py.next.typing as gtx_typing
 
-from gt4py.next import backend as gtx_backend
-import gt4py.next as gtx
-
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -86,36 +83,10 @@ def construct_metric_state(
     )
 
 
-def construct_solve_nh_config(name: str):
-    if name.lower() in "mch_ch_r04b09_dsl":
-        return _mch_ch_r04b09_dsl_nonhydrostatic_config()
-    elif name.lower() in "exclaim_ape_r02b04":
-        return _exclaim_ape_nonhydrostatic_config()
-
-
-def _mch_ch_r04b09_dsl_nonhydrostatic_config():
-    """Create configuration matching the mch_chR04b09_dsl experiment."""
-    config = solve_nh.NonHydrostaticConfig(
-        divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,
-        iau_wgt_dyn=1.0,
-        fourth_order_divdamp_factor=0.004,
-        max_nudging_coefficient=0.375,
-    )
-    return config
-
-
-def _exclaim_ape_nonhydrostatic_config():
-    """Create configuration for EXCLAIM APE experiment."""
-    return solve_nh.NonHydrostaticConfig(
-        rayleigh_coeff=0.1,
-        divdamp_order=24,
-    )
-
-
 def create_vertical_params(
     vertical_config: v_grid.VerticalGridConfig,
     sp: sb.IconGridSavepoint,
-):
+) -> v_grid.VerticalGrid:
     return v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=sp.vct_a(),
@@ -126,12 +97,12 @@ def create_vertical_params(
 def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     grid: icon_grid.IconGrid,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_typing.Backend | None,
     swap_vertical_wind_advective_tendency: bool = False,
-):
+) -> dycore_states.DiagnosticStateNonHydro:
     current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=0.0,
+        max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         theta_v_at_cells_on_half_levels=init_savepoint.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=init_savepoint.exner_pr(),
         rho_at_cells_on_half_levels=init_savepoint.rho_ic(),
@@ -151,16 +122,18 @@ def construct_diagnostics(
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
-        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
         normal_wind_iau_increment=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, backend=backend
+            grid, dims.EdgeDim, dims.KDim, allocator=backend
         ),
-        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
         exner_dynamical_increment=init_savepoint.exner_dyn_incr(),
     )
 
 
-def create_prognostic_states(sp) -> common_utils.TimeStepPair[prognostics.PrognosticState]:
+def create_prognostic_states(
+    sp: sb.IconNonHydroInitSavepoint,
+) -> common_utils.TimeStepPair[prognostics.PrognosticState]:
     prognostic_state_nnow = prognostics.PrognosticState(
         w=sp.w_now(),
         vn=sp.vn_now(),

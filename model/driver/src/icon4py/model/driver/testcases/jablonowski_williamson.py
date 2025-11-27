@@ -11,7 +11,7 @@ import math
 import pathlib
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -38,7 +38,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
@@ -71,25 +71,25 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     xp = data_alloc.import_array_ns(backend)
 
     wgtfac_c = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().wgtfac_c(), backend=backend
+        data_provider.from_metrics_savepoint().wgtfac_c(), allocator=backend
     ).ndarray
     ddqz_z_half = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().ddqz_z_half(), backend=backend
+        data_provider.from_metrics_savepoint().ddqz_z_half(), allocator=backend
     ).ndarray
     theta_ref_mc = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().theta_ref_mc(), backend=backend
+        data_provider.from_metrics_savepoint().theta_ref_mc(), allocator=backend
     ).ndarray
     theta_ref_ic = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().theta_ref_ic(), backend=backend
+        data_provider.from_metrics_savepoint().theta_ref_ic(), allocator=backend
     ).ndarray
     exner_ref_mc = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().exner_ref_mc(), backend=backend
+        data_provider.from_metrics_savepoint().exner_ref_mc(), allocator=backend
     ).ndarray
     d_exner_dz_ref_ic = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().d_exner_dz_ref_ic(), backend=backend
+        data_provider.from_metrics_savepoint().d_exner_dz_ref_ic(), allocator=backend
     ).ndarray
     geopot = data_alloc.as_field(
-        data_provider.from_metrics_savepoint().geopot(), backend=backend
+        data_provider.from_metrics_savepoint().geopot(), allocator=backend
     ).ndarray
 
     cell_lat = cell_param.cell_center_lat.ndarray
@@ -98,13 +98,13 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     primal_normal_x = edge_param.primal_normal[0].ndarray
 
     cell_2_edge_coeff = data_alloc.as_field(
-        data_provider.from_interpolation_savepoint().c_lin_e(), backend=backend
+        data_provider.from_interpolation_savepoint().c_lin_e(), allocator=backend
     )
     rbf_vec_coeff_c1 = data_alloc.as_field(
-        data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(), backend=backend
+        data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(), allocator=backend
     )
     rbf_vec_coeff_c2 = data_alloc.as_field(
-        data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2(), backend=backend
+        data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2(), allocator=backend
     )
 
     num_cells = grid.num_cells
@@ -219,7 +219,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
     log.info("Newton iteration completed!")
 
     eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=backend)
-    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend)
+    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
         eta_v,
         cell_2_edge_coeff,
@@ -308,7 +308,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
 
     log.info("U, V computation completed.")
 
-    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend)
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
     testcases_utils.compute_perturbed_exner.with_backend(backend)(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),

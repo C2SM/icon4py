@@ -10,7 +10,7 @@ import abc
 import logging
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_courant_number import (
@@ -99,7 +99,7 @@ class BoundaryConditions(abc.ABC):
 class NoFluxCondition(BoundaryConditions):
     """Class that sets the upper and lower boundary fluxes to zero."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
         self._backend = backend
@@ -180,14 +180,14 @@ class VerticalLimiter(abc.ABC):
 class NoLimiter(VerticalLimiter):
     """Class that implements no vertical parabola limiter."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
         self._backend = backend
 
         # fields
         self._l_limit = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
 
         # stencils
@@ -248,17 +248,17 @@ class NoLimiter(VerticalLimiter):
 class SemiMonotonicLimiter(VerticalLimiter):
     """Class that implements a semi-monotonic vertical parabola limiter."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
         self._backend = backend
 
         # fields
         self._k_field = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, backend=self._backend
+            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=self._backend
         )  # TODO(dastrm): should be KHalfDim
         self._l_limit = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=gtx.int32, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=gtx.int32, allocator=self._backend
         )
 
         # stencils
@@ -380,7 +380,7 @@ class VerticalAdvection(abc.ABC):
 class NoAdvection(VerticalAdvection):
     """Class that implements disabled vertical advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_backend.Backend | None):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         log.debug("vertical advection class init - start")
 
         # input arguments
@@ -512,7 +512,7 @@ class FirstOrderUpwind(FiniteVolume):
         boundary_conditions: BoundaryConditions,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         log.debug("vertical advection class init - start")
 
@@ -538,7 +538,7 @@ class FirstOrderUpwind(FiniteVolume):
             grid=self._grid,
             extend={dims.KDim: 1},
             dtype=gtx.int32,
-            backend=self._backend,
+            allocator=self._backend,
         )  # TODO(dastrm): should be KHalfDim
 
         # stencils
@@ -653,7 +653,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         vertical_limiter: VerticalLimiter,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         log.debug("vertical advection class init - start")
 
@@ -675,28 +675,28 @@ class PiecewiseParabolicMethod(FiniteVolume):
 
         # fields
         self._k_field = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, backend=self._backend
+            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=self._backend
         )  # TODO(dastrm): should be KHalfDim
         self._z_cfl = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=self._backend
         )  # TODO(dastrm): should be KHalfDim
         self._z_slope = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
         self._z_face = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=self._backend
         )  # TODO(dastrm): should be KHalfDim
         self._z_face_up = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
         self._z_face_low = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
         self._z_delta_q = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
         self._z_a1 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
         )
 
         # stencils

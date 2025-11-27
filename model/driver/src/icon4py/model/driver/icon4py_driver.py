@@ -9,19 +9,18 @@
 import datetime
 import logging
 import pathlib
-import uuid
 from collections.abc import Callable
 from typing import NamedTuple
 
 import click
 import numpy as np
 from devtools import Timer
-from gt4py.next import backend as gtx_backend, config as gtx_config, metrics as gtx_metrics
+from gt4py.next import config as gtx_config, metrics as gtx_metrics, typing as gtx_typing
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -65,6 +64,9 @@ class TimeLoop:
         self._simulation_date: datetime.datetime = self.run_config.start_date
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
+        self._allocator: gtx_typing.FieldBufferAllocationUtil = model_backends.get_allocator(
+            self.run_config.backend
+        )
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -176,7 +178,7 @@ class TimeLoop:
                 second_order_divdamp_factor,
                 do_prep_adv,
             )
-            device_utils.sync(self.run_config.backend)
+            device_utils.sync(self._allocator)
             timer.capture()
 
             self._is_first_step_in_simulation = False
@@ -339,10 +341,8 @@ def initialize(
     props: decomposition.ProcessProperties,
     serialization_type: driver_init.SerializationType,
     experiment_type: driver_init.ExperimentType,
-    grid_id: uuid.UUID,
-    grid_root,
-    grid_level,
-    backend: gtx_backend.Backend,
+    grid_file: pathlib.Path,
+    backend_like: model_backends.BackendLike,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
     Initialize the driver run.
@@ -359,9 +359,8 @@ def initialize(
         props: Processor properties.
         serialization_type: Serialization type.
         experiment_type: Experiment type.
-        grid_id: Grid ID.
-        grid_root: Grid root.
-        grid_level: Grid level.
+        grid_file: Path of the grid.
+        backend: GT4Py backend.
 
     Returns:
         TimeLoop: Time loop object.
@@ -370,27 +369,26 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(experiment_type=experiment_type, backend=backend)
+    config = driver_config.read_config(experiment_type=experiment_type, backend=backend_like)
+
+    # TODO(havogt): Serialbox infrastructure needs to be upgraded to work with allocator instead of backend
+    generic_concrete_backend = model_options.customize_backend(None, backend_like)
 
     decomp_info = driver_init.read_decomp_info(
-        file_path,
-        props,
-        backend,
-        serialization_type,
-        grid_id,
-        grid_root,
-        grid_level,
+        path=file_path,
+        grid_file=grid_file,
+        procs_props=props,
+        backend=generic_concrete_backend,
+        ser_type=serialization_type,
     )
 
     log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = driver_init.read_icon_grid(
-        file_path,
-        backend=backend,
+    grid = driver_init.read_icon_grid(
+        path=file_path,
+        grid_file=grid_file,
+        backend=generic_concrete_backend,
         rank=props.rank,
         ser_type=serialization_type,
-        grid_id=grid_id,
-        grid_root=grid_root,
-        grid_level=grid_level,
     )
     log.info(f"reading input fields from '{file_path}'")
     (
@@ -399,14 +397,12 @@ def initialize(
         vertical_geometry,
         c_owner_mask,
     ) = driver_init.read_geometry_fields(
-        file_path,
+        path=file_path,
+        grid_file=grid_file,
         vertical_grid_config=config.vertical_grid_config,
-        backend=backend,
+        backend=generic_concrete_backend,
         rank=props.rank,
         ser_type=serialization_type,
-        grid_id=grid_id,
-        grid_root=grid_root,
-        grid_level=grid_level,
     )
     (
         diffusion_metric_state,
@@ -415,11 +411,9 @@ def initialize(
         solve_nonhydro_interpolation_state,
         _,
     ) = driver_init.read_static_fields(
-        grid_id,
-        grid_root,
-        grid_level,
-        file_path,
-        backend,
+        path=file_path,
+        grid_file=grid_file,
+        backend=generic_concrete_backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
@@ -428,7 +422,7 @@ def initialize(
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
     diffusion_granule = diffusion.Diffusion(
-        icon_grid,
+        grid,
         config.diffusion_config,
         diffusion_params,
         vertical_geometry,
@@ -437,14 +431,14 @@ def initialize(
         edge_geometry,
         cell_geometry,
         exchange=exchange,
-        backend=backend,
+        backend=backend_like,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        grid=icon_grid,
-        backend=backend,
+        grid=grid,
+        backend=backend_like,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
@@ -464,11 +458,11 @@ def initialize(
         prognostic_state_now,
         prognostic_state_next,
     ) = driver_init.read_initial_state(
-        icon_grid,
-        cell_geometry,
-        edge_geometry,
-        file_path,
-        backend=backend,
+        grid=grid,
+        cell_param=cell_geometry,
+        edge_param=edge_geometry,
+        path=file_path,
+        backend=generic_concrete_backend,
         rank=props.rank,
         experiment_type=experiment_type,
     )
@@ -521,25 +515,14 @@ def initialize(
     "Currently, users can also set it to either jabw or grauss_3d_torus to generate analytic initial condition for the JW and mountain wave tests, respectively (they are placed in abs_path_to_icon4py/model/driver/src/icon4py/model/driver/test_cases/).",
 )
 @click.option(
-    "--grid_root",
-    default=2,
-    show_default=True,
-    help="Grid root division (please refer to Sadourny et al. 1968 or ICON documentation for more information). When torus grid is used, it must be set to 2.",
-)
-@click.option(
-    "--grid_level",
-    default=4,
-    show_default=True,
-    help="Grid refinement level. When torus grid is used, it must be set to 0.",
-)
-@click.option(
-    "--grid_id",
-    default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
-    help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
+    "--grid_file",
+    required=True,
+    help="Path of the grid file.",
 )
 @click.option(
     "--enable_output",
     is_flag=True,
+    default=False,
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
 )
 @click.option(
@@ -560,9 +543,7 @@ def icon4py_driver(
     mpi,
     serialization_type,
     experiment_type,
-    grid_id,
-    grid_root,
-    grid_level,
+    grid_file,
     enable_output,
     enable_profiling,
     icon4py_driver_backend,
@@ -593,10 +574,9 @@ def icon4py_driver(
             f"Invalid driver backend: {icon4py_driver_backend}. \n"
             f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS])}"
         )
-    backend = model_backends.BACKENDS[icon4py_driver_backend]
+    backend_like = model_backends.BACKENDS[icon4py_driver_backend]
 
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
-    grid_id = uuid.UUID(grid_id)
     driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
 
     time_loop: TimeLoop
@@ -607,10 +587,8 @@ def icon4py_driver(
         parallel_props,
         serialization_type,
         experiment_type,
-        grid_id,
-        grid_root,
-        grid_level,
-        backend,
+        pathlib.Path(grid_file),
+        backend_like,
     )
     log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
     log.info(

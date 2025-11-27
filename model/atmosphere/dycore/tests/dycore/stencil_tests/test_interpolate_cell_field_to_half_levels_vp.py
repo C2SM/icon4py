@@ -19,7 +19,7 @@ from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_
 )
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing import stencil_tests as stencil_tests
+from icon4py.model.testing import stencil_tests
 
 
 def interpolate_cell_field_to_half_levels_vp_numpy(

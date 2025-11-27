@@ -5,20 +5,35 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import pathlib
 import random
+from collections.abc import Generator
 
 import pytest
 
-from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
 from icon4py.model.testing.fixtures.datatest import (
-    grid_savepoint,
+    backend,
+    backend_like,
+    damping_height,
     data_provider,
+    decomposition_info,
     download_ser_data,
+    experiment,
+    flat_height,
+    grid_savepoint,
+    htop_moist_proc,
+    icon_grid,
+    interpolation_savepoint,
+    linit,
+    lowest_layer_thickness,
+    maximal_layer_thickness,
+    metrics_savepoint,
+    model_top_height,
+    ndyn_substeps,
     processor_props,
     ranked_data_path,
-    backend,
+    stretch_factor,
+    topography_savepoint,
 )
 
 
@@ -28,7 +43,7 @@ def random_name() -> str:
 
 
 @pytest.fixture
-def test_path(tmp_path):
+def test_path(tmp_path: pathlib.Path) -> Generator[pathlib.Path, None, None]:
     base_path = tmp_path.joinpath("io_tests")
     base_path.mkdir(exist_ok=True, parents=True, mode=0o777)
     yield base_path
@@ -42,8 +57,3 @@ def _delete_recursive(p: pathlib.Path) -> None:
         else:
             _delete_recursive(child)
     p.rmdir()
-
-
-@pytest.fixture
-def grid_file():
-    return REGIONAL_EXPERIMENT

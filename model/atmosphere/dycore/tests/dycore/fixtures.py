@@ -6,9 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-
 from icon4py.model.testing.fixtures.datatest import (
     backend,
+    backend_like,
     damping_height,
     data_provider,
     decomposition_info,
@@ -31,11 +31,11 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_exit,
     savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init,
+    savepoint_dycore_30_to_38_exit,
+    savepoint_dycore_30_to_38_init,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_final,
-    savepoint_dycore_30_to_38_init,
-    savepoint_dycore_30_to_38_exit,
     savepoint_velocity_exit,
     savepoint_velocity_init,
     savepoint_vertically_implicit_dycore_solver_init,
@@ -44,5 +44,4 @@ from icon4py.model.testing.fixtures.datatest import (
     stretch_factor,
     substep_exit,
     substep_init,
-    top_height_limit_for_maximal_layer_thickness,
 )

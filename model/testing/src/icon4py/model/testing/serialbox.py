@@ -10,9 +10,9 @@ import logging
 from typing import Final, Literal, TypeAlias
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import serialbox
-from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
@@ -47,7 +47,7 @@ class IconSavepoint:
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         size: dict,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         self.savepoint = sp
         self.serializer = ser
@@ -147,7 +147,7 @@ class IconGridSavepoint(IconSavepoint):
         grid_id: str,
         size: dict,
         grid_shape: icon.GridShape,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
@@ -310,58 +310,47 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_field("edge_cell_length", dims.EdgeDim, dims.E2CDim)
 
     def cells_start_index(self):
-        return self._read_int32_shift1("c_start_index")
+        start_idx = self._read_int32("c_start_index")
+        return np.where(start_idx == 0, start_idx, start_idx - 1)
 
     def cells_end_index(self):
         return self._read_int32("c_end_index")
 
     def vertex_start_index(self):
-        return self._read_int32_shift1("v_start_index")
+        start_idx = self._read_int32("v_start_index")
+        return np.where(start_idx == 0, start_idx, start_idx - 1)
 
     def vertex_end_index(self):
         return self._read_int32("v_end_index")
 
     def edge_start_index(self):
-        return self._read_int32_shift1("e_start_index")
+        start_idx = self._read_int32("e_start_index")
+        return np.where(start_idx == 0, start_idx, start_idx - 1)
 
-    def start_index(self, dim: gtx.Dimension) -> np.ndarray:
-        """
-        Use to specify lower end of domains of a field for field_operators.
-        """
-        match dim:
-            case dims.CellDim:
-                return self.cells_start_index()
-            case dims.EdgeDim:
-                return self.edge_start_index()
-            case dims.VertexDim:
-                return self.vertex_start_index()
-            case _:
-                raise ValueError(f"Unsupported dimension {dim}")
+    def edge_end_index(self):
+        # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
+        # one off accounts for being exclusive [from:to)
+        return self._read_int32("e_end_index")
 
-    def end_index(self, dim: gtx.Dimension) -> np.ndarray:
-        """
-        Use to specify upper end of domains of a field for field_operators.
-        """
-        match dim:
-            case dims.CellDim:
-                return self.cells_end_index()
-            case dims.EdgeDim:
-                return self.edge_end_index()
-            case dims.VertexDim:
-                return self.vertex_end_index()
-            case _:
-                raise ValueError(f"Unsupported dimension {dim}")
+    def start_index(self) -> dict[gtx.Dimension, np.ndarray]:
+        return {
+            dims.CellDim: self.cells_start_index(),
+            dims.EdgeDim: self.edge_start_index(),
+            dims.VertexDim: self.vertex_start_index(),
+        }
+
+    def end_index(self) -> dict[gtx.Dimension, np.ndarray]:
+        return {
+            dims.CellDim: self.cells_end_index(),
+            dims.EdgeDim: self.edge_end_index(),
+            dims.VertexDim: self.vertex_end_index(),
+        }
 
     def nflatlev(self):
         return self._read_int32_shift1("nflatlev").item()
 
     def nflat_gradp(self):
         return self._read_int32_shift1("nflat_gradp").item()
-
-    def edge_end_index(self):
-        # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
-        # one off accounts for being exclusive [from:to)
-        return self.serializer.read("e_end_index", self.savepoint)
 
     def v_owner_mask(self):
         return self._get_field("v_owner_mask", dims.VertexDim, dtype=bool)
@@ -473,7 +462,6 @@ class IconGridSavepoint(IconSavepoint):
     def construct_decomposition_info(self):
         return (
             decomposition.DecompositionInfo(
-                klevels=self.num(dims.KDim),
                 num_cells=self.num(dims.CellDim),
                 num_edges=self.num(dims.EdgeDim),
                 num_vertices=self.num(dims.VertexDim),
@@ -489,15 +477,8 @@ class IconGridSavepoint(IconSavepoint):
         return dim, global_index, mask
 
     def construct_icon_grid(
-        self, backend: gtx_backend.Backend | None = None, keep_skip_values: bool = True
+        self, backend: gtx_typing.Backend | None = None, keep_skip_values: bool = True
     ) -> icon.IconGrid:
-        cell_starts = self.cells_start_index()
-        cell_ends = self.cells_end_index()
-        vertex_starts = self.vertex_start_index()
-        vertex_ends = self.vertex_end_index()
-        edge_starts = self.edge_start_index()
-        edge_ends = self.edge_end_index()
-
         config = base.GridConfig(
             horizontal_config=base.HorizontalGridSize(
                 num_vertices=self.num(dims.VertexDim),
@@ -513,18 +494,12 @@ class IconGridSavepoint(IconSavepoint):
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
-        start_indices = {
-            **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_starts),
-            **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_starts),
-            **h_grid.map_icon_domain_bounds(dims.CellDim, cell_starts),
-        }
-
-        end_indices = {
-            **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_ends),
-            **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_ends),
-            **h_grid.map_icon_domain_bounds(dims.CellDim, cell_ends),
-        }
-
+        constructor = functools.partial(
+            h_grid.get_start_end_idx_from_icon_arrays,
+            start_indices=self.start_index(),
+            end_indices=self.end_index(),
+        )
+        start_index, end_index = icon.get_start_and_end_index(constructor)
         neighbor_tables = {
             dims.C2E: self.c2e(),
             dims.E2C: self.e2c(),
@@ -546,8 +521,8 @@ class IconGridSavepoint(IconSavepoint):
             config=config,
             neighbor_tables=neighbor_tables,
             global_properties=self.global_grid_params,
-            start_indices=start_indices,
-            end_indices=end_indices,
+            start_index=start_index,
+            end_index=end_index,
         )
 
     def construct_edge_geometry(self) -> grid_states.EdgeParams:
@@ -1159,7 +1134,7 @@ class NonHydroInitEdgeDiagnosticsUpdateVnSavepoint(IconSavepoint):
         return self._get_field("bdy_divdamp", dims.KDim)
 
     def z_hydro_corr(self):
-        return self._get_field("z_hydro_corr", dims.EdgeDim, dims.KDim)
+        return self._get_field("z_hydro_corr", dims.EdgeDim)
 
     def z_graddiv2_vn(self):
         return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
@@ -1566,9 +1541,6 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def z_w_con_c_full(self):
         return self._get_field("z_w_con_c_full", dims.CellDim, dims.KDim)
 
-    def vcfl_dsl(self):
-        return self._get_field("vcfl_dsl", dims.CellDim, dims.KDim)
-
 
 class IconVelocityExitSavepoint(IconSavepoint):
     def max_vcfl_dyn(self):
@@ -1755,7 +1727,7 @@ class IconGraupelSavepoint(IconSavepoint):
         return self.tracer(QG)
 
     def qnc(self):
-        return self._get_field("qnc", dims.CellDim, dims.KDim)
+        return self._get_field("qnc", dims.CellDim)
 
     def dtime(self):
         return self.serializer.read("dtime", self.savepoint)[0]
@@ -1818,7 +1790,7 @@ class TopographySavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend | None,
         fname_prefix,
         path=".",
         do_print=False,
@@ -2079,13 +2051,15 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelSavepoint:
-        savepoint = self.serializer.savepoint["microphysics-init"].date[date].as_savepoint()
+        # TODO (Chia Rui): fix typo microphy[s]ics
+        savepoint = self.serializer.savepoint["microphyics-init"].date[date].as_savepoint()
         return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelSavepoint:
-        savepoint = self.serializer.savepoint["microphysics-exit"].date[date].as_savepoint()
+        # TODO (Chia Rui): fix typo microphy[s]ics
+        savepoint = self.serializer.savepoint["microphyics-exit"].date[date].as_savepoint()
         return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )

@@ -38,9 +38,9 @@ def invoke_cli(cli_runner, module, function, library_name, path):
 
 
 def diff(reference: pathlib.Path, actual: pathlib.Path):
-    with open(reference, "r") as f:
+    with pathlib.Path.open(reference) as f:
         reference_lines = f.readlines()
-    with open(actual, "r") as f:
+    with pathlib.Path.open(actual) as f:
         actual_lines = f.readlines()
     result = difflib.context_diff(reference_lines, actual_lines)
 

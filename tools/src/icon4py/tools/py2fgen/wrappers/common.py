@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-import contextlib
 import functools
 import logging
 from collections.abc import Callable, Iterable
@@ -15,10 +14,11 @@ from types import ModuleType
 from typing import TYPE_CHECKING, Final, TypeAlias
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
-from gt4py.next import backend as gtx_backend
+from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
@@ -48,61 +48,35 @@ log = logging.getLogger(__name__)
 
 class BackendIntEnum(eve.IntEnum):
     DEFAULT = 0
-    DEFAULT_CPU = 1
-    DEFAULT_GPU = 2
-    _GTFN_CPU = 11
-    _GTFN_GPU = 12
-    _DACE_CPU = 21
-    _DACE_GPU = 22
+    DACE = 1
+    GTFN = 2
 
 
-_BACKEND_MAP: dict[BackendIntEnum, gtx_backend.Backend | None] = {
-    BackendIntEnum._GTFN_CPU: model_backends.BACKENDS["gtfn_cpu"],
-    BackendIntEnum._GTFN_GPU: model_backends.BACKENDS["gtfn_gpu"],
-}
-with contextlib.suppress(NotImplementedError):  # dace backends might not be available
-    _BACKEND_MAP |= {
-        BackendIntEnum._DACE_CPU: model_backends.BACKENDS.get("dace_cpu"),
-        BackendIntEnum._DACE_GPU: model_backends.BACKENDS.get("dace_gpu"),
-    }
-
-
-def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backend:
-    default_cpu = BackendIntEnum._GTFN_CPU
-    default_gpu = BackendIntEnum._GTFN_GPU
+def select_backend(
+    selector: BackendIntEnum, on_gpu: bool
+) -> gtx_typing.Backend | model_backends.BackendDescriptor:
+    backend_descriptor: model_backends.BackendDescriptor = {}
+    backend_descriptor["device"] = model_backends.GPU if on_gpu else model_backends.CPU
     if selector == BackendIntEnum.DEFAULT:
-        selector = BackendIntEnum.DEFAULT_GPU if on_gpu else BackendIntEnum.DEFAULT_CPU
-    if selector == BackendIntEnum.DEFAULT_CPU:
-        selector = default_cpu
-    elif selector == BackendIntEnum.DEFAULT_GPU:
-        selector = default_gpu
+        return backend_descriptor
+    if selector == BackendIntEnum.DACE:
+        backend_descriptor["backend_factory"] = model_backends.make_custom_dace_backend
+        return backend_descriptor
+    if selector == BackendIntEnum.GTFN:
+        backend_descriptor["backend_factory"] = model_backends.make_custom_gtfn_backend
+        return backend_descriptor
 
-    if selector not in (
-        BackendIntEnum._GTFN_CPU,
-        BackendIntEnum._GTFN_GPU,
-        BackendIntEnum._DACE_CPU,
-        BackendIntEnum._DACE_GPU,
-    ):
-        raise ValueError(f"Invalid backend selector: {selector.name}")
-    if on_gpu and selector in (BackendIntEnum._DACE_CPU, BackendIntEnum._GTFN_CPU):
-        raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=True")
-    if not on_gpu and selector in (BackendIntEnum._DACE_GPU, BackendIntEnum._GTFN_GPU):
-        raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=False")
-
-    backend = _BACKEND_MAP.get(selector)
-    assert backend is not None
-
-    return backend
+    raise ValueError(f"Invalid backend selector: {selector}")
 
 
 def cached_dummy_field_factory(
-    allocator: gtx_backend.Backend,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
 ) -> Callable[[str, gtx.Domain, gt4py_definitions.DType], gtx.Field]:
     # curried to exclude non-hashable backend from cache
     @functools.lru_cache(maxsize=20)
     def impl(_name: str, domain: gtx.Domain, dtype: gt4py_definitions.DType) -> gtx.Field:
         # _name is used to differentiate between different dummy fields
-        return gtx.zeros(domain, dtype=dtype, allocator=allocator)  # type:ignore[arg-type]  # TODO(): fix type hint
+        return gtx.zeros(domain, dtype=dtype, allocator=allocator)
 
     return impl
 
@@ -154,7 +128,7 @@ def construct_icon_grid(
     vertical_size: int,
     limited_area: bool,
     mean_cell_area: gtx.float64,  # type:ignore[name-defined]  # TODO(): fix type hint
-    backend: gtx_backend.Backend,
+    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
 ) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
@@ -164,15 +138,15 @@ def construct_icon_grid(
 
     log.debug("Offsetting Fortran connectivitity arrays by 1")
 
-    xp = data_alloc.import_array_ns(backend)
-
-    cells_start_index = adjust_fortran_indices(cell_starts)
-    vertex_start_index = adjust_fortran_indices(vertex_starts)
-    edge_start_index = adjust_fortran_indices(edge_starts)
-
-    cells_end_index = cell_ends
-    vertex_end_index = vertex_ends
-    edge_end_index = edge_ends
+    xp = data_alloc.import_array_ns(allocator)
+    start_indices = {
+        # TODO(halungge): ICON Fortran has 0 values in these arrays in some places possibly where they don't use them.
+        # We should investigate where we access these values.
+        dims.CellDim: np.maximum(0, adjust_fortran_indices(cell_starts)),
+        dims.EdgeDim: np.maximum(0, adjust_fortran_indices(edge_starts)),
+        dims.VertexDim: np.maximum(0, adjust_fortran_indices(vertex_starts)),
+    }
+    end_indices = {dims.CellDim: cell_ends, dims.EdgeDim: edge_ends, dims.VertexDim: vertex_ends}
 
     c2e = adjust_fortran_indices(c2e)
     c2v = adjust_fortran_indices(c2v)
@@ -219,26 +193,20 @@ def construct_icon_grid(
         sizes={dims.EdgeDim: num_edges, dims.VertexDim: num_vertices, dims.CellDim: num_cells},
         tables=neighbor_tables,
     )
-
-    start_indices = {
-        **h_grid.map_icon_domain_bounds(dims.CellDim, cells_start_index),
-        **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_start_index),
-        **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_start_index),
-    }
-
-    end_indices = {
-        **h_grid.map_icon_domain_bounds(dims.CellDim, cells_end_index),
-        **h_grid.map_icon_domain_bounds(dims.EdgeDim, edge_end_index),
-        **h_grid.map_icon_domain_bounds(dims.VertexDim, vertex_end_index),
-    }
+    domain_bounds_constructor = functools.partial(
+        h_grid.get_start_end_idx_from_icon_arrays,
+        start_indices=start_indices,
+        end_indices=end_indices,
+    )
+    start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
     return icon.icon_grid(
         id_=grid_id,
-        allocator=backend,
+        allocator=allocator,
         config=config,
         neighbor_tables=neighbor_tables,
-        start_indices=start_indices,
-        end_indices=end_indices,
+        start_index=start_index,
+        end_index=end_index,
         global_properties=icon.GlobalGridParams(mean_cell_area=mean_cell_area),
     )
 
@@ -269,7 +237,7 @@ def construct_decomposition(
 
     decomposition_info = (
         definitions.DecompositionInfo(
-            klevels=num_levels, num_cells=num_cells, num_edges=num_edges, num_vertices=num_vertices
+            num_cells=num_cells, num_edges=num_edges, num_vertices=num_vertices
         )
         .with_dimension(dims.CellDim, c_glb_index, c_owner_mask)
         .with_dimension(dims.EdgeDim, e_glb_index, e_owner_mask)

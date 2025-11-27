@@ -7,19 +7,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import Optional
-from collections.abc import Iterator, Sequence
+import contextlib
+from collections.abc import Iterator
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import (
-    definitions,
-    grid_utils as gridtest_utils,
-)
+from icon4py.model.testing import definitions, grid_utils as gridtest_utils
 
 
 managers: dict[str, gm.GridManager] = {}
@@ -69,47 +66,17 @@ def all_dims() -> Iterator[gtx.Dimension]:
     yield from local_dims()
 
 
-def global_grid_domains(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
-    zones = [
-        h_grid.Zone.END,
-        h_grid.Zone.LOCAL,
-        h_grid.Zone.INTERIOR,
-        h_grid.Zone.HALO,
-        h_grid.Zone.HALO_LEVEL_2,
-    ]
-
-    yield from _domain(dim, zones)
-
-
-def _domain(dim: gtx.Dimension, zones: Sequence[h_grid.Zone]) -> Iterator[h_grid.Domain]:
+def _domain(dim: gtx.Dimension, zones: Iterator[h_grid.Zone]) -> Iterator[h_grid.Domain]:
     domain = h_grid.domain(dim)
     for zone in zones:
-        try:
+        with contextlib.suppress(AssertionError):
             yield domain(zone)
-        except AssertionError:
-            ...
-
-
-def valid_boundary_zones_for_dim(dim: gtx.Dimension) -> Iterator[h_grid.Domain]:
-    zones = [
-        h_grid.Zone.LATERAL_BOUNDARY,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7,
-        h_grid.Zone.NUDGING,
-        h_grid.Zone.NUDGING_LEVEL_2,
-    ]
-
-    yield from _domain(dim, zones)
 
 
 def run_grid_manager(
     grid: definitions.GridDescription,
     keep_skip_values: bool,
-    backend: Optional[gtx_backend.Backend],
+    backend: gtx_typing.Backend | None,
 ) -> gm.GridManager:
     key = "_".join(
         (grid.name, data_alloc.backend_name(backend), "skip" if keep_skip_values else "no_skip")
@@ -121,7 +88,7 @@ def run_grid_manager(
             grid,
             keep_skip_values=keep_skip_values,
             num_levels=1,
-            backend=backend,
+            allocator=model_backends.get_allocator(backend),
         )
         managers[key] = manager
         return manager

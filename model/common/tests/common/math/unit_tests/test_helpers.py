@@ -8,30 +8,31 @@
 from typing import Any
 
 import gt4py.next as gtx
-import icon4py.model.testing.test_utils
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
+import icon4py.model.testing.test_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.math import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
-from icon4py.model.testing.fixtures.datatest import backend
-from icon4py.model.testing.fixtures.stencil_tests import grid
+from icon4py.model.testing.fixtures.datatest import backend, backend_like
+from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
 
 
-def test_cross_product(backend):
-    mesh = simple.simple_grid(backend=backend)
-    x1 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
-    y1 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
-    z1 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
-    x2 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
-    y2 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
-    z2 = data_alloc.random_field(mesh, dims.EdgeDim, backend=backend)
-    x = data_alloc.zero_field(mesh, dims.EdgeDim, backend=backend)
-    y = data_alloc.zero_field(mesh, dims.EdgeDim, backend=backend)
-    z = data_alloc.zero_field(mesh, dims.EdgeDim, backend=backend)
+def test_cross_product(backend: gtx_typing.Backend) -> None:
+    mesh = simple.simple_grid(allocator=backend)
+    x1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
+    y1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
+    z1 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
+    x2 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
+    y2 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
+    z2 = data_alloc.random_field(mesh, dims.EdgeDim, allocator=backend)
+    x = data_alloc.zero_field(mesh, dims.EdgeDim, allocator=backend)
+    y = data_alloc.zero_field(mesh, dims.EdgeDim, allocator=backend)
+    z = data_alloc.zero_field(mesh, dims.EdgeDim, allocator=backend)
 
     helpers.cross_product_on_edges.with_backend(backend)(
         x1, x2, y1, y2, z1, z2, out=(x, y, z), offset_provider={}

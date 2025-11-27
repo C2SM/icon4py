@@ -11,11 +11,11 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
-import icon4py.model.testing.stencil_tests as stencil_tests
 from icon4py.model.atmosphere.advection.stencils.compute_barycentric_backtrajectory import (
     compute_barycentric_backtrajectory,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.testing import stencil_tests
 
 
 class TestComputeBarycentricBacktrajectory(stencil_tests.StencilTest):

@@ -10,11 +10,9 @@ import logging
 import gt4py.next as gtx
 import numpy as np
 import pytest
+from gt4py.next import typing as gtx_typing
 
-from icon4py.model.atmosphere.dycore import (
-    dycore_states,
-    velocity_advection as advection,
-)
+from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
     compute_advection_in_horizontal_momentum_equation,
 )
@@ -25,15 +23,16 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
 )
-from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
+    icon,
     states as grid_states,
     vertical as v_grid,
 )
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
+from icon4py.model.testing import definitions, serialbox, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -60,7 +59,9 @@ def _compare_cfl(
     assert vertical_cfl[horizontal_start:horizontal_end, :].max() == icon_result_max_vcfl_dyn
 
 
-def create_vertical_params(vertical_config, grid_savepoint):
+def create_vertical_params(
+    vertical_config: v_grid.VerticalGridConfig, grid_savepoint: serialbox.IconGridSavepoint
+) -> v_grid.VerticalGrid:
     return v_grid.VerticalGrid(
         config=vertical_config, vct_a=grid_savepoint.vct_a(), vct_b=grid_savepoint.vct_b()
     )
@@ -71,23 +72,23 @@ def create_vertical_params(vertical_config, grid_savepoint):
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_savepoint(
-    interpolation_savepoint,
-    step_date_init,
-    grid_savepoint,
-    icon_grid,
-    metrics_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    experiment,
-    backend,
-):
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    step_date_init: str,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    icon_grid: icon.IconGrid,
+    metrics_savepoint: serialbox.MetricSavepoint,
+    lowest_layer_thickness: ta.wpfloat,
+    model_top_height: ta.wpfloat,
+    stretch_factor: ta.wpfloat,
+    damping_height: ta.wpfloat,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
     vertical_config = v_grid.VerticalGridConfig(
@@ -118,8 +119,8 @@ def test_verify_velocity_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
+        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
 def test_scale_factors_by_dtime(
@@ -147,6 +148,7 @@ def test_scale_factors_by_dtime(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
@@ -166,9 +168,17 @@ def test_scale_factors_by_dtime(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -195,7 +205,7 @@ def test_velocity_predictor_step(
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=0.0,
+        max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
@@ -230,8 +240,8 @@ def test_velocity_predictor_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -313,9 +323,17 @@ def test_velocity_predictor_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -335,9 +353,6 @@ def test_velocity_corrector_step(
     savepoint_velocity_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    ndyn_substeps,
-    substep_init,
-    substep_exit,
     backend,
 ):
     init_savepoint = savepoint_velocity_init
@@ -347,7 +362,7 @@ def test_velocity_corrector_step(
     assert not vn_only
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=0.0,
+        max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         tangential_wind=init_savepoint.vt(),
         vn_on_half_levels=init_savepoint.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=init_savepoint.w_concorr_c(),
@@ -384,8 +399,8 @@ def test_velocity_corrector_step(
 
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
 
-    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -441,8 +456,12 @@ def test_velocity_corrector_step(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
@@ -456,9 +475,6 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     metrics_savepoint,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    substep_init,
-    istep_init,
-    istep_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -468,7 +484,7 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     vn_on_half_levels = savepoint_velocity_init.vn_ie()
     horizontal_kinetic_energy_at_edges_on_model_levels = savepoint_velocity_init.z_kin_hor_e()
     horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, backend=backend
+        icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
     )
     vn = savepoint_velocity_init.vn()
     w = savepoint_velocity_init.w()
@@ -571,9 +587,17 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
@@ -591,8 +615,6 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     savepoint_velocity_exit,
     backend,
     savepoint_velocity_init,
-    substep_init,
-    substep_exit,
 ):
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
@@ -603,7 +625,9 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     horizontal_advection_of_w_at_edges_on_half_levels = savepoint_velocity_exit.z_v_grad_w()
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
-    vertical_cfl = savepoint_velocity_init.vcfl_dsl()
+    vertical_cfl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=backend
+    )
     skip_compute_predictor_vertical_advection = savepoint_velocity_init.lvn_only()
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
@@ -715,9 +739,17 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
@@ -734,8 +766,6 @@ def test_compute_advection_in_vertical_momentum_equation(
     metrics_savepoint,
     savepoint_velocity_exit,
     savepoint_velocity_init,
-    substep_init,
-    substep_exit,
     backend,
 ):
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
@@ -747,7 +777,9 @@ def test_compute_advection_in_vertical_momentum_equation(
     vn_on_half_levels = savepoint_velocity_exit.vn_ie()
     vertical_wind_advective_tendency = savepoint_velocity_init.ddt_w_adv_pc(istep_init - 1)
     contravariant_corrected_w_at_cells_on_model_levels = savepoint_velocity_init.z_w_con_c_full()
-    vertical_cfl = savepoint_velocity_init.vcfl_dsl()
+    vertical_cfl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=backend
+    )
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
@@ -852,8 +884,12 @@ def test_compute_advection_in_vertical_momentum_equation(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
@@ -871,7 +907,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
     backend,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    substep_init,
 ):
     vn = savepoint_velocity_init.vn()
     horizontal_kinetic_energy_at_edges_on_model_levels = savepoint_velocity_exit.z_kin_hor_e()

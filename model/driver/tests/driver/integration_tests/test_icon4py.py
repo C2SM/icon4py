@@ -5,31 +5,38 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+import click
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     icon4py_configuration,
     icon4py_driver,
-    serialbox_helpers as driver_sb,
+    initialization_utils as driver_init,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
-from icon4py.model.testing.fixtures.datatest import backend
+from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
+from icon4py.model.testing.fixtures.datatest import backend, backend_like
 
 from ..fixtures import *  # noqa: F403
-from ..utils import (
-    construct_diffusion_config,
-    construct_icon4pyrun_config,
-    construct_nonhydrostatic_config,
-)
+from ..utils import construct_icon4pyrun_config
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
 
 
 @pytest.mark.embedded_remap_error
@@ -38,7 +45,7 @@ from ..utils import (
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            definitions.Experiments.MCH_CH_R04B09,
             1,
             2,
             1,
@@ -52,7 +59,7 @@ from ..utils import (
             False,
         ),
         (
-            dt_utils.REGIONAL_EXPERIMENT,
+            definitions.Experiments.MCH_CH_R04B09,
             1,
             2,
             1,
@@ -66,35 +73,7 @@ from ..utils import (
             True,
         ),
         (
-            dt_utils.GLOBAL_EXPERIMENT,
-            1,
-            2,
-            1,
-            2,
-            "2000-01-01T00:00:00.000",
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-            False,
-            False,
-            False,
-        ),
-        (
-            dt_utils.GLOBAL_EXPERIMENT,
-            1,
-            2,
-            1,
-            2,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:04.000",
-            "2000-01-01T00:00:04.000",
-            "2000-01-01T00:00:04.000",
-            False,
-            False,
-            True,
-        ),
-        (
-            dt_utils.GAUSS3D_EXPERIMENT,
+            definitions.Experiments.GAUSS3D,
             1,
             2,
             1,
@@ -110,38 +89,31 @@ from ..utils import (
     ],
 )
 def test_run_timeloop_single_step(
-    experiment,
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
-    timeloop_date_init,
-    timeloop_date_exit,
-    step_date_init,
-    step_date_exit,
-    timeloop_diffusion_linit_init,
-    timeloop_diffusion_linit_exit,
-    vn_only,
+    experiment: definitions.Experiment,
+    timeloop_date_init: str,
+    timeloop_date_exit: str,
+    timeloop_diffusion_linit_init: bool,
+    vn_only: bool,  # TODO unused?
     *,
-    grid_savepoint,
-    icon_grid,
-    metrics_savepoint,
-    interpolation_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    ndyn_substeps,
-    timeloop_diffusion_savepoint_init,
-    timeloop_diffusion_savepoint_exit,
-    savepoint_velocity_init,
-    savepoint_nonhydro_init,
-    savepoint_nonhydro_exit,
-    backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    icon_grid: base_grid.Grid,
+    metrics_savepoint: sb.MetricSavepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    lowest_layer_thickness: float,
+    model_top_height: float,
+    stretch_factor: float,
+    damping_height: float,
+    ndyn_substeps: int,
+    timeloop_diffusion_savepoint_init: sb.IconDiffusionInitSavepoint,
+    timeloop_diffusion_savepoint_exit: sb.IconDiffusionExitSavepoint,
+    savepoint_velocity_init: sb.IconVelocityInitSavepoint,
+    savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
+    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
+    backend: gtx_typing.Backend,
 ):
-    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+    if experiment == definitions.Experiments.GAUSS3D:
         config = icon4py_configuration.read_config(
-            experiment_type=experiment,
+            experiment_type=driver_init.ExperimentType.GAUSS3D,
             backend=backend,
         )
         diffusion_config = config.diffusion_config
@@ -149,8 +121,10 @@ def test_run_timeloop_single_step(
         icon4pyrun_config = config.run_config
 
     else:
-        diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
-        nonhydro_config = construct_nonhydrostatic_config(experiment)
+        diffusion_config = definitions.construct_diffusion_config(
+            experiment, ndyn_substeps=ndyn_substeps
+        )
+        nonhydro_config = definitions.construct_nonhydrostatic_config(experiment)
         icon4pyrun_config = construct_icon4pyrun_config(
             experiment,
             timeloop_date_init,
@@ -162,11 +136,26 @@ def test_run_timeloop_single_step(
 
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    grg = interpolation_savepoint.geofac_grg()
 
-    diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
-        interpolation_savepoint
+    diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=interpolation_savepoint.geofac_div(),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=grg[0],
+        geofac_grg_y=grg[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-    diffusion_metric_state = driver_sb.construct_metric_state_for_diffusion(metrics_savepoint)
+    diffusion_metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+    )
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -270,8 +259,11 @@ def test_run_timeloop_single_step(
         backend=backend,
     )
 
-    diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
-        timeloop_diffusion_savepoint_init,
+    diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=timeloop_diffusion_savepoint_init.hdef_ic(),
+        div_ic=timeloop_diffusion_savepoint_init.div_ic(),
+        dwdx=timeloop_diffusion_savepoint_init.dwdx(),
+        dwdy=timeloop_diffusion_savepoint_init.dwdy(),
     )
 
     prep_adv = dycore_states.PrepAdvection(
@@ -282,13 +274,13 @@ def test_run_timeloop_single_step(
             icon_grid,
             dims.CellDim,
             dims.KDim,
-            backend=backend,
+            allocator=backend,
         ),
     )
 
     current_index, next_index = (1, 0) if not linit else (0, 1)
     nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=0.0,
+        max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
         theta_v_at_cells_on_half_levels=sp.theta_v_ic(),
         perturbed_exner_at_cells_on_model_levels=sp.exner_pr(),
         rho_at_cells_on_half_levels=sp.rho_ic(),
@@ -309,13 +301,13 @@ def test_run_timeloop_single_step(
         vn_on_half_levels=sp_v.vn_ie(),
         contravariant_correction_at_cells_on_half_levels=sp_v.w_concorr_c(),
         rho_iau_increment=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
         ),  # sp.rho_incr(),
         normal_wind_iau_increment=data_alloc.zero_field(
-            icon_grid, dims.EdgeDim, dims.KDim, backend=backend
+            icon_grid, dims.EdgeDim, dims.KDim, allocator=backend
         ),  # sp.vn_incr(),
         exner_iau_increment=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, backend=backend
+            icon_grid, dims.CellDim, dims.KDim, allocator=backend
         ),  # sp.exner_incr(),
         exner_dynamical_increment=sp.exner_dyn_incr(),
     )
@@ -384,4 +376,59 @@ def test_run_timeloop_single_step(
     assert test_utils.dallclose(
         prognostic_states.current.rho.asnumpy(),
         rho_sp.asnumpy(),
+    )
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, experiment_type",
+    [
+        (
+            definitions.Experiments.MCH_CH_R04B09,
+            driver_init.ExperimentType.ANY.value,
+        ),
+    ],
+)
+def test_driver(
+    experiment,
+    experiment_type,
+    *,
+    data_provider,
+    ranked_data_path,
+    backend_like,
+):
+    """
+    This is a only test to check if the icon4py driver runs from serialized data without verifying the end result.
+    The timeloop is verified by test_run_timeloop_single_step above.
+    TODO(anyone): Remove or modify this test when it is ready to run the driver from the grid file without having to initialize static fields from serialized data.
+    """
+    data_path = dt_utils.get_datapath_for_experiment(
+        ranked_base_path=ranked_data_path,
+        experiment=experiment,
+    )
+    gm = grid_utils.get_grid_manager_from_experiment(
+        experiment=experiment,
+        keep_skip_values=True,
+        allocator=model_backends.get_allocator(backend_like),
+    )
+
+    backend_name = None
+    for key, value in model_backends.BACKENDS.items():
+        if value == backend_like:
+            backend_name = key
+
+    assert backend_name is not None
+
+    icon4py_driver.icon4py_driver(
+        [
+            str(data_path),
+            "--experiment_type",
+            experiment_type,
+            "--grid_file",
+            str(gm._file_name),
+            "--icon4py_driver_backend",
+            backend_name,
+        ],
+        standalone_mode=False,
     )

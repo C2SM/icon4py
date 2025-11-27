@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import pytest
@@ -21,11 +24,12 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_weighted_cell_neighbor_sum,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils, test_utils
+from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -35,26 +39,32 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import base as base_grid
+    from icon4py.model.testing import serialbox as sb
+
+
 @pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_diffusion_mask_and_coeff(
-    metrics_savepoint,
-    experiment,
-    interpolation_savepoint,
-    icon_grid,
-    grid_savepoint,
-    backend,
-):
-    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+    metrics_savepoint: sb.MetricSavepoint,
+    experiment: definitions.Experiment,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")
 
-    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
+    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, allocator=backend)
 
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
@@ -125,23 +135,22 @@ def test_compute_diffusion_mask_and_coeff(
 @pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_diffusion_intcoef_and_vertoffset(
-    metrics_savepoint,
-    experiment,
-    interpolation_savepoint,
-    icon_grid,
-    grid_savepoint,
-    backend,
-):
-    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+    metrics_savepoint: sb.MetricSavepoint,
+    experiment: definitions.Experiment,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    icon_grid: base_grid.Grid,
+    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
+    if experiment == definitions.Experiments.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")
 
-    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
+    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, allocator=backend)
 
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()

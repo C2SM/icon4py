@@ -12,7 +12,8 @@ import logging
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
+from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -49,6 +50,7 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
+    model_backends,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -82,26 +84,6 @@ class IntermediateFields:
     """
     Declared as z_gradh_exner in ICON.
     """
-    tridiagonal_alpha_coeff_at_cells_on_half_levels: fa.CellKField[
-        ta.vpfloat
-    ]  # TODO(): change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    """
-    Declared as z_alpha in ICON.
-    """
-    tridiagonal_beta_coeff_at_cells_on_model_levels: fa.CellKField[ta.vpfloat]
-    """
-    Declared as z_beta in ICON.
-    """
-    exner_explicit_term: fa.CellKField[ta.wpfloat]
-    """
-    Declared as z_exner_expl in ICON.
-    """
-    vertical_mass_flux_at_cells_on_half_levels: fa.EdgeKField[
-        ta.wpfloat
-    ]  # TODO(): change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    """
-    Declared as z_contr_w_fl_l in ICON.
-    """
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat]
     """
     Declared as z_rho_e in ICON.
@@ -122,10 +104,6 @@ class IntermediateFields:
     """
     Declared as z_graddiv_vn in ICON.
     """
-    rho_explicit_term: fa.CellKField[ta.wpfloat]
-    """
-    Declared as z_rho_expl in ICON.
-    """
     dwdz_at_cells_on_model_levels: fa.CellKField[ta.vpfloat]
     """
     Declared as z_dwdz_dd in ICON.
@@ -135,42 +113,29 @@ class IntermediateFields:
     def allocate(
         cls,
         grid: grid_def.Grid,
-        backend: gtx_backend.Backend | None = None,
+        allocator: gtx_allocators.FieldBufferAllocationUtil | None,
     ):
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, backend=backend
-            ),
-            tridiagonal_alpha_coeff_at_cells_on_half_levels=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
-            ),
-            tridiagonal_beta_coeff_at_cells_on_model_levels=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, backend=backend
-            ),
-            exner_explicit_term=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, backend=backend
-            ),
-            vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             rho_at_edges_on_model_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, backend=backend
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             theta_v_at_edges_on_model_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, backend=backend
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             horizontal_gradient_of_normal_wind_divergence=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, backend=backend
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
-            rho_explicit_term=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
             dwdz_at_cells_on_model_levels=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, backend=backend
+                grid, dims.CellDim, dims.KDim, allocator=allocator
             ),
             horizontal_kinetic_energy_at_edges_on_model_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, backend=backend
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
             tangential_wind_on_half_levels=data_alloc.zero_field(
-                grid, dims.EdgeDim, dims.KDim, backend=backend
+                grid, dims.EdgeDim, dims.KDim, allocator=allocator
             ),
         )
 
@@ -394,11 +359,13 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: gtx_backend.Backend | None,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange
-        self._backend = backend
 
         self._grid = grid
         self._config = config
@@ -411,7 +378,7 @@ class SolveNonhydro:
         self._determine_local_domains()
 
         self._compute_theta_and_exner = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_theta_and_exner,
             constant_args={
                 "bdy_halo_c": self._metric_state_nonhydro.bdy_halo_c,
@@ -429,7 +396,7 @@ class SolveNonhydro:
         )
 
         self._compute_exner_from_rhotheta = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_exner_from_rhotheta,
             constant_args={
                 "rd_o_cvd": constants.RD_O_CVD,
@@ -446,7 +413,7 @@ class SolveNonhydro:
         )
 
         self._update_theta_v = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=update_theta_v,
             constant_args={
                 "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
@@ -462,7 +429,7 @@ class SolveNonhydro:
         )
 
         self._compute_hydrostatic_correction_term = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_hydrostatic_correction_term,
             constant_args={
                 "ikoffset": self._metric_state_nonhydro.vertoffset_gradp,
@@ -483,7 +450,7 @@ class SolveNonhydro:
         )
 
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
             constant_args={
                 "reference_rho_at_edges_on_model_levels": self._metric_state_nonhydro.reference_rho_at_edges_on_model_levels,
@@ -526,7 +493,7 @@ class SolveNonhydro:
         )
 
         self._apply_divergence_damping_and_update_vn = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn,
             constant_args={
                 "horizontal_mask_for_3d_divdamp": self._metric_state_nonhydro.horizontal_mask_for_3d_divdamp,
@@ -556,7 +523,7 @@ class SolveNonhydro:
         )
 
         self._compute_horizontal_velocity_quantities_and_fluxes = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_horizontal_velocity_quantities_and_fluxes,
             constant_args={
                 "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
@@ -581,7 +548,7 @@ class SolveNonhydro:
         )
 
         self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
             constant_args={
                 "e_flx_avg": self._interpolation_state.e_flx_avg,
@@ -603,7 +570,7 @@ class SolveNonhydro:
         )
 
         self._vertically_implicit_solver_at_predictor_step = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=vertically_implicit_dycore_solver.vertically_implicit_solver_at_predictor_step,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
@@ -640,7 +607,7 @@ class SolveNonhydro:
         )
 
         self._vertically_implicit_solver_at_corrector_step = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=vertically_implicit_dycore_solver.vertically_implicit_solver_at_corrector_step,
             constant_args={
                 "exner_w_explicit_weight_parameter": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
@@ -673,7 +640,7 @@ class SolveNonhydro:
         )
 
         self._compute_dwdz_for_divergence_damping = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_dwdz_for_divergence_damping,
             constant_args={
                 "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
@@ -690,7 +657,7 @@ class SolveNonhydro:
         )
 
         self._init_cell_kdim_field_with_zero_wp = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=init_cell_kdim_field_with_zero_wp,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary,
@@ -702,7 +669,7 @@ class SolveNonhydro:
             },
         )
         self._update_mass_flux_weighted = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=update_mass_flux_weighted,
             constant_args={
                 "vwind_expl_wgt": self._metric_state_nonhydro.exner_w_explicit_weight_parameter,
@@ -717,8 +684,18 @@ class SolveNonhydro:
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
         )
+        self._calculate_divdamp_fields = setup_program(
+            backend=backend,
+            program=dycore_utils.calculate_divdamp_fields,
+            constant_args={
+                "divdamp_order": gtx.int32(self._config.divdamp_order),
+                "mean_cell_area": self._grid.global_properties.mean_cell_area,
+                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "dbl_eps": constants.DBL_EPS,
+            },
+        )
         self._compute_rayleigh_damping_factor = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=dycore_utils.compute_rayleigh_damping_factor,
             constant_args={
                 "rayleigh_w": self._metric_state_nonhydro.rayleigh_w,
@@ -726,7 +703,7 @@ class SolveNonhydro:
         )
 
         self._compute_perturbed_quantities_and_interpolation = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_cell_diagnostics_for_dycore.compute_perturbed_quantities_and_interpolation,
             constant_args={
                 "reference_rho_at_cells_on_model_levels": self._metric_state_nonhydro.reference_rho_at_cells_on_model_levels,
@@ -742,30 +719,26 @@ class SolveNonhydro:
                 "inv_ddqz_z_full": self._metric_state_nonhydro.inv_ddqz_z_full,
                 "d2dexdz2_fac1_mc": self._metric_state_nonhydro.d2dexdz2_fac1_mc,
                 "d2dexdz2_fac2_mc": self._metric_state_nonhydro.d2dexdz2_fac2_mc,
-                "limited_area": self._grid.limited_area,
                 "igradp_method": self._config.igradp_method,
             },
             horizontal_sizes={
                 "start_cell_lateral_boundary_level_3": self._start_cell_lateral_boundary_level_3,
                 "start_cell_halo_level_2": self._start_cell_halo_level_2,
-                "end_cell_end": self._end_cell_end,
                 "end_cell_halo": self._end_cell_halo,
                 "end_cell_halo_level_2": self._end_cell_halo_level_2,
                 "start_cell_lateral_boundary": self._start_cell_lateral_boundary,
-                "horizontal_start": gtx.int32(0),
-                "horizontal_end": gtx.int32(self._grid.num_cells),
             },
             vertical_sizes={
                 "nflatlev": self._vertical_params.nflatlev,
                 "nflat_gradp": self._metric_state_nonhydro.nflat_gradp,
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels + 1),
+                "model_top": gtx.int32(0),
+                "surface_level": gtx.int32(self._grid.num_levels + 1),
             },
             offset_provider=self._grid.connectivities,
         )
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration,
             constant_args={
                 "reference_theta_at_cells_on_model_levels": self._metric_state_nonhydro.reference_theta_at_cells_on_model_levels,
@@ -787,7 +760,7 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
         self._stencils_61_62 = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=nhsolve_stencils.stencils_61_62,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary,
@@ -799,7 +772,7 @@ class SolveNonhydro:
             },
         )
         self._en_smag_fac_for_zero_nshift = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=smagorinsky.en_smag_fac_for_zero_nshift,
             constant_args={
                 "vect_a": self._vertical_params.interface_physical_height,
@@ -815,7 +788,7 @@ class SolveNonhydro:
             offset_provider={"Koff": dims.KDim},
         )
         self._init_test_fields = setup_program(
-            backend=self._backend,
+            backend=backend,
             program=nhsolve_stencils.init_test_fields,
             horizontal_sizes={
                 "edges_start": self._start_edge_lateral_boundary,
@@ -836,24 +809,30 @@ class SolveNonhydro:
             vertical_params,
             edge_geometry,
             owner_mask,
-            backend=self._backend,
+            backend=backend,
         )
-        self._allocate_local_fields()
+        self._allocate_local_fields(model_backends.get_allocator(backend))
 
         self._en_smag_fac_for_zero_nshift(
             enh_smag_fac=self.interpolated_fourth_order_divdamp_factor,
         )
 
-        self.p_test_run = True
+        self.p_test_run = False
 
-    def _allocate_local_fields(self):
+        self._dtime_previous_substep: float = 0.0
+        """
+        Dynamic substep length of previous substep in order to track if rayleigh damping coefficients need to be
+        recomputed or not. The substep length should only change in case of high CFL condition.
+        """
+
+    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
             dims.KDim,
             dtype=ta.vpfloat,
             extend={dims.KDim: 1},
-            backend=self._backend,
+            allocator=allocator,
         )
         """
         Declared as z_exner_ex_pr in ICON.
@@ -864,14 +843,14 @@ class SolveNonhydro:
             dims.KDim,
             dtype=ta.vpfloat,
             extend={dims.KDim: 1},
-            backend=self._backend,
+            allocator=allocator,
         )
         """
         Declared as z_exner_ic in ICON.
         """
         self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
-                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
+                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
             )
         )
         """
@@ -883,14 +862,14 @@ class SolveNonhydro:
             dims.KDim,
             dtype=ta.vpfloat,
             extend={dims.KDim: 1},
-            backend=self._backend,
+            allocator=allocator,
         )
 
         """
         Declared as z_theta_v_pr_ic in ICON.
         """
         self.pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_th_ddz_exner_c in ICON. theta' dpi0/dz + theta (1 - eta_impl) dpi'/dz.
@@ -899,85 +878,90 @@ class SolveNonhydro:
         term for updating w, and w at model top/bottom is diagnosed.
         """
         self.perturbed_rho_at_cells_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_rth_pr_1 in ICON.
         """
         self.perturbed_theta_v_at_cells_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_rth_pr_2 in ICON.
         """
         self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
             data_alloc.zero_field(
-                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
+                self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
             )
         )
         """
         Declared as z_dexner_dz_c_2 in ICON.
         """
         self.z_vn_avg = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.theta_v_flux_at_edges_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as z_theta_v_fl_e in ICON.
         """
         self.z_rho_v = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.z_theta_v_v = data_alloc.zero_field(
-            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.VertexDim, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         self.k_field = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         )
         self._contravariant_correction_at_edges_on_model_levels = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
         Declared as z_w_concorr_me in ICON. vn dz/dn + vt dz/dt, z is topography height
         """
-        self.hydrostatic_correction_on_lowest_level = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dtype=ta.vpfloat, backend=self._backend
+        self.hydrostatic_correction_on_lowest_level = gtx.constructors.zeros(
+            domain={
+                dims.EdgeDim: (0, self._grid.num_edges),
+                dims.KDim: (self._grid.num_levels - 1, self._grid.num_levels),
+            },
+            allocator=allocator,
+            dtype=ta.vpfloat,
         )
-        self.hydrostatic_correction = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat, backend=self._backend
+        # using GT4Py internal API to create a 1D field view from the (num_edges, 1)-sized field
+        self.hydrostatic_correction_on_lowest_level_1d_view = gtx_common._field(
+            self.hydrostatic_correction_on_lowest_level.ndarray[:, 0],
+            domain={dims.EdgeDim: (0, self._grid.num_edges)},
         )
         """
         Declared as z_hydro_corr in ICON. Used for computation of horizontal pressure gradient over steep slope.
         """
         self.rayleigh_damping_factor = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as z_raylfac in ICON.
         """
         self.interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as enh_divdamp_fac in ICON.
         """
         self.reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as bdy_divdamp in ICON.
         """
         self.fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, backend=self._backend
+            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
         Declared as scal_divdamp in ICON.
         """
-        self.intermediate_fields = IntermediateFields.allocate(
-            grid=self._grid, backend=self._backend
-        )
+        self.intermediate_fields = IntermediateFields.allocate(grid=self._grid, allocator=allocator)
 
     def _determine_local_domains(self):
         vertex_domain = h_grid.domain(dims.VertexDim)
@@ -1031,6 +1015,16 @@ class SolveNonhydro:
             vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
+
+    def _get_rayleigh_damping_factor(self, dtime):
+        if dtime != self._dtime_previous_substep:
+            #  Precompute Rayleigh damping factor if substep magnitude changes
+            self._compute_rayleigh_damping_factor(
+                rayleigh_damping_factor=self.rayleigh_damping_factor,
+                dtime=dtime,
+            )
+            self._dtime_previous_substep = dtime
+        return self.rayleigh_damping_factor
 
     def time_step(
         self,
@@ -1092,20 +1086,17 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
-
         if self._grid.limited_area:
             self._compute_theta_and_exner(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-
             self._compute_exner_from_rhotheta(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-
         self._update_theta_v(
             rho_now=prognostic_states.current.rho,
             theta_v_now=prognostic_states.current.theta_v,
@@ -1151,12 +1142,6 @@ class SolveNonhydro:
                 cell_areas=self._cell_params.area,
             )
 
-        #  Precompute Rayleigh damping factor
-        self._compute_rayleigh_damping_factor(
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
-            dtime=dtime,
-        )
-
         self._compute_perturbed_quantities_and_interpolation(
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
@@ -1180,12 +1165,8 @@ class SolveNonhydro:
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-            z_hydro_corr=self.hydrostatic_correction,
+            z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
-
-        self.hydrostatic_correction_on_lowest_level[...] = self.hydrostatic_correction.ndarray[
-            :, self._grid.num_levels - 1
-        ]
 
         self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
@@ -1199,7 +1180,7 @@ class SolveNonhydro:
             temporal_extrapolation_of_perturbed_exner=self.temporal_extrapolation_of_perturbed_exner,
             ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=self.d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level,
+            hydrostatic_correction_on_lowest_level=self.hydrostatic_correction_on_lowest_level_1d_view,
             predictor_normal_wind_advective_tendency=diagnostic_state_nh.normal_wind_advective_tendency.predictor,
             normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
@@ -1229,12 +1210,7 @@ class SolveNonhydro:
 
         self._vertically_implicit_solver_at_predictor_step(
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-            vertical_mass_flux_at_cells_on_half_levels=z_fields.vertical_mass_flux_at_cells_on_half_levels,
-            tridiagonal_beta_coeff_at_cells_on_model_levels=z_fields.tridiagonal_beta_coeff_at_cells_on_model_levels,
-            tridiagonal_alpha_coeff_at_cells_on_half_levels=z_fields.tridiagonal_alpha_coeff_at_cells_on_half_levels,
             next_w=prognostic_states.next.w,
-            rho_explicit_term=z_fields.rho_explicit_term,
-            exner_explicit_term=z_fields.exner_explicit_term,
             next_rho=prognostic_states.next.rho,
             next_exner=prognostic_states.next.exner,
             next_theta_v=prognostic_states.next.theta_v,
@@ -1255,7 +1231,7 @@ class SolveNonhydro:
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
+            rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             dtime=dtime,
             at_first_substep=at_first_substep,
         )
@@ -1274,13 +1250,14 @@ class SolveNonhydro:
                 dtime=dtime,
             )
 
-        if self._config.divdamp_type >= 3:
+        if self._grid.limited_area and self._config.divdamp_type >= 3:
             self._compute_dwdz_for_divergence_damping(
                 w=prognostic_states.next.w,
                 w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
                 z_dwdz_dd=z_fields.dwdz_at_cells_on_model_levels,
             )
 
+        if self._config.divdamp_type >= 3:
             log.debug(
                 "exchanging prognostic field 'w' and local field 'dwdz_at_cells_on_model_levels'"
             )
@@ -1319,17 +1296,11 @@ class SolveNonhydro:
             second_order_divdamp_factor * self._grid.global_properties.mean_cell_area
         )
 
-        dycore_utils._calculate_divdamp_fields(
-            self.interpolated_fourth_order_divdamp_factor,
-            gtx.int32(self._config.divdamp_order),
-            self._grid.global_properties.mean_cell_area,
-            second_order_divdamp_factor,
-            self._config.max_nudging_coefficient,
-            constants.DBL_EPS,
-            out=(
-                self.fourth_order_divdamp_scaling_coeff,
-                self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            ),
+        self._calculate_divdamp_fields(
+            interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
+            fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
+            reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+            second_order_divdamp_factor=second_order_divdamp_factor,
         )
 
         log.debug("corrector run velocity advection")
@@ -1341,12 +1312,6 @@ class SolveNonhydro:
             dtime=dtime,
             cell_areas=self._cell_params.area,
         )
-
-        self._compute_rayleigh_damping_factor(
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
-            dtime=dtime,
-        )
-        log.debug("corrector: start stencil 10")
 
         self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
@@ -1413,12 +1378,7 @@ class SolveNonhydro:
         )
 
         self._vertically_implicit_solver_at_corrector_step(
-            vertical_mass_flux_at_cells_on_half_levels=z_fields.vertical_mass_flux_at_cells_on_half_levels,
-            tridiagonal_beta_coeff_at_cells_on_model_levels=z_fields.tridiagonal_beta_coeff_at_cells_on_model_levels,
-            tridiagonal_alpha_coeff_at_cells_on_half_levels=z_fields.tridiagonal_alpha_coeff_at_cells_on_half_levels,
             next_w=prognostic_states.next.w,
-            rho_explicit_term=z_fields.rho_explicit_term,
-            exner_explicit_term=z_fields.exner_explicit_term,
             next_rho=prognostic_states.next.rho,
             next_exner=prognostic_states.next.exner,
             next_theta_v=prognostic_states.next.theta_v,
@@ -1442,7 +1402,7 @@ class SolveNonhydro:
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
-            rayleigh_damping_factor=self.rayleigh_damping_factor,
+            rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(ndyn_substeps_var),
@@ -1459,7 +1419,6 @@ class SolveNonhydro:
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
                 )
-            log.debug(" corrector: start stencil 65")
             self._update_mass_flux_weighted(
                 rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
                 w_now=prognostic_states.current.w,

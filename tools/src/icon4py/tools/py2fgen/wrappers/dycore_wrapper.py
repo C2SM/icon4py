@@ -16,21 +16,19 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 
-import cProfile
 import dataclasses
-import pstats
 from collections.abc import Callable
 from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import backend as gtx_backend
+from gt4py.next import config as gtx_config, metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
+from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
@@ -42,28 +40,14 @@ logger = setup_logger(__name__)
 @dataclasses.dataclass
 class SolveNonhydroGranule:
     solve_nh: solve_nonhydro.SolveNonhydro
-    backend: gtx_backend.Backend
     dummy_field_factory: Callable
-    profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
 
 granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 
-def profile_enable():
-    granule.profiler.enable()
-
-
-def profile_disable():
-    granule.profiler.disable()
-    stats = pstats.Stats(granule.profiler)
-    stats.dump_stats(f"{__name__}.profile")
-
-
 @icon4py_export.export
 def solve_nh_init(
-    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
-    vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], gtx.float64],
@@ -114,7 +98,6 @@ def solve_nh_init(
     coeff2_dwdz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_owner_mask: gtx.Field[gtx.Dims[dims.CellDim], bool],
-    rayleigh_damping_height: gtx.float64,
     itime_scheme: gtx.int32,
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
@@ -138,24 +121,18 @@ def solve_nh_init(
     divdamp_z2: gtx.float64,
     divdamp_z3: gtx.float64,
     divdamp_z4: gtx.float64,
-    lowest_layer_thickness: gtx.float64,
-    model_top_height: gtx.float64,
-    stretch_factor: gtx.float64,
     nflat_gradp: gtx.int32,
-    num_levels: gtx.int32,
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    on_gpu = vct_a.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = c_lin_e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
-    logger.info(f"{on_gpu=}")
-    logger.info(
-        f"Using Backend {wrapper_common.BackendIntEnum(backend).name} ({actual_backend.name})"
-    )
+    backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
+    logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
@@ -240,18 +217,6 @@ def solve_nh_init(
         coeff_gradekin=coeff_gradekin,
     )
 
-    # datatest config
-    vertical_config = VerticalGridConfig(
-        num_levels=num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=rayleigh_damping_height,
-    )
-
-    # datatest config, vertical parameters
-    vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
-
     global granule  # noqa: PLW0603 [global-statement]
     granule = SolveNonhydroGranule(
         solve_nh=solve_nonhydro.SolveNonhydro(
@@ -260,15 +225,16 @@ def solve_nh_init(
             params=nonhydro_params,
             metric_state_nonhydro=metric_state_nonhydro,
             interpolation_state=interpolation_state,
-            vertical_params=vertical_params,
+            vertical_params=grid_wrapper.grid_state.vertical_grid,
             edge_geometry=grid_wrapper.grid_state.edge_geometry,
             cell_geometry=grid_wrapper.grid_state.cell_geometry,
             owner_mask=c_owner_mask,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
-        backend=actual_backend,
-        dummy_field_factory=wrapper_common.cached_dummy_field_factory(actual_backend),
+        dummy_field_factory=wrapper_common.cached_dummy_field_factory(
+            model_backends.get_allocator(actual_backend)
+        ),
     )
 
 
@@ -331,6 +297,8 @@ def solve_nh_run(
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 
+    xp = rho_now.array_ns
+
     if vn_incr is None:
         vn_incr = granule.dummy_field_factory("vn_incr", domain=vn_now.domain, dtype=vn_now.dtype)
 
@@ -351,7 +319,9 @@ def solve_nh_run(
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=vol_flx_ic,
     )
 
-    max_vcfl = max_vcfl_size1_array[0]  # Note, needs to be passed back after the timestep
+    # Make `max_vcfl` a 0-d array to avoid cupy synchronization, see `velocity_advection.py`.
+    # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
+    max_vcfl = data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         max_vertical_cfl=max_vcfl,
@@ -412,4 +382,8 @@ def solve_nh_run(
         at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
     )
 
-    max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl  # pass back to Fortran
+    # TODO(havogt): create separate bindings for writing the timers
+    if gtx_config.COLLECT_METRICS_LEVEL > 0:
+        gtx_metrics.dump_json("gt4py_timers.json")
+
+    max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl[()]  # pass back to Fortran

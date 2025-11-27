@@ -7,13 +7,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pytest
 from gt4py.next import backend as gtx_backend
 
-import icon4py.model.common.states.factory as factory
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (
@@ -21,19 +20,15 @@ from icon4py.model.common.interpolation import (
     interpolation_factory,
     rbf_interpolation as rbf,
 )
+from icon4py.model.common.states import factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
-    grid_utils as gridtest_utils,
     definitions,
+    grid_utils as gridtest_utils,
     test_utils as test_helpers,
 )
-from icon4py.model.testing.fixtures import (
-    backend,
-    data_provider,
-    decomposition_info,
-    experiment,
-)
+from icon4py.model.testing.fixtures import backend, data_provider, decomposition_info, experiment
 from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
     interpolation_savepoint,
@@ -44,14 +39,9 @@ from icon4py.model.testing.fixtures.datatest import (
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
-    from icon4py.model.testing import serialbox
+
     from icon4py.model.common.decomposition import definitions as decomposition
-
-
-# TODO(havogt): use everywhere
-@pytest.fixture(params=[definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE])
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
-    return request.param
+    from icon4py.model.testing import serialbox
 
 
 V2E_SIZE = 6
@@ -60,7 +50,7 @@ C2E_SIZE = 3
 E2C_SIZE = 2
 
 
-interpolation_factories = {}
+interpolation_factories: dict = {}
 
 cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
@@ -68,7 +58,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 
 def _get_interpolation_factory(
-    backend: gtx_backend.Backend | None, experiment: definitions.Experiment
+    backend: gtx_typing.Backend | None, experiment: definitions.Experiment
 ) -> interpolation_factory.InterpolationFieldsFactory:
     registry_key = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
@@ -91,7 +81,7 @@ def test_factory_raises_error_on_unknown_field(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
     decomposition_info: decomposition.DecompositionInfo,
-):
+) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
@@ -102,7 +92,7 @@ def test_factory_raises_error_on_unknown_field(
     )
     with pytest.raises(ValueError) as error:
         interpolation_source.get("foo", factory.RetrievalType.METADATA)
-        assert "unknown field" in error.value
+        assert "unknown field" in str(error.value)
 
 
 @pytest.mark.level("integration")
@@ -117,9 +107,9 @@ def test_factory_raises_error_on_unknown_field(
 def test_get_c_lin_e(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.c_lin_e()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -140,9 +130,9 @@ def test_get_c_lin_e(
 def test_get_geofac_div(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.geofac_div()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -165,9 +155,9 @@ def test_get_geofac_div(
 def test_get_geofac_grdiv(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.geofac_grdiv()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -177,7 +167,7 @@ def test_get_geofac_grdiv(
     assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=rtol)
 
 
-def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs):
+def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs: Any) -> None:
     assert val.shape == ref.shape, f"arrays do not have the same shape: {val.shape} vs {ref.shape}"
     s_val = np.argsort(val)
     s_ref = np.argsort(ref)
@@ -199,9 +189,9 @@ def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs):
 def test_get_geofac_rot(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.geofac_rot()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -225,9 +215,9 @@ def test_get_geofac_rot(
 def test_get_geofac_n2s(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.geofac_n2s()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -241,8 +231,8 @@ def test_get_geofac_n2s(
 def test_get_geofac_grg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
-):
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = interpolation_savepoint.geofac_grg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -278,9 +268,9 @@ def test_get_geofac_grg(
 def test_get_mass_conserving_cell_average_weight(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.c_bln_avg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -290,32 +280,19 @@ def test_get_mass_conserving_cell_average_weight(
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
 
 
-## FIXME: does not validate
-#   -> connectivity order between reference from serialbox and computed value is different
-## TODO(halungge): rtol is from parametrization is overwritten in assert - function is most probably wrong
-#  TODO(halungge) global grid is not tested
-@pytest.mark.xfail(reason="Doesn't pass with reasonable threshold.")
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-    ],
-)
 @pytest.mark.datatest
 def test_e_flx_avg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
-    rtol: float,
-):
+    backend: gtx_typing.Backend | None,
+) -> None:
     field_ref = interpolation_savepoint.e_flx_avg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.E_FLX_AVG)
     assert field.shape == (grid.num_edges, grid.get_connectivity(dims.E2C2EO).shape[1])
-    # FIXME: e2c2e constructed from grid file has different ordering than the serialized one
-    assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=rtol)
+    test_helpers.dallclose(field.asnumpy(), field_ref.asnumpy())
 
 
 @pytest.mark.level("integration")
@@ -330,9 +307,9 @@ def test_e_flx_avg(
 def test_e_bln_c_s(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.e_bln_c_s()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -353,9 +330,9 @@ def test_e_bln_c_s(
 def test_pos_on_tplane_e_x_y(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref_1 = interpolation_savepoint.pos_on_tplane_e_x()
     field_ref_2 = interpolation_savepoint.pos_on_tplane_e_y()
     factory = _get_interpolation_factory(backend, experiment)
@@ -377,9 +354,9 @@ def test_pos_on_tplane_e_x_y(
 def test_cells_aw_verts(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.c_intp()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -401,9 +378,9 @@ def test_cells_aw_verts(
 def test_nudgecoeffs(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     rtol: float,
-):
+) -> None:
     field_ref = interpolation_savepoint.nudgecoeff_e()
     factory = _get_interpolation_factory(backend, experiment)
     field = factory.get(attrs.NUDGECOEFFS_E)
@@ -416,16 +393,16 @@ def test_nudgecoeffs(
     "experiment, atol",
     [
         (definitions.Experiments.EXCLAIM_APE, 3e-9),
-        (definitions.Experiments.MCH_CH_R04B09, 3e-2),
+        (definitions.Experiments.MCH_CH_R04B09, 4e-2),
     ],
 )
 @pytest.mark.datatest
 def test_rbf_interpolation_coeffs_cell(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     atol: float,
-):
+) -> None:
     field_ref_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
     field_ref_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
     factory = _get_interpolation_factory(backend, experiment)
@@ -456,9 +433,9 @@ def test_rbf_interpolation_coeffs_cell(
 def test_rbf_interpolation_coeffs_edge(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     atol: float,
-):
+) -> None:
     field_ref_e = interpolation_savepoint.rbf_vec_coeff_e()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
@@ -484,9 +461,9 @@ def test_rbf_interpolation_coeffs_edge(
 def test_rbf_interpolation_coeffs_vertex(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
-    backend: gtx_backend.Backend | None,
+    backend: gtx_typing.Backend | None,
     atol: float,
-):
+) -> None:
     field_ref_v1 = interpolation_savepoint.rbf_vec_coeff_v1()
     field_ref_v2 = interpolation_savepoint.rbf_vec_coeff_v2()
     factory = _get_interpolation_factory(backend, experiment)

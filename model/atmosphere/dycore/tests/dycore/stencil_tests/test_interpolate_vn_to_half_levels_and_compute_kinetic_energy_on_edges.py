@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing import stencil_tests as stencil_tests
+from icon4py.model.testing import stencil_tests
 
 
 def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_vn_ie_numpy(
@@ -27,7 +27,7 @@ def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_vn_ie_nump
 ) -> np.ndarray:
     vn_ie_k_minus_1 = np.roll(vn, shift=1, axis=1)
     vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_ie_k_minus_1
-    vn_ie[:, 0] = 0
+    vn_ie[:, 0] = vn[:, 0]
     return vn_ie
 
 
@@ -35,7 +35,6 @@ def interpolate_vn_to_half_levels_and_compute_kinetic_energy_on_edges_z_kin_hor_
     vn: np.ndarray, vt: np.ndarray
 ) -> np.ndarray:
     z_kin_hor_e = 0.5 * (vn * vn + vt * vt)
-    z_kin_hor_e[:, 0] = 0
     return z_kin_hor_e
 
 

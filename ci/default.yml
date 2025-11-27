@@ -37,10 +37,16 @@ test_tools_datatests_aarch64:
   script:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   rules:
+    - if: $BACKEND == 'dace_gpu' && $COMPONENT != 'diffusion' && $COMPONENT != 'dycore'
+      when: never  # run only in daily CI, to save compute resources
     - if: $COMPONENT == 'common' && $LEVEL == 'integration'
       variables:
-        NUM_PROCESSES: 2
-        SLURM_TIMELIMIT: '00:30:00'
+        NUM_PROCESSES: 1
+        SLURM_TIMELIMIT: '00:45:00'
+    - if: $BACKEND == 'dace_gpu'
+      variables:
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '01:00:00'
     - if: $BACKEND == 'embedded'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
@@ -50,7 +56,7 @@ test_tools_datatests_aarch64:
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
-        BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
+        BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]

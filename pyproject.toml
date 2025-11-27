@@ -46,7 +46,6 @@ test = [
   "pytest-benchmark>=5.0.0",
   "pytest-cache>=1.0",
   "pytest-cov>=5.0.0",
-  "pytest-deadfixtures>=2.2.1",
   "pytest-factoryboy>=2.6.1",
   "pytest-mpi>=0.6",
   "pytest-unused-fixtures>=0.2.0",
@@ -94,13 +93,13 @@ requires-python = ">=3.10"
 version = "0.0.6"
 
 [project.optional-dependencies]
-all = ["icon4py[dace,distributed,fortran,io,testing]"]
+all = ["icon4py[distributed,fortran,io,testing,profiling]"]
 cuda11 = ["icon4py-common[cuda11]"]
 cuda12 = ["icon4py-common[cuda12]"]
-dace = ["icon4py-common[dace]"]
 distributed = ["icon4py-common[distributed]"]
 fortran = ["icon4py-tools>=0.0.6"]
 io = ["icon4py-common[io]"]
+profiling = ['viztracer>=1.1.0']
 testing = ["icon4py-testing"]
 
 [project.urls]
@@ -133,12 +132,49 @@ version = "{current_version}"
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
 explicit_package_bases = true
-# exclude = [
-# '^tests/py2fgen/*.py',
-# ]
+files = [
+  # TODO(egparedes): activate for all sources and tests
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/tests/',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/tests',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src',
+  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/tests',
+  # '$MYPY_CONFIG_FILE_DIR/model/common/src/',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/utils/',
+  # '$MYPY_CONFIG_FILE_DIR/model/common/tests/',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/grid',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/metrics',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/states',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/math',
+  '$MYPY_CONFIG_FILE_DIR/model/common/tests/common/interpolation',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/decomposition',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/initialization',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
+  # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
+  # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
+  '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
+  # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
+  '$MYPY_CONFIG_FILE_DIR/tools/src/'
+]
 ignore_missing_imports = false
 implicit_reexport = true
-mypy_path = "model/common/src:model/testing/src:tools/src"
+mypy_path = '''
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/dycore/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
+$MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
+$MYPY_CONFIG_FILE_DIR/model/common/src:
+$MYPY_CONFIG_FILE_DIR/model/driver/src:
+$MYPY_CONFIG_FILE_DIR/model/testing/src:
+$MYPY_CONFIG_FILE_DIR/tools/src:
+'''
 namespace_packages = true
 # install_types = true
 # non_interactive = true
@@ -151,18 +187,21 @@ warn_unused_ignores = true
 # TODO(): fix gtx.int32 export in gt4py
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
-module = '*.stencil_tests.*'
+module = ['*.stencil_tests.*', '*.unit_tests.*']
 
 [[tool.mypy.overrides]]
 ignore_errors = true
 module = [
-  'icon4py.model.testing.fixtures.datatest',
   'icon4py.model.testing.pytest_hooks',
   'icon4py.model.testing.serialbox',
   'icon4py.tools.py2fgen.wrappers.diffusion_wrapper',
   'icon4py.tools.py2fgen.wrappers.dycore_wrapper',
   'icon4py.tools.py2fgen.wrappers.grid_wrapper'
 ]
+
+[[tool.mypy.overrides]]
+disallow_untyped_defs = false
+module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 
 # -- pytest --
 [tool.pytest]
@@ -180,7 +219,8 @@ markers = [
   "cpu_only",
   "infinite_concat_where",
   "gtfn_too_slow",
-  "continuous_benchmarking"
+  "continuous_benchmarking",
+  "benchmark_only: benchmark only tests without verification"
 ]
 # add all namespace packages to pythonpath to make them available for pytest
 pythonpath = [
@@ -206,7 +246,6 @@ docstring-code-format = true
 
 [tool.ruff.lint]
 # -- Rules set to be considered --
-exclude = ["**/tests/**"]
 explicit-preview-rules = true
 ignore = [
   'E501',  # [line-too-long]
@@ -281,11 +320,20 @@ max-complexity = 15
 [tool.ruff.lint.per-file-ignores]
 # Avoid messing up conditions in gt4py stencils
 "**/model/**/stencils/*.py" = ["SIM300"]
-# Ignore spurious errors when explicitly importing fixtures in tests.
+# Ignore spurious errors when explicitly importing fixtures in tests (F401, F811).
 # Check: https://github.com/astral-sh/ruff/issues/10662
-"**/tests/**/*_test.py" = ["F401", "F811"]
-"**/tests/**/fixtures.py" = ["F401", "F811"]
-"**/tests/**/test_*.py" = ["F401", "F811"]
+# TODO(havogt): fix error related to PLR0915, PLR0911, TD, RUF012 and remove ignores below
+"**/tests/**/*_test.py" = ["F401", "F811", "PLR0915", "PLR0911", "TD", "RUF012"]
+"**/tests/**/conftest.py" = ["F401", "F811"]
+"**/tests/**/fixtures.py" = [
+  "F401",
+  "F811",
+  "PLR0915",
+  "PLR0911",
+  "TD",
+  "RUF012"
+]
+"**/tests/**/test_*.py" = ["F401", "F811", "PLR0915", "PLR0911", "TD", "RUF012"]
 
 [tool.ruff.lint.pylint]
 max-branches = 12
@@ -305,8 +353,8 @@ name = "test.pypi"
 url = "https://test.pypi.org/simple/"
 
 [tool.uv.sources]
-dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_08_28"}
-# ghex = {git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
+dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_11_26"}
+ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
 gt4py = {git = "https://github.com/havogt/gt4py", branch = "cse_in_fieldop_fusion"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}

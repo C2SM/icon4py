@@ -14,14 +14,10 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import (
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
@@ -87,7 +83,8 @@ def compute_hydrostatic_correction_term_numpy(
         / ((z_theta1 + z_theta2) ** 2)
     )
 
-    return z_hydro_corr
+    nlevels = theta_v.shape[1]
+    return z_hydro_corr[:, nlevels - 1 : nlevels]
 
 
 @pytest.mark.skip_value_error
@@ -122,7 +119,9 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
+        ikoffset = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+        )
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
@@ -132,14 +131,24 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
 
-        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        zdiff_gradp = random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=vpfloat)
-        theta_v_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        grav_o_cpd = wpfloat("10.0")
+        theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        zdiff_gradp = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=ta.vpfloat
+        )
+        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        grav_o_cpd = ta.wpfloat("10.0")
 
-        z_hydro_corr = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_hydro_corr = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+
+        z_hydro_corr = gtx.constructors.zeros(
+            domain={
+                dims.EdgeDim: (0, grid.num_edges),
+                dims.KDim: (grid.num_levels - 1, grid.num_levels),
+            },
+            dtype=ta.vpfloat,
+        )
 
         return dict(
             theta_v=theta_v,
@@ -152,6 +161,6 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
             grav_o_cpd=grav_o_cpd,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
-            vertical_start=0,
+            vertical_start=gtx.int32(grid.num_levels - 1),
             vertical_end=gtx.int32(grid.num_levels),
         )

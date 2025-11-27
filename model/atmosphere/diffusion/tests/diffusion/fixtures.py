@@ -7,15 +7,22 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.testing import serialbox as sb
-
+from icon4py.model.testing.fixtures.benchmark import (
+    geometry_field_source,
+    interpolation_field_source,
+    metrics_field_source,
+)
 from icon4py.model.testing.fixtures.datatest import (
     backend,
+    backend_like,
     damping_height,
     data_provider,
     decomposition_info,
     download_ser_data,
+    exner_expol,
     experiment,
     flat_height,
     grid_savepoint,
@@ -30,12 +37,14 @@ from icon4py.model.testing.fixtures.datatest import (
     ndyn_substeps,
     processor_props,
     ranked_data_path,
+    rayleigh_coeff,
+    rayleigh_type,
     savepoint_diffusion_exit,
     savepoint_diffusion_init,
     step_date_exit,
     step_date_init,
     stretch_factor,
-    top_height_limit_for_maximal_layer_thickness,
+    vwind_offctr,
 )
 
 
