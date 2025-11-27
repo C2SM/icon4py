@@ -27,8 +27,6 @@ def _compute_nudgecoeffs(
         0.0,
     )
 
-
-# TODO(halungge): not registered in factory
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_nudgecoeffs(
     refin_ctrl: fa.EdgeField[gtx.int32],
