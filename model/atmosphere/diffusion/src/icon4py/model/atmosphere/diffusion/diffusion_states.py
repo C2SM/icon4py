@@ -90,14 +90,14 @@ class DiffusionInterpolationState:
 
 
 def initialize_diffusion_diagnostic_state(
-    grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None
+    grid: icon_grid.IconGrid, allocator: gtx_typing.FieldBufferAllocationUtil
 ) -> DiffusionDiagnosticState:
     hdef_ic = data_alloc.zero_field(
         grid,
         dims.CellDim,
         dims.KDim,
         extend={dims.KDim: 1},
-        allocator=backend,
+        allocator=allocator,
         dtype=ta.vpfloat,
     )
     div_ic = data_alloc.zero_field(
@@ -105,7 +105,7 @@ def initialize_diffusion_diagnostic_state(
         dims.CellDim,
         dims.KDim,
         extend={dims.KDim: 1},
-        allocator=backend,
+        allocator=allocator,
         dtype=ta.vpfloat,
     )
     dwdx = data_alloc.zero_field(
@@ -113,7 +113,7 @@ def initialize_diffusion_diagnostic_state(
         dims.CellDim,
         dims.KDim,
         extend={dims.KDim: 1},
-        allocator=backend,
+        allocator=allocator,
         dtype=ta.vpfloat,
     )
     dwdy = data_alloc.zero_field(
@@ -121,7 +121,7 @@ def initialize_diffusion_diagnostic_state(
         dims.CellDim,
         dims.KDim,
         extend={dims.KDim: 1},
-        allocator=backend,
+        allocator=allocator,
         dtype=ta.vpfloat,
     )
     return DiffusionDiagnosticState(

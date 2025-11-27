@@ -10,11 +10,16 @@ import logging
 import math
 
 import gt4py.next as gtx
-import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
+from icon4py.model.common import (
+    constants as phy_const,
+    dimension as dims,
+    model_backends,
+    model_options,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -41,7 +46,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
-    backend: gtx_typing.Backend,
+    backend: model_backends.BackendLike,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_up to values larger than 0.01 if
@@ -55,6 +60,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         backend: GT4Py backend
     Returns: driver state
     """
+    allocator = model_backends.get_allocator(model_backends)
+    concrete_backend = model_options.customize_backend(program=None, backend=backend)
     xp = data_alloc.import_array_ns(backend)
 
     wgtfac_c = metrics_field_source.get(metrics_attributes.WGTFAC_C).ndarray
@@ -190,9 +197,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         temperature_ndarray[:, k_index] = temperature_jw
     log.info("Newton iteration completed.")
 
-    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=backend)
-    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
-    cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
+    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=allocator)
+    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator)
+    cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(concrete_backend)(
         in_field=eta_v,
         coeff=cell_2_edge_coeff,
         out_field=eta_v_e,
@@ -248,11 +255,13 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             pressure_ndarray=pressure_ndarray,
             pressure_ifc_ndarray=pressure_ifc_ndarray,
             grid=grid,
-            backend=backend,
+            allocator=allocator,
         )
     )
 
-    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(
+        concrete_backend
+    )(
         p_e_in=prognostics_states.current.vn,
         ptr_coeff_1=rbf_vec_coeff_c1,
         ptr_coeff_2=rbf_vec_coeff_c2,
@@ -267,8 +276,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     log.info("U, V computation completed.")
 
-    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-    gt4py_math_op.compute_difference_on_cell_k.with_backend(backend)(
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
+    gt4py_math_op.compute_difference_on_cell_k.with_backend(concrete_backend)(
         field_a=prognostics_states.current.exner,
         field_b=metrics_field_source.get(metrics_attributes.EXNER_REF_MC),
         output_field=perturbed_exner,
@@ -281,14 +290,14 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     log.info("perturbed_exner initialization completed.")
 
     diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
-        grid=grid, backend=backend
+        grid=grid, allocator=allocator
     )
     solve_nonhydro_diagnostic_state = dycore_states.initialize_solve_nonhydro_diagnostic_state(
         perturbed_exner_at_cells_on_model_levels=perturbed_exner,
         grid=grid,
-        backend=backend,
+        allocator=allocator,
     )
-    prep_adv = dycore_states.initialize_prep_advection(grid=grid, backend=backend)
+    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
     log.info("Initialization completed.")
 
     ds = driver_states.DriverStates(

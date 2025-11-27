@@ -180,31 +180,33 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     pressure_ndarray: data_alloc.NDArray,
     pressure_ifc_ndarray: data_alloc.NDArray,
     grid: icon_grid.IconGrid,
-    backend: gtx_typing.Backend | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> tuple[
     common_utils.TimeStepPair[prognostics.PrognosticState],
     diagnostics.DiagnosticState,
 ]:
-    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
-    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
-    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
-    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
-    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend)
+    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)
+    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)
+    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
+    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
+    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator)
     virtual_temperature = gtx.as_field(
-        (dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend
+        (dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator
     )
-    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=backend)
-    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
-    pressure_ifc = gtx.as_field((dims.CellDim, dims.KDim), pressure_ifc_ndarray, allocator=backend)
+    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=allocator)
+    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)
+    pressure_ifc = gtx.as_field(
+        (dims.CellDim, dims.KDim), pressure_ifc_ndarray, allocator=allocator
+    )
 
-    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
-    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
-    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
-    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
-    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
+    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)
+    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)
+    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
+    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
+    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)
 
-    u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-    v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
+    u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
+    v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
 
     prognostic_state_now = prognostics.PrognosticState(
         w=w,
