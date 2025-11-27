@@ -47,8 +47,8 @@ def get_dace_options(
         optimization_args["blocking_dim"] = dims.KDim
         optimization_args["blocking_size"] = 4
         optimization_args["gpu_block_size_2d"] = [64, 1, 1]
-        optimization_args["launch_bounds_2d"] = 1024
         optimization_args["blocking_only_if_independent_nodes"] = False
+        optimization_args["gpu_maxnreg"] = 64
 
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn' as performance drops,
