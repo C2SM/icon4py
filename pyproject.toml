@@ -213,6 +213,7 @@ markers = [
   "embedded_static_args",
   "uses_as_offset",
   "skip_value_error",
+  "icon_benchmark_global_error",
   "datatest",
   "embedded_only",
   "uses_concat_where",

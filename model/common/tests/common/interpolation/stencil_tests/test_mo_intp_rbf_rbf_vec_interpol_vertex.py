@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
@@ -21,6 +21,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 
+@pytest.mark.icon_benchmark_global_error
 @pytest.mark.continuous_benchmarking
 class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
     PROGRAM = mo_intp_rbf_rbf_vec_interpol_vertex
@@ -64,14 +65,18 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
         p_v_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
         p_u_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
 
+        vertex_domain = h_grid.domain(dims.VertexDim)
+        horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+        horizontal_end = grid.end_index(vertex_domain(h_grid.Zone.LOCAL))
+
         return dict(
             p_e_in=p_e_in,
             ptr_coeff_1=ptr_coeff_1,
             ptr_coeff_2=ptr_coeff_2,
             p_v_out=p_v_out,
             p_u_out=p_u_out,
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_vertices),
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )

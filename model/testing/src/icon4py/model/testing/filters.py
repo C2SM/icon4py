@@ -77,4 +77,13 @@ item_marker_filters: dict[str, ItemFilter] = {
             "Stencil does not support domain containing skip values. Consider shrinking domain.",
         ),
     ),
+    pytest.mark.icon_benchmark_global_error.name: ItemFilter(
+        condition=lambda item: (grid_name := test_utils.get_grid_name(item)) is not None
+        and grid_name == "icon_benchmark_global"
+        and test_utils.is_cpu_backend(test_utils.get_backend_fixture_value(item)),
+        action=functools.partial(
+            pytest.xfail,
+            "Stencil currently fails on icon_benchmark_global grid.",
+        ),
+    ),
 }
