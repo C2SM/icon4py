@@ -200,7 +200,7 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     sx2x_c_g = _cloud_to_graupel(t, rho, q.c, q.g)
 
     t_below_tmelt = t < t_d.tmelt
-    t_at_least_tmelt = not t_below_tmelt
+    t_at_least_tmelt = ~t_below_tmelt
 
     n_ice = _ice_number(t, rho)
     m_ice = _ice_mass(q.i, n_ice)
