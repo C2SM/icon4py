@@ -1394,7 +1394,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.1+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace-fix_graupel_strides#e73cd27599d63195181e22c10388bc77c03f071e" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace-fix_graupel_strides#7c1f0ced0c5373186720b1d2c8ad4e7e54b4d885" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
