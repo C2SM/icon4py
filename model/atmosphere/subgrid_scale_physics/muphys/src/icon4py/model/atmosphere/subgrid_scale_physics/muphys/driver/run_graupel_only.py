@@ -191,13 +191,9 @@ class GraupelOutput:
         with netCDF4.Dataset(filename, mode="w") as ncfile:
             ncfile.createDimension("ncells", ncells)
             ncfile.createDimension("height", nlev)
-            ncfile.createDimension("height1", nlev + 1)  # what's the reason for the +1 fields here?
 
             write_height_field = functools.partial(
                 _field_to_nc, ncfile, ("height", "ncells"), dtype=np.float64
-            )
-            write_height1_field = functools.partial(  # TODO
-                _field_to_nc, ncfile, ("height1", "ncells"), dtype=np.float64
             )
 
             write_height_field("ta", self.t)
@@ -210,7 +206,7 @@ class GraupelOutput:
             if self.pflx is not None:
                 write_height_field("pflx", self.pflx)
             if self.pr is not None:
-                write_height_field("prr_gsp", self.pr)  # TODO height1?
+                write_height_field("prr_gsp", self.pr) 
             if self.ps is not None:
                 write_height_field("prs_gsp", self.ps)  # TODO
             if self.pi is not None:
