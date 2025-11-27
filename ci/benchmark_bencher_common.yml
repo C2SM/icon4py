@@ -1,0 +1,8 @@
+.benchmark_model_base_variables:
+  variables:
+    ICON4PY_ENABLE_GRID_DOWNLOAD: false
+    ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
+    GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE: true
+    PYTHONOPTIMIZE: 2
+    STENCIL_TEST_SELECTION: "test_Test and compile_time_domain"
+    GRANULE_TEST_SELECTION: "test_diffusion_benchmark or test_benchmark_solve_nonhydro"

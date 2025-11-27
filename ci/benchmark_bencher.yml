@@ -1,6 +1,6 @@
 include:
   - local: 'ci/base.yml'
-  - local: 'ci/benchmark_bencher_baseline.yml'
+  - local: 'ci/benchmark_bencher_common.yml'
 
 .bencher_setup_env:
   setup:

@@ -1,5 +1,6 @@
 include:
   - local: 'ci/base.yml'
+  - local: 'ci/benchmark_bencher_common.yml'
 
 .benchmark_model_base_variables:
   variables:
