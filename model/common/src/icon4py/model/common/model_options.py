@@ -14,8 +14,8 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
-from icon4py.model.common import dimension as dims
-from icon4py.model.common import model_backends
+
+from icon4py.model.common import dimension as dims, model_backends
 
 
 log = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def get_dace_options(
         optimization_args["blocking_dim"] = dims.KDim
         optimization_args["blocking_size"] = 4
         optimization_args["gpu_block_size_2d"] = [64, 1, 1]
-        optimization_args["blocking_only_if_independent_nodes"] = False
+        optimization_args["promote_independent_memlets_for_blocking"] = True
         optimization_args["gpu_maxnreg"] = 64
 
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
