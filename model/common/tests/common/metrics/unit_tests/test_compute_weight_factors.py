@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.exceptions import dummy_exchange
 from icon4py.model.common.metrics import compute_weight_factors as weight_factors
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import test_utils
@@ -28,6 +27,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     ranked_data_path,
 )
+from icon4py.model.testing.test_utils import dummy_exchange
 
 
 if TYPE_CHECKING:

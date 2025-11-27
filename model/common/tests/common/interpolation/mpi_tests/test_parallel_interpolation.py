@@ -46,9 +46,6 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-vert_lb_domain = h_grid.vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-
-
 @pytest.mark.level("integration")
 @pytest.mark.datatest
 @pytest.mark.mpi
@@ -124,10 +121,7 @@ def test_distributed_interpolation_grg(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize(
-    "attrs_name, intrp_name, lb_domain", [(attrs.GEOFAC_ROT, "geofac_rot", vert_lb_domain)]
-)
-def test_distributed_interpolation_attrs_reordered(
+def test_distributed_interpolation_geofac_rot(
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
@@ -135,17 +129,14 @@ def test_distributed_interpolation_attrs_reordered(
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
-    attrs_name: str,
-    intrp_name: str,
-    lb_domain: typing.Any,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = interpolation_factory_from_savepoint
-    lb = lb_domain if isinstance(lb_domain, int) else factory.grid.start_index(lb_domain)
-    field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
-    field = factory.get(attrs_name).asnumpy()
+    lb = factory.grid.start_index(h_grid.vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    field_ref = interpolation_savepoint.__getattribute__("geofac_rot")().asnumpy()
+    field = factory.get(attrs.GEOFAC_ROT).asnumpy()
     assert_reordered(field[lb:, :], field_ref[lb:, :], atol=2e-9, rtol=1e-8)
 
 
