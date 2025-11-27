@@ -6,11 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+import logging
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from types import ModuleType
 from typing import Final
 
+import gt4py.next.common as gtx_common
 import numpy as np
 from gt4py import next as gtx
 from gt4py.next import where
@@ -27,12 +29,15 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 MISSING: Final[int] = gridfile.GridFile.INVALID_INDEX
 
+logger = logging.Logger(__file__)
+
 
 def compute_c_lin_e(
     edge_cell_length: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     edge_owner_mask: data_alloc.NDArray,
     horizontal_start: gtx.int32,
+    exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -51,7 +56,9 @@ def compute_c_lin_e(
     c_lin_e = array_ns.transpose(array_ns.vstack((c_lin_e_, (1.0 - c_lin_e_))))
     c_lin_e[0:horizontal_start, :] = 0.0
     mask = array_ns.transpose(array_ns.tile(edge_owner_mask, (2, 1)))
-    return array_ns.where(mask, c_lin_e, 0.0)
+    res = array_ns.where(mask, c_lin_e, 0.0)
+    exchange_buffers((dims.EdgeDim, dims.C2EDim), res, exchange=exchange)
+    return res
 
 
 @gtx.field_operator
@@ -152,72 +159,51 @@ def compute_geofac_n2s(
     return geofac_n2s
 
 
-def _compute_primal_normal_ec(
+def exchange_buffers(
+    field_dims: Sequence[gtx.Dimension],
+    *buffers: data_alloc.NDArray,
+    exchange: Callable[[gtx.Dimension, gtx.Field], None],
+) -> None:
+    assert len(field_dims) == buffers[0].ndim, "dimensions and buffer size do not match"
+    assert (
+        field_dims[0] in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+    ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+    # all buffers must have the same shape
+    shape = buffers[0].shape
+    domain = {field_dims[0]: (0, shape[0]), field_dims[1]: (0, shape[1])}
+    wrapped = (gtx_common._field(b, domain=domain) for b in buffers)
+    exchange(field_dims[0], *wrapped)
+
+
+def compute_geofac_grg(
     primal_normal_cell_x: data_alloc.NDArray,
     primal_normal_cell_y: data_alloc.NDArray,
     owner_mask: data_alloc.NDArray,
-    c2e: data_alloc.NDArray,
-    e2c: data_alloc.NDArray,
-    array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    """
-    Compute primal_normal_ec.
-
-    Args:
-        primal_normal_cell_x: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        primal_normal_cell_y: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        owner_mask: ndarray, representing a gtx.Field[gtx.Dims[CellDim], bool]
-        c2e: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
-        e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        array_ns: module - the array interface implementation to compute on, defaults to numpy
-    Returns:
-        primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
-    """
-
-    owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
-
-    inv_neighbor_index = _create_inverse_neighbor_index(e2c, c2e, array_ns)
-    u_component = primal_normal_cell_x[c2e, inv_neighbor_index]
-    v_component = primal_normal_cell_y[c2e, inv_neighbor_index]
-    return (array_ns.where(owned, u_component, 0.0), array_ns.where(owned, v_component, 0.0))
-
-
-def _compute_geofac_grg(
-    primal_normal_ec_u: data_alloc.NDArray,
-    primal_normal_ec_v: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
     c2e: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
+    exchange: Callable[[gtx.Dimension, gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    """
-    Compute geometrical factor for Green-Gauss gradient.
+    owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
+    inv_neighbor_index = _create_inverse_neighbor_index(e2c, c2e, array_ns)
+    primal_normal_ec_u = array_ns.where(owned, primal_normal_cell_x[c2e, inv_neighbor_index], 0.0)
+    primal_normal_ec_v = array_ns.where(owned, primal_normal_cell_y[c2e, inv_neighbor_index], 0.0)
 
-    Args:
-        primal_normal_ec_u: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
-        primal_normal_ec_v: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
-        geofac_div: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
-        c_lin_e: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
-        c2e: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
-        e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        c2e2c: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
-        horizontal_start: start index from where the computation is done
-        array_ns: module - the array interface implementation to compute on, defaults to numpy
-    Returns:
-        geofac_grg: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim + 1, 2], ta.wpfloat]
-    """
+    exchange_buffers(
+        (dims.CellDim, dims.E2CDim), primal_normal_ec_u, primal_normal_ec_v, exchange=exchange
+    )
+
     num_cells = c2e.shape[0]
     targ_local_size = c2e.shape[1] + 1
     target_shape = (num_cells, targ_local_size)
     geofac_grg_x = array_ns.zeros(target_shape)
     geofac_grg_y = array_ns.zeros(target_shape)
 
-    inverse_neighbor = _create_inverse_neighbor_index(e2c, c2e, array_ns)
-
-    tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
+    tmp = geofac_div * c_lin_e[c2e, inv_neighbor_index]
     geofac_grg_x[horizontal_start:, 0] = array_ns.sum(primal_normal_ec_u * tmp, axis=1)[
         horizontal_start:
     ]
@@ -235,49 +221,7 @@ def _compute_geofac_grg(
             geofac_grg_y[horizontal_start:, 1:]
             + mask * (primal_normal_ec_v * geofac_div * c_lin_e[c2e, k])[horizontal_start:, :]
         )
-
-    return geofac_grg_x, geofac_grg_y
-
-
-def compute_geofac_grg(
-    primal_normal_cell_x: data_alloc.NDArray,
-    primal_normal_cell_y: data_alloc.NDArray,
-    owner_mask: data_alloc.NDArray,
-    geofac_div: data_alloc.NDArray,
-    c_lin_e: data_alloc.NDArray,
-    c2e: data_alloc.NDArray,
-    e2c: data_alloc.NDArray,
-    c2e2c: data_alloc.NDArray,
-    horizontal_start: gtx.int32,
-    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
-    array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    primal_normal_ec_u, primal_normal_ec_v = _compute_primal_normal_ec(
-        primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c, array_ns=array_ns
-    )
-
-    geofac_grg_x, geofac_grg_y = _compute_geofac_grg(
-        primal_normal_ec_u,
-        primal_normal_ec_v,
-        geofac_div,
-        c_lin_e,
-        c2e,
-        e2c,
-        c2e2c,
-        horizontal_start,
-        array_ns=array_ns,
-    )
-    wrap_in_field_1 = gtx.as_field(
-        (dims.CellDim, dims.C2E2CODim), data=geofac_grg_x, dtype=geofac_grg_x.dtype
-    )
-    halo_exchange(dims.CellDim, wrap_in_field_1)
-    geofac_grg_x = wrap_in_field_1.ndarray
-
-    wrap_in_field_2 = gtx.as_field(
-        (dims.CellDim, dims.C2E2CODim), data=geofac_grg_y, dtype=geofac_grg_y.dtype
-    )
-    halo_exchange(dims.CellDim, wrap_in_field_2)
-    geofac_grg_y = wrap_in_field_2.ndarray
+    exchange_buffers((dims.CellDim, dims.C2E2CODim), geofac_grg_x, geofac_grg_y, exchange=exchange)
 
     return geofac_grg_x, geofac_grg_y
 

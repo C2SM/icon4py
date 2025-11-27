@@ -17,7 +17,6 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import constants
-from icon4py.model.common.exceptions import dummy_exchange
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_lin_e,
@@ -52,6 +51,10 @@ edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
 
 
+def dummy_exchange(dim: gtx.Dimension, *field: gtx.Field) -> None:
+    return None
+
+
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_compute_c_lin_e(
@@ -61,7 +64,7 @@ def test_compute_c_lin_e(
     backend: gtx_typing.Backend,
 ) -> None:
     xp = data_alloc.import_array_ns(backend)
-    func = functools.partial(compute_c_lin_e, array_ns=xp)
+    func = functools.partial(compute_c_lin_e, array_ns=xp, exchange=dummy_exchange)
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
     edge_owner_mask = grid_savepoint.e_owner_mask()
@@ -74,7 +77,8 @@ def test_compute_c_lin_e(
         inv_dual_edge_length.asnumpy(),
         edge_owner_mask.asnumpy(),
         horizontal_start,
-        xp,
+        exchange=dummy_exchange,
+        array_ns=xp,
     )
     assert test_helpers.dallclose(c_lin_e, c_lin_e_ref.asnumpy())
 
@@ -130,13 +134,15 @@ def test_compute_geofac_rot(
     geofac_rot_ref = interpolation_savepoint.geofac_rot()
     geofac_rot = data_alloc.zero_field(mesh, dims.VertexDim, dims.V2EDim)
     horizontal_start = icon_grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    horizontal_end = icon_grid.start_index(vertex_domain(h_grid.Zone.END))
 
     compute_geofac_rot.with_backend(backend)(
         dual_edge_length,
         edge_orientation,
         dual_area,
         owner_mask,
-        out=geofac_rot[horizontal_start:, :],
+        out=geofac_rot,
+        domain={dims.VertexDim: (horizontal_start, horizontal_end)},
         offset_provider={"V2E": mesh.get_connectivity("V2E")},
     )
 
@@ -190,7 +196,9 @@ def test_compute_geofac_grg(
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).ndarray
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
-    geofac_grg_0, geofac_grg_1 = functools.partial(compute_geofac_grg, array_ns=xp)(
+    geofac_grg_0, geofac_grg_1 = functools.partial(
+        compute_geofac_grg, array_ns=xp, exchange=dummy_exchange
+    )(
         primal_normal_cell_x,
         primal_normal_cell_y,
         owner_mask,
@@ -200,7 +208,6 @@ def test_compute_geofac_grg(
         e2c,
         c2e2c,
         horizontal_start,
-        halo_exchange=dummy_exchange,
     )
     assert test_helpers.dallclose(
         data_alloc.as_numpy(geofac_grg_0),
@@ -379,7 +386,7 @@ def test_compute_e_bln_c_s(
         c2e, cells_lat, cells_lon, edges_lat, edges_lon, 0.0
     )
     assert test_helpers.dallclose(
-        data_alloc.as_numpy(e_bln_c_s), e_bln_c_s_ref.asnumpy(), atol=1e-6, rtol=1e-7
+        data_alloc.as_numpy(e_bln_c_s), e_bln_c_s_ref.asnumpy(), rtol=1e-10
     )
 
 
@@ -421,5 +428,5 @@ def test_compute_pos_on_tplane_e(
         horizontal_start,
         array_ns=xp,
     )
-    assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-6, rtol=1e-7)
-    assert test_helpers.dallclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref, atol=1e-6, rtol=1e-7)
+    assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-8, rtol=1e-9)
+    assert test_helpers.dallclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref, atol=1e-8, rtol=1e-9)
