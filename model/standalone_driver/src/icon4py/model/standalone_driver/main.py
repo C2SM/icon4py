@@ -87,10 +87,7 @@ def main(
     log.info("time loop: START")
 
     icon4py_driver.time_integration(
-        ds.diffusion_diagnostic,
-        ds.solve_nonhydro_diagnostic,
-        ds.prognostics,
-        ds.prep_advection_prognostic,
+        ds,
         do_prep_adv=False,
     )
 

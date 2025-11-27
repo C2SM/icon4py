@@ -24,7 +24,7 @@ from icon4py.model.common import (
     model_backends,
     model_options,
 )
-from icon4py.model.common.constants import RayleighType
+from icon4py.model.common.constants import PhysicsConstants, RayleighType
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
@@ -40,7 +40,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import driver_states
+from icon4py.model.standalone_driver import config as driver_config, driver_states
 
 
 log = logging.getLogger(__name__)
@@ -352,6 +352,92 @@ def find_maximum_from_field(
         input_field.ndarray.shape,
     )
     return max_indices, input_field.ndarray[max_indices]
+
+
+def display_driver_setup_in_log_file(
+    logger: logging.Logger,
+    n_time_steps: int,
+    vertical_params,
+    config: driver_config.DriverConfig,
+) -> None:
+    """
+    Print out icon4py signature and some important information of the initial setup to the log file.
+
+                                                            ___
+        -------                                    //      ||   \
+            | |                                     //       ||    |
+            | |       __      _ _        _ _       //  ||    ||___/
+            | |     //       /   \     |/   \     //_ _||_   ||        \\      //
+            | |    ||       |     |    |     |    --------   ||         \\    //
+            | |     \\__     \_ _/     |     |         ||    ||          \\  //
+        -------                                                           //
+                                                                            //
+                                                            = = = = = = //
+    """
+    boundary_line = ["*" * 91]
+    icon4py_signature = []
+    icon4py_signature += boundary_line
+    empty_line = ["*" + 89 * " " + "*"]
+    for _ in range(3):
+        icon4py_signature += empty_line
+
+    icon4py_signature += [
+        "*                                                                ___                      *"
+    ]
+    icon4py_signature += [
+        r"*            -------                                    //      ||   \                    *"
+    ]
+    icon4py_signature += [
+        "*              | |                                     //       ||    |                   *"
+    ]
+    icon4py_signature += [
+        "*              | |       __      _ _        _ _       //  ||    ||___/                    *"
+    ]
+    icon4py_signature += [
+        r"*              | |     //       /   \     |/   \     //_ _||_   ||        \\      //      *"
+    ]
+    icon4py_signature += [
+        r"*              | |    ||       |     |    |     |    --------   ||         \\    //       *"
+    ]
+    icon4py_signature += [
+        r"*              | |     \\__     \_ _/     |     |         ||    ||          \\  //        *"
+    ]
+    icon4py_signature += [
+        "*            -------                                                           //         *"
+    ]
+    icon4py_signature += [
+        "*                                                                             //          *"
+    ]
+    icon4py_signature += [
+        "*                                                                = = = = = = //           *"
+    ]
+
+    for _ in range(3):
+        icon4py_signature += empty_line
+    icon4py_signature += boundary_line
+    icon4py_signature = "\n".join(icon4py_signature)
+    logger.info(f"{icon4py_signature}")
+
+    logger.info("===== ICON4Py Driver Configuration =====")
+    logger.info(f"Experiment name        : {config.experiment_name}")
+    logger.info(f"Time step (dtime)      : {config.dtime.total_seconds()} s")
+    logger.info(f"Start date             : {config.start_date}")
+    logger.info(f"End date               : {config.end_date}")
+    logger.info(f"Number of timesteps    : {n_time_steps}")
+    logger.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
+    logger.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
+    logger.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
+    logger.info(f"Statistics enabled     : {config.enable_statistics_output}")
+    logger.info("")
+
+    logger.info("==== Vertical Grid Parameters ====")
+    logger.info(vertical_params)
+    consts = PhysicsConstants()
+    logger.info("==== Physical Constants ====")
+    for name, value in consts.__class__.__dict__.items():
+        if name.startswith("_") or callable(value):
+            continue
+        logger.info(f"{name:30s}: {value}")
 
 
 def configure_logging(
