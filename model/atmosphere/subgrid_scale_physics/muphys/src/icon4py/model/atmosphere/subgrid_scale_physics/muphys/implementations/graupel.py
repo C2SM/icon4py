@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import NamedTuple
+
 import gt4py.next as gtx
 from gt4py.next import maximum, minimum, power, sqrt, where
 from gt4py.next.experimental import concat_where
@@ -49,7 +51,15 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import Koff
 
 
-# @gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, 0.0, False))   <=== this should work now
+class Q(NamedTuple):
+    v: fa.CellKField[ta.wpfloat]  # Specific humidity
+    c: fa.CellKField[ta.wpfloat]  # Specific cloud water content
+    r: fa.CellKField[ta.wpfloat]  # Specific rain water
+    s: fa.CellKField[ta.wpfloat]  # Specific snow water
+    i: fa.CellKField[ta.wpfloat]  # Specific ice water content
+    g: fa.CellKField[ta.wpfloat]  # Specific graupel water content
+
+
 @gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, 0.0, False))
 def _precip(
     state: tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat, bool],
@@ -121,89 +131,52 @@ def _temperature_update(
 
 
 @gtx.field_operator
-def _graupel_mask(
-    t: fa.CellKField[ta.wpfloat],  # Temperature
-    rho: fa.CellKField[ta.wpfloat],  # Density
-    qv: fa.CellKField[ta.wpfloat],  # Q vapor content
-    qc: fa.CellKField[ta.wpfloat],  # Q cloud content
-    qg: fa.CellKField[ta.wpfloat],  # Q graupel content
-    qi: fa.CellKField[ta.wpfloat],  # Q ice content
-    qr: fa.CellKField[ta.wpfloat],  # Q rain content
-    qs: fa.CellKField[ta.wpfloat],  # Q snow content
-) -> tuple[
-    fa.CellKField[bool],
-    fa.CellKField[bool],
-    fa.CellKField[bool],
-    fa.CellKField[bool],
-    fa.CellKField[bool],
-    fa.CellKField[bool],
-]:
-    mask = where(
-        (maximum(qc, maximum(qg, maximum(qi, maximum(qr, qs)))) > g_ct.qmin)
-        | ((t < g_ct.tfrz_het2) & (qv > _qsat_ice_rho(t, rho))),
-        True,
-        False,
-    )
-    is_sig_present = maximum(qg, maximum(qi, qs)) > g_ct.qmin
-    kmin_r = where(qr > g_ct.qmin, True, False)
-    kmin_i = where(qi > g_ct.qmin, True, False)
-    kmin_s = where(qs > g_ct.qmin, True, False)
-    kmin_g = where(qg > g_ct.qmin, True, False)
-    return mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g
-
-
-@gtx.field_operator
 def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
-    qv: fa.CellKField[ta.wpfloat],  # Q vapor content
-    qc: fa.CellKField[ta.wpfloat],  # Q cloud content
-    qr: fa.CellKField[ta.wpfloat],  # Q rain content
-    qs: fa.CellKField[ta.wpfloat],  # Q snow content
-    qi: fa.CellKField[ta.wpfloat],  # Q ice content
-    qg: fa.CellKField[ta.wpfloat],  # Q graupel content
-    mask: fa.CellKField[bool],
-    is_sig_present: fa.CellKField[bool],
+    q: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
 ) -> tuple[
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    Q,
     fa.CellKField[ta.wpfloat],
 ]:
-    dvsw = qv - _qsat_rho(t, rho)
+    mask = where(
+        (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > g_ct.qmin)
+        | ((t < g_ct.tfrz_het2) & (q.v > _qsat_ice_rho(t, rho))),
+        True,
+        False,
+    )
+    is_sig_present = maximum(q.g, maximum(q.i, q.s)) > g_ct.qmin
+
+    dvsw = q.v - _qsat_rho(t, rho)
     qvsi = _qsat_ice_rho(t, rho)
-    dvsi = qv - qvsi
+    dvsi = q.v - qvsi
+    n_snow = _snow_number(t, rho, q.s)
 
-    n_snow = _snow_number(t, rho, qs)
-
-    l_snow = _snow_lambda(rho, qs, n_snow)
+    l_snow = _snow_lambda(rho, q.s, n_snow)
 
     # Define conversion 'matrix'
-    sx2x_c_r = _cloud_to_rain(t, qc, qr, qnc)
-    sx2x_r_v = _rain_to_vapor(t, rho, qc, qr, dvsw, dt)
-    sx2x_c_i = _cloud_x_ice(t, qc, qi, dt)
+    sx2x_c_r = _cloud_to_rain(t, q.c, q.r, qnc)
+    sx2x_r_v = _rain_to_vapor(t, rho, q.c, q.r, dvsw, dt)
+    sx2x_c_i = _cloud_x_ice(t, q.c, q.i, dt)
     sx2x_i_c = -minimum(sx2x_c_i, 0.0)
     sx2x_c_i = maximum(sx2x_c_i, 0.0)
 
-    sx2x_c_s = _cloud_to_snow(t, qc, qs, n_snow, l_snow)
-    sx2x_c_g = _cloud_to_graupel(t, rho, qc, qg)
+    sx2x_c_s = _cloud_to_snow(t, q.c, q.s, n_snow, l_snow)
+    sx2x_c_g = _cloud_to_graupel(t, rho, q.c, q.g)
 
     t_below_tmelt = t < t_d.tmelt
     t_at_least_tmelt = not t_below_tmelt
 
-    n_ice = where(t_below_tmelt, _ice_number(t, rho), 0.0)
-    m_ice = where(t_below_tmelt, _ice_mass(qi, n_ice), 0.0)
-    x_ice = where(t_below_tmelt, _ice_sticking(t), 0.0)
+    n_ice = _ice_number(t, rho)
+    m_ice = _ice_mass(q.i, n_ice)
+    x_ice = _ice_sticking(t)
 
     eta = where(t_below_tmelt & is_sig_present, _deposition_factor(t, qvsi), 0.0)
     sx2x_v_i = where(
-        t_below_tmelt & is_sig_present, _vapor_x_ice(qi, m_ice, eta, dvsi, rho, dt), 0.0
+        t_below_tmelt & is_sig_present, _vapor_x_ice(q.i, m_ice, eta, dvsi, rho, dt), 0.0
     )
     sx2x_i_v = where(t_below_tmelt & is_sig_present, -minimum(sx2x_v_i, 0.0), 0.0)
     sx2x_v_i = where(t_below_tmelt & is_sig_present, maximum(sx2x_v_i, 0.0), sx2x_i_v)
@@ -212,19 +185,21 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     # TODO(): _deposition_auto_conversion yields roundoff differences in sx2x_i_s
     sx2x_i_s = where(
         t_below_tmelt & is_sig_present,
-        _deposition_auto_conversion(qi, m_ice, ice_dep) + _ice_to_snow(qi, n_snow, l_snow, x_ice),
+        _deposition_auto_conversion(q.i, m_ice, ice_dep) + _ice_to_snow(q.i, n_snow, l_snow, x_ice),
         0.0,
     )
-    sx2x_i_g = where(t_below_tmelt & is_sig_present, _ice_to_graupel(rho, qr, qg, qi, x_ice), 0.0)
-    sx2x_s_g = where(t_below_tmelt & is_sig_present, _snow_to_graupel(t, rho, qc, qs), 0.0)
+    sx2x_i_g = where(
+        t_below_tmelt & is_sig_present, _ice_to_graupel(rho, q.r, q.g, q.i, x_ice), 0.0
+    )
+    sx2x_s_g = where(t_below_tmelt & is_sig_present, _snow_to_graupel(t, rho, q.c, q.s), 0.0)
     sx2x_r_g = where(
         t_below_tmelt & is_sig_present,
-        _rain_to_graupel(t, rho, qc, qr, qi, qs, m_ice, dvsw, dt),
+        _rain_to_graupel(t, rho, q.c, q.r, q.i, q.s, m_ice, dvsw, dt),
         0.0,
     )
 
     sx2x_v_i = where(
-        t_below_tmelt, sx2x_v_i + _ice_deposition_nucleation(t, qc, qi, n_ice, dvsi, dt), 0.0
+        t_below_tmelt, sx2x_v_i + _ice_deposition_nucleation(t, q.c, q.i, n_ice, dvsi, dt), 0.0
     )  # 0.0 or sx2x_v_i both OK
     sx2x_c_r = where(t_at_least_tmelt, sx2x_c_r + sx2x_c_s + sx2x_c_g, sx2x_c_r)
     sx2x_c_s = where(t_at_least_tmelt, 0.0, sx2x_c_s)
@@ -232,21 +207,21 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     ice_dep = where(t_at_least_tmelt, 0.0, ice_dep)
     eta = where(t_at_least_tmelt, 0.0, eta)
 
-    dvsw0 = where(is_sig_present, qv - _qsat_rho_tmelt(rho), 0.0)
+    dvsw0 = where(is_sig_present, q.v - _qsat_rho_tmelt(rho), 0.0)
     sx2x_v_s = where(
         is_sig_present,
-        _vapor_x_snow(t, p, rho, qs, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt),
+        _vapor_x_snow(t, p, rho, q.s, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt),
         0.0,
     )
     sx2x_s_v = where(is_sig_present, -minimum(sx2x_v_s, 0.0), 0.0)
     sx2x_v_s = where(is_sig_present, maximum(sx2x_v_s, 0.0), 0.0)
 
-    sx2x_v_g = where(is_sig_present, _vapor_x_graupel(t, p, rho, qg, dvsw, dvsi, dvsw0, dt), 0.0)
+    sx2x_v_g = where(is_sig_present, _vapor_x_graupel(t, p, rho, q.g, dvsw, dvsi, dvsw0, dt), 0.0)
     sx2x_g_v = where(is_sig_present, -minimum(sx2x_v_g, 0.0), 0.0)
     sx2x_v_g = where(is_sig_present, maximum(sx2x_v_g, 0.0), 0.0)
 
-    sx2x_s_r = where(is_sig_present, _snow_to_rain(t, p, rho, dvsw0, qs), 0.0)
-    sx2x_g_r = where(is_sig_present, _graupel_to_rain(t, p, rho, dvsw0, qg), 0.0)
+    sx2x_s_r = where(is_sig_present, _snow_to_rain(t, p, rho, dvsw0, q.s), 0.0)
+    sx2x_g_r = where(is_sig_present, _graupel_to_rain(t, p, rho, dvsw0, q.g), 0.0)
 
     # The following transitions are not physically meaningful, would be 0.0 in other implementation
     # here they are simply never used:
@@ -270,8 +245,8 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     )  # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
 
     #  if ((sink[qx_ind[ix]] > stot) && (q[qx_ind[ix]].x[oned_vec_index] > qmin))
-    stot = qv / dt
-    sink_v_saturated = (sink_v > stot) & (qv > g_ct.qmin)
+    stot = q.v / dt
+    sink_v_saturated = (sink_v > stot) & (q.v > g_ct.qmin)
     sx2x_v_s = where(sink_v_saturated, sx2x_v_s * stot / sink_v, sx2x_v_s)
     sx2x_v_i = where(sink_v_saturated, sx2x_v_i * stot / sink_v, sx2x_v_i)
     sx2x_v_g = where(sink_v_saturated, sx2x_v_g * stot / sink_v, sx2x_v_g)
@@ -279,8 +254,8 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
         sink_v_saturated, sx2x_v_s + sx2x_v_i + sx2x_v_g, sink_v
     )  # Missing: sx2x_v_c + sx2x_v_r
 
-    stot = qc / dt
-    sink_c_saturated = (sink_c > stot) & (qc > g_ct.qmin)
+    stot = q.c / dt
+    sink_c_saturated = (sink_c > stot) & (q.c > g_ct.qmin)
     sx2x_c_r = where(sink_c_saturated, sx2x_c_r * stot / sink_c, sx2x_c_r)
     sx2x_c_s = where(sink_c_saturated, sx2x_c_s * stot / sink_c, sx2x_c_s)
     sx2x_c_i = where(sink_c_saturated, sx2x_c_i * stot / sink_c, sx2x_c_i)
@@ -289,16 +264,16 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
         sink_c_saturated, sx2x_c_r + sx2x_c_s + sx2x_c_i + sx2x_c_g, sink_c
     )  # Missing: sx2x_c_v
 
-    stot = qr / dt
-    sink_r_saturated = (sink_r > stot) & (qr > g_ct.qmin)
+    stot = q.r / dt
+    sink_r_saturated = (sink_r > stot) & (q.r > g_ct.qmin)
     sx2x_r_v = where(sink_r_saturated, sx2x_r_v * stot / sink_r, sx2x_r_v)
     sx2x_r_g = where(sink_r_saturated, sx2x_r_g * stot / sink_r, sx2x_r_g)
     sink_r = where(
         sink_r_saturated, sx2x_r_v + sx2x_r_g, sink_r
     )  # Missing: sx2x_r_c + sx2x_r_s + sx2x_r_i
 
-    stot = qs / dt
-    sink_s_saturated = (sink_s > stot) & (qs > g_ct.qmin)
+    stot = q.s / dt
+    sink_s_saturated = (sink_s > stot) & (q.s > g_ct.qmin)
     sx2x_s_v = where(sink_s_saturated, sx2x_s_v * stot / sink_s, sx2x_s_v)
     sx2x_s_r = where(sink_s_saturated, sx2x_s_r * stot / sink_s, sx2x_s_r)
     sx2x_s_g = where(sink_s_saturated, sx2x_s_g * stot / sink_s, sx2x_s_g)
@@ -306,8 +281,8 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
         sink_s_saturated, sx2x_s_v + sx2x_s_r + sx2x_s_g, sink_s
     )  # Missing: sx2x_s_c + sx2x_s_i
 
-    stot = qi / dt
-    sink_i_saturated = (sink_i > stot) & (qi > g_ct.qmin)
+    stot = q.i / dt
+    sink_i_saturated = (sink_i > stot) & (q.i > g_ct.qmin)
     sx2x_i_v = where(sink_i_saturated, sx2x_i_v * stot / sink_i, sx2x_i_v)
     sx2x_i_c = where(sink_i_saturated, sx2x_i_c * stot / sink_i, sx2x_i_c)
     sx2x_i_s = where(sink_i_saturated, sx2x_i_s * stot / sink_i, sx2x_i_s)
@@ -316,8 +291,8 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
         sink_i_saturated, sx2x_i_v + sx2x_i_c + sx2x_i_s + sx2x_i_g, sink_i
     )  # Missing: sx2x_i_r
 
-    stot = qg / dt
-    sink_g_saturated = (sink_g > stot) & (qg > g_ct.qmin)
+    stot = q.g / dt
+    sink_g_saturated = (sink_g > stot) & (q.g > g_ct.qmin)
     sx2x_g_v = where(sink_g_saturated, sx2x_g_v * stot / sink_g, sx2x_g_v)
     sx2x_g_r = where(sink_g_saturated, sx2x_g_r * stot / sink_g, sx2x_g_r)
     sink_g = where(
@@ -327,17 +302,17 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     # water content updates:
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
     dqdt_v = sx2x_r_v + sx2x_s_v + sx2x_i_v + sx2x_g_v - sink_v  # Missing: sx2x_c_v
-    qv = where(mask, maximum(0.0, qv + dqdt_v * dt), qv)
+    qv = where(mask, maximum(0.0, q.v + dqdt_v * dt), q.v)
     dqdt_c = sx2x_i_c - sink_c  # Missing: sx2x_v_c, sx2x_r_c, sx2x_s_c, sx2x_g_c
-    qc = where(mask, maximum(0.0, qc + dqdt_c * dt), qc)
+    qc = where(mask, maximum(0.0, q.c + dqdt_c * dt), q.c)
     dqdt_r = sx2x_c_r + sx2x_s_r + sx2x_g_r - sink_r  # Missing: sx2x_v_r + sx2x_i_r
-    qr = where(mask, maximum(0.0, qr + dqdt_r * dt), qr)
+    qr = where(mask, maximum(0.0, q.r + dqdt_r * dt), q.r)
     dqdt_s = sx2x_v_s + sx2x_c_s + sx2x_i_s - sink_s  # Missing: sx2x_r_s + sx2x_g_s
-    qs = where(mask, maximum(0.0, qs + dqdt_s * dt), qs)
+    qs = where(mask, maximum(0.0, q.s + dqdt_s * dt), q.s)
     dqdt_i = sx2x_v_i + sx2x_c_i - sink_i  # Missing: sx2x_r_i + sx2x_s_i + sx2x_g_i
-    qi = where(mask, maximum(0.0, qi + dqdt_i * dt), qi)
+    qi = where(mask, maximum(0.0, q.i + dqdt_i * dt), q.i)
     dqdt_g = sx2x_v_g + sx2x_c_g + sx2x_r_g + sx2x_s_g + sx2x_i_g - sink_g
-    qg = where(mask, maximum(0.0, qg + dqdt_g * dt), qg)
+    qg = where(mask, maximum(0.0, q.g + dqdt_g * dt), q.g)
 
     qice = qs + qi + qg
     qliq = qc + qr
@@ -360,7 +335,7 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
         / cv,
         t,
     )
-    return qv, qc, qr, qs, qi, qg, t
+    return Q(v=qv, c=qc, r=qr, s=qs, i=qi, g=qg), t
 
 
 @gtx.field_operator
@@ -370,12 +345,7 @@ def _precipitation_effects(
     kmin_i: fa.CellKField[bool],  # ice minimum level
     kmin_s: fa.CellKField[bool],  # snow minimum level
     kmin_g: fa.CellKField[bool],  # graupel minimum level
-    qv: fa.CellKField[ta.wpfloat],  # Q vapor content
-    qc: fa.CellKField[ta.wpfloat],  # Q cloud content
-    qr: fa.CellKField[ta.wpfloat],  # Q rain content
-    qs: fa.CellKField[ta.wpfloat],  # Q snow content
-    qi: fa.CellKField[ta.wpfloat],  # Q ice content
-    qg: fa.CellKField[ta.wpfloat],  # Q graupel content    qv,
+    q_in: Q,
     t: fa.CellKField[ta.wpfloat],  # temperature,
     rho: fa.CellKField[ta.wpfloat],  # density
     dz: fa.CellKField[ta.wpfloat],
@@ -394,41 +364,41 @@ def _precipitation_effects(
     fa.CellKField[ta.wpfloat],
 ]:
     # Store current fields for later temperature update
-    qliq = qc + qr
-    qice = qs + qi + qg
-    ei_old = _internal_energy(t, qv, qliq, qice, rho, dz)
+    qliq = q_in.c + q_in.r
+    qice = q_in.s + q_in.i + q_in.g
+    ei_old = _internal_energy(t, q_in.v, qliq, qice, rho, dz)
     zeta = dt / (2.0 * dz)
     xrho = sqrt(g_ct.rho_00 / rho)
 
     vc_r = _vel_scale_factor_default(xrho)
-    vc_s = _vel_scale_factor_snow(xrho, rho, t, qs)
+    vc_s = _vel_scale_factor_snow(xrho, rho, t, q_in.s)
     vc_i = _vel_scale_factor_ice(xrho)
     vc_g = _vel_scale_factor_default(xrho)
 
-    q_kp1 = concat_where(dims.KDim < last_lev, qr(Koff[1]), qr)
+    q_kp1 = concat_where(dims.KDim < last_lev, q_in.r(Koff[1]), q_in.r)
     qr, pr, _, _ = _precip(
-        idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, qr, q_kp1, rho, kmin_r
+        idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, q_in.r, q_kp1, rho, kmin_r
     )
-    q_kp1 = concat_where(dims.KDim < last_lev, qs(Koff[1]), qs)
+    q_kp1 = concat_where(dims.KDim < last_lev, q_in.s(Koff[1]), q_in.s)
     qs, ps, _, _ = _precip(
-        idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, qs, q_kp1, rho, kmin_s
+        idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, q_in.s, q_kp1, rho, kmin_s
     )
-    q_kp1 = concat_where(dims.KDim < last_lev, qi(Koff[1]), qi)
+    q_kp1 = concat_where(dims.KDim < last_lev, q_in.i(Koff[1]), q_in.i)
     qi, pi, _, _ = _precip(
-        idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, qi, q_kp1, rho, kmin_i
+        idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, q_in.i, q_kp1, rho, kmin_i
     )
-    q_kp1 = concat_where(dims.KDim < last_lev, qg(Koff[1]), qg)
+    q_kp1 = concat_where(dims.KDim < last_lev, q_in.g(Koff[1]), q_in.g)
     qg, pg, _, _ = _precip(
-        idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, qg, q_kp1, rho, kmin_g
+        idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, q_in.g, q_kp1, rho, kmin_g
     )
 
-    qliq = qc + qr
+    qliq = q_in.c + qr
     qice = qs + qi + qg
     p_sig = ps + pi + pg
     t_kp1 = concat_where(dims.KDim < last_lev, t(Koff[1]), t)
     kmin_rsig = kmin_r | kmin_s | kmin_i | kmin_g
     t, eflx, _ = _temperature_update(
-        t, t_kp1, ei_old, pr, p_sig, qv, qliq, qice, rho, dz, dt, kmin_rsig
+        t, t_kp1, ei_old, pr, p_sig, q_in.v, qliq, qice, rho, dz, dt, kmin_rsig
     )
 
     return qr, qs, qi, qg, t, p_sig + pr, pr, ps, pi, pg, eflx / dt
@@ -441,22 +411,12 @@ def _graupel_run(
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
-    qve: fa.CellKField[ta.wpfloat],  # Specific humidity
-    qce: fa.CellKField[ta.wpfloat],  # Specific cloud water content
-    qre: fa.CellKField[ta.wpfloat],  # Specific rain water
-    qse: fa.CellKField[ta.wpfloat],  # Specific snow water
-    qie: fa.CellKField[ta.wpfloat],  # Specific ice water content
-    qge: fa.CellKField[ta.wpfloat],  # Specific graupel water content
+    q_in: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    Q,
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -464,17 +424,16 @@ def _graupel_run(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(
-        te, rho, qve, qce, qge, qie, qre, qse
-    )
-    qv, qc, qr, qs, qi, qg, t = _q_t_update(
-        te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc
-    )
+    kmin_r = where(q_in.r > g_ct.qmin, True, False)
+    kmin_i = where(q_in.i > g_ct.qmin, True, False)
+    kmin_s = where(q_in.s > g_ct.qmin, True, False)
+    kmin_g = where(q_in.g > g_ct.qmin, True, False)
+    q, t = _q_t_update(te, p, rho, q_in, dt, qnc)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
-        last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt
+        last_lev, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
 
-    return t, qv, qc, qr, qs, qi, qg, pflx, pr, ps, pi, pg, pre
+    return t, Q(v=q.v, c=q.c, r=qr, s=qs, i=qi, g=qg), pflx, pr, ps, pi, pg, pre
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -484,21 +443,11 @@ def graupel_run(
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
-    qve: fa.CellKField[ta.wpfloat],  # Specific humidityn
-    qce: fa.CellKField[ta.wpfloat],  # Specific cloud water content
-    qre: fa.CellKField[ta.wpfloat],  # Specific rain water
-    qse: fa.CellKField[ta.wpfloat],  # Specific snow water
-    qie: fa.CellKField[ta.wpfloat],  # Specific ice water content
-    qge: fa.CellKField[ta.wpfloat],  # Specific graupel water content
+    q_in: Q,
     dt: ta.wpfloat,  # Time step
     qnc: ta.wpfloat,
+    q_out: Q,
     t_out: fa.CellKField[ta.wpfloat],  # Revised temperature
-    qv_out: fa.CellKField[ta.wpfloat],  # Revised humidity
-    qc_out: fa.CellKField[ta.wpfloat],  # Revised cloud water
-    qr_out: fa.CellKField[ta.wpfloat],  # Revised rain water
-    qs_out: fa.CellKField[ta.wpfloat],  # Revised snow water
-    qi_out: fa.CellKField[ta.wpfloat],  # Revised ice water
-    qg_out: fa.CellKField[ta.wpfloat],  # Revised graupel water
     pflx: fa.CellKField[ta.wpfloat],  # Total precipitation flux
     pr: fa.CellKField[ta.wpfloat],  # Precipitation of rain
     ps: fa.CellKField[ta.wpfloat],  # Precipitation of snow
@@ -511,20 +460,15 @@ def graupel_run(
     vertical_end: gtx.int32,
 ):
     _graupel_run(
-        last_lev,
+        last_lev,  # TODO vertical_end - 1
         dz,
         te,
         p,
         rho,
-        qve,
-        qce,
-        qre,
-        qse,
-        qie,
-        qge,
+        q_in,
         dt,
         qnc,
-        out=(t_out, qv_out, qc_out, qr_out, qs_out, qi_out, qg_out, pflx, pr, ps, pi, pg, pre),
+        out=(t_out, q_out, pflx, pr, ps, pi, pg, pre),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
