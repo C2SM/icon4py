@@ -15,6 +15,8 @@ include:
       echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
 
 benchmark_bencher_stencils_feature_aarch64:
+  script:
+    - !reference [.bencher_setup_env, setup]
   extends: [.benchmark_nox_job, .test_template_aarch64]
   variables:
     NOX_SESSION: "__bencher_feature_branch_CI-3.10"
@@ -22,6 +24,8 @@ benchmark_bencher_stencils_feature_aarch64:
     GT4PY_COLLECT_METRICS_LEVEL: 10
 
 benchmark_bencher_granules_feature_aarch64:
+  script:
+    - !reference [.bencher_setup_env, setup]
   extends: [.benchmark_nox_job, .test_template_aarch64]
   variables:
     NOX_SESSION: "__bencher_feature_branch_CI-3.10"
