@@ -318,12 +318,15 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"c2e": dims.C2EDim},
             params={"weighting_factor": self._config["weighting_factor"]},
+            do_exchange=False,  # does overcompute
         )
         self.register_provider(e_bln_c_s)
 
         pos_on_tplane_e_x_y = factory.NumpyDataProvider(
             func=functools.partial(
-                interpolation_fields.compute_pos_on_tplane_e_x_y, array_ns=self._xp
+                interpolation_fields.compute_pos_on_tplane_e_x_y,
+                array_ns=self._xp,
+                exchange=self._exchange.exchange_buffers,
             ),
             fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
             domain=(dims.EdgeDim, dims.E2CDim),
@@ -350,7 +353,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(pos_on_tplane_e_x_y)
 
         cells_aw_verts = factory.NumpyDataProvider(
-            func=functools.partial(interpolation_fields.compute_cells_aw_verts, array_ns=self._xp),
+            func=functools.partial(
+                interpolation_fields.compute_cells_aw_verts,
+                array_ns=self._xp,
+                exchange=self._exchange.exchange_buffers,
+            ),
             fields=(attrs.CELL_AW_VERTS,),
             domain=(dims.VertexDim, dims.V2CDim),
             deps={

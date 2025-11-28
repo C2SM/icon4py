@@ -357,7 +357,9 @@ def test_compute_cells_aw_verts(
         vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
-    cells_aw_verts = functools.partial(compute_cells_aw_verts, array_ns=xp)(
+    cells_aw_verts = functools.partial(
+        compute_cells_aw_verts, array_ns=xp, exchange=dummy_exchange_buffer
+    )(
         dual_area=dual_area,
         edge_vert_length=edge_vert_length,
         edge_cell_length=edge_cell_length,
@@ -430,6 +432,7 @@ def test_compute_pos_on_tplane_e(
         owner_mask,
         e2c,
         horizontal_start,
+        dummy_exchange_buffer,
         array_ns=xp,
     )
     assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-8, rtol=1e-9)

@@ -10,7 +10,7 @@ import logging
 import math
 from collections.abc import Callable, Sequence
 from types import ModuleType
-from typing import Final
+from typing import Final, TypeAlias
 
 import numpy as np
 from gt4py import next as gtx
@@ -25,6 +25,8 @@ from icon4py.model.common.grid import gridfile
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
+BufferExchange: TypeAlias = Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None]
 
 MISSING: Final[int] = gridfile.GridFile.INVALID_INDEX
 
@@ -110,7 +112,7 @@ def compute_geofac_n2s(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
+    exchange: BufferExchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -439,7 +441,7 @@ def _force_mass_conservation_to_c_bln_avg(
     cell_owner_mask: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
-    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
+    exchange: BufferExchange,
     array_ns: ModuleType = np,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
@@ -585,7 +587,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
+    exchange: BufferExchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(
@@ -658,7 +660,7 @@ def compute_e_flx_avg(
     e2c2e: data_alloc.NDArray,
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
-    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
+    exchange: BufferExchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -823,6 +825,7 @@ def compute_cells_aw_verts(
     v2c: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
+    exchange: BufferExchange,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -872,7 +875,7 @@ def compute_cells_aw_verts(
                         * edge_vert_length[ile, idx_ve]
                         * edge_cell_length[ile, 1]
                     )
-
+    exchange((dims.VertexDim, dims.V2CDim), cells_aw_verts)
     return cells_aw_verts
 
 
@@ -939,6 +942,7 @@ def compute_pos_on_tplane_e_x_y(
     owner_mask: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
+    exchange: BufferExchange,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
@@ -962,6 +966,7 @@ def compute_pos_on_tplane_e_x_y(
         edges_lat: //
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
         e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        exchange: halo exchange callback
         horizontal_start:
 
     Returns:
@@ -969,7 +974,8 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e_y: //
     """
     llb = horizontal_start
-    pos_on_tplane_e = array_ns.zeros([e2c.shape[0], 2, 2])
+    pos_on_tplane_e_x = array_ns.zeros(e2c.shape)
+    pos_on_tplane_e_y = array_ns.zeros(e2c.shape)
     xyloc_plane_n1 = array_ns.zeros([2, e2c.shape[0]])
     xyloc_plane_n2 = array_ns.zeros([2, e2c.shape[0]])
     xyloc_plane_n1[0, llb:], xyloc_plane_n1[1, llb:] = proj.gnomonic_proj(
@@ -979,41 +985,41 @@ def compute_pos_on_tplane_e_x_y(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 1]], cells_lat[e2c[llb:, 1]]
     )
 
-    pos_on_tplane_e[llb:, 0, 0] = array_ns.where(
+    pos_on_tplane_e_x[llb:, 0] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
             xyloc_plane_n1[0, llb:] * primal_normal_v1[llb:]
             + xyloc_plane_n1[1, llb:] * primal_normal_v2[llb:]
         ),
-        pos_on_tplane_e[llb:, 0, 0],
+        pos_on_tplane_e_x[llb:, 0],
     )
-    pos_on_tplane_e[llb:, 0, 1] = array_ns.where(
+    pos_on_tplane_e_y[llb:, 0] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
             xyloc_plane_n1[0, llb:] * dual_normal_v1[llb:]
             + xyloc_plane_n1[1, llb:] * dual_normal_v2[llb:]
         ),
-        pos_on_tplane_e[llb:, 0, 1],
+        pos_on_tplane_e_y[llb:, 0],
     )
-    pos_on_tplane_e[llb:, 1, 0] = array_ns.where(
+    pos_on_tplane_e_x[llb:, 1] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
             xyloc_plane_n2[0, llb:] * primal_normal_v1[llb:]
             + xyloc_plane_n2[1, llb:] * primal_normal_v2[llb:]
         ),
-        pos_on_tplane_e[llb:, 1, 0],
+        pos_on_tplane_e_x[llb:, 1],
     )
-    pos_on_tplane_e[llb:, 1, 1] = array_ns.where(
+    pos_on_tplane_e_y[llb:, 1] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
             xyloc_plane_n2[0, llb:] * dual_normal_v1[llb:]
             + xyloc_plane_n2[1, llb:] * dual_normal_v2[llb:]
         ),
-        pos_on_tplane_e[llb:, 1, 1],
+        pos_on_tplane_e_y[llb:, 1],
     )
-
-    return pos_on_tplane_e[:, :, 0], pos_on_tplane_e[:, :, 1]
+    exchange((dims.EdgeDim, dims.E2CDim), pos_on_tplane_e_x, pos_on_tplane_e_y)
+    return pos_on_tplane_e_x, pos_on_tplane_e_y

@@ -138,6 +138,7 @@ def test_distributed_interpolation_grg(
     ref_y = field_ref[1].asnumpy()
     field_x = intp_factory.get(attrs.GEOFAC_GRG_X).asnumpy()
     field_y = intp_factory.get(attrs.GEOFAC_GRG_Y).asnumpy()
+
     assert test_utils.dallclose(
         field_x,
         ref_x,
