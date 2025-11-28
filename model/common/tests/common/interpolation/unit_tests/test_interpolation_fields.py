@@ -52,10 +52,6 @@ edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
 
 
-def dummy_exchange(dim: gtx.Dimension, *field: gtx.Field) -> None:
-    return None
-
-
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_compute_c_lin_e(
