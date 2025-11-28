@@ -45,9 +45,13 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
         p_e_in: np.ndarray,
         ptr_coeff_1: np.ndarray,
         ptr_coeff_2: np.ndarray,
+        horizontal_start: int,
+        horizontal_end: int,
         **kwargs: Any,
     ) -> dict[str, np.ndarray]:
         v2e = connectivities[dims.V2EDim]
+        p_u_out_domain = p_e_in.copy()
+        p_v_out_domain = p_e_in.copy()
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         p_u_out = np.sum(
             np.where(np.expand_dims(v2e, axis=-1) >= 0, p_e_in[v2e] * ptr_coeff_1, 0.0), axis=1
@@ -57,8 +61,14 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
         p_v_out = np.sum(
             np.where(np.expand_dims(v2e, axis=-1) >= 0, p_e_in[v2e] * ptr_coeff_2, 0.0), axis=1
         )
+        p_u_out_domain[horizontal_start:horizontal_end, :] = p_u_out[
+            horizontal_start:horizontal_end, :
+        ]
+        p_v_out_domain[horizontal_start:horizontal_end, :] = p_v_out[
+            horizontal_start:horizontal_end, :
+        ]
 
-        return dict(p_v_out=p_v_out, p_u_out=p_u_out)
+        return dict(p_v_out=p_u_out_domain, p_u_out=p_v_out_domain)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict:
