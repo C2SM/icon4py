@@ -169,13 +169,14 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
-            do_exchange=True,
+            do_exchange=False,  # field exchanged internally
         )
         self.register_provider(geofac_n2s)
 
         geofac_grdiv = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_geofac_grdiv,
+                exchange=self._exchange.exchange_buffers,
                 array_ns=self._xp,
             ),
             fields=(attrs.GEOFAC_GRDIV,),
@@ -191,7 +192,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
-            do_exchange=True,
+            do_exchange=False,  # field exchanged internally
         )
 
         self.register_provider(geofac_grdiv)

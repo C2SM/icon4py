@@ -218,6 +218,7 @@ def compute_geofac_grdiv(
     e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
     horizontal_start: gtx.int32,
+    exchange: Callable[[Sequence[gtx.Dimension], gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -270,6 +271,7 @@ def compute_geofac_grdiv(
                 geofac_div[e2c[horizontal_start:, 1], k] * inv_dual_edge_length[horizontal_start:],
                 geofac_grdiv[horizontal_start:, 2 * e2c.shape[1] - 1 + j],
             )
+    exchange((dims.EdgeDim, dims.E2C2EODim), geofac_grdiv)
     return geofac_grdiv
 
 

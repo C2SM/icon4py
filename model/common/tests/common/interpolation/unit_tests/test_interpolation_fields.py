@@ -243,7 +243,9 @@ def test_compute_geofac_grdiv(
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
     e2c2e = icon_grid.get_connectivity(dims.E2C2E).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    geofac_grdiv = functools.partial(compute_geofac_grdiv, array_ns=xp)(
+    geofac_grdiv = functools.partial(
+        compute_geofac_grdiv, array_ns=xp, exchange=dummy_exchange_buffer
+    )(
         geofac_div.ndarray,
         inv_dual_edge_length.ndarray,
         owner_mask.ndarray,

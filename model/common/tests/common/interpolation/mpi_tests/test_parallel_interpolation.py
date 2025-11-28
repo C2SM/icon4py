@@ -60,7 +60,7 @@ if TYPE_CHECKING:
         (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-9, 1e-8),
     ],
 )
-def test_distributed_interpolation_with_custom_bounds(
+def test_distributed_interpolation_with_custom_tolerance(
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
