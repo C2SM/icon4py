@@ -383,6 +383,7 @@ class GridGeometry(factory.FieldSource):
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
             fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
+            do_exchange=True,
         )
         self.register_provider(normal_cell_wrapper)
         # 3. dual normals: the dual normals are the edge tangents

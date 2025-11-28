@@ -105,13 +105,15 @@ class NeedsExchange(Protocol):
         if self.needs_exchange():
             # ghex assumes all fields to in one call to have the same `dtype`, this is not the case for all producer functions in icon4py,
             # hence as a simple workaround we loop over the fields
-            for field in fields.values():
+            for name, field in fields.items():
+                log.debug(f"preparing exchange of {name} - {field}")
                 first_dim = field.domain.dims[0]
                 assert (
                     first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
                 ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
                 with as_exchangeable_field(field) as buffer:
                     exchange.exchange_and_wait(first_dim, buffer)
+                log.debug(f"exchanged buffer for {name}")
 
 
 class FieldProvider(NeedsExchange, Protocol):
@@ -219,6 +221,7 @@ class FieldSource(GridProvider, Protocol):
             dataarray containing both.
 
         """
+        log.info(f" retrieving field {field_name} (mode = {type_})")
         if field_name not in self._providers:
             raise ValueError(f"Field '{field_name}' not provided by the source '{self.__class__}'")
         match type_:
@@ -669,6 +672,7 @@ class NumpyDataProvider(FieldProvider):
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
+            log.info(f"computeing field {field_name}")
             self._compute(factory, backend, grid)
             self.exchange(self.fields, exchange)
         return self.fields[field_name]

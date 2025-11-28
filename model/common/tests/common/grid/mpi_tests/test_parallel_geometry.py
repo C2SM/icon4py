@@ -76,7 +76,7 @@ def test_distributed_geometry_attrs(
     grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = grid_geometry.get(attrs_name).asnumpy()
-    assert test_utils.dallclose(field, field_ref, equal_nan=True, atol=1e-12)
+    assert test_utils.dallclose(field, field_ref, atol=1e-12)
 
 
 @pytest.mark.datatest

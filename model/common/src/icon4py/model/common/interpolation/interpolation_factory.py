@@ -118,6 +118,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "nudge_efold_width": self._config["nudge_efold_width"],
                 "nudge_zone_width": self._config["nudge_zone_width"],
             },
+            do_exchange=True,
         )
         self.register_provider(nudging_coefficients_for_edges)
 
@@ -131,6 +132,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edge_orientation": geometry_attrs.CELL_NORMAL_ORIENTATION,
                 "area": geometry_attrs.CELL_AREA,
             },
+            do_exchange=True,
         )
         self.register_provider(geofac_div)
 
@@ -145,6 +147,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "dual_area": geometry_attrs.DUAL_AREA,
                 "owner_mask": "vertex_owner_mask",
             },
+            do_exchange=True,
         )
         self.register_provider(geofac_rot)
 
@@ -162,6 +165,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
         self.register_provider(geofac_n2s)
 
@@ -183,6 +187,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
 
         self.register_provider(geofac_grdiv)
@@ -216,7 +221,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(cell_average_weight)
 
         c_lin_e = factory.NumpyDataProvider(
-            func=functools.partial(interpolation_fields.compute_c_lin_e, array_ns=self._xp),
+            func=functools.partial(
+                interpolation_fields.compute_c_lin_e,
+                array_ns=self._xp,
+                exchange=self._exchange.exchange_and_wait,
+            ),
             fields=(attrs.C_LIN_E,),
             domain=(dims.EdgeDim, dims.E2CDim),
             deps={
@@ -229,6 +238,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=False,  # field exchange internally
         )
         self.register_provider(c_lin_e)
 
@@ -236,7 +246,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_geofac_grg,
                 array_ns=self._xp,
-                halo_exchange=self._exchange.exchange_and_wait,
+                exchange=self._exchange.exchange_and_wait,
             ),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -253,7 +263,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
-            do_exchange=False,
+            do_exchange=False,  # field exchanged internally
         )
         self.register_provider(geofac_grg)
 
@@ -287,7 +297,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
                 ),
             },
-            do_exchange=False,
+            do_exchange=False,  # field exchanged internally
         )
         self.register_provider(e_flx_avg)
 
@@ -330,6 +340,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
+            do_exchange=True,
         )
         self.register_provider(pos_on_tplane_e_x_y)
 
@@ -353,6 +364,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
+            do_exchange=True,
         )
         self.register_provider(cells_aw_verts)
 
@@ -381,6 +393,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
+            do_exchange=True,
         )
         self.register_provider(rbf_vec_coeff_c)
 
@@ -408,6 +421,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
+            do_exchange=True,
         )
         self.register_provider(rbf_vec_coeff_e)
 
@@ -436,6 +450,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
+            do_exchange=True,
         )
         self.register_provider(rbf_vec_coeff_v)
 
