@@ -110,6 +110,7 @@ def compute_geofac_n2s(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
+    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -156,6 +157,7 @@ def compute_geofac_n2s(
         geofac_n2s[horizontal_start:, 1:]
         + mask[horizontal_start:, :] * (geofac_div / dual_edge_length[c2e])[horizontal_start:, :]
     )
+    exchange((dims.CellDim, dims.C2E2CODim), geofac_n2s)
     return geofac_n2s
 
 

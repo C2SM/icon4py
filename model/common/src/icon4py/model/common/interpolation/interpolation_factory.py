@@ -152,7 +152,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(geofac_rot)
 
         geofac_n2s = factory.NumpyDataProvider(
-            func=functools.partial(interpolation_fields.compute_geofac_n2s, array_ns=self._xp),
+            func=functools.partial(
+                interpolation_fields.compute_geofac_n2s,
+                array_ns=self._xp,
+                exchange=self._exchange.exchange_buffers,
+            ),
             fields=(attrs.GEOFAC_N2S,),
             domain=(dims.CellDim, dims.C2E2CODim),
             deps={
