@@ -30,7 +30,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.testing.test_utils import dallclose
+from icon4py.model.testing.test_utils import dallclose, dummy_exchange
 
 
 if TYPE_CHECKING:
@@ -82,6 +82,7 @@ def test_compute_zdiff_gradp_dsl(
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
+        halo_exchange=dummy_exchange,
         array_ns=xp,
     )
 

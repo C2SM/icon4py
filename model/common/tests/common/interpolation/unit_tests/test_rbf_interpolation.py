@@ -35,6 +35,8 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+from .. import utils
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
@@ -179,6 +181,7 @@ def test_rbf_interpolation_coeffs_cell(
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
+        exchange=utils.dummy_exchange_buffer,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -248,6 +251,7 @@ def test_rbf_interpolation_coeffs_vertex(
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
+        exchange=utils.dummy_exchange_buffer,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -319,6 +323,7 @@ def test_rbf_interpolation_coeffs_edge(
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
+        exchange=utils.dummy_exchange_buffer,
         array_ns=data_alloc.import_array_ns(backend),
     )
 

@@ -20,6 +20,7 @@ from gt4py.next import (
     astype,
     broadcast,
     int32,
+    max_over,
     maximum,
     minimum,
     neighbor_sum,
@@ -422,15 +423,11 @@ def _compute_maxslp_maxhgtd(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    z_maxslp_0_1 = maximum(abs(ddxn_z_full(C2E[0])), abs(ddxn_z_full(C2E[1])))
-    maxslp = maximum(z_maxslp_0_1, abs(ddxn_z_full(C2E[2])))
+    tmp = abs(ddxn_z_full)
+    maxslp = max_over(tmp(C2E), axis=dims.C2EDim)
 
-    z_maxhgtd_0_1 = maximum(
-        abs(ddxn_z_full(C2E[0]) * dual_edge_length(C2E[0])),
-        abs(ddxn_z_full(C2E[1]) * dual_edge_length(C2E[1])),
-    )
-
-    maxhgtd = maximum(z_maxhgtd_0_1, abs(ddxn_z_full(C2E[2]) * dual_edge_length(C2E[2])))
+    tmp_maxhgtd = abs(ddxn_z_full * dual_edge_length)
+    maxhgtd = max_over(tmp_maxhgtd(C2E), axis=dims.C2EDim)
     return maxslp, maxhgtd
 
 
@@ -620,7 +617,7 @@ def _compute_downward_extrapolation_distance(
     z_ifc: fa.CellField[wpfloat],
 ) -> fa.EdgeField[wpfloat]:
     extrapol_dist = 5.0
-    x = maximum(z_ifc(E2C[0]), z_ifc(E2C[1]))
+    x = max_over(z_ifc(E2C), axis=dims.E2CDim)
     return x - extrapol_dist
 
 
@@ -939,8 +936,7 @@ def compute_weighted_cell_neighbor_sum(
 def _compute_max_nbhgt(
     z_mc_nlev: fa.CellField[wpfloat],
 ) -> fa.CellField[wpfloat]:
-    max_nbhgt_0_1 = maximum(z_mc_nlev(C2E2C[0]), z_mc_nlev(C2E2C[1]))
-    max_nbhgt = maximum(max_nbhgt_0_1, z_mc_nlev(C2E2C[2]))
+    max_nbhgt = max_over(z_mc_nlev(C2E2C), axis=dims.C2E2CDim)
     return max_nbhgt
 
 
