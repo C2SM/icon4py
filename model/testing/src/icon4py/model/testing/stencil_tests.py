@@ -85,10 +85,10 @@ def test_and_benchmark(
     _configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
-    benchmark_only_option = request.config.getoption(
-        "benchmark_only"
-    )  # skip verification if `--benchmark-only` CLI option is set
-    if not benchmark_only_option:
+    skip_stenciltest_verification = request.config.getoption(
+        "skip_stenciltest_verification"
+    )  # skip verification if `--skip-stenciltest-verification` CLI option is set
+    if not skip_stenciltest_verification:
         reference_outputs = self.reference(
             _ConnectivityConceptFixer(
                 grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
@@ -137,7 +137,7 @@ def test_and_benchmark(
             compute_samples = metrics_data[metrics_key].metrics["compute"].samples
             # exclude warmup iterations, one extra iteration for calibrating pytest-benchmark and one for validation (if executed)
             initial_program_iterations_to_skip = warmup_rounds * iterations + (
-                1 if benchmark_only_option else 2
+                1 if skip_stenciltest_verification else 2
             )
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:

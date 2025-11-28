@@ -100,6 +100,13 @@ def pytest_addoption(parser: pytest.Parser):
             help="Set level (unit, integration) of the tests to run. Defaults to 'any'.",
             default="any",
         )
+    with contextlib.suppress(ValueError):
+        parser.addoption(
+            "--skip-stenciltest-verification",
+            action="store_true",
+            help="Skip verification of `StencilTest`s against reference outputs.",
+            default=False,
+        )
 
 
 def pytest_collection_modifyitems(config, items):
