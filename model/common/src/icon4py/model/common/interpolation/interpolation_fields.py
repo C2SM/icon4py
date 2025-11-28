@@ -434,12 +434,12 @@ def _compute_c_bln_avg(
 
 def _force_mass_conservation_to_c_bln_avg(
     c2e2c0: data_alloc.NDArray,
-    c_bln_avg_field: gtx.Field,
+    c_bln_avg: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
-    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
+    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
     array_ns: ModuleType = np,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
@@ -538,7 +538,6 @@ def _force_mass_conservation_to_c_bln_avg(
         )
         return c_bln_avg
 
-    c_bln_avg = c_bln_avg_field.ndarray
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
     inverse_neighbor_idx = _create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
@@ -552,9 +551,7 @@ def _force_mass_conservation_to_c_bln_avg(
             cell_owner_mask, local_summed_weights, cell_areas
         )[horizontal_start:]
 
-        residual_field_wrap = gtx.as_field((dims.CellDim,), data=residual, dtype=residual.dtype)
-        halo_exchange(dims.CellDim, residual_field_wrap)
-        residual = residual_field_wrap.ndarray
+        exchange((dims.CellDim,), residual)
 
         # remove condition or do (inefficient) global reduction, practically
         # the convergence criteria is never reached before the niter
@@ -574,7 +571,7 @@ def _force_mass_conservation_to_c_bln_avg(
                 horizontal_start=horizontal_start,
             )
 
-        halo_exchange(dims.CellDim, c_bln_avg_field)
+        exchange((dims.CellDim, dims.C2E2CODim), c_bln_avg)
 
     return c_bln_avg
 
@@ -588,10 +585,10 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
+    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    c_bln_avg_buffer = _compute_c_bln_avg(
+    c_bln_avg = _compute_c_bln_avg(
         c2e2c0[:, 1:],
         lat,
         lon,
@@ -599,10 +596,8 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         horizontal_start,
         array_ns=array_ns,
     )
-    c_bln_avg = gtx.as_field(
-        (dims.CellDim, dims.C2E2CODim), data=c_bln_avg_buffer, dtype=ta.wpfloat
-    )
-    halo_exchange(dims.CellDim, c_bln_avg)
+
+    exchange((dims.CellDim, dims.C2E2CODim), c_bln_avg)
 
     return _force_mass_conservation_to_c_bln_avg(
         c2e2c0,
@@ -612,7 +607,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         divavg_cntrwgt,
         horizontal_start_level_3,
         array_ns=array_ns,
-        halo_exchange=halo_exchange,
+        exchange=exchange,
     )
 
 
@@ -663,7 +658,7 @@ def compute_e_flx_avg(
     e2c2e: data_alloc.NDArray,
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
-    halo_exchange: Callable[[gtx.Dimension, gtx.Field], None],
+    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -735,11 +730,9 @@ def compute_e_flx_avg(
                 ),
                 e_flx_avg[llb:, i + 3],
             )
-    wrap_in_field = gtx.as_field(
-        (dims.EdgeDim, dims.E2C2EODim), data=e_flx_avg, dtype=e_flx_avg.dtype
-    )
-    halo_exchange(dims.EdgeDim, wrap_in_field)
-    e_flx_avg = wrap_in_field.ndarray
+
+    exchange((dims.EdgeDim, dims.E2C2EODim), e_flx_avg)
+
     # the icon prescribed order dependency is probably due to these magic numbers...
     iie = MISSING * array_ns.ones(e2c2e.shape, dtype=int)
     iie[:, 0] = array_ns.where(
@@ -815,11 +808,8 @@ def compute_e_flx_avg(
     e_flx_avg[llb:, :] = array_ns.where(
         owner_mask[llb:, None], e_flx_avg[llb:, :] / checksum[llb:, None], e_flx_avg[llb:, :]
     )
-    wrap_in_field = gtx.as_field(
-        (dims.EdgeDim, dims.E2C2EODim), data=e_flx_avg, dtype=e_flx_avg.dtype
-    )
-    halo_exchange(dims.EdgeDim, wrap_in_field)
-    e_flx_avg = wrap_in_field.ndarray
+
+    exchange((dims.EdgeDim, dims.E2C2EODim), e_flx_avg)
 
     return e_flx_avg
 

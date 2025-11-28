@@ -282,7 +282,7 @@ def test_compute_c_bln_avg(
     c_bln_avg = functools.partial(
         compute_mass_conserving_bilinear_cell_average_weight,
         array_ns=xp,
-        halo_exchange=dummy_exchange,
+        exchange=dummy_exchange_buffer,
     )(
         c2e2c0,
         lat,
@@ -319,7 +319,7 @@ def test_compute_e_flx_avg(
     horizontal_start_1 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
-    e_flx_avg = functools.partial(compute_e_flx_avg, array_ns=xp)(
+    e_flx_avg = functools.partial(compute_e_flx_avg, array_ns=xp, exchange=dummy_exchange_buffer)(
         c_bln_avg,
         geofac_div,
         owner_mask,
@@ -332,7 +332,6 @@ def test_compute_e_flx_avg(
         e2c2e,
         horizontal_start_1,
         horizontal_start_2,
-        halo_exchange=dummy_exchange,
     )
     assert test_helpers.dallclose(data_alloc.as_numpy(e_flx_avg), e_flx_avg_ref)
 

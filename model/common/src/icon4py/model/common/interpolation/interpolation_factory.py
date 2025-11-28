@@ -201,7 +201,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
                 array_ns=self._xp,
-                halo_exchange=self._exchange.exchange_and_wait,
+                exchange=self._exchange.exchange_buffers,
             ),
             fields=(attrs.C_BLN_AVG,),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -276,7 +276,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_e_flx_avg,
                 array_ns=self._xp,
-                halo_exchange=self._exchange.exchange_and_wait,
+                exchange=self._exchange.exchange_buffers,
             ),
             fields=(attrs.E_FLX_AVG,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
