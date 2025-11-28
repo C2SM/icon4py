@@ -409,7 +409,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
-            do_exchange=False, # field exchanged internally
+            do_exchange=False,  # field exchanged internally
         )
         self.register_provider(rbf_vec_coeff_c)
 
@@ -441,7 +441,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
-            do_exchange=False, # field exchanged internally
+            do_exchange=False,  # field exchanged internally
         )
         self.register_provider(rbf_vec_coeff_e)
 
@@ -474,7 +474,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
-            do_exchange=False, # field exchanged internally
+            do_exchange=False,  # field exchanged internally
         )
         self.register_provider(rbf_vec_coeff_v)
 

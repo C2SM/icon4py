@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-from collections.abc import Sequence
 
-import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import pytest
 
@@ -43,7 +41,6 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.testing.test_utils import dummy_exchange
 
 from .. import utils
 
