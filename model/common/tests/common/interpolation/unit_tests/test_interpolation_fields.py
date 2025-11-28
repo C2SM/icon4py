@@ -44,18 +44,12 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+from .. import utils
+
 
 cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
 vertex_domain = h_grid.domain(dims.VertexDim)
-
-
-def dummy_exchange(dim: gtx.Dimension, *field: gtx.Field) -> None:
-    return None
-
-
-def dummy_exchange_buffer(dim: Sequence[gtx.Dimension], *field: data_alloc.NDArray) -> None:
-    return None
 
 
 @pytest.mark.level("unit")
@@ -67,7 +61,7 @@ def test_compute_c_lin_e(
     backend: gtx_typing.Backend,
 ) -> None:
     xp = data_alloc.import_array_ns(backend)
-    func = functools.partial(compute_c_lin_e, array_ns=xp, exchange=dummy_exchange_buffer)
+    func = functools.partial(compute_c_lin_e, array_ns=xp, exchange=utils.dummy_exchange_buffer)
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
     edge_owner_mask = grid_savepoint.e_owner_mask()
@@ -80,7 +74,7 @@ def test_compute_c_lin_e(
         inv_dual_edge_length.asnumpy(),
         edge_owner_mask.asnumpy(),
         horizontal_start,
-        exchange=dummy_exchange_buffer,
+        exchange=utils.dummy_exchange_buffer,
         array_ns=xp,
     )
     assert test_helpers.dallclose(c_lin_e, c_lin_e_ref.asnumpy())
@@ -168,7 +162,9 @@ def test_compute_geofac_n2s(
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).ndarray
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    geofac_n2s = functools.partial(compute_geofac_n2s, array_ns=xp, exchange=dummy_exchange_buffer)(
+    geofac_n2s = functools.partial(
+        compute_geofac_n2s, array_ns=xp, exchange=utils.dummy_exchange_buffer
+    )(
         dual_edge_length.ndarray,
         geofac_div.ndarray,
         c2e,
@@ -200,7 +196,7 @@ def test_compute_geofac_grg(
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     geofac_grg_0, geofac_grg_1 = functools.partial(
-        compute_geofac_grg, array_ns=xp, exchange=dummy_exchange_buffer
+        compute_geofac_grg, array_ns=xp, exchange=utils.dummy_exchange_buffer
     )(
         primal_normal_cell_x,
         primal_normal_cell_y,
@@ -244,7 +240,7 @@ def test_compute_geofac_grdiv(
     e2c2e = icon_grid.get_connectivity(dims.E2C2E).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     geofac_grdiv = functools.partial(
-        compute_geofac_grdiv, array_ns=xp, exchange=dummy_exchange_buffer
+        compute_geofac_grdiv, array_ns=xp, exchange=utils.dummy_exchange_buffer
     )(
         geofac_div.ndarray,
         inv_dual_edge_length.ndarray,
@@ -282,7 +278,7 @@ def test_compute_c_bln_avg(
     c_bln_avg = functools.partial(
         compute_mass_conserving_bilinear_cell_average_weight,
         array_ns=xp,
-        exchange=dummy_exchange_buffer,
+        exchange=utils.dummy_exchange_buffer,
     )(
         c2e2c0,
         lat,
@@ -319,7 +315,9 @@ def test_compute_e_flx_avg(
     horizontal_start_1 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
-    e_flx_avg = functools.partial(compute_e_flx_avg, array_ns=xp, exchange=dummy_exchange_buffer)(
+    e_flx_avg = functools.partial(
+        compute_e_flx_avg, array_ns=xp, exchange=utils.dummy_exchange_buffer
+    )(
         c_bln_avg,
         geofac_div,
         owner_mask,
@@ -358,7 +356,7 @@ def test_compute_cells_aw_verts(
     )
 
     cells_aw_verts = functools.partial(
-        compute_cells_aw_verts, array_ns=xp, exchange=dummy_exchange_buffer
+        compute_cells_aw_verts, array_ns=xp, exchange=utils.dummy_exchange_buffer
     )(
         dual_area=dual_area,
         edge_vert_length=edge_vert_length,
@@ -432,7 +430,7 @@ def test_compute_pos_on_tplane_e(
         owner_mask,
         e2c,
         horizontal_start,
-        dummy_exchange_buffer,
+        utils.dummy_exchange_buffer,
         array_ns=xp,
     )
     assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-8, rtol=1e-9)

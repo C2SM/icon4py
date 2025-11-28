@@ -11,9 +11,9 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from enum import Enum
-from typing import Any, Literal, Protocol, overload, runtime_checkable
+from typing import Any, Literal, Protocol, TypeAlias, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
@@ -25,6 +25,9 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
+
+
+BufferExchange: TypeAlias = Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None]
 
 
 class ProcessProperties(Protocol):

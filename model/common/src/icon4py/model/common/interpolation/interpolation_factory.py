@@ -381,7 +381,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(cells_aw_verts)
 
         rbf_vec_coeff_c = factory.NumpyDataProvider(
-            func=functools.partial(rbf.compute_rbf_interpolation_coeffs_cell, array_ns=self._xp),
+            func=functools.partial(
+                rbf.compute_rbf_interpolation_coeffs_cell,
+                array_ns=self._xp,
+                exchange=self._exchange.exchange_buffers,
+            ),
             fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
             domain=(dims.CellDim, dims.C2E2C2EDim),
             deps={
@@ -405,12 +409,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
-            do_exchange=True,
+            do_exchange=False, # field exchanged internally
         )
         self.register_provider(rbf_vec_coeff_c)
 
         rbf_vec_coeff_e = factory.NumpyDataProvider(
-            func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=self._xp),
+            func=functools.partial(
+                rbf.compute_rbf_interpolation_coeffs_edge,
+                array_ns=self._xp,
+                exchange=self._exchange.exchange_buffers,
+            ),
             fields=(attrs.RBF_VEC_COEFF_E,),
             domain=(dims.EdgeDim, dims.E2C2EDim),
             deps={
@@ -433,12 +441,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
-            do_exchange=True,
+            do_exchange=False, # field exchanged internally
         )
         self.register_provider(rbf_vec_coeff_e)
 
         rbf_vec_coeff_v = factory.NumpyDataProvider(
-            func=functools.partial(rbf.compute_rbf_interpolation_coeffs_vertex, array_ns=self._xp),
+            func=functools.partial(
+                rbf.compute_rbf_interpolation_coeffs_vertex,
+                array_ns=self._xp,
+                exchange=self._exchange.exchange_buffers,
+            ),
             fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
             domain=(dims.VertexDim, dims.V2EDim),
             deps={
@@ -462,7 +474,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
-            do_exchange=True,
+            do_exchange=False, # field exchanged internally
         )
         self.register_provider(rbf_vec_coeff_v)
 
