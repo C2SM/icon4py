@@ -9,14 +9,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common.exceptions import dummy_exchange
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures import *  # noqa: F403
+from icon4py.model.testing.test_utils import dummy_exchange
 
 
 if TYPE_CHECKING:

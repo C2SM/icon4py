@@ -108,6 +108,7 @@ def test_distributed_metrics_attrs(
         (attrs.BDY_HALO_C, "bdy_halo_c"),
         (attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP, "hmask_dd3d"),
         (attrs.WGTFAC_C, "wgtfac_c"),
+        (attrs.EXNER_EXFAC, "exner_exfac"),
     ],
 )
 def test_distributed_metrics_attrs_no_halo(
@@ -134,7 +135,6 @@ def test_distributed_metrics_attrs_no_halo(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("experiment", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize(
     "attrs_name, metrics_name",
     [
@@ -142,7 +142,6 @@ def test_distributed_metrics_attrs_no_halo(
         (attrs.ZD_DIFFCOEF_DSL, "zd_diffcoef"),
         (attrs.ZD_INTCOEF_DSL, "zd_intcoef"),
         (attrs.ZD_VERTOFFSET_DSL, "zd_vertoffset"),
-        (attrs.EXNER_EXFAC, "exner_exfac"),
     ],
 )
 def test_distributed_metrics_attrs_no_halo_regional(
@@ -156,6 +155,8 @@ def test_distributed_metrics_attrs_no_halo_regional(
     metrics_name: str,
     experiment: test_defs.Experiment,
 ) -> None:
+    if experiment == test_defs.Experiments.EXCLAIM_APE:
+        pytest.skip(f"Fields not computed for {experiment}")
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
@@ -169,7 +170,7 @@ def test_distributed_metrics_attrs_no_halo_regional(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_distributed_metrics_attrs_no_halo_tuple(
+def test_distributed_metrics_wgtfacq_e(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,

@@ -43,10 +43,6 @@ edge_domain = horizontal.domain(dims.EdgeDim)
 vertex_domain = horizontal.domain(dims.VertexDim)
 
 
-def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
-    return None
-
-
 @pytest.mark.level("unit")
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest

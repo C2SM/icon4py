@@ -6,8 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import gt4py.next as gtx
-
 
 class InvalidComputationError(Exception):
     pass
@@ -24,7 +22,3 @@ class IncompleteStateError(Exception):
 
 class IconGridError(RuntimeError):
     pass
-
-
-def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
-    return None
