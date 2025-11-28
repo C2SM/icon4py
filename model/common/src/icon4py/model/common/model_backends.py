@@ -104,6 +104,6 @@ BACKENDS: dict[str, BackendLike] = {
     "gtfn_gpu": {"backend_factory": make_custom_gtfn_backend, "device": GPU},
     "dace_cpu": {"backend_factory": make_custom_dace_backend, "device": CPU},
     "dace_gpu": {"backend_factory": make_custom_dace_backend, "device": GPU},
-    "cpu": {"device": GPU},
+    "cpu": {"device": CPU},
     "gpu": {"device": GPU},
 }

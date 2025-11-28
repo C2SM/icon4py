@@ -76,7 +76,7 @@ class Icon4pyDriver:
         self._initialize_timeloop_parameters()
         self._validate_config()
         self._make_logger()
-        driver_utils.display_setup_in_log_file(
+        driver_utils.display_driver_setup_in_log_file(
             self._logger,
             self.n_time_steps,
             self.solve_nonhydro._vertical_params,
@@ -375,7 +375,7 @@ class Icon4pyDriver:
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
-        self._compute_total_mass_and_energy(dyn_substep, prognostic_states.next)
+        self._compute_total_mass_and_energy(prognostic_states.next)
 
         # TODO(OngChia): compute airmass for prognostic_state here
 
@@ -490,12 +490,12 @@ class Icon4pyDriver:
         if self.config.enable_statistics_output:
             # TODO (Chia Rui): Do global max when multinode is ready
             rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
-                self._xp, prognostic_states.rho
+                prognostic_states.rho, self._xp,
             )
             vn_arg_max, max_vn = driver_utils.find_maximum_from_field(
-                self._xp, prognostic_states.vn
+                prognostic_states.vn, self._xp,
             )
-            w_arg_max, max_w = driver_utils.find_maximum_from_field(self._xp, prognostic_states.w)
+            w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w, self._xp)
 
             def _determine_sign(input_number: float) -> str:
                 return " " if input_number >= 0.0 else "-"
@@ -518,13 +518,13 @@ class Icon4pyDriver:
     ) -> None:
         if self.config.enable_statistics_output:
             rho_ndarray = prognostic_states.rho.ndarray
-            cell_volume_ndarray = self.grid_manager.geometry_fields[
+            cell_area_ndarray = self.grid_manager.geometry_fields[
                 gridfile.GeometryName.CELL_AREA.value
             ].ndarray
             cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
-            total_mass = self._xp.sum(rho_ndarray * cell_volume_ndarray * cell_thickness_ndarray)
+            total_mass = self._xp.sum(rho_ndarray * cell_area_ndarray * cell_thickness_ndarray)
             self._logger.info(f"TOTAL MASS: {total_mass:.10e}, TOTAL ENERGY")
 
     def _compute_mean_at_final_time_step(
