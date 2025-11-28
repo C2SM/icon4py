@@ -1394,7 +1394,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.1+unknown.version.details"
-source = { git = "https://github.com/havogt/gt4py?branch=cse_in_fieldop_fusion#0ae4a275f6d26c3736e63250b710f95d0c91a1e5" }
+source = { git = "https://github.com/havogt/gt4py?branch=cse_in_fieldop_fusion#d82fd067cf26d635d043c5e8e00e93943ab6c771" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
