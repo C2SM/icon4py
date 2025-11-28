@@ -7,117 +7,50 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""
-This is the full muphys implementation for a single muphys call
-WORK IN PROGRESS!!!!  Do not try to run this.
-"""
-
-# TODO refactor similar to run_graupel_only
+from __future__ import annotations
 
 import argparse
-import sys
+import dataclasses
+import functools
+import pathlib
 import time
 
-import gt4py.next as gtx
 import netCDF4
 import numpy as np
+from gt4py import next as gtx
+from gt4py.next import typing as gtx_typing
 
-from icon4py.model.common import model_options
-from icon4py.model.common.model_options import setup_program
-
-
-try:
-    from netCDF4 import Dataset
-except ImportError:
-    print("Netcdf not installed")
-    sys.exit()
-
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import saturation_adjustment
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel import (
-    graupel_run,
-)
-from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
+from icon4py.model.common import dimension as dims, model_backends, model_options
+from icon4py.model.common.utils import device_utils
 
 
-def set_lib_path(lib_dir):
-    sys.path.append(lib_dir)
+# TODO(havogt): make similar to icon4py driver structure
 
 
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-o",
-        metavar="output_file",
-        dest="output_file",
-        help="output filename",
-        default="output.nc",
+        "-o", metavar="output_file", dest="output_file", help="output filename", default="output.nc"
     )
     parser.add_argument(
-        "-b",
-        metavar="backend",
-        dest="backend",
-        help="gt4py backend",
-        default="gtfn_cpu",
+        "-b", metavar="backend", dest="backend", help="gt4py backend", default="gtfn_cpu"
     )
     parser.add_argument("input_file", help="input data file")
     parser.add_argument("itime", help="time-index", nargs="?", default=0)
     parser.add_argument("dt", help="timestep", nargs="?", default=30.0)
     parser.add_argument("qnc", help="Water number concentration", nargs="?", default=100.0)
-    parser.add_argument(
-        "-ldir",
-        metavar="lib_dir",
-        dest="ldir",
-        help="directory with py_graupel shared lib",
-        default="build/lib64",
-    )
-    parser.add_argument(
-        "-with_sat_adj",
-        action="store_true",
-    )
 
     return parser.parse_args()
 
 
-class Data:
-    def __init__(self, args):
-        nc = netCDF4.Dataset(args.input_file)
-        # intent(in) variables:
-        try:
-            self.ncells = len(nc.dimensions["cell"])
-        except KeyError:
-            self.ncells = len(nc.dimensions["ncells"])
-
-        self.nlev = len(nc.dimensions["height"])
-        self.z = nc.variables["zg"][:, :].astype(np.float64)
-        self.p = nc.variables["pfull"][:, :].astype(np.float64)
-        self.rho = nc.variables["rho"][:, :].astype(np.float64)
-        # intent(inout) variables:
-        self.t = nc.variables["ta"][:, :].astype(np.float64)  # inout
-        self.qv = nc.variables["hus"][:, :].astype(np.float64)  # inout
-        self.qc = nc.variables["clw"][:, :].astype(np.float64)  # inout
-        self.qi = nc.variables["cli"][:, :].astype(np.float64)  # inout
-        self.qr = nc.variables["qr"][:, :].astype(np.float64)  # inout
-        self.qs = nc.variables["qs"][:, :].astype(np.float64)  # inout
-        self.qg = nc.variables["qg"][:, :].astype(np.float64)  # inout
-        # intent(out) variables:
-        self.t_out = np.zeros((self.ncells, self.nlev), np.float64)
-        self.qv_out = np.zeros((self.ncells, self.nlev), np.float64)
-        self.qc_out = np.zeros((self.ncells, self.nlev), np.float64)
-        self.qi_out = np.zeros((self.ncells, self.nlev), np.float64)
-        self.qr_out = np.zeros((self.ncells, self.nlev), np.float64)
-        self.qs_out = np.zeros((self.ncells, self.nlev), np.float64)
-        self.qg_out = np.zeros((self.ncells, self.nlev), np.float64)
-        self.pflx_out = np.zeros((self.ncells, self.nlev), np.float64)
-        self.prr_gsp = np.zeros(self.ncells, np.float64)
-        self.pri_gsp = np.zeros(self.ncells, np.float64)
-        self.prs_gsp = np.zeros(self.ncells, np.float64)
-        self.prg_gsp = np.zeros(self.ncells, np.float64)
-        self.pre_gsp = np.zeros(self.ncells, np.float64)
-        self.dz = calc_dz(self.nlev, self.z)
-        self.mask_out = np.full((self.ncells, self.nlev), True)
+# TODO double check the sizes of pxxx vars (should be nlev+1?)
 
 
-def calc_dz(ksize, z):
+def _calc_dz(z: np.ndarray) -> np.ndarray:
+    ksize = z.shape[0]
     dz = np.zeros(z.shape, np.float64)
     zh = 1.5 * z[ksize - 1, :] - 0.5 * z[ksize - 2, :]
     for k in range(ksize - 1, -1, -1):
@@ -127,187 +60,238 @@ def calc_dz(ksize, z):
     return dz
 
 
-def run_program(
-    args, backend, data, t_out, qv_out, qc_out, qi_out, qr_out, qs_out, qg_out, pflx_out
-):
-    ksize = data.dz.shape[0]
+def _as_field_from_nc(
+    dataset: netCDF4.Dataset,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
+    varname: str,
+    optional: bool = False,
+    dtype: np.dtype | None = None,
+) -> gtx.Field[dims.CellDim, dims.KDim] | None:
+    if optional and varname not in dataset.variables:
+        return None
 
-    dz = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.dz[:, :]),
-        allocator=backend,
-    )
-    te = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.t[0, :, :]),
-        allocator=backend,
-    )
-    p = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.p[0, :, :]),
-        allocator=backend,
-    )
-    qse = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qs[0, :, :]),
-        allocator=backend,
-    )
-    qie = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qi[0, :, :]),
-        allocator=backend,
-    )
-    qge = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qg[0, :, :]),
-        allocator=backend,
-    )
-    qve = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qv[0, :, :]),
-        allocator=backend,
-    )
-    qce = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qc[0, :, :]),
-        allocator=backend,
-    )
-    qre = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.qr[0, :, :]),
-        allocator=backend,
-    )
-    rho = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.transpose(data.rho[0, :, :]),
-        allocator=backend,
+    var = dataset.variables[varname]
+    if var.dimensions[0] == "time":
+        var = var[0, :, :]
+    data = np.transpose(var)
+    if dtype is not None:
+        data = data.astype(dtype)
+    return gtx.as_field(
+        (dims.CellDim, dims.KDim),
+        data,
+        allocator=allocator,
     )
 
-    pr_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.zeros((data.ncells, data.nlev)),
-        allocator=backend,
-    )
-    ps_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.zeros((data.ncells, data.nlev)),
-        allocator=backend,
-    )
-    pi_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.zeros((data.ncells, data.nlev)),
-        allocator=backend,
-    )
-    pg_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.zeros((data.ncells, data.nlev)),
-        allocator=backend,
-    )
-    pre_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        np.zeros((data.ncells, data.nlev)),
-        allocator=backend,
-    )
-    mask_out = gtx.as_field(
-        (
-            dims.CellDim,
-            dims.KDim,
-        ),
-        data.mask_out,
-        allocator=backend,
+
+def _field_to_nc(
+    dataset: netCDF4.Dataset,
+    dims: tuple[str, str],
+    varname: str,
+    field: gtx.Field[dims.CellDim, dims.KDim],
+    dtype: np.dtype = np.float64,
+) -> None:
+    var = dataset.createVariable(varname, dtype, dims)
+    var[...] = field.asnumpy().transpose()
+
+
+@dataclasses.dataclass
+class GraupelInput:
+    ncells: int
+    nlev: int
+    dz: gtx.Field[dims.CellDim, dims.KDim]
+    p: gtx.Field[dims.CellDim, dims.KDim]
+    rho: gtx.Field[dims.CellDim, dims.KDim]
+    t: gtx.Field[dims.CellDim, dims.KDim]
+    qv: gtx.Field[dims.CellDim, dims.KDim]
+    qc: gtx.Field[dims.CellDim, dims.KDim]
+    qi: gtx.Field[dims.CellDim, dims.KDim]
+    qr: gtx.Field[dims.CellDim, dims.KDim]
+    qs: gtx.Field[dims.CellDim, dims.KDim]
+    qg: gtx.Field[dims.CellDim, dims.KDim]
+
+    @classmethod
+    def load(
+        cls, filename: pathlib.Path | str, allocator: gtx_typing.FieldBufferAllocationUtil
+    ) -> None:
+        with netCDF4.Dataset(filename, mode="r") as ncfile:
+            try:
+                ncells = len(ncfile.dimensions["cell"])
+            except KeyError:
+                ncells = len(ncfile.dimensions["ncells"])
+
+            nlev = len(ncfile.dimensions["height"])
+
+            dz = _calc_dz(ncfile.variables["zg"])
+
+            field_from_nc = functools.partial(
+                _as_field_from_nc, ncfile, allocator, dtype=np.float64
+            )
+            return cls(
+                ncells=ncells,
+                nlev=nlev,
+                dz=gtx.as_field((dims.CellDim, dims.KDim), np.transpose(dz), allocator=allocator),
+                t=field_from_nc("ta"),
+                p=field_from_nc("pfull"),
+                qs=field_from_nc("qs"),
+                qi=field_from_nc("cli"),
+                qg=field_from_nc("qg"),
+                qv=field_from_nc("hus"),
+                qc=field_from_nc("clw"),
+                qr=field_from_nc("qr"),
+                rho=field_from_nc("rho"),
+            )
+
+
+@dataclasses.dataclass
+class GraupelOutput:
+    t: gtx.Field[dims.CellDim, dims.KDim]
+    qv: gtx.Field[dims.CellDim, dims.KDim]
+    qc: gtx.Field[dims.CellDim, dims.KDim]
+    qi: gtx.Field[dims.CellDim, dims.KDim]
+    qr: gtx.Field[dims.CellDim, dims.KDim]
+    qs: gtx.Field[dims.CellDim, dims.KDim]
+    qg: gtx.Field[dims.CellDim, dims.KDim]
+
+    pflx: gtx.Field[dims.CellDim, dims.KDim] | None
+    pr: gtx.Field[dims.CellDim, dims.KDim] | None
+    ps: gtx.Field[dims.CellDim, dims.KDim] | None
+    pi: gtx.Field[dims.CellDim, dims.KDim] | None
+    pg: gtx.Field[dims.CellDim, dims.KDim] | None
+    pre: gtx.Field[dims.CellDim, dims.KDim] | None
+
+    @classmethod
+    def allocate(cls, allocator: gtx_typing.FieldBufferAllocationUtil, domain: gtx.Domain):
+        zeros = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
+        # TODO +1 size fields?
+        return cls(**{field.name: zeros() for field in dataclasses.fields(cls)})
+
+    @classmethod
+    def load(cls, filename: pathlib.Path | str, allocator: gtx_typing.FieldBufferAllocationUtil):
+        with netCDF4.Dataset(filename, mode="r") as ncfile:
+            field_from_nc = functools.partial(_as_field_from_nc, ncfile, allocator)
+            return cls(
+                t=field_from_nc("ta"),
+                qv=field_from_nc("hus"),
+                qc=field_from_nc("clw"),
+                qi=field_from_nc("cli"),
+                qr=field_from_nc("qr"),
+                qs=field_from_nc("qs"),
+                qg=field_from_nc("qg"),
+                pflx=field_from_nc("pflx", optional=True),
+                pr=field_from_nc("prr_gsp", optional=True),
+                ps=field_from_nc("prs_gsp", optional=True),
+                pi=field_from_nc("pri_gsp", optional=True),
+                pg=field_from_nc("prg_gsp", optional=True),
+                pre=field_from_nc("pre_gsp", optional=True),
+            )
+
+    def write(self, filename: pathlib.Path | str):
+        ncells = self.t.shape[0]
+        nlev = self.t.shape[1]
+
+        with netCDF4.Dataset(filename, mode="w") as ncfile:
+            ncfile.createDimension("ncells", ncells)
+            ncfile.createDimension("height", nlev)
+            ncfile.createDimension("height1", nlev + 1)  # what's the reason for the +1 fields here?
+
+            write_height_field = functools.partial(
+                _field_to_nc, ncfile, ("height", "ncells"), dtype=np.float64
+            )
+            write_height1_field = functools.partial(  # TODO
+                _field_to_nc, ncfile, ("height1", "ncells"), dtype=np.float64
+            )
+
+            write_height_field("ta", self.t)
+            write_height_field("hus", self.qv)
+            write_height_field("clw", self.qc)
+            write_height_field("cli", self.qi)
+            write_height_field("qr", self.qr)
+            write_height_field("qs", self.qs)
+            write_height_field("qg", self.qg)
+            if self.pflx is not None:
+                write_height_field("pflx", self.pflx)
+            if self.pr is not None:
+                write_height_field("prr_gsp", self.pr)  # TODO height1?
+            if self.ps is not None:
+                write_height_field("prs_gsp", self.ps)  # TODO
+            if self.pi is not None:
+                write_height_field("pri_gsp", self.pi)  # TODO
+            if self.pg is not None:
+                write_height_field("prg_gsp", self.pg)  # TODO
+            if self.pre is not None:
+                write_height_field("pre_gsp", self.pre)  # TODO
+
+
+def setup_saturation_adjustment(inp: GraupelInput, dt: float, qnc: float, backend: model_backends.BackendLike):
+    with utils.recursion_limit(10**4):  # TODO thread safe?
+        saturation_adjustment_run_program = model_options.setup_program(
+            backend=backend,
+            program=saturation_adjustment.saturation_adjustment_run,
+            constant_args={"dt": dt, "qnc": qnc},
+            horizontal_sizes={
+                "horizontal_start": gtx.int32(0),
+                "horizontal_end": inp.ncells,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(inp.nlev),
+            },
+            offset_provider={"Koff": dims.KDim},
+        )
+        gtx.wait_for_compilation()
+        return saturation_adjustment_run_program
+
+
+def setup_graupel(inp: GraupelInput, dt: float, qnc: float, backend: model_backends.BackendLike):
+    with utils.recursion_limit(10**4):  # TODO thread safe?
+        graupel_run_program = model_options.setup_program(
+            backend=backend,
+            program=graupel.graupel_run,
+            constant_args={"dt": dt, "qnc": qnc},
+            horizontal_sizes={
+                "horizontal_start": gtx.int32(0),
+                "horizontal_end": inp.ncells,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(inp.nlev),
+                "last_lev": gtx.int32(inp.nlev - 1),
+            },
+            offset_provider={"Koff": dims.KDim},
+        )
+        gtx.wait_for_compilation()
+        return graupel_run_program
+
+
+def main():
+    args = get_args()
+
+    backend = model_backends.BACKENDS[args.backend]
+    allocator = model_backends.get_allocator(backend)
+
+    inp = GraupelInput.load(filename=pathlib.Path(args.input_file), allocator=allocator)
+    out = GraupelOutput.allocate(
+        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}), allocator=allocator
     )
 
-    saturation_adjustment_program = setup_program(
-        backend=backend,
-        program=saturation_adjustment,
-        constant_args={},
-        horizontal_sizes={
-            "horizontal_start": gtx.int32(0),
-            "horizontal_end": data.ncells,
-        },
-        vertical_sizes={
-            "vertical_start": gtx.int32(0),
-            "vertical_end": gtx.int32(data.nlev),
-        },
-        offset_provider={"Koff": dims.KDim},
-    )
+    saturation_adjustment_run_program = setup_saturation_adjustment(inp, dt=args.dt, qnc=args.qnc, backend=backend)
+    graupel_run_program = setup_graupel(inp, dt=args.dt, qnc=args.qnc, backend=backend)
 
-    graupel_run_program = setup_program(
-        backend=backend,
-        program=graupel_run,
-        constant_args={},
-        horizontal_sizes={
-            "horizontal_start": gtx.int32(0),
-            "horizontal_end": data.ncells,
-        },
-        vertical_sizes={
-            "vertical_start": gtx.int32(0),
-            "vertical_end": gtx.int32(data.nlev),
-            "last_lev": ksize - 1,
-        },
-        offset_provider={"Koff": dims.KDim},
-    )
-
-    start_time = time.time()
-
+    start_time = None
     for _x in range(int(args.itime) + 1):
         if _x == 1:  # Only start timing second iteration
+            device_utils.sync(backend)
             start_time = time.time()
 
         saturation_adjustment_program(
-            te=te,
-            qve=qve,
-            qce=qce,
-            qre=qre,
-            qse=qse,
-            qie=qie,
-            qge=qge,
-            rho=rho,
+            te=inp.t,
+            qve=inp.qve,
+            qce=inp.qce,
+            qre=inp.qre,
+            qse=inp.qse,
+            qie=inp.qie,
+            qge=inp.qge,
+            rho=inp.rho,
             te_out=t_out,  # Temperature
             qve_out=qv_out,  # Specific humidity
             qce_out=qc_out,  # Specific cloud water content
@@ -315,203 +299,55 @@ def run_program(
         )
 
         graupel_run_program(
-            dz=dz,
-            te=te,
-            p=p,
-            rho=rho,
-            qve=qve,
-            qce=qce,
-            qre=qre,
-            qse=qse,
-            qie=qie,
-            qge=qge,
-            dt=args.dt,
-            qnc=args.qnc,
-            t_out=t_out,
-            qv_out=qv_out,
-            qc_out=qc_out,
-            qr_out=qr_out,
-            qs_out=qs_out,
-            qi_out=qi_out,
-            qg_out=qg_out,
-            pflx=pflx_out,
-            pr=pr_out,
-            ps=ps_out,
-            pi=pi_out,
-            pg=pg_out,
-            pre=pre_out,
+            dz=inp.dz,
+            te=inp.t,
+            p=inp.p,
+            rho=inp.rho,
+            qve=inp.qv,
+            qce=inp.qc,
+            qre=inp.qr,
+            qse=inp.qs,
+            qie=inp.qi,
+            qge=inp.qg,
+            t_out=out.t,
+            qv_out=out.qv,
+            qc_out=out.qc,
+            qr_out=out.qr,
+            qs_out=out.qs,
+            qi_out=out.qi,
+            qg_out=out.qg,
+            pflx=out.pflx,
+            pr=out.pr,
+            ps=out.ps,
+            pi=out.pi,
+            pg=out.pg,
+            pre=out.pre,
         )
 
         saturation_adjustment_program(
-            te=te,
-            qve=qve,
-            qce=qce,
-            qre=qre,
-            qse=qse,
-            qie=qie,
-            qge=qge,
-            rho=rho,
+            te=inp.te,
+            qve=inp.qve,
+            qce=inp.qce,
+            qre=inp.qre,
+            qse=inp.qse,
+            qie=inp.qie,
+            qge=inp.qge,
+            rho=inp.rho,
             te_out=t_out,  # Temperature
             qve_out=qv_out,  # Specific humidity
             qce_out=qc_out,  # Specific cloud water content
             mask_out=mask_out,  # Mask of interest
         )
 
-        if _x == int(args.itime):  # End timer on last iteration
-            end_time = time.time()
+    device_utils.sync(backend)
+    end_time = time.time()
 
-    elapsed_time = end_time - start_time
-    print("For", int(args.itime), "iterations it took", elapsed_time, "seconds!")
-    data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize - 1)].asnumpy())
-    data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize - 1)].asnumpy())
-    data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize - 1)].asnumpy())
-    data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize - 1)].asnumpy())
-    data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize - 1)].asnumpy())
+    if start_time is not None:
+        elapsed_time = end_time - start_time
+        print("For", int(args.itime), "iterations it took", elapsed_time, "seconds!")
+
+    out.write(args.output_file)
 
 
-def write_fields(
-    output_filename,
-    ncell,
-    nlev,
-    t,
-    qv,
-    qc,
-    qi,
-    qr,
-    qs,
-    qg,
-    prr_gsp,
-    prs_gsp,
-    pri_gsp,
-    prg_gsp,
-    pflx,
-    pre_gsp,
-):
-    ncfile = Dataset(output_filename, mode="w")
-    ncells = ncfile.createDimension("ncells", ncell)
-    height = ncfile.createDimension("height", nlev)
-    height1 = ncfile.createDimension("height1", nlev + 1)
-    ta_var = ncfile.createVariable("ta", np.double, ("height", "ncells"))
-    hus_var = ncfile.createVariable("hus", np.double, ("height", "ncells"))
-    clw_var = ncfile.createVariable("clw", np.double, ("height", "ncells"))
-    cli_var = ncfile.createVariable("cli", np.double, ("height", "ncells"))
-    qr_var = ncfile.createVariable("qr", np.double, ("height", "ncells"))
-    qs_var = ncfile.createVariable("qs", np.double, ("height", "ncells"))
-    qg_var = ncfile.createVariable("qg", np.double, ("height", "ncells"))
-    pflx_var = ncfile.createVariable("pflx", np.double, ("height", "ncells"))
-    prr_gsp_var = ncfile.createVariable("prr_gsp", np.double, ("height1", "ncells"))
-    prs_gsp_var = ncfile.createVariable("prs_gsp", np.double, ("height1", "ncells"))
-    pri_gsp_var = ncfile.createVariable("pri_gsp", np.double, ("height1", "ncells"))
-    prg_gsp_var = ncfile.createVariable("prg_gsp", np.double, ("height1", "ncells"))
-    pre_gsp_var = ncfile.createVariable("pre_gsp", np.double, ("height1", "ncells"))
-
-    ta_var[:, :] = t
-    hus_var[:, :] = qv
-    clw_var[:, :] = qc
-    cli_var[:, :] = qi
-    qr_var[:, :] = qr
-    qs_var[:, :] = qs
-    qg_var[:, :] = qg
-    pflx_var[:, :] = pflx
-    prr_gsp_var[:, :] = prr_gsp
-    prs_gsp_var[:, :] = prs_gsp
-    pri_gsp_var[:, :] = pri_gsp
-    prg_gsp_var[:, :] = prg_gsp
-    pre_gsp_var[:, :] = pre_gsp
-    ncfile.close()
-
-
-args = get_args()
-backend_like = model_backends.BACKENDS[args.backend]
-backend = model_options.customize_backend(None, backend_like)
-
-set_lib_path(args.ldir)
-sys.setrecursionlimit(10**4)
-
-data = Data(args)
-
-t_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.t_out,
-    allocator=backend,
-)
-qv_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.qv_out,
-    allocator=backend,
-)
-qc_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.qc_out,
-    allocator=backend,
-)
-qr_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.qr_out,
-    allocator=backend,
-)
-qs_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.qs_out,
-    allocator=backend,
-)
-qi_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.qi_out,
-    allocator=backend,
-)
-qg_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.qg_out,
-    allocator=backend,
-)
-pflx_out = gtx.as_field(
-    (
-        dims.CellDim,
-        dims.KDim,
-    ),
-    data.pflx_out,
-    allocator=backend,
-)
-
-run_program(args, backend, data, t_out, qv_out, qc_out, qi_out, qr_out, qs_out, qg_out, pflx_out)
-
-write_fields(
-    args.output_file,
-    data.ncells,
-    data.nlev,
-    t=np.transpose(t_out.asnumpy()),
-    qv=np.transpose(qv_out.asnumpy()),
-    qc=np.transpose(qc_out.asnumpy()),
-    qi=np.transpose(qi_out.asnumpy()),
-    qr=np.transpose(qr_out.asnumpy()),
-    qs=np.transpose(qs_out.asnumpy()),
-    qg=np.transpose(qg_out.asnumpy()),
-    prr_gsp=data.prr_gsp,
-    pri_gsp=data.pri_gsp,
-    prs_gsp=data.prs_gsp,
-    prg_gsp=data.prg_gsp,
-    pflx=np.transpose(pflx_out.asnumpy()),
-    pre_gsp=data.pre_gsp,
-)
+if __name__ == "__main__":
+    main()
