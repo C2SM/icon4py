@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 import dace  # type: ignore[import-untyped]
 import numpy as np
 from gt4py import next as gtx
+from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
@@ -251,6 +252,32 @@ class GHexMultiNodeExchange:
         res = self.exchange(dim, *fields)
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
+
+    def exchange_buffers(
+        self,
+        field_dims: Sequence[gtx.Dimension],
+        *buffers: data_alloc.NDArray,
+    ) -> None:
+        """
+        Allows to exchange numpy buffers of by temporarily wrapping them into a field.
+
+        Restrictions are:
+            - buffers must be 1d or 2d
+            - all buffers must have the same shape (dimensions)
+
+        """
+        assert len(field_dims) == buffers[0].ndim, "dimensions and buffer size do not match"
+        assert buffers[0].ndim in (1, 2), "Buffers must be 1d or 2d"
+        assert (
+            field_dims[0] in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+        shape = buffers[0].shape
+        for b in buffers:
+            assert b.shape == shape, "All buffers must have the same shape"
+        domain = {d: (0, shape[i]) for i, d in enumerate(field_dims)}
+        # uses gt4py internal API
+        wrapped = (gtx_common._field(b, domain=domain) for b in buffers)
+        self.exchange_and_wait(field_dims[0], *wrapped)
 
     def __call__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> MultiNodeResult | None:  # type: ignore[return] # return statment in else condition
         """Perform a halo exchange operation.

@@ -12,7 +12,6 @@ from collections.abc import Callable, Sequence
 from types import ModuleType
 from typing import Final
 
-import gt4py.next.common as gtx_common
 import numpy as np
 from gt4py import next as gtx
 from gt4py.next import where
@@ -37,7 +36,7 @@ def compute_c_lin_e(
     inv_dual_edge_length: data_alloc.NDArray,
     edge_owner_mask: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[gtx.Dimension, gtx.Field], None],
+    exchange: Callable[[Sequence[gtx.Dimension], gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -49,6 +48,7 @@ def compute_c_lin_e(
         edge_owner_mask: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index from the field is computed: c_lin_e is not calculated for the first boundary layer
         array_ns: ModuleType to use for the computation, numpy or cupy, defaults to cupy
+        exchange: Callback to the halo exchange function
     Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
     """
@@ -57,7 +57,7 @@ def compute_c_lin_e(
     c_lin_e[0:horizontal_start, :] = 0.0
     mask = array_ns.transpose(array_ns.tile(edge_owner_mask, (2, 1)))
     res = array_ns.where(mask, c_lin_e, 0.0)
-    exchange_buffers((dims.EdgeDim, dims.C2EDim), res, exchange=exchange)
+    exchange((dims.EdgeDim, dims.C2EDim), res)
     return res
 
 
@@ -159,22 +159,6 @@ def compute_geofac_n2s(
     return geofac_n2s
 
 
-def exchange_buffers(
-    field_dims: Sequence[gtx.Dimension],
-    *buffers: data_alloc.NDArray,
-    exchange: Callable[[gtx.Dimension, gtx.Field], None],
-) -> None:
-    assert len(field_dims) == buffers[0].ndim, "dimensions and buffer size do not match"
-    assert (
-        field_dims[0] in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-    ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
-    # all buffers must have the same shape
-    shape = buffers[0].shape
-    domain = {field_dims[0]: (0, shape[0]), field_dims[1]: (0, shape[1])}
-    wrapped = (gtx_common._field(b, domain=domain) for b in buffers)
-    exchange(field_dims[0], *wrapped)
-
-
 def compute_geofac_grg(
     primal_normal_cell_x: data_alloc.NDArray,
     primal_normal_cell_y: data_alloc.NDArray,
@@ -185,7 +169,7 @@ def compute_geofac_grg(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[gtx.Dimension, gtx.Field], None],
+    exchange: Callable[[Sequence[gtx.Dimension], gtx.Field], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
@@ -193,9 +177,7 @@ def compute_geofac_grg(
     primal_normal_ec_u = array_ns.where(owned, primal_normal_cell_x[c2e, inv_neighbor_index], 0.0)
     primal_normal_ec_v = array_ns.where(owned, primal_normal_cell_y[c2e, inv_neighbor_index], 0.0)
 
-    exchange_buffers(
-        (dims.CellDim, dims.E2CDim), primal_normal_ec_u, primal_normal_ec_v, exchange=exchange
-    )
+    exchange((dims.CellDim, dims.E2CDim), primal_normal_ec_u, primal_normal_ec_v)
 
     num_cells = c2e.shape[0]
     targ_local_size = c2e.shape[1] + 1
@@ -221,7 +203,7 @@ def compute_geofac_grg(
             geofac_grg_y[horizontal_start:, 1:]
             + mask * (primal_normal_ec_v * geofac_div * c_lin_e[c2e, k])[horizontal_start:, :]
         )
-    exchange_buffers((dims.CellDim, dims.C2E2CODim), geofac_grg_x, geofac_grg_y, exchange=exchange)
+    exchange((dims.CellDim, dims.C2E2CODim), geofac_grg_x, geofac_grg_y)
 
     return geofac_grg_x, geofac_grg_y
 

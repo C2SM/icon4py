@@ -6,8 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-from collections.abc import Callable
-from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -55,6 +54,10 @@ def dummy_exchange(dim: gtx.Dimension, *field: gtx.Field) -> None:
     return None
 
 
+def dummy_exchange_buffer(dim: Sequence[gtx.Dimension], *field: data_alloc.NDArray) -> None:
+    return None
+
+
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_compute_c_lin_e(
@@ -64,7 +67,7 @@ def test_compute_c_lin_e(
     backend: gtx_typing.Backend,
 ) -> None:
     xp = data_alloc.import_array_ns(backend)
-    func = functools.partial(compute_c_lin_e, array_ns=xp, exchange=dummy_exchange)
+    func = functools.partial(compute_c_lin_e, array_ns=xp, exchange=dummy_exchange_buffer)
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
     edge_owner_mask = grid_savepoint.e_owner_mask()
@@ -77,7 +80,7 @@ def test_compute_c_lin_e(
         inv_dual_edge_length.asnumpy(),
         edge_owner_mask.asnumpy(),
         horizontal_start,
-        exchange=dummy_exchange,
+        exchange=dummy_exchange_buffer,
         array_ns=xp,
     )
     assert test_helpers.dallclose(c_lin_e, c_lin_e_ref.asnumpy())
@@ -197,7 +200,7 @@ def test_compute_geofac_grg(
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     geofac_grg_0, geofac_grg_1 = functools.partial(
-        compute_geofac_grg, array_ns=xp, exchange=dummy_exchange
+        compute_geofac_grg, array_ns=xp, exchange=dummy_exchange_buffer
     )(
         primal_normal_cell_x,
         primal_normal_cell_y,

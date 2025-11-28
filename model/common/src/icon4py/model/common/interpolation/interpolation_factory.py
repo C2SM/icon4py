@@ -224,7 +224,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_c_lin_e,
                 array_ns=self._xp,
-                exchange=self._exchange.exchange_and_wait,
+                exchange=self._exchange.exchange_buffers,
             ),
             fields=(attrs.C_LIN_E,),
             domain=(dims.EdgeDim, dims.E2CDim),
@@ -246,7 +246,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_geofac_grg,
                 array_ns=self._xp,
-                exchange=self._exchange.exchange_and_wait,
+                exchange=self._exchange.exchange_buffers,
             ),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
             domain=(dims.CellDim, dims.C2E2CODim),
