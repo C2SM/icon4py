@@ -17,6 +17,7 @@ include:
 benchmark_bencher_stencils_feature_aarch64:
   script:
     - !reference [.bencher_setup_env, setup]
+    - !reference [.benchmark_nox_job, script]
   extends: [.benchmark_nox_job, .test_template_aarch64]
   variables:
     NOX_SESSION: "__bencher_feature_branch_CI-3.10"
@@ -26,6 +27,7 @@ benchmark_bencher_stencils_feature_aarch64:
 benchmark_bencher_granules_feature_aarch64:
   script:
     - !reference [.bencher_setup_env, setup]
+    - !reference [.benchmark_nox_job, script]
   extends: [.benchmark_nox_job, .test_template_aarch64]
   variables:
     NOX_SESSION: "__bencher_feature_branch_CI-3.10"
