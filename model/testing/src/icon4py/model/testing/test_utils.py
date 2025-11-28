@@ -71,11 +71,3 @@ def is_dace(backend: gtx_typing.Backend | None) -> bool:
 
 def is_gtfn_backend(backend: gtx_typing.Backend | None) -> bool:
     return "gtfn" in backend.name if backend else False
-
-
-def is_cpu_backend(backend: gtx_typing.Backend | None) -> bool:
-    return "cpu" in backend.name if backend else False
-
-
-def get_grid_name(item: pytest.Item) -> str | None:
-    return item.config.getoption("grid", None)

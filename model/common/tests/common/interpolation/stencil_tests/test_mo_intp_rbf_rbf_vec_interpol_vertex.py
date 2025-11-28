@@ -21,7 +21,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 
-@pytest.mark.icon_benchmark_global_error
 @pytest.mark.continuous_benchmarking
 class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
     PROGRAM = mo_intp_rbf_rbf_vec_interpol_vertex
@@ -50,10 +49,14 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
     ) -> dict[str, np.ndarray]:
         v2e = connectivities[dims.V2EDim]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
-        p_u_out = np.sum(p_e_in[v2e] * ptr_coeff_1, axis=1)
+        p_u_out = np.sum(
+            np.where(np.expand_dims(v2e, axis=-1) >= 0, p_e_in[v2e] * ptr_coeff_1, 0.0), axis=1
+        )
 
         ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)
-        p_v_out = np.sum(p_e_in[v2e] * ptr_coeff_2, axis=1)
+        p_v_out = np.sum(
+            np.where(np.expand_dims(v2e, axis=-1) >= 0, p_e_in[v2e] * ptr_coeff_2, 0.0), axis=1
+        )
 
         return dict(p_v_out=p_v_out, p_u_out=p_u_out)
 
