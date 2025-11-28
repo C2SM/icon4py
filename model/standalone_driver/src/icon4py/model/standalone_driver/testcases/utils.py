@@ -11,13 +11,13 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.common import (
-    constants as phy_const,
-    dimension as dims,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
+import icon4py.model.common.utils as common_utils
+from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -130,10 +130,10 @@ def zonalwind_2_normalwind_ndarray(
     Returns: normal wind
     """
     # TODO(OngChia): this function needs a test
-
+    ub = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     mask = array_ns.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
-        0 : grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
+        0:ub,
         :,
     ] = False
     edge_lat = array_ns.repeat(array_ns.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
@@ -170,50 +170,6 @@ def zonalwind_2_normalwind_ndarray(
     return vn
 
 
-# TODO(OngChia): Can this kind of simple arithmetic operation be replaced by a more general stencil that does the same operation on a general field?
-@gtx.field_operator
-def _compute_perturbed_exner(
-    exner: fa.CellKField[ta.wpfloat],
-    reference_exner: fa.CellKField[ta.vpfloat],
-) -> fa.CellKField[ta.wpfloat]:
-    """
-    Compute the perturbed exner function (exner_pr in ICON).
-        perturbed_exner = exner - reference_exner
-    This stencil is copied from subroutine compute_exner_pert in mo_nh_init_utils in ICON. It should be called
-    during the initialization to initialize perturbed_exner_at_cells_on_model_levels of DiagnosticStateHydro
-    if the model does not restart from a restart file.
-
-    Args:
-        exner: exner function
-        reference_exner: reference exner function
-    Returns:
-        Perturbed exner function
-    """
-    perturbed_exner = exner - reference_exner
-    return perturbed_exner
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_perturbed_exner(
-    exner: fa.CellKField[ta.wpfloat],
-    reference_exner: fa.CellKField[ta.vpfloat],
-    perturbed_exner: fa.CellKField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _compute_perturbed_exner(
-        exner,
-        reference_exner,
-        out=perturbed_exner,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     vn_ndarray: data_alloc.NDArray,
     w_ndarray: data_alloc.NDArray,
@@ -224,61 +180,58 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     pressure_ndarray: data_alloc.NDArray,
     pressure_ifc_ndarray: data_alloc.NDArray,
     grid: icon_grid.IconGrid,
-    backend: gtx_typing.Backend | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> tuple[
-    fa.EdgeKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.EdgeKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    common_utils.TimeStepPair[prognostics.PrognosticState],
+    diagnostics.DiagnosticState,
 ]:
-    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
-    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
-    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
-    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
-    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend)
-    virutal_temperature = gtx.as_field(
-        (dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend
+    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)
+    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)
+    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
+    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
+    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator)
+    virtual_temperature = gtx.as_field(
+        (dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator
     )
-    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=backend)
-    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
-    pressure_ifc = gtx.as_field((dims.CellDim, dims.KDim), pressure_ifc_ndarray, allocator=backend)
-
-    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
-    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
-    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
-    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
-    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
-
-    u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-    v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-
-    return (
-        vn,
-        w,
-        exner,
-        rho,
-        theta_v,
-        vn_next,
-        w_next,
-        exner_next,
-        rho_next,
-        theta_v_next,
-        temperature,
-        virutal_temperature,
-        pressure,
-        pressure_ifc,
-        u,
-        v,
+    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=allocator)
+    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)
+    pressure_ifc = gtx.as_field(
+        (dims.CellDim, dims.KDim), pressure_ifc_ndarray, allocator=allocator
     )
+
+    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)
+    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)
+    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
+    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
+    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)
+
+    u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
+    v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
+
+    prognostic_state_now = prognostics.PrognosticState(
+        w=w,
+        vn=vn,
+        theta_v=theta_v,
+        rho=rho,
+        exner=exner,
+    )
+    prognostic_state_next = prognostics.PrognosticState(
+        w=w_next,
+        vn=vn_next,
+        theta_v=theta_v_next,
+        rho=rho_next,
+        exner=exner_next,
+    )
+
+    prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+
+    diagnostic_state = diagnostics.DiagnosticState(
+        pressure=pressure,
+        pressure_ifc=pressure_ifc,
+        temperature=temperature,
+        virtual_temperature=virtual_temperature,
+        u=u,
+        v=v,
+    )
+
+    return prognostics_states, diagnostic_state
