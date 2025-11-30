@@ -1,7 +1,0 @@
-nohup: ignoring input
-/capstor/scratch/cscs/cong/icon4py/model/common/src/icon4py/model/common/interpolation/rbf_interpolation.py:155: RuntimeWarning: invalid value encountered in divide
-  array_ns.divide(arc_lengths, v2_norm[:, array_ns.newaxis, :], out=arc_lengths)
-/capstor/scratch/cscs/cong/icon4py/model/common/src/icon4py/model/common/interpolation/rbf_interpolation.py:125: RuntimeWarning: invalid value encountered in divide
-  array_ns.divide(arc_lengths, norms[:, :, array_ns.newaxis], out=arc_lengths)
-/capstor/scratch/cscs/cong/icon4py/model/common/src/icon4py/model/common/interpolation/rbf_interpolation.py:126: RuntimeWarning: invalid value encountered in divide
-  array_ns.divide(arc_lengths, norms[:, array_ns.newaxis, :], out=arc_lengths)
