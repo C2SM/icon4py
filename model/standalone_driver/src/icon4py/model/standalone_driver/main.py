@@ -5,9 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import datetime
 import logging
-import pathlib
 from typing import Annotated
 
 import typer
@@ -17,6 +15,7 @@ from icon4py.model.standalone_driver import driver_states, driver_utils, standal
 from icon4py.model.standalone_driver.testcases import initial_condition
 
 
+logging.getLogger(__name__).setLevel(logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
@@ -38,7 +37,7 @@ def main(
     log_level: Annotated[
         str,
         typer.Option(
-            help=f"Logging level of log files. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
+            help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
 ) -> None:
@@ -52,25 +51,13 @@ def main(
     The integration can then be executed by calling time_integration function in Icon4pyDriver
     """
 
-    backend = driver_utils.get_backend_from_name(icon4py_backend)
-
-    log.info("Initializing the driver")
-
-    current_time = datetime.datetime.now()
-    output_path = (
-        output_path
-        + f"_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
-    )
-    absolute_output_path = pathlib.Path(output_path).absolute()
-    absolute_output_path.mkdir(parents=True, exist_ok=False)
-
     icon4py_driver: standalone_driver.Icon4pyDriver
     icon4py_driver = standalone_driver.initialize_driver(
-        configuration_file_path=pathlib.Path(configuration_file_path).absolute(),
-        output_path=absolute_output_path,
-        grid_file_path=pathlib.Path(grid_file_path).absolute(),
+        configuration_file_path=configuration_file_path,
+        output_path=output_path,
+        grid_file_path=grid_file_path,
         log_level=log_level,
-        backend=backend,
+        backend_name=icon4py_backend,
     )
 
     log.info("Generating the initial condition")
@@ -80,7 +67,7 @@ def main(
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
-        backend=backend,
+        backend=icon4py_driver.backend,
     )
 
     log.info("driver setup: DONE")

@@ -7,11 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+import dataclasses
 import logging
 import pathlib
 import sys
 import time
 from types import ModuleType
+from typing import Any
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -354,25 +356,20 @@ def find_maximum_from_field(
     return max_indices, input_field.ndarray[max_indices]
 
 
-def display_driver_setup_in_log_file(
-    logger: logging.Logger,
-    n_time_steps: int,
-    vertical_params,
-    config: driver_config.DriverConfig,
-) -> None:
+def display_icon4py_logo_in_log_file() -> None:
     """
     Print out icon4py signature and some important information of the initial setup to the log file.
 
-                                                            ___
-        -------                                    //      ||   \
+                                                               ___
+          -------                                    //      ||   \
             | |                                     //       ||    |
             | |       __      _ _        _ _       //  ||    ||___/
             | |     //       /   \     |/   \     //_ _||_   ||        \\      //
             | |    ||       |     |    |     |    --------   ||         \\    //
             | |     \\__     \_ _/     |     |         ||    ||          \\  //
-        -------                                                           //
-                                                                            //
-                                                            = = = = = = //
+          -------                                                           //
+                                                                           //
+                                                              = = = = = = //
     """
     boundary_line = ["*" * 91]
     icon4py_signature = []
@@ -416,28 +413,77 @@ def display_driver_setup_in_log_file(
         icon4py_signature += empty_line
     icon4py_signature += boundary_line
     icon4py_signature = "\n".join(icon4py_signature)
-    logger.info(f"{icon4py_signature}")
+    log.info(f"{icon4py_signature}")
 
-    logger.info("===== ICON4Py Driver Configuration =====")
-    logger.info(f"Experiment name        : {config.experiment_name}")
-    logger.info(f"Time step (dtime)      : {config.dtime.total_seconds()} s")
-    logger.info(f"Start date             : {config.start_date}")
-    logger.info(f"End date               : {config.end_date}")
-    logger.info(f"Number of timesteps    : {n_time_steps}")
-    logger.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
-    logger.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
-    logger.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
-    logger.info(f"Statistics enabled     : {config.enable_statistics_output}")
-    logger.info("")
 
-    logger.info("==== Vertical Grid Parameters ====")
-    logger.info(vertical_params)
+def display_driver_setup_in_log_file(
+    n_time_steps: int,
+    vertical_params,
+    config: driver_config.DriverConfig,
+) -> None:
+    log.info("===== ICON4Py Driver Configuration =====")
+    log.info(f"Experiment name        : {config.experiment_name}")
+    log.info(f"Time step (dtime)      : {config.dtime.total_seconds()} s")
+    log.info(f"Start date             : {config.start_date}")
+    log.info(f"End date               : {config.end_date}")
+    log.info(f"Number of timesteps    : {n_time_steps}")
+    log.info(f"Initial ndyn_substeps  : {config.ndyn_substeps}")
+    log.info(f"Vertical CFL threshold : {config.vertical_cfl_threshold}")
+    log.info(f"Second-order divdamp   : {config.apply_extra_second_order_divdamp}")
+    log.info(f"Statistics enabled     : {config.enable_statistics_output}")
+    log.info("")
+
+    log.info("==== Vertical Grid Parameters ====")
+    log.info(vertical_params)
     consts = PhysicsConstants()
-    logger.info("==== Physical Constants ====")
+    log.info("==== Physical Constants ====")
     for name, value in consts.__class__.__dict__.items():
         if name.startswith("_") or callable(value):
             continue
-        logger.info(f"{name:30s}: {value}")
+        log.info(f"{name:30s}: {value}")
+
+
+@dataclasses.dataclass
+class _InfoFormatter(logging.Formatter):
+    style: str
+    default_fmt: str
+    info_fmt: str
+    defaults: dict[str, Any] | None
+
+    _info_formatter: logging.Formatter = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        super().__init__(fmt=self.default_fmt, style=self.style, defaults=self.defaults)
+        self._info_formatter = logging.Formatter(
+            fmt=self.info_fmt,
+            style=self.style,
+        )
+
+    def format(self, record: logging.LogRecord) -> str:
+        if record.levelno == logging.INFO:
+            return self._info_formatter.format(record)
+        return super().format(record)
+
+
+def make_handler(
+    logging_level: int | None,
+    log_filter: logging.Filter | None,
+    formatter: str | logging.Formatter | None,
+    file_name: str | None,
+) -> logging.Handler:
+    handler = (
+        logging.StreamHandler(stream=sys.stdout)
+        if file_name is None
+        else logging.FileHandler(filename=file_name)
+    )
+    if log_filter is not None:
+        handler.addFilter(log_filter)
+    if isinstance(formatter, str):
+        formatter = logging.Formatter(fmt=formatter, style="{")
+    handler.setFormatter(formatter)
+    if logging_level is not None:
+        handler.setLevel(logging_level)
+    return handler
 
 
 def configure_logging(
@@ -447,12 +493,12 @@ def configure_logging(
     """
     Configure logging.
 
-    Log output is sent to console and to a file.
+    Log output with user-defined logging level across the entire icon4py, except
+    for the driver whose logging level is fixed at debug, is sent to console
+    (stdout) and the error message is sent to stderr.
 
     Args:
-        output_path: path to the output folder where the logfile should be stored
-        experiment_name: name of the simulation
-        enable_output: enable output logging messages above debug level
+        logging_level: log level
         processor_procs: ProcessProperties
 
     """
@@ -461,22 +507,35 @@ def configure_logging(
             f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([*_LOGGING_LEVELS.keys()])}"
         )
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(filename)-20s (%(lineno)-4d) : %(funcName)-20s:  %(levelname)-8s %(message)s",
-        stream=sys.stdout,
-    )
-    logging.Formatter.converter = time.localtime
-    logging.getLogger("icon4py").setLevel(logging.DEBUG)
-    console_handler = logging.StreamHandler(stream=sys.stderr)
-    # TODO(OngChia): modify here when single_dispatch is ready
-    console_handler.addFilter(mpi_decomp.ParallelLogger(processor_procs))
+    logging.Formatter.converter = time.localtime  # set to local time instead of utc
 
-    log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
-    formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
-    console_handler.setFormatter(formatter)
-    console_handler.setLevel(_LOGGING_LEVELS[logging_level])
-    logging.getLogger("icon4py").addHandler(console_handler)
+    # TODO(OngChia): modify here when single_dispatch is ready
+    log_filter = mpi_decomp.ParallelLogger(processor_procs)
+    formatter = _InfoFormatter(
+        style="{",
+        default_fmt="{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}",
+        info_fmt="{message}",
+        defaults={"rank": None},
+    )
+    handler = make_handler(
+        logging_level=logging.DEBUG,
+        log_filter=log_filter,
+        formatter=formatter,
+        file_name=None,
+    )
+    logging.basicConfig(
+        level=logging.DEBUG,
+        handlers=[
+            handler,
+        ],
+    )
+    driver_module_name = __name__[: __name__.rindex(".")]
+    logging.getLogger("icon4py.model").setLevel(_LOGGING_LEVELS[logging_level])
+    logging.getLogger(driver_module_name).setLevel(logging.DEBUG)
+    logging.getLogger("filelock").setLevel(logging.WARNING)
+    logging.getLogger("factory.generate").setLevel(logging.WARNING)
+
+    display_icon4py_logo_in_log_file()
 
 
 def get_backend_from_name(backend_name: str) -> model_backends.BackendLike:

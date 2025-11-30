@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import dataclasses
 import datetime
 import functools
 import logging
@@ -34,27 +33,6 @@ from icon4py.model.standalone_driver import config as driver_config, driver_stat
 log = logging.getLogger(__name__)
 
 
-@dataclasses.dataclass
-class _DerivedFormatter(logging.Formatter):
-    style: str
-    default_fmt: str
-    debug_fmt: str
-
-    _debug_formatter: logging.Formatter = dataclasses.field(init=False)
-
-    def __post_init__(self):
-        super().__init__(fmt=self.default_fmt, style=self.style)
-        self._debug_formatter = logging.Formatter(
-            fmt=self.debug_fmt,
-            style=self.style,
-        )
-
-    def format(self, record: logging.LogRecord) -> str:
-        if record.levelno == logging.DEBUG:
-            return self._debug_formatter.format(record)
-        return super().format(record)
-
-
 class Icon4pyDriver:
     def __init__(
         self,
@@ -75,9 +53,7 @@ class Icon4pyDriver:
         self._make_timers()
         self._initialize_timeloop_parameters()
         self._validate_config()
-        self._make_logger()
         driver_utils.display_driver_setup_in_log_file(
-            self._logger,
             self.n_time_steps,
             self.solve_nonhydro._vertical_params,
             self.config,
@@ -101,24 +77,6 @@ class Icon4pyDriver:
         self._timers["timer_solve_nh"] = Timer("Solve nh: after first time step", dp=6)
         self._timers["timer_diffusion_first_step"] = Timer("Diffusion: first time step", dp=6)
         self._timers["timer_diffusion"] = Timer("Diffusion: after first time step", dp=6)
-
-    def _make_logger(self) -> None:
-        """
-        Create a log file and two log formats for debug and other logging levels. When debug level is used for
-        a message, an ascii time stamp and the function name are appended to the beginning of the message.
-        """
-        self._logger = logging.getLogger("Icon4PyDriver")
-        file_handler = logging.FileHandler(
-            filename=str(self.config.output_path.joinpath(f"log_{self.config.experiment_name}")),
-        )
-        logging_formatter = _DerivedFormatter(
-            style="{",
-            default_fmt="{message}",
-            debug_fmt="{asctime} {funcName:<20} : {message}",
-        )
-        file_handler.setFormatter(logging_formatter)
-        file_handler.setLevel(logging.DEBUG)
-        self._logger.addHandler(file_handler)
 
     def _initialize_timeloop_parameters(self) -> None:
         """
@@ -155,7 +113,7 @@ class Icon4pyDriver:
         Re-initialize the time step, number of substeps, elapsed time, simulation date, and other
         time integration parameters for re-run.
         """
-        self._logger.info("Reinitialize the driver")
+        log.info("Reinitialize the driver")
         self._initialize_timeloop_parameters()
 
     @property
@@ -194,7 +152,7 @@ class Icon4pyDriver:
         for timer_name, timer in self._timers.items():
             try:
                 timer_summary = timer.summary(False)
-                self._logger.info(
+                log.info(
                     f"{timer_name} timer summary: "
                     f"times={len(timer_summary)}, "
                     f"mean={statistics.mean(timer_summary):0.8f}s, "
@@ -203,7 +161,7 @@ class Icon4pyDriver:
                     f"max={max(timer_summary):0.8f}s"
                 )
             except RuntimeError:  # noqa: PERF203 `try`-`except` within a loop incurs performance overhead
-                self._logger.info(f"Timer {timer_name} has not started")
+                log.info(f"Timer {timer_name} has not started")
 
     def time_integration(
         self,
@@ -215,7 +173,7 @@ class Icon4pyDriver:
         prognostic_states = ds.prognostics
         prep_adv = ds.prep_advection_prognostic
 
-        self._logger.debug(
+        log.debug(
             f"starting time loop for dtime = {self._dtime_in_seconds} s, substep_timestep = {self._substep_timestep} s, n_timesteps = {self.n_time_steps}, substep_timestep = {self.substep_timestep}"
         )
 
@@ -230,7 +188,7 @@ class Icon4pyDriver:
                         self.config.profiling_stats.gt4py_metrics_level
                     )
 
-            self._logger.info(
+            log.info(
                 f"\n"
                 f"simulation date : {self._simulation_date}, at run timestep : {time_step}, with actual time spent: {(datetime.datetime.now() - actual_starting_time).total_seconds()}"
                 f"\n"
@@ -271,7 +229,7 @@ class Icon4pyDriver:
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
     ):
-        self._logger.debug(f"Running {self.solve_nonhydro.__class__}")
+        log.debug(f"Running {self.solve_nonhydro.__class__}")
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_states,
@@ -280,7 +238,7 @@ class Icon4pyDriver:
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
-            self._logger.debug(f"Running {self.diffusion.__class__}")
+            log.debug(f"Running {self.diffusion.__class__}")
             timer_diffusion = (
                 self._timers["timer_diffusion_first_step"]
                 if self._is_first_step_in_simulation
@@ -393,7 +351,7 @@ class Icon4pyDriver:
             global_max_vertical_cfl > ta.wpfloat("0.81") * self.config.vertical_cfl_threshold
             and not self._cfl_watch_mode
         ):
-            self._logger.warning(
+            log.warning(
                 "High CFL number for vertical advection in dynamical core, entering watch mode"
             )
             self._cfl_watch_mode = True
@@ -404,7 +362,7 @@ class Icon4pyDriver:
                 global_max_vertical_cfl * substep_fraction
                 > ta.wpfloat("0.9") * self.config.vertical_cfl_threshold
             ):
-                self._logger.warning(
+                log.warning(
                     f"Maximum vertical CFL number {global_max_vertical_cfl} is close to critical threshold"
                 )
 
@@ -427,13 +385,13 @@ class Icon4pyDriver:
                         self._ndyn_substeps_var + ndyn_substeps_increment, self._max_ndyn_substeps
                     )
                 else:
-                    self._logger.warning(
+                    log.warning(
                         f"WARNING: max cfl {global_max_vertical_cfl} is not a number! Number of substeps is set to the max value! "
                     )
                     new_ndyn_substeps_var = self._max_ndyn_substeps
                 self._update_ndyn_substeps(new_ndyn_substeps_var)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
-                self._logger.warning(
+                log.warning(
                     f"The number of dynamics substeps is increased to {self._ndyn_substeps_var}"
                 )
             if (
@@ -444,7 +402,7 @@ class Icon4pyDriver:
             ):
                 self._update_ndyn_substeps(self._ndyn_substeps_var - 1)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
-                self._logger.warning(
+                log.warning(
                     f"The number of dynamics substeps is decreased to {self._ndyn_substeps_var}"
                 )
 
@@ -453,7 +411,7 @@ class Icon4pyDriver:
                     and global_max_vertical_cfl
                     < ta.wpfloat("0.76") * self.config.vertical_cfl_threshold
                 ):
-                    self._logger.warning(
+                    log.warning(
                         "CFL number for vertical advection in dynamical core has decreased, leaving watch mode"
                     )
                     self._cfl_watch_mode = False
@@ -490,10 +448,12 @@ class Icon4pyDriver:
         if self.config.enable_statistics_output:
             # TODO (Chia Rui): Do global max when multinode is ready
             rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
-                prognostic_states.rho, self._xp,
+                prognostic_states.rho,
+                self._xp,
             )
             vn_arg_max, max_vn = driver_utils.find_maximum_from_field(
-                prognostic_states.vn, self._xp,
+                prognostic_states.vn,
+                self._xp,
             )
             w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w, self._xp)
 
@@ -504,12 +464,12 @@ class Icon4pyDriver:
             vn_sign = _determine_sign(max_vn)
             w_sign = _determine_sign(max_w)
 
-            self._logger.info(
+            log.info(
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self._ndyn_substeps_var:3d} == "
                 f"MAX RHO: {rho_sign}{abs(max_rho):.5e} at lvl {rho_arg_max[1]:4d}, MAX VN: {vn_sign}{abs(max_vn):.5e} at lvl {vn_arg_max[1]:4d}, MAX W: {w_sign}{abs(max_w):.5e} at lvl {w_arg_max[1]:4d}"
             )
         else:
-            self._logger.info(
+            log.info(
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self._ndyn_substeps_var:3d}"
             )
 
@@ -524,8 +484,10 @@ class Icon4pyDriver:
             cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
-            total_mass = self._xp.sum(rho_ndarray * cell_area_ndarray * cell_thickness_ndarray)
-            self._logger.info(f"TOTAL MASS: {total_mass:.10e}, TOTAL ENERGY")
+            total_mass = self._xp.sum(
+                rho_ndarray * cell_area_ndarray[:, self._xp.newaxis] * cell_thickness_ndarray
+            )
+            log.info(f"TOTAL MASS: {total_mass:.10e}, TOTAL ENERGY")
 
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
@@ -539,12 +501,12 @@ class Icon4pyDriver:
             interface_physical_height_ndarray = (
                 self.solve_nonhydro._vertical_params.interface_physical_height.ndarray
             )
-            self._logger.info("")
-            self._logger.info(
+            log.info("")
+            log.info(
                 "Global mean of    rho         vn           w          theta_v     exner      at model levels:"
             )
             for k in range(rho_ndarray.shape[1]):
-                self._logger.info(
+                log.info(
                     f"{interface_physical_height_ndarray[k]:12.3f}: {self._xp.mean(rho_ndarray[:, k]):.5e} "
                     f"{self._xp.mean(vn_ndarray[:, k]):.5e} "
                     f"{self._xp.mean(w_ndarray[:, k+1]):.5e} "
@@ -610,11 +572,11 @@ def _read_config(
 
 
 def initialize_driver(
-    configuration_file_path: pathlib.Path,
-    output_path: pathlib.Path,
-    grid_file_path: pathlib.Path,
+    configuration_file_path: str,
+    output_path: str,
+    grid_file_path: str,
     log_level: str,
-    backend: model_backends.BackendLike,
+    backend_name: str,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -634,18 +596,36 @@ def initialize_driver(
         Driver: driver object
     """
 
-    allocator = model_backends.get_allocator(backend)
-
-    driver_config, vertical_grid_config, diffusion_config, solve_nh_config = _read_config(
-        output_path=output_path,
-        enable_profiling=False,
-    )
     parallel_props = decomposition_defs.get_processor_properties(
         decomposition_defs.get_runtype(with_mpi=False)
     )
     driver_utils.configure_logging(
         logging_level=log_level,
         processor_procs=parallel_props,
+    )
+
+    configuration_file_path = pathlib.Path(configuration_file_path)
+    grid_file_path = pathlib.Path(grid_file_path)
+    if pathlib.Path(output_path).exists():
+        current_time = datetime.datetime.now()
+        log.warning(f"output path {output_path} already exists, a time stamp will be added")
+        output_path = pathlib.Path(
+            output_path
+            + f"_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
+        )
+    else:
+        output_path = pathlib.Path(output_path)
+    output_path.mkdir(parents=True, exist_ok=False)
+
+    backend = driver_utils.get_backend_from_name(backend_name)
+
+    allocator = model_backends.get_allocator(backend)
+
+    log.info("Initializing the driver")
+
+    driver_config, vertical_grid_config, diffusion_config, solve_nh_config = _read_config(
+        output_path=output_path,
+        enable_profiling=False,
     )
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
