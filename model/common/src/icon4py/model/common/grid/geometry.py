@@ -225,6 +225,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=True,
         )
         self.register_provider(edge_areas)
         coriolis_params = factory.ProgramFieldProvider(
@@ -291,6 +292,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=True,
         )
         self.register_provider(normal_uv)
 
@@ -353,6 +355,7 @@ class GridGeometry(factory.FieldSource):
                 ("u_vertex_1", "u_vertex_2", "u_vertex_3", "u_vertex_4"),
                 ("v_vertex_1", "v_vertex_2", "v_vertex_3", "v_vertex_4"),
             ),
+            do_exchange=True,
         )
         self.register_provider(normal_vert_wrapper)
         normal_cell = factory.ProgramFieldProvider(
@@ -422,6 +425,7 @@ class GridGeometry(factory.FieldSource):
                 ("u_vertex_1", "u_vertex_2", "u_vertex_3", "u_vertex_4"),
                 ("v_vertex_1", "v_vertex_2", "v_vertex_3", "v_vertex_4"),
             ),
+            do_exchange=True,
         )
         self.register_provider(tangent_vert_wrapper)
         tangent_cell = factory.ProgramFieldProvider(
@@ -452,6 +456,7 @@ class GridGeometry(factory.FieldSource):
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
             fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
+            do_exchange=True,
         )
         self.register_provider(tangent_cell_wrapper)
         cartesian_vertices = factory.EmbeddedFieldOperatorProvider(
@@ -529,6 +534,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
+            do_exchange=True,
         )
         return provider
 
@@ -562,7 +568,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         target_dims: Sequence[gtx.Dimension],
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
-        do_exchange: bool = True,
+        do_exchange: bool,
     ):
         assert len(target_dims) == 2
         assert target_dims[1].kind == gtx.DimensionKind.LOCAL
