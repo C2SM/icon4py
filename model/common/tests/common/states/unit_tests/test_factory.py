@@ -161,7 +161,9 @@ def test_field_operator_provider(cell_coordinate_source: SimpleFieldSource) -> N
     deps = {"lat": "lat", "lon": "lon"}
     fields = {"x": "x", "y": "y", "z": "z"}
 
-    provider = factory.EmbeddedFieldOperatorProvider(field_op, domain, fields, deps)
+    provider = factory.EmbeddedFieldOperatorProvider(
+        field_op, domain, fields, deps, do_exchange=False
+    )
     provider(
         "x",
         cell_coordinate_source,
@@ -185,7 +187,7 @@ def test_program_provider(height_coordinate_source: SimpleFieldSource) -> None:
         "input_field": "height_coordinate",
     }
     fields = {"average": "output_f"}
-    provider = factory.ProgramFieldProvider(program, domain, fields, deps)
+    provider = factory.ProgramFieldProvider(program, domain, fields, deps, do_exchange=False)
     provider(
         "output_f",
         height_coordinate_source,
@@ -209,7 +211,9 @@ def test_field_source_raise_error_on_register(cell_coordinate_source: SimpleFiel
         "input_field": "height_coordinate",
     }
     fields = {"result": "output_f"}
-    provider = factory.ProgramFieldProvider(func=program, domain=domain, fields=fields, deps=deps)
+    provider = factory.ProgramFieldProvider(
+        func=program, domain=domain, fields=fields, deps=deps, do_exchange=False
+    )
     with pytest.raises(ValueError) as err:
         cell_coordinate_source.register_provider(provider)
         assert "not provided by source " in err.value  # type: ignore[operator]
