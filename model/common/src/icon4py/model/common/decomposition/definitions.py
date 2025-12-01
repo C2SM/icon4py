@@ -21,6 +21,7 @@ import numpy as np
 
 from icon4py.model.common import utils
 from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -320,6 +321,10 @@ class SingleNodeRun(RunType):
     """
 
     pass
+
+
+class Reductions(Protocol):
+    def global_min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
 
 
 @overload

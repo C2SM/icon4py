@@ -12,6 +12,7 @@ import functools
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
 import dace  # type: ignore[import-untyped]
@@ -21,8 +22,9 @@ from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import SingleNodeExchange
+from icon4py.model.common.decomposition.definitions import Reductions, SingleNodeExchange
 from icon4py.model.common.orchestration import halo_exchange
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -437,3 +439,16 @@ def create_multinode_node_exchange(
         return GHexMultiNodeExchange(props, decomp_info)
     else:
         return SingleNodeExchange()
+
+
+class GlobalReductions(Reductions):
+    def __init__(self, array_ns: ModuleType = np):
+        self.runtype = definitions.get_runtype(with_mpi=True)
+        self.props = get_multinode_properties(self.runtype)
+        self._xp = array_ns
+
+    def global_min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        min_buffer_arr = self._xp.array([self._xp.min(buffer)])
+        recv_buffer = self._xp.empty(1, dtype=buffer.dtype)
+        self.props.comm.Allreduce(min_buffer_arr, recv_buffer, mpi4py.MPI.MIN)
+        return recv_buffer.item()
