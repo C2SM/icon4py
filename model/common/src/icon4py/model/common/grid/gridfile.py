@@ -8,7 +8,7 @@
 
 import enum
 import logging
-from typing import Protocol, Any
+from typing import Any, Protocol
 
 import numpy as np
 from gt4py import next as gtx
@@ -134,8 +134,9 @@ class MandatoryPropertyName(PropertyName):
     LEVEL = "grid_level"
     ROOT = "grid_root"
 
-class DimensionName(GridFileName):
-    ...
+
+class DimensionName(GridFileName): ...
+
 
 class DynamicDimension(DimensionName):
     """Dimension values (sizes) used in grid file."""
@@ -151,33 +152,31 @@ class DynamicDimension(DimensionName):
     MAX_CHILD_DOMAINS = "max_chdom"
 
 
-
 class FixedSizeDimension(DimensionName):
     size: int
 
-    def __new__(cls, value:str, size_:int):
+    def __new__(cls, value: str, size_: int):
         obj = str.__new__(cls)
         obj._value_ = value
         obj.size = size_
         return obj
 
     #: number of edges in a diamond: 4
-    DIAMOND_EDGE_SIZE = ("no",4)
+    DIAMOND_EDGE_SIZE = ("no", 4)
 
     #: number of edges/cells neighboring one vertex: 6 (for regular, non pentagons)
-    NEIGHBORS_TO_VERTEX_SIZE = ("ne",6)
+    NEIGHBORS_TO_VERTEX_SIZE = ("ne", 6)
 
     #: number of cells edges, vertices and cells neighboring a cell: 3
-    NEIGHBORS_TO_CELL_SIZE = ("nv",3)
+    NEIGHBORS_TO_CELL_SIZE = ("nv", 3)
 
     #: number of vertices/cells neighboring an edge: 2
-    NEIGHBORS_TO_EDGE_SIZE = ("nc",2)
+    NEIGHBORS_TO_EDGE_SIZE = ("nc", 2)
 
     #: Grid refinement: maximal number in grid-refinement (refin_ctl) array for each dimension
     CELL_GRF = ("cell_grf", 14)
     EDGE_GRF = ("edge_grf", 28)
-    VERTEX_GRF = ("vert_grf",14)
-
+    VERTEX_GRF = ("vert_grf", 14)
 
     def __str__(self):
         return f"{self.name}({self.name}: {self.size})"
@@ -368,7 +367,6 @@ class GridFile:
             variable_size = variable.ndim
             n = (variable.shape[0],) if variable_size > 1 else ()
             target_shape = n + (-1,)
-
 
             slicer = [slice(None) for _ in range(variable_size)]
             if indices is not None and indices.size > 0:
