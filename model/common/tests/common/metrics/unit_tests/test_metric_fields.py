@@ -233,10 +233,23 @@ def test_compute_exner_exfac(
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     exner_expol = 0.333 if experiment == definitions.Experiments.MCH_CH_R04B09 else 0.3333333333333
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_slp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_hgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    mf._compute_maxslp_maxhgtd.with_backend(backend)(
+        metrics_savepoint.ddxn_z_full(),
+        grid_savepoint.dual_edge_length(),
+        out=(max_slp, max_hgtd),
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        domain={
+            dims.CellDim: (horizontal_start, icon_grid.num_cells),
+            dims.KDim: (0, icon_grid.num_levels),
+        },
+    )
+
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     mf.compute_exner_exfac.with_backend(backend)(
-        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
-        dual_edge_length=grid_savepoint.dual_edge_length(),
+        maxslp=max_slp,
+        maxhgtd=max_hgtd,
         exner_exfac=exner_exfac,
         exner_expol=exner_expol,
         lateral_boundary_level_2=horizontal_start,
@@ -244,7 +257,7 @@ def test_compute_exner_exfac(
         horizontal_end=gtx.int32(icon_grid.num_cells),
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)

@@ -562,8 +562,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_exner_exfac = factory.ProgramFieldProvider(
             func=mf.compute_exner_exfac.with_backend(self._backend),
             deps={
-                "ddxn_z_full": attrs.DDXN_Z_FULL,
-                "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
+                "maxslp": attrs.MAXSLP,
+                "maxhgtd": attrs.MAXHGTD,
             },
             domain={
                 dims.CellDim: (
@@ -741,7 +741,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl,
                 array_ns=self._xp,
-                halo_exchange=self._exchange.exchange_and_wait,
+                exchange=self._exchange.exchange_buffers,
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -765,7 +765,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
                 ),
             },
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_zdiff_gradp_dsl_np)
 
