@@ -414,10 +414,6 @@ def saturation_adjustment(
     te_out: fa.CellKField[ta.wpfloat],  # Temperature
     qve_out: fa.CellKField[ta.wpfloat],  # Specific humidity
     qce_out: fa.CellKField[ta.wpfloat],  # Specific cloud water content
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
 ):
     _saturation_adjustment(
         te,
@@ -429,8 +425,4 @@ def saturation_adjustment(
         qge,
         rho,
         out=(te_out, qve_out, qce_out),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
     )
