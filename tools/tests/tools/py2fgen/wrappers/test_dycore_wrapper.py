@@ -63,15 +63,7 @@ def solve_nh_init(
     divdamp_z4 = 80000.0
 
     # vertical grid params
-    num_levels = 65
-    lowest_layer_thickness = 20.0
-    model_top_height = 23000.0
-    stretch_factor = 0.65
-    rayleigh_damping_height = 12500.0
-
-    # vertical params
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
+    vertical_size = grid_savepoint.num(dims.KDim)
     nflat_gradp = gtx.int32(
         grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
@@ -114,7 +106,9 @@ def solve_nh_init(
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
-    wgtfacq_e = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_e_dsl(num_levels).ndarray)
+    wgtfacq_e = test_utils.array_to_array_info(
+        metrics_savepoint.wgtfacq_e_dsl(vertical_size).ndarray
+    )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
     scalfac_dd3d = test_utils.array_to_array_info(metrics_savepoint.scalfac_dd3d().ndarray)
@@ -160,8 +154,6 @@ def solve_nh_init(
     dycore_wrapper.solve_nh_init(
         ffi=ffi,
         perf_counters=None,
-        vct_a=vct_a,
-        vct_b=vct_b,
         c_lin_e=c_lin_e,
         c_intp=c_intp,
         e_flx_avg=e_flx_avg,
@@ -212,7 +204,6 @@ def solve_nh_init(
         coeff2_dwdz=coeff2_dwdz,
         coeff_gradekin=coeff_gradekin,
         c_owner_mask=c_owner_mask,
-        rayleigh_damping_height=rayleigh_damping_height,
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
@@ -236,11 +227,7 @@ def solve_nh_init(
         divdamp_z2=divdamp_z2,
         divdamp_z3=divdamp_z3,
         divdamp_z4=divdamp_z4,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
         nflat_gradp=nflat_gradp,
-        num_levels=num_levels,
         backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 
@@ -272,10 +259,6 @@ def test_dycore_wrapper_granule_inputs(
     experiment,
     ndyn_substeps,
     savepoint_nonhydro_init,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -317,15 +300,7 @@ def test_dycore_wrapper_granule_inputs(
     divdamp_z4 = 80000.0
 
     # vertical grid params
-    num_levels = 65
-    lowest_layer_thickness = 20.0
-    model_top_height = 23000.0
-    stretch_factor = 0.65
-    rayleigh_damping_height = 12500.0
-
-    # vertical params
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
+    vertical_size = grid_savepoint.num(dims.KDim)
     nflat_gradp = gtx.int32(
         grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
@@ -372,7 +347,9 @@ def test_dycore_wrapper_granule_inputs(
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
-    wgtfacq_e = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_e_dsl(num_levels).ndarray)
+    wgtfacq_e = test_utils.array_to_array_info(
+        metrics_savepoint.wgtfacq_e_dsl(vertical_size).ndarray
+    )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
     scalfac_dd3d = test_utils.array_to_array_info(metrics_savepoint.scalfac_dd3d().ndarray)
@@ -521,25 +498,13 @@ def test_dycore_wrapper_granule_inputs(
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(num_levels),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(vertical_size),
         exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
         coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
         coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
-    )
-    expected_vertical_config = VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    expected_vertical_params = v_grid.VerticalGrid(
-        config=expected_vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
     )
     expected_config = definitions.construct_nonhydrostatic_config(experiment)
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
@@ -613,8 +578,6 @@ def test_dycore_wrapper_granule_inputs(
         dycore_wrapper.solve_nh_init(
             ffi=ffi,
             perf_counters=None,
-            vct_a=vct_a,
-            vct_b=vct_b,
             c_lin_e=c_lin_e,
             c_intp=c_intp,
             e_flx_avg=e_flx_avg,
@@ -665,7 +628,6 @@ def test_dycore_wrapper_granule_inputs(
             coeff2_dwdz=coeff2_dwdz,
             coeff_gradekin=coeff_gradekin,
             c_owner_mask=c_owner_mask,
-            rayleigh_damping_height=rayleigh_damping_height,
             itime_scheme=itime_scheme,
             iadv_rhotheta=iadv_rhotheta,
             igradp_method=igradp_method,
@@ -689,11 +651,7 @@ def test_dycore_wrapper_granule_inputs(
             divdamp_z2=divdamp_z2,
             divdamp_z3=divdamp_z3,
             divdamp_z4=divdamp_z4,
-            lowest_layer_thickness=lowest_layer_thickness,
-            model_top_height=model_top_height,
-            stretch_factor=stretch_factor,
             nflat_gradp=nflat_gradp,
-            num_levels=num_levels,
             backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
 
@@ -730,11 +688,6 @@ def test_dycore_wrapper_granule_inputs(
             captured_kwargs["interpolation_state"], expected_interpolation_state
         )
         assert result, f"Interpolation State comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
-            captured_kwargs["vertical_params"], expected_vertical_params
-        )
-        assert result, f"Vertical Params comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
             captured_kwargs["edge_geometry"], expected_edge_geometry

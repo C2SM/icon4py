@@ -342,10 +342,6 @@ def diffusion_run_wrapper(
 
 @ffi.def_extern()
 def diffusion_init_wrapper(
-    vct_a,
-    vct_a_size_0,
-    vct_b,
-    vct_b_size_0,
     theta_ref_mc,
     theta_ref_mc_size_0,
     theta_ref_mc_size_1,
@@ -390,7 +386,6 @@ def diffusion_init_wrapper(
     zd_intcoef_size_1,
     zd_intcoef_size_2,
     ndyn_substeps,
-    rayleigh_damping_height,
     diffusion_type,
     hdiff_w,
     hdiff_vn,
@@ -406,9 +401,6 @@ def diffusion_init_wrapper(
     nudge_max_coeff,
     itype_sher,
     ltkeshs,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
     backend,
     on_gpu,
 ):
@@ -422,10 +414,6 @@ def diffusion_init_wrapper(
                     unpack_start_time = _runtime.perf_counter()
 
             # ArrayInfos
-
-            vct_a = (vct_a, (vct_a_size_0,), on_gpu, False)
-
-            vct_b = (vct_b, (vct_b_size_0,), on_gpu, False)
 
             theta_ref_mc = (
                 theta_ref_mc,
@@ -578,8 +566,6 @@ def diffusion_init_wrapper(
             diffusion_init(
                 ffi=ffi,
                 perf_counters=perf_counters,
-                vct_a=vct_a,
-                vct_b=vct_b,
                 theta_ref_mc=theta_ref_mc,
                 wgtfac_c=wgtfac_c,
                 e_bln_c_s=e_bln_c_s,
@@ -595,7 +581,6 @@ def diffusion_init_wrapper(
                 zd_vertoffset=zd_vertoffset,
                 zd_intcoef=zd_intcoef,
                 ndyn_substeps=ndyn_substeps,
-                rayleigh_damping_height=rayleigh_damping_height,
                 diffusion_type=diffusion_type,
                 hdiff_w=hdiff_w,
                 hdiff_vn=hdiff_vn,
@@ -611,9 +596,6 @@ def diffusion_init_wrapper(
                 nudge_max_coeff=nudge_max_coeff,
                 itype_sher=itype_sher,
                 ltkeshs=ltkeshs,
-                lowest_layer_thickness=lowest_layer_thickness,
-                model_top_height=model_top_height,
-                stretch_factor=stretch_factor,
                 backend=backend,
             )
 
@@ -632,38 +614,6 @@ def diffusion_init_wrapper(
 
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
-
-                    vct_a_arr = (
-                        _conversion.as_array(ffi, vct_a, _definitions.FLOAT64)
-                        if vct_a is not None
-                        else None
-                    )
-                    msg = "shape of vct_a after computation = %s" % str(
-                        vct_a_arr.shape if vct_a is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "vct_a after computation: %s" % str(vct_a_arr)
-                        if vct_a is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    vct_b_arr = (
-                        _conversion.as_array(ffi, vct_b, _definitions.FLOAT64)
-                        if vct_b is not None
-                        else None
-                    )
-                    msg = "shape of vct_b after computation = %s" % str(
-                        vct_b_arr.shape if vct_b is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "vct_b after computation: %s" % str(vct_b_arr)
-                        if vct_b is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
 
                     theta_ref_mc_arr = (
                         _conversion.as_array(ffi, theta_ref_mc, _definitions.FLOAT64)
