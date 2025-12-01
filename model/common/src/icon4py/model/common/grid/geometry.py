@@ -667,8 +667,6 @@ class TorusGridGeometry(GridGeometry):
         inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
         self.register_provider(inverse_dual_edge_length)
 
-        # TODO(msimberg): Is this needed for torus? Even the serialized data
-        # doesn't seem to make sense. Earth radius is used even for the torus.
         vertex_vertex_distance = factory.ProgramFieldProvider(
             func=stencils.compute_distance_of_far_edges_in_diamond_torus,
             domain={
