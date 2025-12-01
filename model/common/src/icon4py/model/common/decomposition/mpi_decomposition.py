@@ -20,23 +20,15 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 from icon4py.model.common.orchestration import halo_exchange
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import ghex  # type: ignore [import-not-found]
-    import mpi4py  # type: ignore [import-not-found]
+    import ghex  # type: ignore  [no-untyped-def]
+    import mpi4py
+    from ghex import unstructured, util
     from ghex.context import make_context  # type: ignore [import-not-found]
-    from ghex.unstructured import (  # type: ignore [import-not-found]
-        DomainDescriptor,
-        HaloGenerator,
-        make_communication_object,
-        make_field_descriptor,
-        make_pattern,
-    )
-    from ghex.util import Architecture  # type: ignore [import-not-found]
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -48,7 +40,7 @@ except ImportError:
 
 
 if TYPE_CHECKING:
-    import mpi4py.MPI  # type: ignore [import-not-found]
+    import mpi4py.MPI
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -100,21 +92,21 @@ class ParallelLogger(logging.Filter):
 
 @definitions.get_processor_properties.register(definitions.MultiNodeRun)
 def get_multinode_properties(
-    s: definitions.MultiNodeRun, comm_id: CommId = None
+    s: definitions.RunType, comm_id: CommId = None
 ) -> definitions.ProcessProperties:
     return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
 @dataclass(frozen=True)
 class MPICommProcessProperties(definitions.ProcessProperties):
-    comm: mpi4py.MPI.Comm = None
+    comm: mpi4py.MPI.Comm
 
     @functools.cached_property
-    def rank(self) -> int:  # type: ignore [override]
+    def rank(self) -> int:
         return self.comm.Get_rank()
 
     @functools.cached_property
-    def comm_name(self) -> str:  # type: ignore [override]
+    def comm_name(self) -> str:
         return self.comm.Get_name()
 
     @functools.cached_property
@@ -139,12 +131,16 @@ class GHexMultiNodeExchange:
             dim: self._create_domain_descriptor(dim)
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
+        self._field_size: dict[gtx.Dimension : int] = {
+            dim: self._decomposition_info.global_index(dim).shape[0]
+            for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
         self._patterns = {
             dim: self._create_pattern(dim) for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
-        self._comm = make_communication_object(self._context)
+        self._comm = unstructured.make_communication_object(self._context)
 
         # DaCe SDFGConvertible interface
         self.num_of_halo_tasklets = (
@@ -155,7 +151,7 @@ class GHexMultiNodeExchange:
 
         log.info("communication object initialized")
 
-    def _domain_descriptor_info(self, descr: DomainDescriptor) -> str:
+    def _domain_descriptor_info(self, descr: unstructured.DomainDescriptor) -> str:
         return f" domain_descriptor=[id='{descr.domain_id()}', size='{descr.size()}', inner_size='{descr.inner_size()}' (halo size='{descr.size() - descr.inner_size()}')"
 
     def get_size(self) -> int:
@@ -164,7 +160,7 @@ class GHexMultiNodeExchange:
     def my_rank(self) -> int:
         return self._context.rank()
 
-    def _create_domain_descriptor(self, dim: gtx.Dimension) -> DomainDescriptor:
+    def _create_domain_descriptor(self, dim: gtx.Dimension) -> unstructured.DomainDescriptor:
         all_global = self._decomposition_info.global_index(
             dim, definitions.DecompositionInfo.EntryType.ALL
         )
@@ -174,7 +170,7 @@ class GHexMultiNodeExchange:
         # first arg is the domain ID which builds up an MPI Tag.
         # if those ids are not different for all domain descriptors the system might deadlock
         # if two parallel exchanges with the same domain id are done
-        domain_desc = DomainDescriptor(
+        domain_desc = unstructured.DomainDescriptor(
             self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )
         log.debug(
@@ -182,15 +178,15 @@ class GHexMultiNodeExchange:
         )
         return domain_desc
 
-    def _create_pattern(self, horizontal_dim: gtx.Dimension) -> DomainDescriptor:
+    def _create_pattern(self, horizontal_dim: gtx.Dimension) -> unstructured.DomainDescriptor:
         assert horizontal_dim.kind == gtx.DimensionKind.HORIZONTAL
 
         global_halo_idx = self._decomposition_info.global_index(
             horizontal_dim, definitions.DecompositionInfo.EntryType.HALO
         )
-        halo_generator = HaloGenerator.from_gids(global_halo_idx)
+        halo_generator = unstructured.HaloGenerator.from_gids(global_halo_idx)
         log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
-        pattern = make_pattern(
+        pattern = unstructured.make_pattern(
             self._context,
             halo_generator,
             [self._domain_descriptors[horizontal_dim]],
@@ -203,15 +199,20 @@ class GHexMultiNodeExchange:
     def _slice_field_based_on_dim(self, field: gtx.Field, dim: gtx.Dimension) -> data_alloc.NDArray:
         """
         Slices the field based on the dimension passed in.
+
+        This is a helper function needed for the granule - Fortran integration. As the Fortran fields have nproma
+        size but the global_index fields used to initialize GHEX exchanges have only local num_edge,
+        num_cell_num_vertex size.
         """
-        if dim == dims.VertexDim:
-            return field.ndarray[: self._decomposition_info.num_vertices, :]
-        elif dim == dims.EdgeDim:
-            return field.ndarray[: self._decomposition_info.num_edges, :]
-        elif dim == dims.CellDim:
-            return field.ndarray[: self._decomposition_info.num_cells, :]
-        else:
-            raise ValueError(f"Unknown dimension {dim}")
+        print(f" field = {field}, {type(field)}")
+        try:
+            assert field.ndarray.ndim == 2
+            trim_length = self._field_size[dim]
+            return field.ndarray[:trim_length, :]
+        except KeyError:
+            log.warning(
+                f"Trying to trim field of invalid dimension {dim} for exchange. Not trimming."
+            )
 
     def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field) -> str:
         # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
@@ -224,10 +225,12 @@ class GHexMultiNodeExchange:
             assert dim in f.domain.dims
             array = self._slice_field_based_on_dim(f, dim)
             self._applied_patterns_cache[key] = self._patterns[dim](
-                make_field_descriptor(
+                unstructured.make_field_descriptor(
                     self._domain_descriptors[dim],
                     array,
-                    arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
+                    arch=unstructured.Architecture.CPU
+                    if isinstance(f.ndarray, np.ndarray)
+                    else unstructured.Architecture.GPU,
                 )
             )
             return self._applied_patterns_cache[key]
@@ -408,4 +411,4 @@ def create_multinode_node_exchange(
     if props.comm_size > 1:
         return GHexMultiNodeExchange(props, decomp_info)
     else:
-        return SingleNodeExchange()
+        return definitions.SingleNodeExchange()

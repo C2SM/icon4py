@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 
 try:
-    import mpi4py  # type: ignore[import-not-found] # F401:  import mpi4py to check for optional mpi dependency
+    import mpi4py
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 

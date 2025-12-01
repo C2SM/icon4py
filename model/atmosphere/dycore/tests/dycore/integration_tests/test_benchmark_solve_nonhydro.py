@@ -32,7 +32,6 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import grid_utils
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
     interpolation_field_source,
@@ -61,8 +60,6 @@ def solve_nonhydro(
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
-
-    decomposition_info = grid_utils.construct_decomposition_info(mesh, allocator)
 
     vertical_config = v_grid.VerticalGridConfig(
         mesh.num_levels,
@@ -204,11 +201,7 @@ def solve_nonhydro(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=gtx.as_field(
-            (dims.CellDim,),
-            decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type] # mypy not take the type of owner_mask
-            allocator=allocator,
-        ),
+        owner_mask=grid_geometry.get("cell_owner_mask"),
         backend=backend_like,
     )
 
