@@ -202,7 +202,7 @@ class GridGeometry(factory.FieldSource):
                 "vertex_lon": attrs.VERTEX_LON,
             },
             params={"radius": self._grid.global_properties.radius},
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(vertex_vertex_distance)
 
