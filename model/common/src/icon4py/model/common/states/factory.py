@@ -330,9 +330,9 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]] | tuple[gtx.Dimension, ...],
         fields: dict[str, str],  # keyword arg to (field_operator, field_name)
         deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
+        do_exchange: bool,
         params: dict[str, state_utils.ScalarType]
         | None = None,  # keyword arg to (field_operator, field_name)
-        do_exchange: bool = True,
     ):
         self._func = func
         self._dims: (
@@ -496,8 +496,8 @@ class ProgramFieldProvider(FieldProvider):
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
         fields: dict[str, str],
         deps: dict[str, str],
+        do_exchange: bool,
         params: dict[str, state_utils.ScalarType] | None = None,
-        do_exchange: bool = True,
     ):
         self._func = func
         self._compute_domain = domain
@@ -649,9 +649,9 @@ class NumpyDataProvider(FieldProvider):
         domain: Sequence[gtx.Dimension],
         fields: Sequence[str],
         deps: dict[str, str],
+        do_exchange: bool,
         connectivities: dict[str, gtx.Dimension] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
-        do_exchange: bool = True,
     ):
         self._func = func
         self._dims = tuple(map(replace_khalfdim, domain))

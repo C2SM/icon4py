@@ -568,7 +568,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         target_dims: Sequence[gtx.Dimension],
         fields: Sequence[str],
         pairs: Sequence[tuple[str, ...]],
-        do_exchange: bool = True,
+        do_exchange: bool,
     ):
         assert len(target_dims) == 2
         assert target_dims[1].kind == gtx.DimensionKind.LOCAL

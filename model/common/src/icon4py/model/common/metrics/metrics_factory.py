@@ -235,6 +235,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"out_field": attrs.DDQZ_Z_FULL_E},
+            do_exchange=True,
         )
         self.register_provider(ddqz_full_on_edges)
 
@@ -449,6 +450,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={attrs.DDXT_Z_HALF_E: attrs.DDXT_Z_HALF_E},
+            do_exchange=True,
         )
         self.register_provider(compute_ddxt_z_half_e)
 
@@ -469,6 +471,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={attrs.DDXN_Z_HALF_E: attrs.DDXN_Z_HALF_E},
+            do_exchange=True,
         )
         self.register_provider(compute_ddxn_z_half_e)
 
@@ -491,6 +494,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"average": attrs.DDXN_Z_FULL},
+            do_exchange=True,
         )
         self.register_provider(compute_ddxn_z_full)
 
@@ -512,6 +516,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"average": attrs.DDXT_Z_FULL},
+            do_exchange=True,
         )
         self.register_provider(compute_ddxt_z_full)
 
@@ -728,6 +733,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),  # type: ignore [attr-defined]
                 "grf_nudgezone_width": gtx.int32(refinement.DEFAULT_GRF_NUDGEZONE_WIDTH),  # type: ignore [attr-defined]
             },
+            do_exchange=True,
         )
         self.register_provider(compute_horizontal_mask_for_3d_divdamp)
 
