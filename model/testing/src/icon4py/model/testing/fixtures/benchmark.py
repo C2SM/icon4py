@@ -43,7 +43,7 @@ def geometry_field_source(
     generic_concrete_backend = model_options.customize_backend(None, backend_like)
     decomposition_info = grid_utils.construct_decomposition_info(mesh, allocator)
 
-    geometry_field_source = grid_geometry.GridGeometry(
+    geometry_field_source = grid_geometry.GridGeometry.with_geometry_type(
         grid=mesh,
         decomposition_info=decomposition_info,
         backend=generic_concrete_backend,
