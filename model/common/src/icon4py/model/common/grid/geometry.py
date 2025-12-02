@@ -121,10 +121,13 @@ class GridGeometry(factory.FieldSource):
         if self._geometry_type == base.GeometryType.TORUS:
             coordinates_[attrs.CELL_CENTER_X] = coordinates[dims.CellDim]["x"]
             coordinates_[attrs.CELL_CENTER_Y] = coordinates[dims.CellDim]["y"]
+            coordinates_[attrs.CELL_CENTER_Z] = coordinates[dims.CellDim]["z"]
             coordinates_[attrs.EDGE_CENTER_X] = coordinates[dims.EdgeDim]["x"]
             coordinates_[attrs.EDGE_CENTER_Y] = coordinates[dims.EdgeDim]["y"]
+            coordinates_[attrs.EDGE_CENTER_Z] = coordinates[dims.EdgeDim]["z"]
             coordinates_[attrs.VERTEX_X] = coordinates[dims.VertexDim]["x"]
             coordinates_[attrs.VERTEX_Y] = coordinates[dims.VertexDim]["y"]
+            coordinates_[attrs.VERTEX_Z] = coordinates[dims.VertexDim]["z"]
 
         coordinate_provider = factory.PrecomputedFieldProvider(coordinates_)
         self.register_provider(coordinate_provider)
@@ -219,7 +222,8 @@ class GridGeometry(factory.FieldSource):
         inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
         self.register_provider(inverse_dual_edge_length)
 
-        # Cartesian coordinates for icosahedron geometry
+        # Cartesian coordinates for icosahedron geometry (the torus reads them
+        # from the grid file)
         if self._geometry_type == base.GeometryType.ICOSAHEDRON:
             self._register_cartesian_coordinates_icosahedron()
 
