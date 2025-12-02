@@ -199,9 +199,11 @@ def test_compute_inverse_vertex_vertex_length(
     expected = grid_savepoint.inv_vert_vert_length().asnumpy()
     result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH).asnumpy()
     if grid_geometry.grid.geometry_type == base.GeometryType.TORUS:
-        # TODO(msimberg, jcanton): icon fortran multiplies sphere radius even for torus
-        # grids. Fix submitted upstream. The following can be removed when fixed
-        # serialized data is available.
+        # TODO(msimberg, jcanton): icon fortran multiplies sphere radius even
+        # for torus grids. Fix submitted upstream. The following can be removed
+        # when fixed serialized data is available.
+        # https://gitlab.dkrz.de/icon-libraries/libiconmath/-/merge_requests/82
+        # https://gitlab.dkrz.de/icon/icon-nwp/-/merge_requests/1916
         result = result / constants.EARTH_RADIUS
     assert test_utils.dallclose(result, expected, rtol=rtol)
 
