@@ -6,8 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from collections.abc import Sequence
-from typing import Callable
+from collections.abc import Callable, Sequence
 from types import ModuleType
 
 import gt4py.next as gtx

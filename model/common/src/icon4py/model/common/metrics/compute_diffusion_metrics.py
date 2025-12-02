@@ -5,8 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import typing
+from collections.abc import Sequence
 from types import ModuleType
-from typing import Callable, Sequence
 
 import gt4py.next as gtx
 import numpy as np
@@ -19,7 +20,7 @@ def compute_max_nbhgt_array_ns(
     c2e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     nlev: int,
-    exchange: Callable[Sequence[gtx.Dimension], data_alloc.NDArray],
+    exchange: typing.Callable[Sequence[gtx.Dimension], data_alloc.NDArray],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     z_mc_nlev = z_mc[:, nlev - 1]
