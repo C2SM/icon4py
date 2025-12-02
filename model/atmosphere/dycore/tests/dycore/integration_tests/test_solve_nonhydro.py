@@ -1625,19 +1625,20 @@ def test_apply_divergence_damping_and_update_vn(
     corrector_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(1)
     normal_wind_tendency_due_to_slow_physics_process = sp_stencil_init.ddt_vn_phy()
     normal_wind_iau_increment = sp_stencil_init.vn_incr()
-    reduced_fourth_order_divdamp_coeff_at_nest_boundary = sp_nh_init.bdy_divdamp()
-    fourth_order_divdamp_scaling_coeff = sp_nh_init.scal_divdamp()
+    interpolated_fourth_order_divdamp_factor = sp_nh_init.enh_divdamp_fac()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     horizontal_pressure_gradient = sp_stencil_init.z_gradh_exner()
     current_vn = sp_stencil_init.vn()
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
     config = definitions.construct_nonhydrostatic_config(experiment)
+    mean_cell_area = grid_savepoint.mean_cell_area()
+    max_nudging_coefficient = grid_savepoint.nudge_max_coeff()
 
     iau_wgt_dyn = config.iau_wgt_dyn
     divdamp_order = config.divdamp_order
     second_order_divdamp_scaling_coeff = (
-        sp_nh_init.divdamp_fac_o2() * grid_savepoint.mean_cell_area()
+        sp_nh_init.divdamp_fac_o2() * mean_cell_area
     )
     second_order_divdamp_factor = savepoint_nonhydro_init.divdamp_fac_o2()
     apply_2nd_order_divergence_damping = (
@@ -1668,8 +1669,6 @@ def test_apply_divergence_damping_and_update_vn(
         normal_wind_iau_increment=normal_wind_iau_increment,
         theta_v_at_edges_on_model_levels=theta_v_at_edges_on_model_levels,
         horizontal_pressure_gradient=horizontal_pressure_gradient,
-        reduced_fourth_order_divdamp_coeff_at_nest_boundary=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-        fourth_order_divdamp_scaling_coeff=fourth_order_divdamp_scaling_coeff,
         second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
@@ -1684,6 +1683,12 @@ def test_apply_divergence_damping_and_update_vn(
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
         apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+        divdamp_order=divdamp_order,
+        mean_cell_area=mean_cell_area,
+        second_order_divdamp_factor=second_order_divdamp_factor,
+        max_nudging_coefficient=max_nudging_coefficient,
+        dbl_eps=constants.DBL_EPS,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,
         vertical_start=gtx.int32(0),
