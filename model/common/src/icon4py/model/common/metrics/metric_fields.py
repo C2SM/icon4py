@@ -31,6 +31,7 @@ from gt4py.next import (
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common.decomposition.mpi_decomposition import GlobalReductions
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, Koff
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -608,8 +609,8 @@ def compute_nflat_gradp(
         flat_idx_max,
         nlev,
     )
-    nflat_gradp = array_ns.min(mask_array)
-    return nflat_gradp.item()
+    nflat_gradp = GlobalReductions(array_ns=array_ns).global_min(mask_array)
+    return nflat_gradp
 
 
 @gtx.field_operator
