@@ -443,12 +443,14 @@ def create_multinode_node_exchange(
 
 class GlobalReductions(Reductions):
     def __init__(self, array_ns: ModuleType = np):
-        self.runtype = definitions.get_runtype(with_mpi=True)
-        self.props = get_multinode_properties(self.runtype)
         self._xp = array_ns
 
     def global_min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        min_buffer_arr = self._xp.array([self._xp.min(buffer)])
-        recv_buffer = self._xp.empty(1, dtype=buffer.dtype)
-        self.props.comm.Allreduce(min_buffer_arr, recv_buffer, mpi4py.MPI.MIN)
+        if mpi4py is None:
+            recv_buffer = self._xp.min(buffer)
+        else:
+            props = get_multinode_properties(definitions.get_runtype(with_mpi=True))
+            min_buffer_arr = self._xp.array([self._xp.min(buffer)])
+            recv_buffer = self._xp.empty(1, dtype=buffer.dtype)
+            props.comm.Allreduce(min_buffer_arr, recv_buffer, mpi4py.MPI.MIN)
         return recv_buffer.item()
