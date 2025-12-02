@@ -31,7 +31,7 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
-from ...interpolation import utils
+from ... import utils
 
 
 if TYPE_CHECKING:

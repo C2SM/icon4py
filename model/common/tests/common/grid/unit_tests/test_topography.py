@@ -16,7 +16,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures import *  # noqa: F403
 
-from ...interpolation import utils
+from ... import utils
 
 
 if TYPE_CHECKING:

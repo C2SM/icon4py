@@ -42,7 +42,7 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
-from .. import utils
+from ... import utils
 
 
 cell_domain = h_grid.domain(dims.CellDim)

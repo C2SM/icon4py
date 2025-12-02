@@ -9,7 +9,6 @@
 import hashlib
 from typing import Any
 
-import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import numpy.typing as npt
@@ -72,7 +71,3 @@ def is_dace(backend: gtx_typing.Backend | None) -> bool:
 
 def is_gtfn_backend(backend: gtx_typing.Backend | None) -> bool:
     return "gtfn" in backend.name if backend else False
-
-
-def dummy_exchange(dim: gtx.Dimension, field: gtx.Field) -> None:
-    return None
