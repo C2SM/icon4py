@@ -174,6 +174,9 @@ class ExchangeRuntime(Protocol):
 
     def my_rank(self) -> int: ...
 
+    def __str__(self) -> str:
+        return f"{self.__class__} (rank = {self.my_rank()} / {self.get_size()})"
+
 
 @dataclasses.dataclass
 class SingleNodeExchange:

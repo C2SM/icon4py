@@ -15,7 +15,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import definitions, test_utils
@@ -426,7 +425,7 @@ def test_compute_vertical_coordinate(
         SLEVE_minimum_relative_layer_thickness_2=0.5,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,
         array_ns=xp,
-        halo_exchange=dummy_exchange,
+        exchange=dummy_exchange,
     )
 
     assert test_utils.dallclose(

@@ -96,12 +96,12 @@ def as_exchangeable_field(field: state_utils.GTXFieldType) -> Iterator[state_uti
 
 
 class NeedsExchange(Protocol):
-    def needs_exchange(self) -> bool:
-        return False
+    def needs_exchange(self) -> bool: ...
 
     def exchange(
         self, fields: Mapping[str, state_utils.FieldType], exchange: decomposition.ExchangeRuntime
     ) -> None:
+        log.debug(f"provider for fields {fields.keys()} needs exchange {self.needs_exchange()}")
         if self.needs_exchange():
             # ghex assumes all fields to in one call to have the same `dtype`, this is not the case for all producer functions in icon4py,
             # hence as a simple workaround we loop over the fields
@@ -263,6 +263,7 @@ class CompositeSource(FieldSource):
         self._backend = me.backend
         self._grid = me.grid
         self._vertical_grid = me.vertical_grid
+        self._exchange = me._exchange
         self._metadata = collections.ChainMap(me.metadata, *(s.metadata for s in others))
         self._providers = collections.ChainMap(me._providers, *(s._providers for s in others))
 
@@ -293,6 +294,9 @@ class PrecomputedFieldProvider(FieldProvider):
     @property
     def dependencies(self) -> Sequence[str]:
         return ()
+
+    def needs_exchange(self) -> bool:
+        return False
 
     def __call__(
         self,
@@ -370,6 +374,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
         exchange: decomposition.ExchangeRuntime,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
+            log.debug(f"computing fields  {self.fields.keys()}")
             self._compute(field_src, grid)
             self.exchange(self.fields, exchange)
         return self.fields[field_name]
@@ -505,6 +510,7 @@ class ProgramFieldProvider(FieldProvider):
         self._dependencies = deps
         self._output = fields
         self._params = params if params is not None else {}
+        self.ready = False
         self._fields: dict[str, gtx.Field | state_utils.ScalarType | None] = {
             name: None for name in fields.values()
         }
@@ -606,6 +612,7 @@ class ProgramFieldProvider(FieldProvider):
             dtype = {v: ta.wpfloat for v in self._output.values()}
 
         self._fields = self._allocate(backend, grid_provider.grid, dtype=dtype)
+        log.debug(f" getting dependencies {self._dependencies.values()} from {factory}")
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})

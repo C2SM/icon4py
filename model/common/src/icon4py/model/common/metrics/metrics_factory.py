@@ -137,7 +137,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
                 array_ns=self._xp,
-                halo_exchange=self._exchange.exchange_and_wait,
+                exchange=self._exchange.exchange_buffers,
             ),
             fields=(attrs.CELL_HEIGHT_ON_HALF_LEVEL,),
             domain=(dims.CellDim, dims.KHalfDim),
@@ -494,7 +494,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"average": attrs.DDXN_Z_FULL},
-            do_exchange=True,
+            do_exchange=False,
         )
         self.register_provider(compute_ddxn_z_full)
 
@@ -507,7 +507,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.LOCAL),
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     edge_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
@@ -562,8 +562,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_exner_exfac = factory.ProgramFieldProvider(
             func=mf.compute_exner_exfac.with_backend(self._backend),
             deps={
-                "ddxn_z_full": attrs.DDXN_Z_FULL,
-                "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
+                "maxslp": attrs.MAXSLP,
+                "maxhgtd": attrs.MAXHGTD,
             },
             domain={
                 dims.CellDim: (
@@ -741,7 +741,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl,
                 array_ns=self._xp,
-                halo_exchange=self._exchange.exchange_and_wait,
+                exchange=self._exchange.exchange_buffers,
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -765,7 +765,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
                 ),
             },
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_zdiff_gradp_dsl_np)
 
@@ -804,7 +804,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 weight_factors.compute_wgtfacq_e_dsl,
                 array_ns=self._xp,
-                halo_exchange=self._exchange.exchange_and_wait,
+                exchange=self._exchange.exchange_buffers,
             ),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -828,7 +828,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.CellDim: (
-                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    cell_domain(h_grid.Zone.LOCAL),
                     cell_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
@@ -837,7 +837,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={attrs.MAXSLP: attrs.MAXSLP, attrs.MAXHGTD: attrs.MAXHGTD},
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_maxslp_maxhgtd)
 
@@ -859,13 +859,15 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={attrs.MAXSLP_AVG: attrs.MAXSLP_AVG, attrs.MAXHGTD_AVG: attrs.MAXHGTD_AVG},
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_weighted_cell_neighbor_sum)
 
         compute_max_nbhgt = factory.NumpyDataProvider(
             func=functools.partial(
-                compute_diffusion_metrics.compute_max_nbhgt_array_ns, array_ns=self._xp
+                compute_diffusion_metrics.compute_max_nbhgt_array_ns,
+                array_ns=self._xp,
+                exchange=self._exchange.exchange_buffers,
             ),
             deps={
                 "z_mc": attrs.Z_MC,

@@ -34,8 +34,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     ranked_data_path,
 )
-
-from .. import utils
+from icon4py.model.testing.test_utils import dummy_exchange
 
 
 if TYPE_CHECKING:
@@ -181,7 +180,7 @@ def test_rbf_interpolation_coeffs_cell(
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
-        exchange=utils.dummy_exchange_buffer,
+        exchange=dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -251,7 +250,7 @@ def test_rbf_interpolation_coeffs_vertex(
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
-        exchange=utils.dummy_exchange_buffer,
+        exchange=dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -323,7 +322,7 @@ def test_rbf_interpolation_coeffs_edge(
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
-        exchange=utils.dummy_exchange_buffer,
+        exchange=dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
