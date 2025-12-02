@@ -73,10 +73,10 @@ class Icon4pyDriver:
 
     def _make_timers(self) -> None:
         self._timers: dict[str, Timer] = {}
-        self._timers["timer_solve_nh_first_step"] = Timer("Solve nh: first time step", dp=6)
-        self._timers["timer_solve_nh"] = Timer("Solve nh: after first time step", dp=6)
-        self._timers["timer_diffusion_first_step"] = Timer("Diffusion: first time step", dp=6)
-        self._timers["timer_diffusion"] = Timer("Diffusion: after first time step", dp=6)
+        self._timers["timer_solve_nh_first_step"] = Timer("Solve nh: first time step", dp=6, verbose=False)
+        self._timers["timer_solve_nh"] = Timer("Solve nh: after first time step", dp=6, verbose=False)
+        self._timers["timer_diffusion_first_step"] = Timer("Diffusion: first time step", dp=6, verbose=False)
+        self._timers["timer_diffusion"] = Timer("Diffusion: after first time step", dp=6, verbose=False)
 
     def _initialize_timeloop_parameters(self) -> None:
         """
