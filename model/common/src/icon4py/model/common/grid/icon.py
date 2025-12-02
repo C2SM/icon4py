@@ -52,7 +52,6 @@ class GridShape:
         geometry_type: base.GeometryType,
         subdivision: GridSubdivision | None = None,
     ) -> None:
-
         match geometry_type:
             case base.GeometryType.ICOSAHEDRON:
                 if subdivision is None:
@@ -161,8 +160,8 @@ class GlobalGridParams:
             object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
 
     @property
-    def geometry_type(self) -> base.GeometryType:
-        return self.grid_shape.geometry_type
+    def geometry_type(self) -> base.GeometryType | None:
+        return self.grid_shape.geometry_type if self.grid_shape else None
 
     @property
     def subdivision(self) -> GridSubdivision | None:
