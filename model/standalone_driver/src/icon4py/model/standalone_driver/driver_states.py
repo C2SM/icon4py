@@ -6,19 +6,20 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import datetime
-import statistics
 import dataclasses
+import datetime
 import enum
 import functools
 import logging
+import statistics
 from typing import NamedTuple
+
 from devtools import Timer
 
-from icon4py.model.common import type_alias as ta
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.common import type_alias as ta
 from icon4py.model.common.grid import geometry as grid_geometry
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
@@ -28,7 +29,9 @@ from icon4py.model.common.states import (
 )
 from icon4py.model.standalone_driver import config as driver_config
 
+
 log = logging.getLogger(__name__)
+
 
 class StaticFieldFactories(NamedTuple):
     """
@@ -63,6 +66,7 @@ class DriverStates(NamedTuple):
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState
 
+
 @dataclasses.dataclass
 class _DerivedFormatter(logging.Formatter):
     style: str
@@ -83,6 +87,7 @@ class _DerivedFormatter(logging.Formatter):
             return self._debug_formatter.format(record)
         return super().format(record)
 
+
 @dataclasses.dataclass
 class ModelTimeVariables:
     # This is *only* used to initialize the other fields, not stored on the instance
@@ -99,17 +104,13 @@ class ModelTimeVariables:
     cfl_watch_mode: bool = dataclasses.field(init=False)
 
     def __post_init__(self, config: driver_config.DriverConfig) -> None:
-        self.n_time_steps = int(
-            (config.end_date - config.start_date) / config.dtime
-        )
+        self.n_time_steps = int((config.end_date - config.start_date) / config.dtime)
         self.dtime = config.dtime
         self.dtime_in_seconds = ta.wpfloat(self.dtime.total_seconds())
 
         self.ndyn_substeps_var = config.ndyn_substeps
         self.max_ndyn_substeps = config.ndyn_substeps + 7
-        self.substep_timestep = ta.wpfloat(
-            self.dtime_in_seconds / self.ndyn_substeps_var
-        )
+        self.substep_timestep = ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
 
         self.elapse_time_in_seconds = ta.wpfloat("0.0")
         self.simulation_date = config.start_date
@@ -135,11 +136,13 @@ class ModelTimeVariables:
         """
         self.__post_init__(config)
 
+
 class DriverTimers(enum.Enum):
     solve_nh_first_step = "timer_solve_nh_first_step"
     solve_nh = "timer_solve_nh"
     diffusion_first_step = "timer_diffusion_first_step"
     diffusion = "timer_diffusion"
+
 
 @dataclasses.dataclass
 class TimerCollection:
@@ -168,5 +171,3 @@ class TimerCollection:
                 )
             except RuntimeError:  # noqa: PERF203 `try`-`except` within a loop incurs performance overhead
                 log.info(f"Timer {timer_key} has not started")
-
-

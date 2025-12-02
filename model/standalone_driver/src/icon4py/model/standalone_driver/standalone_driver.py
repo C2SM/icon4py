@@ -20,15 +20,15 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import grid_manager as gm, gridfile, vertical as v_grid
+from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid
 from icon4py.model.common.initialization import jablonowski_williamson_topography
-from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import config as driver_config, driver_states, driver_utils
 
 
 log = logging.getLogger(__name__)
+
 
 class Icon4pyDriver:
     def __init__(
@@ -47,7 +47,9 @@ class Icon4pyDriver:
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
         self.model_time_var = driver_states.ModelTimeVariables(config=config)
-        self.timer_collection = driver_states.TimerCollection([timer.value for timer in driver_states.DriverTimers])
+        self.timer_collection = driver_states.TimerCollection(
+            [timer.value for timer in driver_states.DriverTimers]
+        )
 
         driver_utils.display_driver_setup_in_log_file(
             self.model_time_var.n_time_steps,
@@ -271,7 +273,9 @@ class Icon4pyDriver:
             self.model_time_var.cfl_watch_mode = True
 
         if self.model_time_var.cfl_watch_mode:
-            substep_fraction = ta.wpfloat(self.model_time_var.ndyn_substeps_var / self.config.ndyn_substeps)
+            substep_fraction = ta.wpfloat(
+                self.model_time_var.ndyn_substeps_var / self.config.ndyn_substeps
+            )
             if (
                 global_max_vertical_cfl * substep_fraction
                 > ta.wpfloat("0.9") * self.config.vertical_cfl_threshold
@@ -296,7 +300,8 @@ class Icon4pyDriver:
                         ),
                     )
                     new_ndyn_substeps_var = min(
-                        self.model_time_var.ndyn_substeps_var + ndyn_substeps_increment, self.model_time_var.max_ndyn_substeps
+                        self.model_time_var.ndyn_substeps_var + ndyn_substeps_increment,
+                        self.model_time_var.max_ndyn_substeps,
                     )
                 else:
                     log.warning(
@@ -311,7 +316,10 @@ class Icon4pyDriver:
             if (
                 self.model_time_var.ndyn_substeps_var > self.config.ndyn_substeps
                 and global_max_vertical_cfl
-                * ta.wpfloat(self.model_time_var.ndyn_substeps_var / (self.model_time_var.ndyn_substeps_var - 1))
+                * ta.wpfloat(
+                    self.model_time_var.ndyn_substeps_var
+                    / (self.model_time_var.ndyn_substeps_var - 1)
+                )
                 < vertical_cfl_threshold_for_decrement
             ):
                 self.model_time_var.update_ndyn_substeps(self.model_time_var.ndyn_substeps_var - 1)
@@ -362,10 +370,12 @@ class Icon4pyDriver:
         if self.config.enable_statistics_output:
             # TODO (Chia Rui): Do global max when multinode is ready
             rho_arg_max, max_rho = driver_utils.find_maximum_from_field(
-                prognostic_states.rho, self._xp,
+                prognostic_states.rho,
+                self._xp,
             )
             vn_arg_max, max_vn = driver_utils.find_maximum_from_field(
-                prognostic_states.vn, self._xp,
+                prognostic_states.vn,
+                self._xp,
             )
             w_arg_max, max_w = driver_utils.find_maximum_from_field(prognostic_states.w, self._xp)
 
