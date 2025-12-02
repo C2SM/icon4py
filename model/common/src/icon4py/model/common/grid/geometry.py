@@ -12,7 +12,6 @@ from typing import Any
 
 import gt4py.next.typing as gtx_typing
 from gt4py import next as gtx
-from typing_extensions import assert_never
 
 import icon4py.model.common.math.helpers as math_helpers
 from icon4py.model.common import (
@@ -264,8 +263,6 @@ class GridGeometry(factory.FieldSource):
                         "domain_height": self._grid.global_properties.domain_height,
                     },
                 )
-            case _:
-                assert_never(self._geometry_type)
         self.register_provider(vertex_vertex_distance)
 
         # Inverse of vertex-vertex distance
@@ -323,8 +320,6 @@ class GridGeometry(factory.FieldSource):
                         )
                     }
                 )
-            case _:
-                assert_never(self._geometry_type)
         self.register_provider(coriolis_param)
 
         # Tangent and normal coordinates (geometry-specific)
@@ -333,8 +328,6 @@ class GridGeometry(factory.FieldSource):
                 self._register_normals_and_tangents_icosahedron()
             case base.GeometryType.TORUS:
                 self._register_normals_and_tangents_torus()
-            case _:
-                assert_never(self._geometry_type)
 
     def _register_normals_and_tangents_icosahedron(self) -> None:
         """Register normals and tangents specific to icosahedron geometry."""

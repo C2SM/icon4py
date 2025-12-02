@@ -14,7 +14,6 @@ from typing import Final, TypeVar
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
-from typing_extensions import assert_never
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -63,8 +62,6 @@ class GridShape:
                     )
             case base.GeometryType.TORUS:
                 subdivision = None
-            case _:
-                assert_never(geometry_type)
 
         self.geometry_type = geometry_type
         self.subdivision = subdivision
