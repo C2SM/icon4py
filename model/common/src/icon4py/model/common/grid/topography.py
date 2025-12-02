@@ -35,7 +35,7 @@ def smooth_topography(
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
-    exchange: Callable[[Sequence[gtx.Dimension], gtx.Field], None],
+    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
     num_iterations: int = 25,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:

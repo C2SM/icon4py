@@ -31,6 +31,8 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+from ...interpolation import utils
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
@@ -381,7 +383,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
 
@@ -409,6 +410,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
+        exchange=utils.dummy_exchange_buffer,
         array_ns=xp,
     )
     # TODO (nfarabullini): fix type ignore

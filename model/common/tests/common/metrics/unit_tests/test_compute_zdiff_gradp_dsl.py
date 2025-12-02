@@ -70,6 +70,7 @@ def test_compute_zdiff_gradp_dsl(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k_lev.ndarray,
+        exchange=utils.dummy_exchange_buffer,
         array_ns=xp,
     )
 

@@ -628,6 +628,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         max_flat_index_provider = factory.NumpyDataProvider(
             func=functools.partial(
                 mf.compute_flat_max_idx,
+                exchange=self._exchange.exchange_buffers,
                 array_ns=self._xp,
             ),
             deps={
