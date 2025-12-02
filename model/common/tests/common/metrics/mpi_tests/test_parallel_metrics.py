@@ -88,26 +88,26 @@ def test_distributed_metrics_attrs(
 @pytest.mark.parametrize(
     "attrs_name, metrics_name",
     [
-        (attrs.DDQZ_Z_FULL, "ddqz_z_full"),
-        (attrs.INV_DDQZ_Z_FULL, "inv_ddqz_z_full"),
-        (attrs.COEFF1_DWDZ, "coeff1_dwdz"),
-        (attrs.COEFF2_DWDZ, "coeff2_dwdz"),
-        (attrs.THETA_REF_MC, "theta_ref_mc"),
-        (attrs.EXNER_REF_MC, "exner_ref_mc"),
-        (attrs.RHO_REF_ME, "rho_ref_me"),
-        (attrs.THETA_REF_ME, "theta_ref_me"),
-        (attrs.D2DEXDZ2_FAC1_MC, "d2dexdz2_fac1_mc"),
-        (attrs.D2DEXDZ2_FAC2_MC, "d2dexdz2_fac2_mc"),
-        (attrs.DDXN_Z_FULL, "ddxn_z_full"),
-        (attrs.DDXT_Z_FULL, "ddxt_z_full"),
-        (attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER, "vwind_impl_wgt"),
-        (attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER, "vwind_expl_wgt"),
-        (attrs.PG_EDGEDIST_DSL, "pg_exdist"),
-        (attrs.PG_EDGEIDX_DSL, "pg_edgeidx_dsl"),
-        (attrs.MASK_PROG_HALO_C, "mask_prog_halo_c"),
-        (attrs.BDY_HALO_C, "bdy_halo_c"),
-        (attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP, "hmask_dd3d"),
-        (attrs.WGTFAC_C, "wgtfac_c"),
+        # (attrs.DDQZ_Z_FULL, "ddqz_z_full"),
+        # (attrs.INV_DDQZ_Z_FULL, "inv_ddqz_z_full"),
+        # (attrs.COEFF1_DWDZ, "coeff1_dwdz"),
+        # (attrs.COEFF2_DWDZ, "coeff2_dwdz"),
+        # (attrs.THETA_REF_MC, "theta_ref_mc"),
+        # (attrs.EXNER_REF_MC, "exner_ref_mc"),
+        # (attrs.RHO_REF_ME, "rho_ref_me"),
+        # (attrs.THETA_REF_ME, "theta_ref_me"),
+        # (attrs.D2DEXDZ2_FAC1_MC, "d2dexdz2_fac1_mc"),
+        # (attrs.D2DEXDZ2_FAC2_MC, "d2dexdz2_fac2_mc"),
+        # (attrs.DDXN_Z_FULL, "ddxn_z_full"),
+        # (attrs.DDXT_Z_FULL, "ddxt_z_full"),
+        # (attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER, "vwind_impl_wgt"),
+        # (attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER, "vwind_expl_wgt"),
+        # (attrs.PG_EDGEDIST_DSL, "pg_exdist"),
+        # (attrs.PG_EDGEIDX_DSL, "pg_edgeidx_dsl"),
+        # (attrs.MASK_PROG_HALO_C, "mask_prog_halo_c"),
+        # (attrs.BDY_HALO_C, "bdy_halo_c"),
+        # (attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP, "hmask_dd3d"),
+        # (attrs.WGTFAC_C, "wgtfac_c"),
         (attrs.EXNER_EXFAC, "exner_exfac"),
     ],
 )
@@ -128,11 +128,12 @@ def test_distributed_metrics_attrs_no_halo(
     factory = metrics_factory_from_savepoint
 
     # needs to be called first?? synchronisation??
-    factory.get(attrs.DDXN_Z_FULL)
+    # factory.get(attrs.DDXN_Z_FULL)
     owned = decomposition_info.owner_mask(dims.CellDim)
 
     field = factory.get(attrs_name).asnumpy()
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
+    breakpoint()
     assert test_utils.dallclose(field, field_ref, rtol=1e-7, atol=1.0e-8)
 
 

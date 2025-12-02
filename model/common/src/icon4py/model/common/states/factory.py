@@ -95,9 +95,24 @@ def as_exchangeable_field(field: state_utils.GTXFieldType) -> Iterator[state_uti
     yield field
 
 
+
+
 class NeedsExchange(Protocol):
     def needs_exchange(self) -> bool:
         return False
+
+    def _as_exchangeable_field(self, field: state_utils.GTXFieldType) -> state_utils.FieldType:
+        """Create a 2d View of the field that can be passed to GHEX."""
+        original_dims = field.domain.dims
+        if len(original_dims) > 2:
+            original_shape = field.ndarray.shape
+            tail_size = original_shape[1] * original_shape[2]
+            field = gtx_common._field(
+                field.ndarray.reshape(original_shape[0], -1),
+                domain={original_dims[0]: (0, original_shape[0]), original_dims[1]: (0, tail_size)},
+            )
+        return field
+
 
     def exchange(
         self, fields: Mapping[str, state_utils.FieldType], exchange: decomposition.ExchangeRuntime
@@ -111,8 +126,8 @@ class NeedsExchange(Protocol):
                 assert (
                     first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
                 ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
-                with as_exchangeable_field(field) as buffer:
-                    exchange.exchange_and_wait(first_dim, buffer)
+                buffer = self._as_exchangeable_field(field)
+                exchange.exchange_and_wait(first_dim, buffer)
                 log.debug(f"exchanged buffer for {name}")
 
 

@@ -49,7 +49,7 @@ def _get_metrics_factory(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    exchange: decomposition.Exchange = decomposition.single_node_default,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
 ) -> metrics_factory.MetricsFieldsFactory:
     registry_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = metrics_factories.get(registry_name)
