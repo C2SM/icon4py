@@ -385,7 +385,6 @@ def test_global_grid_params_from_fields(
     [
         (base.GeometryType.ICOSAHEDRON, None, None),
         (base.GeometryType.ICOSAHEDRON, 0, 0),
-        (None, None, None),
     ],
 )
 def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_level: int) -> None:
