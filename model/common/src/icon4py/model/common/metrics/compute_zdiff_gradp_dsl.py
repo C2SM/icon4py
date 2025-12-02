@@ -30,7 +30,6 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     nedges = e2c.shape[0]
-    # exchange((dims.CellDim,), topography)
     z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
 
     exchange((dims.EdgeDim, dims.KDim), z_me)

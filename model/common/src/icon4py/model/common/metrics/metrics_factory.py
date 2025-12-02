@@ -494,7 +494,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"average": attrs.DDXN_Z_FULL},
-            do_exchange=True,
+            do_exchange=False,
         )
         self.register_provider(compute_ddxn_z_full)
 
@@ -507,7 +507,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             domain={
                 dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.LOCAL),
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     edge_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
@@ -582,7 +582,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_exner_exfac)
 
@@ -837,7 +837,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={attrs.MAXSLP: attrs.MAXSLP, attrs.MAXHGTD: attrs.MAXHGTD},
-            do_exchange=False,
+            do_exchange=True,
         )
         self.register_provider(compute_maxslp_maxhgtd)
 
