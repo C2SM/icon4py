@@ -39,8 +39,7 @@ from icon4py.model.testing.fixtures import (
     top_height_limit_for_maximal_layer_thickness,
     topography_savepoint,
 )
-
-from ...interpolation import utils as intp_utils
+from icon4py.model.testing.test_utils import dummy_exchange
 
 
 if TYPE_CHECKING:
@@ -426,7 +425,7 @@ def test_compute_vertical_coordinate(
         SLEVE_minimum_relative_layer_thickness_2=0.5,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,
         array_ns=xp,
-        exchange=intp_utils.dummy_exchange_buffer,
+        exchange=dummy_exchange,
     )
 
     assert test_utils.dallclose(
