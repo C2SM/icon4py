@@ -1,4 +1,4 @@
-# model driver for Python ICON port
+# model driver for Python ICON4Py
 
 `main.py` contains a simple python program to run the experimental ICON python port.
 

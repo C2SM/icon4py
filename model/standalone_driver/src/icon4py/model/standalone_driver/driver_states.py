@@ -6,8 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import datetime
+import statistics
+import dataclasses
+import enum
+import functools
+import logging
 from typing import NamedTuple
+from devtools import Timer
 
+from icon4py.model.common import type_alias as ta
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -18,7 +26,9 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.standalone_driver import config as driver_config
 
+log = logging.getLogger(__name__)
 
 class StaticFieldFactories(NamedTuple):
     """
@@ -52,3 +62,111 @@ class DriverStates(NamedTuple):
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState
+
+@dataclasses.dataclass
+class _DerivedFormatter(logging.Formatter):
+    style: str
+    default_fmt: str
+    debug_fmt: str
+
+    _debug_formatter: logging.Formatter = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        super().__init__(fmt=self.default_fmt, style=self.style)
+        self._debug_formatter = logging.Formatter(
+            fmt=self.debug_fmt,
+            style=self.style,
+        )
+
+    def format(self, record: logging.LogRecord) -> str:
+        if record.levelno == logging.DEBUG:
+            return self._debug_formatter.format(record)
+        return super().format(record)
+
+@dataclasses.dataclass
+class ModelTimeVariables:
+    # This is *only* used to initialize the other fields, not stored on the instance
+    config: dataclasses.InitVar[driver_config.DriverConfig]
+
+    n_time_steps: int = dataclasses.field(init=False)
+    dtime_in_seconds: ta.wpfloat = dataclasses.field(init=False)
+    ndyn_substeps_var: int = dataclasses.field(init=False)
+    max_ndyn_substeps: int = dataclasses.field(init=False)
+    substep_timestep: ta.wpfloat = dataclasses.field(init=False)
+    elapse_time_in_seconds: ta.wpfloat = dataclasses.field(init=False)
+    simulation_date: datetime.datetime = dataclasses.field(init=False)
+    is_first_step_in_simulation: bool = dataclasses.field(init=False)
+    cfl_watch_mode: bool = dataclasses.field(init=False)
+
+    def __post_init__(self, config: driver_config.DriverConfig) -> None:
+        self.n_time_steps = int(
+            (config.end_date - config.start_date) / config.dtime
+        )
+        self.dtime = config.dtime
+        self.dtime_in_seconds = ta.wpfloat(self.dtime.total_seconds())
+
+        self.ndyn_substeps_var = config.ndyn_substeps
+        self.max_ndyn_substeps = config.ndyn_substeps + 7
+        self.substep_timestep = ta.wpfloat(
+            self.dtime_in_seconds / self.ndyn_substeps_var
+        )
+
+        self.elapse_time_in_seconds = ta.wpfloat("0.0")
+        self.simulation_date = config.start_date
+        self.is_first_step_in_simulation = True
+        self.cfl_watch_mode = False
+
+    def next_simulation_date(self) -> None:
+        self.simulation_date += self.dtime
+        self.elapse_time_in_seconds += self.dtime_in_seconds
+
+    @functools.cached_property
+    def validate_config(self) -> None:
+        if self.n_time_steps < 0:
+            raise ValueError("end_date should be larger than start_date. Please check.")
+
+    def update_ndyn_substeps(self, new_ndyn_substeps: int) -> None:
+        self.ndyn_substeps_var = new_ndyn_substeps
+        self.substep_timestep = ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
+
+    def reset(self, config: driver_config.DriverConfig) -> None:
+        """
+        Re-initialize all time-integration-related runtime values from the given config.
+        """
+        self.__post_init__(config)
+
+class DriverTimers(enum.Enum):
+    solve_nh_first_step = "timer_solve_nh_first_step"
+    solve_nh = "timer_solve_nh"
+    diffusion_first_step = "timer_diffusion_first_step"
+    diffusion = "timer_diffusion"
+
+@dataclasses.dataclass
+class TimerCollection:
+    timer_names: dataclasses.InitVar[list[str]]
+    timers: dict[str, Timer] = dataclasses.field(init=False)
+
+    def __post_init__(self, timer_names: list[str]) -> None:
+        timers: dict[str, Timer] = {}
+        for timer in timer_names:
+            timers[timer] = Timer(timer, dp=6, verbose=False)
+        self.timers = timers
+
+    def show_timer_report(
+        self,
+    ) -> None:
+        for timer_key, timer in self.timers.items():
+            try:
+                timer_summary = timer.summary(False)
+                log.info(
+                    f"{timer_key} timer summary: "
+                    f"times={len(timer_summary)}, "
+                    f"mean={statistics.mean(timer_summary):0.8f}s, "
+                    f"stdev={statistics.stdev(timer_summary) if len(timer_summary) > 1 else 0:0.8f}s, "
+                    f"min={min(timer_summary):0.8f}s, "
+                    f"max={max(timer_summary):0.8f}s"
+                )
+            except RuntimeError:  # noqa: PERF203 `try`-`except` within a loop incurs performance overhead
+                log.info(f"Timer {timer_key} has not started")
+
+
