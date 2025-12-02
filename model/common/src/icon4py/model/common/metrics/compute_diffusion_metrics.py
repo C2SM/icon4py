@@ -5,12 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+from collections.abc import Callable, Sequence
 from types import ModuleType
 
 import gt4py.next as gtx
 import numpy as np
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -18,11 +19,13 @@ def compute_max_nbhgt_array_ns(
     c2e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     nlev: int,
+    exchange: Callable[Sequence[gtx.Dimension], data_alloc.NDArray],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     z_mc_nlev = z_mc[:, nlev - 1]
     max_nbhgt_0_1 = array_ns.maximum(z_mc_nlev[c2e2c[:, 0]], z_mc_nlev[c2e2c[:, 1]])
     max_nbhgt = array_ns.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[:, 2]])
+    exchange((dims.CellDim,), max_nbhgt)
     return max_nbhgt
 
 

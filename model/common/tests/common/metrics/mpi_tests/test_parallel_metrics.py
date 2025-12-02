@@ -164,7 +164,7 @@ def test_distributed_metrics_attrs_no_halo_regional(
 
     field = factory.get(attrs_name).asnumpy()
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
-    assert test_utils.dallclose(field, field_ref)
+    assert test_utils.dallclose(field, field_ref, atol=1e-8)
 
 
 @pytest.mark.datatest

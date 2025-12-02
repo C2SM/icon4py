@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from types import ModuleType
 
 import gt4py.next as gtx
@@ -35,7 +35,7 @@ def smooth_topography(
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
-    exchange: Callable[[gtx.Dimension, gtx.Field], None],
+    exchange: Callable[[Sequence[gtx.Dimension], gtx.Field], None],
     num_iterations: int = 25,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
@@ -43,17 +43,14 @@ def smooth_topography(
     Computes the smoothed (laplacian-filtered) topography needed by the SLEVE
     coordinate.
     """
-    # as field _will_ do a copy. The call to ndarray.copy here is to make it explicit that we need a copy.
-    topo_as_field = gtx.as_field((dims.CellDim,), topography.copy(), dtype=topography.dtype)
+    smooth_topo = topography.copy()
     # TODO(@halungge): if the input topopgraphy is properly exchanged, which it should this is not needed here.
-    exchange(topo_as_field.domain.dims[0], topo_as_field)
+    exchange((dims.CellDim,), smooth_topo)
 
     for _ in range(num_iterations):
-        nabla2_topo = compute_nabla2_on_cell(topo_as_field.ndarray, geofac_n2s, c2e2co, array_ns)
-        array_ns.add(
-            topo_as_field.ndarray, 0.125 * nabla2_topo * cell_areas, out=topo_as_field.ndarray
-        )
+        nabla2_topo = compute_nabla2_on_cell(smooth_topo, geofac_n2s, c2e2co, array_ns)
+        array_ns.add(smooth_topo, 0.125 * nabla2_topo * cell_areas, out=smooth_topo)
 
-        exchange(topo_as_field.domain.dims[0], topo_as_field)
+        exchange((dims.CellDim,), smooth_topo)
 
-    return topo_as_field.ndarray
+    return smooth_topo
