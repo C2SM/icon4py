@@ -24,7 +24,7 @@ from icon4py.model.common.math.helpers import (
     normalize_cartesian_vector_on_edges,
     zonal_and_meridional_components_on_edges,
 )
-from icon4py.model.common.utils import data_allocation as alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -73,7 +73,7 @@ def cartesian_coordinates_of_edge_tangent_torus(
     """
     Compute normalized cartesian vector tangential to an edge on a torus grid.
 
-    That is: computes the distance between the two vertices adjacent to the edge:
+    That is: computes the delta between the two vertices adjacent to the edge:
     t = d(v1, v2)
 
     Args:
@@ -96,7 +96,9 @@ def cartesian_coordinates_of_edge_tangent_torus(
     )
     x = edge_orientation * xdiff
     y = edge_orientation * ydiff
-    z = 0.0 * x  # TODO(msimberg): zeros
+    z = 0.0 * x
+    # TODO(msimberg): This should use something like numpy.zeros_like if and
+    # when that becomes available in gt4py.
 
     return normalize_cartesian_vector_on_edges(x, y, z)
 
@@ -158,7 +160,9 @@ def cartesian_coordinates_of_edge_normal_torus(
         edge_normal_y: y coordinate of the normal
         edge_normal_z: y coordinate of the normal
     """
-    z = 0.0 * edge_tangent_x  # TODO(msimberg): zeros
+    z = 0.0 * edge_tangent_x
+    # TODO(msimberg): This should use something like numpy.zeros_like if and
+    # when that becomes available in gt4py.
     return normalize_cartesian_vector_on_edges(-edge_tangent_y, edge_tangent_x, z)
 
 
@@ -794,11 +798,11 @@ def compute_coriolis_parameter_on_edges(
 
 
 def compute_primal_cart_normal(
-    primal_cart_normal_x: alloc.NDArray,
-    primal_cart_normal_y: alloc.NDArray,
-    primal_cart_normal_z: alloc.NDArray,
+    primal_cart_normal_x: data_alloc.NDArray,
+    primal_cart_normal_y: data_alloc.NDArray,
+    primal_cart_normal_z: data_alloc.NDArray,
     array_ns: ModuleType = np,
-) -> alloc.NDArray:
+) -> data_alloc.NDArray:
     primal_cart_normal = array_ns.transpose(
         array_ns.stack(
             (
