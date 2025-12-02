@@ -478,9 +478,10 @@ def make_handler(
     )
     if log_filter is not None:
         handler.addFilter(log_filter)
-    if isinstance(formatter, str):
-        formatter = logging.Formatter(fmt=formatter, style="{")
-    handler.setFormatter(formatter)
+    if formatter is not None:
+        if isinstance(formatter, str):
+            formatter = logging.Formatter(fmt=formatter, style="{")
+        handler.setFormatter(formatter)
     if logging_level is not None:
         handler.setLevel(logging_level)
     return handler

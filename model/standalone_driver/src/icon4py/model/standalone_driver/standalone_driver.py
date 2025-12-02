@@ -411,7 +411,7 @@ class Icon4pyDriver:
                 rho_ndarray * cell_area_ndarray[:, self._xp.newaxis] * cell_thickness_ndarray
             )
             # TODO (Chia Rui): compute total energy
-            log.info(f"TOTAL MASS: {total_mass:.15e}")
+            log.info(f"TOTAL MASS: {total_mass:.15e} kg")
 
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
@@ -479,7 +479,7 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
+        end_date=datetime.datetime(1, 1, 1, 1, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("0.85"),
