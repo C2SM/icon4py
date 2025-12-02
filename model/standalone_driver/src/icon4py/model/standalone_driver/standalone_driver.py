@@ -20,8 +20,9 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid
-from icon4py.model.common.initialization import jablonowski_williamson_topography
+from icon4py.model.common.grid import grid_manager as gm, gridfile, vertical as v_grid
+from icon4py.model.common.initialization import topography
+from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import config as driver_config, driver_states, driver_utils
@@ -90,7 +91,7 @@ class Icon4pyDriver:
         prep_adv = ds.prep_advection_prognostic
 
         log.debug(
-            f"starting time loop for dtime = {self.model_time_var.dtime_in_seconds} s, substep_timestep = {self.model_time_var.substep_timestep} s, n_timesteps = {self.model_time_var.n_time_steps}, substep_timestep = {self.model_time_var.substep_timestep}"
+            f"starting time loop for dtime = {self.model_time_var.dtime_in_seconds} s, substep_timestep = {self.model_time_var.substep_timestep} s, n_timesteps = {self.model_time_var.n_time_steps}"
         )
 
         # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
@@ -249,7 +250,7 @@ class Icon4pyDriver:
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
-        # self._compute_total_mass_and_energy(prognostic_states.next)
+        self._compute_total_mass_and_energy(prognostic_states.next)
 
         # TODO(OngChia): compute airmass for prognostic_state here
 
@@ -270,7 +271,7 @@ class Icon4pyDriver:
             log.warning(
                 "High CFL number for vertical advection in dynamical core, entering watch mode"
             )
-            self.model_time_var.cfl_watch_mode = True
+            self.model_time_var.update_cfl_watch_mode(True)
 
         if self.model_time_var.cfl_watch_mode:
             substep_fraction = ta.wpfloat(
@@ -336,7 +337,7 @@ class Icon4pyDriver:
                     log.warning(
                         "CFL number for vertical advection in dynamical core has decreased, leaving watch mode"
                     )
-                    self.model_time_var.cfl_watch_mode = False
+                    self.model_time_var.update_cfl_watch_mode(False)
 
         # reset max_vertical_cfl to zero
         solve_nonhydro_diagnostic_state.max_vertical_cfl = data_alloc.scalar_like_array(
@@ -395,19 +396,22 @@ class Icon4pyDriver:
                 f"substep / n_substeps : {current_dyn_substep:3d} / {self.model_time_var.ndyn_substeps_var:3d}"
             )
 
-    # def _compute_total_mass_and_energy(
-    #     self, prognostic_states: prognostics.PrognosticState
-    # ) -> None:
-    #     if self.config.enable_statistics_output:
-    #         rho_ndarray = prognostic_states.rho.ndarray
-    #         cell_area_ndarray = self.grid_manager.geometry_fields[
-    #             gridfile.GeometryName.CELL_AREA.value
-    #         ].ndarray
-    #         cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
-    #             metrics_attr.DDQZ_Z_FULL
-    #         ).ndarray
-    #         total_mass = self._xp.sum(rho_ndarray * cell_area_ndarray * cell_thickness_ndarray)
-    #         self._logger.info(f"TOTAL MASS: {total_mass:.10e}, TOTAL ENERGY")
+    def _compute_total_mass_and_energy(
+        self, prognostic_states: prognostics.PrognosticState
+    ) -> None:
+        if self.config.enable_statistics_output:
+            rho_ndarray = prognostic_states.rho.ndarray
+            cell_area_ndarray = self.grid_manager.geometry_fields[
+                gridfile.GeometryName.CELL_AREA.value
+            ].ndarray
+            cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
+                metrics_attr.DDQZ_Z_FULL
+            ).ndarray
+            total_mass = self._xp.sum(
+                rho_ndarray * cell_area_ndarray[:, self._xp.newaxis] * cell_thickness_ndarray
+            )
+            # TODO (Chia Rui): compute total energy
+            log.info(f"TOTAL MASS: {total_mass:.15e}")
 
     def _compute_mean_at_final_time_step(
         self, prognostic_states: prognostics.PrognosticState
@@ -475,7 +479,7 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 1, 0, 0),
+        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("0.85"),
@@ -570,7 +574,7 @@ def initialize_driver(
     )
 
     log.info("initializing the JW topography")
-    cell_topography = jablonowski_williamson_topography.jablonowski_williamson_topography(
+    cell_topography = topography.jablonowski_williamson(
         cell_lat=grid_manager.coordinates[dims.CellDim]["lat"].ndarray,
         u0=35.0,
         array_ns=data_alloc.import_array_ns(allocator=allocator),

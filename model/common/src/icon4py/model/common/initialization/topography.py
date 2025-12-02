@@ -13,7 +13,7 @@ from icon4py.model.common import constants as phy_const
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def jablonowski_williamson_topography(
+def jablonowski_williamson(
     cell_lat: data_alloc.NDArray,
     u0: float,
     array_ns: ModuleType,

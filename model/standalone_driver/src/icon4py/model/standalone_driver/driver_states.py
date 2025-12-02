@@ -68,36 +68,19 @@ class DriverStates(NamedTuple):
 
 
 @dataclasses.dataclass
-class _DerivedFormatter(logging.Formatter):
-    style: str
-    default_fmt: str
-    debug_fmt: str
-
-    _debug_formatter: logging.Formatter = dataclasses.field(init=False)
-
-    def __post_init__(self):
-        super().__init__(fmt=self.default_fmt, style=self.style)
-        self._debug_formatter = logging.Formatter(
-            fmt=self.debug_fmt,
-            style=self.style,
-        )
-
-    def format(self, record: logging.LogRecord) -> str:
-        if record.levelno == logging.DEBUG:
-            return self._debug_formatter.format(record)
-        return super().format(record)
-
-
-@dataclasses.dataclass
 class ModelTimeVariables:
-    # This is *only* used to initialize the other fields, not stored on the instance
+    """
+    This class contains driver's run-time time or date variables.
+    It tracks the current simulation date, substepping information, and cfl watch mode.
+
+    """
+
     config: dataclasses.InitVar[driver_config.DriverConfig]
 
     n_time_steps: int = dataclasses.field(init=False)
-    dtime_in_seconds: ta.wpfloat = dataclasses.field(init=False)
+    dtime: datetime.timedelta = dataclasses.field(init=False)
     ndyn_substeps_var: int = dataclasses.field(init=False)
     max_ndyn_substeps: int = dataclasses.field(init=False)
-    substep_timestep: ta.wpfloat = dataclasses.field(init=False)
     elapse_time_in_seconds: ta.wpfloat = dataclasses.field(init=False)
     simulation_date: datetime.datetime = dataclasses.field(init=False)
     is_first_step_in_simulation: bool = dataclasses.field(init=False)
@@ -106,29 +89,33 @@ class ModelTimeVariables:
     def __post_init__(self, config: driver_config.DriverConfig) -> None:
         self.n_time_steps = int((config.end_date - config.start_date) / config.dtime)
         self.dtime = config.dtime
-        self.dtime_in_seconds = ta.wpfloat(self.dtime.total_seconds())
-
-        self.ndyn_substeps_var = config.ndyn_substeps
-        self.max_ndyn_substeps = config.ndyn_substeps + 7
-        self.substep_timestep = ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
-
         self.elapse_time_in_seconds = ta.wpfloat("0.0")
         self.simulation_date = config.start_date
+        self.ndyn_substeps_var = config.ndyn_substeps
+        self.max_ndyn_substeps = config.ndyn_substeps + 7
         self.is_first_step_in_simulation = True
         self.cfl_watch_mode = False
+
+        if self.n_time_steps < 0:
+            raise ValueError("end_date should be larger than start_date. Please check.")
+
+    @functools.cached_property
+    def dtime_in_seconds(self) -> ta.wpfloat:
+        return ta.wpfloat(self.dtime.total_seconds())
+
+    @property
+    def substep_timestep(self) -> ta.wpfloat:
+        return ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
 
     def next_simulation_date(self) -> None:
         self.simulation_date += self.dtime
         self.elapse_time_in_seconds += self.dtime_in_seconds
 
-    @functools.cached_property
-    def validate_config(self) -> None:
-        if self.n_time_steps < 0:
-            raise ValueError("end_date should be larger than start_date. Please check.")
-
     def update_ndyn_substeps(self, new_ndyn_substeps: int) -> None:
         self.ndyn_substeps_var = new_ndyn_substeps
-        self.substep_timestep = ta.wpfloat(self.dtime_in_seconds / self.ndyn_substeps_var)
+
+    def update_cfl_watch_mode(self, mode: bool) -> None:
+        self.cfl_watch_mode = mode
 
     def reset(self, config: driver_config.DriverConfig) -> None:
         """
@@ -138,10 +125,10 @@ class ModelTimeVariables:
 
 
 class DriverTimers(enum.Enum):
-    solve_nh_first_step = "timer_solve_nh_first_step"
-    solve_nh = "timer_solve_nh"
-    diffusion_first_step = "timer_diffusion_first_step"
-    diffusion = "timer_diffusion"
+    solve_nh_first_step = "solve_nh_first_step"
+    solve_nh = "solve_nh"
+    diffusion_first_step = "diffusion_first_step"
+    diffusion = "diffusion"
 
 
 @dataclasses.dataclass
@@ -158,16 +145,38 @@ class TimerCollection:
     def show_timer_report(
         self,
     ) -> None:
-        for timer_key, timer in self.timers.items():
-            try:
-                timer_summary = timer.summary(False)
+        log.info("===== ICON4Py timer report =====")
+        table_titles = (
+            f"|{'timer name':^30}|"
+            f"{'no. of times called':^23}|"
+            f"{'mean time (s)':^23}|"
+            f"{'std. deviation (s)':^23}|"
+            f"{'min time (s)':^23}|"
+            f"{'max time (s)':^23}|"
+        )
+        log.info(table_titles)
+        log.info("-" * len(table_titles))
+        for timer_name, timer in self.timers.items():
+            times = []
+            for r in timer.results:
+                if not r.finish:
+                    r.capture()
+                times.append(r.elapsed())
+            if len(times) > 0:
                 log.info(
-                    f"{timer_key} timer summary: "
-                    f"times={len(timer_summary)}, "
-                    f"mean={statistics.mean(timer_summary):0.8f}s, "
-                    f"stdev={statistics.stdev(timer_summary) if len(timer_summary) > 1 else 0:0.8f}s, "
-                    f"min={min(timer_summary):0.8f}s, "
-                    f"max={max(timer_summary):0.8f}s"
+                    f"|{timer_name:^30}|"
+                    f"{len(times):^23}|"
+                    f"{statistics.mean(times):^23.8f}|"
+                    f"{statistics.stdev(times) if len(times) > 1 else 0:^23.8f}|"
+                    f"{min(times):^23.8f}|"
+                    f"{max(times):^23.8f}|"
                 )
-            except RuntimeError:  # noqa: PERF203 `try`-`except` within a loop incurs performance overhead
-                log.info(f"Timer {timer_key} has not started")
+            else:
+                log.info(
+                    f"|{timer_name:^30}|"
+                    f"{'not started':^23}|"
+                    f"{'':^23}|"
+                    f"{'':^23}|"
+                    f"{'':^23}|"
+                    f"{'':^23}|"
+                )
