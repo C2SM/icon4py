@@ -11,9 +11,9 @@ import functools
 import logging
 import math
 import pathlib
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from types import ModuleType
-from typing import Final
+from typing import Final, Callable
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing

@@ -8,9 +8,8 @@
 import dataclasses
 import logging
 import math
-from collections.abc import Callable
 from types import ModuleType
-from typing import Final, TypeVar
+from typing import Final, TypeVar, Callable
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
