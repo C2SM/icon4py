@@ -63,7 +63,6 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         )
 
 
-# TODO(msimberg): x, y, z added temporarily for torus grids, but should they be in a separate dict?
 CoordinateDict: TypeAlias = dict[
     gtx.Dimension, dict[Literal["lat", "lon", "x", "y", "z"], gtx.Field]
 ]
@@ -126,8 +125,10 @@ class GridManager:
 
         if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
             geometry_type = base.GeometryType(geometry_type)
+        else:
+            geometry_type = base.GeometryType.ICOSAHEDRON
 
-        self._geometry = self._read_geometry_fields(allocator, geometry_type)
+        self._geometry = self._read_geometry_fields(allocator)
         self._grid = self._construct_grid(
             allocator=allocator, with_skip_values=keep_skip_values, geometry_type=geometry_type
         )
@@ -137,7 +138,7 @@ class GridManager:
     def _read_coordinates(
         self,
         allocator: gtx_typing.FieldBufferAllocationUtil | None,
-        geometry_type: base.GeometryType | None,
+        geometry_type: base.GeometryType,
     ) -> CoordinateDict:
         coordinates = {
             dims.CellDim: {
@@ -245,7 +246,6 @@ class GridManager:
     def _read_geometry_fields(
         self,
         allocator: gtx_typing.FieldBufferAllocationUtil,
-        geometry_type: base.GeometryType | None,
     ) -> GeometryDict:
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
@@ -352,7 +352,7 @@ class GridManager:
         self,
         allocator: gtx_typing.FieldBufferAllocationUtil | None,
         with_skip_values: bool,
-        geometry_type: base.GeometryType | None,
+        geometry_type: base.GeometryType,
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -372,8 +372,6 @@ class GridManager:
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
-            geometry_type = base.GeometryType(geometry_type)
         sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)

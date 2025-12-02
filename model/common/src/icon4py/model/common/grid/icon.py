@@ -49,14 +49,9 @@ class GridShape:
 
     def __init__(
         self,
-        geometry_type: base.GeometryType | None = None,
+        geometry_type: base.GeometryType,
         subdivision: GridSubdivision | None = None,
     ) -> None:
-        if geometry_type is None and subdivision is None:
-            raise ValueError("Either geometry_type or subdivision must be provided")
-
-        if geometry_type is None:
-            geometry_type = base.GeometryType.ICOSAHEDRON
 
         match geometry_type:
             case base.GeometryType.ICOSAHEDRON:
