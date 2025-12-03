@@ -7,10 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import hashlib
-from collections.abc import Sequence
 from typing import Any
 
-import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import numpy.typing as npt
@@ -18,7 +16,6 @@ import pytest
 from typing_extensions import Buffer
 
 from icon4py.model.common import model_options
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def dallclose(
@@ -74,9 +71,3 @@ def is_dace(backend: gtx_typing.Backend | None) -> bool:
 
 def is_gtfn_backend(backend: gtx_typing.Backend | None) -> bool:
     return "gtfn" in backend.name if backend else False
-
-
-def dummy_exchange(
-    dim: gtx.Dimension | Sequence[gtx.Dimension], *field: gtx.Field | data_alloc.NDArray
-) -> None:
-    return None

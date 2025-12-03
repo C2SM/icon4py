@@ -566,7 +566,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     SLEVE_decay_scale_1: ta.wpfloat,
     SLEVE_decay_exponent: ta.wpfloat,
     SLEVE_decay_scale_2: ta.wpfloat,
-    exchange: Callable[[Sequence[gtx.Dimension], gtx.Field], None],
+    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """

@@ -628,6 +628,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         max_flat_index_provider = factory.NumpyDataProvider(
             func=functools.partial(
                 mf.compute_flat_max_idx,
+                exchange=self._exchange.exchange_buffers,
                 array_ns=self._xp,
             ),
             deps={
@@ -765,7 +766,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
                 ),
             },
-            do_exchange=True,
+            do_exchange=False,
         )
         self.register_provider(compute_zdiff_gradp_dsl_np)
 
