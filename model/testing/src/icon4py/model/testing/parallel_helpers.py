@@ -19,8 +19,3 @@ def check_comm_size(
     if props.comm_size not in sizes:
         pytest.xfail(f"wrong comm size: {props.comm_size}: test only works for comm-sizes: {sizes}")
 
-
-@pytest.fixture(scope="session")
-def processor_props(request: pytest.FixtureRequest) -> Iterable[definitions.ProcessProperties]:
-    runtype = definitions.get_runtype(with_mpi=True)
-    yield mpi_decomposition.get_multinode_properties(runtype)

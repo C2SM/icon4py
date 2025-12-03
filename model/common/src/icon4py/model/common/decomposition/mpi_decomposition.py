@@ -57,10 +57,8 @@ log = logging.getLogger(__name__)
 def init_mpi() -> None:
     from mpi4py import MPI
 
-    print("calling init_mpi:")
     if not MPI.Is_initialized():
         log.info("initializing MPI")
-        print("MPI.Init")
         MPI.Init()
 
 
@@ -229,7 +227,7 @@ class GHexMultiNodeExchange:
                 make_field_descriptor(
                     self._domain_descriptors[dim],
                     array,
-                    arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
+                    arch=Architecture.CPU if isinstance(f.ndarray, np.ndarray) else Architecture.GPU,
                 )
             )
             return self._applied_patterns_cache[key]

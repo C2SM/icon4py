@@ -141,6 +141,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 @pytest.mark.parametrize(
