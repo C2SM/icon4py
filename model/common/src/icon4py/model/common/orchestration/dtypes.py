@@ -10,9 +10,7 @@ import sys
 from typing import Final
 
 import dace
-from gt4py.next import Field, common, int32, int64
-
-from icon4py.model.common import type_alias
+from gt4py.next import Field, common, float32, float64, int32, int64
 
 
 CellDim_sym = dace.symbol("CellDim_sym")
@@ -21,17 +19,18 @@ VertexDim_sym = dace.symbol("VertexDim_sym")
 KDim_sym = dace.symbol("KDim_sym")
 
 ICON4PY_PRIMITIVE_DTYPES: Final = (
-    type_alias.wpfloat,
-    type_alias.vpfloat,
+    float32,
+    float64,
     float,
     bool,
     int32,
     int64,
     int,
 )
+
 DACE_PRIMITIVE_DTYPES: Final = (
+    dace.float32,
     dace.float64,
-    dace.float64 if type_alias.precision == "double" else dace.float32,
     dace.float64,
     dace.bool,
     dace.int32,
