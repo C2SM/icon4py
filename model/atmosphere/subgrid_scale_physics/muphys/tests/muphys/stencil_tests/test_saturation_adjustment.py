@@ -6,7 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
+
 import numpy as np
 import pytest
 
@@ -15,6 +17,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
+
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
