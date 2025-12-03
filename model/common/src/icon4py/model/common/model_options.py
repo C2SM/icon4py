@@ -43,16 +43,23 @@ def get_dace_options(
                     validate_all=False,
                 )
             )
-            optimization_args["blocking_dim"] = dims.KDim
-            optimization_args["blocking_size"] = 4
-            optimization_args["promote_independent_memlets_for_blocking"] = True
-            optimization_args["blocking_independent_node_threshold"] = 3
-    if program_name == "compute_advection_in_horizontal_momentum_equation":
+    non_kblocking_programs = set(
+        [
+            "calculate_nabla2_and_smag_coefficients_for_vn",
+            "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection",
+            "compute_derived_horizontal_winds_and_ke_and_contravariant_correction",
+            "compute_hydrostatic_correction_term",
+            "update_mass_flux_weighted",
+            "vertically_implicit_solver_at_corrector_step",
+            "vertically_implicit_solver_at_predictor_step",
+            "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn", # TODO(iomaganaris): Fix bug with K offset field tlet
+        ]
+    )
+    if program_name not in non_kblocking_programs:
         optimization_args["blocking_dim"] = dims.KDim
         optimization_args["blocking_size"] = 4
-        optimization_args["gpu_block_size_2d"] = [64, 1, 1]
         optimization_args["promote_independent_memlets_for_blocking"] = True
-        optimization_args["gpu_maxnreg"] = 64
+        optimization_args["blocking_independent_node_threshold"] = 3
 
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn' as performance drops,
