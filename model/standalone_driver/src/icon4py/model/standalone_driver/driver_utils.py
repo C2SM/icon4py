@@ -68,7 +68,7 @@ def create_grid_manager(
         vertical_grid_config,
     )
 
-    grid_manager(allocator=allocator, keep_skip_values=False)
+    grid_manager(allocator=allocator, keep_skip_values=True)
 
     return grid_manager
 
@@ -535,6 +535,7 @@ def configure_logging(
     logging.getLogger(driver_module_name).setLevel(logging.DEBUG)
     logging.getLogger("filelock").setLevel(logging.WARNING)
     logging.getLogger("factory.generate").setLevel(logging.WARNING)
+    logging.getLogger("blib2to3").setLevel(logging.WARNING)
 
     display_icon4py_logo_in_log_file()
 
@@ -545,4 +546,7 @@ def get_backend_from_name(backend_name: str) -> model_backends.BackendLike:
             f"Invalid driver backend: {backend_name}. \n"
             f"Available backends are {', '.join([*model_backends.BACKENDS.keys()])}"
         )
-    return model_backends.BACKENDS[backend_name]
+    backend = model_backends.BACKENDS[backend_name]
+    log.info(f"Backend name used for the model: {backend_name}")
+    log.info(f"BackendLike derived from the backend name: {backend}")
+    return backend

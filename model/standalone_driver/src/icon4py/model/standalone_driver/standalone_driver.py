@@ -542,11 +542,9 @@ def initialize_driver(
     output_path.mkdir(parents=True, exist_ok=False)
 
     backend = driver_utils.get_backend_from_name(backend_name)
-
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
-
     driver_config, vertical_grid_config, diffusion_config, solve_nh_config = _read_config(
         output_path=output_path,
         enable_profiling=False,
