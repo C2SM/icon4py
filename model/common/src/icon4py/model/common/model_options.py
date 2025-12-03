@@ -43,6 +43,10 @@ def get_dace_options(
                     validate_all=False,
                 )
             )
+            optimization_args["blocking_dim"] = dims.KDim
+            optimization_args["blocking_size"] = 4
+            optimization_args["promote_independent_memlets_for_blocking"] = True
+            optimization_args["blocking_independent_node_threshold"] = 3
     if program_name == "compute_advection_in_horizontal_momentum_equation":
         optimization_args["blocking_dim"] = dims.KDim
         optimization_args["blocking_size"] = 4
