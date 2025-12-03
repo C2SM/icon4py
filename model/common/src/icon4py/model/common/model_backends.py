@@ -5,39 +5,104 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any, Final, TypeAlias, TypeGuard
 
-from typing import Final
+import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
+from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
-import gt4py.next.backend as gtx_backend
-from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
+
+# DeviceType should always be imported from here, as we might replace it by an ICON4Py internal implementation
+DeviceType: TypeAlias = gtx.DeviceType
+CPU = DeviceType.CPU
+GPU = gtx.CUPY_DEVICE_TYPE
+
+BackendDescriptor: TypeAlias = dict[str, Any]
+BackendLike: TypeAlias = DeviceType | gtx_typing.Backend | BackendDescriptor | None
 
 
 DEFAULT_BACKEND: Final = "embedded"
 
-BACKENDS: dict[str, gtx_backend.Backend | None] = {
+
+def is_backend_descriptor(
+    backend: BackendLike,
+) -> TypeGuard[BackendDescriptor]:
+    if isinstance(backend, dict):
+        return all(isinstance(key, str) for key in backend)
+    return False
+
+
+def get_allocator(
+    backend: BackendLike,
+) -> gtx_typing.Backend:
+    if isinstance(backend, gtx_backend.Backend):
+        return backend
+    if backend is None:
+        # TODO(havogt): currently the testing infrastructure doesn't allow to specify
+        # embedded backend aka `None` for cupy, as there is no separation
+        # of allocator and backend.
+        return gtx_allocators.device_allocators[CPU]
+
+    if is_backend_descriptor(backend):
+        backend = backend["device"]
+    if isinstance(backend, DeviceType):
+        return gtx_allocators.device_allocators[backend]
+    raise ValueError(f"Cannot get allocator from {backend}")
+
+
+def make_custom_gtfn_backend(device: DeviceType, cached: bool = True, **_) -> gtx_typing.Backend:
+    on_gpu = device == GPU
+    return gtfn.GTFNBackendFactory(
+        gpu=on_gpu,
+        cached=cached,
+        otf_workflow__cached_translation=cached,
+    )
+
+
+def make_custom_dace_backend(
+    device: DeviceType,
+    cached: bool = True,
+    auto_optimize: bool = True,
+    async_sdfg_call: bool = True,
+    optimization_args: dict[str, Any] | None = None,
+    use_metrics: bool = True,
+    use_zero_origin: bool = False,
+    **_,
+) -> gtx_typing.Backend:
+    """Customize the dace backend with the given configuration parameters.
+
+    Args:
+        device: The target device.
+        cached: Cache the lowered SDFG as a JSON file and the compiled programs.
+        auto_optimize: Enable the SDFG auto-optimize pipeline.
+        async_sdfg_call: Make an asynchronous SDFG call on GPU to allow overlapping
+            of GPU kernel execution with the Python driver code.
+        optimization_args: A `dict` containing configuration parameters for
+            the SDFG auto-optimize pipeline.
+        use_metrics: Add SDFG instrumentation to collect the metric for stencil
+            compute time.
+
+    Returns:
+        A dace backend with custom configuration for the target device.
+    """
+    on_gpu = device == GPU
+    return gtx_dace.make_dace_backend(
+        gpu=on_gpu,
+        cached=cached,
+        auto_optimize=auto_optimize,
+        async_sdfg_call=async_sdfg_call,
+        optimization_args=optimization_args,
+        use_metrics=use_metrics,
+        use_zero_origin=use_zero_origin,
+    )
+
+
+BACKENDS: dict[str, BackendLike] = {
     "embedded": None,
-    "roundtrip": itir_python,
-    "gtfn_cpu": gtfn_cpu,
-    "gtfn_gpu": gtfn_gpu,
+    "roundtrip": gtx.itir_python,
+    "gtfn_cpu": {"backend_factory": make_custom_gtfn_backend, "device": CPU},
+    "gtfn_gpu": {"backend_factory": make_custom_gtfn_backend, "device": GPU},
+    "dace_cpu": {"backend_factory": make_custom_dace_backend, "device": CPU},
+    "dace_gpu": {"backend_factory": make_custom_dace_backend, "device": GPU},
 }
-
-try:
-    from gt4py.next.program_processors.runners.dace import (
-        run_dace_cpu_cached as run_dace_cpu,
-        run_dace_cpu_noopt,
-        run_dace_gpu_cached as run_dace_gpu,
-        run_dace_gpu_noopt,
-    )
-
-    BACKENDS.update(
-        {
-            "dace_cpu": run_dace_cpu,
-            "dace_gpu": run_dace_gpu,
-            "dace_cpu_noopt": run_dace_cpu_noopt,
-            "dace_gpu_noopt": run_dace_gpu_noopt,
-        }
-    )
-
-except ImportError:
-    # dace module not installed, ignore dace backends
-    pass

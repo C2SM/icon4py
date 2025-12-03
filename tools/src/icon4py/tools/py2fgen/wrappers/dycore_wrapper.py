@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# type: ignore
 
 """
 Wrapper module for dycore granule.
@@ -17,21 +16,20 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 
-import cProfile
 import dataclasses
-import pstats
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import backend as gtx_backend
+from gt4py.next import config as gtx_config, metrics as gtx_metrics
+from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
+from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
 
@@ -42,30 +40,14 @@ logger = setup_logger(__name__)
 @dataclasses.dataclass
 class SolveNonhydroGranule:
     solve_nh: solve_nonhydro.SolveNonhydro
-    backend: gtx_backend.Backend
     dummy_field_factory: Callable
-    profiler: cProfile.Profile = dataclasses.field(default_factory=cProfile.Profile)
 
 
-granule: Optional[SolveNonhydroGranule]  # TODO(havogt): remove module global state
-
-
-def profile_enable():
-    global granule
-    granule.profiler.enable()
-
-
-def profile_disable():
-    global granule
-    granule.profiler.disable()
-    stats = pstats.Stats(granule.profiler)
-    stats.dump_stats(f"{__name__}.profile")
+granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 
 @icon4py_export.export
 def solve_nh_init(
-    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
-    vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], gtx.float64],
@@ -116,11 +98,9 @@ def solve_nh_init(
     coeff2_dwdz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_owner_mask: gtx.Field[gtx.Dims[dims.CellDim], bool],
-    rayleigh_damping_height: gtx.float64,
     itime_scheme: gtx.int32,
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
-    ndyn_substeps: gtx.float64,
     rayleigh_type: gtx.int32,
     rayleigh_coeff: gtx.float64,
     divdamp_order: gtx.int32,
@@ -132,7 +112,7 @@ def solve_nh_init(
     l_vert_nested: bool,
     rhotheta_offctr: gtx.float64,
     veladv_offctr: gtx.float64,
-    nudge_max_coeff: gtx.float64,  # note: this is the ICON value (scaled with the default physics-dynamics timestep ratio)
+    nudge_max_coeff: gtx.float64,  # note: this is the scaled ICON value, i.e. not the namelist value
     divdamp_fac: gtx.float64,
     divdamp_fac2: gtx.float64,
     divdamp_fac3: gtx.float64,
@@ -141,30 +121,23 @@ def solve_nh_init(
     divdamp_z2: gtx.float64,
     divdamp_z3: gtx.float64,
     divdamp_z4: gtx.float64,
-    lowest_layer_thickness: gtx.float64,
-    model_top_height: gtx.float64,
-    stretch_factor: gtx.float64,
     nflat_gradp: gtx.int32,
-    num_levels: gtx.int32,
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    on_gpu = not vct_a.array_ns == np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = c_lin_e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
-    logger.info(f"{on_gpu=}")
-    logger.info(
-        f"Using Backend {wrapper_common.BackendIntEnum(backend).name} ({actual_backend.name})"
-    )
+    backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
+    logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
-        ndyn_substeps_var=ndyn_substeps,
         rayleigh_type=rayleigh_type,
         rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
@@ -176,7 +149,7 @@ def solve_nh_init(
         l_vert_nested=l_vert_nested,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        max_nudging_coeff=nudge_max_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
+        max_nudging_coefficient=nudge_max_coeff,
         fourth_order_divdamp_factor=divdamp_fac,
         fourth_order_divdamp_factor2=divdamp_fac2,
         fourth_order_divdamp_factor3=divdamp_fac3,
@@ -194,17 +167,13 @@ def solve_nh_init(
         e_flx_avg=e_flx_avg,
         geofac_grdiv=geofac_grdiv,
         geofac_rot=geofac_rot,
-        pos_on_tplane_e_1=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=pos_on_tplane_e_1[:, 0:2]
-        ),
-        pos_on_tplane_e_2=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=pos_on_tplane_e_2[:, 0:2]
-        ),
+        pos_on_tplane_e_1=pos_on_tplane_e_1[:, 0:2],
+        pos_on_tplane_e_2=pos_on_tplane_e_2[:, 0:2],
         rbf_vec_coeff_e=rbf_vec_coeff_e,
-        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=e_bln_c_s),
+        e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=geofac_div),
+        geofac_div=geofac_div,
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
@@ -231,10 +200,9 @@ def solve_nh_init(
         reference_rho_at_edges_on_model_levels=rho_ref_me,
         reference_theta_at_edges_on_model_levels=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
-        zdiff_gradp=data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=zdiff_gradp),
-        vertoffset_gradp=data_alloc.flatten_first_two_dims(
-            dims.ECDim, dims.KDim, field=vertoffset_gradp
-        ),
+        zdiff_gradp=zdiff_gradp,
+        vertoffset_gradp=vertoffset_gradp,
+        nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
         pg_edgeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
@@ -246,29 +214,10 @@ def solve_nh_init(
         scaling_factor_for_3d_divdamp=scalfac_dd3d,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
-        coeff_gradekin=data_alloc.flatten_first_two_dims(dims.ECDim, field=coeff_gradekin),
+        coeff_gradekin=coeff_gradekin,
     )
 
-    # datatest config
-    vertical_config = VerticalGridConfig(
-        num_levels=num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=rayleigh_damping_height,
-    )
-
-    # datatest config, vertical parameters
-    vertical_params = VerticalGrid(
-        config=vertical_config,
-        vct_a=vct_a,
-        vct_b=vct_b,
-        _min_index_flat_horizontal_grad_pressure=gtx.int32(
-            nflat_gradp - 1
-        ),  # Fortran vs Python indexing
-    )
-
-    global granule
+    global granule  # noqa: PLW0603 [global-statement]
     granule = SolveNonhydroGranule(
         solve_nh=solve_nonhydro.SolveNonhydro(
             grid=grid_wrapper.grid_state.grid,
@@ -276,16 +225,28 @@ def solve_nh_init(
             params=nonhydro_params,
             metric_state_nonhydro=metric_state_nonhydro,
             interpolation_state=interpolation_state,
-            vertical_params=vertical_params,
+            vertical_params=grid_wrapper.grid_state.vertical_grid,
             edge_geometry=grid_wrapper.grid_state.edge_geometry,
             cell_geometry=grid_wrapper.grid_state.cell_geometry,
             owner_mask=c_owner_mask,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
-        backend=actual_backend,
-        dummy_field_factory=wrapper_common.cached_dummy_field_factory(actual_backend),
+        dummy_field_factory=wrapper_common.cached_dummy_field_factory(
+            model_backends.get_allocator(actual_backend)
+        ),
     )
+
+
+NumpyFloatArray1D: TypeAlias = Annotated[
+    np.ndarray,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.HOST,
+        is_optional=False,
+    ),
+]
 
 
 @icon4py_export.export
@@ -318,23 +279,25 @@ def solve_nh_run(
     grf_tend_vn: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
-    vn_incr: Optional[gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64]],
-    rho_incr: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
-    exner_incr: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    vn_incr: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64] | None,
+    rho_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
+    exner_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64] | None,
     mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     dtime: gtx.float64,
+    max_vcfl_size1_array: NumpyFloatArray1D,  # receive from Fortran as a single-element array
     lprep_adv: bool,
     at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
-    ndyn_substeps: gtx.float64,
+    ndyn_substeps_var: gtx.int32,
     idyn_timestep: gtx.int32,
 ):
-    global granule
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
+
+    xp = rho_now.array_ns
 
     if vn_incr is None:
         vn_incr = granule.dummy_field_factory("vn_incr", domain=vn_now.domain, dtype=vn_now.dtype)
@@ -356,7 +319,12 @@ def solve_nh_run(
         dynamical_vertical_volumetric_flux_at_cells_on_half_levels=vol_flx_ic,
     )
 
+    # Make `max_vcfl` a 0-d array to avoid cupy synchronization, see `velocity_advection.py`.
+    # Note, `max_vcfl` needs to be passed back to Fortran after the timestep.
+    max_vcfl = data_alloc.scalar_like_array(max_vcfl_size1_array[0], xp)
+
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
+        max_vertical_cfl=max_vcfl,
         theta_v_at_cells_on_half_levels=theta_v_ic,
         perturbed_exner_at_cells_on_model_levels=exner_pr,
         rho_at_cells_on_half_levels=rho_ic,
@@ -407,8 +375,15 @@ def solve_nh_run(
         prep_adv=prep_adv,
         second_order_divdamp_factor=divdamp_fac_o2,
         dtime=dtime,
+        ndyn_substeps_var=ndyn_substeps_var,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
-        at_last_substep=idyn_timestep == (ndyn_substeps - 1),
+        at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
     )
+
+    # TODO(havogt): create separate bindings for writing the timers
+    if gtx_config.COLLECT_METRICS_LEVEL > 0:
+        gtx_metrics.dump_json("gt4py_timers.json")
+
+    max_vcfl_size1_array[0] = diagnostic_state_nh.max_vertical_cfl[()]  # pass back to Fortran

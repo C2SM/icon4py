@@ -8,10 +8,11 @@
 import contextlib
 import logging
 import pathlib
-from typing import Final, Union
+import typing
+from typing import Final
 
 import gt4py.next as gtx
-import uxarray
+import uxarray  # type: ignore[import-untyped] # mypy cannot find the corresponding uxarray type hints
 import xarray as xa
 
 import icon4py.model.common.dimension as dim
@@ -48,7 +49,7 @@ def extract_horizontal_coordinates(
     """
     Extract the coordinates from the ICON grid file.
 
-    TODO (@halungge) does it  work for decomposed grids?
+    TODO(halungge) does it  work for decomposed grids?
     """
     return dict(
         cell=(ds["clat"], ds["clon"]),
@@ -82,7 +83,7 @@ def ugrid_attributes(dim: gtx.Dimension) -> dict:
 def extract_bounds(ds: xa.Dataset) -> dict[str, tuple[xa.DataArray, xa.DataArray]]:
     """
     Extract the bounds from the ICON grid file.
-    TODO (@halungge) does it  work for decomposed grids?
+    TODO(halungge) does it  work for decomposed grids?
     """
     return dict(
         cell=(ds["clat_vertices"], ds["clon_vertices"]),
@@ -98,7 +99,7 @@ class IconUGridPatcher:
     TODO: (magdalena) should all the unnecessary data fields be removed?
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.connectivities = (
             "edge_of_cell",  # E2C connectivity
             "vertex_of_cell",  # V2C connectivity
@@ -118,7 +119,7 @@ class IconUGridPatcher:
             "end_idx_v",
         )
         self.index_lists = self.connectivities + self.horizontal_domain_borders
-        # TODO (magdalena) do not exist on local grid (grid.nc of mch_ch_r04b09_dsl)
+        # TODO(halungge): do not exist on local grid (grid.nc of mch_ch_r04b09_dsl)
         #  what do they contain?
         # "edge_index",
         # "vertex_index",
@@ -145,7 +146,7 @@ class IconUGridPatcher:
                 face_face_connectivity="neighbor_cell_index",
                 edge_face_connectivity="adjacent_cell_of_edge",
                 node_dimension="vertex",
-                # TODO (@halungge) do we need the boundary_node_connectivity ?
+                # TODO(halungge): do we need the boundary_node_connectivity ?
             ),
         )
 
@@ -183,7 +184,7 @@ class IconUGridPatcher:
         The ICON grid file contains some fields of order (sparse_dimension, horizontal_dimension)
         and others the other way around. We transpose them to have all the same ordering.
 
-        TODO (@halungge) should eventually be supported by UXarray.
+        TODO(halungge) should eventually be supported by UXarray.
         """
         for name in self.connectivities:
             shp = ds[name].shape
@@ -203,7 +204,7 @@ class IconUGridPatcher:
             log.error(f"Validation of the ugrid failed with {error}>")
             raise UGridValidationError("Validation of the ugrid failed") from error
 
-    def __call__(self, ds: xa.Dataset, validate: bool = False):
+    def __call__(self, ds: xa.Dataset, validate: bool = False) -> xa.Dataset:
         self._patch_start_index(ds, with_zero_start_index=True)
         self._set_fill_value(ds)
         self._transpose_index_lists(ds)
@@ -220,13 +221,13 @@ class IconUGridWriter:
 
     def __init__(
         self,
-        original_filename: Union[pathlib.Path, str],
-        output_path: Union[pathlib.Path, str],
+        original_filename: pathlib.Path | str,
+        output_path: pathlib.Path | str,
     ):
         self.original_filename = pathlib.Path(original_filename)
         self.output_path = pathlib.Path(output_path)
 
-    def __call__(self, validate: bool = False):
+    def __call__(self, validate: bool = False) -> None:
         patch = IconUGridPatcher()
         with load_data_file(self.original_filename) as ds:
             patched_ds = patch(ds, validate)
@@ -242,7 +243,7 @@ def dump_ugrid_file(
 
 
 @contextlib.contextmanager
-def load_data_file(filename: Union[pathlib.Path | str]) -> xa.Dataset:
+def load_data_file(filename: pathlib.Path | str) -> typing.Generator[xa.Dataset, None, None]:
     ds = xa.open_dataset(filename)
     try:
         yield ds

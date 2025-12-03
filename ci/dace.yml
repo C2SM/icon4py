@@ -5,11 +5,18 @@ include:
   stage: test
   script:
     - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
+  rules:
+    - if: $COMPONENT == 'advection' || $COMPONENT == 'dycore'
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
   parallel:
     matrix:
-    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
-      BACKEND: [dace_cpu, dace_gpu]
-      GRID: [simple_grid, icon_grid]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
+        BACKEND: [dace_cpu, dace_gpu]
+        GRID: [simple, icon_regional]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
 test_model_stencils_aarch64:
@@ -21,9 +28,18 @@ test_model_stencils_aarch64:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
-      BACKEND: [dace_cpu, dace_gpu]
-      LEVEL: [integration]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
+        BACKEND: [dace_cpu, dace_gpu]
+        LEVEL: [integration]
+  rules:
+    - if: $COMPONENT == 'common' && $LEVEL == 'integration'
+      variables:
+        NUM_PROCESSES: 2
+        SLURM_TIMELIMIT: '01:30:00'
+    - when: on_success
+      variables:
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '00:45:00'
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:

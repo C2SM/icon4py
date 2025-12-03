@@ -540,7 +540,7 @@ def generate_page(static_dir: str):
     ]
     figure_paths.sort()
 
-    # todo: use constant for _source location
+    # TODO(): use constant for _source location
     page_rst_path = os.path.join("_source", "offset_providers.rst")
 
     with open(page_rst_path, "w") as f:

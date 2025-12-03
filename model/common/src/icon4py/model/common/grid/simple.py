@@ -5,15 +5,16 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
 import functools
-import uuid
+from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
-from icon4py.model.common import dimension as dims, exceptions
-from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.grid.base import BaseGrid, GeometryType, GridConfig, HorizontalGridSize
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base, horizontal as h_grid
 
 # periodic
 #
@@ -34,7 +35,10 @@ from icon4py.model.common.grid.base import BaseGrid, GeometryType, GridConfig, H
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.vertical import VerticalGridConfig
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
+
+
+DEFAULT_NUM_LEVELS: Final = 10
 
 
 class SimpleGridData:
@@ -407,159 +411,69 @@ class SimpleGridData:
         )
 
 
-class SimpleGrid(BaseGrid):
+def simple_grid(
+    *,
+    allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
+    num_levels: int = DEFAULT_NUM_LEVELS,
+) -> base.Grid:
+    """
+    Factory function to create a SimpleGrid instance.
+
+    :param backend: Optional backend to use for the grid.
+    :return: An instance of SimpleGrid.
+    """
     _CELLS = 18
     _EDGES = 27
     _VERTICES = 9
+    size = {dims.CellDim: _CELLS, dims.EdgeDim: _EDGES, dims.VertexDim: _VERTICES}
 
-    def __init__(self, backend: gtx_backend.Backend | None = None):
-        """Instantiate a SimpleGrid used for testing purposes."""
-        super().__init__()
+    def simple_start_index(domain: h_grid.Domain) -> gtx.int32:
+        return gtx.int32(size[domain.dim]) if domain.zone.is_halo() else gtx.int32(0)
 
-        self._configure(backend)
-        self._connectivity_mapping = {
-            "C2E": (self._construct_connectivity, dims.C2EDim, dims.CellDim, dims.EdgeDim),
-            "C2E2CO": (self._construct_connectivity, dims.C2E2CODim, dims.CellDim, dims.CellDim),
-            "C2E2C": (self._construct_connectivity, dims.C2E2CDim, dims.CellDim, dims.CellDim),
-            "E2C2EO": (self._construct_connectivity, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
-            "E2C2E": (self._construct_connectivity, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
-            "V2C": (self._construct_connectivity, dims.V2CDim, dims.VertexDim, dims.CellDim),
-            "V2E": (self._construct_connectivity, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
-            "E2C": (self._construct_connectivity, dims.E2CDim, dims.EdgeDim, dims.CellDim),
-            "E2V": (self._construct_connectivity, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
-            "E2C2V": (self._construct_connectivity, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
-            "C2CE": (
-                self._get_connectivity_sparse_fields,
-                dims.C2EDim,
-                dims.CellDim,
-                dims.CEDim,
-            ),
-            "Koff": (lambda: dims.KDim,),  # Koff is a special case
-            "C2E2C2E": (self._construct_connectivity, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
-            "C2E2C2E2C": (
-                self._construct_connectivity,
-                dims.C2E2C2E2CDim,
-                dims.CellDim,
-                dims.CellDim,
-            ),
-            "E2ECV": (
-                self._get_connectivity_sparse_fields,
-                dims.E2C2VDim,
-                dims.EdgeDim,
-                dims.ECVDim,
-            ),
-            "E2EC": (
-                self._get_connectivity_sparse_fields,
-                dims.E2CDim,
-                dims.EdgeDim,
-                dims.ECDim,
-            ),
-            "C2CEC": (
-                self._get_connectivity_sparse_fields,
-                dims.C2E2CDim,
-                dims.CellDim,
-                dims.CECDim,
-            ),
-            "C2CECEC": (
-                self._get_connectivity_sparse_fields,
-                dims.C2E2C2E2CDim,
-                dims.CellDim,
-                dims.CECECDim,
-            ),
-        }
+    def simple_end_index(domain: h_grid.Domain) -> gtx.int32:
+        return gtx.int32(size[domain.dim])
 
-    @property
-    def num_cells(self) -> int:
-        return self.config.num_cells
+    horizontal_grid_size = base.HorizontalGridSize(
+        num_vertices=_VERTICES, num_edges=_EDGES, num_cells=_CELLS
+    )
+    vertical_grid_config = VerticalGridConfig(num_levels=num_levels)
+    config = base.GridConfig(
+        horizontal_config=horizontal_grid_size,
+        vertical_size=vertical_grid_config.num_levels,
+        limited_area=False,
+    )
 
-    @property
-    def num_vertices(self) -> int:
-        return self.config.num_vertices
+    on_gpu = False if allocator is None else device_utils.is_cupy_device(allocator)
+    simple_grid_data = SimpleGridData(on_gpu=on_gpu)
 
-    @property
-    def num_edges(self) -> int:
-        return self.config.num_edges
+    neighbor_tables = {
+        dims.C2V: simple_grid_data.c2v_table,
+        dims.E2C: simple_grid_data.e2c_table,
+        dims.E2V: simple_grid_data.e2v_table,
+        dims.C2E: simple_grid_data.c2e_table,
+        dims.C2E2CO: simple_grid_data.c2e2cO_table,
+        dims.C2E2C: simple_grid_data.c2e2c_table,
+        dims.E2C2EO: simple_grid_data.e2c2eO_table,
+        dims.E2C2E: simple_grid_data.e2c2e_table,
+        dims.E2C2V: simple_grid_data.e2c2v_table,
+        dims.V2C: simple_grid_data.v2c_table,
+        dims.V2E: simple_grid_data.v2e_table,
+        dims.C2E2C2E: simple_grid_data.c2e2c2e_table,
+        dims.C2E2C2E2C: simple_grid_data.c2e2c2e2c_table,
+    }
 
-    @property
-    def diamond_table(self) -> data_alloc.NDArray:
-        return SimpleGridData.e2c2v_table
-
-    @property
-    def num_levels(self) -> int:
-        return self.config.num_levels
-
-    @property
-    def geometry_type(self) -> GeometryType:
-        return GeometryType.TORUS
-
-    @property
-    def id(self) -> uuid.UUID:
-        return uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85")
-
-    @property
-    def limited_area(self) -> bool:
-        return False
-
-    def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
-        return False
-
-    def _configure(self, backend: gtx_backend.Backend | None = None) -> None:
-        horizontal_grid_size = HorizontalGridSize(
-            num_vertices=self._VERTICES, num_edges=self._EDGES, num_cells=self._CELLS
+    connectivities = {
+        offset.value: base.construct_connectivity(
+            offset, table, skip_value=None, allocator=allocator
         )
-        vertical_grid_config = VerticalGridConfig(num_levels=10)
-        on_gpu = False if backend is None else data_alloc.is_cupy_device(backend)
-        config = GridConfig(
-            horizontal_config=horizontal_grid_size,
-            vertical_size=vertical_grid_config.num_levels,
-            limited_area=False,
-            on_gpu=on_gpu,
-        )
+        for offset, table in neighbor_tables.items()
+    }
 
-        simple_grid_data = SimpleGridData(on_gpu=on_gpu)
-        connectivity_dict = {
-            dims.C2VDim: simple_grid_data.c2v_table,
-            dims.E2CDim: simple_grid_data.e2c_table,
-            dims.E2VDim: simple_grid_data.e2v_table,
-            dims.C2EDim: simple_grid_data.c2e_table,
-            dims.C2E2CODim: simple_grid_data.c2e2cO_table,
-            dims.C2E2CDim: simple_grid_data.c2e2c_table,
-            dims.E2C2EODim: simple_grid_data.e2c2eO_table,
-            dims.E2C2EDim: simple_grid_data.e2c2e_table,
-            dims.E2C2VDim: simple_grid_data.e2c2v_table,
-            dims.V2CDim: simple_grid_data.v2c_table,
-            dims.V2EDim: simple_grid_data.v2e_table,
-            dims.C2E2C2EDim: simple_grid_data.c2e2c2e_table,
-            dims.C2E2C2E2CDim: simple_grid_data.c2e2c2e2c_table,
-        }
-
-        self.set_config(config).set_neighbor_tables(connectivity_dict)
-        self.update_size_connectivities(
-            {
-                dims.ECVDim: self.size[dims.EdgeDim] * self.size[dims.E2C2VDim],
-                dims.CEDim: self.size[dims.CellDim] * self.size[dims.C2EDim],
-                dims.ECDim: self.size[dims.EdgeDim] * self.size[dims.E2CDim],
-            }
-        )
-
-    def start_index(self, domain: h_grid.Domain) -> gtx.int32:
-        num = self._match_grid_size(domain) if domain.zone.is_halo() else 0
-        return gtx.int32(num)
-
-    def end_index(self, domain: h_grid.Domain) -> gtx.int32:
-        num = self._match_grid_size(domain)
-        return gtx.int32(num)
-
-    def _match_grid_size(self, domain: h_grid.Domain) -> int:
-        dimension = domain.dim
-        match dimension:
-            case dims.VertexDim:
-                return self.num_vertices
-            case dims.CellDim:
-                return self.num_cells
-            case dims.EdgeDim:
-                return self.num_edges
-            case _:
-                raise exceptions.IconGridError(
-                    f" {domain} : Not a valid horizontal Domain implementation {type(domain)}"
-                )
+    return base.Grid(
+        id="simple_grid",
+        config=config,
+        connectivities=connectivities,
+        geometry_type=base.GeometryType.TORUS,
+        start_index=simple_start_index,
+        end_index=simple_end_index,
+    )

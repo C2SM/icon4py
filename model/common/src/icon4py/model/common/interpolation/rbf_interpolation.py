@@ -14,10 +14,7 @@ import gt4py.next as gtx
 import numpy as np
 import scipy.linalg as sla
 
-from icon4py.model.common import (
-    dimension as dims,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -38,11 +35,11 @@ RBF_STENCIL_SIZE: dict[RBFDimension, int] = {
 
 
 class InterpolationKernel(enum.Enum):
-    GAUSSIAN = 1
-    INVERSE_MULTIQUADRATIC = 3
+    GAUSSIAN: int = 1
+    INVERSE_MULTIQUADRATIC: int = 3
 
 
-DEFAULT_RBF_KERNEL: dict[RBFDimension, InterpolationKernel] = {
+DEFAULT_RBF_KERNEL: dict[RBFDimension, int] = {
     RBFDimension.CELL: InterpolationKernel.GAUSSIAN,
     RBFDimension.EDGE: InterpolationKernel.INVERSE_MULTIQUADRATIC,
     RBFDimension.VERTEX: InterpolationKernel.GAUSSIAN,
@@ -73,30 +70,30 @@ def compute_default_rbf_scale(mean_characteristic_length: ta.wpfloat, dim: RBFDi
 
 
 def construct_rbf_matrix_offsets_tables_for_cells(
-    grid: base_grid.BaseGrid,
+    grid: base_grid.Grid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the cell RBF matrix: rbf_vec_index_c"""
-    offset = grid.neighbor_tables[dims.C2E2C2EDim]
-    assert offset.shape == (grid.num_cells, RBF_STENCIL_SIZE[RBFDimension.CELL])
-    return offset
+    connectivity = grid.get_connectivity(dims.C2E2C2E).asnumpy()
+    assert connectivity.shape == (grid.num_cells, RBF_STENCIL_SIZE[RBFDimension.CELL])
+    return connectivity
 
 
 def construct_rbf_matrix_offsets_tables_for_edges(
-    grid: base_grid.BaseGrid,
+    grid: base_grid.Grid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_e"""
-    offset = grid.neighbor_tables[dims.E2C2EDim]
-    assert offset.shape == (grid.num_edges, RBF_STENCIL_SIZE[RBFDimension.EDGE])
-    return offset
+    connectivity = grid.get_connectivity(dims.E2C2E).asnumpy()
+    assert connectivity.shape == (grid.num_edges, RBF_STENCIL_SIZE[RBFDimension.EDGE])
+    return connectivity
 
 
 def construct_rbf_matrix_offsets_tables_for_vertices(
-    grid: base_grid.BaseGrid,
+    grid: base_grid.Grid,
 ) -> data_alloc.NDArray:
     """Compute the neighbor tables for the edge RBF matrix: rbf_vec_index_v"""
-    offset = grid.neighbor_tables[dims.V2EDim]
-    assert offset.shape == (grid.num_vertices, RBF_STENCIL_SIZE[RBFDimension.VERTEX])
-    return offset
+    connectivity = grid.get_connectivity(dims.V2E).asnumpy()
+    assert connectivity.shape == (grid.num_vertices, RBF_STENCIL_SIZE[RBFDimension.VERTEX])
+    return connectivity
 
 
 def _dot_product(
@@ -224,13 +221,13 @@ def _compute_rbf_interpolation_coeffs(
     edge_normal_x: data_alloc.NDArray,
     edge_normal_y: data_alloc.NDArray,
     edge_normal_z: data_alloc.NDArray,
-    uv: list[tuple[data_alloc.NDArray, data_alloc.NDArray]],
+    uv: tuple[tuple[data_alloc.NDArray, data_alloc.NDArray], ...],
     rbf_offset: data_alloc.NDArray,
     rbf_kernel: InterpolationKernel,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
-):
+) -> tuple[data_alloc.NDArray, ...]:
     rbf_offset_shape_full = rbf_offset.shape
     rbf_offset = rbf_offset[horizontal_start:]
     num_elements = rbf_offset.shape[0]
@@ -349,7 +346,7 @@ def _compute_rbf_interpolation_coeffs(
             rbf_vec_coeff_np[j][i + horizontal_start, valid_neighbors] = sla.cho_solve(
                 z_diag_np, rhs_np[j][i, valid_neighbors]
             )
-    rbf_vec_coeff = [array_ns.asarray(x) for x in rbf_vec_coeff_np]
+    rbf_vec_coeff = tuple([array_ns.asarray(x) for x in rbf_vec_coeff_np])
 
     # Normalize coefficients
     for j in range(num_zonal_meridional_components):
@@ -373,16 +370,16 @@ def compute_rbf_interpolation_coeffs_cell(
     edge_normal_y: data_alloc.NDArray,
     edge_normal_z: data_alloc.NDArray,
     rbf_offset: data_alloc.NDArray,
-    # TODO: Can't pass enum as "params" in NumpyFieldsProvider?
+    # TODO(): Can't pass enum as "params" in NumpyFieldsProvider?
     rbf_kernel: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
-    coeffs = _compute_rbf_interpolation_coeffs(
+    return _compute_rbf_interpolation_coeffs(
         cell_center_lat,
         cell_center_lon,
         cell_center_x,
@@ -394,15 +391,13 @@ def compute_rbf_interpolation_coeffs_cell(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [(ones, zeros), (zeros, ones)],
+        ((ones, zeros), (zeros, ones)),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
         scale_factor,
         horizontal_start,
         array_ns=array_ns,
     )
-    assert len(coeffs) == 2
-    return coeffs
 
 
 def compute_rbf_interpolation_coeffs_edge(
@@ -422,7 +417,7 @@ def compute_rbf_interpolation_coeffs_edge(
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    coeffs = _compute_rbf_interpolation_coeffs(
+    return _compute_rbf_interpolation_coeffs(
         edge_lat,
         edge_lon,
         edge_center_x,
@@ -434,15 +429,13 @@ def compute_rbf_interpolation_coeffs_edge(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [(edge_dual_normal_u, edge_dual_normal_v)],
+        ((edge_dual_normal_u, edge_dual_normal_v),),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
         scale_factor,
         horizontal_start,
         array_ns=array_ns,
-    )
-    assert len(coeffs) == 1
-    return coeffs[0]
+    )[0]
 
 
 def compute_rbf_interpolation_coeffs_vertex(
@@ -466,7 +459,7 @@ def compute_rbf_interpolation_coeffs_vertex(
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
     ones = array_ns.ones(rbf_offset.shape[0], dtype=ta.wpfloat)
 
-    coeffs = _compute_rbf_interpolation_coeffs(
+    return _compute_rbf_interpolation_coeffs(
         vertex_lat,
         vertex_lon,
         vertex_x,
@@ -478,12 +471,10 @@ def compute_rbf_interpolation_coeffs_vertex(
         edge_normal_x,
         edge_normal_y,
         edge_normal_z,
-        [(ones, zeros), (zeros, ones)],
+        ((ones, zeros), (zeros, ones)),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
         scale_factor,
         horizontal_start,
         array_ns=array_ns,
     )
-    assert len(coeffs) == 2
-    return coeffs

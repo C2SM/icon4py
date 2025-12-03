@@ -51,15 +51,15 @@ build_distributed_baseimage_aarch64:
 
 
 build_distributed_cpu:
-    stage: image
-    extends: [.container-builder-cscs-gh200, .build_distributed_cpu]
-    needs: [build_distributed_baseimage_aarch64]
+  stage: image
+  extends: [.container-builder-cscs-gh200, .build_distributed_cpu]
+  needs: [build_distributed_baseimage_aarch64]
 
 .test_template_distributed:
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION
-  extends: [ .container-runner-santis-gh200, .build_distributed_cpu]
-  needs: [ build_distributed_cpu ]
+  extends: [.container-runner-santis-gh200, .build_distributed_cpu]
+  needs: [build_distributed_cpu]
   variables:
     SLURM_TIMELIMIT: '00:30:00'
     SLURM_JOB_NUM_NODES: 1
@@ -90,14 +90,13 @@ build_distributed_cpu:
     - echo "using MPI_PREFIX ${ICON4PY_MPI_PREFIX}"
   script:
       #- ${ICON4PY_MPI_PREFIX} pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
-      - uv run pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
+    - uv run pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
-      - COMPONENT: [ atmosphere/diffusion, atmosphere/dycore, common] # [atmosphere/advection,microphysics,driver]
-        BACKEND: [ gtfn_cpu] # dace_cpu
+      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]  # [atmosphere/advection,microphysics,driver]
+        BACKEND: [gtfn_cpu]  # dace_cpu
   rules:
     - when: on_success
 
 test_model_distributed:
   extends: [.test_distributed_aarch64]
-

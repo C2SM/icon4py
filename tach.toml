@@ -1,41 +1,54 @@
-exact = true
-exclude = []
-forbid_circular_dependencies = true
 interfaces = []
+exclude = []
 source_roots = [
     "model/atmosphere/advection/src",
     "model/atmosphere/diffusion/src",
     "model/atmosphere/dycore/src",
     "model/atmosphere/subgrid_scale_physics/microphysics/src",
+    "model/atmosphere/subgrid_scale_physics/muphys/src",
     "model/common/src",
     "model/driver/src",
     "model/testing/src",
     "tools/src",
 ]
+exact = true
+forbid_circular_dependencies = true
+# exclude optional external dependencies
+[external]
+exclude = [
+    "fprettify",
+    "configargparse",
+    "cupy",
+    "ghex",
+    "dace",
+    "mpi4py",
+    "netcdf4",
+    "xarray",
+    "uxarray",
+    "cftime",
+    "viztracer",
+]
+rename = ["serialbox:serialbox4py"]
+
+[[modules]]
+path = "icon4py.model.atmosphere.subgrid_scale_physics.muphys"
+depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.model.atmosphere.advection"
-depends_on = [
-    { path = "icon4py.model.common" },
-]
+depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.model.atmosphere.diffusion"
-depends_on = [
-    { path = "icon4py.model.common" },
-]
+depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.model.atmosphere.dycore"
-depends_on = [
-    { path = "icon4py.model.common" },
-]
+depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.model.atmosphere.subgrid_scale_physics.microphysics"
-depends_on = [
-    { path = "icon4py.model.common" },
-]
+depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.model.common"
@@ -47,14 +60,12 @@ depends_on = [
     { path = "icon4py.model.atmosphere.diffusion" },
     { path = "icon4py.model.atmosphere.dycore" },
     { path = "icon4py.model.common" },
-    { path = "icon4py.model.testing" },  # TODO: remove this dependency when driver is fully standalone
+    { path = "icon4py.model.testing" },              # TODO(): remove this dependency when driver is fully standalone
 ]
 
 [[modules]]
 path = "icon4py.model.testing"
-depends_on = [
-    { path = "icon4py.model.common" },
-]
+depends_on = [{ path = "icon4py.model.common" }]
 
 [[modules]]
 path = "icon4py.tools"
@@ -62,29 +73,7 @@ depends_on = []
 
 [[modules]]
 path = "icon4py.tools.common"
-depends_on = [
-    { path = "icon4py.model.common" },
-]
 
-[[modules]]
-path = "icon4py.tools.f2ser"
-depends_on = [
-    { path = "icon4py.tools.liskov" },
-]
-
-[[modules]]
-path = "icon4py.tools.icon4pygen"
-depends_on = [
-    { path = "icon4py.model.common" },
-    { path = "icon4py.tools.common" },
-]
-
-[[modules]]
-path = "icon4py.tools.liskov"
-depends_on = [
-    { path = "icon4py.tools" },
-    { path = "icon4py.tools.common" },
-]
 
 [[modules]]
 path = "icon4py.tools.py2fgen"

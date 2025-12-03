@@ -378,7 +378,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="1",
         dims=(dims.EdgeDim,),
         icon_var_name=f"t_grid_edges%{TANGENT_ORIENTATION}",
-        dtype=ta.wpfloat,  # TODO (@halungge) netcdf: int
+        dtype=ta.wpfloat,  # TODO(halungge): netcdf: int
     ),
     VERTEX_EDGE_ORIENTATION: dict(
         standard_name=VERTEX_EDGE_ORIENTATION,
@@ -391,7 +391,7 @@ attrs: dict[str, model.FieldMetaData] = {
     EDGE_DUAL_U: dict(
         standard_name=EDGE_DUAL_U,
         long_name="eastward component of the dual edge (edge tangent)",
-        units="",  # TODO
+        units="",  # TODO(): add this
         dims=(dims.EdgeDim,),
         icon_var_name="ptr_patch%edges%dual_normal%v1",
         dtype=ta.wpfloat,
@@ -399,7 +399,7 @@ attrs: dict[str, model.FieldMetaData] = {
     EDGE_DUAL_V: dict(
         standard_name="northward component of the dual edge (edge tangent)",
         long_name="ptr_patch%edges%dual_normal_vert_y",
-        units="",  # TODO
+        units="",  # TODO(): add this
         dims=(dims.EdgeDim,),
         icon_var_name="ptr_patch%edges%dual_normal%v2",
         dtype=ta.wpfloat,

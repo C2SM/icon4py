@@ -39,7 +39,7 @@ def format_fortran_code(source: str) -> str:
 
 def write_file(string: str, outdir: pathlib.Path, fname: str) -> None:
     path = outdir / fname
-    with open(path, "w") as f:
+    with path.open("w") as f:
         f.write(string)
 
 

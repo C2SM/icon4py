@@ -6,15 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import program, scan_operator
-from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@scan_operator(axis=dims.KDim, forward=False, init=wpfloat("1.0"))
+@gtx.scan_operator(axis=dims.KDim, forward=False, init=wpfloat("0.0"))
 def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
     w_state: wpfloat, z_q: vpfloat, w: wpfloat
 ) -> wpfloat:
@@ -22,7 +20,7 @@ def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
     return w + w_state * astype(z_q, wpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def solve_tridiagonal_matrix_for_w_back_substitution(
     z_q: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],

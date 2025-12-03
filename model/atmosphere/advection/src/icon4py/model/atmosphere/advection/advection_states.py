@@ -30,7 +30,7 @@ class AdvectionDiagnosticState:
     hfl_tracer: fa.EdgeKField[ta.wpfloat]
 
     #: vertical tracer flux at cells [kg/m/s]
-    vfl_tracer: fa.CellKField[ta.wpfloat]  # TODO (dastrm): should be KHalfDim
+    vfl_tracer: fa.CellKField[ta.wpfloat]  # TODO(dastrm): should be KHalfDim
 
 
 @dataclasses.dataclass(frozen=True)
@@ -44,7 +44,7 @@ class AdvectionPrepAdvState:
     mass_flx_me: fa.EdgeKField[ta.wpfloat]
 
     #: mass flux at half level centers averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_ic: fa.CellKField[ta.wpfloat]  # TODO (dastrm): should be KHalfDim
+    mass_flx_ic: fa.CellKField[ta.wpfloat]  # TODO(dastrm): should be KHalfDim
 
 
 @dataclasses.dataclass(frozen=True)
@@ -52,16 +52,16 @@ class AdvectionInterpolationState:
     """Represents the interpolation state needed in advection."""
 
     #: factor for divergence
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat]
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat]
 
     #: coefficients used for rbf interpolation of the tangential velocity component
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat]
 
     #: x-components of positions of various points on local plane tangential to the edge midpoint
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat]
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
 
     #: y-components of positions of various points on local plane tangential to the edge midpoint
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat]
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -69,8 +69,8 @@ class AdvectionLeastSquaresState:
     """Represents the least squares state needed in advection."""
 
     #: pseudo (or Moore-Penrose) inverse of lsq design matrix A
-    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CECDim], ta.wpfloat]
-    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CECDim], ta.wpfloat]
+    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat]
+    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)

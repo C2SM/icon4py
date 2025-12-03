@@ -7,20 +7,19 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
-from typing import Optional
 
 import gt4py.next as gtx
-from gt4py.next import backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 
-import icon4py.model.common.metrics.compute_nudgecoeffs as common_metrics
+import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_attrs,
+    grid_refinement as refinement,
     horizontal as h_grid,
     icon,
-    refinement,
 )
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
@@ -44,7 +43,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        backend: Optional[gtx_backend.Backend],
+        backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
     ):
         self._backend = backend
@@ -60,7 +59,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._config = {
             "divavg_cntrwgt": 0.5,
             "weighting_factor": 0.0,
-            "nudge_max_coeffs": 0.375,
+            "max_nudging_coefficient": 0.375,
             "nudge_efold_width": 2.0,
             "nudge_zone_width": 10,
             "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
@@ -91,16 +90,16 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self._register_computed_fields()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__} on (grid={self._grid!r}) providing fields f{self.metadata.keys()}"
 
     @property
     def _sources(self) -> factory.FieldSource:
         return factory.CompositeSource(self, (self._geometry,))
 
-    def _register_computed_fields(self):
+    def _register_computed_fields(self) -> None:
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
-            func=common_metrics.compute_nudgecoeffs.with_backend(None),
+            func=nudgecoeffs.compute_nudgecoeffs.with_backend(None),
             domain={
                 dims.EdgeDim: (
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
@@ -112,10 +111,8 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "refin_ctrl": "refinement_control_at_edges",
             },
             params={
-                "grf_nudge_start_e": refinement.refine_control_value(
-                    dims.EdgeDim, h_grid.Zone.NUDGING
-                ).value,
-                "nudge_max_coeffs": self._config["nudge_max_coeffs"],
+                "grf_nudge_start_e": refinement.get_nudging_refinement_value(dims.EdgeDim),
+                "max_nudging_coefficient": self._config["max_nudging_coefficient"],
                 "nudge_efold_width": self._config["nudge_efold_width"],
                 "nudge_zone_width": self._config["nudge_zone_width"],
             },
@@ -149,7 +146,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(geofac_rot)
 
-        geofac_n2s = factory.NumpyFieldsProvider(
+        geofac_n2s = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_geofac_n2s, array_ns=self._xp),
             fields=(attrs.GEOFAC_N2S,),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -166,7 +163,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(geofac_n2s)
 
-        geofac_grdiv = factory.NumpyFieldsProvider(
+        geofac_grdiv = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_geofac_grdiv, array_ns=self._xp),
             fields=(attrs.GEOFAC_GRDIV,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
@@ -185,7 +182,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(geofac_grdiv)
 
-        cell_average_weight = factory.NumpyFieldsProvider(
+        cell_average_weight = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
                 array_ns=self._xp,
@@ -211,7 +208,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(cell_average_weight)
 
-        c_lin_e = factory.NumpyFieldsProvider(
+        c_lin_e = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_c_lin_e, array_ns=self._xp),
             fields=(attrs.C_LIN_E,),
             domain=(dims.EdgeDim, dims.E2CDim),
@@ -228,7 +225,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(c_lin_e)
 
-        geofac_grg = factory.NumpyFieldsProvider(
+        geofac_grg = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_geofac_grg, array_ns=self._xp),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -248,7 +245,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(geofac_grg)
 
-        e_flx_avg = factory.NumpyFieldsProvider(
+        e_flx_avg = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_e_flx_avg, array_ns=self._xp),
             fields=(attrs.E_FLX_AVG,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
@@ -277,7 +274,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(e_flx_avg)
 
-        e_bln_c_s = factory.NumpyFieldsProvider(
+        e_bln_c_s = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_e_bln_c_s, array_ns=self._xp),
             fields=(attrs.E_BLN_C_S,),
             domain=(dims.CellDim, dims.C2EDim),
@@ -292,12 +289,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(e_bln_c_s)
 
-        pos_on_tplane_e_x_y = factory.NumpyFieldsProvider(
+        pos_on_tplane_e_x_y = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_pos_on_tplane_e_x_y, array_ns=self._xp
             ),
             fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
-            domain=(dims.ECDim,),
+            domain=(dims.EdgeDim, dims.E2CDim),
             deps={
                 "primal_normal_v1": geometry_attrs.EDGE_NORMAL_U,
                 "primal_normal_v2": geometry_attrs.EDGE_NORMAL_V,
@@ -307,11 +304,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "cells_lat": geometry_attrs.CELL_LAT,
                 "edges_lon": geometry_attrs.EDGE_LON,
                 "edges_lat": geometry_attrs.EDGE_LAT,
-                "vertex_lon": geometry_attrs.VERTEX_LON,
-                "vertex_lat": geometry_attrs.VERTEX_LAT,
                 "owner_mask": "edge_owner_mask",
             },
-            connectivities={"e2c": dims.E2CDim, "e2v": dims.E2VDim, "e2c2e": dims.E2C2EDim},
+            connectivities={"e2c": dims.E2CDim},
             params={
                 "grid_sphere_radius": constants.EARTH_RADIUS,
                 "horizontal_start": self.grid.start_index(
@@ -321,7 +316,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(pos_on_tplane_e_x_y)
 
-        cells_aw_verts = factory.NumpyFieldsProvider(
+        cells_aw_verts = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_cells_aw_verts, array_ns=self._xp),
             fields=(attrs.CELL_AW_VERTS,),
             domain=(dims.VertexDim, dims.V2CDim),
@@ -344,7 +339,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(cells_aw_verts)
 
-        rbf_vec_coeff_c = factory.NumpyFieldsProvider(
+        rbf_vec_coeff_c = factory.NumpyDataProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_cell, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
             domain=(dims.CellDim, dims.C2E2C2EDim),
@@ -372,10 +367,10 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(rbf_vec_coeff_c)
 
-        rbf_vec_coeff_e = factory.NumpyFieldsProvider(
+        rbf_vec_coeff_e = factory.NumpyDataProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_edge, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_E,),
-            domain=(dims.CellDim, dims.E2C2EDim),
+            domain=(dims.EdgeDim, dims.E2C2EDim),
             deps={
                 "edge_lat": geometry_attrs.EDGE_LAT,
                 "edge_lon": geometry_attrs.EDGE_LON,
@@ -399,7 +394,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(rbf_vec_coeff_e)
 
-        rbf_vec_coeff_v = factory.NumpyFieldsProvider(
+        rbf_vec_coeff_v = factory.NumpyDataProvider(
             func=functools.partial(rbf.compute_rbf_interpolation_coeffs_vertex, array_ns=self._xp),
             fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
             domain=(dims.VertexDim, dims.V2EDim),
@@ -432,13 +427,13 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         return self._attrs
 
     @property
-    def backend(self) -> gtx_backend.Backend:
+    def backend(self) -> gtx_typing.Backend | None:
         return self._backend
 
     @property
-    def grid(self):
+    def grid(self) -> icon.IconGrid:
         return self._grid
 
     @property
-    def vertical_grid(self):
+    def vertical_grid(self) -> None:
         return None

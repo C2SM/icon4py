@@ -8,4 +8,3 @@ ENV MPI4PY_BUILD_BACKEND="scikit-build-core"
 WORKDIR /icon4py
 RUN echo "UV_PROJECT_ENVIRONMENT=$UV_PROJECT_ENVIRONMENT"
 RUN uv sync --extra distributed --extra dace --python=$PYVERSION
-

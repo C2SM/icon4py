@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_values import (
     _compute_ppm_quadratic_face_values,
@@ -16,8 +16,8 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import Koff
 
 
-# TODO (dastrm): this stencil is imported but never called
-# TODO (dastrm): slev/elev and vertical_start/end are redundant
+# TODO(dastrm): this stencil is imported but never called
+# TODO(dastrm): slev/elev and vertical_start/end are redundant
 
 
 @gtx.field_operator

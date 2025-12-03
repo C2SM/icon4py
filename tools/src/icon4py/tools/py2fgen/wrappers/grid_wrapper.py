@@ -6,21 +6,18 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# type: ignore
-
 import dataclasses
-from typing import Annotated, Optional, TypeAlias
+from typing import Annotated, TypeAlias
 
 import numpy as np
 from gt4py import next as gtx
 from gt4py.next.type_system import type_specifications as ts
 
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import icon as icon_grid
+from icon4py.model.common.grid import icon as icon_grid, vertical
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen.wrappers import (
     common as wrapper_common,
@@ -32,12 +29,13 @@ from icon4py.tools.py2fgen.wrappers import (
 @dataclasses.dataclass
 class GridState:
     grid: icon_grid.IconGrid
+    vertical_grid: vertical.VerticalGrid
     edge_geometry: grid_states.EdgeParams
     cell_geometry: grid_states.CellParams
     exchange_runtime: decomposition_defs.ExchangeRuntime
 
 
-grid_state: Optional[GridState] = None  # TODO(havogt): remove module global state
+grid_state: GridState | None = None  # TODO(havogt): remove module global state
 
 NumpyInt32Array1D: TypeAlias = Annotated[
     np.ndarray,
@@ -104,6 +102,13 @@ def grid_init(
     edge_center_lon: fa.EdgeField[wpfloat],
     primal_normal_x: fa.EdgeField[wpfloat],
     primal_normal_y: fa.EdgeField[wpfloat],
+    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
+    vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
+    lowest_layer_thickness: gtx.float64,
+    model_top_height: gtx.float64,
+    stretch_factor: gtx.float64,
+    flat_height: gtx.float64,
+    rayleigh_damping_height: gtx.float64,
     mean_cell_area: gtx.float64,
     comm_id: gtx.int32,
     num_vertices: gtx.int32,
@@ -111,9 +116,13 @@ def grid_init(
     num_edges: gtx.int32,
     vertical_size: gtx.int32,
     limited_area: bool,
+    backend: gtx.int32,
 ) -> None:
-    on_gpu = c2e.array_ns is not np  # TODO(havogt): expose `on_gpu` from py2fgen
-
+    on_gpu = c2e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    actual_backend = wrapper_common.select_backend(
+        wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
+    )
+    allocator = model_backends.get_allocator(actual_backend)
     grid = wrapper_common.construct_icon_grid(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
@@ -136,9 +145,28 @@ def grid_init(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=on_gpu,
+        mean_cell_area=mean_cell_area,
+        allocator=allocator,
     )
-    grid.set_global_params(icon_grid.GlobalGridParams.from_mean_cell_area(mean_cell_area))
+
+    # Vertical grid config
+    vertical_config = vertical.VerticalGridConfig(
+        num_levels=vertical_size,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=rayleigh_damping_height,
+        flat_height=flat_height,
+        # TODO(havogt): pass all other params from Fortran and ensure
+        # we don't miss new ones in the future
+    )
+
+    # Vertical parameters
+    vertical_grid = vertical.VerticalGrid(
+        config=vertical_config,
+        vct_a=vct_a,
+        vct_b=vct_b,
+    )
 
     # Edge geometry
     edge_params = grid_states.EdgeParams(
@@ -146,22 +174,14 @@ def grid_init(
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_x
-        ),
-        primal_normal_vert_y=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_y
-        ),
-        dual_normal_vert_x=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_x),
-        dual_normal_vert_y=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_y),
-        primal_normal_cell_x=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_x
-        ),
-        primal_normal_cell_y=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_y
-        ),
-        dual_normal_cell_x=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_x),
-        dual_normal_cell_y=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_y),
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_x=dual_normal_cell_x,
+        dual_normal_cell_y=dual_normal_cell_y,
         edge_areas=edge_areas,
         coriolis_frequency=f_e,
         edge_center_lat=edge_center_lat,
@@ -207,9 +227,10 @@ def grid_init(
             num_vertices,
         )
 
-    global grid_state
+    global grid_state  # noqa: PLW0603 [global-statement]
     grid_state = GridState(
         grid=grid,
+        vertical_grid=vertical_grid,
         edge_geometry=edge_params,
         cell_geometry=cell_params,
         exchange_runtime=exchange_runtime,

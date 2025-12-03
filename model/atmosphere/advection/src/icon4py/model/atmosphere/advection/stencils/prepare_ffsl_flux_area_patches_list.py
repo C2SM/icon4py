@@ -9,10 +9,10 @@
 import sys
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import astype, broadcast, where
+from gt4py.next import astype, broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2EC
+from icon4py.model.common.dimension import E2CDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -113,11 +113,11 @@ def line_intersect(
 
 
 @gtx.field_operator
-def _prepare_ffsl_flux_area_patches_list(
+def _prepare_ffsl_flux_area_patches_list(  # noqa: PLR0915 [too-many-statements]
     famask_int: fa.EdgeKField[gtx.int32],
     p_vn: fa.EdgeKField[ta.wpfloat],
-    ptr_v3_lon: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
-    ptr_v3_lat: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    ptr_v3_lon: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    ptr_v3_lat: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     tangent_orientation_dsl: fa.EdgeField[ta.wpfloat],
     dreg_patch0_1_lon_dsl: fa.EdgeKField[ta.vpfloat],
     dreg_patch0_1_lat_dsl: fa.EdgeKField[ta.vpfloat],
@@ -173,14 +173,14 @@ def _prepare_ffsl_flux_area_patches_list(
     # get triangle edge 1 (A1V3)
     tri_line1_p1_lon = astype(arrival_pts_1_lon_dsl, wpfloat)
     tri_line1_p1_lat = astype(arrival_pts_1_lat_dsl, wpfloat)
-    tri_line1_p2_lon = where(lvn_pos, ptr_v3_lon(E2EC[0]), ptr_v3_lon(E2EC[1]))
-    tri_line1_p2_lat = where(lvn_pos, ptr_v3_lat(E2EC[0]), ptr_v3_lat(E2EC[1]))
+    tri_line1_p2_lon = where(lvn_pos, ptr_v3_lon[E2CDim(0)], ptr_v3_lon[E2CDim(1)])
+    tri_line1_p2_lat = where(lvn_pos, ptr_v3_lat[E2CDim(0)], ptr_v3_lat[E2CDim(1)])
 
     # get triangle edge 2 (A2V3)
     tri_line2_p1_lon = astype(arrival_pts_2_lon_dsl, wpfloat)
     tri_line2_p1_lat = astype(arrival_pts_2_lat_dsl, wpfloat)
-    tri_line2_p2_lon = where(lvn_pos, ptr_v3_lon(E2EC[0]), ptr_v3_lon(E2EC[1]))
-    tri_line2_p2_lat = where(lvn_pos, ptr_v3_lat(E2EC[0]), ptr_v3_lat(E2EC[1]))
+    tri_line2_p2_lon = where(lvn_pos, ptr_v3_lon[E2CDim(0)], ptr_v3_lon[E2CDim(1)])
+    tri_line2_p2_lat = where(lvn_pos, ptr_v3_lat[E2CDim(0)], ptr_v3_lat[E2CDim(1)])
 
     # Create first mask does departure-line segment intersects with A1V3
     lintersect_line1 = lintersect(
@@ -283,7 +283,7 @@ def _prepare_ffsl_flux_area_patches_list(
     )
 
     # ------------------------------------------------- Case 2a
-    mask_case2a = lintersect_line1 & (not lintersect_line2) & famask_bool
+    mask_case2a = lintersect_line1 & (~lintersect_line2) & famask_bool
     # Case 2a - patch 0
     dreg_patch0_1_lon_dsl = where(mask_case2a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
     dreg_patch0_1_lat_dsl = where(mask_case2a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
@@ -329,7 +329,7 @@ def _prepare_ffsl_flux_area_patches_list(
     dreg_patch2_4_lat_vmask = where(mask_case2a, 0.0, dreg_patch2_4_lat_vmask)
 
     # -------------------------------------------------- Case 2b
-    mask_case2b = lintersect_line2 & (not lintersect_line1) & famask_bool
+    mask_case2b = lintersect_line2 & (~lintersect_line1) & famask_bool
     # Case 2b - patch 0
     dreg_patch0_1_lon_dsl = where(mask_case2b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
     dreg_patch0_1_lat_dsl = where(mask_case2b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
@@ -547,7 +547,7 @@ def _prepare_ffsl_flux_area_patches_list(
     # can't be overwritten by this new condition.
     indices_previously_matched = mask_case3b | mask_case3a | mask_case2b | mask_case2a | mask_case1
     #    mask_case4 = (abs(p_vn) < 0.1) & famask_bool & (not indices_previously_matched) we insert also the error indices
-    mask_case4 = famask_bool & (not indices_previously_matched)
+    mask_case4 = famask_bool & (~indices_previously_matched)
     # Case 4 - patch 0 - no change
     # Case 4 - patch 1
     dreg_patch1_1_lon_vmask = where(mask_case4, 0.0, dreg_patch1_1_lon_vmask)
@@ -600,8 +600,8 @@ def _prepare_ffsl_flux_area_patches_list(
 def prepare_ffsl_flux_area_patches_list(
     famask_int: fa.EdgeKField[gtx.int32],
     p_vn: fa.EdgeKField[ta.wpfloat],
-    ptr_v3_lon: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
-    ptr_v3_lat: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    ptr_v3_lon: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    ptr_v3_lat: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     tangent_orientation_dsl: fa.EdgeField[ta.wpfloat],
     dreg_patch0_1_lon_dsl: fa.EdgeKField[ta.vpfloat],
     dreg_patch0_1_lat_dsl: fa.EdgeKField[ta.vpfloat],
