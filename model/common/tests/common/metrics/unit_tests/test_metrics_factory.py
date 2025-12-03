@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from icon4py.model.testing.test_utils import dummy_exchange
-
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
