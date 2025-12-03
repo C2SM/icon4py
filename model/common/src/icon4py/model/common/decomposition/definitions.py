@@ -11,9 +11,9 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Literal, Protocol, TypeAlias, overload, runtime_checkable
+from typing import Any, Literal, Protocol, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
@@ -25,9 +25,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
-
-
-BufferExchange: TypeAlias = Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None]
 
 
 class ProcessProperties(Protocol):
@@ -159,15 +156,17 @@ class ExchangeResult(Protocol):
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
+    @overload
     def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> ExchangeResult: ...
 
+    @overload
+    def exchange(self, dim: gtx.Dimension, *buffers: data_alloc.NDArray) -> ExchangeResult: ...
+
+    @overload
     def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None: ...
 
-    def exchange_buffers(
-        self,
-        field_dims: Sequence[gtx.Dimension],
-        *buffers: data_alloc.NDArray,
-    ) -> None: ...
+    @overload
+    def exchange_and_wait(self, dim: gtx.Dimension, *buffers: data_alloc.NDArray) -> None: ...
 
     def get_size(self) -> int: ...
 
@@ -179,14 +178,13 @@ class ExchangeRuntime(Protocol):
 
 @dataclasses.dataclass
 class SingleNodeExchange:
-    def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> ExchangeResult:
+    def exchange(
+        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    ) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None:
-        return None
-
-    def exchange_buffers(
-        self, field_dims: Sequence[gtx.Dimension], *buffers: data_alloc.NDArray
+    def exchange_and_wait(
+        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
     ) -> None:
         return None
 

@@ -426,7 +426,7 @@ def test_compute_vertical_coordinate(
         SLEVE_minimum_relative_layer_thickness_2=0.5,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,
         array_ns=xp,
-        exchange=utils.dummy_exchange_buffer,
+        exchange=utils.dummy_exchange,
     )
 
     assert test_utils.dallclose(
