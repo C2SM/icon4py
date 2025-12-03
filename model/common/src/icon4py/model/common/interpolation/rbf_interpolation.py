@@ -77,8 +77,6 @@ def compute_default_rbf_scale(
             return scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale
         case base_grid.GeometryType.TORUS:
             return mean_dual_edge_length
-        case _:
-            raise ValueError(f"Unsupported geometry type: {geometry_type}")
 
 
 def construct_rbf_matrix_offsets_tables_for_cells(
