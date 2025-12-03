@@ -157,8 +157,6 @@ def _distance_pairwise(
             inverted_diff = array_ns.subtract(domain_size_expanded, diff)
             array_ns.minimum(diff, inverted_diff, out=diff)
             return array_ns.linalg.norm(diff, axis=-1)
-        case _:
-            raise ValueError(f"Unsupported geometry type: {geometry_type}")
 
 
 def _distance_vector_matrix(
@@ -204,8 +202,6 @@ def _distance_vector_matrix(
             inverted_diff = array_ns.subtract(domain_size_expanded, diff)
             diff = array_ns.minimum(diff, inverted_diff, out=diff)
             return array_ns.linalg.norm(diff, axis=-1)
-        case _:
-            raise ValueError(f"Unsupported geometry type: {geometry_type}")
 
 
 def _gaussian(
