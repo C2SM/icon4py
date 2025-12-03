@@ -136,11 +136,14 @@ class TimerCollection:
     timer_names: dataclasses.InitVar[list[str]]
     timers: dict[str, Timer] = dataclasses.field(init=False)
 
-    def __post_init__(self, timer_names: list[str]) -> None:
-        timers: dict[str, Timer] = {}
+    def __post_init__(self, timer_names: str | list[str]) -> None:
+        self.timers = {}
+        self.add_timers(timer_names)
+
+    def add_timers(self, timer_names: str | list[str]) -> None:
         for timer in timer_names:
-            timers[timer] = Timer(timer, dp=6, verbose=False)
-        self.timers = timers
+            assert timer not in self.timers, f"Timer '{timer}' is already defined."
+            self.timers[timer] = Timer(timer, dp=6, verbose=False)
 
     def show_timer_report(
         self,
