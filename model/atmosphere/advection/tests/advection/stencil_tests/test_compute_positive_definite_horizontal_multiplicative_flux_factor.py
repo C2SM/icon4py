@@ -30,7 +30,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         p_rhodz_now: np.ndarray,
         p_mflx_tracer_h: np.ndarray,
         p_dtime,
-        dbl_eps,
+        wp_eps,
         **kwargs,
     ) -> dict:
         c2e = connectivities[dims.C2EDim]
@@ -49,7 +49,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         )
 
         p_m = p_m_0 + p_m_1 + p_m_2
-        r_m = np.minimum(1.0, p_cc * p_rhodz_now / (p_m + dbl_eps))
+        r_m = np.minimum(1.0, p_cc * p_rhodz_now / (p_m + wp_eps))
 
         return dict(r_m=r_m)
 
@@ -61,14 +61,14 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
         p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         r_m = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         p_dtime = np.float64(5)
-        dbl_eps = np.float64(1e-9)
+        wp_eps = np.float64(1e-9)
         return dict(
             geofac_div=geofac_div,
             p_cc=p_cc,
             p_rhodz_now=p_rhodz_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
             p_dtime=p_dtime,
-            dbl_eps=dbl_eps,
+            wp_eps=wp_eps,
             r_m=r_m,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
