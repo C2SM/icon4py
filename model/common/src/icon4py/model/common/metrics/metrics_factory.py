@@ -766,7 +766,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
                 ),
             },
-            do_exchange=True,
+            do_exchange=False,
         )
         self.register_provider(compute_zdiff_gradp_dsl_np)
 
