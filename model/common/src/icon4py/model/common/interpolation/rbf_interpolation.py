@@ -13,6 +13,7 @@ from types import ModuleType
 import gt4py.next as gtx
 import numpy as np
 import scipy.linalg as sla
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
@@ -52,7 +53,7 @@ def compute_default_rbf_scale(
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
     dim: RBFDimension,
-):
+) -> ta.wpfloat:
     """Compute the default RBF scale factor. This assumes that the default
     interpolation kernels are used for each dimension"""
 
@@ -74,7 +75,7 @@ def compute_default_rbf_scale(
             scale = (
                 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
             )
-            return scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale
+            return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
         case base_grid.GeometryType.TORUS:
             return mean_dual_edge_length
 
