@@ -8,13 +8,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 
 import pytest
+import gt4py.next as gtx
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.testing import definitions as test_defs, parallel_helpers
+from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.grid import base as base_grid
 
 from ...fixtures import (
     backend,
@@ -28,11 +30,8 @@ from ...fixtures import (
 from .. import utils
 
 
-if TYPE_CHECKING:
-    import gt4py.next as gtx
 
-    from icon4py.model.common.decomposition import definitions as decomp_defs
-    from icon4py.model.common.grid import base as base_grid
+
 
 
 try:
@@ -43,7 +42,7 @@ except ImportError:
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_props(processor_props: decomp_defs.ProcessProperties) -> None:
+def test_props(processor_props: decomposition.ProcessProperties) -> None:
     """dummy test to check whether the MPI initialization and GHEX setup works."""
     import ghex.context as ghex  # type: ignore[import-not-found]
 
@@ -81,7 +80,7 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 )
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_distributed_local(
-    processor_props: decomp_defs.ProcessProperties,
+    processor_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     icon_grid: base_grid.Grid,
     experiment: test_defs.Experiment,
@@ -152,7 +151,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 )
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
 def test_distributed_halo(
-    processor_props: decomp_defs.ProcessProperties,
+    processor_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,

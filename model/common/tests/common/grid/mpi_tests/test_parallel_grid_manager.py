@@ -284,10 +284,7 @@ def assert_gathered_field_against_global(
         )
 
 
-# TODO add test including halo access:
-#  Will uses
-#    - geofac_div
-#    - geofac_n2s
+
 
 
 # TODO (halungge): fix non contiguous dimension for embedded in gt4py
@@ -643,13 +640,13 @@ def test_halo_neighbor_access_e2v(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("experiment", (definitions.Grids.R02B04_GLOBAL,))
+@pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_v2e(
     processor_props: defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    experiment: definitions.Experiment,
+    grid: definitions.GridDescription,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(experiment)
+    file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
     single_node = run_grid_manager_for_singlenode(file, vertical_config)
     single_node_grid = single_node.grid
@@ -664,10 +661,13 @@ def test_halo_neighbor_access_v2e(
     dual_edge_length = single_node_geometry.get(geometry_attributes.DUAL_EDGE_LENGTH)
     edge_orientation = single_node_geometry.get(geometry_attributes.VERTEX_EDGE_ORIENTATION)
     dual_area = single_node_geometry.get(geometry_attributes.DUAL_AREA)
-    owner_mask = single_node.decomposition_info.owner_mask(dims.VertexDim)
+    owner_mask = gtx.as_field((dims.VertexDim,),single_node.decomposition_info.owner_mask(dims.VertexDim))
     reference = data_alloc.zero_field(single_node_grid, dims.VertexDim, dims.V2EDim)
     lateral_boundary_start = single_node_grid.start_index(
         h_grid.vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    horizontal_end = single_node_grid.start_index(
+        h_grid.vertex_domain(h_grid.Zone.END)
     )
 
     interpolation_fields.compute_geofac_rot.with_backend(None)(
@@ -676,7 +676,7 @@ def test_halo_neighbor_access_v2e(
         dual_area,
         owner_mask,
         out=reference,
-        domain={dims.VertexDim: (lateral_boundary_start, single_node_grid.num_vertices)},
+        domain={dims.VertexDim: (lateral_boundary_start,horizontal_end)},
         offset_provider={"V2E": single_node_grid.get_connectivity(dims.V2E)},
     )
 
@@ -713,11 +713,12 @@ def test_halo_neighbor_access_v2e(
 
     geofac_rot = data_alloc.zero_field(distributed_grid, dims.VertexDim, dims.V2EDim)
 
+    onwner_mask = gtx.as_field((dims.VertexDim,), multinode_grid_manager.decomposition_info.owner_mask(dims.VertexDim))
     interpolation_fields.compute_geofac_rot.with_backend(None)(
         dual_edge_length=dual_edge_length,
         edge_orientation=edge_orientation,
         dual_area=dual_area,
-        owner_mask=decomposition_info.owner_mask(dims.VertexDim),
+        owner_mask=onwner_mask,
         out=geofac_rot,
         offset_provider={"V2E": distributed_grid.get_connectivity(dims.V2E)},
     )
@@ -818,7 +819,7 @@ def test_halo_neighbor_access_c2e2c(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_halo_access_v2c(processor_props, backend):
+def test_halo_neighbor_access_v2c(processor_props, backend):
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     print(f"running on {processor_props.comm}")
     single_node = run_grid_manager_for_singlenode(file, vertical_config)
