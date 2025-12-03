@@ -40,8 +40,8 @@ from ...fixtures import (
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
+    processor_props,
     ranked_data_path,
-    processor_props
 )
 
 

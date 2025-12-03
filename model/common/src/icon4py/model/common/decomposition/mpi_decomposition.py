@@ -227,7 +227,9 @@ class GHexMultiNodeExchange:
                 make_field_descriptor(
                     self._domain_descriptors[dim],
                     array,
-                    arch=Architecture.CPU if isinstance(f.ndarray, np.ndarray) else Architecture.GPU,
+                    arch=Architecture.CPU
+                    if isinstance(f.ndarray, np.ndarray)
+                    else Architecture.GPU,
                 )
             )
             return self._applied_patterns_cache[key]

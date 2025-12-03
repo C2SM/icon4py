@@ -6,11 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from collections.abc import Iterable
 
 import pytest
 
-from icon4py.model.common.decomposition import definitions, mpi_decomposition
+from icon4py.model.common.decomposition import definitions
 
 
 def check_comm_size(
@@ -18,4 +17,3 @@ def check_comm_size(
 ) -> None:
     if props.comm_size not in sizes:
         pytest.xfail(f"wrong comm size: {props.comm_size}: test only works for comm-sizes: {sizes}")
-

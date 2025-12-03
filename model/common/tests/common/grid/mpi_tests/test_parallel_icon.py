@@ -14,6 +14,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
+from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.testing import definitions as test_defs, parallel_helpers
 
 from ...fixtures import (
@@ -31,7 +32,6 @@ from .. import utils
 if TYPE_CHECKING:
     import gt4py.next as gtx
 
-    from icon4py.model.common.decomposition import definitions as decomp_defs
     from icon4py.model.common.grid import base as base_grid
 
 
