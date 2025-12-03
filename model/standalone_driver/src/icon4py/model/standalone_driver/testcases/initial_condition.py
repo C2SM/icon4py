@@ -62,7 +62,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     """
     allocator = model_backends.get_allocator(backend)
     concrete_backend = model_options.customize_backend(program=None, backend=backend)
-    xp = data_alloc.import_array_ns(backend)
+    xp = data_alloc.import_array_ns(allocator)
 
     wgtfac_c = metrics_field_source.get(metrics_attributes.WGTFAC_C).ndarray
     ddqz_z_half = metrics_field_source.get(metrics_attributes.DDQZ_Z_HALF).ndarray
