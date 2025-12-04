@@ -10,7 +10,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from types import ModuleType
 from typing import Final
 
@@ -571,13 +571,13 @@ def compute_flat_max_idx(
     c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     k_lev: data_alloc.NDArray,
-    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     k_lev_minus1 = k_lev[:-1]
     coeff_ = np.expand_dims(c_lin_e, axis=-1)
     z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
-    exchange((dims.EdgeDim, dims.KDim), z_me)
+    exchange(z_me)
     z_ifc_e_0 = z_ifc[e2c[:, 0], :-1]
     z_ifc_e_k_0 = z_ifc[e2c[:, 0], 1:]
     z_ifc_e_1 = z_ifc[e2c[:, 1], :-1]

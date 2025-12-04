@@ -139,7 +139,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
                 array_ns=self._xp,
-                exchange=self._exchange.exchange_buffers,
+                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
             ),
             fields=(attrs.CELL_HEIGHT_ON_HALF_LEVEL,),
             domain=(dims.CellDim, dims.KHalfDim),
@@ -630,7 +630,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         max_flat_index_provider = factory.NumpyDataProvider(
             func=functools.partial(
                 mf.compute_flat_max_idx,
-                exchange=self._exchange.exchange_buffers,
+                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
                 array_ns=self._xp,
             ),
             deps={
@@ -748,7 +748,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl,
                 array_ns=self._xp,
-                exchange=self._exchange.exchange_buffers,
+                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -811,7 +811,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 weight_factors.compute_wgtfacq_e_dsl,
                 array_ns=self._xp,
-                exchange=self._exchange.exchange_buffers,
+                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
             ),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -874,7 +874,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_diffusion_metrics.compute_max_nbhgt_array_ns,
                 array_ns=self._xp,
-                exchange=self._exchange.exchange_buffers,
+                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
             ),
             deps={
                 "z_mc": attrs.Z_MC,

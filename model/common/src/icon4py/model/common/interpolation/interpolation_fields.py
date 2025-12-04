@@ -8,9 +8,9 @@
 import functools
 import logging
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from types import ModuleType
-from typing import Final, TypeAlias
+from typing import Final
 
 import numpy as np
 from gt4py import next as gtx
@@ -26,8 +26,6 @@ from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_norm
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-BufferExchange: TypeAlias = Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None]
-
 MISSING: Final[int] = gridfile.GridFile.INVALID_INDEX
 
 logger = logging.Logger(__file__)
@@ -38,7 +36,7 @@ def compute_c_lin_e(
     inv_dual_edge_length: data_alloc.NDArray,
     edge_owner_mask: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[Sequence[gtx.Dimension], gtx.Field], None],
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -59,7 +57,7 @@ def compute_c_lin_e(
     c_lin_e[0:horizontal_start, :] = 0.0
     mask = array_ns.transpose(array_ns.tile(edge_owner_mask, (2, 1)))
     res = array_ns.where(mask, c_lin_e, 0.0)
-    exchange((dims.EdgeDim, dims.C2EDim), res)
+    exchange(res)
     return res
 
 
@@ -112,7 +110,7 @@ def compute_geofac_n2s(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: BufferExchange,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -159,7 +157,7 @@ def compute_geofac_n2s(
         geofac_n2s[horizontal_start:, 1:]
         + mask[horizontal_start:, :] * (geofac_div / dual_edge_length[c2e])[horizontal_start:, :]
     )
-    exchange((dims.CellDim, dims.C2E2CODim), geofac_n2s)
+    exchange(geofac_n2s)
     return geofac_n2s
 
 
@@ -173,7 +171,7 @@ def compute_geofac_grg(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[Sequence[gtx.Dimension], gtx.Field], None],
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
@@ -181,7 +179,7 @@ def compute_geofac_grg(
     primal_normal_ec_u = array_ns.where(owned, primal_normal_cell_x[c2e, inv_neighbor_index], 0.0)
     primal_normal_ec_v = array_ns.where(owned, primal_normal_cell_y[c2e, inv_neighbor_index], 0.0)
 
-    exchange((dims.CellDim, dims.E2CDim), primal_normal_ec_u, primal_normal_ec_v)
+    exchange(primal_normal_ec_u, primal_normal_ec_v)
 
     num_cells = c2e.shape[0]
     targ_local_size = c2e.shape[1] + 1
@@ -207,7 +205,7 @@ def compute_geofac_grg(
             geofac_grg_y[horizontal_start:, 1:]
             + mask * (primal_normal_ec_v * geofac_div * c_lin_e[c2e, k])[horizontal_start:, :]
         )
-    exchange((dims.CellDim, dims.C2E2CODim), geofac_grg_x, geofac_grg_y)
+    exchange(geofac_grg_x, geofac_grg_y)
 
     return geofac_grg_x, geofac_grg_y
 
@@ -220,7 +218,7 @@ def compute_geofac_grdiv(
     e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[Sequence[gtx.Dimension], gtx.Field], None],
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -273,7 +271,7 @@ def compute_geofac_grdiv(
                 geofac_div[e2c[horizontal_start:, 1], k] * inv_dual_edge_length[horizontal_start:],
                 geofac_grdiv[horizontal_start:, 2 * e2c.shape[1] - 1 + j],
             )
-    exchange((dims.EdgeDim, dims.E2C2EODim), geofac_grdiv)
+    exchange(geofac_grdiv)
     return geofac_grdiv
 
 
@@ -441,7 +439,7 @@ def _force_mass_conservation_to_c_bln_avg(
     cell_owner_mask: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
-    exchange: BufferExchange,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
@@ -553,7 +551,7 @@ def _force_mass_conservation_to_c_bln_avg(
             cell_owner_mask, local_summed_weights, cell_areas
         )[horizontal_start:]
 
-        exchange((dims.CellDim,), residual)
+        exchange(residual)
 
         # remove condition or do (inefficient) global reduction, practically
         # the convergence criteria is never reached before the niter
@@ -573,7 +571,7 @@ def _force_mass_conservation_to_c_bln_avg(
                 horizontal_start=horizontal_start,
             )
 
-        exchange((dims.CellDim, dims.C2E2CODim), c_bln_avg)
+        exchange(c_bln_avg)
 
     return c_bln_avg
 
@@ -587,7 +585,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: BufferExchange,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(
@@ -599,7 +597,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         array_ns=array_ns,
     )
 
-    exchange((dims.CellDim, dims.C2E2CODim), c_bln_avg)
+    exchange(c_bln_avg)
 
     return _force_mass_conservation_to_c_bln_avg(
         c2e2c0,
@@ -660,7 +658,7 @@ def compute_e_flx_avg(
     e2c2e: data_alloc.NDArray,
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
-    exchange: BufferExchange,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -733,7 +731,7 @@ def compute_e_flx_avg(
                 e_flx_avg[llb:, i + 3],
             )
 
-    exchange((dims.EdgeDim, dims.E2C2EODim), e_flx_avg)
+    exchange(e_flx_avg)
 
     # the icon prescribed order dependency is probably due to these magic numbers...
     iie = MISSING * array_ns.ones(e2c2e.shape, dtype=int)
@@ -811,7 +809,7 @@ def compute_e_flx_avg(
         owner_mask[llb:, None], e_flx_avg[llb:, :] / checksum[llb:, None], e_flx_avg[llb:, :]
     )
 
-    exchange((dims.EdgeDim, dims.E2C2EODim), e_flx_avg)
+    exchange(e_flx_avg)
 
     return e_flx_avg
 
@@ -825,7 +823,7 @@ def compute_cells_aw_verts(
     v2c: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: BufferExchange,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -875,7 +873,7 @@ def compute_cells_aw_verts(
                         * edge_vert_length[ile, idx_ve]
                         * edge_cell_length[ile, 1]
                     )
-    exchange((dims.VertexDim, dims.V2CDim), cells_aw_verts)
+    exchange(cells_aw_verts)
     return cells_aw_verts
 
 
@@ -942,7 +940,7 @@ def compute_pos_on_tplane_e_x_y(
     owner_mask: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: BufferExchange,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
@@ -1021,5 +1019,5 @@ def compute_pos_on_tplane_e_x_y(
         ),
         pos_on_tplane_e_y[llb:, 1],
     )
-    exchange((dims.EdgeDim, dims.E2CDim), pos_on_tplane_e_x, pos_on_tplane_e_y)
+    exchange(pos_on_tplane_e_x, pos_on_tplane_e_y)
     return pos_on_tplane_e_x, pos_on_tplane_e_y

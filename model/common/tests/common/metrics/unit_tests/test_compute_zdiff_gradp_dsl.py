@@ -70,7 +70,7 @@ def test_compute_zdiff_gradp_dsl(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k_lev.ndarray,
-        exchange=utils.dummy_exchange_buffer,
+        exchange=utils.dummy_exchange,
         array_ns=xp,
     )
 
@@ -84,7 +84,7 @@ def test_compute_zdiff_gradp_dsl(
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
-        exchange=utils.dummy_exchange_buffer,
+        exchange=utils.dummy_exchange,
         array_ns=xp,
     )
 

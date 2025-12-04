@@ -50,7 +50,7 @@ def test_topography_smoothing_with_serialized_data(
         c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
         num_iterations=num_iterations,
         array_ns=xp,
-        exchange=utils.dummy_exchange_buffer,
+        exchange=utils.dummy_exchange,
     )
 
     assert test_utils.dallclose(topography_smoothed_ref, topography_smoothed, atol=1.0e-14)

@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import enum
-import functools
 import math
 from collections.abc import Callable
 from types import ModuleType
@@ -17,7 +16,6 @@ import numpy as np
 import scipy.linalg as sla
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -384,7 +382,7 @@ def compute_rbf_interpolation_coeffs_cell(
     rbf_kernel: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
-    exchange: decomposition.BufferExchange,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
@@ -407,7 +405,7 @@ def compute_rbf_interpolation_coeffs_cell(
         InterpolationKernel(rbf_kernel),
         scale_factor,
         horizontal_start,
-        exchange=functools.partial(exchange, (dims.CellDim, dims.C2E2C2EDim)),
+        exchange=exchange,
         array_ns=array_ns,
     )
 
@@ -427,7 +425,7 @@ def compute_rbf_interpolation_coeffs_edge(
     rbf_kernel: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
-    exchange: decomposition.BufferExchange,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     return _compute_rbf_interpolation_coeffs(
@@ -447,7 +445,7 @@ def compute_rbf_interpolation_coeffs_edge(
         InterpolationKernel(rbf_kernel),
         scale_factor,
         horizontal_start,
-        exchange=functools.partial(exchange, (dims.EdgeDim, dims.E2C2EDim)),
+        exchange=exchange,
         array_ns=array_ns,
     )[0]
 
@@ -468,7 +466,7 @@ def compute_rbf_interpolation_coeffs_vertex(
     rbf_kernel: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
-    exchange: decomposition.BufferExchange,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
@@ -491,6 +489,6 @@ def compute_rbf_interpolation_coeffs_vertex(
         InterpolationKernel(rbf_kernel),
         scale_factor,
         horizontal_start,
-        exchange=functools.partial(exchange, (dims.VertexDim, dims.V2EDim)),
+        exchange=exchange,
         array_ns=array_ns,
     )

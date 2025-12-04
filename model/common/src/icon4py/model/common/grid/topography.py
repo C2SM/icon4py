@@ -6,13 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from types import ModuleType
 
-import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -35,7 +33,7 @@ def smooth_topography(
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
-    exchange: Callable[[Sequence[gtx.Dimension], data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None],
     num_iterations: int = 25,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
@@ -45,12 +43,12 @@ def smooth_topography(
     """
     smooth_topo = topography.copy()
     # TODO(@halungge): if the input topopgraphy is properly exchanged, which it should this is not needed here.
-    exchange((dims.CellDim,), smooth_topo)
+    exchange(smooth_topo)
 
     for _ in range(num_iterations):
         nabla2_topo = compute_nabla2_on_cell(smooth_topo, geofac_n2s, c2e2co, array_ns)
         array_ns.add(smooth_topo, 0.125 * nabla2_topo * cell_areas, out=smooth_topo)
 
-        exchange((dims.CellDim,), smooth_topo)
+        exchange(smooth_topo)
 
     return smooth_topo
