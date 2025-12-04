@@ -13,6 +13,7 @@ import functools
 import logging
 from collections.abc import Callable, Sequence
 from enum import Enum
+from types import ModuleType
 from typing import Any, Literal, Protocol, TypeAlias, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
@@ -327,7 +328,15 @@ class SingleNodeRun(RunType):
 
 
 class Reductions(Protocol):
-    def global_min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
+    def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
+
+
+class SingleNodeReductions(Reductions):
+    def __init__(self, array_ns: ModuleType = np):
+        self._xp = array_ns
+
+    def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        return self._xp.min(buffer).item()
 
 
 @overload
@@ -372,4 +381,20 @@ def create_single_node_exchange(
     return SingleNodeExchange()
 
 
+@functools.singledispatch
+def create_global_reduction(props: ProcessProperties) -> Reductions:
+    """
+    Create an Exchange depending on the runtime size.
+
+    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+    """
+    raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
+
+
+@create_global_reduction.register(SingleNodeProcessProperties)
+def create_global_reduction_exchange(props: SingleNodeProcessProperties) -> Reductions:
+    return SingleNodeReductions()
+
+
 single_node_default = SingleNodeExchange()
+single_node_reductions = SingleNodeReductions()

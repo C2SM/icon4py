@@ -11,6 +11,10 @@ from typing import Any
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
+from model.common.src.icon4py.model.common.metrics import (
+    metrics_attributes as attrs,
+    metrics_factory,
+)
 
 from icon4py.model.common.grid import horizontal as h_grid, icon
 from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
@@ -329,3 +333,20 @@ def test_halo_exchange_for_sparse_field(
     exchange.exchange_and_wait(dims.EdgeDim, c_lin_e_field)
 
     assert test_helpers.dallclose(c_lin_e_field.asnumpy(), c_lin_e_ref.asnumpy())
+
+
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_exchange_on_dummy_reduction(
+    processor_props: definitions.ProcessProperties,
+) -> None:
+    my_rank = processor_props.rank
+    print(f"rank={my_rank}")
+
+    global_reduc = definitions.create_global_reduction(processor_props)
+    arr = np.arange(3) - my_rank
+
+    min_val = global_reduc.min(arr)
+    expected_val = -my_rank
+
+    assert expected_val == min_val

@@ -63,6 +63,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         exner_expol: float,
         vwind_offctr: float,
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -75,6 +76,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._geometry = geometry_source
         self._exchange = exchange
         self._interpolation_source = interpolation_source
+        self._global_reductions = global_reductions
         log.info(
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
@@ -650,7 +652,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(max_flat_index_provider)
 
         nflat_gradp_provider = factory.NumpyDataProvider(
-            func=functools.partial(mf.compute_nflat_gradp, array_ns=self._xp),
+            func=functools.partial(
+                mf.compute_nflat_gradp,
+                array_ns=self._xp,
+                min_reduction=self._global_reductions.min,
+            ),
             domain=(),
             deps={
                 "flat_idx_max": attrs.FLAT_IDX_MAX,

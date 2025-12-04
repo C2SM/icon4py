@@ -445,12 +445,24 @@ class GlobalReductions(Reductions):
     def __init__(self, array_ns: ModuleType = np):
         self._xp = array_ns
 
-    def global_min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
-        if mpi4py is None:
-            recv_buffer = self._xp.min(buffer)
-        else:
-            props = get_multinode_properties(definitions.get_runtype(with_mpi=True))
-            min_buffer_arr = self._xp.array([self._xp.min(buffer)])
-            recv_buffer = self._xp.empty(1, dtype=buffer.dtype)
-            props.comm.Allreduce(min_buffer_arr, recv_buffer, mpi4py.MPI.MIN)
+    def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+        props = get_multinode_properties(definitions.get_runtype(with_mpi=True))
+        min_buffer_arr = self._xp.array([self._xp.min(buffer)])
+        recv_buffer = self._xp.empty(1, dtype=buffer.dtype)
+        props.comm.Allreduce(min_buffer_arr, recv_buffer, mpi4py.MPI.MIN)
         return recv_buffer.item()
+
+
+@functools.singledispatch
+def create_global_reduction(props: MPICommProcessProperties) -> Reductions:
+    """
+    Create an Exchange depending on the runtime size.
+
+    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+    """
+    raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
+
+
+@create_global_reduction.register(MPICommProcessProperties)
+def create_global_reduction_exchange(props: MPICommProcessProperties) -> Reductions:
+    return GlobalReductions()
