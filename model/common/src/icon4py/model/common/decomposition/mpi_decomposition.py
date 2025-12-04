@@ -428,8 +428,8 @@ def create_multinode_node_exchange(
 
 
 class GlobalReductions(Reductions):
-    def __init__(self, array_ns: ModuleType = np):
-        self._xp = array_ns
+    def __init__(self, props: definitions.ProcessProperties):
+        self._props = props
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         props = get_multinode_properties(definitions.get_runtype(with_mpi=True))
