@@ -95,7 +95,7 @@ def test_run_solve_nonhydro_single_step(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    dtime = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_nonhydro_init.dtime()
     lprep_adv = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=savepoint_nonhydro_init.vn_traj(),
