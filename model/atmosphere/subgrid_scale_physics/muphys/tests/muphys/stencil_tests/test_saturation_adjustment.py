@@ -5,6 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pytest
 
@@ -15,14 +19,18 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-@pytest.mark.embedded_only
+if TYPE_CHECKING:
+    from icon4py.model.common.grid import base as base_grid
+
+
+# @pytest.mark.embedded_only
 class TestSaturationAdjustment(StencilTest):
     PROGRAM = saturation_adjustment
     OUTPUTS = ("te_out", "qve_out", "qce_out", "mask_out")
 
     @staticmethod
     def reference(
-        grid,
+        grid: base_grid.Grid,
         te: np.ndarray,
         qve: np.ndarray,
         qce: np.ndarray,
@@ -39,7 +47,7 @@ class TestSaturationAdjustment(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.Grid) -> dict:
         return dict(
             te=data_alloc.constant_field(
                 grid, 273.90911754406039, dims.CellDim, dims.KDim, dtype=wpfloat
