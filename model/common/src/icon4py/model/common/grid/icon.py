@@ -166,8 +166,8 @@ class GlobalGridParams:
             object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
 
     @property
-    def geometry_type(self) -> base.GeometryType | None:
-        return self.grid_shape.geometry_type if self.grid_shape else None
+    def geometry_type(self) -> base.GeometryType:
+        return self.grid_shape.geometry_type
 
     @property
     def subdivision(self) -> GridSubdivision | None:
