@@ -439,4 +439,4 @@ class GlobalReductions(Reductions):
 
 @definitions.create_global_reduction.register(MPICommProcessProperties)
 def create_global_reduction_exchange(props: MPICommProcessProperties) -> Reductions:
-    return GlobalReductions()
+    return GlobalReductions(props)
