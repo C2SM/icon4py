@@ -504,8 +504,6 @@ module dycore
                                      rayleigh_type, &
                                      rayleigh_coeff, &
                                      divdamp_order, &
-                                     is_iau_active, &
-                                     iau_wgt_dyn, &
                                      divdamp_type, &
                                      divdamp_trans_start, &
                                      divdamp_trans_end, &
@@ -824,10 +822,6 @@ module dycore
          real(c_double), value, target :: rayleigh_coeff
 
          integer(c_int), value, target :: divdamp_order
-
-         logical(c_int), value, target :: is_iau_active
-
-         real(c_double), value, target :: iau_wgt_dyn
 
          integer(c_int), value, target :: divdamp_type
 
@@ -1524,8 +1518,6 @@ contains
                             rayleigh_type, &
                             rayleigh_coeff, &
                             divdamp_order, &
-                            is_iau_active, &
-                            iau_wgt_dyn, &
                             divdamp_type, &
                             divdamp_trans_start, &
                             divdamp_trans_end, &
@@ -1657,10 +1649,6 @@ contains
       real(c_double), value, target :: rayleigh_coeff
 
       integer(c_int), value, target :: divdamp_order
-
-      logical(c_int), value, target :: is_iau_active
-
-      real(c_double), value, target :: iau_wgt_dyn
 
       integer(c_int), value, target :: divdamp_type
 
@@ -2236,8 +2224,6 @@ contains
                                  rayleigh_type=rayleigh_type, &
                                  rayleigh_coeff=rayleigh_coeff, &
                                  divdamp_order=divdamp_order, &
-                                 is_iau_active=is_iau_active, &
-                                 iau_wgt_dyn=iau_wgt_dyn, &
                                  divdamp_type=divdamp_type, &
                                  divdamp_trans_start=divdamp_trans_start, &
                                  divdamp_trans_end=divdamp_trans_end, &

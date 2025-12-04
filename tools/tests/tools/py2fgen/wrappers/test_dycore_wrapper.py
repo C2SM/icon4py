@@ -44,8 +44,6 @@ def solve_nh_init(
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
-    is_iau_active = False
-    iau_wgt_dyn = 1.0
     divdamp_type = 3
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
@@ -210,8 +208,6 @@ def solve_nh_init(
         rayleigh_type=rayleigh_type,
         rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
         divdamp_type=divdamp_type,
         divdamp_trans_start=divdamp_trans_start,
         divdamp_trans_end=divdamp_trans_end,
@@ -281,8 +277,6 @@ def test_dycore_wrapper_granule_inputs(
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
-    is_iau_active = False
-    iau_wgt_dyn = 1.0
     divdamp_type = 3
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
@@ -634,8 +628,6 @@ def test_dycore_wrapper_granule_inputs(
             rayleigh_type=rayleigh_type,
             rayleigh_coeff=rayleigh_coeff,
             divdamp_order=divdamp_order,
-            is_iau_active=is_iau_active,
-            iau_wgt_dyn=iau_wgt_dyn,
             divdamp_type=divdamp_type,
             divdamp_trans_start=divdamp_trans_start,
             divdamp_trans_end=divdamp_trans_end,
