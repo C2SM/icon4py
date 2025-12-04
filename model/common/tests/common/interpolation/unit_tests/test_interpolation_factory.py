@@ -413,11 +413,17 @@ def test_rbf_interpolation_coeffs_cell(
 
     assert field_c1.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
     assert field_c2.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
-    assert test_helpers.dallclose(
-        field_ref_c1.asnumpy()[horizontal_start:], field_c1.asnumpy()[horizontal_start:], atol=atol
+    np.testing.assert_allclose(
+        field_ref_c1.asnumpy()[horizontal_start:],
+        field_c1.asnumpy()[horizontal_start:],
+        atol=atol,
+        rtol=1.0e-12,
     )
-    assert test_helpers.dallclose(
-        field_ref_c2.asnumpy()[horizontal_start:], field_c2.asnumpy()[horizontal_start:], atol=atol
+    np.testing.assert_allclose(
+        field_ref_c2.asnumpy()[horizontal_start:],
+        field_c2.asnumpy()[horizontal_start:],
+        atol=atol,
+        rtol=1.0e-12,
     )
 
 
