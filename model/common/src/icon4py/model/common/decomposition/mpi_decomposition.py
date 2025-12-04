@@ -439,15 +439,6 @@ class GlobalReductions(Reductions):
         return recv_buffer.item()
 
 
-@functools.singledispatch
-def create_global_reduction(props: MPICommProcessProperties) -> Reductions:
-    """
-    Create an Exchange depending on the runtime size.
-
-    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
-    """
-    raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
-
 
 @create_global_reduction.register(MPICommProcessProperties)
 def create_global_reduction_exchange(props: MPICommProcessProperties) -> Reductions:
