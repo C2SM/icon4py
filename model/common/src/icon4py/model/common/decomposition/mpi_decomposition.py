@@ -432,10 +432,8 @@ class GlobalReductions(Reductions):
         self._props = props
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        props = get_multinode_properties(definitions.get_runtype(with_mpi=True))
-        min_buffer_arr = self._xp.array([self._xp.min(buffer)])
-        recv_buffer = self._xp.empty(1, dtype=buffer.dtype)
-        props.comm.Allreduce(min_buffer_arr, recv_buffer, mpi4py.MPI.MIN)
+        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
+        self._props.comm.Allreduce(buffer, recv_buffer, mpi4py.MPI.MIN)
         return recv_buffer.item()
 
 
