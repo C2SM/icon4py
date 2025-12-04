@@ -14,7 +14,6 @@ from typing import Final, TypeVar
 
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
-from typing_extensions import assert_never
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -45,32 +44,23 @@ class GridSubdivision:
 @dataclasses.dataclass(kw_only=True)
 class GridShape:
     geometry_type: base.GeometryType
-    subdivision: GridSubdivision | None
+    subdivision: GridSubdivision
 
     def __init__(
         self,
-        geometry_type: base.GeometryType | None = None,
+        geometry_type: base.GeometryType,
         subdivision: GridSubdivision | None = None,
     ) -> None:
-        if geometry_type is None and subdivision is None:
-            raise ValueError("Either geometry_type or subdivision must be provided")
-
-        if geometry_type is None:
-            geometry_type = base.GeometryType.ICOSAHEDRON
-
         match geometry_type:
             case base.GeometryType.ICOSAHEDRON:
                 if subdivision is None:
                     raise ValueError("Subdivision must be provided for icosahedron geometry type")
-
                 if subdivision.root < 1 or subdivision.level < 0:
                     raise ValueError(
                         f"For icosahedron geometry type, root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
                     )
             case base.GeometryType.TORUS:
-                subdivision = None
-            case _:
-                assert_never(geometry_type)
+                subdivision = GridSubdivision(root=0, level=0)
 
         self.geometry_type = geometry_type
         self.subdivision = subdivision
@@ -166,12 +156,12 @@ class GlobalGridParams:
             object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
 
     @property
-    def geometry_type(self) -> base.GeometryType | None:
-        return self.grid_shape.geometry_type if self.grid_shape else None
+    def geometry_type(self) -> base.GeometryType:
+        return self.grid_shape.geometry_type
 
     @property
-    def subdivision(self) -> GridSubdivision | None:
-        return self.grid_shape.subdivision if self.grid_shape else None
+    def subdivision(self) -> GridSubdivision:
+        return self.grid_shape.subdivision
 
 
 def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:
