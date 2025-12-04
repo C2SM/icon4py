@@ -16,7 +16,6 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libssl-dev \
     libbz2-dev \
     libsqlite3-dev \
-    libnuma-dev \
     llvm \
     libncurses5-dev \
     libncursesw5-dev \
