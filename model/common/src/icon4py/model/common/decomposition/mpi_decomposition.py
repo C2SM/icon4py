@@ -431,7 +431,7 @@ class GlobalReductions(Reductions):
     def __init__(self, array_ns: ModuleType = np):
         self._xp = array_ns
 
-    def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
+    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         props = get_multinode_properties(definitions.get_runtype(with_mpi=True))
         min_buffer_arr = self._xp.array([self._xp.min(buffer)])
         recv_buffer = self._xp.empty(1, dtype=buffer.dtype)
