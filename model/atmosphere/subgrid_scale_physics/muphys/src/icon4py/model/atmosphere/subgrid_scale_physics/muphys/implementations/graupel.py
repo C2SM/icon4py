@@ -5,13 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import NamedTuple
-
 import gt4py.next as gtx
 from gt4py.next import maximum, minimum, power, sqrt, where
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, idx, t_d
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import (
     _deposition_auto_conversion,
     _deposition_factor,
@@ -49,15 +48,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-
-
-class Q(NamedTuple):
-    v: fa.CellKField[ta.wpfloat]  # Specific humidity
-    c: fa.CellKField[ta.wpfloat]  # Specific cloud water content
-    r: fa.CellKField[ta.wpfloat]  # Specific rain water
-    s: fa.CellKField[ta.wpfloat]  # Specific snow water
-    i: fa.CellKField[ta.wpfloat]  # Specific ice water content
-    g: fa.CellKField[ta.wpfloat]  # Specific graupel water content
 
 
 @gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, 0.0, False))

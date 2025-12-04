@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 from gt4py import next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import run_graupel_only
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_graupel_only
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.testing import data_handling, definitions as testing_defs
@@ -83,10 +83,9 @@ def download_test_data(experiment: MuphysGraupelExperiment) -> None:
     ids=lambda exp: exp.name,
 )
 def test_graupel_only(
-    backend_like: model_backends.BackendLike,
-    experiment: MuphysGraupelExperiment,
+    backend_like: model_backends.BackendLike, experiment: MuphysGraupelExperiment
 ) -> None:
-    inp = run_graupel_only.GraupelInput.load(
+    inp = common.GraupelInput.load(
         filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
     )
 
@@ -94,27 +93,9 @@ def test_graupel_only(
         inp, dt=experiment.dt, qnc=experiment.qnc, backend=backend_like
     )
 
-    out = run_graupel_only.GraupelOutput.allocate(
+    out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
-    )
-
-    q_in = graupel.Q(
-        v=inp.qv,
-        c=inp.qc,
-        r=inp.qr,
-        s=inp.qs,
-        i=inp.qi,
-        g=inp.qg,
-    )
-
-    q_out = graupel.Q(
-        v=out.qv,
-        c=out.qc,
-        r=out.qr,
-        s=out.qs,
-        i=out.qi,
-        g=out.qg,
     )
 
     graupel_run_program(
@@ -122,9 +103,9 @@ def test_graupel_only(
         te=inp.t,
         p=inp.p,
         rho=inp.rho,
-        q_in=q_in,
+        q_in=inp.q,
         t_out=out.t,
-        q_out=q_out,
+        q_out=out.q,
         pflx=out.pflx,
         pr=out.pr,
         ps=out.ps,
@@ -133,9 +114,8 @@ def test_graupel_only(
         pre=out.pre,
     )
 
-    ref = run_graupel_only.GraupelOutput.load(
-        filename=experiment.reference_file,
-        allocator=model_backends.get_allocator(backend_like),
+    ref = common.GraupelOutput.load(
+        filename=experiment.reference_file, allocator=model_backends.get_allocator(backend_like)
     )
 
     # TODO check tolerances
