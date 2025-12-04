@@ -409,7 +409,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
             vertical_cfl=vertical_cfl_ret,
         )
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
@@ -627,6 +627,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             {"skip_compute_predictor_vertical_advection": value} for value in [True, False]
         ],  # True for benchmarking, False for testing
         ids=lambda param: f"skip_compute_predictor_vertical_advection[{param['skip_compute_predictor_vertical_advection']}]",
+        scope="class",
     )
     def input_data(
         self, grid: base.Grid, request: pytest.FixtureRequest

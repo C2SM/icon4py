@@ -68,7 +68,7 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(stencil_tests.StencilTest
         )
         return dict(z_graddiv_vn=z_graddiv_vn)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         hmask_dd3d = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         scalfac_dd3d = data_alloc.random_field(grid, dims.KDim, dtype=ta.wpfloat)

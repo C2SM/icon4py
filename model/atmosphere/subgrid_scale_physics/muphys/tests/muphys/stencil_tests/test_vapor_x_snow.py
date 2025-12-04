@@ -38,7 +38,7 @@ class TestVaporXSnow(StencilTest):
     ) -> dict:
         return dict(vapor_deposition_rate=np.full(t.shape, -8.6584296264775935e-13))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 278.748, dims.CellDim, dims.KDim, dtype=wpfloat),

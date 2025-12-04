@@ -27,7 +27,7 @@ class TestVelScaleFactorSnow(StencilTest):
     ) -> dict:
         return dict(scale_factor=np.full(xrho.shape, 0.06633230453931642))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             xrho=data_alloc.constant_field(grid, 1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),

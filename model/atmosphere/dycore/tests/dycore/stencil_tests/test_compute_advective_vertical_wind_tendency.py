@@ -56,7 +56,7 @@ class TestComputeAdvectiveVerticalWindTendency(StencilTest):
         )
         return dict(ddt_w_adv=ddt_w_adv)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
