@@ -74,7 +74,7 @@ def geometry_from_savepoint(
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
 ) -> Generator[geometry.GridGeometry]:
-    grid = grid_savepoint.construct_icon_grid(backend)
+    grid = grid_savepoint.construct_icon_grid(backend, with_repeated_index=False)
     coordinates = grid_savepoint.coordinates()
     extra_fields = {
         gridfile.GeometryName.CELL_AREA: grid_savepoint.cell_areas(),

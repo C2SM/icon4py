@@ -116,7 +116,7 @@ class NeedsExchange(Protocol):
                 log.debug(f"exchanged buffer for {name}")
 
 
-class FieldProvider(NeedsExchange, Protocol):
+class FieldProvider(Protocol):
     """
     Protocol for field providers.
 
@@ -295,9 +295,6 @@ class PrecomputedFieldProvider(FieldProvider):
     def dependencies(self) -> Sequence[str]:
         return ()
 
-    def needs_exchange(self) -> bool:
-        return False
-
     def __call__(
         self,
         field_name: str,
@@ -317,7 +314,7 @@ class PrecomputedFieldProvider(FieldProvider):
         return lambda: self.fields
 
 
-class EmbeddedFieldOperatorProvider(FieldProvider):
+class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
     """Provider that calls a GT4Py Fieldoperator.
 
     # TODO(halungge): for now to be used only on FieldView Embedded GT4Py backend.
@@ -476,7 +473,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider):
         }
 
 
-class ProgramFieldProvider(FieldProvider):
+class ProgramFieldProvider(FieldProvider, NeedsExchange):
     """
     Computes a field defined by a GT4Py Program.
 
@@ -656,7 +653,6 @@ class NumpyDataProvider(FieldProvider):
         domain: Sequence[gtx.Dimension],
         fields: Sequence[str],
         deps: dict[str, str],
-        do_exchange: bool,
         connectivities: dict[str, gtx.Dimension] | None = None,
         params: dict[str, state_utils.ScalarType] | None = None,
     ):
@@ -668,7 +664,6 @@ class NumpyDataProvider(FieldProvider):
         self._dependencies = deps
         self._connectivities = connectivities if connectivities is not None else {}
         self._params = params if params is not None else {}
-        self._do_exchange = do_exchange
 
     def __call__(
         self,
@@ -681,7 +676,6 @@ class NumpyDataProvider(FieldProvider):
         if any([f is None for f in self.fields.values()]):
             log.info(f"computeing field {field_name}")
             self._compute(factory, backend, grid)
-            self.exchange(self.fields, exchange)
         return self.fields[field_name]
 
     def _compute(
