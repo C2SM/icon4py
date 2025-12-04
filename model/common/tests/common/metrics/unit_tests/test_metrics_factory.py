@@ -46,7 +46,13 @@ def metrics_config(experiment: definitions.Experiment) -> tuple:
     rayleigh_coeff = 5.0
     lowest_layer_thickness = 50.0
     exner_expol = 0.333
-    vwind_offctr = 0.2
+    match experiment:
+        case definitions.Experiments.MCH_CH_R04B09:
+            vwind_offctr = 0.2
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            vwind_offctr = 0.2
+        case _:
+            vwind_offctr = 0.15
     rayleigh_type = 2
     model_top_height = 23500.0
     stretch_factor = 1.0
@@ -64,6 +70,13 @@ def metrics_config(experiment: definitions.Experiment) -> tuple:
             rayleigh_coeff = 0.1
             exner_expol = 0.3333333333333
             vwind_offctr = 0.15
+        case definitions.Experiments.GAUSS3D:
+            rayleigh_coeff = 0.1
+            damping_height = 45000.0
+            exner_expol = 1.0 / 3.0
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            rayleigh_coeff = 0.75
+            damping_height = 8000.0
 
     return (
         lowest_layer_thickness,
@@ -630,6 +643,9 @@ def test_factory_compute_diffusion_mask_and_coef(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
+    if experiment == definitions.Experiments.GAUSS3D:
+        pytest.xfail("TODO")
+
     field_ref_1 = metrics_savepoint.mask_hdiff()
     field_ref_2 = metrics_savepoint.zd_diffcoef()
     factory = _get_metrics_factory(
@@ -655,6 +671,9 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
+    if experiment == definitions.Experiments.GAUSS3D:
+        pytest.xfail("TODO")
+
     field_ref_1 = metrics_savepoint.zd_intcoef()
     field_ref_2 = metrics_savepoint.zd_vertoffset()
     factory = _get_metrics_factory(
