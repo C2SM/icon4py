@@ -316,21 +316,9 @@ def test_compute_scalar_value_from_numpy_provider(
     value_ref = np.min(metrics_savepoint.z_ifc().asnumpy())
     sample_func = functools.partial(reduce_scalar_min, xp=data_alloc.import_array_ns(backend))
     provider = factory.NumpyDataProvider(
-        func=sample_func,
-        deps={"ar": "height_coordinate"},
-        domain=(),
-        fields=("minimal_height",),
-        do_exchange=False,
+        func=sample_func, deps={"ar": "height_coordinate"}, domain=(), fields=("minimal_height",)
     )
     height_coordinate_source.register_provider(provider)
     value = height_coordinate_source.get("minimal_height", factory.RetrievalType.FIELD)
     assert np.isscalar(value)
     assert value_ref == value
-
-
-def test_pre_computed_fields_do_not_exchange() -> None:
-    grid = simple.simple_grid()
-    f1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-    f2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-    precomputed_provider = factory.PrecomputedFieldProvider({"f1": f1, "f2": f2})
-    assert not precomputed_provider.needs_exchange()

@@ -561,7 +561,7 @@ class GridGeometry(factory.FieldSource):
         return None
 
 
-class SparseFieldProviderWrapper(factory.FieldProvider):
+class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
     def __init__(
         self,
         field_provider: factory.ProgramFieldProvider,
