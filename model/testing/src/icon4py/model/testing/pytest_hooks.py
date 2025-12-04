@@ -11,7 +11,6 @@ import re
 
 import numpy as np
 import pytest
-from gt4py.next import config as gtx_config
 
 from icon4py.model.common import model_backends
 from icon4py.model.testing import filters
@@ -101,6 +100,13 @@ def pytest_addoption(parser: pytest.Parser):
             help="Set level (unit, integration) of the tests to run. Defaults to 'any'.",
             default="any",
         )
+    with contextlib.suppress(ValueError):
+        parser.addoption(
+            "--skip-stenciltest-verification",
+            action="store_true",
+            help="Skip verification of `StencilTest`s against reference outputs.",
+            default=False,
+        )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -164,10 +170,10 @@ def pytest_benchmark_update_json(output_json):
 
     for bench in output_json["benchmarks"]:
         bench["fullname"] = _name_from_fullname(bench["fullname"])
-        # if GT4Py metrics collection is enabled, replace the benchmark stats used by `bencher` with the GT4Py metrics stats
+        # if GT4Py metrics are gathered, replace the benchmark stats used by `bencher` with the GT4Py metrics stats
         # to avoid reporting python overheads in `bencher` so that the results are comparable to the Fortran stencil benchmarks
-        if gtx_config.COLLECT_METRICS_LEVEL > 0:
-            gt4py_metrics_runtimes = bench.get("extra_info", {}).get("gtx_metrics", [])
+        if "extra_info" in bench and "gtx_metrics" in bench["extra_info"]:
+            gt4py_metrics_runtimes = bench.get("extra_info").get("gtx_metrics")
             assert (
                 len(gt4py_metrics_runtimes) > 0
             ), "No GT4Py metrics collected despite COLLECT_METRICS_LEVEL > 0"
@@ -225,7 +231,6 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         terminalreporter.line("-" * left + title + "-" * right, bold=True, blue=True)
         terminalreporter.line(header)
         terminalreporter.line("-" * len(header), blue=True)
-        import numpy as np
 
         for benchmark_name, gtx_metrics in benchmark_gtx_metrics:
             terminalreporter.line(

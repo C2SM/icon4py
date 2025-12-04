@@ -27,7 +27,6 @@ from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
-from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools import py2fgen
@@ -49,8 +48,6 @@ granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 @icon4py_export.export
 def solve_nh_init(
-    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
-    vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], gtx.float64],
@@ -101,7 +98,6 @@ def solve_nh_init(
     coeff2_dwdz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_owner_mask: gtx.Field[gtx.Dims[dims.CellDim], bool],
-    rayleigh_damping_height: gtx.float64,
     itime_scheme: gtx.int32,
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
@@ -125,17 +121,13 @@ def solve_nh_init(
     divdamp_z2: gtx.float64,
     divdamp_z3: gtx.float64,
     divdamp_z4: gtx.float64,
-    lowest_layer_thickness: gtx.float64,
-    model_top_height: gtx.float64,
-    stretch_factor: gtx.float64,
     nflat_gradp: gtx.int32,
-    num_levels: gtx.int32,
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    on_gpu = vct_a.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = c_lin_e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -225,18 +217,6 @@ def solve_nh_init(
         coeff_gradekin=coeff_gradekin,
     )
 
-    # datatest config
-    vertical_config = VerticalGridConfig(
-        num_levels=num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=rayleigh_damping_height,
-    )
-
-    # datatest config, vertical parameters
-    vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
-
     global granule  # noqa: PLW0603 [global-statement]
     granule = SolveNonhydroGranule(
         solve_nh=solve_nonhydro.SolveNonhydro(
@@ -245,7 +225,7 @@ def solve_nh_init(
             params=nonhydro_params,
             metric_state_nonhydro=metric_state_nonhydro,
             interpolation_state=interpolation_state,
-            vertical_params=vertical_params,
+            vertical_params=grid_wrapper.grid_state.vertical_grid,
             edge_geometry=grid_wrapper.grid_state.edge_geometry,
             cell_geometry=grid_wrapper.grid_state.cell_geometry,
             owner_mask=c_owner_mask,

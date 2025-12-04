@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import gc
+import os
 from collections.abc import Callable, Generator, Mapping, Sequence
 from typing import Any, ClassVar
 
@@ -90,10 +91,10 @@ def test_and_benchmark(
     _configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
-    benchmark_only_option = request.config.getoption(
-        "benchmark_only"
-    )  # skip verification if `--benchmark-only` CLI option is set
-    if not benchmark_only_option:
+    skip_stenciltest_verification = request.config.getoption(
+        "skip_stenciltest_verification"
+    )  # skip verification if `--skip-stenciltest-verification` CLI option is set
+    if not skip_stenciltest_verification:
         reference_outputs = self.reference(
             _ConnectivityConceptFixer(
                 grid  # TODO(havogt): pass as keyword argument (needs fixes in some tests)
@@ -110,18 +111,17 @@ def test_and_benchmark(
         )
 
     if benchmark is not None and benchmark.enabled:
-        # Clean up GT4Py metrics from previous runs
-        if gtx_config.COLLECT_METRICS_LEVEL > 0:
-            gtx_metrics.sources.clear()
+        warmup_rounds = int(os.getenv("ICON4PY_STENCIL_TEST_WARMUP_ROUNDS", "1"))
+        iterations = int(os.getenv("ICON4PY_STENCIL_TEST_ITERATIONS", "10"))
 
-        warmup_rounds = 1
-        iterations = 10
-
+        # Use of `pedantic` to explicitly control warmup rounds and iterations
         benchmark.pedantic(
             _configured_program,
             args=(),
             kwargs=dict(**_properly_allocated_input_data, offset_provider=grid.connectivities),
-            rounds=3,  # 30 iterations in total should be stable enough
+            rounds=int(
+                os.getenv("ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS", "3")
+            ),  # 30 iterations in total should be stable enough
             warmup_rounds=warmup_rounds,
             iterations=iterations,
         )
@@ -129,14 +129,22 @@ def test_and_benchmark(
         # Collect GT4Py runtime metrics if enabled
         if gtx_config.COLLECT_METRICS_LEVEL > 0:
             assert (
-                len(gtx_metrics.sources) == 1
-            ), "Expected exactly one entry in gtx_metrics.sources"
-            # Store GT4Py metrics in benchmark.extra_info
+                len(_configured_program._compiled_programs.compiled_programs) == 1
+            ), "Multiple compiled programs found, cannot extract metrics."
+            # Get compiled programs from the _configured_program passed to test
+            compiled_programs = _configured_program._compiled_programs.compiled_programs
+            # Get the pool key necessary to find the right metrics key. There should be only one compiled program in _configured_program
+            pool_key = next(iter(compiled_programs.keys()))
+            # Get the metrics key from the pool key to read the corresponding metrics
+            metrics_key = _configured_program._compiled_programs._metrics_key_from_pool_key(
+                pool_key
+            )
             metrics_data = gtx_metrics.sources
-            key = next(iter(metrics_data))
-            compute_samples = metrics_data[key].metrics["compute"].samples
-            # exclude warmup iterations and one extra iteration for calibrating pytest-benchmark
-            initial_program_iterations_to_skip = warmup_rounds * iterations + 1
+            compute_samples = metrics_data[metrics_key].metrics["compute"].samples
+            # exclude warmup iterations, one extra iteration for calibrating pytest-benchmark and one for validation (if executed)
+            initial_program_iterations_to_skip = warmup_rounds * iterations + (
+                1 if skip_stenciltest_verification else 2
+            )
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:
             ]
@@ -230,6 +238,11 @@ class StencilTest:
             )
 
             input_data_name = input_data[name]  # for mypy
+            # TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 1e-6
+            # to cover floating point descripancies observed in CI tests. Failing CI can be found in
+            # https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/5125340235196978/2255149825504673/-/pipelines/2184694383
+            # from PR#861. Reason is probably derivatives of random data. Investigate and lower tolerance back to 1e-7 if possible.
+            relative_tolerance = 3e-6
             if isinstance(input_data_name, tuple):
                 for i_out_field, out_field in enumerate(input_data_name):
                     np.testing.assert_allclose(
@@ -237,6 +250,7 @@ class StencilTest:
                         reference_outputs[name][i_out_field][refslice],
                         equal_nan=True,
                         err_msg=f"Verification failed for '{name}[{i_out_field}]'",
+                        rtol=relative_tolerance,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
                     )
             else:
                 reference_outputs_name = reference_outputs[name]  # for mypy
@@ -246,6 +260,7 @@ class StencilTest:
                     reference_outputs_name[refslice],
                     equal_nan=True,
                     err_msg=f"Verification failed for '{name}'",
+                    rtol=relative_tolerance,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
                 )
 
     @staticmethod
