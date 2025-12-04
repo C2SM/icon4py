@@ -330,8 +330,6 @@ class Reductions(Protocol):
 
 
 class SingleNodeReductions(Reductions):
-    def __init__(self, array_ns: ModuleType = np):
-        self._xp = array_ns
 
     def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType:
         return self._xp.min(buffer).item()
