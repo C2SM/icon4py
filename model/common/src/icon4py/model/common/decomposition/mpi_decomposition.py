@@ -439,7 +439,6 @@ class GlobalReductions(Reductions):
         return recv_buffer.item()
 
 
-
-@create_global_reduction.register(MPICommProcessProperties)
+@definitions.create_global_reduction.register(MPICommProcessProperties)
 def create_global_reduction_exchange(props: MPICommProcessProperties) -> Reductions:
     return GlobalReductions()

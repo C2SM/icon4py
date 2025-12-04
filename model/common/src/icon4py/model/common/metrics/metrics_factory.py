@@ -655,7 +655,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 mf.compute_nflat_gradp,
                 array_ns=self._xp,
-                min_reduction=self._global_reductions.min,
+                min_reduction=self._global_reductions.min(array_ns=self._xp),
             ),
             domain=(),
             deps={

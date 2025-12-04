@@ -347,6 +347,6 @@ def test_exchange_on_dummy_reduction(
     arr = np.arange(3) - my_rank
 
     min_val = global_reduc.min(arr)
-    expected_val = -my_rank
+    expected_val = -(processor_props.comm_size - 1)
 
     assert expected_val == min_val
