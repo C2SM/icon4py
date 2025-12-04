@@ -62,3 +62,30 @@ test_tools_datatests_aarch64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
+
+.test_single_precision:
+  stage: test
+  script:
+    - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --single-precision --backend=$BACKEND --level=$LEVEL
+  rules:
+    - if: $BACKEND == 'dace_gpu' && $COMPONENT != 'dycore'
+      when: never  # run only in daily CI, to save compute resources
+    - if: $COMPONENT == 'common' && $LEVEL == 'integration'
+      variables:
+        NUM_PROCESSES: 1
+        SLURM_TIMELIMIT: '00:45:00'
+    - if: $BACKEND == 'dace_gpu'
+      variables:
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '01:00:00'
+    - if: $BACKEND == 'embedded'
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
+  parallel:
+    matrix:
+      - COMPONENT: [dycore]
+        BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
+        LEVEL: [integration]
