@@ -125,20 +125,20 @@ class GridManager:
         self._coordinates = self._read_coordinates(allocator)
         self.close()
 
-    def _read_coordinates(self, backend: gtx_typing.Backend | None) -> CoordinateDict:
+    def _read_coordinates(self, allocator: gtx_typing.FieldBufferAllocationUtil) -> CoordinateDict:
         return {
             dims.CellDim: {
                 "lat": gtx.as_field(
                     (dims.CellDim,),
                     self._reader.variable(gridfile.CoordinateName.CELL_LATITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
                 "lon": gtx.as_field(
                     (dims.CellDim,),
                     self._reader.variable(gridfile.CoordinateName.CELL_LONGITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
             },
             dims.EdgeDim: {
@@ -146,26 +146,26 @@ class GridManager:
                     (dims.EdgeDim,),
                     self._reader.variable(gridfile.CoordinateName.EDGE_LATITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
                 "lon": gtx.as_field(
                     (dims.EdgeDim,),
                     self._reader.variable(gridfile.CoordinateName.EDGE_LONGITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
             },
             dims.VertexDim: {
                 "lat": gtx.as_field(
                     (dims.VertexDim,),
                     self._reader.variable(gridfile.CoordinateName.VERTEX_LATITUDE),
-                    allocator=backend,
+                    allocator=allocator,
                     dtype=ta.wpfloat,
                 ),
                 "lon": gtx.as_field(
                     (dims.VertexDim,),
                     self._reader.variable(gridfile.CoordinateName.VERTEX_LONGITUDE),
-                    allocator=backend,
+                    allocator=allocator,
                     dtype=ta.wpfloat,
                 ),
             },

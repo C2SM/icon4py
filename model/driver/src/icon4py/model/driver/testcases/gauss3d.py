@@ -203,7 +203,7 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
         pressure_ndarray,
         pressure_ifc_ndarray,
         grid=grid,
-        backend=backend,
+        allocator=backend,
     )
 
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
@@ -257,16 +257,16 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
         exner=exner_next,
     )
 
-    diffusion_diagnostic_state = testcases_utils.initialize_diffusion_diagnostic_state(
-        grid=grid, backend=backend
+    diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
+        grid=grid, allocator=backend
     )
-    solve_nonhydro_diagnostic_state = testcases_utils.initialize_solve_nonhydro_diagnostic_state(
+    solve_nonhydro_diagnostic_state = dycore_states.initialize_solve_nonhydro_diagnostic_state(
         perturbed_exner_at_cells_on_model_levels=perturbed_exner,
         grid=grid,
-        backend=backend,
+        allocator=backend,
     )
 
-    prep_adv = testcases_utils.initialize_prep_advection(grid=grid, backend=backend)
+    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=backend)
     log.info("Initialization completed.")
 
     return (

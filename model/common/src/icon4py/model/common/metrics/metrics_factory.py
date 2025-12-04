@@ -14,7 +14,7 @@ import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
@@ -54,7 +54,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_grid: v_grid.VerticalGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        topography: gtx.Field,
+        topography: fa.CellField[ta.wpfloat],
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
@@ -99,10 +99,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._backend)
         e_owner_mask = gtx.as_field(
-            (dims.EdgeDim,), self._decomposition_info.owner_mask(dims.EdgeDim)
+            (dims.EdgeDim,),
+            self._decomposition_info.owner_mask(dims.EdgeDim),
+            allocator=self._backend,
         )
         c_owner_mask = gtx.as_field(
-            (dims.CellDim,), self._decomposition_info.owner_mask(dims.CellDim)
+            (dims.CellDim,),
+            self._decomposition_info.owner_mask(dims.CellDim),
+            allocator=self._backend,
         )
         c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
 

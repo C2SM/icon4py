@@ -55,7 +55,7 @@ test_tools_datatests_aarch64:
         SLURM_TIMELIMIT: '00:30:00'
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver, standalone_driver]
         BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
 # test_model_datatests_x86_64:
