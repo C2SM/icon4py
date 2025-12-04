@@ -326,7 +326,7 @@ class SingleNodeRun(RunType):
 
 
 class Reductions(Protocol):
-    def min(self, buffer: data_alloc.NDArray) -> state_utils.ScalarType: ...
+    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType=np) -> state_utils.ScalarType: ...
 
 
 class SingleNodeReductions(Reductions):
