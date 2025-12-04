@@ -348,7 +348,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
             },
-            do_exchange=True,
+            do_exchange=False,
         )
         self.register_provider(pos_on_tplane_e_x_y)
 
@@ -376,7 +376,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
             },
-            do_exchange=True,
+            do_exchange=False,
         )
         self.register_provider(cells_aw_verts)
 
