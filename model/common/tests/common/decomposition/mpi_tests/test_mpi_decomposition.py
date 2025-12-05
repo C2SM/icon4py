@@ -25,13 +25,14 @@ except ImportError:
 import gt4py.next as gtx
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.testing import definitions as test_defs, serialbox
 from icon4py.model.testing.parallel_helpers import check_comm_size, processor_props
 
 from ...fixtures import (
     backend,
+    backend_like,
     data_provider,
     decomposition_info,
     download_ser_data,
@@ -333,16 +334,20 @@ def test_halo_exchange_for_sparse_field(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_exchange_on_dummy_reduction(
-    processor_props: definitions.ProcessProperties,
+def test_global_reductions_min(
+    processor_props: definitions.ProcessProperties, backend_like: model_backends.BackendLike
 ) -> None:
     my_rank = processor_props.rank
-    print(f"rank={my_rank}")
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
 
-    global_reduc = definitions.create_global_reduction(processor_props)
     arr = np.arange(3) - my_rank
 
-    min_val = global_reduc.min(arr)
+    global_reduc = definitions.create_global_reduction(processor_props)
+
+    min_val = global_reduc.min(arr, xp)
     expected_val = -(processor_props.comm_size - 1)
+    print(
+        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}]  - reduction result [{min_val}] "
+    )
 
     assert expected_val == min_val
