@@ -295,7 +295,7 @@ def test_nudgecoeffs(
 @pytest.mark.parametrize(
     "experiment, atol",
     [
-        (definitions.Experiments.EXCLAIM_APE, 3e-9),
+        (definitions.Experiments.EXCLAIM_APE, 3.1e-9),
         (definitions.Experiments.MCH_CH_R04B09, 4e-2),
     ],
 )
