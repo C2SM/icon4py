@@ -10,17 +10,12 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
-import functools
 import pathlib
 import time
 
-import netCDF4
-import numpy as np
 from gt4py import next as gtx
-from gt4py.next import typing as gtx_typing
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import utils
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
 from icon4py.model.common import dimension as dims, model_backends, model_options
 from icon4py.model.common.utils import device_utils
@@ -45,180 +40,10 @@ def get_args():
     return parser.parse_args()
 
 
-# TODO double check the sizes of pxxx vars (should be nlev+1?)
-
-
-def _calc_dz(z: np.ndarray) -> np.ndarray:
-    ksize = z.shape[0]
-    dz = np.zeros(z.shape, np.float64)
-    zh = 1.5 * z[ksize - 1, :] - 0.5 * z[ksize - 2, :]
-    for k in range(ksize - 1, -1, -1):
-        zh_new = 2.0 * z[k, :] - zh
-        dz[k, :] = -zh + zh_new
-        zh = zh_new
-    return dz
-
-
-def _as_field_from_nc(
-    dataset: netCDF4.Dataset,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
-    varname: str,
-    optional: bool = False,
-    dtype: np.dtype | None = None,
-) -> gtx.Field[dims.CellDim, dims.KDim] | None:
-    if optional and varname not in dataset.variables:
-        return None
-
-    var = dataset.variables[varname]
-    if var.dimensions[0] == "time":
-        var = var[0, :, :]
-    data = np.transpose(var)
-    if dtype is not None:
-        data = data.astype(dtype)
-    return gtx.as_field(
-        (dims.CellDim, dims.KDim),
-        data,
-        allocator=allocator,
-    )
-
-
-def _field_to_nc(
-    dataset: netCDF4.Dataset,
-    dims: tuple[str, str],
-    varname: str,
-    field: gtx.Field[dims.CellDim, dims.KDim],
-    dtype: np.dtype = np.float64,
-) -> None:
-    var = dataset.createVariable(varname, dtype, dims)
-    var[...] = field.asnumpy().transpose()
-
-
-@dataclasses.dataclass
-class GraupelInput:
-    ncells: int
-    nlev: int
-    dz: gtx.Field[dims.CellDim, dims.KDim]
-    p: gtx.Field[dims.CellDim, dims.KDim]
-    rho: gtx.Field[dims.CellDim, dims.KDim]
-    t: gtx.Field[dims.CellDim, dims.KDim]
-    qv: gtx.Field[dims.CellDim, dims.KDim]
-    qc: gtx.Field[dims.CellDim, dims.KDim]
-    qi: gtx.Field[dims.CellDim, dims.KDim]
-    qr: gtx.Field[dims.CellDim, dims.KDim]
-    qs: gtx.Field[dims.CellDim, dims.KDim]
-    qg: gtx.Field[dims.CellDim, dims.KDim]
-
-    @classmethod
-    def load(
-        cls, filename: pathlib.Path | str, allocator: gtx_typing.FieldBufferAllocationUtil
-    ) -> None:
-        with netCDF4.Dataset(filename, mode="r") as ncfile:
-            try:
-                ncells = len(ncfile.dimensions["cell"])
-            except KeyError:
-                ncells = len(ncfile.dimensions["ncells"])
-
-            nlev = len(ncfile.dimensions["height"])
-
-            dz = _calc_dz(ncfile.variables["zg"])
-
-            field_from_nc = functools.partial(
-                _as_field_from_nc, ncfile, allocator, dtype=np.float64
-            )
-            return cls(
-                ncells=ncells,
-                nlev=nlev,
-                dz=gtx.as_field((dims.CellDim, dims.KDim), np.transpose(dz), allocator=allocator),
-                t=field_from_nc("ta"),
-                p=field_from_nc("pfull"),
-                qs=field_from_nc("qs"),
-                qi=field_from_nc("cli"),
-                qg=field_from_nc("qg"),
-                qv=field_from_nc("hus"),
-                qc=field_from_nc("clw"),
-                qr=field_from_nc("qr"),
-                rho=field_from_nc("rho"),
-            )
-
-
-@dataclasses.dataclass
-class GraupelOutput:
-    t: gtx.Field[dims.CellDim, dims.KDim]
-    qv: gtx.Field[dims.CellDim, dims.KDim]
-    qc: gtx.Field[dims.CellDim, dims.KDim]
-    qi: gtx.Field[dims.CellDim, dims.KDim]
-    qr: gtx.Field[dims.CellDim, dims.KDim]
-    qs: gtx.Field[dims.CellDim, dims.KDim]
-    qg: gtx.Field[dims.CellDim, dims.KDim]
-
-    pflx: gtx.Field[dims.CellDim, dims.KDim] | None
-    pr: gtx.Field[dims.CellDim, dims.KDim] | None
-    ps: gtx.Field[dims.CellDim, dims.KDim] | None
-    pi: gtx.Field[dims.CellDim, dims.KDim] | None
-    pg: gtx.Field[dims.CellDim, dims.KDim] | None
-    pre: gtx.Field[dims.CellDim, dims.KDim] | None
-
-    @classmethod
-    def allocate(cls, allocator: gtx_typing.FieldBufferAllocationUtil, domain: gtx.Domain):
-        zeros = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
-        # TODO +1 size fields?
-        return cls(**{field.name: zeros() for field in dataclasses.fields(cls)})
-
-    @classmethod
-    def load(cls, filename: pathlib.Path | str, allocator: gtx_typing.FieldBufferAllocationUtil):
-        with netCDF4.Dataset(filename, mode="r") as ncfile:
-            field_from_nc = functools.partial(_as_field_from_nc, ncfile, allocator)
-            return cls(
-                t=field_from_nc("ta"),
-                qv=field_from_nc("hus"),
-                qc=field_from_nc("clw"),
-                qi=field_from_nc("cli"),
-                qr=field_from_nc("qr"),
-                qs=field_from_nc("qs"),
-                qg=field_from_nc("qg"),
-                pflx=field_from_nc("pflx", optional=True),
-                pr=field_from_nc("prr_gsp", optional=True),
-                ps=field_from_nc("prs_gsp", optional=True),
-                pi=field_from_nc("pri_gsp", optional=True),
-                pg=field_from_nc("prg_gsp", optional=True),
-                pre=field_from_nc("pre_gsp", optional=True),
-            )
-
-    def write(self, filename: pathlib.Path | str):
-        ncells = self.t.shape[0]
-        nlev = self.t.shape[1]
-
-        with netCDF4.Dataset(filename, mode="w") as ncfile:
-            ncfile.createDimension("ncells", ncells)
-            ncfile.createDimension("height", nlev)
-
-            write_height_field = functools.partial(
-                _field_to_nc, ncfile, ("height", "ncells"), dtype=np.float64
-            )
-
-            write_height_field("ta", self.t)
-            write_height_field("hus", self.qv)
-            write_height_field("clw", self.qc)
-            write_height_field("cli", self.qi)
-            write_height_field("qr", self.qr)
-            write_height_field("qs", self.qs)
-            write_height_field("qg", self.qg)
-            if self.pflx is not None:
-                write_height_field("pflx", self.pflx)
-            if self.pr is not None:
-                write_height_field("prr_gsp", self.pr) 
-            if self.ps is not None:
-                write_height_field("prs_gsp", self.ps)  # TODO
-            if self.pi is not None:
-                write_height_field("pri_gsp", self.pi)  # TODO
-            if self.pg is not None:
-                write_height_field("prg_gsp", self.pg)  # TODO
-            if self.pre is not None:
-                write_height_field("pre_gsp", self.pre)  # TODO
-
-
-def setup_graupel(inp: GraupelInput, dt: float, qnc: float, backend: model_backends.BackendLike):
-    with utils.recursion_limit(10**4):  # TODO thread safe?
+def setup_graupel(
+    inp: common.GraupelInput, dt: float, qnc: float, backend: model_backends.BackendLike
+):
+    with utils.recursion_limit(10**4):  # TODO(havogt): make an option in gt4py?
         graupel_run_program = model_options.setup_program(
             backend=backend,
             program=graupel.graupel_run,
@@ -243,8 +68,8 @@ def main():
     backend = model_backends.BACKENDS[args.backend]
     allocator = model_backends.get_allocator(backend)
 
-    inp = GraupelInput.load(filename=pathlib.Path(args.input_file), allocator=allocator)
-    out = GraupelOutput.allocate(
+    inp = common.GraupelInput.load(filename=pathlib.Path(args.input_file), allocator=allocator)
+    out = common.GraupelOutput.allocate(
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}), allocator=allocator
     )
 
@@ -261,19 +86,9 @@ def main():
             te=inp.t,
             p=inp.p,
             rho=inp.rho,
-            qve=inp.qv,
-            qce=inp.qc,
-            qre=inp.qr,
-            qse=inp.qs,
-            qie=inp.qi,
-            qge=inp.qg,
+            q_in=inp.q,
             t_out=out.t,
-            qv_out=out.qv,
-            qc_out=out.qc,
-            qr_out=out.qr,
-            qs_out=out.qs,
-            qi_out=out.qi,
-            qg_out=out.qg,
+            q_out=out.q,
             pflx=out.pflx,
             pr=out.pr,
             ps=out.ps,

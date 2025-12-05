@@ -6,10 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import exp, maximum, where
+from gt4py.next import exp
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, t_d
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 
 @gtx.field_operator
@@ -338,99 +338,3 @@ def _newton_raphson(
     dux = cv + dqx * (g_ct.lvc + (t_d.cvv - t_d.clw) * Tx)
     Tx = Tx - (ux - ue) / dux
     return Tx
-
-
-@gtx.field_operator
-def _saturation_adjustment(
-    te: fa.CellKField[ta.wpfloat],
-    qve: fa.CellKField[ta.wpfloat],
-    qce: fa.CellKField[ta.wpfloat],
-    qre: fa.CellKField[ta.wpfloat],
-    qse: fa.CellKField[ta.wpfloat],
-    qie: fa.CellKField[ta.wpfloat],
-    qge: fa.CellKField[ta.wpfloat],
-    rho: fa.CellKField[ta.wpfloat],
-) -> tuple[
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-]:
-    """
-    Compute the saturation adjustment which revises internal energy and water contents
-
-    Args:
-        Tx:                    Temperature
-        qve:                   Specific humidity
-        qce:                   Specific cloud water content
-        qre:                   Specific rain water
-        qti:                   Specific mass of all ice species (total-ice)
-        rho:                   Density containing dry air and water constituents
-
-    Result:                    Tuple containing
-                               - Revised temperature
-                               - Revised specific cloud water content
-                               - Revised specific vapor content
-                               - Mask specifying where qce+qve less than holding capacity
-    """
-    qti = qse + qie + qge
-    qt = qve + qce + qre + qti
-    cvc = t_d.cvd * (1.0 - qt) + t_d.clw * qre + g_ct.ci * qti
-    cv = cvc + t_d.cvv * qve + t_d.clw * qce
-    ue = cv * te - qce * g_ct.lvc
-    Tx_hold = ue / (cv + qce * (t_d.cvv - t_d.clw))
-    qx_hold = _qsat_rho(Tx_hold, rho)
-
-    Tx = te
-    # Newton-Raphson iteration: 6 times the same operations
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue)
-
-    # At this point we hope Tx has converged
-    qx = _qsat_rho(Tx, rho)
-
-    # Is it possible to unify the where for all three outputs??
-    mask = qve + qce <= qx_hold
-    te = where(mask, Tx_hold, Tx)
-    qce = where(mask, 0.0, maximum(qve + qce - qx, 0.0))
-    qve = where(mask, qve + qce, qx)
-
-    return te, qve, qce
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def saturation_adjustment(
-    te: fa.CellKField[ta.wpfloat],  # Temperature
-    qve: fa.CellKField[ta.wpfloat],  # Specific humidity
-    qce: fa.CellKField[ta.wpfloat],  # Specific cloud water content
-    qre: fa.CellKField[ta.wpfloat],  # Specific rain water
-    qse: fa.CellKField[ta.wpfloat],  # Specific snow water
-    qie: fa.CellKField[ta.wpfloat],  # Specific ice water content
-    qge: fa.CellKField[ta.wpfloat],  # Specific graupel water content
-    rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
-    te_out: fa.CellKField[ta.wpfloat],  # Temperature
-    qve_out: fa.CellKField[ta.wpfloat],  # Specific humidity
-    qce_out: fa.CellKField[ta.wpfloat],  # Specific cloud water content
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _saturation_adjustment(
-        te,
-        qve,
-        qce,
-        qre,
-        qse,
-        qie,
-        qge,
-        rho,
-        out=(te_out, qve_out, qce_out),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )

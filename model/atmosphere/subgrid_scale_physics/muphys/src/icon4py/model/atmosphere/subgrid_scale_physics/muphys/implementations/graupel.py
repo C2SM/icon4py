@@ -12,6 +12,7 @@ from gt4py.next import maximum, minimum, power, sqrt, where
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, idx, t_d
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import (
     _deposition_auto_conversion,
     _deposition_factor,
@@ -49,15 +50,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-
-
-class Q(NamedTuple):
-    v: fa.CellKField[ta.wpfloat]  # Specific humidity
-    c: fa.CellKField[ta.wpfloat]  # Specific cloud water content
-    r: fa.CellKField[ta.wpfloat]  # Specific rain water
-    s: fa.CellKField[ta.wpfloat]  # Specific snow water
-    i: fa.CellKField[ta.wpfloat]  # Specific ice water content
-    g: fa.CellKField[ta.wpfloat]  # Specific graupel water content
 
 
 class PrecipState(NamedTuple):
@@ -433,8 +425,8 @@ def _precipitation_effects(
 
 
 @gtx.field_operator
-def _graupel_run(
-    last_lev: gtx.int32,
+def graupel(
+    last_level: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
@@ -458,7 +450,7 @@ def _graupel_run(
     kmin_g = where(q.g > g_ct.qmin, True, False)
     q, t = _q_t_update(te, p, rho, q, dt, qnc)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
-        last_lev, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
+        last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
 
     return t, Q(v=q.v, c=q.c, r=qr, s=qs, i=qi, g=qg), pflx, pr, ps, pi, pg, pre
@@ -486,8 +478,8 @@ def graupel_run(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _graupel_run(
-        last_lev=vertical_end - 1,
+    graupel(
+        last_level=vertical_end - 1,
         dz=dz,
         te=te,
         p=p,
