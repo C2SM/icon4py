@@ -16,15 +16,14 @@ import numpy as np
 import pytest
 from gt4py import next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_graupel_only
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_full_muphys
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.testing import data_handling, definitions as testing_defs
 from icon4py.model.testing.fixtures.datatest import backend_like
 
 
 def _path_to_experiment_testdata(experiment: MuphysGraupelExperiment) -> pathlib.Path:
-    return testing_defs.get_test_data_root_path() / "muphys_graupel_data" / experiment.name
+    return testing_defs.get_test_data_root_path() / "full_muphys_data" / experiment.name
 
 
 @dataclasses.dataclass(frozen=True)
@@ -51,17 +50,17 @@ class Experiments:
     # TODO currently on havogt's polybox
     MINI: Final = MuphysGraupelExperiment(
         name="mini",
-        uri="https://polybox.ethz.ch/index.php/s/55oHBDxS2SiqAGN/download/mini.tar.gz",
+        uri="TODO",
         dtype=np.float32,
     )
     TINY: Final = MuphysGraupelExperiment(
         name="tiny",
-        uri="https://polybox.ethz.ch/index.php/s/5Ceop3iaWkbc7gf/download/tiny.tar.gz",
+        uri="TODO",
         dtype=np.float64,
     )
     R2B05: Final = MuphysGraupelExperiment(
         name="R2B05",
-        uri="https://polybox.ethz.ch/index.php/s/RBib8rFSEd7Eomo/download/R2B05.tar.gz",
+        uri="TODO",
         dtype=np.float32,
     )
 
@@ -82,15 +81,23 @@ def download_test_data(experiment: MuphysGraupelExperiment) -> None:
     ],
     ids=lambda exp: exp.name,
 )
-def test_graupel_only(
-    backend_like: model_backends.BackendLike, experiment: MuphysGraupelExperiment
+@pytest.mark.parametrize("single_program", [True, False], ids=lambda sp: f"single_program={sp}")
+def test_full_muphys(
+    backend_like: model_backends.BackendLike,
+    experiment: MuphysGraupelExperiment,
+    single_program: bool,
 ) -> None:
+    # TODO why does it verify on the graupel only reference?
     inp = common.GraupelInput.load(
         filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
     )
 
-    graupel_run_program = run_graupel_only.setup_graupel(
-        inp, dt=experiment.dt, qnc=experiment.qnc, backend=backend_like
+    muphys_program = run_full_muphys.setup_muphys(
+        inp,
+        dt=experiment.dt,
+        qnc=experiment.qnc,
+        backend=backend_like,
+        single_program=single_program,
     )
 
     out = common.GraupelOutput.allocate(
@@ -98,7 +105,7 @@ def test_graupel_only(
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
     )
 
-    graupel_run_program(
+    muphys_program(
         dz=inp.dz,
         te=inp.t,
         p=inp.p,
