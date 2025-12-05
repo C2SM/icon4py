@@ -499,12 +499,19 @@ class IconGridSavepoint(IconSavepoint):
             limited_area=self.get_metadata("limited_area").get("limited_area"),
             keep_skip_values=keep_skip_values,
         )
+
+        if with_repeated_index:
+
+            def potentially_revert_icon_index_transformation(ar):
+                return ar
+        else:
+            potentially_revert_icon_index_transformation = functools.partial(
+                grid_utils.revert_repeated_index_to_invalid,
+                array_ns=data_alloc.import_array_ns(backend),
+            )
+
         c2e2c = self.c2e2c()
-        e2c2e = (
-            self.e2c2e()
-            if with_repeated_index
-            else grid_utils.revert_repeated_index_to_invalid(self.e2c2e())
-        )
+        e2c2e = potentially_revert_icon_index_transformation(self.e2c2e())
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
@@ -513,16 +520,8 @@ class IconGridSavepoint(IconSavepoint):
             start_indices=self.start_index(),
             end_indices=self.end_index(),
         )
-        c2e2c2e = (
-            self.c2e2c2e()
-            if with_repeated_index
-            else grid_utils.revert_repeated_index_to_invalid(self.c2e2c2e())
-        )
-        v2e = (
-            self.v2e()
-            if with_repeated_index
-            else grid_utils.revert_repeated_index_to_invalid(self.v2e())
-        )
+        c2e2c2e = potentially_revert_icon_index_transformation(self.c2e2c2e())
+        v2e = potentially_revert_icon_index_transformation(self.v2e())
 
         start_index, end_index = icon.get_start_and_end_index(constructor)
         neighbor_tables = {
