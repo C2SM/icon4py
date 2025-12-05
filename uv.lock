@@ -1399,7 +1399,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.1+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace-one_sdfg_builder#f9e304c1cf57145d04a039dbfca3969125fa60ee" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace-one_sdfg_builder#2219edfc429b1dcc1df07e75315d39884e2bce20" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
