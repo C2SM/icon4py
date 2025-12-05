@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import exp, maximum, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, t_d
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 
 @gtx.field_operator
@@ -399,30 +399,3 @@ def _saturation_adjustment(
     qve = where(mask, qve + qce, qx)
 
     return te, qve, qce
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def saturation_adjustment(
-    te: fa.CellKField[ta.wpfloat],  # Temperature
-    qve: fa.CellKField[ta.wpfloat],  # Specific humidity
-    qce: fa.CellKField[ta.wpfloat],  # Specific cloud water content
-    qre: fa.CellKField[ta.wpfloat],  # Specific rain water
-    qse: fa.CellKField[ta.wpfloat],  # Specific snow water
-    qie: fa.CellKField[ta.wpfloat],  # Specific ice water content
-    qge: fa.CellKField[ta.wpfloat],  # Specific graupel water content
-    rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
-    te_out: fa.CellKField[ta.wpfloat],  # Temperature
-    qve_out: fa.CellKField[ta.wpfloat],  # Specific humidity
-    qce_out: fa.CellKField[ta.wpfloat],  # Specific cloud water content
-):
-    _saturation_adjustment(
-        te,
-        qve,
-        qce,
-        qre,
-        qse,
-        qie,
-        qge,
-        rho,
-        out=(te_out, qve_out, qce_out),
-    )

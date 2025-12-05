@@ -6,23 +6,20 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import maximum
+from gt4py.next import maximum, where
+
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, t_d
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
+    _newton_raphson,
+    _qsat_rho,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
-class Q(NamedTuple):
-    v: fa.CellKField[ta.wpfloat]  # Specific humidity                                                                                                          
-    c: fa.CellKField[ta.wpfloat]  # Specific cloud water content                                                                                               
-    r: fa.CellKField[ta.wpfloat]  # Specific rain water                                                                                                        
-    s: fa.CellKField[ta.wpfloat]  # Specific snow water                                                                                                        
-    i: fa.CellKField[ta.wpfloat]  # Specific ice water content                                                                                                 
-    g: fa.CellKField[ta.wpfloat]  # Specific graupel water content                                                                                             
 
 @gtx.field_operator
 def _saturation_adjustment(
-    te: fa.CellKField[ta.wpfloat],
-    rho: fa.CellKField[ta.wpfloat],
-    q_in: Q
+    te: fa.CellKField[ta.wpfloat], rho: fa.CellKField[ta.wpfloat], q_in: Q
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -64,18 +61,18 @@ def _saturation_adjustment(
     # Is it possible to unify the where for all three outputs??
     mask = q_in.v + q_in.c <= qx_hold
     te = where(mask, Tx_hold, Tx)
-    qce = where(mask, 0.0, maximum(q_in.v + qce - qx, 0.0))
-    qve = where(mask, qve + qce, qx)
+    qce = where(mask, 0.0, maximum(q_in.v + q_in.c - qx, 0.0))
+    qve = where(mask, q_in.v + q_in.c, qx)
 
     return te, qve, qce
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def saturation_adjustment(
-    te: fa.CellKField[ta.wpfloat],       # Temperature
-    rho: fa.CellKField[ta.wpfloat],      # Density containing dry air and water constituents
-    q_in: Q,                             # Class with humidity, cloud, rain, snow, ice and graupel water
-    te_out: fa.CellKField[ta.wpfloat],   # Temperature
+    te: fa.CellKField[ta.wpfloat],  # Temperature
+    rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
+    q_in: Q,  # Class with humidity, cloud, rain, snow, ice and graupel water
+    te_out: fa.CellKField[ta.wpfloat],  # Temperature
     qve_out: fa.CellKField[ta.wpfloat],  # Specific humidity
     qce_out: fa.CellKField[ta.wpfloat],  # Specific cloud water content
     horizontal_start: gtx.int32,

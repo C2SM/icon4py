@@ -395,8 +395,8 @@ def _precipitation_effects(
 
 
 @gtx.field_operator
-def _graupel_run(
-    last_lev: gtx.int32,
+def graupel(
+    last_level: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
@@ -420,7 +420,7 @@ def _graupel_run(
     kmin_g = where(q_in.g > g_ct.qmin, True, False)
     q, t = _q_t_update(te, p, rho, q_in, dt, qnc)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
-        last_lev, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
+        last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
 
     return t, Q(v=q.v, c=q.c, r=qr, s=qs, i=qi, g=qg), pflx, pr, ps, pi, pg, pre
@@ -428,7 +428,6 @@ def _graupel_run(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def graupel_run(
-    last_lev: gtx.int32,
     dz: fa.CellKField[ta.wpfloat],
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
@@ -449,8 +448,8 @@ def graupel_run(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _graupel_run(
-        last_lev,  # TODO vertical_end - 1
+    graupel(
+        vertical_end - 1,
         dz,
         te,
         p,

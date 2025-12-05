@@ -43,7 +43,7 @@ def get_args():
 def setup_graupel(
     inp: common.GraupelInput, dt: float, qnc: float, backend: model_backends.BackendLike
 ):
-    with utils.recursion_limit(10**4):  # TODO thread safe?
+    with utils.recursion_limit(10**4):  # TODO(havogt): make an option in gt4py?
         graupel_run_program = model_options.setup_program(
             backend=backend,
             program=graupel.graupel_run,
@@ -55,7 +55,6 @@ def setup_graupel(
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(inp.nlev),
-                "last_lev": gtx.int32(inp.nlev - 1),
             },
             offset_provider={"Koff": dims.KDim},
         )
