@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import NamedTuple
+
 import gt4py.next as gtx
 from gt4py.next import maximum, minimum, power, sqrt, where
 from gt4py.next.experimental import concat_where
@@ -50,41 +52,74 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import Koff
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, 0.0, False))
+class PrecipState(NamedTuple):
+    q_update: ta.wpfloat
+    flx: ta.wpfloat
+    rho: ta.wpfloat
+    vc: ta.wpfloat
+    activated: bool
+
+
+@gtx.scan_operator(
+    axis=dims.KDim,
+    forward=True,
+    init=PrecipState(
+        q_update=0.0,
+        flx=0.0,
+        rho=0.0,
+        vc=0.0,
+        activated=False,
+    ),
+)
 def _precip(
-    state: tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat, bool],
+    previous_level: PrecipState,
     prefactor: ta.wpfloat,  # param[0] of fall_speed
     exponent: ta.wpfloat,  # param[1] of fall_speed
     offset: ta.wpfloat,  # param[1] of fall_speed
     zeta: ta.wpfloat,  # dt/(2dz)
     vc: ta.wpfloat,  # state dependent fall speed correction
     q: ta.wpfloat,  # specific mass of hydrometeor
-    q_kp1: ta.wpfloat,  # specific mass in next lower cell
     rho: ta.wpfloat,  # density
-    mask: bool,  # k-level located in cloud
-) -> tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat, bool]:  # updates
-    _, flx, vt, is_level_activated = state
-    is_level_activated = is_level_activated | mask
+    mask: bool,
+) -> PrecipState:
+    current_level_activated = previous_level.activated | mask
     rho_x = q * rho
-    flx_eff = (rho_x / zeta) + 2.0 * flx
+    flx_eff = (rho_x / zeta) + 2.0 * previous_level.flx
     #   Inlined calculation using _fall_speed_scalar
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
-    if is_level_activated:
-        update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
-        update1 = (update0 * rho * vt + flx_partial) * 0.5  # flux
-        rho_x = (update0 + q_kp1) * 0.5 * rho
-        # Inlined calculation using _fall_speed_scalar
-        update2 = vc * prefactor * power((rho_x + offset), exponent)  # vt
+
+    rhox_prev = (previous_level.q_update + q) * 0.5 * previous_level.rho
+
+    if previous_level.activated:
+        # this looks weird because we are setting vt based on previous level being active. bug?
+        vt = previous_level.vc * prefactor * power((rhox_prev + offset), exponent)
     else:
-        update0 = q
-        update1 = 0.0
-        update2 = 0.0
-    return update0, update1, update2, is_level_activated
+        vt = 0.0
+
+    if current_level_activated:
+        next_q_update = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
+        next_flx = (next_q_update * rho * vt + flx_partial) * 0.5  # flux
+    else:
+        next_q_update = q
+        next_flx = 0.0
+    return PrecipState(
+        q_update=next_q_update,
+        flx=next_flx,
+        rho=rho,
+        vc=vc,
+        activated=current_level_activated,
+    )
 
 
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=(0.0, 0.0, False))
+class TempState(NamedTuple):
+    t: ta.wpfloat
+    eflx: ta.wpfloat
+    activated: bool
+
+
+@gtx.scan_operator(axis=dims.KDim, forward=True, init=TempState(t=0.0, eflx=0.0, activated=False))
 def _temperature_update(
-    state: tuple[ta.wpfloat, ta.wpfloat, bool],
+    previous_level: TempState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
     ei_old: ta.wpfloat,
@@ -97,17 +132,14 @@ def _temperature_update(
     dz: ta.wpfloat,
     dt: ta.wpfloat,
     mask: bool,
-) -> tuple[ta.wpfloat, ta.wpfloat, bool]:
-    _, eflx, is_level_activated = state
-    is_level_activated = is_level_activated | mask
-    if is_level_activated:
-        e_int = ei_old + eflx
-
+) -> TempState:
+    current_level_activated = previous_level.activated | mask
+    if current_level_activated:
         eflx = dt * (
             pr * (t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc)
             + (pflx_tot) * (g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc)
         )
-        e_int = e_int - eflx
+        e_int = ei_old + previous_level.eflx - eflx
 
         #  Inlined calculation using T_from_internal_energy_scalar
         #  in order to avoid scan_operator -> field_operator
@@ -116,8 +148,10 @@ def _temperature_update(
             (t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
         )  # Moist isometric specific heat
         t = (e_int + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
+    else:
+        eflx = previous_level.eflx
 
-    return t, eflx, is_level_activated
+    return TempState(t=t, eflx=eflx, activated=current_level_activated)
 
 
 @gtx.field_operator
@@ -158,7 +192,7 @@ def _q_t_update(  # noqa: PLR0915 [too-many-statements]
     sx2x_c_g = _cloud_to_graupel(t, rho, q.c, q.g)
 
     t_below_tmelt = t < t_d.tmelt
-    t_at_least_tmelt = not t_below_tmelt
+    t_at_least_tmelt = ~t_below_tmelt
 
     n_ice = _ice_number(t, rho)
     m_ice = _ice_mass(q.i, n_ice)
@@ -365,33 +399,29 @@ def _precipitation_effects(
     vc_i = _vel_scale_factor_ice(xrho)
     vc_g = _vel_scale_factor_default(xrho)
 
-    q_kp1 = concat_where(dims.KDim < last_lev, q_in.r(Koff[1]), q_in.r)
-    qr, pr, _, _ = _precip(
-        idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, q_in.r, q_kp1, rho, kmin_r
+    qr, pr, _, _, _ = _precip(
+        idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, q_in.r, rho, kmin_r
     )
-    q_kp1 = concat_where(dims.KDim < last_lev, q_in.s(Koff[1]), q_in.s)
-    qs, ps, _, _ = _precip(
-        idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, q_in.s, q_kp1, rho, kmin_s
+    qs, ps, _, _, _ = _precip(
+        idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, q_in.s, rho, kmin_s
     )
-    q_kp1 = concat_where(dims.KDim < last_lev, q_in.i(Koff[1]), q_in.i)
-    qi, pi, _, _ = _precip(
-        idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, q_in.i, q_kp1, rho, kmin_i
+    qi, pi, _, _, _ = _precip(
+        idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, q_in.i, rho, kmin_i
     )
-    q_kp1 = concat_where(dims.KDim < last_lev, q_in.g(Koff[1]), q_in.g)
-    qg, pg, _, _ = _precip(
-        idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, q_in.g, q_kp1, rho, kmin_g
+    qg, pg, _, _, _ = _precip(
+        idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, q_in.g, rho, kmin_g
     )
 
     qliq = q_in.c + qr
     qice = qs + qi + qg
-    p_sig = ps + pi + pg
+    pflx_tot = ps + pi + pg
     t_kp1 = concat_where(dims.KDim < last_lev, t(Koff[1]), t)
     kmin_rsig = kmin_r | kmin_s | kmin_i | kmin_g
     t, eflx, _ = _temperature_update(
-        t, t_kp1, ei_old, pr, p_sig, q_in.v, qliq, qice, rho, dz, dt, kmin_rsig
+        t, t_kp1, ei_old, pr, pflx_tot, q_in.v, qliq, qice, rho, dz, dt, kmin_rsig
     )
 
-    return qr, qs, qi, qg, t, p_sig + pr, pr, ps, pi, pg, eflx / dt
+    return qr, qs, qi, qg, t, pflx_tot + pr, pr, ps, pi, pg, eflx / dt
 
 
 @gtx.field_operator
@@ -401,7 +431,7 @@ def graupel(
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
-    q_in: Q,
+    q: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
 ) -> tuple[
@@ -414,11 +444,11 @@ def graupel(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    kmin_r = where(q_in.r > g_ct.qmin, True, False)
-    kmin_i = where(q_in.i > g_ct.qmin, True, False)
-    kmin_s = where(q_in.s > g_ct.qmin, True, False)
-    kmin_g = where(q_in.g > g_ct.qmin, True, False)
-    q, t = _q_t_update(te, p, rho, q_in, dt, qnc)
+    kmin_r = where(q.r > g_ct.qmin, True, False)
+    kmin_i = where(q.i > g_ct.qmin, True, False)
+    kmin_s = where(q.s > g_ct.qmin, True, False)
+    kmin_g = where(q.g > g_ct.qmin, True, False)
+    q, t = _q_t_update(te, p, rho, q, dt, qnc)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
         last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
@@ -449,14 +479,14 @@ def graupel_run(
     vertical_end: gtx.int32,
 ):
     graupel(
-        vertical_end - 1,
-        dz,
-        te,
-        p,
-        rho,
-        q_in,
-        dt,
-        qnc,
+        last_level=vertical_end - 1,
+        dz=dz,
+        te=te,
+        p=p,
+        rho=rho,
+        q=q_in,
+        dt=dt,
+        qnc=qnc,
         out=(t_out, q_out, pflx, pr, ps, pi, pg, pre),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
