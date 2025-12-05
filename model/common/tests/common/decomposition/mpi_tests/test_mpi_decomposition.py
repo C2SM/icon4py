@@ -11,10 +11,6 @@ from typing import Any
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
-from model.common.src.icon4py.model.common.metrics import (
-    metrics_attributes as attrs,
-    metrics_factory,
-)
 
 from icon4py.model.common.grid import horizontal as h_grid, icon
 from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
@@ -275,7 +271,7 @@ def test_exchange_on_dummy_data(
     local_points = decomposition_info.local_index(
         dimension, definitions.DecompositionInfo.EntryType.OWNED
     )
-    assert np.all(input_field == number)
+    assert np.all(input_field.asnumpy() == number)
     exchange.exchange_and_wait(dimension, input_field)
     result = input_field.asnumpy()
     print(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
