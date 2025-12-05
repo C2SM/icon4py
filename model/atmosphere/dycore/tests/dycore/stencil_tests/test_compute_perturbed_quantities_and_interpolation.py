@@ -65,6 +65,7 @@ def compute_first_vertical_derivative_numpy(
 
 
 @pytest.mark.uses_concat_where
+@pytest.mark.continuous_benchmarking
 class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
     PROGRAM = compute_perturbed_quantities_and_interpolation
     OUTPUTS = (
@@ -80,6 +81,28 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         "pressure_buoyancy_acceleration_at_cells_on_half_levels",
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "igradp_method",
+            "nflatlev",
+            "nflat_gradp",
+            "start_cell_lateral_boundary",
+            "start_cell_lateral_boundary_level_3",
+            "start_cell_halo_level_2",
+            "end_cell_halo",
+            "end_cell_halo_level_2",
+            "model_top",
+            "surface_level",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "igradp_method",
+            "nflatlev",
+            "nflat_gradp",
+            "model_top",
+            "surface_level",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -397,8 +420,8 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         start_cell_halo_level_2 = grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
         end_cell_halo_level_2 = grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
 
-        nflatlev = 4
-        nflat_gradp = 27
+        nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        nflat_gradp = 34  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         return dict(
             temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,

@@ -58,11 +58,15 @@ def compute_derived_horizontal_winds_and_ke_and_contravariant_correction_numpy(
     skip_compute_predictor_vertical_advection: bool,
     nflatlev: int,
     nlevp1: int,
+    horizontal_start: int,
+    horizontal_end: int,
     vertical_start: int,
 ) -> tuple[np.ndarray, ...]:
     k: np.ndarray = np.arange(nlevp1)
     k = k[np.newaxis, :]
     k_nlev = k[:, :-1]
+
+    initial_vn_on_half_levels = vn_on_half_levels.copy()
 
     tangential_wind = np.where(
         k_nlev >= vertical_start,
@@ -116,6 +120,9 @@ def compute_derived_horizontal_winds_and_ke_and_contravariant_correction_numpy(
 
     vn_on_half_levels[:, -1] = extrapolate_to_surface_numpy(wgtfacq_e, vn)
 
+    vn_on_half_levels[:horizontal_start, :] = initial_vn_on_half_levels[:horizontal_start, :]
+    vn_on_half_levels[horizontal_end:, :] = initial_vn_on_half_levels[horizontal_end:, :]
+
     return (
         tangential_wind,
         tangential_wind_on_half_levels,
@@ -142,6 +149,7 @@ def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.nd
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection(
     stencil_tests.StencilTest
 ):
@@ -154,6 +162,21 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         "contravariant_correction_at_edges_on_model_levels",
         "horizontal_advection_of_w_at_edges_on_half_levels",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "nflatlev",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nflatlev",
+        ),
+    }
 
     @classmethod
     def reference(
@@ -222,7 +245,9 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             tangent_orientation=tangent_orientation,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
             nflatlev=nflatlev,
-            nlevp1=nflatlev,
+            nlevp1=vertical_end,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
             vertical_start=vertical_start,
         )
 
@@ -266,7 +291,10 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         )
 
     @pytest.fixture(
-        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]]
+        params=[
+            {"skip_compute_predictor_vertical_advection": value} for value in [True, False]
+        ],  # True for benchmarking, False for testing
+        ids=lambda param: f"skip_compute_predictor_vertical_advection[{param['skip_compute_predictor_vertical_advection']}]",
     )
     def input_data(
         self, grid: base.Grid, request: pytest.FixtureRequest
@@ -298,14 +326,15 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
         nlev = grid.num_levels
-        nflatlev = 11
+        nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         skip_compute_predictor_vertical_advection = request.param[
             "skip_compute_predictor_vertical_advection"
         ]
 
-        horizontal_start = 0
-        horizontal_end = grid.num_edges
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
         vertical_start = 0
         vertical_end = nlev + 1
 
