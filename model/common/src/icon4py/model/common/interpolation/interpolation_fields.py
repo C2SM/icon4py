@@ -553,7 +553,6 @@ def _force_mass_conservation_to_c_bln_avg(
 
         exchange(residual)
 
-
         # in practice the convergence criteria is never reached before the niter is reached for (niter <= 1000)
         # so when parallelizing we opt for disableing the criteria instead of doing an inefficient
         # global reduction. (We assume that there is no convergence criteria for the very same reason in the
