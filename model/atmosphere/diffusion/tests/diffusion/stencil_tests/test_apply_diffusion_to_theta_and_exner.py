@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils.data_allocation import random_field, random_mask, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing import stencil_tests
 
 from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
 from .test_calculate_nabla2_of_theta import calculate_nabla2_of_theta_numpy
@@ -27,12 +27,28 @@ from .test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
 from .test_update_theta_and_exner import update_theta_and_exner_numpy
 
 
-@pytest.mark.skip_value_error
+# @pytest.mark.skip_value_error
 @pytest.mark.uses_as_offset
 @pytest.mark.embedded_remap_error
-class TestApplyDiffusionToThetaAndExner(StencilTest):
+@pytest.mark.continuous_benchmarking
+class TestApplyDiffusionToThetaAndExner(stencil_tests.StencilTest):
     PROGRAM = apply_diffusion_to_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "apply_zdiffusion_t",
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "apply_zdiffusion_t",
+            "vertical_start",
+            "vertical_end",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -50,6 +66,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         area: np.ndarray,
         exner: np.ndarray,
         rd_o_cvd: float,
+        apply_zdiffusion_t: bool,
         **kwargs: Any,
     ) -> dict:
         kwargs_2 = {k: v for k, v in kwargs.items() if k != "theta_v"}  # remove unused kwargs
@@ -70,16 +87,13 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
             vcoef,
             theta_v_in,
             z_temp,
-        )
+        ) if apply_zdiffusion_t else z_temp
         theta_v, exner = update_theta_and_exner_numpy(z_temp, area, theta_v_in, exner, rd_o_cvd)
 
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid):
-        pytest.xfail(
-            "stencil segfaults with GTFN and it is not used in diffusion: it is missing an if condition"
-        )
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim)
         theta_v_in = random_field(grid, dims.CellDim, dims.KDim)
@@ -102,6 +116,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         theta_v = random_field(grid, dims.CellDim, dims.KDim)
         exner = random_field(grid, dims.CellDim, dims.KDim)
         rd_o_cvd = 5.0
+        apply_zdiffusion_t = True
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
@@ -123,6 +138,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
             theta_v=theta_v,
             exner=exner,
             rd_o_cvd=rd_o_cvd,
+            apply_zdiffusion_t=apply_zdiffusion_t,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,

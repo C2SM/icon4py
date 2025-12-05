@@ -6,3 +6,13 @@
     PYTHONOPTIMIZE: 2
     STENCIL_TEST_SELECTION: "test_Test and compile_time_domain"
     GRANULE_TEST_SELECTION: "test_diffusion_benchmark or test_benchmark_solve_nonhydro"
+
+.benchmark_nox_job:
+  stage: benchmark
+  script:
+    - nox -s ${NOX_SESSION} -- --backend=$BACKEND --grid=$GRID -k "${TEST_SELECTION}"
+  parallel:
+    matrix:
+      - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+        GRID: [icon_benchmark_regional, icon_benchmark_global]
+  extends: [.benchmark_model_base_variables]

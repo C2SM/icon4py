@@ -16,6 +16,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures import *  # noqa: F403
 
+from ... import utils
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
@@ -26,13 +28,6 @@ if TYPE_CHECKING:
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        definitions.Experiments.GAUSS3D,
-        definitions.Experiments.MCH_CH_R04B09,
-    ],
-)
 def test_topography_smoothing_with_serialized_data(
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
@@ -55,6 +50,7 @@ def test_topography_smoothing_with_serialized_data(
         c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
         num_iterations=num_iterations,
         array_ns=xp,
+        exchange=utils.dummy_exchange,
     )
 
     assert test_utils.dallclose(topography_smoothed_ref, topography_smoothed, atol=1.0e-14)

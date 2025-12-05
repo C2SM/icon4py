@@ -35,6 +35,8 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+from ... import utils
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
@@ -179,11 +181,12 @@ def test_rbf_interpolation_coeffs_cell(
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
+        exchange=utils.dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
-    rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().ndarray
-    rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2().ndarray
+    rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().asnumpy()
+    rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2().asnumpy()
 
     assert rbf_vec_coeff_c1.shape == rbf_vec_coeff_c1_ref.shape
     assert rbf_vec_coeff_c2.shape == rbf_vec_coeff_c2_ref.shape
@@ -248,6 +251,7 @@ def test_rbf_interpolation_coeffs_vertex(
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
+        exchange=utils.dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -319,6 +323,7 @@ def test_rbf_interpolation_coeffs_edge(
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
         horizontal_start,
+        exchange=utils.dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
