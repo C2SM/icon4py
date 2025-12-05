@@ -92,7 +92,7 @@ def test_distributed_metrics_attrs(
         (attrs.EXNER_REF_MC, "exner_ref_mc"),
         (attrs.RHO_REF_ME, "rho_ref_me"),
         (attrs.THETA_REF_ME, "theta_ref_me"),
-        (attrs.D2DEXDZ2_FAC1_MC, "d2dexdz2_fac1_mc"), #1-e-12
+        (attrs.D2DEXDZ2_FAC1_MC, "d2dexdz2_fac1_mc"),
         (attrs.D2DEXDZ2_FAC2_MC, "d2dexdz2_fac2_mc"),
         (attrs.DDXN_Z_FULL, "ddxn_z_full"),
         (attrs.DDXT_Z_FULL, "ddxt_z_full"),
