@@ -13,6 +13,7 @@ import functools
 import logging
 from collections.abc import Sequence
 from enum import Enum
+from types import ModuleType
 from typing import Any, Literal, Protocol, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
@@ -21,6 +22,7 @@ import numpy as np
 
 from icon4py.model.common import utils
 from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -323,6 +325,17 @@ class SingleNodeRun(RunType):
     pass
 
 
+class Reductions(Protocol):
+    def min(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+
+class SingleNodeReductions(Reductions):
+    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.min(buffer).item()
+
+
 @overload
 def get_runtype(with_mpi: Literal[True]) -> MultiNodeRun: ...
 
@@ -365,4 +378,20 @@ def create_single_node_exchange(
     return SingleNodeExchange()
 
 
+@functools.singledispatch
+def create_global_reduction(props: ProcessProperties) -> Reductions:
+    """
+    Create an Exchange depending on the runtime size.
+
+    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+    """
+    raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
+
+
+@create_global_reduction.register(SingleNodeProcessProperties)
+def create_global_reduction_exchange(props: SingleNodeProcessProperties) -> Reductions:
+    return SingleNodeReductions()
+
+
 single_node_default = SingleNodeExchange()
+single_node_reductions = SingleNodeReductions()
