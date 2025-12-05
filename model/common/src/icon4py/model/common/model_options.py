@@ -53,6 +53,7 @@ def get_dace_options(
             "vertically_implicit_solver_at_corrector_step",
             "vertically_implicit_solver_at_predictor_step",
             "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn", # TODO(iomaganaris): Fix bug with K offset field tlet
+            "apply_diffusion_to_theta_and_exner.py" # TODO(iomaganaris): Fix bug with K offset field tlet
         ]
     )
     if program_name not in non_kblocking_programs:
