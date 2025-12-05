@@ -560,7 +560,7 @@ def _force_mass_conservation_to_c_bln_avg(
         # for max_ = array_ns.max(residual)
         max_ = 1.0
         if iteration >= (niter - 1) or max_ < 1e-9:
-            print(f"number of iterations: {iteration} - max residual={max_}")
+            logger.debug(f"number of iterations: {iteration} - max residual disabled")
             c_bln_avg = _enforce_mass_conservation(
                 c_bln_avg, residual, cell_owner_mask, horizontal_start
             )
