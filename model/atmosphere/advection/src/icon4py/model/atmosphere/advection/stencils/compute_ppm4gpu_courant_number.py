@@ -9,8 +9,9 @@
 import gt4py.next as gtx
 from gt4py.next import abs, where  # noqa: A004
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO(dastrm): this stencil has no test
@@ -19,13 +20,13 @@ from icon4py.model.common.dimension import Koff
 
 @gtx.field_operator
 def _compute_courant_number_below(
-    p_cellmass_now: fa.CellKField[ta.wpfloat],
-    z_mass: fa.CellKField[ta.wpfloat],
-    z_cfl: fa.CellKField[ta.wpfloat],
+    p_cellmass_now: fa.CellKField[wpfloat],
+    z_mass: fa.CellKField[wpfloat],
+    z_cfl: fa.CellKField[wpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    dbl_eps: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
+    wp_eps: wpfloat,
+) -> fa.CellKField[wpfloat]:
     z_mass_pos = z_mass > 0.0
 
     in_bounds_p0 = k <= nlev - 1
@@ -63,20 +64,20 @@ def _compute_courant_number_below(
     p_cellmass_now_jks = where(mass_gt_cellmass_p3, p_cellmass_now(Koff[4]), p_cellmass_now_jks)
 
     z_cflfrac = where(z_mass_pos, z_mass / p_cellmass_now_jks, 0.0)
-    z_cfl = z_cfl + where(z_cflfrac < 1.0, z_cflfrac, 1.0 - dbl_eps)
+    z_cfl = z_cfl + where(z_cflfrac < 1.0, z_cflfrac, 1.0 - wp_eps)
 
     return z_cfl
 
 
 @gtx.field_operator
 def _compute_courant_number_above(
-    p_cellmass_now: fa.CellKField[ta.wpfloat],
-    z_mass: fa.CellKField[ta.wpfloat],
-    z_cfl: fa.CellKField[ta.wpfloat],
+    p_cellmass_now: fa.CellKField[wpfloat],
+    z_mass: fa.CellKField[wpfloat],
+    z_cfl: fa.CellKField[wpfloat],
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
-    dbl_eps: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
+    wp_eps: wpfloat,
+) -> fa.CellKField[wpfloat]:
     z_mass_neg = z_mass <= 0.0
 
     in_bounds_m0 = k >= slevp1_ti + 1
@@ -116,26 +117,26 @@ def _compute_courant_number_above(
     z_cfl = z_cfl - where(mass_gt_cellmass_m3, 1.0, 0.0)
 
     z_cflfrac = where(z_mass_neg, z_mass / p_cellmass_now_jks, 0.0)
-    z_cfl = z_cfl + where(abs(z_cflfrac) < 1.0, z_cflfrac, dbl_eps - 1.0)
+    z_cfl = z_cfl + where(abs(z_cflfrac) < 1.0, z_cflfrac, wp_eps - 1.0)
 
     return z_cfl
 
 
 @gtx.field_operator
 def _compute_ppm4gpu_courant_number(
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
-    p_cellmass_now: fa.CellKField[ta.wpfloat],
-    z_cfl: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKField[wpfloat],
+    p_cellmass_now: fa.CellKField[wpfloat],
+    z_cfl: fa.CellKField[wpfloat],
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
     nlev: gtx.int32,
-    dbl_eps: ta.wpfloat,
-    p_dtime: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
+    wp_eps: wpfloat,
+    p_dtime: wpfloat,
+) -> fa.CellKField[wpfloat]:
     z_mass = p_dtime * p_mflx_contra_v
 
-    cfl_below = _compute_courant_number_below(p_cellmass_now, z_mass, z_cfl, k, nlev, dbl_eps)
-    cfl_above = _compute_courant_number_above(p_cellmass_now, z_mass, z_cfl, k, slevp1_ti, dbl_eps)
+    cfl_below = _compute_courant_number_below(p_cellmass_now, z_mass, z_cfl, k, nlev, wp_eps)
+    cfl_above = _compute_courant_number_above(p_cellmass_now, z_mass, z_cfl, k, slevp1_ti, wp_eps)
 
     z_cfl = cfl_below + cfl_above
 
@@ -144,14 +145,14 @@ def _compute_ppm4gpu_courant_number(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_ppm4gpu_courant_number(
-    p_mflx_contra_v: fa.CellKField[ta.wpfloat],
-    p_cellmass_now: fa.CellKField[ta.wpfloat],
-    z_cfl: fa.CellKField[ta.wpfloat],
+    p_mflx_contra_v: fa.CellKField[wpfloat],
+    p_cellmass_now: fa.CellKField[wpfloat],
+    z_cfl: fa.CellKField[wpfloat],
     k: fa.KField[gtx.int32],
     slevp1_ti: gtx.int32,
     nlev: gtx.int32,
-    dbl_eps: ta.wpfloat,
-    p_dtime: ta.wpfloat,
+    wp_eps: wpfloat,
+    p_dtime: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -164,7 +165,7 @@ def compute_ppm4gpu_courant_number(
         k,
         slevp1_ti,
         nlev,
-        dbl_eps,
+        wp_eps,
         p_dtime,
         out=z_cfl,
         domain={

@@ -785,7 +785,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             k=self._k_field,
             slevp1_ti=self._slevp1_ti,
             nlev=self._nlev,
-            dbl_eps=constants.DBL_EPS,
+            wp_eps=constants.WP_EPS,
             p_dtime=dtime,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
