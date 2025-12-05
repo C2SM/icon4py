@@ -9,6 +9,7 @@ import contextlib
 import os
 import re
 
+import numpy as np
 import pytest
 
 from icon4py.model.common import model_backends
@@ -94,9 +95,17 @@ def pytest_addoption(parser: pytest.Parser):
             help="Set level (unit, integration) of the tests to run. Defaults to 'any'.",
             default="any",
         )
+    with contextlib.suppress(ValueError):
+        parser.addoption(
+            "--skip-stenciltest-verification",
+            action="store_true",
+            help="Skip verification of `StencilTest`s against reference outputs.",
+            default=False,
+        )
 
 
 def pytest_collection_modifyitems(config, items):
+    """Modify collected test items based on command line options."""
     test_level = config.getoption("--level")
     if test_level == "any":
         return
@@ -128,7 +137,7 @@ _name_from_fullname_pattern = re.compile(
     r"""
         ::(?P<class>[A-Za-z_]\w*)       # capture class name
         (?::: [A-Za-z_]\w*              # skip method name
-        (?:\[(?P<params>[^\]]+)\])? )   # optional parameterization
+        (?:\[(?P<params>.+)\])? )       # optional parameterization; allow '[' and ']' inside params
         """,
     re.VERBOSE,
 )
@@ -156,3 +165,70 @@ def pytest_benchmark_update_json(output_json):
 
     for bench in output_json["benchmarks"]:
         bench["fullname"] = _name_from_fullname(bench["fullname"])
+        # if GT4Py metrics are gathered, replace the benchmark stats used by `bencher` with the GT4Py metrics stats
+        # to avoid reporting python overheads in `bencher` so that the results are comparable to the Fortran stencil benchmarks
+        if "extra_info" in bench and "gtx_metrics" in bench["extra_info"]:
+            gt4py_metrics_runtimes = bench.get("extra_info").get("gtx_metrics")
+            assert (
+                len(gt4py_metrics_runtimes) > 0
+            ), "No GT4Py metrics collected despite COLLECT_METRICS_LEVEL > 0"
+            bench["stats"]["mean"] = np.mean(gt4py_metrics_runtimes)
+            bench["stats"]["median"] = np.median(gt4py_metrics_runtimes)
+            bench["stats"]["stddev"] = np.std(gt4py_metrics_runtimes)
+            bench["stats"]["q1"] = np.percentile(gt4py_metrics_runtimes, 25)
+            bench["stats"]["q3"] = np.percentile(gt4py_metrics_runtimes, 75)
+            bench["stats"]["iqr"] = bench["stats"]["q3"] - bench["stats"]["q1"]
+            bench["stats"]["min"] = np.min(gt4py_metrics_runtimes)
+            bench["stats"]["max"] = np.max(gt4py_metrics_runtimes)
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """
+    Gather GT4Py timer metrics from benchmark fixture and add them to the test report.
+    """
+    outcome = yield
+    report = outcome.get_result()
+    if call.when == "call":
+        benchmark = item.funcargs.get("benchmark", None)
+        if benchmark and hasattr(benchmark, "extra_info"):
+            info = benchmark.extra_info.get("gtx_metrics", None)
+            if info:
+                filtered_benchmark_name = benchmark.name.split("test_Test")[-1]
+                # Combine the benchmark name in a readable form with the gtx_metrics data
+                report.sections.append(("benchmark-extra", tuple([filtered_benchmark_name, info])))
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    """
+    Add a custom section to the terminal summary with GT4Py timer metrics from benchmarks.
+    """
+    # Gather gtx_metrics
+    benchmark_gtx_metrics = []
+    for outcome in ("passed", "failed", "skipped"):
+        all_reports = terminalreporter.stats.get(outcome, [])
+        for report in all_reports:
+            for secname, info in getattr(report, "sections", []):
+                if secname == "benchmark-extra":
+                    benchmark_gtx_metrics.append(info)
+    # Calculate the maximum length of benchmark names for formatting
+    max_name_len = 0
+    for benchmark_name, _ in benchmark_gtx_metrics:
+        max_name_len = max(len(benchmark_name), max_name_len)
+    # Print the GT4Py timer report table
+    if benchmark_gtx_metrics:
+        terminalreporter.ensure_newline()
+        header = f"{'Benchmark Name':<{max_name_len}} | {'Mean (s)':>10} | {'Median (s)':>10} | {'Std Dev':>10} | {'Runs':>4}"
+        title = " GT4Py Timer Report "
+        sep_len = max(0, len(header) - len(title))
+        left = sep_len // 2
+        right = sep_len - left
+        terminalreporter.line("-" * left + title + "-" * right, bold=True, blue=True)
+        terminalreporter.line(header)
+        terminalreporter.line("-" * len(header), blue=True)
+
+        for benchmark_name, gtx_metrics in benchmark_gtx_metrics:
+            terminalreporter.line(
+                f"{benchmark_name:<{max_name_len}} | {np.mean(gtx_metrics):>10.8f} | {np.median(gtx_metrics):>10.8f} | {np.std(gtx_metrics):>10.8f} | {len(gtx_metrics):>4}"
+            )
+        terminalreporter.line("-" * len(header), blue=True)

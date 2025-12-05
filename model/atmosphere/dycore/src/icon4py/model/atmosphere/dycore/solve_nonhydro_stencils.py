@@ -122,22 +122,22 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
 
 @gtx.field_operator
 def _predictor_stencils_35_36(
-    vn: fa.EdgeKField[float],
-    ddxn_z_full: fa.EdgeKField[float],
-    ddxt_z_full: fa.EdgeKField[float],
-    vt: fa.EdgeKField[float],
-    z_w_concorr_me: fa.EdgeKField[float],
-    wgtfac_e: fa.EdgeKField[float],
-    vn_ie: fa.EdgeKField[float],
-    z_vt_ie: fa.EdgeKField[float],
-    z_kin_hor_e: fa.EdgeKField[float],
+    vn: fa.EdgeKField[wpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_vt_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     k_field: fa.KField[gtx.int32],
     nflatlev_startindex: gtx.int32,
 ) -> tuple[
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     z_w_concorr_me = concat_where(
         dims.KDim >= nflatlev_startindex,
@@ -154,15 +154,15 @@ def _predictor_stencils_35_36(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def predictor_stencils_35_36(
-    vn: fa.EdgeKField[float],
-    ddxn_z_full: fa.EdgeKField[float],
-    ddxt_z_full: fa.EdgeKField[float],
-    vt: fa.EdgeKField[float],
-    z_w_concorr_me: fa.EdgeKField[float],
-    wgtfac_e: fa.EdgeKField[float],
-    vn_ie: fa.EdgeKField[float],
-    z_vt_ie: fa.EdgeKField[float],
-    z_kin_hor_e: fa.EdgeKField[float],
+    vn: fa.EdgeKField[wpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_vt_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     k_field: fa.KField[gtx.int32],
     nflatlev_startindex: gtx.int32,
     horizontal_start: gtx.int32,
@@ -192,12 +192,12 @@ def predictor_stencils_35_36(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def predictor_stencils_37_38(
-    vn: fa.EdgeKField[float],
-    vt: fa.EdgeKField[float],
-    vn_ie: fa.EdgeKField[float],
-    z_vt_ie: fa.EdgeKField[float],
-    z_kin_hor_e: fa.EdgeKField[float],
-    wgtfacq_e_dsl: fa.EdgeKField[float],
+    vn: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_vt_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    wgtfacq_e_dsl: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -213,8 +213,8 @@ def predictor_stencils_37_38(
         },
     )
     _extrapolate_at_top(
-        vn,
         wgtfacq_e_dsl,
+        vn,
         out=vn_ie,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
