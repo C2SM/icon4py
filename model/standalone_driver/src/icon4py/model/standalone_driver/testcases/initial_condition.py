@@ -60,9 +60,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         backend: GT4Py backend
     Returns: driver state
     """
-    allocator = model_backends.get_allocator(backend)
+
     concrete_backend = model_options.customize_backend(program=None, backend=backend)
-    xp = data_alloc.import_array_ns(allocator)
+    xp = data_alloc.import_array_ns(concrete_backend.allocator)
 
     wgtfac_c = metrics_field_source.get(metrics_attributes.WGTFAC_C).ndarray
     ddqz_z_half = metrics_field_source.get(metrics_attributes.DDQZ_Z_HALF).ndarray
@@ -197,8 +197,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         temperature_ndarray[:, k_index] = temperature_jw
     log.info("Newton iteration completed.")
 
-    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=allocator)
-    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator)
+    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=concrete_backend.allocator)
+    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=concrete_backend.allocator)
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(concrete_backend)(
         in_field=eta_v,
         coeff=cell_2_edge_coeff,
@@ -255,7 +255,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
             pressure_ndarray=pressure_ndarray,
             pressure_ifc_ndarray=pressure_ifc_ndarray,
             grid=grid,
-            allocator=allocator,
+            allocator=concrete_backend.allocator,
         )
     )
 
@@ -276,7 +276,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     log.info("U, V computation completed.")
 
-    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=concrete_backend.allocator)
     gt4py_math_op.compute_difference_on_cell_k.with_backend(concrete_backend)(
         field_a=prognostics_states.current.exner,
         field_b=metrics_field_source.get(metrics_attributes.EXNER_REF_MC),
@@ -290,14 +290,14 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     log.info("perturbed_exner initialization completed.")
 
     diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
-        grid=grid, allocator=allocator
+        grid=grid, allocator=concrete_backend.allocator
     )
     solve_nonhydro_diagnostic_state = dycore_states.initialize_solve_nonhydro_diagnostic_state(
         perturbed_exner_at_cells_on_model_levels=perturbed_exner,
         grid=grid,
-        allocator=allocator,
+        allocator=concrete_backend.allocator,
     )
-    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
+    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=concrete_backend.allocator)
     log.info("Initialization completed.")
 
     ds = driver_states.DriverStates(

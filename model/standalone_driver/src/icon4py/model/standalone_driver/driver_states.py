@@ -14,7 +14,7 @@ import logging
 import statistics
 from typing import NamedTuple
 
-from devtools import Timer
+import devtools
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion_states
@@ -125,16 +125,16 @@ class ModelTimeVariables:
 
 
 class DriverTimers(enum.Enum):
-    solve_nh_first_step = "solve_nh_first_step"
-    solve_nh = "solve_nh"
-    diffusion_first_step = "diffusion_first_step"
-    diffusion = "diffusion"
+    SOLVE_NH_FIRST_STEP = "solve_nh_first_step"
+    SOLVE_NH = "solve_nh"
+    DIFFUSION_FIRST_STEP = "diffusion_first_step"
+    DIFFUSION = "diffusion"
 
 
 @dataclasses.dataclass
 class TimerCollection:
     timer_names: dataclasses.InitVar[list[str]]
-    timers: dict[str, Timer] = dataclasses.field(init=False)
+    timers: dict[str, devtools.Timer] = dataclasses.field(init=False)
 
     def __post_init__(self, timer_names: str | list[str]) -> None:
         self.timers = {}
@@ -143,7 +143,7 @@ class TimerCollection:
     def add_timers(self, timer_names: str | list[str]) -> None:
         for timer in timer_names:
             assert timer not in self.timers, f"Timer '{timer}' is already defined."
-            self.timers[timer] = Timer(timer, dp=6, verbose=False)
+            self.timers[timer] = devtools.Timer(timer, dp=6, verbose=False)
 
     def show_timer_report(
         self,

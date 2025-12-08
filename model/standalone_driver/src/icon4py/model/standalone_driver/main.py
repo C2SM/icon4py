@@ -51,8 +51,7 @@ def main(
     The integration can then be executed by calling time_integration function in Icon4pyDriver
     """
 
-    icon4py_driver: standalone_driver.Icon4pyDriver
-    icon4py_driver = standalone_driver.initialize_driver(
+    icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         configuration_file_path=configuration_file_path,
         output_path=output_path,
         grid_file_path=grid_file_path,
@@ -61,8 +60,7 @@ def main(
     )
 
     log.info("Generating the initial condition")
-    ds: driver_states.DriverStates
-    ds = initial_condition.jablonowski_williamson(
+    ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
         grid=icon4py_driver.grid_manager.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,

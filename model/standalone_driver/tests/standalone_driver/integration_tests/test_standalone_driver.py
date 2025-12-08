@@ -18,10 +18,7 @@ from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_standalone_driver(
-    experiment: definitions.Experiments,
     backend_like,
 ):
     """
@@ -34,7 +31,7 @@ def test_standalone_driver(
         if backend_like == v:
             backend_name = k
 
-    grid_file_path = grid_utils._download_grid_file(experiment.grid)
+    grid_file_path = grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL)
 
     output_path = f"./ci_driver_output_for_backend_{backend_name}"
     main.main(

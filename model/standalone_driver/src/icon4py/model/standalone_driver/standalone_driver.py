@@ -157,16 +157,16 @@ class Icon4pyDriver:
         if self.diffusion.config.apply_to_horizontal_wind:
             log.debug(f"Running {self.diffusion.__class__}")
             timer_diffusion = (
-                self.timer_collection.timers[driver_states.DriverTimers.diffusion_first_step.value]
+                self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION_FIRST_STEP.value]
                 if self.model_time_var.is_first_step_in_simulation
-                else self.timer_collection.timers[driver_states.DriverTimers.diffusion.value]
+                else self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION.value]
             )
-            timer_diffusion.start()
-            self.diffusion.run(
-                diffusion_diagnostic_state,
-                prognostic_states.next,
-                self.model_time_var.dtime_in_seconds,
-            )
+            with timer_diffusion:
+                self.diffusion.run(
+                    diffusion_diagnostic_state,
+                    prognostic_states.next,
+                    self.model_time_var.dtime_in_seconds,
+                )
             timer_diffusion.capture()
 
         prognostic_states.swap()
@@ -220,9 +220,9 @@ class Icon4pyDriver:
         # TODO(OngChia): compute airmass for prognostic_state here
 
         timer_solve_nh = (
-            self.timer_collection.timers[driver_states.DriverTimers.solve_nh_first_step.value]
+            self.timer_collection.timers[driver_states.DriverTimers.SOLVE_NH_FIRST_STEP.value]
             if self.model_time_var.is_first_step_in_simulation
-            else self.timer_collection.timers[driver_states.DriverTimers.solve_nh.value]
+            else self.timer_collection.timers[driver_states.DriverTimers.SOLVE_NH.value]
         )
         for dyn_substep in range(self.model_time_var.ndyn_substeps_var):
             self._compute_statistics(dyn_substep, prognostic_states.current)
