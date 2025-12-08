@@ -236,8 +236,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     },
                 )
                 self.register_provider(cell_average_weight)
-            case _:
-                raise ValueError("TODO")
 
         c_lin_e = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_c_lin_e, array_ns=self._xp),
