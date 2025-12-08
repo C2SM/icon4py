@@ -55,7 +55,7 @@ def _setup_runtime_diff_multfac_vn(k4: wpfloat, dyn_substeps: wpfloat) -> fa.KFi
 
 @gtx.field_operator
 def _setup_initial_diff_multfac_vn(k4: wpfloat, hdiff_efdt_ratio: wpfloat) -> fa.KField[wpfloat]:
-    return broadcast(k4 / wpfloat(wpfloat(3.0)) * hdiff_efdt_ratio, (KDim,))
+    return broadcast(k4 / wpfloat(3.0) * hdiff_efdt_ratio, (KDim,))
 
 
 @gtx.field_operator

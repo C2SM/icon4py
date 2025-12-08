@@ -11,6 +11,7 @@ import functools
 import logging
 import math
 import pathlib
+from collections.abc import Callable
 from types import ModuleType
 from typing import Final
 
@@ -562,6 +563,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     SLEVE_decay_scale_1: wpfloat,
     SLEVE_decay_exponent: wpfloat,
     SLEVE_decay_scale_2: wpfloat,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -592,6 +594,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
         cell_areas=cell_areas,
         geofac_n2s=geofac_n2s,
         c2e2co=c2e2co,
+        exchange=exchange,
     )
 
     vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1), dtype=wpfloat)
@@ -746,6 +749,7 @@ def compute_vertical_coordinate(
     SLEVE_minimum_layer_thickness_2: wpfloat,
     SLEVE_minimum_relative_layer_thickness_2: wpfloat,
     lowest_layer_thickness: wpfloat,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -781,6 +785,7 @@ def compute_vertical_coordinate(
         SLEVE_decay_exponent=SLEVE_decay_exponent,
         SLEVE_decay_scale_2=SLEVE_decay_scale_2,
         array_ns=array_ns,
+        exchange=exchange,
     )
 
     vertical_coordinate = _check_and_correct_layer_thickness(

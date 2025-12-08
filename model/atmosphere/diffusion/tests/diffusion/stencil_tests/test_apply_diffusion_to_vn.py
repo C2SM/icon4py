@@ -170,8 +170,3 @@ class TestApplyDiffusionToVn(StencilTest):
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
-
-
-@pytest.mark.continuous_benchmarking
-class TestApplyDiffusionToVnContinuousBenchmarking(TestApplyDiffusionToVn):
-    pass

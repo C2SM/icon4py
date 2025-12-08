@@ -18,7 +18,7 @@ import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base, horizontal as h_grid, icon
+from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -293,6 +293,13 @@ class IconGridSavepoint(IconSavepoint):
             case _:
                 raise ValueError
 
+    def coordinates(self):
+        return {
+            dims.CellDim: {"lat": self.cell_center_lat(), "lon": self.cell_center_lon()},
+            dims.EdgeDim: {"lat": self.edges_center_lat(), "lon": self.edges_center_lon()},
+            dims.VertexDim: {"lat": self.verts_vertex_lat(), "lon": self.verts_vertex_lon()},
+        }
+
     def cell_center_lat(self):
         return self._get_field("cell_center_lat", dims.CellDim)
 
@@ -489,7 +496,10 @@ class IconGridSavepoint(IconSavepoint):
         return dim, global_index, mask
 
     def construct_icon_grid(
-        self, backend: gtx_typing.Backend | None = None, keep_skip_values: bool = True
+        self,
+        backend: gtx_typing.Backend | None = None,
+        keep_skip_values: bool = True,
+        with_repeated_index: bool = True,
     ) -> icon.IconGrid:
         config = base.GridConfig(
             horizontal_config=base.HorizontalGridSize(
@@ -501,8 +511,19 @@ class IconGridSavepoint(IconSavepoint):
             limited_area=self.get_metadata("limited_area").get("limited_area"),
             keep_skip_values=keep_skip_values,
         )
+
+        if with_repeated_index:
+
+            def potentially_revert_icon_index_transformation(ar):
+                return ar
+        else:
+            potentially_revert_icon_index_transformation = functools.partial(
+                grid_utils.revert_repeated_index_to_invalid,
+                array_ns=data_alloc.import_array_ns(backend),
+            )
+
         c2e2c = self.c2e2c()
-        e2c2e = self.e2c2e()
+        e2c2e = potentially_revert_icon_index_transformation(self.e2c2e())
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
@@ -511,17 +532,20 @@ class IconGridSavepoint(IconSavepoint):
             start_indices=self.start_index(),
             end_indices=self.end_index(),
         )
+        c2e2c2e = potentially_revert_icon_index_transformation(self.c2e2c2e())
+        v2e = potentially_revert_icon_index_transformation(self.v2e())
+
         start_index, end_index = icon.get_start_and_end_index(constructor)
         neighbor_tables = {
             dims.C2E: self.c2e(),
             dims.E2C: self.e2c(),
             dims.C2E2C: c2e2c,
             dims.C2E2CO: c2e2c0,
-            dims.C2E2C2E: self.c2e2c2e(),
+            dims.C2E2C2E: c2e2c2e,
             dims.E2C2E: e2c2e,
             dims.E2C2EO: e2c2e0,
             dims.E2V: self.e2v(),
-            dims.V2E: self.v2e(),
+            dims.V2E: v2e,
             dims.V2C: self.v2c(),
             dims.E2C2V: self.e2c2v(),
             dims.C2V: self.c2v(),
@@ -535,6 +559,11 @@ class IconGridSavepoint(IconSavepoint):
             global_properties=self.global_grid_params,
             start_index=start_index,
             end_index=end_index,
+            refinement_control={
+                dims.CellDim: self.refin_ctrl(dims.CellDim),
+                dims.EdgeDim: self.refin_ctrl(dims.EdgeDim),
+                dims.VertexDim: self.refin_ctrl(dims.VertexDim),
+            },
         )
 
     def construct_edge_geometry(self) -> grid_states.EdgeParams:
