@@ -96,7 +96,7 @@ class Icon4pyDriver:
 
         # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
 
-        actual_starting_time = datetime.datetime.now()
+        wall_clock_starting_time = datetime.datetime.now()
 
         for time_step in range(self.model_time_var.n_time_steps):
             if self.config.profiling_stats is not None:
@@ -107,7 +107,7 @@ class Icon4pyDriver:
 
             log.info(
                 f"\n"
-                f"simulation date : {self.model_time_var.simulation_date}, at run timestep : {time_step}, with actual time spent: {(datetime.datetime.now() - actual_starting_time).total_seconds()}"
+                f"simulation date : {self.model_time_var.simulation_date}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
                 f"\n"
             )
 
@@ -347,13 +347,13 @@ class Icon4pyDriver:
     def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
         if self.config.apply_extra_second_order_divdamp:
             fourth_order_divdamp_factor = self.solve_nonhydro._config.fourth_order_divdamp_factor
-            if self.model_time_var.elapse_time_in_seconds <= ta.wpfloat("1800.0"):
+            if self.model_time_var.elapsed_time_in_seconds <= ta.wpfloat("1800.0"):
                 return ta.wpfloat("0.8") * fourth_order_divdamp_factor
-            elif self.model_time_var.elapse_time_in_seconds <= ta.wpfloat("7200.0"):
+            elif self.model_time_var.elapsed_time_in_seconds <= ta.wpfloat("7200.0"):
                 return (
                     ta.wpfloat("0.8")
                     * fourth_order_divdamp_factor
-                    * (self.model_time_var.elapse_time_in_seconds - ta.wpfloat("1800.0"))
+                    * (self.model_time_var.elapsed_time_in_seconds - ta.wpfloat("1800.0"))
                     / ta.wpfloat("5400.0")
                 )
             else:

@@ -40,7 +40,7 @@ class StaticFieldFactories(NamedTuple):
     Attributes:
         geometry_field_source: grid geometry field factory that stores geometrical properties of a grid
         interpolation_field_source: interpolation field factory that stores pre-computed coefficients for interpolation employed in the model
-        metrics_field_source: metric field factory that stores pre-computed coefficients for numerical operations employed in the model
+        metrics_field_source: metrics field factory that stores pre-computed coefficients for numerical operations employed in the model
     """
 
     geometry_field_source: grid_geometry.GridGeometry
@@ -81,7 +81,7 @@ class ModelTimeVariables:
     dtime: datetime.timedelta = dataclasses.field(init=False)
     ndyn_substeps_var: int = dataclasses.field(init=False)
     max_ndyn_substeps: int = dataclasses.field(init=False)
-    elapse_time_in_seconds: ta.wpfloat = dataclasses.field(init=False)
+    elapsed_time_in_seconds: ta.wpfloat = dataclasses.field(init=False)
     simulation_date: datetime.datetime = dataclasses.field(init=False)
     is_first_step_in_simulation: bool = dataclasses.field(init=False)
     cfl_watch_mode: bool = dataclasses.field(init=False)
@@ -89,7 +89,7 @@ class ModelTimeVariables:
     def __post_init__(self, config: driver_config.DriverConfig) -> None:
         self.n_time_steps = int((config.end_date - config.start_date) / config.dtime)
         self.dtime = config.dtime
-        self.elapse_time_in_seconds = ta.wpfloat("0.0")
+        self.elapsed_time_in_seconds = ta.wpfloat("0.0")
         self.simulation_date = config.start_date
         self.ndyn_substeps_var = config.ndyn_substeps
         self.max_ndyn_substeps = config.ndyn_substeps + 7
@@ -109,7 +109,7 @@ class ModelTimeVariables:
 
     def next_simulation_date(self) -> None:
         self.simulation_date += self.dtime
-        self.elapse_time_in_seconds += self.dtime_in_seconds
+        self.elapsed_time_in_seconds += self.dtime_in_seconds
 
     def update_ndyn_substeps(self, new_ndyn_substeps: int) -> None:
         self.ndyn_substeps_var = new_ndyn_substeps

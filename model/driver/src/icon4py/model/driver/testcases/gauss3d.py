@@ -13,7 +13,7 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
+from icon4py.model.common import model_backends, constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
@@ -59,11 +59,13 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
         PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
         variables (now and next).
     """
+
+    allocator = model_backends.get_allocator(backend)
     data_provider = sb.IconSerialDataProvider(
         backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
 
-    xp = data_alloc.import_array_ns(backend)
+    xp = data_alloc.import_array_ns(allocator)
 
     wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
     ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
@@ -161,8 +163,8 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=backend)
-    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend)
+    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=allocator)
+    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator)
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
         eta_v,
         cell_2_edge_coeff,
@@ -203,7 +205,7 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
         pressure_ndarray,
         pressure_ifc_ndarray,
         grid=grid,
-        allocator=backend,
+        allocator=allocator,
     )
 
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
@@ -220,7 +222,7 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("U, V computation completed.")
 
-    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
+    perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
     testcases_utils.compute_perturbed_exner.with_backend(backend)(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
@@ -258,15 +260,15 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
     )
 
     diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(
-        grid=grid, allocator=backend
+        grid=grid, allocator=allocator
     )
     solve_nonhydro_diagnostic_state = dycore_states.initialize_solve_nonhydro_diagnostic_state(
         perturbed_exner_at_cells_on_model_levels=perturbed_exner,
         grid=grid,
-        allocator=backend,
+        allocator=allocator,
     )
 
-    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=backend)
+    prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
     log.info("Initialization completed.")
 
     return (

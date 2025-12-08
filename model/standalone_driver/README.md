@@ -15,9 +15,16 @@ See the general instructions in the [README.md](../../README.md) in the base fol
 ## Usage
 
 ```bash
+# set environment variables (optional but convenient)
 export ICON4PY_ROOT=<path to the icon4py clone>
 export GRID_FOLDER=<path to the folder holding grids>
-python model/standalone_driver/src/icon4py/model/standalone_driver/main.py ICON4PY_ROOT/configuration_path/ --grid-file-path GRID_FOLDER/icon_grid_0013_R02B04_R.nc --output-path ICON4PY_ROOT/output_path --icon4py-backend gtfn_cpu
+
+# command line arguments:
+icon4py-standalone-driver \
+    $ICON4PY_ROOT/configuration_path/ \
+    --grid-file-path $GRID_FOLDER/icon_grid_0013_R02B04_R.nc \
+    --output-path $ICON4PY_ROOT/output_path \
+    --icon4py-backend gtfn_cpu
 ```
 
 #### Remarks

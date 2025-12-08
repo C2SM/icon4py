@@ -80,6 +80,10 @@ def main(
 
     log.info("time loop:  DONE")
 
+def click():
+    """Entry point for the standalone driver CLI."""
+    typer.run(main)
+
 
 if __name__ == "__main__":
-    typer.run(main)
+    click()
