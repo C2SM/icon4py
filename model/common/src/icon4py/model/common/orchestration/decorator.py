@@ -31,7 +31,7 @@ import numpy as np
 from dace import hooks
 from dace.transformation.passes import simplify as dace_simplify
 from gt4py._core import definitions as core_defs
-from gt4py.next.program_processors.runners.dace import utils as gtx_dace_utils
+from gt4py.next.program_processors.runners.dace import sdfg_args as gtx_dace_args
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -159,7 +159,7 @@ def orchestrate(
                         {
                             k: v
                             for k, v in grid.connectivities.items()
-                            if gtx_dace_utils.connectivity_identifier(k) in sdfg.arrays
+                            if gtx_dace_args.connectivity_identifier(k) in sdfg.arrays
                         },
                     ),
                 }
@@ -509,7 +509,7 @@ def dace_specific_kwargs(
     return {
         # connectivity tables at runtime
         **{
-            gtx_dace_utils.connectivity_identifier(k): v.ndarray
+            gtx_dace_args.connectivity_identifier(k): v.ndarray
             for k, v in offset_providers.items()
             if hasattr(v, "ndarray")
         },
