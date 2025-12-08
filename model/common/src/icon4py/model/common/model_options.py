@@ -43,6 +43,14 @@ def get_dace_options(
                     validate_all=False,
                 )
             )
+        if gtx_transformations.GT4PyAutoOptHook.AfterToGPU not in optimization_hooks:
+            optimization_hooks[gtx_transformations.GT4PyAutoOptHook.AfterToGPU] = (
+                lambda sdfg: sdfg.apply_transformations_once_everywhere(
+                    gtx_transformations.GPUScanLoopUnrolling(unroll_factor=0),
+                    validate=False,
+                    validate_all=False,
+                )
+            )
     non_kblocking_programs = set(
         [
             "calculate_nabla2_and_smag_coefficients_for_vn",
