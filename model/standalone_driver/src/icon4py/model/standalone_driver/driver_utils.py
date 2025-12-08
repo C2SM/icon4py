@@ -26,7 +26,7 @@ from icon4py.model.common import (
     model_backends,
     model_options,
 )
-from icon4py.model.common.constants import PhysicsConstants, RayleighType
+from icon4py.model.common import constants
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
@@ -142,7 +142,7 @@ def create_static_field_factories(
         interpolation_source=interpolation_field_source,
         backend=concrete_backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=RayleighType.KLEMP,
+        rayleigh_type=constants.RayleighType.KLEMP,
         rayleigh_coeff=0.1,
         exner_expol=0.333,
         vwind_offctr=0.2,
@@ -435,7 +435,7 @@ def display_driver_setup_in_log_file(
 
     log.info("==== Vertical Grid Parameters ====")
     log.info(vertical_params)
-    consts = PhysicsConstants()
+    consts = constants.PhysicsConstants()
     log.info("==== Physical Constants ====")
     for name, value in consts.__class__.__dict__.items():
         if name.startswith("_") or callable(value):
@@ -503,7 +503,7 @@ def configure_logging(
         processor_procs: ProcessProperties
 
     """
-    if logging_level not in _LOGGING_LEVELS:
+    if logging_level.lower() not in _LOGGING_LEVELS:
         raise ValueError(
             f"Invalid logging level {logging_level}, please make sure that the logging level matches either {' / '.join([*_LOGGING_LEVELS.keys()])}"
         )

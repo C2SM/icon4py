@@ -14,7 +14,8 @@ import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa, type_alias as ta, \
+    model_backends
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
@@ -65,7 +66,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
+        self._allocator = model_backends.get_allocator(backend)
         self._grid = grid
         self._vertical_grid = vertical_grid
         self._decomposition_info = decomposition_info
@@ -95,18 +96,18 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         }
 
         k_index = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=self._backend
+            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=self._allocator
         )
-        e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._backend)
+        e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._allocator)
         e_owner_mask = gtx.as_field(
             (dims.EdgeDim,),
             self._decomposition_info.owner_mask(dims.EdgeDim),
-            allocator=self._backend,
+            allocator=self._allocator,
         )
         c_owner_mask = gtx.as_field(
             (dims.CellDim,),
             self._decomposition_info.owner_mask(dims.CellDim),
-            allocator=self._backend,
+            allocator=self._allocator,
         )
         c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
 
