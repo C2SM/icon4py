@@ -1,3 +1,5 @@
+# TODO: This license is not consistent with the license used in the project.
+#       Delete the inconsistent license and above line and rerun pre-commit to insert a good license.
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -34,11 +36,10 @@ def test_standalone_driver(
 
     grid_file_path = grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL)
 
-    output_path = tmp_path /f"./ci_driver_output_for_backend_{backend_name}"
+    output_path = tmp_path / f"./ci_driver_output_for_backend_{backend_name}"
     main.main(
         configuration_file_path="./",
         grid_file_path=grid_file_path,
         icon4py_backend=backend_name,
         output_path=str(output_path),
     )
-

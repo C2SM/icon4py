@@ -44,7 +44,7 @@ requires-python = ">=3.10"
 version = "0.0.6"
 
 [project.scripts]
-icon4py-standalone-driver = "icon4py.model.standalone_driver.main:click" # TODO (Yilu): change the name (remove the standalone) when it becomes the main driver
+icon4py-standalone-driver = "icon4py.model.standalone_driver.main:click"  # TODO (Yilu): change the name (remove the standalone) when it becomes the main driver
 
 [project.urls]
 Homepage = "https://github.com/C2SM/icon4py"

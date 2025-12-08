@@ -14,8 +14,13 @@ import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa, type_alias as ta, \
-    model_backends
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    field_type_aliases as fa,
+    model_backends,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,

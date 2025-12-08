@@ -21,12 +21,12 @@ import gt4py.next.typing as gtx_typing
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import (
+    constants,
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
     model_options,
 )
-from icon4py.model.common import constants
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,

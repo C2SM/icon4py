@@ -13,7 +13,12 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import model_backends, constants as phy_const, dimension as dims, type_alias as ta
+from icon4py.model.common import (
+    constants as phy_const,
+    dimension as dims,
+    model_backends,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,

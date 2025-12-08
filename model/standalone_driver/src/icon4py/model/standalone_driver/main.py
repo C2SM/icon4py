@@ -78,6 +78,7 @@ def main(
 
     log.info("time loop:  DONE")
 
+
 def click():
     """Entry point for the standalone driver CLI."""
     typer.run(main)
