@@ -117,9 +117,7 @@ def _dot_product(
     return array_ns.matmul(v1, v2_tilde)
 
 
-# TODO(msimberg): Rename again. This is arc length on a unit sphere for
-# icosahedral grids and real distance for torus grids.
-def _distance_pairwise(
+def _compute_pairwise_distance(
     geometry_type: base_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
@@ -161,7 +159,7 @@ def _distance_pairwise(
             return array_ns.linalg.norm(diff, axis=-1)
 
 
-def _distance_vector_matrix(
+def _compute_vector_matrix_distance(
     geometry_type: base_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
@@ -328,7 +326,7 @@ def _compute_rbf_interpolation_coeffs(
         axis=-1,
     )
     assert element_center.shape == (rbf_offset.shape[0], 3)
-    vector_dist = _distance_vector_matrix(
+    vector_dist = _compute_vector_matrix_distance(
         geometry_type,
         domain_length,
         domain_height,
@@ -374,7 +372,7 @@ def _compute_rbf_interpolation_coeffs(
     )
 
     # Distance between edge midpoints for RBF interpolation matrix
-    z_dist = _distance_pairwise(
+    z_dist = _compute_pairwise_distance(
         geometry_type, domain_length, domain_height, edge_center, array_ns=array_ns
     )
     assert z_dist.shape == (
