@@ -54,8 +54,9 @@ def compute_default_rbf_scale(
     mean_dual_edge_length: ta.wpfloat,
     dim: RBFDimension,
 ) -> ta.wpfloat:
-    """Compute the default RBF scale factor. This assumes that the default
-    interpolation kernels are used for each dimension"""
+    """Compute the default RBF scale factor. This assumes that the Gaussian
+    kernel is used for vertices and cells, and that the inverse multiquadratic
+    kernel is used for edges."""
 
     match geometry_type:
         case base_grid.GeometryType.ICOSAHEDRON:
