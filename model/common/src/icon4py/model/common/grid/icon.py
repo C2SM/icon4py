@@ -44,13 +44,15 @@ class GridSubdivision:
 @dataclasses.dataclass(kw_only=True)
 class GridShape:
     geometry_type: base.GeometryType
-    subdivision: GridSubdivision
+    subdivision: GridSubdivision | None
 
     def __init__(
         self,
-        geometry_type: base.GeometryType,
+        geometry_type: base.GeometryType | None = None,
         subdivision: GridSubdivision | None = None,
     ) -> None:
+        if geometry_type is None and subdivision is None:
+            raise ValueError("Either geometry_type or subdivision must be provided")
         match geometry_type:
             case base.GeometryType.ICOSAHEDRON:
                 if subdivision is None:

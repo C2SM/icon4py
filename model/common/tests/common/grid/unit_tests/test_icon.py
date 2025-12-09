@@ -278,8 +278,8 @@ def _sphere_area(radius: float) -> float:
 )
 def test_global_grid_params(
     geometry_type: base.GeometryType,
-    grid_root: int,
-    grid_level: int,
+    grid_root: int | None,
+    grid_level: int | None,
     global_num_cells: int | None,
     num_cells: int | None,
     mean_cell_area: float | None,
@@ -287,10 +287,16 @@ def test_global_grid_params(
     expected_num_cells: int | None,
     expected_mean_cell_area: float | None,
 ) -> None:
+    if grid_root is None:
+        assert grid_level is None
     params = icon.GlobalGridParams(
         grid_shape=icon.GridShape(
             geometry_type=geometry_type,
-            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            subdivision=(
+                icon.GridSubdivision(root=grid_root, level=grid_level)  # type: ignore[arg-type]
+                if grid_root is not None
+                else None
+            ),
         ),
         domain_length=42.0,
         domain_height=100.5,
@@ -379,6 +385,7 @@ def test_global_grid_params_from_fields(
     [
         (base.GeometryType.ICOSAHEDRON, None, None),
         (base.GeometryType.ICOSAHEDRON, 0, 0),
+        (None, None, None),
     ],
 )
 def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_level: int) -> None:
