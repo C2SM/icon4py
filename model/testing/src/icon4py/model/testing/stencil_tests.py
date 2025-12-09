@@ -38,10 +38,7 @@ def allocate_data(
 ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
     _allocate_field = constructors.as_field.partial(allocator=allocator)  # type:ignore[attr-defined] # TODO(havogt): check why it doesn't understand the fluid_partial
     input_data = {
-        # TODO: make this work for dataclass named collections as well
-        k: v.__class__(
-            *tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
-        )
+        k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
         if isinstance(v, tuple)
         else _allocate_field(domain=v.domain, data=v.ndarray)
         if not gtx.is_scalar_type(v) and k != "domain"
