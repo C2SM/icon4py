@@ -135,9 +135,27 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
     PROGRAM = compute_advection_in_horizontal_momentum_equation
     OUTPUTS = ("normal_wind_advective_tendency",)
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "end_index_of_damping_layer",
+            "vertical_start",
+            "vertical_end",
+            "apply_extra_diffusion_on_vn",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "end_index_of_damping_layer",
+            "vertical_start",
+            "vertical_end",
+            "apply_extra_diffusion_on_vn",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -227,8 +245,15 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
 
         return dict(normal_wind_advective_tendency=normal_wind_advective_tendency)
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @pytest.fixture(
+        params=[
+            {"apply_extra_diffusion_on_vn": value} for value in [True, False]
+        ],  # True for testing, False for benchmarking
+        ids=lambda param: f"apply_extra_diffusion_on_vn[{param['apply_extra_diffusion_on_vn']}]",
+    )
+    def input_data(
+        self, request: pytest.FixtureRequest, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         normal_wind_advective_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_kinetic_energy_at_edges_on_model_levels = data_alloc.random_field(
@@ -257,9 +282,9 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         scalfac_exdiff = 0.6
         dtime = 2.0
         cfl_w_limit = 0.65 / dtime
-        apply_extra_diffusion_on_vn = True
+        apply_extra_diffusion_on_vn = request.param["apply_extra_diffusion_on_vn"]
 
-        end_index_of_damping_layer = 5
+        end_index_of_damping_layer = 12  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))

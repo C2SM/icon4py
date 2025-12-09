@@ -269,6 +269,7 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
     PROGRAM = compute_advection_in_vertical_momentum_equation
     OUTPUTS = (
@@ -276,6 +277,21 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         "contravariant_corrected_w_at_cells_on_model_levels",
         "vertical_cfl",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "end_index_of_damping_layer",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "end_index_of_damping_layer",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -429,7 +445,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         dtime = 2.0
         cfl_w_limit = 0.65 / dtime
 
-        end_index_of_damping_layer = 5
+        end_index_of_damping_layer = 12  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         cell_domain = h_grid.domain(dims.CellDim)
         horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
@@ -468,6 +484,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.StencilTest):
     PROGRAM = compute_contravariant_correction_and_advection_in_vertical_momentum_equation
     OUTPUTS = (
@@ -476,6 +493,9 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         "contravariant_corrected_w_at_cells_on_model_levels",
         "vertical_cfl",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),  # For now compile time variants triger error in gt4py
+    }
 
     @staticmethod
     def reference(
@@ -603,7 +623,10 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         )
 
     @pytest.fixture(
-        params=[{"skip_compute_predictor_vertical_advection": value} for value in [True, False]]
+        params=[
+            {"skip_compute_predictor_vertical_advection": value} for value in [True, False]
+        ],  # True for benchmarking, False for testing
+        ids=lambda param: f"skip_compute_predictor_vertical_advection[{param['skip_compute_predictor_vertical_advection']}]",
     )
     def input_data(
         self, grid: base.Grid, request: pytest.FixtureRequest
@@ -643,8 +666,8 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             "skip_compute_predictor_vertical_advection"
         ]
 
-        nflatlev = 3
-        end_index_of_damping_layer = 5
+        nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        end_index_of_damping_layer = 12  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         cell_domain = h_grid.domain(dims.CellDim)
         horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))

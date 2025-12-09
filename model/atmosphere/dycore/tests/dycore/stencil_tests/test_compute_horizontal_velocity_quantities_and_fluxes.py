@@ -85,6 +85,7 @@ def compute_vt_vn_on_half_levels_and_kinetic_energy_numpy(
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.continuous_benchmarking
 class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest):
     PROGRAM = compute_horizontal_velocity_quantities_and_fluxes
     OUTPUTS = (
@@ -98,6 +99,21 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         "horizontal_kinetic_energy_at_edges_on_model_levels",
         "contravariant_correction_at_edges_on_model_levels",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+            "nflatlev",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "nflatlev",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -291,11 +307,11 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
 
-        nflatlev = 5
+        nflatlev = 5  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
-        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
         return dict(
             spatially_averaged_vn=spatially_averaged_vn,
