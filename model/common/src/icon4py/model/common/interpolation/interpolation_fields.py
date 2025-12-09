@@ -635,8 +635,8 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         cell_owner_mask,
         divavg_cntrwgt,
         horizontal_start_level_3,
-        array_ns=array_ns,
         exchange=exchange,
+        array_ns=array_ns,
     )
 
 
@@ -647,11 +647,13 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_uniform_c_bln_avg(
         c2e2c0[:, 1:], divavg_cntrwgt, horizontal_start, array_ns
     )
+    exchange(c_bln_avg)
     # TODO(msimberg): Exact result for torus without the following. 1e-16 error
     # with the the following. Is it needed?
     return _force_mass_conservation_to_c_bln_avg(
@@ -661,7 +663,8 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
         cell_owner_mask,
         divavg_cntrwgt,
         horizontal_start_level_3,
-        array_ns,
+        exchange=exchange,
+        array_ns=array_ns,
     )
 
 
@@ -1097,6 +1100,7 @@ def compute_pos_on_tplane_e_x_y(
 def compute_pos_on_tplane_e_x_y_torus(
     dual_edge_length: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -1111,6 +1115,7 @@ def compute_pos_on_tplane_e_x_y_torus(
     Args:
         dual_edge_length: numpy_array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        exchange: halo exchange callback
 
     Returns:
         pos_on_tplane_e_x: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
@@ -1129,7 +1134,9 @@ def compute_pos_on_tplane_e_x_y_torus(
     #   normal and the second neighbor is in the direction of the primal normal.
     half_dual_edge_length = 0.5 * dual_edge_length[0]
     num_edges = e2c.shape[0]
-    return (
+    pos_on_tplane_e_x, pos_on_tplane_e_y = (
         array_ns.full([num_edges, 2], [-half_dual_edge_length, half_dual_edge_length]),
         array_ns.zeros([num_edges, 2]),
     )
+    exchange(pos_on_tplane_e_x, pos_on_tplane_e_y)
+    return pos_on_tplane_e_x, pos_on_tplane_e_y
