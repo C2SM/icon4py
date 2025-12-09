@@ -31,6 +31,8 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+from ... import utils
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
@@ -251,10 +253,23 @@ def test_compute_exner_exfac(
             exner_expol = 1.0 / 3.0
 
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_slp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_hgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    mf._compute_maxslp_maxhgtd.with_backend(backend)(
+        metrics_savepoint.ddxn_z_full(),
+        grid_savepoint.dual_edge_length(),
+        out=(max_slp, max_hgtd),
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        domain={
+            dims.CellDim: (horizontal_start, icon_grid.num_cells),
+            dims.KDim: (0, icon_grid.num_levels),
+        },
+    )
+
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     mf.compute_exner_exfac.with_backend(backend)(
-        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
-        dual_edge_length=grid_savepoint.dual_edge_length(),
+        maxslp=max_slp,
+        maxhgtd=max_hgtd,
         exner_exfac=exner_exfac,
         exner_expol=exner_expol,
         lateral_boundary_level_2=horizontal_start,
@@ -262,7 +277,7 @@ def test_compute_exner_exfac(
         horizontal_end=gtx.int32(icon_grid.num_cells),
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
@@ -393,7 +408,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
 
@@ -421,6 +435,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
+        exchange=utils.dummy_exchange,
         array_ns=xp,
     )
     # TODO (nfarabullini): fix type ignore

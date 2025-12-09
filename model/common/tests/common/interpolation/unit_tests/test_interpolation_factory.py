@@ -13,8 +13,9 @@ import numpy as np
 import pytest
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common.decomposition.definitions import single_node_default
+from icon4py.model.common.grid import geometry, horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
@@ -58,7 +59,8 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 
 def _get_interpolation_factory(
-    backend: gtx_typing.Backend | None, experiment: definitions.Experiment
+    backend: gtx_typing.Backend | None,
+    experiment: definitions.Experiment,
 ) -> interpolation_factory.InterpolationFieldsFactory:
     registry_key = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = interpolation_factories.get(registry_key)
@@ -96,139 +98,79 @@ def test_factory_raises_error_on_unknown_field(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.GAUSS3D, 0),
-    ],
-)
 @pytest.mark.datatest
 def test_get_c_lin_e(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref = interpolation_savepoint.c_lin_e()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.C_LIN_E)
     assert field.shape == (grid.num_edges, E2C_SIZE)
-    assert test_helpers.dallclose(field.asnumpy(), field_ref.asnumpy(), rtol=rtol)
+    assert test_helpers.dallclose(field.asnumpy(), field_ref.asnumpy())
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 1e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-12),
-        (definitions.Experiments.GAUSS3D, 0),
-    ],
-)
 @pytest.mark.datatest
 def test_get_geofac_div(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_div()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
     field = factory.get(attrs.GEOFAC_DIV)
     assert field.shape == (grid.num_cells, C2E_SIZE)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
-@pytest.mark.level("integration")
-## FIXME: does not validate
-#   -> connectivity order between reference from serialbox and computed value is different
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.GAUSS3D, 0),
-    ],
-)
 @pytest.mark.datatest
 def test_get_geofac_grdiv(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_grdiv()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.GEOFAC_GRDIV)
+    field = factory.get(attrs.GEOFAC_GRDIV).asnumpy()
     assert field.shape == (grid.num_edges, 5)
-    # FIXME: e2c2e constructed from grid file has different ordering than the serialized one
-    assert_reordered(field.asnumpy(), field_ref.asnumpy(), rtol=rtol)
+    assert test_helpers.dallclose(field, field_ref.asnumpy())
 
 
-def assert_reordered(val: np.ndarray, ref: np.ndarray, **kwargs: Any) -> None:
-    assert val.shape == ref.shape, f"arrays do not have the same shape: {val.shape} vs {ref.shape}"
-    s_val = np.argsort(val)
-    s_ref = np.argsort(ref)
-    for i in range(val.shape[0]):
-        assert test_helpers.dallclose(
-            val[i, s_val[i, :]], ref[i, s_ref[i, :]], **kwargs
-        ), f"assertion failed for row {i}"
-
-
-@pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.GAUSS3D, 0),
-    ],
-)
 @pytest.mark.datatest
 def test_get_geofac_rot(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_rot()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.GEOFAC_ROT)
+    field = factory.get(attrs.GEOFAC_ROT).asnumpy()
     horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     assert field.shape == (grid.num_vertices, V2E_SIZE)
     assert test_helpers.dallclose(
-        field_ref.asnumpy()[horizontal_start:, :], field.asnumpy()[horizontal_start:, :], rtol=rtol
+        field_ref.asnumpy()[horizontal_start:, :], field[horizontal_start:, :]
     )
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.GAUSS3D, 0),
-    ],
-)
 @pytest.mark.datatest
 def test_get_geofac_n2s(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref = interpolation_savepoint.geofac_n2s()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.GEOFAC_N2S)
+    field = factory.get(attrs.GEOFAC_N2S).asnumpy()
     assert field.shape == (grid.num_cells, 4)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field)
 
 
 @pytest.mark.level("integration")
@@ -241,49 +183,28 @@ def test_get_geofac_grg(
     field_ref = interpolation_savepoint.geofac_grg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field_x = factory.get(attrs.GEOFAC_GRG_X)
+    field_x = factory.get(attrs.GEOFAC_GRG_X).asnumpy()
     assert field_x.shape == (grid.num_cells, 4)
-    field_y = factory.get(attrs.GEOFAC_GRG_Y)
+    field_y = factory.get(attrs.GEOFAC_GRG_Y).asnumpy()
     assert field_y.shape == (grid.num_cells, 4)
-    # TODO(halungge): tolerances are high, especially in the 0th (central) component, check stencil
-    #   this passes due to the atol which is too large for the values
-    assert test_helpers.dallclose(
-        field_ref[0].asnumpy(),
-        field_x.asnumpy(),
-        rtol=1e-7,
-        atol=1e-6,
-    )
-    assert test_helpers.dallclose(
-        field_ref[1].asnumpy(),
-        field_y.asnumpy(),
-        rtol=1e-7,
-        atol=1e-6,
-    )
+    assert test_helpers.dallclose(field_ref[0].asnumpy(), field_x, rtol=1e-11, atol=1e-16)
+    assert test_helpers.dallclose(field_ref[1].asnumpy(), field_y, rtol=1e-11, atol=1e-16)
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.GAUSS3D, 1e-15),
-    ],
-)
 @pytest.mark.datatest
 def test_get_mass_conserving_cell_average_weight(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref = interpolation_savepoint.c_bln_avg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.C_BLN_AVG)
+    field = factory.get(attrs.C_BLN_AVG).asnumpy()
 
     assert field.shape == (grid.num_cells, 4)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field, rtol=1e-11)
 
 
 @pytest.mark.level("integration")
@@ -296,16 +217,16 @@ def test_e_flx_avg(
     field_ref = interpolation_savepoint.e_flx_avg()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.E_FLX_AVG)
+    field = factory.get(attrs.E_FLX_AVG).asnumpy()
     assert field.shape == (grid.num_edges, grid.get_connectivity(dims.E2C2EO).shape[1])
-    test_helpers.dallclose(field.asnumpy(), field_ref.asnumpy())
+    test_helpers.dallclose(field, field_ref.asnumpy())
 
 
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "experiment, rtol",
     [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
+        (definitions.Experiments.MCH_CH_R04B09, 1e-10),
         (definitions.Experiments.EXCLAIM_APE, 1e-11),
         (definitions.Experiments.GAUSS3D, 0),
     ],
@@ -320,89 +241,62 @@ def test_e_bln_c_s(
     field_ref = interpolation_savepoint.e_bln_c_s()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.E_BLN_C_S)
+    field = factory.get(attrs.E_BLN_C_S).asnumpy()
     assert field.shape == (grid.num_cells, C2E_SIZE)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field, rtol=rtol)
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.GAUSS3D, 1e-13),
-    ],
-)
 @pytest.mark.datatest
 def test_pos_on_tplane_e_x_y(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref_1 = interpolation_savepoint.pos_on_tplane_e_x()
     field_ref_2 = interpolation_savepoint.pos_on_tplane_e_y()
     factory = _get_interpolation_factory(backend, experiment)
     field_1 = factory.get(attrs.POS_ON_TPLANE_E_X)
     field_2 = factory.get(attrs.POS_ON_TPLANE_E_Y)
-    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), rtol=rtol)
-    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-8)
+    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1e-8, rtol=1e-9)
+    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1e-8, rtol=1e-9)
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.GAUSS3D, 0),
-    ],
-)
 @pytest.mark.datatest
 def test_cells_aw_verts(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref = interpolation_savepoint.c_intp()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field = factory.get(attrs.CELL_AW_VERTS)
+    field = factory.get(attrs.CELL_AW_VERTS).asnumpy()
 
     assert field.shape == (grid.num_vertices, 6)
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field)
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-        (definitions.Experiments.GAUSS3D, 0),
-    ],
-)
 @pytest.mark.datatest
 def test_nudgecoeffs(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    rtol: float,
 ) -> None:
     field_ref = interpolation_savepoint.nudgecoeff_e()
     factory = _get_interpolation_factory(backend, experiment)
     field = factory.get(attrs.NUDGECOEFFS_E)
 
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
 @pytest.mark.level("integration")
 @pytest.mark.parametrize(
     "experiment, atol",
     [
-        (definitions.Experiments.EXCLAIM_APE, 3e-9),
+        (definitions.Experiments.EXCLAIM_APE, 3.1e-9),
         (definitions.Experiments.MCH_CH_R04B09, 4e-2),
         (definitions.Experiments.GAUSS3D, 1e-14),
     ],
@@ -418,17 +312,17 @@ def test_rbf_interpolation_coeffs_cell(
     field_ref_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field_c1 = factory.get(attrs.RBF_VEC_COEFF_C1)
-    field_c2 = factory.get(attrs.RBF_VEC_COEFF_C2)
+    field_c1 = factory.get(attrs.RBF_VEC_COEFF_C1).asnumpy()
+    field_c2 = factory.get(attrs.RBF_VEC_COEFF_C2).asnumpy()
     horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     assert field_c1.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
     assert field_c2.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
     assert test_helpers.dallclose(
-        field_ref_c1.asnumpy()[horizontal_start:], field_c1.asnumpy()[horizontal_start:], atol=atol
+        field_ref_c1.asnumpy()[horizontal_start:], field_c1[horizontal_start:], atol=atol
     )
     assert test_helpers.dallclose(
-        field_ref_c2.asnumpy()[horizontal_start:], field_c2.asnumpy()[horizontal_start:], atol=atol
+        field_ref_c2.asnumpy()[horizontal_start:], field_c2[horizontal_start:], atol=atol
     )
 
 
@@ -451,13 +345,12 @@ def test_rbf_interpolation_coeffs_edge(
     field_ref_e = interpolation_savepoint.rbf_vec_coeff_e()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field_e = factory.get(attrs.RBF_VEC_COEFF_E)
+    field_e = factory.get(attrs.RBF_VEC_COEFF_E).asnumpy()
     horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     assert field_e.shape == (grid.num_edges, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE])
-    # FIXME: e2c2e constructed from grid file has different ordering than the serialized one
-    assert_reordered(
-        field_ref_e.asnumpy()[horizontal_start:], field_e.asnumpy()[horizontal_start:], atol=atol
+    assert test_helpers.dallclose(
+        field_ref_e.asnumpy()[horizontal_start:], field_e[horizontal_start:], atol=atol
     )
 
 
@@ -481,15 +374,15 @@ def test_rbf_interpolation_coeffs_vertex(
     field_ref_v2 = interpolation_savepoint.rbf_vec_coeff_v2()
     factory = _get_interpolation_factory(backend, experiment)
     grid = factory.grid
-    field_v1 = factory.get(attrs.RBF_VEC_COEFF_V1)
-    field_v2 = factory.get(attrs.RBF_VEC_COEFF_V2)
+    field_v1 = factory.get(attrs.RBF_VEC_COEFF_V1).asnumpy()
+    field_v2 = factory.get(attrs.RBF_VEC_COEFF_V2).asnumpy()
     horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     assert field_v1.shape == (grid.num_vertices, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX])
     assert field_v2.shape == (grid.num_vertices, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX])
     assert test_helpers.dallclose(
-        field_ref_v1.asnumpy()[horizontal_start:], field_v1.asnumpy()[horizontal_start:], atol=atol
+        field_ref_v1.asnumpy()[horizontal_start:], field_v1[horizontal_start:], atol=atol
     )
     assert test_helpers.dallclose(
-        field_ref_v2.asnumpy()[horizontal_start:], field_v2.asnumpy()[horizontal_start:], atol=atol
+        field_ref_v2.asnumpy()[horizontal_start:], field_v2[horizontal_start:], atol=atol
     )

@@ -1,22 +1,23 @@
 include:
   - local: 'ci/base.yml'
+  - local: 'ci/benchmark_bencher_common.yml'
 
-.benchmark_model_stencils:
-  stage: benchmark
-  script:
-    - nox -s __bencher_baseline_CI-3.10 -- --backend=$BACKEND --grid=$GRID
-  parallel:
-    matrix:
-      - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
-        GRID: [icon_benchmark_regional, icon_benchmark_global]
+# benchmark_bencher_stencils_baseline_x86_64:
+#   extends: [.benchmark_model_baseline, .test_template_x86_64]
+#   variables:
+#     NOX_SESSION: "__bencher_baseline_CI-3.10"
+#     TEST_SELECTION: "${STENCIL_TEST_SELECTION}"
+#     GT4PY_COLLECT_METRICS_LEVEL: 10
+
+benchmark_bencher_stencils_baseline_aarch64:
+  extends: [.benchmark_nox_job, .test_template_aarch64]
   variables:
-    ICON4PY_ENABLE_GRID_DOWNLOAD: false
-    ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
-    GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE: true
-    PYTHONOPTIMIZE: 2
+    NOX_SESSION: "__bencher_baseline_CI-3.10"
+    TEST_SELECTION: "${STENCIL_TEST_SELECTION}"
+    GT4PY_COLLECT_METRICS_LEVEL: 10
 
-# benchmark_bencher_baseline_x86_64:
-#   extends: [.benchmark_model_stencils, .test_template_x86_64]
-
-benchmark_bencher_baseline_aarch64:
-  extends: [.benchmark_model_stencils, .test_template_aarch64]
+benchmark_bencher_granules_baseline_aarch64:
+  extends: [.benchmark_nox_job, .test_template_aarch64]
+  variables:
+    NOX_SESSION: "__bencher_baseline_CI-3.10"
+    TEST_SELECTION: "${GRANULE_TEST_SELECTION}"

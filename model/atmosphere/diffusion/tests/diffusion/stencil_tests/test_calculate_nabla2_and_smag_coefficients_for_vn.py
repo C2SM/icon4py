@@ -14,14 +14,28 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import stencil_tests
+from icon4py.model.testing import definitions, stencil_tests
 
 
-@pytest.mark.skip_value_error
+@pytest.mark.continuous_benchmarking
 class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
     PROGRAM = calculate_nabla2_and_smag_coefficients_for_vn
     OUTPUTS = ("kh_smag_e", "kh_smag_ec", "z_nabla2_e")
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "vertical_start",
+            "vertical_end",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -39,6 +53,10 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         vn: np.ndarray,
         smag_limit: np.ndarray,
         smag_offset: float,
+        horizontal_start: int,
+        horizontal_end: int,
+        vertical_start: int,
+        vertical_end: int,
         **kwargs,
     ) -> dict:
         e2c2v = connectivities[dims.E2C2VDim]
@@ -140,11 +158,23 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         kh_smag_ec = kh_smag_e
         kh_smag_e = np.maximum(0.0, kh_smag_e - smag_offset)
         kh_smag_e = np.minimum(kh_smag_e, smag_limit)
+        kh_smag_e_out = np.zeros_like(kh_smag_e)
+        kh_smag_ec_out = np.zeros_like(kh_smag_ec)
+        z_nabla2_e_out = np.zeros_like(z_nabla2_e)
+        kh_smag_e_out[horizontal_start:horizontal_end, vertical_start:vertical_end] = kh_smag_e[
+            horizontal_start:horizontal_end, vertical_start:vertical_end
+        ]
+        kh_smag_ec_out[horizontal_start:horizontal_end, vertical_start:vertical_end] = kh_smag_ec[
+            horizontal_start:horizontal_end, vertical_start:vertical_end
+        ]
+        z_nabla2_e_out[horizontal_start:horizontal_end, vertical_start:vertical_end] = z_nabla2_e[
+            horizontal_start:horizontal_end, vertical_start:vertical_end
+        ]
 
-        return dict(kh_smag_e=kh_smag_e, kh_smag_ec=kh_smag_ec, z_nabla2_e=z_nabla2_e)
+        return dict(kh_smag_e=kh_smag_e_out, kh_smag_ec=kh_smag_ec_out, z_nabla2_e=z_nabla2_e_out)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.Grid) -> dict:
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         smag_offset = ta.vpfloat("9.0")
@@ -172,6 +202,11 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
         kh_smag_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         kh_smag_ec = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+        assert horizontal_start < horizontal_end
+
         return dict(
             diff_multfac_smag=diff_multfac_smag,
             tangent_orientation=tangent_orientation,
@@ -189,8 +224,8 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(stencil_tests.StencilTest):
             kh_smag_ec=kh_smag_ec,
             z_nabla2_e=z_nabla2_e,
             smag_offset=smag_offset,
-            horizontal_start=0,
-            horizontal_end=grid.num_edges,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=grid.num_levels,
         )

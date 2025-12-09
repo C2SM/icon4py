@@ -257,3 +257,38 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
         raise NotImplementedError(
             f"NonHydrostaticConfig for experiment {experiment.name} not implemented."
         )
+
+
+def metrics_config(experiment: Experiment) -> tuple:
+    rayleigh_coeff = 5.0
+    lowest_layer_thickness = 50.0
+    exner_expol = 0.333
+    vwind_offctr = 0.2
+    rayleigh_type = 2
+    model_top_height = 23500.0
+    stretch_factor = 1.0
+    damping_height = 45000.0
+    match experiment:
+        case Experiments.MCH_CH_R04B09:
+            lowest_layer_thickness = 20.0
+            model_top_height = 23000.0
+            stretch_factor = 0.65
+            damping_height = 12500.0
+        case Experiments.EXCLAIM_APE:
+            model_top_height = 75000.0
+            stretch_factor = 0.9
+            damping_height = 50000.0
+            rayleigh_coeff = 0.1
+            exner_expol = 0.3333333333333
+            vwind_offctr = 0.15
+
+    return (
+        lowest_layer_thickness,
+        model_top_height,
+        stretch_factor,
+        damping_height,
+        rayleigh_coeff,
+        exner_expol,
+        vwind_offctr,
+        rayleigh_type,
+    )
