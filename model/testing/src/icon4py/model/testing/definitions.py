@@ -255,7 +255,6 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
         )
     elif experiment == Experiments.GAUSS3D:
         return solve_nh.NonHydrostaticConfig(
-            igradp_method=3,
             fourth_order_divdamp_factor=0.0025,
         )
     else:
@@ -265,7 +264,6 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
 
 
 def construct_metrics_config(experiment: Experiment) -> tuple:
-
     match experiment:
         case Experiments.MCH_CH_R04B09:
             lowest_layer_thickness = 20.0
@@ -304,7 +302,9 @@ def construct_metrics_config(experiment: Experiment) -> tuple:
             vwind_offctr = 0.15
             rayleigh_type = 2
         case _:
-            raise NotImplementedError(f"Metrics config for experiment {experiment.name} not implemented.")
+            raise NotImplementedError(
+                f"Metrics config for experiment {experiment.name} not implemented."
+            )
 
     return (
         lowest_layer_thickness,
