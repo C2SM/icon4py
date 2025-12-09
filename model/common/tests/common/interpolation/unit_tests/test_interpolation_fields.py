@@ -392,7 +392,6 @@ def test_compute_e_bln_c_s(
     edges_lon = grid_savepoint.edges_center_lon().ndarray
     xp = data_alloc.import_array_ns(backend)
 
-    # TODO(msimberg): pass geometry type to compute_pos_on_tplane_e_x_y?
     match icon_grid.global_properties.geometry_type:
         case base_grid.GeometryType.ICOSAHEDRON:
             e_bln_c_s = compute_e_bln_c_s(
@@ -429,7 +428,7 @@ def test_compute_pos_on_tplane_e(
     edges_lat = grid_savepoint.edges_center_lat().ndarray
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    # TODO(msimberg): pass geometry type to compute_pos_on_tplane_e_x_y?
+
     match icon_grid.global_properties.geometry_type:
         case base_grid.GeometryType.ICOSAHEDRON:
             pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
