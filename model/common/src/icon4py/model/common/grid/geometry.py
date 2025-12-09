@@ -207,6 +207,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
+            do_exchange=False,
         )
         return provider
 
@@ -245,6 +246,7 @@ class GridGeometry(factory.FieldSource):
                         "vertex_lon": attrs.VERTEX_LON,
                     },
                     params={"radius": self._grid.global_properties.radius},
+                    do_exchange=True,
                 )
             case base.GeometryType.TORUS:
                 vertex_vertex_distance = factory.ProgramFieldProvider(
@@ -264,16 +266,8 @@ class GridGeometry(factory.FieldSource):
                         "domain_length": self._grid.global_properties.domain_length,
                         "domain_height": self._grid.global_properties.domain_height,
                     },
+                    do_exchange=True,
                 )
-            },
-            fields={"far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH},
-            deps={
-                "vertex_lat": attrs.VERTEX_LAT,
-                "vertex_lon": attrs.VERTEX_LON,
-            },
-            params={"radius": self._grid.global_properties.radius},
-            do_exchange=True,
-        )
         self.register_provider(vertex_vertex_distance)
 
         # Inverse of vertex-vertex distance
@@ -300,20 +294,6 @@ class GridGeometry(factory.FieldSource):
             do_exchange=True,
         )
         self.register_provider(edge_areas)
-        coriolis_params = factory.ProgramFieldProvider(
-            func=stencils.compute_coriolis_parameter_on_edges,
-            deps={"edge_center_lat": attrs.EDGE_LAT},
-            params={"angular_velocity": constants.EARTH_ANGULAR_VELOCITY},
-            fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.END),
-                )
-            },
-            do_exchange=False,
-        )
-        self.register_provider(coriolis_params)
 
         # Coriolis parameter (geometry-specific)
         match self._geometry_type:
@@ -329,6 +309,7 @@ class GridGeometry(factory.FieldSource):
                             self._edge_domain(h_grid.Zone.END),
                         )
                     },
+                    do_exchange=False,
                 )
             case base.GeometryType.TORUS:
                 coriolis_param = factory.PrecomputedFieldProvider(
@@ -610,6 +591,7 @@ class GridGeometry(factory.FieldSource):
                 "domain_length": self._grid.global_properties.domain_length,
                 "domain_height": self._grid.global_properties.domain_height,
             },
+            do_exchange=False,
         )
         self.register_provider(tangent_normal_coordinates)
 
@@ -632,6 +614,7 @@ class GridGeometry(factory.FieldSource):
                     attrs.EDGE_NORMAL_Y,
                 ),
             ),
+            do_exchange=True,
         )
         self.register_provider(normal_vert_wrapper)
 
@@ -643,6 +626,7 @@ class GridGeometry(factory.FieldSource):
                 (attrs.EDGE_NORMAL_X, attrs.EDGE_NORMAL_X),
                 (attrs.EDGE_NORMAL_Y, attrs.EDGE_NORMAL_Y),
             ),
+            do_exchange=True,
         )
         self.register_provider(normal_cell_wrapper)
 
@@ -665,6 +649,7 @@ class GridGeometry(factory.FieldSource):
                     attrs.EDGE_TANGENT_Y,
                 ),
             ),
+            do_exchange=True,
         )
         self.register_provider(tangent_vert_wrapper)
 
@@ -676,6 +661,7 @@ class GridGeometry(factory.FieldSource):
                 (attrs.EDGE_TANGENT_X, attrs.EDGE_TANGENT_X),
                 (attrs.EDGE_TANGENT_Y, attrs.EDGE_TANGENT_Y),
             ),
+            do_exchange=True,
         )
         self.register_provider(tangent_cell_wrapper)
 
@@ -741,24 +727,6 @@ class GridGeometry(factory.FieldSource):
             do_exchange=False,
         )
         self.register_provider(cartesian_cell_centers)
-
-    def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
-        meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
-        name = meta["standard_name"]
-        self._attrs.update({name: meta})
-        provider = factory.ProgramFieldProvider(
-            func=math_helpers.compute_inverse_on_edges,
-            deps={"f": field_name},
-            fields={"f_inverse": name},
-            domain={
-                dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.END),
-                )
-            },
-            do_exchange=False,
-        )
-        return provider
 
     def __repr__(self) -> str:
         geometry_name = self._geometry_type._name_ if self._geometry_type else ""
