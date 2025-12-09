@@ -117,7 +117,7 @@ def _dot_product(
     return array_ns.matmul(v1, v2_tilde)
 
 
-def _compute_pairwise_distance(
+def _compute_distance_pairwise(
     geometry_type: base_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
@@ -159,7 +159,7 @@ def _compute_pairwise_distance(
             return array_ns.linalg.norm(diff, axis=-1)
 
 
-def _compute_vector_matrix_distance(
+def _compute_distance_vector_matrix(
     geometry_type: base_grid.GeometryType,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
@@ -257,8 +257,6 @@ def _cartesian_coordinates_from_zonal_and_meridional_components(
             return x, y, z
         case base_grid.GeometryType.TORUS:
             return u, v, array_ns.zeros_like(u)
-        case _:
-            raise ValueError(f"Unsupported geometry type: {geometry_type}")
 
 
 def _compute_rbf_interpolation_coeffs(
@@ -326,7 +324,7 @@ def _compute_rbf_interpolation_coeffs(
         axis=-1,
     )
     assert element_center.shape == (rbf_offset.shape[0], 3)
-    vector_dist = _compute_vector_matrix_distance(
+    vector_dist = _compute_distance_vector_matrix(
         geometry_type,
         domain_length,
         domain_height,
@@ -372,7 +370,7 @@ def _compute_rbf_interpolation_coeffs(
     )
 
     # Distance between edge midpoints for RBF interpolation matrix
-    z_dist = _compute_pairwise_distance(
+    z_dist = _compute_distance_pairwise(
         geometry_type, domain_length, domain_height, edge_center, array_ns=array_ns
     )
     assert z_dist.shape == (
@@ -490,8 +488,8 @@ def compute_rbf_interpolation_coeffs_edge(
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     return _compute_rbf_interpolation_coeffs(
-        edge_lat,  # these should be ignored for torus
-        edge_lon,  # these should be ignored for torus
+        edge_lat,
+        edge_lon,
         edge_center_x,
         edge_center_y,
         edge_center_z,

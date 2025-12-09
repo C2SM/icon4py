@@ -333,8 +333,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     params={},
                 )
                 self.register_provider(e_bln_c_s)
-            case _:
-                raise ValueError("TODO")
 
         match self.grid.global_properties.geometry_type:
             case base.GeometryType.ICOSAHEDRON:
@@ -378,8 +376,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     params={},
                 )
                 self.register_provider(pos_on_tplane_e_x_y)
-            case _:
-                raise ValueError("TODO")
 
         cells_aw_verts = factory.NumpyDataProvider(
             func=functools.partial(interpolation_fields.compute_cells_aw_verts, array_ns=self._xp),
