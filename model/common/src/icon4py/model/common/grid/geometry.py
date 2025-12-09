@@ -178,7 +178,7 @@ class GridGeometry(factory.FieldSource):
     @staticmethod
     def with_geometry_type(
         grid: icon.IconGrid,
-        decomposition_info: definitions.DecompositionInfo,
+        decomposition_info: decomposition.DecompositionInfo,
         backend: gtx_typing.Backend | None,
         coordinates: gm.CoordinateDict,
         extra_fields: gm.GeometryDict,

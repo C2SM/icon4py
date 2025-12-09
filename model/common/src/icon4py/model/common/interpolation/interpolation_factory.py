@@ -336,7 +336,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     func=functools.partial(
                         interpolation_fields.compute_e_bln_c_s,
                         exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
-                        array_ns=self._xp
+                        array_ns=self._xp,
                     ),
                     fields=(attrs.E_BLN_C_S,),
                     domain=(dims.CellDim, dims.C2EDim),
@@ -355,7 +355,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     func=functools.partial(
                         interpolation_fields.compute_e_bln_c_s_torus,
                         exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
-                        array_ns=self._xp
+                        array_ns=self._xp,
                     ),
                     fields=(attrs.E_BLN_C_S,),
                     domain=(dims.CellDim, dims.C2EDim),
@@ -371,7 +371,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     func=functools.partial(
                         interpolation_fields.compute_pos_on_tplane_e_x_y,
                         exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
-                        array_ns=self._xp
+                        array_ns=self._xp,
                     ),
                     fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
                     domain=(dims.EdgeDim, dims.E2CDim),
@@ -400,7 +400,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     func=functools.partial(
                         interpolation_fields.compute_pos_on_tplane_e_x_y_torus,
                         exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
-                        array_ns=self._xp
+                        array_ns=self._xp,
                     ),
                     fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
                     domain=(dims.EdgeDim, dims.E2CDim),

@@ -300,7 +300,7 @@ def test_compute_c_bln_avg(
                 array_ns=xp,
             )
 
-    assert test_helpers.dallclose(data_alloc.as_numpy(c_bln_avg), c_bln_avg_ref, atol=atol)
+    assert test_helpers.dallclose(data_alloc.as_numpy(c_bln_avg), c_bln_avg_ref, rtol=1e-11)
 
 
 @pytest.mark.level("unit")
