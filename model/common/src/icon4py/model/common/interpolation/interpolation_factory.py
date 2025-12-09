@@ -335,7 +335,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 e_bln_c_s = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_e_bln_c_s,
-                        exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
                         array_ns=self._xp,
                     ),
                     fields=(attrs.E_BLN_C_S,),
@@ -354,7 +353,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 e_bln_c_s = factory.NumpyDataProvider(
                     func=functools.partial(
                         interpolation_fields.compute_e_bln_c_s_torus,
-                        exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
                         array_ns=self._xp,
                     ),
                     fields=(attrs.E_BLN_C_S,),
