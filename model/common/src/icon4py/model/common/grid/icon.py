@@ -60,7 +60,7 @@ class GridShape:
                         f"For icosahedron geometry type, root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
                     )
             case base.GeometryType.TORUS:
-                subdivision = GridSubdivision(root=0, level=0)
+                subdivision = None
 
         self.geometry_type = geometry_type
         self.subdivision = subdivision
@@ -154,12 +154,12 @@ class GlobalGridParams:
             object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
 
     @property
-    def geometry_type(self) -> base.GeometryType:
-        return self.grid_shape.geometry_type
+    def geometry_type(self) -> base.GeometryType | None:
+        return self.grid_shape.geometry_type if self.grid_shape else None
 
     @property
-    def subdivision(self) -> GridSubdivision:
-        return self.grid_shape.subdivision
+    def subdivision(self) -> GridSubdivision | None:
+        return self.grid_shape.subdivision if self.grid_shape else None
 
 
 def compute_icosahedron_num_cells(subdivision: GridSubdivision) -> int:

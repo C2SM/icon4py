@@ -273,7 +273,7 @@ def _sphere_area(radius: float) -> float:
         (base.GeometryType.ICOSAHEDRON, 4, 9, None, None, 123.456, 83886080, 83886080, 123.456),
         (base.GeometryType.ICOSAHEDRON, 4, 9, None, 42, None, 83886080, 42, 6080879.45232143),
         (base.GeometryType.TORUS, 2, 0, None, 42, 123.456, None, 42, 123.456),
-        (base.GeometryType.TORUS, 0, 0, None, 42, None, None, 42, None),
+        (base.GeometryType.TORUS, None, None, None, 42, None, None, 42, None),
     ],
 )
 def test_global_grid_params(
@@ -290,8 +290,7 @@ def test_global_grid_params(
     params = icon.GlobalGridParams(
         grid_shape=icon.GridShape(
             geometry_type=geometry_type,
-            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level
-            ),
+            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
         ),
         domain_length=42.0,
         domain_height=100.5,
@@ -303,19 +302,21 @@ def test_global_grid_params(
         mean_dual_cell_area=None,
     )
     assert geometry_type == params.geometry_type
-    match geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
-            assert params.grid_shape.subdivision == icon.GridSubdivision(root=grid_root, level=grid_level)
-            assert pytest.approx(params.radius) == constants.EARTH_RADIUS
-            assert params.domain_length is None
-            assert params.domain_height is None
-        case base.GeometryType.TORUS:
-            # get the value for tours' subdivision without hardcoding it here
-            # (it's actually not relevant to check this)
-            assert params.grid_shape.subdivision == icon.GridShape(base.GeometryType.TORUS).subdivision
-            assert params.radius is None
-            assert params.domain_length == 42.0
-            assert params.domain_height == 100.5
+    if geometry_type == base.GeometryType.TORUS:
+        assert params.grid_shape is not None
+        assert params.grid_shape.subdivision is None
+    else:
+        assert (
+            icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_shape.subdivision  # type: ignore[union-attr]
+        )
+    if geometry_type == base.GeometryType.TORUS:
+        assert params.radius is None
+        assert params.domain_length == 42.0
+        assert params.domain_height == 100.5
+    else:
+        assert pytest.approx(params.radius) == constants.EARTH_RADIUS
+        assert params.domain_length is None
+        assert params.domain_height is None
     assert params.global_num_cells == expected_global_num_cells
     assert params.num_cells == expected_num_cells
     assert pytest.approx(params.mean_edge_length) == 13.0
@@ -489,7 +490,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
         (
             definitions.Grids.TORUS_100X116_1000M,
             base.GeometryType.TORUS,
-            icon.GridSubdivision(root=2, level=0),
+            None,
             None,
             100000.0,
             100458.94683899487,
@@ -504,7 +505,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
         (
             definitions.Grids.TORUS_50000x5000,
             base.GeometryType.TORUS,
-            icon.GridSubdivision(root=0, level=0),
+            None,
             None,
             50000.0,
             5248.638810814779,
