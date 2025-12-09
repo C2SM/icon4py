@@ -465,7 +465,7 @@ class SolveNonhydro:
                 "limited_area": self._grid.limited_area,
             },
             variants={
-                "is_iau_active": [False, True],
+                "is_iau_active": [False, True] if self._grid.iau_init else [False]
             },
             horizontal_sizes={
                 "start_edge_lateral_boundary": self._start_edge_lateral_boundary,
@@ -501,7 +501,7 @@ class SolveNonhydro:
             variants={
                 "apply_2nd_order_divergence_damping": [False, True],
                 "apply_4th_order_divergence_damping": [False, True],
-                "is_iau_active": [False, True],
+                "is_iau_active": [False, True] if self._grid.iau_init else [False]
             },
             horizontal_sizes={
                 "horizontal_start": gtx.int32(self._start_edge_nudging_level_2),
@@ -579,7 +579,7 @@ class SolveNonhydro:
             },
             variants={
                 "at_first_substep": [False, True],
-                "is_iau_active": [False, True],
+                "is_iau_active": [False, True] if self._grid.iau_init else [False]
             },
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,
@@ -614,7 +614,7 @@ class SolveNonhydro:
                 "at_first_substep": [False, True],
                 "at_last_substep": [False, True],
                 "prepare_advection": [False, True],
-                "is_iau_active": [False, True],
+                "is_iau_active": [False, True] if self._grid.iau_init else [False]
             },
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,
