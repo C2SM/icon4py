@@ -253,6 +253,11 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
             rayleigh_coeff=0.1,
             divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type] # TODO(havogt): typing in `NonHydrostaticConfig` needs to be fixed
         )
+    elif experiment == Experiments.GAUSS3D:
+        return solve_nh.NonHydrostaticConfig(
+            igradp_method=3,
+            fourth_order_divdamp_factor=0.0025,
+        )
     else:
         raise NotImplementedError(
             f"NonHydrostaticConfig for experiment {experiment.name} not implemented."
@@ -281,6 +286,13 @@ def metrics_config(experiment: Experiment) -> tuple:
             rayleigh_coeff = 0.1
             exner_expol = 0.3333333333333
             vwind_offctr = 0.15
+        case Experiments.GAUSS3D:
+            rayleigh_coeff = 0.1
+            damping_height = 45000.0
+            exner_expol = 1.0 / 3.0
+        case Experiments.WEISMAN_KLEMP_TORUS:
+            rayleigh_coeff = 0.75
+            damping_height = 8000.0
 
     return (
         lowest_layer_thickness,
