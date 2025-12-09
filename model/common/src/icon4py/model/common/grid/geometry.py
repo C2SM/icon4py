@@ -265,8 +265,6 @@ class GridGeometry(factory.FieldSource):
                         "domain_height": self._grid.global_properties.domain_height,
                     },
                 )
-<<<<<<< HEAD
-=======
             },
             fields={"far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH},
             deps={
@@ -276,7 +274,6 @@ class GridGeometry(factory.FieldSource):
             params={"radius": self._grid.global_properties.radius},
             do_exchange=True,
         )
->>>>>>> main
         self.register_provider(vertex_vertex_distance)
 
         # Inverse of vertex-vertex distance
@@ -303,8 +300,6 @@ class GridGeometry(factory.FieldSource):
             do_exchange=True,
         )
         self.register_provider(edge_areas)
-<<<<<<< HEAD
-=======
         coriolis_params = factory.ProgramFieldProvider(
             func=stencils.compute_coriolis_parameter_on_edges,
             deps={"edge_center_lat": attrs.EDGE_LAT},
@@ -319,7 +314,6 @@ class GridGeometry(factory.FieldSource):
             do_exchange=False,
         )
         self.register_provider(coriolis_params)
->>>>>>> main
 
         # Coriolis parameter (geometry-specific)
         match self._geometry_type:
@@ -748,8 +742,6 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(cartesian_cell_centers)
 
-<<<<<<< HEAD
-=======
     def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
         name = meta["standard_name"]
@@ -768,7 +760,6 @@ class GridGeometry(factory.FieldSource):
         )
         return provider
 
->>>>>>> main
     def __repr__(self) -> str:
         geometry_name = self._geometry_type._name_ if self._geometry_type else ""
         return (
