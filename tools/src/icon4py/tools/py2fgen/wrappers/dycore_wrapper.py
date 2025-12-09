@@ -289,6 +289,8 @@ def solve_nh_run(
     divdamp_fac_o2: gtx.float64,
     ndyn_substeps_var: gtx.int32,
     idyn_timestep: gtx.int32,
+    is_iau_active: bool,
+    iau_wgt_dyn: gtx.float64,
 ):
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
@@ -376,6 +378,8 @@ def solve_nh_run(
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps_var - 1),
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
     )
 
     # TODO(havogt): create separate bindings for writing the timers

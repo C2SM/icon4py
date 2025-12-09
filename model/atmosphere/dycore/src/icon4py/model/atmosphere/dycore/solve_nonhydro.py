@@ -157,8 +157,6 @@ class NonHydrostaticConfig:
         rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
         rayleigh_coeff: float = 0.05,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
-        is_iau_active: bool = False,
-        iau_wgt_dyn: float = 0.0,
         divdamp_type: dycore_states.DivergenceDampingType = dycore_states.DivergenceDampingType.THREE_DIMENSIONAL,
         divdamp_trans_start: float = 12500.0,
         divdamp_trans_end: float = 17500.0,
@@ -283,12 +281,6 @@ class NonHydrostaticConfig:
         #: from mo_run_nml.f90
         #: use vertical nesting
         self.l_vert_nested: bool = l_vert_nested
-
-        #: from mo_initicon_nml.f90/ mo_initicon_config.f90
-        #: whether IAU is active at current time
-        self.is_iau_active: bool = is_iau_active
-        #: IAU weight for dynamics fields
-        self.iau_wgt_dyn: float = iau_wgt_dyn
 
         self._validate()
 
@@ -470,9 +462,10 @@ class SolveNonhydro:
                 "ipeidx_dsl": self._metric_state_nonhydro.pg_edgeidx_dsl,
                 "pg_exdist": self._metric_state_nonhydro.pg_exdist,
                 "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
-                "iau_wgt_dyn": self._config.iau_wgt_dyn,
-                "is_iau_active": self._config.is_iau_active,
                 "limited_area": self._grid.limited_area,
+            },
+            variants={
+                "is_iau_active": [False, True],
             },
             horizontal_sizes={
                 "start_edge_lateral_boundary": self._start_edge_lateral_boundary,
@@ -503,13 +496,12 @@ class SolveNonhydro:
                 "geofac_grdiv": self._interpolation_state.geofac_grdiv,
                 "advection_explicit_weight_parameter": self._params.advection_explicit_weight_parameter,
                 "advection_implicit_weight_parameter": self._params.advection_implicit_weight_parameter,
-                "iau_wgt_dyn": self._config.iau_wgt_dyn,
-                "is_iau_active": self._config.is_iau_active,
                 "limited_area": self._grid.limited_area,
             },
             variants={
                 "apply_2nd_order_divergence_damping": [False, True],
                 "apply_4th_order_divergence_damping": [False, True],
+                "is_iau_active": [False, True],
             },
             horizontal_sizes={
                 "horizontal_start": gtx.int32(self._start_edge_nudging_level_2),
@@ -582,13 +574,12 @@ class SolveNonhydro:
                 "e_bln_c_s": self._interpolation_state.e_bln_c_s,
                 "wgtfac_c": self._metric_state_nonhydro.wgtfac_c,
                 "wgtfacq_c": self._metric_state_nonhydro.wgtfacq_c,
-                "iau_wgt_dyn": self._config.iau_wgt_dyn,
-                "is_iau_active": self._config.is_iau_active,
                 "rayleigh_type": self._config.rayleigh_type,
                 "divdamp_type": self._config.divdamp_type,
             },
             variants={
                 "at_first_substep": [False, True],
+                "is_iau_active": [False, True],
             },
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,
@@ -617,14 +608,13 @@ class SolveNonhydro:
                 "reference_exner_at_cells_on_model_levels": self._metric_state_nonhydro.reference_exner_at_cells_on_model_levels,
                 "advection_explicit_weight_parameter": self._params.advection_explicit_weight_parameter,
                 "advection_implicit_weight_parameter": self._params.advection_implicit_weight_parameter,
-                "iau_wgt_dyn": self._config.iau_wgt_dyn,
-                "is_iau_active": self._config.is_iau_active,
                 "rayleigh_type": self._config.rayleigh_type,
             },
             variants={
                 "at_first_substep": [False, True],
                 "at_last_substep": [False, True],
-                "lprep_adv": [False, True],
+                "prepare_advection": [False, True],
+                "is_iau_active": [False, True],
             },
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,
@@ -1038,6 +1028,8 @@ class SolveNonhydro:
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
+        is_iau_active: bool,
+        iau_wgt_dyn: float,
     ):
         """
         Update prognostic variables (prognostic_states.next) after the dynamical process over one substep.
@@ -1072,6 +1064,8 @@ class SolveNonhydro:
             dtime=dtime,
             at_initial_timestep=at_initial_timestep,
             at_first_substep=at_first_substep,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
         )
 
         self.run_corrector_step(
@@ -1085,6 +1079,8 @@ class SolveNonhydro:
             lprep_adv=lprep_adv,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
         )
         if self._grid.limited_area:
             self._compute_theta_and_exner(
@@ -1115,6 +1111,8 @@ class SolveNonhydro:
         dtime: float,
         at_initial_timestep: bool,
         at_first_substep: bool,
+        is_iau_active: bool,
+        iau_wgt_dyn: float,
     ):
         """
         Runs the predictor step of the non-hydrostatic solver.
@@ -1185,6 +1183,8 @@ class SolveNonhydro:
             normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
             grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
+            is_iau_active=self._config.is_iau_active,
+            iau_wgt_dyn=self._config.iau_wgt_dyn,
             dtime=dtime,
         )
 
@@ -1234,6 +1234,8 @@ class SolveNonhydro:
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             dtime=dtime,
             at_first_substep=at_first_substep,
+            is_iau_active=self._config.is_iau_active,
+            iau_wgt_dyn=self._config.iau_wgt_dyn,
         )
 
         if self._grid.limited_area:
@@ -1280,6 +1282,8 @@ class SolveNonhydro:
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
+        is_iau_active: bool,
+        iau_wgt_dyn: float,
     ):
         log.info(
             f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  "
@@ -1358,6 +1362,8 @@ class SolveNonhydro:
             dtime=dtime,
             apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
             apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
+            is_iau_active=self._config.is_iau_active,
+            iau_wgt_dyn=self._config.iau_wgt_dyn,
         )
 
         log.debug("exchanging prognostic field 'vn'")
@@ -1402,8 +1408,10 @@ class SolveNonhydro:
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
+            is_iau_active=self._config.is_iau_active,
+            iau_wgt_dyn=self._config.iau_wgt_dyn,
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
-            lprep_adv=lprep_adv,
+            prepare_advection=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(ndyn_substeps_var),
             dtime=dtime,
