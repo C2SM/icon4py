@@ -11,7 +11,13 @@ import gt4py.next as gtx
 from gt4py.next import maximum, minimum, power, sqrt, where
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, idx, t_d
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import (
+    g_ct,
+    idx,
+    t_d,
+    flux_parametrizations,
+    FluxParametrization,
+)
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import (
     _deposition_auto_conversion,
@@ -52,27 +58,25 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import Koff
 
 
-class PrecipState(NamedTuple):
+class PrecipStateQx(NamedTuple):
     q_update: ta.wpfloat
     flx: ta.wpfloat
-    rho: ta.wpfloat
     vc: ta.wpfloat
     activated: bool
 
 
-@gtx.scan_operator(
-    axis=dims.KDim,
-    forward=True,
-    init=PrecipState(
-        q_update=0.0,
-        flx=0.0,
-        rho=0.0,
-        vc=0.0,
-        activated=False,
-    ),
-)
-def _precip(
-    previous_level: PrecipState,
+class PrecipState(NamedTuple):
+    r: PrecipStateQx
+    s: PrecipStateQx
+    i: PrecipStateQx
+    g: PrecipStateQx
+    rho: ta.wpfloat
+
+
+@gtx.field_operator
+def precip_qx_level_update(
+    previous_level_q: PrecipStateQx,
+    previous_level_rho: ta.wpfloat,
     prefactor: ta.wpfloat,  # param[0] of fall_speed
     exponent: ta.wpfloat,  # param[1] of fall_speed
     offset: ta.wpfloat,  # param[1] of fall_speed
@@ -81,18 +85,17 @@ def _precip(
     q: ta.wpfloat,  # specific mass of hydrometeor
     rho: ta.wpfloat,  # density
     mask: bool,
-) -> PrecipState:
-    current_level_activated = previous_level.activated | mask
+) -> PrecipStateQx:
+    current_level_activated = previous_level_q.activated | mask
     rho_x = q * rho
-    flx_eff = (rho_x / zeta) + 2.0 * previous_level.flx
+    flx_eff = (rho_x / zeta) + 2.0 * previous_level_q.flx
     #   Inlined calculation using _fall_speed_scalar
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
 
-    rhox_prev = (previous_level.q_update + q) * 0.5 * previous_level.rho
+    rhox_prev = (previous_level_q.q_update + q) * 0.5 * previous_level_rho
 
-    if previous_level.activated:
-        # this looks weird because we are setting vt based on previous level being active. bug?
-        vt = previous_level.vc * prefactor * power((rhox_prev + offset), exponent)
+    if previous_level_q.activated:
+        vt = previous_level_q.vc * prefactor * power((rhox_prev + offset), exponent)
     else:
         vt = 0.0
 
@@ -102,12 +105,92 @@ def _precip(
     else:
         next_q_update = q
         next_flx = 0.0
-    return PrecipState(
+    return PrecipStateQx(
         q_update=next_q_update,
         flx=next_flx,
-        rho=rho,
         vc=vc,
         activated=current_level_activated,
+    )
+
+
+@gtx.scan_operator(
+    axis=dims.KDim,
+    forward=True,
+    init=PrecipState(
+        r=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
+        s=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
+        i=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
+        g=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
+        rho=0.0,
+    ),
+)
+def _precip(
+    previous_level: PrecipState,
+    zeta: ta.wpfloat,  # dt/(2dz)
+    rho: ta.wpfloat,  # density
+    vc_r: ta.wpfloat,  # state dependent fall speed correction
+    q_r: ta.wpfloat,  # specific mass of hydrometeor
+    mask_r: bool,
+    vc_s: ta.wpfloat,  # state dependent fall speed correction
+    q_s: ta.wpfloat,  # specific mass of hydrometeor
+    mask_s: bool,
+    vc_i: ta.wpfloat,  # state dependent fall speed correction
+    q_i: ta.wpfloat,  # specific mass of hydrometeor
+    mask_i: bool,
+    vc_g: ta.wpfloat,  # state dependent fall speed correction
+    q_g: ta.wpfloat,  # specific mass of hydrometeor
+    mask_g: bool,
+) -> PrecipState:
+    return PrecipState(
+        r=precip_qx_level_update(
+            previous_level.r,
+            previous_level.rho,
+            idx.prefactor_r,
+            idx.exponent_r,
+            idx.offset_r,
+            zeta,
+            vc_r,
+            q_r,
+            rho,
+            mask_r,
+        ),
+        s=precip_qx_level_update(
+            previous_level.s,
+            previous_level.rho,
+            idx.prefactor_s,
+            idx.exponent_s,
+            idx.offset_s,
+            zeta,
+            vc_s,
+            q_s,
+            rho,
+            mask_s,
+        ),
+        i=precip_qx_level_update(
+            previous_level.i,
+            previous_level.rho,
+            idx.prefactor_i,
+            idx.exponent_i,
+            idx.offset_i,
+            zeta,
+            vc_i,
+            q_i,
+            rho,
+            mask_i,
+        ),
+        g=precip_qx_level_update(
+            previous_level.g,
+            previous_level.rho,
+            idx.prefactor_g,
+            idx.exponent_g,
+            idx.offset_g,
+            zeta,
+            vc_g,
+            q_g,
+            rho,
+            mask_g,
+        ),
+        rho=rho,
     )
 
 
@@ -399,18 +482,50 @@ def _precipitation_effects(
     vc_i = _vel_scale_factor_ice(xrho)
     vc_g = _vel_scale_factor_default(xrho)
 
-    qr, pr, _, _, _ = _precip(
-        idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, q_in.r, rho, kmin_r
+    # TODO(havogt): should be defined in the `frozen` module, however not working due to GT4Py limitations
+    # r_params = FluxParametrization(idx.prefactor_r, idx.exponent_r, idx.offset_r)
+    # qr, pr, _, _, _ = _precip(r_params, zeta, vc_r, q_in.r, rho, kmin_r) # TODO: doesn't work because of a GT4Py bug
+    # r_update, _ = _precip(
+    #     idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, q_in.r, rho, kmin_r
+    # )
+    # qr, pr = r_update.q_update, r_update.flx
+    # s_update, _ = _precip(
+    #     idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, q_in.s, rho, kmin_s
+    # )
+    # qs, ps = s_update.q_update, s_update.flx
+    # i_update, _ = _precip(
+    #     idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, q_in.i, rho, kmin_i
+    # )
+    # qi, pi = i_update.q_update, i_update.flx
+    # g_update, _ = _precip(
+    #     idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, q_in.g, rho, kmin_g
+    # )
+    # qg, pg = g_update.q_update, g_update.flx
+
+    precip_state = _precip(
+        zeta,
+        rho,
+        vc_r,
+        q_in.r,
+        kmin_r,
+        vc_s,
+        q_in.s,
+        kmin_s,
+        vc_i,
+        q_in.i,
+        kmin_i,
+        vc_g,
+        q_in.g,
+        kmin_g,
     )
-    qs, ps, _, _, _ = _precip(
-        idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, q_in.s, rho, kmin_s
-    )
-    qi, pi, _, _, _ = _precip(
-        idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, q_in.i, rho, kmin_i
-    )
-    qg, pg, _, _, _ = _precip(
-        idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, q_in.g, rho, kmin_g
-    )
+    qr = precip_state.r.q_update
+    pr = precip_state.r.flx
+    qs = precip_state.s.q_update
+    ps = precip_state.s.flx
+    qi = precip_state.i.q_update
+    pi = precip_state.i.flx
+    qg = precip_state.g.q_update
+    pg = precip_state.g.flx
 
     qliq = q_in.c + qr
     qice = qs + qi + qg
