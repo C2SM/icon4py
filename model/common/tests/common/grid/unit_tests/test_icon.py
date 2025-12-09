@@ -313,7 +313,7 @@ def test_global_grid_params(
         assert params.grid_shape.subdivision is None
     else:
         assert (
-            icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_shape.subdivision  # type: ignore[union-attr]
+            icon.GridSubdivision(root=grid_root, level=grid_level) == params.grid_shape.subdivision  # type: ignore[arg-type, union-attr]
         )
     if geometry_type == base.GeometryType.TORUS:
         assert params.radius is None
