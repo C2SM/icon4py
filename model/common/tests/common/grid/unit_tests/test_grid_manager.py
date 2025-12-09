@@ -78,7 +78,11 @@ def test_grid_manager_eval_v2e(
     v2e_table = grid.get_connectivity("V2E").asnumpy()
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
-    assert not has_invalid_index(v2e_table) if experiment.grid.kind == definitions.GridKind.TORUS else has_invalid_index(v2e_table)
+    assert (
+        not has_invalid_index(v2e_table)
+        if experiment.grid.kind == definitions.GridKind.TORUS
+        else has_invalid_index(v2e_table)
+    )
     _reset_invalid_index(seralized_v2e)
     assert np.allclose(v2e_table, seralized_v2e)
 
@@ -120,7 +124,11 @@ def test_grid_manager_eval_v2c(
     assert not has_invalid_index(serialized_v2c)
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
-    assert not has_invalid_index(v2c_table) if experiment.grid.kind == definitions.GridKind.TORUS else has_invalid_index(v2c_table)
+    assert (
+        not has_invalid_index(v2c_table)
+        if experiment.grid.kind == definitions.GridKind.TORUS
+        else has_invalid_index(v2c_table)
+    )
     _reset_invalid_index(serialized_v2c)
     assert np.allclose(v2c_table, serialized_v2c)
 
