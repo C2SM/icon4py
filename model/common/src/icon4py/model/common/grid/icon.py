@@ -127,8 +127,6 @@ class GlobalGridParams:
                         object.__setattr__(self, "radius", constants.EARTH_RADIUS)
                 case base.GeometryType.TORUS:
                     object.__setattr__(self, "radius", None)
-                case _:
-                    ...
 
         if self.global_num_cells is None and self.geometry_type is base.GeometryType.ICOSAHEDRON:
             object.__setattr__(
