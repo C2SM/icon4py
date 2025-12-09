@@ -228,6 +228,10 @@ def construct_diffusion_config(
             hdiff_temp=True,
             n_substeps=ndyn_substeps,
         )
+    elif experiment == Experiments.GAUSS3D:
+        return diffusion.DiffusionConfig(
+            n_substeps=ndyn_substeps,
+        )
     else:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."
