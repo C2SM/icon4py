@@ -25,7 +25,7 @@ from icon4py.model.testing import (
     serialbox,
     test_utils as test_helpers,
 )
-from icon4py.model.testing.definitions import metrics_config
+from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -66,7 +66,7 @@ def _get_metrics_factory(
             exner_expol,
             vwind_offctr,
             rayleigh_type,
-        ) = metrics_config(experiment)
+        ) = construct_metrics_config(experiment)
 
         vertical_config = v_grid.VerticalGridConfig(
             geometry.grid.num_levels,

@@ -264,7 +264,7 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
         )
 
 
-def metrics_config(experiment: Experiment) -> tuple:
+def construct_metrics_config(experiment: Experiment) -> tuple:
 
     match experiment:
         case Experiments.MCH_CH_R04B09:
