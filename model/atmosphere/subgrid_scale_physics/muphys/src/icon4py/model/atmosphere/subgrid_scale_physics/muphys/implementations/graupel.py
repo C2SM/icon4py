@@ -23,7 +23,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
     _snow_lambda,
     _snow_number,
     _vel_scale_factor_ice_scalar,
-    _vel_scale_factor_snow,
+    _vel_scale_factor_snow_scalar,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
     _internal_energy,
@@ -119,13 +119,13 @@ def precip_qx_level_update(
 )
 def _precip(
     previous_level: PrecipState,
-    # t: ta.wpfloat,
+    t: ta.wpfloat,
     # zeta: ta.wpfloat,  # dt/(2dz)
     rho: ta.wpfloat,  # density
     # vc_r: ta.wpfloat,  # state dependent fall speed correction
     q_r: ta.wpfloat,  # specific mass of hydrometeor
     mask_r: bool,
-    vc_s: ta.wpfloat,  # state dependent fall speed correction
+    # vc_s: ta.wpfloat,  # state dependent fall speed correction
     q_s: ta.wpfloat,  # specific mass of hydrometeor
     mask_s: bool,
     # vc_i: ta.wpfloat,  # state dependent fall speed correction
@@ -142,7 +142,7 @@ def _precip(
 
     # vc_r = _vel_scale_factor_default(xrho)
     vc_r = xrho
-    # vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q_s) # TODO: fails in DaCe backend
+    vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q_s)  # TODO: fails in DaCe backend
     vc_i = _vel_scale_factor_ice_scalar(xrho)
     # vc_g = _vel_scale_factor_default(xrho)
     vc_g = xrho
@@ -480,10 +480,10 @@ def _precipitation_effects(
     qice = q_in.s + q_in.i + q_in.g
     ei_old = _internal_energy(t, q_in.v, qliq, qice, rho, dz)
     # zeta = dt / (2.0 * dz)
-    xrho = sqrt(g_ct.rho_00 / rho)
+    # xrho = sqrt(g_ct.rho_00 / rho)
 
     # vc_r = _vel_scale_factor_default(xrho)
-    vc_s = _vel_scale_factor_snow(xrho, rho, t, q_in.s)
+    # vc_s = _vel_scale_factor_snow(xrho, rho, t, q_in.s)
     # vc_i = _vel_scale_factor_ice(xrho)
     # vc_g = _vel_scale_factor_default(xrho)
 
@@ -508,13 +508,13 @@ def _precipitation_effects(
     # qg, pg = g_update.q_update, g_update.flx
 
     precip_state = _precip(
-        # t,
+        t,
         # zeta,
         rho,
         # vc_r,
         q_in.r,
         kmin_r,
-        vc_s,
+        # vc_s,
         q_in.s,
         kmin_s,
         # vc_i,
