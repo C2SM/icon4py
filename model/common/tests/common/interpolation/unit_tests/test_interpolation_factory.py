@@ -187,7 +187,8 @@ def test_get_geofac_grg(
     assert field_x.shape == (grid.num_cells, 4)
     field_y = factory.get(attrs.GEOFAC_GRG_Y).asnumpy()
     assert field_y.shape == (grid.num_cells, 4)
-    assert test_helpers.dallclose(field_ref[0].asnumpy(), field_x, rtol=1e-11, atol=1e-16)
+    # less than 1.1e-16 does not pass on mac for mch_ch_r04b09_dsl (but still passes on CI)
+    assert test_helpers.dallclose(field_ref[0].asnumpy(), field_x, rtol=1e-11, atol=1.1e-16)
     assert test_helpers.dallclose(field_ref[1].asnumpy(), field_y, rtol=1e-11, atol=1e-16)
 
 
