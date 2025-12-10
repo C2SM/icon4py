@@ -87,7 +87,7 @@ def test_full_muphys(
     experiment: MuphysGraupelExperiment,
     single_program: bool,
 ) -> None:
-    # TODO why does it verify on the graupel only reference?
+    # TODO why does `tiny` verify on the graupel only reference?
     inp = common.GraupelInput.load(
         filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
     )

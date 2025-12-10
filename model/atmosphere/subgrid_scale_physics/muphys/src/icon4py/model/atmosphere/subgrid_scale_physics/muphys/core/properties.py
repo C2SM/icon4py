@@ -502,6 +502,21 @@ def _vel_scale_factor_default(
     return xrho
 
 
+@gtx.field_operator
+def _vel_scale_factor_default_scalar(
+    xrho: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Compute the default velocity scaling factor
+
+    Args:
+        xrho:              sqrt(rho_00/rho)
+
+    Result:                default velocity scaling factor
+    """
+    return xrho
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def vel_scale_factor_ice(
     xrho: fa.CellKField[ta.wpfloat],  # sqrt(rho_00/rho)

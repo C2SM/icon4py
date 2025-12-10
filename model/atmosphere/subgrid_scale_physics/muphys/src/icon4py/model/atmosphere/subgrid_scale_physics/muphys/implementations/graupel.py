@@ -12,7 +12,7 @@ from gt4py.next import maximum, minimum, power, sqrt, where
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, idx, t_d
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q, Q_scalar
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import (
     _deposition_auto_conversion,
     _deposition_factor,
@@ -22,11 +22,12 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
     _ice_sticking,
     _snow_lambda,
     _snow_number,
+    _vel_scale_factor_default_scalar,
     _vel_scale_factor_ice_scalar,
     _vel_scale_factor_snow_scalar,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
-    _internal_energy,
+    _internal_energy_scalar,
     _qsat_ice_rho,
     _qsat_rho,
     _qsat_rho_tmelt,
@@ -58,11 +59,18 @@ class PrecipStateQx(NamedTuple):
     activated: bool
 
 
+class TempState(NamedTuple):
+    t: ta.wpfloat
+    eflx: ta.wpfloat
+    activated: bool
+
+
 class PrecipState(NamedTuple):
     r: PrecipStateQx
     s: PrecipStateQx
     i: PrecipStateQx
     g: PrecipStateQx
+    t_state: TempState
     rho: ta.wpfloat
 
 
@@ -106,106 +114,7 @@ def precip_qx_level_update(
     )
 
 
-@gtx.scan_operator(
-    axis=dims.KDim,
-    forward=True,
-    init=PrecipState(
-        r=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
-        s=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
-        i=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
-        g=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
-        rho=0.0,
-    ),
-)
-def _precip(
-    previous_level: PrecipState,
-    t: ta.wpfloat,
-    # zeta: ta.wpfloat,  # dt/(2dz)
-    rho: ta.wpfloat,  # density
-    # vc_r: ta.wpfloat,  # state dependent fall speed correction
-    q_r: ta.wpfloat,  # specific mass of hydrometeor
-    mask_r: bool,
-    # vc_s: ta.wpfloat,  # state dependent fall speed correction
-    q_s: ta.wpfloat,  # specific mass of hydrometeor
-    mask_s: bool,
-    # vc_i: ta.wpfloat,  # state dependent fall speed correction
-    q_i: ta.wpfloat,  # specific mass of hydrometeor
-    mask_i: bool,
-    # vc_g: ta.wpfloat,  # state dependent fall speed correction
-    q_g: ta.wpfloat,  # specific mass of hydrometeor
-    mask_g: bool,
-    dt: ta.wpfloat,
-    dz: ta.wpfloat,
-) -> PrecipState:
-    zeta = dt / (2.0 * dz)
-    xrho = sqrt(g_ct.rho_00 / rho)
-
-    # vc_r = _vel_scale_factor_default(xrho)
-    vc_r = xrho
-    vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q_s)  # TODO: fails in DaCe backend
-    vc_i = _vel_scale_factor_ice_scalar(xrho)
-    # vc_g = _vel_scale_factor_default(xrho)
-    vc_g = xrho
-    return PrecipState(
-        r=precip_qx_level_update(
-            previous_level.r,
-            previous_level.rho,
-            idx.prefactor_r,
-            idx.exponent_r,
-            idx.offset_r,
-            zeta,
-            vc_r,
-            q_r,
-            rho,
-            mask_r,
-        ),
-        s=precip_qx_level_update(
-            previous_level.s,
-            previous_level.rho,
-            idx.prefactor_s,
-            idx.exponent_s,
-            idx.offset_s,
-            zeta,
-            vc_s,
-            q_s,
-            rho,
-            mask_s,
-        ),
-        i=precip_qx_level_update(
-            previous_level.i,
-            previous_level.rho,
-            idx.prefactor_i,
-            idx.exponent_i,
-            idx.offset_i,
-            zeta,
-            vc_i,
-            q_i,
-            rho,
-            mask_i,
-        ),
-        g=precip_qx_level_update(
-            previous_level.g,
-            previous_level.rho,
-            idx.prefactor_g,
-            idx.exponent_g,
-            idx.offset_g,
-            zeta,
-            vc_g,
-            q_g,
-            rho,
-            mask_g,
-        ),
-        rho=rho,
-    )
-
-
-class TempState(NamedTuple):
-    t: ta.wpfloat
-    eflx: ta.wpfloat
-    activated: bool
-
-
-@gtx.scan_operator(axis=dims.KDim, forward=True, init=TempState(t=0.0, eflx=0.0, activated=False))
+@gtx.field_operator
 def _temperature_update(
     previous_level: TempState,
     t: ta.wpfloat,
@@ -240,6 +149,121 @@ def _temperature_update(
         eflx = previous_level.eflx
 
     return TempState(t=t, eflx=eflx, activated=current_level_activated)
+
+
+@gtx.scan_operator(
+    axis=dims.KDim,
+    forward=True,
+    init=PrecipState(
+        r=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
+        s=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
+        i=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
+        g=PrecipStateQx(q_update=0.0, flx=0.0, vc=0.0, activated=False),
+        t_state=TempState(t=0.0, eflx=0.0, activated=False),
+        rho=0.0,
+    ),
+)
+def _precip(
+    previous_level: PrecipState,
+    t: ta.wpfloat,
+    t_kp1: ta.wpfloat,
+    rho: ta.wpfloat,  # density
+    q: Q_scalar,
+    mask_r: bool,
+    mask_s: bool,
+    mask_i: bool,
+    mask_g: bool,
+    dt: ta.wpfloat,
+    dz: ta.wpfloat,
+) -> PrecipState:
+    zeta = dt / (2.0 * dz)
+    xrho = sqrt(g_ct.rho_00 / rho)
+
+    vc_r = _vel_scale_factor_default_scalar(xrho)
+    vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q.s)
+    vc_i = _vel_scale_factor_ice_scalar(xrho)
+    vc_g = _vel_scale_factor_default_scalar(xrho)
+
+    r_update = precip_qx_level_update(
+        previous_level.r,
+        previous_level.rho,
+        idx.prefactor_r,
+        idx.exponent_r,
+        idx.offset_r,
+        zeta,
+        vc_r,
+        q.r,
+        rho,
+        mask_r,
+    )
+    s_update = precip_qx_level_update(
+        previous_level.s,
+        previous_level.rho,
+        idx.prefactor_s,
+        idx.exponent_s,
+        idx.offset_s,
+        zeta,
+        vc_s,
+        q.s,
+        rho,
+        mask_s,
+    )
+    i_update = precip_qx_level_update(
+        previous_level.i,
+        previous_level.rho,
+        idx.prefactor_i,
+        idx.exponent_i,
+        idx.offset_i,
+        zeta,
+        vc_i,
+        q.i,
+        rho,
+        mask_i,
+    )
+    g_update = precip_qx_level_update(
+        previous_level.g,
+        previous_level.rho,
+        idx.prefactor_g,
+        idx.exponent_g,
+        idx.offset_g,
+        zeta,
+        vc_g,
+        q.g,
+        rho,
+        mask_g,
+    )
+
+    qliq = q.c + q.r
+    qice = q.s + q.i + q.g
+    ei_old = _internal_energy_scalar(t, q.v, qliq, qice, rho, dz)
+    pflx_tot = s_update.flx + i_update.flx + g_update.flx
+
+    qliq = q.c + r_update.q_update
+    qice = s_update.q_update + i_update.q_update + g_update.q_update
+    kmin_rsig = mask_r | mask_s | mask_i | mask_g
+
+    return PrecipState(
+        r=r_update,
+        s=s_update,
+        i=i_update,
+        g=g_update,
+        t_state=_temperature_update(
+            previous_level.t_state,
+            t=t,
+            t_kp1=t_kp1,
+            ei_old=ei_old,
+            pr=r_update.flx,
+            pflx_tot=pflx_tot,
+            qv=q.v,
+            qliq=qliq,
+            qice=qice,
+            rho=rho,
+            dz=dz,
+            dt=dt,
+            mask=kmin_rsig,
+        ),
+        rho=rho,
+    )
 
 
 @gtx.field_operator
@@ -475,53 +499,16 @@ def _precipitation_effects(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    # Store current fields for later temperature update
-    qliq = q_in.c + q_in.r
-    qice = q_in.s + q_in.i + q_in.g
-    ei_old = _internal_energy(t, q_in.v, qliq, qice, rho, dz)
-    # zeta = dt / (2.0 * dz)
-    # xrho = sqrt(g_ct.rho_00 / rho)
-
-    # vc_r = _vel_scale_factor_default(xrho)
-    # vc_s = _vel_scale_factor_snow(xrho, rho, t, q_in.s)
-    # vc_i = _vel_scale_factor_ice(xrho)
-    # vc_g = _vel_scale_factor_default(xrho)
-
-    # TODO(havogt): should be defined in the `frozen` module, however not working due to GT4Py limitations
-    # r_params = FluxParametrization(idx.prefactor_r, idx.exponent_r, idx.offset_r)
-    # qr, pr, _, _, _ = _precip(r_params, zeta, vc_r, q_in.r, rho, kmin_r) # TODO: doesn't work because of a GT4Py bug
-    # r_update, _ = _precip(
-    #     idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, q_in.r, rho, kmin_r
-    # )
-    # qr, pr = r_update.q_update, r_update.flx
-    # s_update, _ = _precip(
-    #     idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, q_in.s, rho, kmin_s
-    # )
-    # qs, ps = s_update.q_update, s_update.flx
-    # i_update, _ = _precip(
-    #     idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, q_in.i, rho, kmin_i
-    # )
-    # qi, pi = i_update.q_update, i_update.flx
-    # g_update, _ = _precip(
-    #     idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, q_in.g, rho, kmin_g
-    # )
-    # qg, pg = g_update.q_update, g_update.flx
+    t_kp1 = concat_where(dims.KDim < last_lev, t(Koff[1]), t)
 
     precip_state = _precip(
         t,
-        # zeta,
+        t_kp1,
         rho,
-        # vc_r,
-        q_in.r,
+        q_in,
         kmin_r,
-        # vc_s,
-        q_in.s,
         kmin_s,
-        # vc_i,
-        q_in.i,
         kmin_i,
-        # vc_g,
-        q_in.g,
         kmin_g,
         dt,
         dz,
@@ -535,14 +522,10 @@ def _precipitation_effects(
     qg = precip_state.g.q_update
     pg = precip_state.g.flx
 
-    qliq = q_in.c + qr
-    qice = qs + qi + qg
+    t = precip_state.t_state.t
+    eflx = precip_state.t_state.eflx
+
     pflx_tot = ps + pi + pg
-    t_kp1 = concat_where(dims.KDim < last_lev, t(Koff[1]), t)
-    kmin_rsig = kmin_r | kmin_s | kmin_i | kmin_g
-    t, eflx, _ = _temperature_update(
-        t, t_kp1, ei_old, pr, pflx_tot, q_in.v, qliq, qice, rho, dz, dt, kmin_rsig
-    )
 
     return qr, qs, qi, qg, t, pflx_tot + pr, pr, ps, pi, pg, eflx / dt
 
