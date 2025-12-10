@@ -184,7 +184,6 @@ class GridManager:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
-        my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
@@ -196,17 +195,17 @@ class GridManager:
             # TODO(halungge): easily computed from a neighbor_sum V2C over the cell areas?
             gridfile.GeometryName.DUAL_AREA.value: gtx.as_field(
                 (dims.VertexDim,),
-                self._reader.variable(gridfile.GeometryName.DUAL_AREA),
+                self._reader.variable(gridfile.GeometryName.DUAL_AREA, indices=my_vertex_indices),
                 allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_LENGTH.value: gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.EDGE_LENGTH),
+                self._reader.variable(gridfile.GeometryName.EDGE_LENGTH, indices=my_edge_indices),
                 allocator=allocator,
             ),
             gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH),
+                self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH, indices=my_edge_indices),
                 allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
