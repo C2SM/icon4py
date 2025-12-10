@@ -120,6 +120,7 @@ class TimeLoop:
         second_order_divdamp_factor: wpfloat,
         do_prep_adv: bool,
         profiling: driver_config.ProfilingConfig | None = None,
+        save_results_file: pathlib.Path | None = None,
     ):
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
@@ -190,12 +191,18 @@ class TimeLoop:
 
             # TODO(OngChia): simple IO enough for JW test
 
-        timer_first_timestep.summary(True)
+        results_first_step = timer_first_timestep.summary(True)
         if self.n_time_steps > 1:  # in case only one time step was run
-            timer_after_first_timestep.summary(True)
+            results_after_first_step = timer_after_first_timestep.summary(True)
         if profiling is not None and profiling.gt4py_metrics_level > gtx_metrics.DISABLED:
             print(gtx_metrics.dumps())
             gtx_metrics.dump_json(profiling.gt4py_metrics_output_file)
+        if save_results_file is not None:
+            np.savez(
+                save_results_file,
+                first_steps=results_first_step,
+                non_first_steps=results_after_first_step if self.n_time_steps > 1 else None,
+            )
 
     def _integrate_one_time_step(
         self,
@@ -534,6 +541,13 @@ def initialize(
     help="Enable detailed profiling with GT4Py metrics. Can be a flag (--enable_profiling) or provide a filename (--enable_profiling='gt4py_metrics.json').",
 )
 @click.option(
+    "--save_timings_file",
+    is_flag=False,
+    flag_value="timings_results.npz",
+    default="",
+    help="Save timing results to a .npz file. Can be a flag (--save_timings_file) or provide a filename (--save_timings_file='timings_results.npz').",
+)
+@click.option(
     "--icon4py_driver_backend",
     "-b",
     required=True,
@@ -548,6 +562,7 @@ def icon4py_driver(
     grid_file,
     enable_output,
     enable_profiling,
+    save_timings_file,
     icon4py_driver_backend,
 ) -> None:
     """
@@ -612,6 +627,7 @@ def icon4py_driver(
         profiling=driver_config.ProfilingConfig(gt4py_metrics_output_file=enable_profiling)
         if enable_profiling
         else None,
+        save_results_file=pathlib.Path(save_timings_file) if save_timings_file else None,
     )
 
     log.info("time loop:  DONE")
