@@ -31,6 +31,8 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+from ... import utils
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
@@ -176,7 +178,7 @@ def test_compute_coeff_dwdz(
     coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),
-        1 / metrics_savepoint.inv_ddqz_z_full().asnumpy(),
+        1 / metrics_savepoint.inv_ddqz_z_full().ndarray,
         allocator=backend,
     )
 
@@ -233,10 +235,23 @@ def test_compute_exner_exfac(
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     exner_expol = 0.333 if experiment == definitions.Experiments.MCH_CH_R04B09 else 0.3333333333333
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_slp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_hgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    mf._compute_maxslp_maxhgtd.with_backend(backend)(
+        metrics_savepoint.ddxn_z_full(),
+        grid_savepoint.dual_edge_length(),
+        out=(max_slp, max_hgtd),
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        domain={
+            dims.CellDim: (horizontal_start, icon_grid.num_cells),
+            dims.KDim: (0, icon_grid.num_levels),
+        },
+    )
+
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     mf.compute_exner_exfac.with_backend(backend)(
-        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
-        dual_edge_length=grid_savepoint.dual_edge_length(),
+        maxslp=max_slp,
+        maxhgtd=max_hgtd,
         exner_exfac=exner_exfac,
         exner_expol=exner_expol,
         lateral_boundary_level_2=horizontal_start,
@@ -244,7 +259,7 @@ def test_compute_exner_exfac(
         horizontal_end=gtx.int32(icon_grid.num_cells),
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
@@ -368,7 +383,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
 
@@ -381,9 +395,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, allocator=backend)
     edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, allocator=backend)
 
-    flat_idx = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, allocator=backend
-    )
     edge_mask = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, allocator=backend
     )
@@ -391,38 +402,25 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
 
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
-    horizontal_start_edge = icon_grid.start_index(
-        edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
-    )
 
-    mf.compute_flat_idx.with_backend(backend)(
-        z_mc=z_mc,
-        c_lin_e=c_lin_e,
-        z_ifc=z_ifc,
-        k_lev=k,
-        flat_idx=flat_idx,
-        horizontal_start=horizontal_start_edge,
-        horizontal_end=icon_grid.num_edges,
-        vertical_start=gtx.int32(0),
-        vertical_end=icon_grid.num_levels,
-        offset_provider={
-            "E2C": icon_grid.get_connectivity("E2C"),
-            "Koff": dims.KDim,
-        },
+    xp = data_alloc.import_array_ns(backend)
+    flat_idx_max = mf.compute_flat_max_idx(
+        e2c=icon_grid.get_connectivity("E2C").ndarray,
+        z_mc=z_mc.ndarray,
+        c_lin_e=c_lin_e.ndarray,
+        z_ifc=z_ifc.ndarray,
+        k_lev=k.ndarray,
+        exchange=utils.dummy_exchange,
+        array_ns=xp,
     )
-    flat_idx_max = gtx.as_field(
-        (dims.EdgeDim,),
-        xp.max(flat_idx.asnumpy(), axis=1),
-        dtype=gtx.int32,
-        allocator=backend,
-    )
-
+    # TODO (nfarabullini): fix type ignore
+    flat_idx = gtx.as_field((dims.EdgeDim,), data=flat_idx_max, allocator=backend)  # type: ignore [arg-type]
     mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
         z_mc=z_mc,
         topography=topography,
         c_lin_e=c_lin_e,
         e_owner_mask=grid_savepoint.e_owner_mask(),
-        flat_idx_max=flat_idx_max,
+        flat_idx_max=flat_idx,
         e_lev=edges,
         k_lev=k,
         pg_edgeidx_dsl=edge_mask,
@@ -520,47 +518,3 @@ def test_compute_horizontal_mask_for_3d_divdamp(
     assert testing_helpers.dallclose(
         horizontal_mask_for_3d_divdamp.asnumpy(), hmask_dd3d_ref.asnumpy()
     )
-
-
-@pytest.mark.level("unit")
-@pytest.mark.datatest
-def test_compute_theta_exner_ref_mc(
-    metrics_savepoint: sb.MetricSavepoint,
-    icon_grid: base_grid.Grid,
-    backend: gtx_typing.Backend,
-) -> None:
-    exner_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
-    theta_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
-    t0sl_bg = constants.SEA_LEVEL_TEMPERATURE
-    del_t_bg = constants.DELTA_TEMPERATURE
-    h_scal_bg = constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
-    grav = constants.GRAV
-    rd = constants.RD
-    p0sl_bg = constants.SEA_LEVEL_PRESSURE
-    rd_o_cpd = constants.RD_O_CPD
-    p0ref = constants.REFERENCE_PRESSURE
-    exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
-    theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
-    z_mc = metrics_savepoint.z_mc()
-
-    mf.compute_theta_exner_ref_mc.with_backend(backend)(
-        z_mc=z_mc,
-        exner_ref_mc=exner_ref_mc_full,
-        theta_ref_mc=theta_ref_mc_full,
-        t0sl_bg=t0sl_bg,
-        del_t_bg=del_t_bg,
-        h_scal_bg=h_scal_bg,
-        grav=grav,
-        rd=rd,
-        p0sl_bg=p0sl_bg,
-        rd_o_cpd=rd_o_cpd,
-        p0ref=p0ref,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=icon_grid.num_levels,
-        offset_provider={},
-    )
-
-    assert testing_helpers.dallclose(exner_ref_mc_ref.asnumpy(), exner_ref_mc_full.asnumpy())
-    assert testing_helpers.dallclose(theta_ref_mc_ref.asnumpy(), theta_ref_mc_full.asnumpy())

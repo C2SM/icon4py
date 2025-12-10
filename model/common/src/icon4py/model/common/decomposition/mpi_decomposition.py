@@ -38,7 +38,6 @@ except ImportError:
     ghex = None
     unstructured = None
 
-
 if TYPE_CHECKING:
     import mpi4py.MPI
 
@@ -201,48 +200,54 @@ class GHexMultiNodeExchange:
         """
         Slices the field based on the dimension passed in.
 
-        This is a helper function needed for the granule - Fortran integration. As the Fortran fields have nproma
-        size but the global_index fields used to initialize GHEX exchanges have only local num_edge,
-        num_cell_num_vertex size.
+        This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
+        the granule context where fields otherwise have length nproma.
         """
-        print(f" field = {field}, {type(field)}")
-        try:
-            assert field.ndarray.ndim == 2
-            trim_length = self._field_size[dim]
-            return field.ndarray[:trim_length, :]
-        except KeyError:
-            log.warning(
-                f"Trying to trim field of invalid dimension {dim} for exchange. Not trimming."
-            )
+        if dim == dims.VertexDim:
+            return field.ndarray[: self._decomposition_info.num_vertices]
+        elif dim == dims.EdgeDim:
+            return field.ndarray[: self._decomposition_info.num_edges]
+        elif dim == dims.CellDim:
+            return field.ndarray[: self._decomposition_info.num_cells]
+        else:
+            raise ValueError(f"Unknown dimension {dim}")
 
-    def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field) -> str:
-        # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
-        assert hasattr(f, "__gt_buffer_info__")
-        # dimension and buffer_info uniquely identifies the exchange pattern
-        key = (dim, f.__gt_buffer_info__.hash_key)
-        try:
-            return self._applied_patterns_cache[key]
-        except KeyError:
-            assert dim in f.domain.dims
-            array = self._slice_field_based_on_dim(f, dim)
-            self._applied_patterns_cache[key] = self._patterns[dim](
-                unstructured.make_field_descriptor(
-                    self._domain_descriptors[dim],
-                    array,
-                    arch=unstructured.Architecture.CPU
-                    if isinstance(f.ndarray, np.ndarray)
-                    else unstructured.Architecture.GPU,
+    def _make_field_descriptor(self, dim: gtx.Dimension, array: data_alloc.NDArray) -> Any:
+        return unstructured.make_field_descriptor(
+            self._domain_descriptors[dim],
+            array,
+            arch=unstructured.Architecture.CPU if isinstance(array, np.ndarray) else Architecture.GPU,
+        )
+
+    def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field | data_alloc.NDArray) -> str:
+        if isinstance(f, gtx.Field):
+            assert hasattr(f, "__gt_buffer_info__")
+            # dimension and buffer_info uniquely identifies the exchange pattern
+            # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
+            key = (dim, f.__gt_buffer_info__.hash_key)
+            try:
+                return self._applied_patterns_cache[key]
+            except KeyError:
+                assert dim in f.domain.dims
+                array = self._slice_field_based_on_dim(f, dim)
+                self._applied_patterns_cache[key] = self._patterns[dim](
+                    self._make_field_descriptor(dim, array)
                 )
-            )
-            return self._applied_patterns_cache[key]
+                return self._applied_patterns_cache[key]
+        else:
+            assert f.ndim in (1, 2), "Buffers must be 1d or 2d"
+            return self._patterns[dim](self._make_field_descriptor(dim, f))
 
-    def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> MultiNodeResult:
+    def exchange(
+        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    ) -> MultiNodeResult:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
-
-            This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
-            the granule context where fields otherwise have length nproma.
         """
+        assert (
+            dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         # With https://github.com/ghex-org/GHEX/pull/186, ghex will schedule/sync work on the default stream,
         # otherwise we need an explicit device synchronize here.
@@ -250,7 +255,9 @@ class GHexMultiNodeExchange:
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None:
+    def exchange_and_wait(
+        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    ) -> None:
         res = self.exchange(dim, *fields)
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")

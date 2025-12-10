@@ -82,81 +82,49 @@ def test_coriolis_parameter(
     assert test_utils.dallclose(expected.asnumpy(), result.asnumpy())
 
 
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 1e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-12),
-    ],
-)
 @pytest.mark.datatest
 def test_compute_edge_length(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
-    rtol: float,
 ) -> None:
     geometry_source = grid_utils.get_grid_geometry(backend, experiment)
     expected = grid_savepoint.primal_edge_length()
     result = geometry_source.get(attrs.EDGE_LENGTH)
-    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
+    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
 
 
-@pytest.mark.parametrize(
-    " experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 1e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-12),
-    ],
-)
 @pytest.mark.datatest
 def test_compute_inverse_edge_length(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
-    rtol: float,
 ) -> None:
     expected = grid_savepoint.inverse_primal_edge_lengths()
     geometry_source = grid_utils.get_grid_geometry(backend, experiment)
     computed = geometry_source.get(f"inverse_of_{attrs.EDGE_LENGTH}")
 
-    assert test_utils.dallclose(computed.asnumpy(), expected.asnumpy(), rtol=rtol)
+    assert test_utils.dallclose(computed.asnumpy(), expected.asnumpy())
 
 
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 1e-7),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-    ],
-)
 @pytest.mark.datatest
 def test_compute_dual_edge_length(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
-    rtol: float,
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
 
     expected = grid_savepoint.dual_edge_length()
     result = grid_geometry.get(attrs.DUAL_EDGE_LENGTH)
-    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
+    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
 
 
-@pytest.mark.parametrize(
-    "experiment, rtol",
-    [
-        (definitions.Experiments.MCH_CH_R04B09, 5e-9),
-        (definitions.Experiments.EXCLAIM_APE, 1e-11),
-    ],
-)
 @pytest.mark.datatest
 def test_compute_inverse_dual_edge_length(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
     experiment: definitions.Experiment,
-    rtol: float,
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     expected = grid_savepoint.inv_dual_edge_length()
@@ -165,9 +133,7 @@ def test_compute_inverse_dual_edge_length(
     # compared to ICON we overcompute, so we only compare the values from LATERAL_BOUNDARY_LEVEL_2
     level = h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     start_index = grid_geometry.grid.start_index(level)
-    assert test_utils.dallclose(
-        result.asnumpy()[start_index:], expected.asnumpy()[start_index:], rtol=rtol
-    )
+    assert test_utils.dallclose(result.asnumpy()[start_index:], expected.asnumpy()[start_index:])
 
 
 @pytest.mark.parametrize(

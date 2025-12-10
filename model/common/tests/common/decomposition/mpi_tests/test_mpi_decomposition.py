@@ -14,7 +14,8 @@ import numpy as np
 import pytest
 
 from icon4py.model.common.grid import horizontal as h_grid, icon
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
+from icon4py.model.common.interpolation import interpolation_fields
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
@@ -62,7 +63,6 @@ mpirun -np 2 pytest -v --with-mpi -k mpi_tests/
 """
 
 @pytest.mark.mpi(min_size= 2)
-
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props: definitions.ProcessProperties) -> None:
     assert processor_props.comm
@@ -344,37 +344,32 @@ def test_halo_exchange_for_sparse_field(
     processor_props: definitions.ProcessProperties,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
-    backend: gtx_typing.Backend | None,
     decomposition_info: definitions.DecompositionInfo,
 ):
-    xp = data_alloc.import_array_ns(backend)
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    edge_cell_length = grid_savepoint.edge_cell_length()
-    edge_owner_mask = grid_savepoint.e_owner_mask()
-    c_lin_e_ref = interpolation_savepoint.c_lin_e()
+    edge_length = grid_savepoint.primal_edge_length()
+    edge_orientation = grid_savepoint.edge_orientation()
+    area = grid_savepoint.cell_areas()
+    field_ref = interpolation_savepoint.geofac_div()
     print(
-        f"{processor_props.rank}/{processor_props.comm_size}: size of reference field {c_lin_e_ref.asnumpy().shape}"
+        f"{processor_props.rank}/{processor_props.comm_size}: size of reference field {field_ref.asnumpy().shape}"
     )
-
-    horizontal_start = icon_grid.start_index(
-        h_grid.edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    result = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.C2EDim, dtype=gtx.float64, allocator=None
     )
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    c_lin_e = compute_c_lin_e(
-        edge_cell_length.asnumpy(),
-        inv_dual_edge_length.asnumpy(),
-        edge_owner_mask.asnumpy(),
-        horizontal_start,
-        xp,
+    # mandatory computation on embedded because the result is sparse
+    interpolation_fields.compute_geofac_div.with_backend(None)(
+        edge_length,
+        edge_orientation,
+        area,
+        out=result,
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
     )
     print(
-        f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {c_lin_e_ref.asnumpy().shape}"
+        f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {result.asnumpy().shape}"
     )
-    # convert to field
-    c_lin_e_field = gtx.as_field(
-        (dims.EdgeDim, dims.E2CDim), data=c_lin_e, dtype=gtx.float64, allocator=backend
-    )
-    exchange.exchange_and_wait(dims.EdgeDim, c_lin_e_field)
 
-    assert test_helpers.dallclose(c_lin_e_field.asnumpy(), c_lin_e_ref.asnumpy())
+    exchange.exchange_and_wait(dims.CellDim, result)
+
+    assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())

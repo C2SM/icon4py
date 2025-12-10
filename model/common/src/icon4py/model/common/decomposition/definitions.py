@@ -9,33 +9,22 @@
 from __future__ import annotations
 
 import dataclasses
-import enum
 import functools
 import logging
 from collections.abc import Sequence
-from dataclasses import dataclass
-from enum import IntEnum
+from enum import Enum
 from typing import Any, Literal, Protocol, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
-import mpi4py.MPI
 import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base, gridfile
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-try:
-    import dace
-
-    from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
-except ImportError:
-    from types import ModuleType
-
-    dace: ModuleType | None = None  # type: ignore[no-redef]
 from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
@@ -43,43 +32,23 @@ log = logging.getLogger(__name__)
 
 class ProcessProperties(Protocol):
     comm: Any
-
-    @property
-    def rank(self)->int:
-        ...
-    @property
-    def comm_name(self)->str:
-       ...
-
-    @property
-    def comm_size(self) -> int:
-        ...
-
-    def single_node(self) -> bool:
-        return self.comm_size == 1
-
-    def __str__(self) -> str:
-        return f"Comm name={self.comm_name}: rank = {self.rank}/{self.comm_size}"
+    rank: int
+    comm_name: str
+    comm_size: int
 
 
-@dataclass(frozen=True, init=False)
+@dataclasses.dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):
-    @property
-    def comm(self)->Any:
-        return None
+    comm: None
+    rank: int
+    comm_name: str
+    comm_size: int
 
-    @property
-    def rank(self)->int:
-        return 0
-
-    @property
-    def comm_name(self)->str:
-        return ""
-
-    @property
-    def comm_size(self) -> int:
-        return 1
-
+    def __init__(self) -> None:
+        object.__setattr__(self, "comm", None)
+        object.__setattr__(self, "rank", 0)
+        object.__setattr__(self, "comm_name", "")
+        object.__setattr__(self, "comm_size", 1)
 
 
 class DomainDescriptorIdGenerator:
@@ -110,7 +79,7 @@ class DecompositionInfo:
         self._halo_levels: dict[gtx.Dimension, data_alloc.NDArray] = {}
         self._owner_mask: dict[gtx.Dimension, data_alloc.NDArray] = {}
 
-    class EntryType(IntEnum):
+    class EntryType(int, Enum):
         ALL = 0
         OWNED = 1
         HALO = 2
@@ -222,22 +191,37 @@ class ExchangeResult(Protocol):
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]) -> ExchangeResult: ...
+    @overload
+    def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> ExchangeResult: ...
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]) -> None: ...
+    @overload
+    def exchange(self, dim: gtx.Dimension, *buffers: data_alloc.NDArray) -> ExchangeResult: ...
+
+    @overload
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None: ...
+
+    @overload
+    def exchange_and_wait(self, dim: gtx.Dimension, *buffers: data_alloc.NDArray) -> None: ...
 
     def get_size(self) -> int: ...
 
     def my_rank(self) -> int: ...
 
+    def __str__(self) -> str:
+        return f"{self.__class__} (rank = {self.my_rank()} / {self.get_size()})"
 
-@dataclass
+
+@dataclasses.dataclass
 class SingleNodeExchange:
-    def exchange(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]) -> ExchangeResult:
+    def exchange(
+        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    ) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple[gtx.Field, ...]) -> None:
-        return
+    def exchange_and_wait(
+        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    ) -> None:
+        return None
 
     def my_rank(self) -> int:
         return 0
@@ -302,7 +286,7 @@ class HaloExchangeWaitRuntime(Protocol):
         ...
 
 
-@dataclass
+@dataclasses.dataclass
 class HaloExchangeWait:
     exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
 
@@ -416,7 +400,7 @@ def create_single_node_exchange(
     return SingleNodeExchange()
 
 
-class DecompositionFlag(enum.IntEnum):
+class DecompositionFlag(int, Enum):
     UNDEFINED = -1
     OWNED = 0
     """used for locally owned cells, vertices, edges"""
@@ -445,3 +429,5 @@ class DecompositionFlag(enum.IntEnum):
     - vertices (NOT USED)
     - edges that are only on the cell(SECOND_HALO_LINE)
     """
+
+single_node_default = SingleNodeExchange()
