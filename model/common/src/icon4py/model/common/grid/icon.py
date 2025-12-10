@@ -24,8 +24,11 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 log = logging.getLogger(__name__)
 
 CONNECTIVITIES_ON_BOUNDARIES = (
+    dims.C2EDim,
+    dims.C2VDim, # should be removed by includein all vertices on level 2 edges...
+    dims.E2VDim,
     dims.C2E2C2EDim,
-    dims.E2CDim,
+    dims.E2CDim,  # non on halos because of "open halo cells"
     dims.C2E2CDim,
     dims.C2E2CODim,
     dims.E2C2VDim,
@@ -201,7 +204,7 @@ class IconGrid(base.Grid):
     )
 
 
-def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool) -> bool:
+def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool, distributed: bool) -> bool:
     """
     For the icosahedral global grid skip values are only present for the pentagon points.
 
@@ -210,7 +213,7 @@ def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool) -> bool:
     """
     dimension = offset.target[1]
     assert dimension.kind == gtx.DimensionKind.LOCAL, "only local dimensions can have skip values"
-    value = dimension in CONNECTIVITIES_ON_PENTAGONS or (
+    value = dimension in CONNECTIVITIES_ON_PENTAGONS or (distributed or
         limited_area and dimension in CONNECTIVITIES_ON_BOUNDARIES
     )
 
@@ -255,11 +258,12 @@ def icon_grid(
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
+    distributed = config.num_cells < global_properties.global_num_cells
     connectivities = {
         offset.value: base.construct_connectivity(
             offset,
             data_alloc.import_array_ns(allocator).asarray(table),
-            skip_value=-1 if _has_skip_values(offset, config.limited_area) else None,
+            skip_value=-1 if _has_skip_values(offset, config.limited_area, distributed) else None,
             allocator=allocator,
             replace_skip_values=_should_replace_skip_values(
                 offset, config.keep_skip_values, config.limited_area

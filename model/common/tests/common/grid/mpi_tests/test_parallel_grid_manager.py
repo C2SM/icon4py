@@ -249,6 +249,7 @@ def assert_gathered_field_against_global(
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
 ) -> None:
+    print(f" rank= {processor_props.rank}/{processor_props.comm_size}----exchanging field of main dim {dim}")
     assert (
         local_field.shape[0]
         == decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.ALL).shape[0]
@@ -267,28 +268,29 @@ def assert_gathered_field_against_global(
             gathered_sizes == global_index_sizes
         ), f"gathered field sizes do not match  {gathered_sizes}"
         print(
-            f"rank = {processor_props.rank}: Checking field size: --- gathered sizes {gathered_sizes}"
+            f"rank = {processor_props.rank}: Checking field size: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
         print(
             f"rank = {processor_props.rank}:                      --- gathered field has size {gathered_sizes}"
         )
         sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)  # type: ignore [attr-defined]
         sorted_[gathered_global_indices] = gathered_field
-        assert test_helpers.dallclose(
-            sorted_, global_reference_field
-        ), f"Gathered field values do not match for dim {dim}.- "
-        print(
-            f"rank = {processor_props.rank}:  comparing fields (samples) "
-            f"\n      -- gathered {sorted_[:6]}  "
-            f"\n    -- global ref {global_reference_field[:6]}"
-        )
-
-
+        print(f" global reference field {global_reference_field.shape} gathered = {gathered_field.shape}")
+        np.testing.assert_allclose(sorted_, global_reference_field, rtol=1e-12, verbose=True)
 
 
 
 # TODO (halungge): fix non contiguous dimension for embedded in gt4py
 # @pytest.mark.xfail()  #  non-contiguous dimensions in gt4py embedded: embedded/nd_array_field.py 576
+# the problem should not be -1 but edge indices in the C2E that are not in the local domain.
+# from def _hyperslice print slice, hcube, (full connectivity)?
+
+# something like
+# Example:
+#         index_array =  0  1 -1
+#                        3  13 -1
+#                       -1 -1 -1
+#         skip_value = -1
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL,))
@@ -297,9 +299,8 @@ def test_halo_neighbor_access_c2e(
     backend: gtx_typing.Backend | None,
     grid: definitions.GridDescription,
 ) -> None:
-    #    processor_props = decomp_utils.DummyProps(1)
     file = grid_utils.resolve_full_grid_file_name(grid)
-    print(f"running on {processor_props.comm}")
+    print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
     single_node = run_grid_manager_for_singlenode(file, vertical_config)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
@@ -646,6 +647,7 @@ def test_halo_neighbor_access_v2e(
     backend: gtx_typing.Backend | None,
     grid: definitions.GridDescription,
 ) -> None:
+    #processor_props = decomp_utils.DummyProps(1)
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
     single_node = run_grid_manager_for_singlenode(file, vertical_config)
@@ -658,10 +660,10 @@ def test_halo_neighbor_access_v2e(
         extra_fields=single_node.geometry_fields,
         metadata=geometry_attributes.attrs,
     )
-    dual_edge_length = single_node_geometry.get(geometry_attributes.DUAL_EDGE_LENGTH)
-    edge_orientation = single_node_geometry.get(geometry_attributes.VERTEX_EDGE_ORIENTATION)
-    dual_area = single_node_geometry.get(geometry_attributes.DUAL_AREA)
-    owner_mask = gtx.as_field((dims.VertexDim,),single_node.decomposition_info.owner_mask(dims.VertexDim))
+    single_node_dual_edge_length = single_node_geometry.get(geometry_attributes.DUAL_EDGE_LENGTH)
+    single_node_edge_orientation = single_node_geometry.get(geometry_attributes.VERTEX_EDGE_ORIENTATION)
+    single_node_dual_area = single_node_geometry.get(geometry_attributes.DUAL_AREA)
+    single_node_owner_mask = gtx.as_field((dims.VertexDim,), single_node.decomposition_info.owner_mask(dims.VertexDim))
     reference = data_alloc.zero_field(single_node_grid, dims.VertexDim, dims.V2EDim)
     lateral_boundary_start = single_node_grid.start_index(
         h_grid.vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -671,12 +673,12 @@ def test_halo_neighbor_access_v2e(
     )
 
     interpolation_fields.compute_geofac_rot.with_backend(None)(
-        dual_edge_length,
-        edge_orientation,
-        dual_area,
-        owner_mask,
+        single_node_dual_edge_length,
+        single_node_edge_orientation,
+        single_node_dual_area,
+        single_node_owner_mask,
         out=reference,
-        domain={dims.VertexDim: (lateral_boundary_start,horizontal_end)},
+        domain={dims.VertexDim: (lateral_boundary_start, horizontal_end)},
         offset_provider={"V2E": single_node_grid.get_connectivity(dims.V2E)},
     )
 
@@ -694,8 +696,8 @@ def test_halo_neighbor_access_v2e(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
-    )
+         f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+     )
     distributed_coordinates = multinode_grid_manager.coordinates
     extra_geometry_fields = multinode_grid_manager.geometry_fields
     distributed_geometry = geometry.GridGeometry(
@@ -710,10 +712,8 @@ def test_halo_neighbor_access_v2e(
     dual_edge_length = distributed_geometry.get(geometry_attributes.DUAL_EDGE_LENGTH)
     edge_orientation = distributed_geometry.get(geometry_attributes.VERTEX_EDGE_ORIENTATION)
     dual_area = distributed_geometry.get(geometry_attributes.DUAL_AREA)
-
     geofac_rot = data_alloc.zero_field(distributed_grid, dims.VertexDim, dims.V2EDim)
-
-    onwner_mask = gtx.as_field((dims.VertexDim,), multinode_grid_manager.decomposition_info.owner_mask(dims.VertexDim))
+    onwner_mask = gtx.as_field((dims.VertexDim,), decomposition_info.owner_mask(dims.VertexDim))
     interpolation_fields.compute_geofac_rot.with_backend(None)(
         dual_edge_length=dual_edge_length,
         edge_orientation=edge_orientation,
@@ -820,20 +820,20 @@ def test_halo_neighbor_access_c2e2c(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_halo_neighbor_access_v2c(processor_props, backend):
+
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     print(f"running on {processor_props.comm}")
     single_node = run_grid_manager_for_singlenode(file, vertical_config)
     single_node_grid = single_node.grid
 
-    full_cell_k_field = data_alloc.random_field(
-        single_node.grid, dims.CellDim, dims.KDim, low=1.0, high=10.0, allocator=backend
-    )
+    full_cell_k_field = gtx.as_field((dims.CellDim, dims.KDim), data=np.repeat(single_node.coordinates[dims.CellDim]["lat"].ndarray[:, None],  vertical_config.num_levels, axis=1), dtype=float, allocator=backend)
     print(
         f"rank = {processor_props.rank}  / {processor_props.comm_size}: single node input field has size  {full_cell_k_field.asnumpy().shape}"
     )
-    full_coef = data_alloc.random_field(
-        single_node_grid, dims.VertexDim, dims.V2CDim, low=-1.0, high=1.0, allocator=backend
-    )
+    vertex_data = single_node.coordinates[dims.VertexDim]["lat"].ndarray/np.max(single_node.coordinates[dims.VertexDim]["lat"].ndarray)
+    full_coef = gtx.as_field(
+        (dims.VertexDim, dims.V2CDim), data= np.repeat(vertex_data[:, None], 6, axis=1), dtype=float, allocator=backend)
+
     reference = data_alloc.zero_field(
         single_node_grid,
         dims.VertexDim,
@@ -860,6 +860,7 @@ def test_halo_neighbor_access_v2c(processor_props, backend):
     distributed_grid = multinode_grid_manager.grid
     decomposition_info = multinode_grid_manager.decomposition_info
 
+
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
         f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
@@ -867,31 +868,38 @@ def test_halo_neighbor_access_v2c(processor_props, backend):
     print(
         f"rank = {processor_props.rank}: halo size for 'VertexDim' (1 : {decomposition_info.get_halo_size(dims.VertexDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.VertexDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
     )
-    global_cell_index = decomposition_info.global_index(dims.CellDim)
-    cell_k_buffer = (
-        full_cell_k_field.ndarray[global_cell_index, :]
-        .ravel(order="K")
-        .reshape((global_cell_index.shape[0], vertical_config.num_levels))
-    )
-    print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: input field shape = ([{cell_k_buffer.shape})"
-    )
-    cell_k_field = gtx.as_field(
-        (dims.CellDim, dims.KDim), data=cell_k_buffer, dtype=cell_k_buffer.dtype, allocator=backend
-    )
+    my_global_cells = decomposition_info.global_index(dims.CellDim)
+    cell_k_buffer = full_cell_k_field.ndarray[my_global_cells, :].ravel(order="K").reshape(distributed_grid.num_cells,
+                                                                                           10)
     assert_gathered_field_against_global(
         decomposition_info,
         processor_props,
         dims.CellDim,
-        global_reference_field=cell_k_field.ndarray,
+        global_reference_field=full_cell_k_field.ndarray,
         local_field=cell_k_buffer,
     )
-    global_vertex_index = decomposition_info.global_index(dims.VertexDim)
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: input field shape = ([{cell_k_buffer.shape})"
+    )
+
+    cell_k_field = gtx.as_field(
+        (dims.CellDim, dims.KDim), data=cell_k_buffer, dtype=cell_k_buffer.dtype, allocator=backend
+    )
+
+    my_global_vertices = decomposition_info.global_index(dims.VertexDim)
 
     coef = (
-        full_coef.ndarray[global_vertex_index, :]
+        full_coef.ndarray[my_global_vertices, :]
         .ravel(order="K")
-        .reshape((global_vertex_index.shape[0], 6))
+       .reshape((distributed_grid.num_vertices, 6))
+    )
+
+    assert_gathered_field_against_global(
+        decomposition_info,
+        processor_props,
+        dims.VertexDim,
+        global_reference_field=full_coef.ndarray,
+        local_field=coef,
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: coefficient shape = ([{coef.shape})"
