@@ -201,7 +201,7 @@ def solve_nonhydro(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=grid_geometry.get("cell_owner_mask"),
+        owner_mask=geometry_field_source.get("cell_owner_mask"),
         backend=backend_like,
     )
 

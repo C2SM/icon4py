@@ -55,6 +55,8 @@ from ..fixtures import (
 )
 
 
+NUM_LEVELS = 10
+
 try:
     import mpi4py
 
@@ -63,31 +65,27 @@ except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
 log = logging.getLogger(__file__)
-vertical_config = v_grid.VerticalGridConfig(num_levels=10)
 
 
 def run_gridmananger_for_multinode(
     file: pathlib.Path,
-    vertical_config: v_grid.VerticalGridConfig,
     run_properties: defs.ProcessProperties,
     decomposer: halo.Decomposer,
 ) -> gm.GridManager:
-    manager = _grid_manager(file, vertical_config)
+    manager = _grid_manager(file, num_levels=NUM_LEVELS)
     manager(
         keep_skip_values=True, allocator=None, run_properties=run_properties, decomposer=decomposer
     )
     return manager
 
 
-def _grid_manager(file: pathlib.Path, vertical_config: v_grid.VerticalGridConfig) -> gm.GridManager:
-    manager = gm.GridManager(str(file), vertical_config)
+def _grid_manager(file: pathlib.Path, num_levels: int) -> gm.GridManager:
+    manager = gm.GridManager(str(file), num_levels=num_levels)
     return manager
 
 
-def run_grid_manager_for_singlenode(
-    file: pathlib.Path, vertical_config: v_grid.VerticalGridConfig
-) -> gm.GridManager:
-    manager = _grid_manager(file, vertical_config)
+def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
+    manager = _grid_manager(file, NUM_LEVELS)
     manager(
         keep_skip_values=True,
         run_properties=defs.SingleNodeProcessProperties(),
@@ -101,7 +99,7 @@ def run_grid_manager_for_singlenode(
 @pytest.mark.mpi(min_size=2)
 def test_grid_manager_validate_decomposer(processor_props: defs.ProcessProperties) -> None:
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
-    manager = gm.GridManager(file, vertical_config, gridfile.ToZeroBasedIndexTransformation())
+    manager = gm.GridManager(file, NUM_LEVELS, gridfile.ToZeroBasedIndexTransformation())
     with pytest.raises(exceptions.InvalidConfigError) as e:
         manager(
             keep_skip_values=True,
@@ -134,7 +132,6 @@ def test_local_connectivities(
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=neighbor_tables,
         run_properties=processor_props,
-        num_levels=1,
     )
 
     decomposition_info = halo_generator(labels)
@@ -163,7 +160,7 @@ def test_fields_distribute_and_gather(processor_props: defs.ProcessProperties, c
     caplog.set_level(logging.INFO)
     print(f"myrank - {processor_props.rank}: running with processor_props =  {processor_props}")
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
-    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node = run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     global_cell_area = single_node.geometry_fields[gridfile.GeometryName.CELL_AREA]
     global_edge_lat = single_node.coordinates[dims.EdgeDim]["lat"]
@@ -171,7 +168,6 @@ def test_fields_distribute_and_gather(processor_props: defs.ProcessProperties, c
 
     multinode = run_gridmananger_for_multinode(
         file=file,
-        vertical_config=vertical_config,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
     )
@@ -293,7 +289,7 @@ def test_halo_neighbor_access_c2e(
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node = run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -326,7 +322,6 @@ def test_halo_neighbor_access_c2e(
     )
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
-        vertical_config=vertical_config,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
     )
@@ -383,7 +378,7 @@ def test_halo_access_e2c2v(
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
-    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node = run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -400,7 +395,6 @@ def test_halo_access_e2c2v(
     reference_v = single_node_geometry.get(geometry_attributes.EDGE_NORMAL_VERTEX_V).asnumpy()
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
-        vertical_config=vertical_config,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
     )
@@ -474,7 +468,7 @@ def test_halo_access_e2c(
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
-    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node = run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -491,7 +485,6 @@ def test_halo_access_e2c(
     reference_v = single_node_geometry.get(geometry_attributes.EDGE_NORMAL_CELL_V).asnumpy()
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
-        vertical_config=vertical_config,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
     )
@@ -564,7 +557,7 @@ def test_halo_neighbor_access_e2v(
 ) -> None:
     print(f"running on {processor_props.comm}")
     file = grid_utils.resolve_full_grid_file_name(grid)
-    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node = run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -581,7 +574,6 @@ def test_halo_neighbor_access_e2v(
     )
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
-        vertical_config=vertical_config,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
     )
@@ -594,7 +586,7 @@ def test_halo_neighbor_access_e2v(
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     vertex_lat = distributed_coordinates[dims.VertexDim]["lat"]
-    vertex_lon = distributed_coordinates.get[dims.VertexDim]["lon"]
+    vertex_lon = distributed_coordinates[dims.VertexDim]["lon"]
     tangent_orientation = multinode_grid_manager.geometry_fields.get(
         gridfile.GeometryName.TANGENT_ORIENTATION
     )
@@ -639,10 +631,9 @@ def test_halo_neighbor_access_v2e(
     backend: gtx_typing.Backend | None,
     grid: definitions.GridDescription,
 ) -> None:
-    # processor_props = decomp_utils.DummyProps(1)
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
-    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node = run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -659,7 +650,7 @@ def test_halo_neighbor_access_v2e(
     single_node_dual_area = single_node_geometry.get(geometry_attributes.DUAL_AREA)
     single_node_owner_mask = gtx.as_field(
         (dims.VertexDim,),
-        data=single_node.decomposition_info.owner_mask(dims.VertexDim),
+        data=single_node.decomposition_info.owner_mask(dims.VertexDim),  # type: ignore  [arg-type]
         dtype=bool,
     )
     reference = data_alloc.zero_field(single_node_grid, dims.VertexDim, dims.V2EDim)
@@ -683,7 +674,6 @@ def test_halo_neighbor_access_v2e(
     )
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
-        vertical_config=vertical_config,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
     )
@@ -709,7 +699,7 @@ def test_halo_neighbor_access_v2e(
     edge_orientation = distributed_geometry.get(geometry_attributes.VERTEX_EDGE_ORIENTATION)
     dual_area = distributed_geometry.get(geometry_attributes.DUAL_AREA)
     geofac_rot = data_alloc.zero_field(distributed_grid, dims.VertexDim, dims.V2EDim)
-    onwner_mask = gtx.as_field((dims.VertexDim,), decomposition_info.owner_mask(dims.VertexDim))
+    onwner_mask = gtx.as_field((dims.VertexDim,), decomposition_info.owner_mask(dims.VertexDim))  # type: ignore [arg-type]
     interpolation_fields.compute_geofac_rot.with_backend(None)(
         dual_edge_length=dual_edge_length,
         edge_orientation=edge_orientation,
@@ -743,7 +733,7 @@ def test_halo_neighbor_access_c2e2c(
     xp = data_alloc.import_array_ns(allocator=backend)
     start_zone = h_grid.cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     print(f"running on {processor_props.comm}")
-    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node = run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -767,7 +757,6 @@ def test_halo_neighbor_access_c2e2c(
     )
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
-        vertical_config=vertical_config,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
     )
@@ -815,31 +804,30 @@ def test_halo_neighbor_access_c2e2c(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_halo_neighbor_access_v2c(processor_props, backend):
+def test_halo_neighbor_access_v2c(
+    processor_props: defs.ProcessProperties, backend: gtx_typing.Backend
+) -> None:
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     print(f"running on {processor_props.comm}")
-    single_node = run_grid_manager_for_singlenode(file, vertical_config)
+    single_node = run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
 
+    data = np.repeat(
+        single_node.coordinates[dims.CellDim]["lat"].asnumpy()[:, None], repeats=NUM_LEVELS, axis=1
+    )
     full_cell_k_field = gtx.as_field(
         (dims.CellDim, dims.KDim),
-        data=np.repeat(
-            single_node.coordinates[dims.CellDim]["lat"].ndarray[:, None],
-            vertical_config.num_levels,
-            axis=1,
-        ),
+        data=data,  # type: ignore [arg-type]
         dtype=float,
         allocator=backend,
     )
     print(
         f"rank = {processor_props.rank}  / {processor_props.comm_size}: single node input field has size  {full_cell_k_field.asnumpy().shape}"
     )
-    vertex_data = single_node.coordinates[dims.VertexDim]["lat"].ndarray / np.max(
-        single_node.coordinates[dims.VertexDim]["lat"].ndarray
-    )
+    buffer = single_node.coordinates[dims.VertexDim]["lat"].asnumpy()
     full_coef = gtx.as_field(
         (dims.VertexDim, dims.V2CDim),
-        data=np.repeat(vertex_data[:, None], 6, axis=1),
+        data=np.repeat((buffer / np.max(buffer))[:, None], 6, axis=1),  # type: ignore [arg-type]
         dtype=float,
         allocator=backend,
     )
@@ -863,7 +851,6 @@ def test_halo_neighbor_access_v2c(processor_props, backend):
     )
     multinode_grid_manager = run_gridmananger_for_multinode(
         file=file,
-        vertical_config=vertical_config,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
     )
@@ -879,7 +866,7 @@ def test_halo_neighbor_access_v2c(processor_props, backend):
     )
     my_global_cells = decomposition_info.global_index(dims.CellDim)
     cell_k_buffer = (
-        full_cell_k_field.ndarray[my_global_cells, :]
+        full_cell_k_field.asnumpy()[my_global_cells, :]
         .ravel(order="K")
         .reshape(distributed_grid.num_cells, 10)
     )
@@ -887,7 +874,7 @@ def test_halo_neighbor_access_v2c(processor_props, backend):
         decomposition_info,
         processor_props,
         dims.CellDim,
-        global_reference_field=full_cell_k_field.ndarray,
+        global_reference_field=full_cell_k_field.asnumpy(),
         local_field=cell_k_buffer,
     )
     print(
@@ -895,13 +882,16 @@ def test_halo_neighbor_access_v2c(processor_props, backend):
     )
 
     cell_k_field = gtx.as_field(
-        (dims.CellDim, dims.KDim), data=cell_k_buffer, dtype=cell_k_buffer.dtype, allocator=backend
+        (dims.CellDim, dims.KDim),
+        data=cell_k_buffer,  # type: ignore [arg-type]
+        dtype=cell_k_buffer.dtype,
+        allocator=backend,
     )
 
     my_global_vertices = decomposition_info.global_index(dims.VertexDim)
 
     coef = (
-        full_coef.ndarray[my_global_vertices, :]
+        full_coef.asnumpy()[my_global_vertices, :]
         .ravel(order="K")
         .reshape((distributed_grid.num_vertices, 6))
     )
@@ -910,13 +900,13 @@ def test_halo_neighbor_access_v2c(processor_props, backend):
         decomposition_info,
         processor_props,
         dims.VertexDim,
-        global_reference_field=full_coef.ndarray,
+        global_reference_field=full_coef.asnumpy(),
         local_field=coef,
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: coefficient shape = ([{coef.shape})"
     )
-    coef_field = gtx.as_field((dims.VertexDim, dims.V2CDim), data=coef, allocator=backend)
+    coef_field = gtx.as_field((dims.VertexDim, dims.V2CDim), data=coef, allocator=backend)  # type: ignore  [arg-type]
     output = data_alloc.zero_field(distributed_grid, dims.VertexDim, dims.KDim, allocator=backend)
     _compute_cell_2_vertex_interpolation(
         cell_k_field,

@@ -21,8 +21,6 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base, gridfile
-
-
 from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -35,6 +33,9 @@ class ProcessProperties(Protocol):
     rank: int
     comm_name: str
     comm_size: int
+
+    def single_node(self) -> bool:
+        return self.comm_size == 1
 
 
 @dataclasses.dataclass(frozen=True, init=False)
@@ -74,7 +75,7 @@ class DomainDescriptorIdGenerator:
 class DecompositionInfo:
     def __init__(
         self,
-    ):
+    ) -> None:
         self._global_index: dict[gtx.Dimension, data_alloc.NDArray] = {}
         self._halo_levels: dict[gtx.Dimension, data_alloc.NDArray] = {}
         self._owner_mask: dict[gtx.Dimension, data_alloc.NDArray] = {}
@@ -95,6 +96,7 @@ class DecompositionInfo:
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
         self._halo_levels[dim] = halo_levels
+
 
     def local_index(
         self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
@@ -429,5 +431,6 @@ class DecompositionFlag(int, Enum):
     - vertices (NOT USED)
     - edges that are only on the cell(SECOND_HALO_LINE)
     """
+
 
 single_node_default = SingleNodeExchange()

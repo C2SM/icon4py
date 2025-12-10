@@ -19,13 +19,7 @@ import numpy as np
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition, halo
 from icon4py.model.common.exceptions import InvalidConfigError
-from icon4py.model.common.grid import (
-    base,
-    grid_refinement as refinement,
-    gridfile,
-    icon,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import base, grid_refinement as refinement, gridfile, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -97,7 +91,7 @@ class GridManager:
 
     def __call__(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.FieldBufferAllocationUtil | None,
         keep_skip_values: bool,
         decomposer: halo.Decomposer = _single_node_decomposer,
         run_properties=_single_process_props,

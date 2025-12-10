@@ -30,6 +30,7 @@ def get_grid_manager_from_experiment(
 ) -> gm.GridManager:
     return get_grid_manager_from_identifier(
         experiment.grid,
+        num_levels=experiment.num_levels,
         keep_skip_values=keep_skip_values,
         allocator=allocator,
     )
@@ -37,17 +38,19 @@ def get_grid_manager_from_experiment(
 
 def get_grid_manager_from_identifier(
     grid: definitions.GridDescription,
+    num_levels: int,
     keep_skip_values: bool,
     allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
     grid_file = _download_grid_file(grid)
     return get_grid_manager(
-        grid_file, keep_skip_values=keep_skip_values, allocator=allocator
+        grid_file, num_levels=num_levels, keep_skip_values=keep_skip_values, allocator=allocator
     )
 
 
 def get_grid_manager(
     filename: pathlib.Path,
+    num_levels: int,
     keep_skip_values: bool,
     allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
@@ -62,7 +65,8 @@ def get_grid_manager(
     """
     manager = gm.GridManager(
         filename,
-        gridfile.ToZeroBasedIndexTransformation(),
+        num_levels=num_levels,
+        transformation=gridfile.ToZeroBasedIndexTransformation(),
     )
     manager(allocator=allocator, keep_skip_values=keep_skip_values)
     return manager
@@ -102,6 +106,7 @@ def get_grid_geometry(
     def _construct_grid_geometry() -> geometry.GridGeometry:
         gm = get_grid_manager_from_identifier(
             experiment.grid,
+            num_levels=experiment.num_levels,
             keep_skip_values=True,
             allocator=model_backends.get_allocator(backend),
         )

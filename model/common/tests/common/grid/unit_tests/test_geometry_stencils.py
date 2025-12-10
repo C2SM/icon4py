@@ -36,7 +36,7 @@ def test_edge_length(
     keep = True
     grid_file = experiment.grid
     gm = grid_utils.get_grid_manager_from_identifier(
-        grid_file, keep_skip_values=keep, num_levels=1, allocator=backend
+        grid_file, num_levels=experiment.num_levels, keep_skip_values=keep, allocator=backend
     )
     grid = gm.grid
     coordinates = gm.coordinates[dims.VertexDim]

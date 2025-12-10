@@ -374,7 +374,7 @@ def test_create_auxiliary_orientation_coordinates(
 ) -> None:
     gm = grid_utils.get_grid_manager_from_identifier(
         experiment.grid,
-        num_levels=1,
+        num_levels=experiment.num_levels,
         keep_skip_values=True,
         allocator=backend,
     )

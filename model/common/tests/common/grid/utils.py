@@ -87,6 +87,7 @@ def run_grid_manager(
         manager = gridtest_utils.get_grid_manager_from_identifier(
             grid,
             keep_skip_values=keep_skip_values,
+            num_levels=1,
             allocator=model_backends.get_allocator(backend),
         )
         managers[key] = manager

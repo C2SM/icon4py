@@ -336,8 +336,8 @@ def test_gridmanager_given_file_not_found_then_abort(
     with pytest.raises(FileNotFoundError) as error:
         manager = gm.GridManager(
             fname,
-            v_grid.VerticalGridConfig(num_levels=80),
-            icon4py.model.common.grid.gridfile.NoTransformation(),
+            num_levels=80,
+            transformation=icon4py.model.common.grid.gridfile.NoTransformation(),
         )
         manager(allocator=cpu_allocator, keep_skip_values=True)
         assert error.value == 1

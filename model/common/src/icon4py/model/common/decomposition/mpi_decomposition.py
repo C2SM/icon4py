@@ -25,10 +25,17 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
-    import ghex  # type: ignore  [no-untyped-def]
-    import mpi4py
-    from ghex import unstructured, util
+    import ghex  # type: ignore [import-not-found]
+    import mpi4py  # type: ignore [import-not-found]
     from ghex.context import make_context  # type: ignore [import-not-found]
+    from ghex.unstructured import (  # type: ignore [import-not-found]
+        DomainDescriptor,
+        HaloGenerator,
+        make_communication_object,
+        make_field_descriptor,
+        make_pattern,
+    )
+    from ghex.util import Architecture  # type: ignore [import-not-found]
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -39,7 +46,7 @@ except ImportError:
     unstructured = None
 
 if TYPE_CHECKING:
-    import mpi4py.MPI
+    import mpi4py.MPI  # type: ignore [import-not-found]
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -98,15 +105,14 @@ def get_multinode_properties(
 
 @dataclass(frozen=True)
 class MPICommProcessProperties(definitions.ProcessProperties):
-    comm: mpi4py.MPI.Comm
-
+    comm: mpi4py.MPI.Comm = None
 
     @functools.cached_property
-    def rank(self) -> int:
+    def rank(self) -> int:  # type: ignore [override]
         return self.comm.Get_rank()
 
     @functools.cached_property
-    def comm_name(self) -> str:
+    def comm_name(self) -> str:  # type: ignore [override]
         return self.comm.Get_name()
 
     @functools.cached_property
@@ -131,7 +137,7 @@ class GHexMultiNodeExchange:
             dim: self._create_domain_descriptor(dim)
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
-        self._field_size: dict[gtx.Dimension : int] = {
+        self._field_size: dict[gtx.Dimension, int] = {
             dim: self._decomposition_info.global_index(dim).shape[0]
             for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
@@ -140,7 +146,7 @@ class GHexMultiNodeExchange:
             dim: self._create_pattern(dim) for dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
-        self._comm = unstructured.make_communication_object(self._context)
+        self._comm = make_communication_object(self._context)
 
         # DaCe SDFGConvertible interface
         self.num_of_halo_tasklets = (
@@ -151,7 +157,7 @@ class GHexMultiNodeExchange:
 
         log.info("communication object initialized")
 
-    def _domain_descriptor_info(self, descr: unstructured.DomainDescriptor) -> str:
+    def _domain_descriptor_info(self, descr: DomainDescriptor) -> str:
         return f" domain_descriptor=[id='{descr.domain_id()}', size='{descr.size()}', inner_size='{descr.inner_size()}' (halo size='{descr.size() - descr.inner_size()}')"
 
     def get_size(self) -> int:
@@ -160,7 +166,7 @@ class GHexMultiNodeExchange:
     def my_rank(self) -> int:
         return self._context.rank()
 
-    def _create_domain_descriptor(self, dim: gtx.Dimension) -> unstructured.DomainDescriptor:
+    def _create_domain_descriptor(self, dim: gtx.Dimension) -> DomainDescriptor:
         all_global = self._decomposition_info.global_index(
             dim, definitions.DecompositionInfo.EntryType.ALL
         )
@@ -170,7 +176,7 @@ class GHexMultiNodeExchange:
         # first arg is the domain ID which builds up an MPI Tag.
         # if those ids are not different for all domain descriptors the system might deadlock
         # if two parallel exchanges with the same domain id are done
-        domain_desc = unstructured.DomainDescriptor(
+        domain_desc = DomainDescriptor(
             self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )
         log.debug(
@@ -178,15 +184,15 @@ class GHexMultiNodeExchange:
         )
         return domain_desc
 
-    def _create_pattern(self, horizontal_dim: gtx.Dimension) -> unstructured.DomainDescriptor:
+    def _create_pattern(self, horizontal_dim: gtx.Dimension) -> DomainDescriptor:
         assert horizontal_dim.kind == gtx.DimensionKind.HORIZONTAL
 
         global_halo_idx = self._decomposition_info.global_index(
             horizontal_dim, definitions.DecompositionInfo.EntryType.HALO
         )
-        halo_generator = unstructured.HaloGenerator.from_gids(global_halo_idx)
+        halo_generator = HaloGenerator.from_gids(global_halo_idx)
         log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
-        pattern = unstructured.make_pattern(
+        pattern = make_pattern(
             self._context,
             halo_generator,
             [self._domain_descriptors[horizontal_dim]],
@@ -203,20 +209,16 @@ class GHexMultiNodeExchange:
         This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
         the granule context where fields otherwise have length nproma.
         """
-        if dim == dims.VertexDim:
-            return field.ndarray[: self._decomposition_info.num_vertices]
-        elif dim == dims.EdgeDim:
-            return field.ndarray[: self._decomposition_info.num_edges]
-        elif dim == dims.CellDim:
-            return field.ndarray[: self._decomposition_info.num_cells]
+        if dim == dims.VertexDim or dim == dims.EdgeDim or dim == dims.CellDim:
+            return field.ndarray[: self._field_size[dim]]
         else:
             raise ValueError(f"Unknown dimension {dim}")
 
     def _make_field_descriptor(self, dim: gtx.Dimension, array: data_alloc.NDArray) -> Any:
-        return unstructured.make_field_descriptor(
+        return make_field_descriptor(
             self._domain_descriptors[dim],
             array,
-            arch=unstructured.Architecture.CPU if isinstance(array, np.ndarray) else Architecture.GPU,
+            arch=Architecture.CPU if isinstance(array, np.ndarray) else Architecture.GPU,
         )
 
     def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field | data_alloc.NDArray) -> str:

@@ -203,6 +203,7 @@ class IconGrid(base.Grid):
         default=None, kw_only=True
     )
 
+
 # TODO (halungge): combine the last to args "into single_node_global"
 def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool, distributed: bool) -> bool:
     """

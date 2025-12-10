@@ -14,8 +14,8 @@ from gt4py.next import common as gtx_common
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common.decomposition import definitions, halo
-from icon4py.model.testing import definitions as test_defs
 from icon4py.model.common.grid import simple
+from icon4py.model.testing import definitions as test_defs
 from icon4py.model.testing.fixtures import processor_props
 
 from ...grid import utils as grid_utils
@@ -133,7 +133,9 @@ def test_decomposition_info_single_node_empty_halo(
     if not processor_props.single_node():
         pytest.xfail()
 
-    manager = grid_utils.run_grid_manager(test_defs.Grids.MCH_CH_R04B09_DSL, keep_skip_values=True, backend=None)
+    manager = grid_utils.run_grid_manager(
+        test_defs.Grids.MCH_CH_R04B09_DSL, keep_skip_values=True, backend=None
+    )
 
     decomposition_info = manager.decomposition_info
     for level in definitions.DecompositionFlag:

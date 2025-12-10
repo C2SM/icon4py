@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 def _value(k: gtx.FieldOffset | str) -> str:
-    return k.value if isinstance(k, gtx.FieldOffset) else k
+    return str(k.value) if isinstance(k, gtx.FieldOffset) else k
 
 
 @runtime_checkable
@@ -38,7 +38,7 @@ class NoHalos(HaloConstructor):
     def __init__(
         self,
         horizontal_size: base.HorizontalGridSize,
-        allocator: gtx.Field | None = None,
+        allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
     ):
         self._size = horizontal_size
         self._allocator = allocator
@@ -86,7 +86,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     @property
     def face_face_connectivity(self) -> data_alloc.NDArray:
-        return self._connectivity(dims.C2E2C.value)
+        return self._connectivity(dims.C2E2C)
 
     @property
     def edge_face_connectivity(self) -> data_alloc.NDArray:
@@ -149,7 +149,9 @@ class IconLikeHaloConstructor(HaloConstructor):
                 f"Connectivity for offset {offset} is not available"
             ) from err
 
-    def next_halo_line(self, cells: data_alloc.NDArray, depot: data_alloc.NDArray | None = None):
+    def next_halo_line(
+        self, cells: data_alloc.NDArray, depot: data_alloc.NDArray | None = None
+    ) -> data_alloc.NDArray:
         """Returns the full-grid indices of the next halo line.
 
         If a depot is given the function only return indices that are not in the depot
@@ -181,7 +183,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         unique_neighbors = self._xp.unique(neighbors.reshape(shp[0] * shp[1]))
         return unique_neighbors
 
-    def _find_cell_neighbors(self, cells: data_alloc.NDArray):
+    def _find_cell_neighbors(self, cells: data_alloc.NDArray) -> data_alloc.NDArray:
         """Find all neighboring cells of a list of cells."""
         return self._find_neighbors(cells, connectivity=self.face_face_connectivity)
 
@@ -202,8 +204,13 @@ class IconLikeHaloConstructor(HaloConstructor):
         return self._xp.asarray(owned_cells).nonzero()[0]
 
     def _update_owner_mask_by_max_rank_convention(
-        self, face_to_rank, owner_mask, all_indices, indices_on_cutting_line, target_connectivity
-    ):
+        self,
+        face_to_rank: data_alloc.NDArray,
+        owner_mask: data_alloc.NDArray,
+        all_indices: data_alloc.NDArray,
+        indices_on_cutting_line: data_alloc.NDArray,
+        target_connectivity: data_alloc.NDArray,
+    ) -> data_alloc.NDArray:
         """
         In order to have unique ownership of edges (and vertices) among nodes there needs to be
         a convention as to where those elements on the cutting line go:
@@ -413,7 +420,7 @@ class SimpleMetisDecomposer(Decomposer):
         Returns: np.ndarray: array with partition label (int, rank number) for each cell
         """
 
-        import pymetis
+        import pymetis  # type: ignore [import-not-found]
 
         _, partition_index = pymetis.part_graph(nparts=num_partitions, adjacency=adjacency_matrix)
         return np.array(partition_index)
@@ -421,7 +428,7 @@ class SimpleMetisDecomposer(Decomposer):
 
 class SingleNodeDecomposer(Decomposer):
     def __call__(
-        self, adjacency_matrix: data_alloc.NDArray, num_partitions=1
+        self, adjacency_matrix: data_alloc.NDArray, num_partitions: int = 1
     ) -> data_alloc.NDArray:
         """Dummy decomposer for single node: assigns all cells to rank = 0"""
         return np.zeros(adjacency_matrix.shape[0], dtype=gtx.int32)
@@ -430,8 +437,8 @@ class SingleNodeDecomposer(Decomposer):
 def halo_constructor(
     run_properties: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
-    connectivities: dict[gtx.FieldOffset, data_alloc.NDArray],
-    allocator=gtx_typing.FieldBufferAllocationUtil | None,
+    connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
+    allocator: gtx_typing.FieldBufferAllocationUtil | None,
 ) -> HaloConstructor:
     """
     Factory method to create the halo constructor. We need some input data from the global grid and from
