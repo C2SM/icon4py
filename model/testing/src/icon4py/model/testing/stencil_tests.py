@@ -173,6 +173,12 @@ class StencilTest:
     # standard tolerances of np.testing.assert_allclose:
     RTOL = 1e-7
     ATOL = 0.0
+    
+    # TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 1e-6
+    # to cover floating point descripancies observed in CI tests. Failing CI can be found in
+    # https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/5125340235196978/2255149825504673/-/pipelines/2184694383
+    # from PR#861. Reason is probably derivatives of random data. Investigate and lower tolerance back to 1e-7 if possible.
+    RTOL = 3e-6
 
     # TODO(pstark): remove once all tests have good tolerances for single
     def try_allclose(
@@ -261,21 +267,15 @@ class StencilTest:
             )
 
             input_data_name = input_data[name]  # for mypy
-            # TODO(iomaganaris, havogt, nfarabullini): tolerance was increased from 1e-7 to 1e-6
-            # to cover floating point descripancies observed in CI tests. Failing CI can be found in
-            # https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/5125340235196978/2255149825504673/-/pipelines/2184694383
-            # from PR#861. Reason is probably derivatives of random data. Investigate and lower tolerance back to 1e-7 if possible.
-            relative_tolerance = 3e-6
             if isinstance(input_data_name, tuple):
                 for i_out_field, out_field in enumerate(input_data_name):
                     self.try_allclose(
                         out_field.asnumpy()[gtslice],
                         reference_outputs[name][i_out_field][refslice],
-                        rtol=self.RTOL,
+                        rtol=self.RTOL,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
                         atol=self.ATOL,
                         equal_nan=True,
                         err_msg=f"Verification failed for '{name}[{i_out_field}]'",
-                        rtol=relative_tolerance,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
                     )
             else:
                 reference_outputs_name = reference_outputs[name]  # for mypy
@@ -284,11 +284,10 @@ class StencilTest:
                 self.try_allclose(
                     input_data_name.asnumpy()[gtslice],
                     reference_outputs_name[refslice],
-                    rtol=self.RTOL,
+                    rtol=self.RTOL,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
                     atol=self.ATOL,
                     equal_nan=True,
                     err_msg=f"Verification failed for '{name}'",
-                    rtol=relative_tolerance,  # TODO(iomaganaris, havogt, nfarabullini): check above comment
                 )
 
     @staticmethod
