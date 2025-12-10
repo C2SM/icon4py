@@ -11,13 +11,7 @@ import gt4py.next as gtx
 from gt4py.next import maximum, minimum, power, sqrt, where
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import (
-    g_ct,
-    idx,
-    t_d,
-    flux_parametrizations,
-    FluxParametrization,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, idx, t_d
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.definitions import Q
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import (
     _deposition_auto_conversion,
@@ -28,8 +22,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
     _ice_sticking,
     _snow_lambda,
     _snow_number,
-    _vel_scale_factor_default,
-    _vel_scale_factor_ice,
+    _vel_scale_factor_ice_scalar,
     _vel_scale_factor_snow,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
@@ -126,21 +119,33 @@ def precip_qx_level_update(
 )
 def _precip(
     previous_level: PrecipState,
-    zeta: ta.wpfloat,  # dt/(2dz)
+    # t: ta.wpfloat,
+    # zeta: ta.wpfloat,  # dt/(2dz)
     rho: ta.wpfloat,  # density
-    vc_r: ta.wpfloat,  # state dependent fall speed correction
+    # vc_r: ta.wpfloat,  # state dependent fall speed correction
     q_r: ta.wpfloat,  # specific mass of hydrometeor
     mask_r: bool,
     vc_s: ta.wpfloat,  # state dependent fall speed correction
     q_s: ta.wpfloat,  # specific mass of hydrometeor
     mask_s: bool,
-    vc_i: ta.wpfloat,  # state dependent fall speed correction
+    # vc_i: ta.wpfloat,  # state dependent fall speed correction
     q_i: ta.wpfloat,  # specific mass of hydrometeor
     mask_i: bool,
-    vc_g: ta.wpfloat,  # state dependent fall speed correction
+    # vc_g: ta.wpfloat,  # state dependent fall speed correction
     q_g: ta.wpfloat,  # specific mass of hydrometeor
     mask_g: bool,
+    dt: ta.wpfloat,
+    dz: ta.wpfloat,
 ) -> PrecipState:
+    zeta = dt / (2.0 * dz)
+    xrho = sqrt(g_ct.rho_00 / rho)
+
+    # vc_r = _vel_scale_factor_default(xrho)
+    vc_r = xrho
+    # vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q_s) # TODO: fails in DaCe backend
+    vc_i = _vel_scale_factor_ice_scalar(xrho)
+    # vc_g = _vel_scale_factor_default(xrho)
+    vc_g = xrho
     return PrecipState(
         r=precip_qx_level_update(
             previous_level.r,
@@ -474,13 +479,13 @@ def _precipitation_effects(
     qliq = q_in.c + q_in.r
     qice = q_in.s + q_in.i + q_in.g
     ei_old = _internal_energy(t, q_in.v, qliq, qice, rho, dz)
-    zeta = dt / (2.0 * dz)
+    # zeta = dt / (2.0 * dz)
     xrho = sqrt(g_ct.rho_00 / rho)
 
-    vc_r = _vel_scale_factor_default(xrho)
+    # vc_r = _vel_scale_factor_default(xrho)
     vc_s = _vel_scale_factor_snow(xrho, rho, t, q_in.s)
-    vc_i = _vel_scale_factor_ice(xrho)
-    vc_g = _vel_scale_factor_default(xrho)
+    # vc_i = _vel_scale_factor_ice(xrho)
+    # vc_g = _vel_scale_factor_default(xrho)
 
     # TODO(havogt): should be defined in the `frozen` module, however not working due to GT4Py limitations
     # r_params = FluxParametrization(idx.prefactor_r, idx.exponent_r, idx.offset_r)
@@ -503,20 +508,23 @@ def _precipitation_effects(
     # qg, pg = g_update.q_update, g_update.flx
 
     precip_state = _precip(
-        zeta,
+        # t,
+        # zeta,
         rho,
-        vc_r,
+        # vc_r,
         q_in.r,
         kmin_r,
         vc_s,
         q_in.s,
         kmin_s,
-        vc_i,
+        # vc_i,
         q_in.i,
         kmin_i,
-        vc_g,
+        # vc_g,
         q_in.g,
         kmin_g,
+        dt,
+        dz,
     )
     qr = precip_state.r.q_update
     pr = precip_state.r.flx
