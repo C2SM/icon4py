@@ -11,7 +11,7 @@ from types import ModuleType
 from typing import Protocol, runtime_checkable
 
 import gt4py.next as gtx
-import gt4py.next.backend as gtx_backend
+import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.common import dimension as dims, exceptions
@@ -23,7 +23,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 log = logging.getLogger(__name__)
 
 
-def _value(k: gtx.FieldOffset | str):
+def _value(k: gtx.FieldOffset | str) -> str:
     return k.value if isinstance(k, gtx.FieldOffset) else k
 
 
@@ -38,15 +38,13 @@ class NoHalos(HaloConstructor):
     def __init__(
         self,
         horizontal_size: base.HorizontalGridSize,
-        num_levels: int,
-        backend: gtx_backend.Backend | None = None,
+        allocator: gtx.Field | None = None,
     ):
         self._size = horizontal_size
-        self._num_levels = num_levels
-        self._backend = backend
+        self._allocator = allocator
 
     def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
-        xp = data_alloc.import_array_ns(self._backend)
+        xp = data_alloc.import_array_ns(self._allocator)
         create_arrays = functools.partial(_create_dummy_decomposition_arrays, array_ns=xp)
         decomposition_info = defs.DecompositionInfo()
 
@@ -56,7 +54,9 @@ class NoHalos(HaloConstructor):
         return decomposition_info
 
 
-def _create_dummy_decomposition_arrays(size: int, array_ns: ModuleType = np):
+def _create_dummy_decomposition_arrays(
+    size: int, array_ns: ModuleType = np
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
     indices = array_ns.arange(size, dtype=gtx.int32)
     owner_mask = array_ns.ones((size,), dtype=bool)
     halo_levels = array_ns.ones((size,), dtype=gtx.int32) * defs.DecompositionFlag.OWNED
@@ -70,48 +70,45 @@ class IconLikeHaloConstructor(HaloConstructor):
         self,
         run_properties: defs.ProcessProperties,
         connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
-        num_levels,
-        backend: gtx_backend.Backend | None = None,
+        allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
     ):
         """
 
         Args:
             run_properties: contains information on the communicator and local compute node.
             connectivities: connectivity arrays needed to construct the halos
-            num_levels: number of vertical levels, TODO(halungge):: should be removed, it is needed in GHEX that why we have it no the DecompotionInfo
             backend: GT4Py (used to determine the array ns import)
         """
-        self._xp = data_alloc.import_array_ns(backend)
-        self._num_levels = num_levels
+        self._xp = data_alloc.import_array_ns(allocator)
         self._props = run_properties
         self._connectivities = {_value(k): v for k, v in connectivities.items()}
         self._assert_all_neighbor_tables()
 
     @property
-    def face_face_connectivity(self):
+    def face_face_connectivity(self) -> data_alloc.NDArray:
         return self._connectivity(dims.C2E2C.value)
 
     @property
-    def edge_face_connectivity(self):
+    def edge_face_connectivity(self) -> data_alloc.NDArray:
         return self._connectivity(dims.E2C)
 
     @property
-    def face_edge_connectivity(self):
+    def face_edge_connectivity(self) -> data_alloc.NDArray:
         return self._connectivity(dims.C2E)
 
     @property
-    def node_edge_connectivity(self):
+    def node_edge_connectivity(self) -> data_alloc.NDArray:
         return self._connectivity(dims.V2E)
 
     @property
-    def node_face_connectivity(self):
+    def node_face_connectivity(self) -> data_alloc.NDArray:
         return self._connectivity(dims.V2C)
 
     @property
-    def face_node_connectivity(self):
+    def face_node_connectivity(self) -> data_alloc.NDArray:
         return self._connectivity(dims.C2V)
 
-    def _validate_mapping(self, face_to_rank_mapping: data_alloc.NDArray):
+    def _validate_mapping(self, face_to_rank_mapping: data_alloc.NDArray) -> None:
         # validate the distribution mapping:
         num_cells = self.face_face_connectivity.shape[0]
         expected_shape = (num_cells,)
@@ -432,10 +429,9 @@ class SingleNodeDecomposer(Decomposer):
 
 def halo_constructor(
     run_properties: defs.ProcessProperties,
-    num_levels: int,
     full_grid_size: base.HorizontalGridSize,
     connectivities: dict[gtx.FieldOffset, data_alloc.NDArray],
-    backend=gtx_backend.Backend | None,
+    allocator=gtx_typing.FieldBufferAllocationUtil | None,
 ) -> HaloConstructor:
     """
     Factory method to create the halo constructor. We need some input data from the global grid and from
@@ -446,7 +442,6 @@ def halo_constructor(
     parameter
     Args:
         processor_props:
-        num_levels:
         full_grid_size
         connectivities:
         backend:
@@ -456,14 +451,12 @@ def halo_constructor(
     """
     if run_properties.single_node():
         return NoHalos(
-            num_levels=num_levels,
             horizontal_size=full_grid_size,
-            backend=backend,
+            allocator=allocator,
         )
     else:
         return IconLikeHaloConstructor(
-            num_levels=num_levels,
             run_properties=run_properties,
             connectivities=connectivities,
-            backend=backend,
+            allocator=allocator,
         )

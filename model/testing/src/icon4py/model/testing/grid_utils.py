@@ -15,7 +15,6 @@ from icon4py.model.common.grid import (
     geometry_attributes as geometry_attrs,
     grid_manager as gm,
     gridfile,
-    vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import config, data_handling, definitions, locking
@@ -31,7 +30,6 @@ def get_grid_manager_from_experiment(
 ) -> gm.GridManager:
     return get_grid_manager_from_identifier(
         experiment.grid,
-        num_levels=experiment.num_levels,
         keep_skip_values=keep_skip_values,
         allocator=allocator,
     )
@@ -39,19 +37,17 @@ def get_grid_manager_from_experiment(
 
 def get_grid_manager_from_identifier(
     grid: definitions.GridDescription,
-    num_levels: int,
     keep_skip_values: bool,
     allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
     grid_file = _download_grid_file(grid)
     return get_grid_manager(
-        grid_file, num_levels=num_levels, keep_skip_values=keep_skip_values, allocator=allocator
+        grid_file, keep_skip_values=keep_skip_values, allocator=allocator
     )
 
 
 def get_grid_manager(
     filename: pathlib.Path,
-    num_levels: int,
     keep_skip_values: bool,
     allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> gm.GridManager:
@@ -66,7 +62,6 @@ def get_grid_manager(
     """
     manager = gm.GridManager(
         filename,
-        v_grid.VerticalGridConfig(num_levels=num_levels),
         gridfile.ToZeroBasedIndexTransformation(),
     )
     manager(allocator=allocator, keep_skip_values=keep_skip_values)
@@ -108,7 +103,6 @@ def get_grid_geometry(
         gm = get_grid_manager_from_identifier(
             experiment.grid,
             keep_skip_values=True,
-            num_levels=experiment.num_levels,
             allocator=model_backends.get_allocator(backend),
         )
         grid = gm.grid

@@ -8,15 +8,14 @@
 
 from __future__ import annotations
 
-
-import pytest
 import gt4py.next as gtx
+import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.testing import definitions as test_defs, parallel_helpers
 from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import base as base_grid
+from icon4py.model.testing import definitions as test_defs, parallel_helpers
 
 from ...fixtures import (
     backend,
@@ -28,10 +27,6 @@ from ...fixtures import (
     ranked_data_path,
 )
 from .. import utils
-
-
-
-
 
 
 try:

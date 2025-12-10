@@ -48,12 +48,12 @@ def simple_neighbor_tables():
 
 
 @pytest.mark.mpi(min_size=4)
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_halo_constructor_owned_cells(processor_props, simple_neighbor_tables):  # F811 # fixture
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         run_properties=processor_props,
-        num_levels=1,
-        backend=backend,
+        allocator=backend,
     )
     my_owned_cells = halo_generator.owned_cells(utils.SIMPLE_DISTRIBUTION)
 
@@ -70,7 +70,6 @@ def test_halo_constructor_validate_number_of_node_mismatch(processor_props, simp
         halo_generator = halo.IconLikeHaloConstructor(
             connectivities=simple_neighbor_tables,
             run_properties=processor_props,
-            num_levels=1,
         )
         halo_generator(distribution)
     assert "The distribution assumes more nodes than the current run" in e.value.args[0]
@@ -85,7 +84,6 @@ def test_halo_constructor_validate_rank_mapping_wrong_shape(
         halo_generator = halo.IconLikeHaloConstructor(
             connectivities=simple_neighbor_tables,
             run_properties=processor_props,
-            num_levels=1,
         )
         halo_generator(np.zeros((num_cells, 3), dtype=int))
     assert f"should have shape ({num_cells},)" in e.value.args[0]
@@ -107,7 +105,6 @@ def test_element_ownership_is_unique(
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         run_properties=processor_props,
-        num_levels=1,
         backend=backend,
     )
 
@@ -153,7 +150,6 @@ def test_halo_constructor_decomposition_info_global_indices(
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         run_properties=processor_props,
-        num_levels=1,
     )
 
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
@@ -177,7 +173,6 @@ def test_halo_constructor_decomposition_info_halo_levels(
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         run_properties=processor_props,
-        num_levels=1,
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     my_halo_levels = decomp_info.halo_levels(dim)
@@ -225,7 +220,7 @@ def decompose(grid: base_grid.Grid, processor_props):  # F811 # fixture
 
 def test_no_halo():
     grid_size = base_grid.HorizontalGridSize(num_cells=9, num_edges=14, num_vertices=6)
-    halo_generator = halo.NoHalos(horizontal_size=grid_size, num_levels=10, backend=None)
+    halo_generator = halo.NoHalos(horizontal_size=grid_size, allocator=None)
     decomposition = halo.SingleNodeDecomposer()
     decomposition_info = halo_generator(decomposition(np.arange(grid_size.num_cells), 1))
     # cells

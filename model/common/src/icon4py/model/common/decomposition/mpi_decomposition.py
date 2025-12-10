@@ -101,6 +101,7 @@ def get_multinode_properties(
 class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm
 
+
     @functools.cached_property
     def rank(self) -> int:
         return self.comm.Get_rank()

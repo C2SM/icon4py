@@ -14,6 +14,7 @@ from gt4py.next import common as gtx_common
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common.decomposition import definitions, halo
+from icon4py.model.testing import definitions as test_defs
 from icon4py.model.common.grid import simple
 from icon4py.model.testing.fixtures import processor_props
 
@@ -54,7 +55,7 @@ def test_global_to_local_index(offset, rank):
         if gtx_common.is_neighbor_connectivity(v)
     }
     props = dummy_four_ranks(rank)
-    halo_constructor = halo.IconLikeHaloConstructor(props, neighbor_tables, 1)
+    halo_constructor = halo.IconLikeHaloConstructor(props, neighbor_tables)
     decomposition_info = halo_constructor(utils.SIMPLE_DISTRIBUTION)
     source_indices_on_local_grid = decomposition_info.global_index(offset.target[0])
 
@@ -88,7 +89,6 @@ def test_halo_constructor_decomposition_info_global_indices(dim, rank):
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         run_properties=props,
-        num_levels=1,
     )
 
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
@@ -108,7 +108,6 @@ def test_horizontal_size(rank):
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
         run_properties=props,
-        num_levels=1,
     )
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     horizontal_size = decomp_info.get_horizontal_size()
@@ -126,15 +125,17 @@ def test_horizontal_size(rank):
     ), f"local size mismatch on rank={rank}  for {dims.CellDim}: expected {expected_cells}, but was {horizontal_size.num_cells}"
 
 
-@pytest.mark.datatest
 @pytest.mark.parametrize("dim", grid_utils.main_horizontal_dims())
 def test_decomposition_info_single_node_empty_halo(
     dim: gtx.Dimension,
-    decomposition_info: definitions.DecompositionInfo,
     processor_props: definitions.ProcessProperties,
 ) -> None:
     if not processor_props.single_node():
         pytest.xfail()
-    for level in definitions.DecompositionFlag.__values__:
+
+    manager = grid_utils.run_grid_manager(test_defs.Grids.MCH_CH_R04B09_DSL, keep_skip_values=True, backend=None)
+
+    decomposition_info = manager.decomposition_info
+    for level in definitions.DecompositionFlag:
         assert decomposition_info.get_halo_size(dim, level) == 0
         assert np.count_nonzero(decomposition_info.halo_level_mask(dim, level)) == 0

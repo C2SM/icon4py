@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 CONNECTIVITIES_ON_BOUNDARIES = (
     dims.C2EDim,
-    dims.C2VDim, # should be removed by includein all vertices on level 2 edges...
+    dims.C2VDim,  # should be removed by includein all vertices on level 2 edges...
     dims.E2VDim,
     dims.C2E2C2EDim,
     dims.E2CDim,  # non on halos because of "open halo cells"
@@ -203,7 +203,7 @@ class IconGrid(base.Grid):
         default=None, kw_only=True
     )
 
-
+# TODO (halungge): combine the last to args "into single_node_global"
 def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool, distributed: bool) -> bool:
     """
     For the icosahedral global grid skip values are only present for the pentagon points.
@@ -213,8 +213,8 @@ def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool, distributed: b
     """
     dimension = offset.target[1]
     assert dimension.kind == gtx.DimensionKind.LOCAL, "only local dimensions can have skip values"
-    value = dimension in CONNECTIVITIES_ON_PENTAGONS or (distributed or
-        limited_area and dimension in CONNECTIVITIES_ON_BOUNDARIES
+    value = dimension in CONNECTIVITIES_ON_PENTAGONS or (
+        distributed or (limited_area and dimension in CONNECTIVITIES_ON_BOUNDARIES)
     )
 
     return value

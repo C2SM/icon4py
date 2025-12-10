@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import enum
 import functools
 import logging
@@ -18,6 +19,7 @@ from typing import Any, Literal, Protocol, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
+import mpi4py.MPI
 import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
@@ -41,9 +43,17 @@ log = logging.getLogger(__name__)
 
 class ProcessProperties(Protocol):
     comm: Any
-    rank: int
-    comm_name: str
-    comm_size: int
+
+    @property
+    def rank(self)->int:
+        ...
+    @property
+    def comm_name(self)->str:
+       ...
+
+    @property
+    def comm_size(self) -> int:
+        ...
 
     def single_node(self) -> bool:
         return self.comm_size == 1
@@ -54,16 +64,22 @@ class ProcessProperties(Protocol):
 
 @dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):
-    comm: Any
-    comm_name: str
-    comm_size: int
-    rank: int
+    @property
+    def comm(self)->Any:
+        return None
 
-    def __init__(self):  # type: ignore  [no-untyped-def]
-        object.__setattr__(self, "comm", None)
-        object.__setattr__(self, "rank", 0)
-        object.__setattr__(self, "comm_name", "")
-        object.__setattr__(self, "comm_size", 1)
+    @property
+    def rank(self)->int:
+        return 0
+
+    @property
+    def comm_name(self)->str:
+        return ""
+
+    @property
+    def comm_size(self) -> int:
+        return 1
+
 
 
 class DomainDescriptorIdGenerator:

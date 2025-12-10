@@ -59,12 +59,12 @@ class GridManager:
     def __init__(
         self,
         grid_file: pathlib.Path | str,
-        config: v_grid.VerticalGridConfig,
+        num_levels: int,
         transformation: gridfile.IndexTransformation = _fortan_to_python_transformer,
     ):
         self._transformation = transformation
         self._file_name = str(grid_file)
-        self._vertical_config = config
+        self._num_levels = num_levels
         self._halo_constructor: halo.HaloConstructor | None = None
         # Output
         self._grid: icon.IconGrid | None = None
@@ -205,7 +205,9 @@ class GridManager:
             ),
             gridfile.GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
                 (dims.EdgeDim,),
-                self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH, indices=my_edge_indices),
+                self._reader.variable(
+                    gridfile.GeometryName.DUAL_EDGE_LENGTH, indices=my_edge_indices
+                ),
                 allocator=allocator,
             ),
             gridfile.GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
@@ -346,10 +348,9 @@ class GridManager:
         neighbor_tables_for_halo_construction = neighbor_tables
         halo_constructor = halo.halo_constructor(
             run_properties=run_properties,
-            num_levels=self._vertical_config.num_levels,
             full_grid_size=global_size,
             connectivities=neighbor_tables_for_halo_construction,
-            backend=allocator,
+            allocator=allocator,
         )
 
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
@@ -378,7 +379,7 @@ class GridManager:
 
         grid_config = base.GridConfig(
             horizontal_size=distributed_size,
-            vertical_size=self._vertical_config.num_levels,
+            vertical_size=self._num_levels,
             limited_area=limited_area,
             keep_skip_values=with_skip_values,
         )

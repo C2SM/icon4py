@@ -194,8 +194,8 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(
 
     assert (
         np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item()
-    ) == icon._has_skip_values(offset, grid.config.limited_area)
-    if not icon._has_skip_values(offset, grid.config.limited_area):
+    ) == icon._has_skip_values(offset, grid.config.limited_area, distributed=False)
+    if not icon._has_skip_values(offset, grid.config.limited_area, distributed=False):
         assert connectivity.skip_value is None
     else:
         assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX

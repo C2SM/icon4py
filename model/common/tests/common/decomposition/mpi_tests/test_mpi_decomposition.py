@@ -61,6 +61,7 @@ mpirun -np 2 pytest -v --with-mpi -k mpi_tests/
 
 """
 
+@pytest.mark.mpi(min_size= 2)
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props: definitions.ProcessProperties) -> None:
