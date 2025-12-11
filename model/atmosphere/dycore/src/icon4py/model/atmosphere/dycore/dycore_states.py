@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+
 class TimeSteppingScheme(enum.IntEnum):
     """Parameter called `itime_scheme` in ICON namelist."""
 
@@ -332,7 +333,7 @@ def initialize_solve_nonhydro_diagnostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> DiagnosticStateNonHydro:
-    _zero_edge_k_in_predictor  = data_alloc.zero_field(
+    _zero_edge_k_in_predictor = data_alloc.zero_field(
         grid,
         dims.EdgeDim,
         dims.KDim,

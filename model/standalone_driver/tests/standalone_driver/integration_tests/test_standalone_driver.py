@@ -1,3 +1,5 @@
+# TODO: This license is not consistent with the license used in the project.
+#       Delete the inconsistent license and above line and rerun pre-commit to insert a good license.
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -14,6 +16,7 @@ from icon4py.model.common import model_backends
 from icon4py.model.standalone_driver import main
 from icon4py.model.testing import definitions, grid_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
+
 
 @pytest.mark.embedded_remap_error
 def test_standalone_driver(

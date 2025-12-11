@@ -33,6 +33,7 @@ log = logging.getLogger(__name__)
 cfl_watchmode_factor = ta.wpfloat("0.81")
 cfl_threshold_factor = ta.wpfloat("0.9")
 
+
 class Icon4pyDriver:
     def __init__(
         self,
@@ -327,7 +328,9 @@ class Icon4pyDriver:
                 )
                 < vertical_cfl_threshold_for_decrement
             ):
-                self.model_time_variables.update_ndyn_substeps(self.model_time_variables.ndyn_substeps_var - 1)
+                self.model_time_variables.update_ndyn_substeps(
+                    self.model_time_variables.ndyn_substeps_var - 1
+                )
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
                 log.warning(
                     f"The number of dynamics substeps is decreased to {self.model_time_variables.ndyn_substeps_var}"

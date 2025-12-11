@@ -14,7 +14,9 @@ from icon4py.model.common import model_backends
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
 
+
 log = logging.getLogger(__name__)
+
 
 def main(
     configuration_file_path: Annotated[str, typer.Argument(help="Configuration file path.")],
@@ -58,7 +60,7 @@ def main(
 
     log.info("Generating the initial condition")
     ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
-        grid=icon4py_driver.grid, # TODO (Yilu) pass the grid directly from the icon4py_driver
+        grid=icon4py_driver.grid,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
