@@ -14,8 +14,6 @@ from gt4py.next import metrics as gtx_metrics
 
 from icon4py.model.common import type_alias as ta
 
-
-# TODO (Chia Rui): I think this should be merged into driver config
 @dataclasses.dataclass
 class ProfilingStats:
     gt4py_metrics_level: int = gtx_metrics.ALL

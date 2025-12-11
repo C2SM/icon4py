@@ -21,6 +21,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import grid_manager as gm, gridfile, vertical as v_grid
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -29,13 +30,15 @@ from icon4py.model.standalone_driver import config as driver_config, driver_stat
 
 
 log = logging.getLogger(__name__)
-
+cfl_watchmode_factor = ta.wpfloat("0.81")
+cfl_threshold_factor = ta.wpfloat("0.9")
 
 class Icon4pyDriver:
     def __init__(
         self,
         config: driver_config.DriverConfig,
         backend: model_backends.BackendLike,
+        grid: IconGrid,
         grid_manager: gm.GridManager,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
@@ -43,17 +46,18 @@ class Icon4pyDriver:
     ):
         self.config = config
         self.backend = backend
+        self.grid = grid
         self.grid_manager = grid_manager
         self.static_field_factories = static_field_factories
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
-        self.model_time_var = driver_states.ModelTimeVariables(config=config)
+        self.model_time_variables = driver_states.ModelTimeVariables(config=config)
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
 
         driver_utils.display_driver_setup_in_log_file(
-            self.model_time_var.n_time_steps,
+            self.model_time_variables.n_time_steps,
             self.solve_nonhydro._vertical_params,
             self.config,
         )
@@ -71,7 +75,7 @@ class Icon4pyDriver:
         return model_options.customize_backend(program=None, backend=self.backend)
 
     def _is_last_substep(self, step_nr: int) -> bool:
-        return step_nr == (self.model_time_var.ndyn_substeps_var - 1)
+        return step_nr == (self.model_time_variables.ndyn_substeps_var - 1)
 
     @staticmethod
     def _is_first_substep(step_nr: int) -> bool:
@@ -91,14 +95,14 @@ class Icon4pyDriver:
         prep_adv = ds.prep_advection_prognostic
 
         log.debug(
-            f"starting time loop for dtime = {self.model_time_var.dtime_in_seconds} s, substep_timestep = {self.model_time_var.substep_timestep} s, n_timesteps = {self.model_time_var.n_time_steps}"
+            f"starting time loop for dtime = {self.model_time_variables.dtime_in_seconds} s, substep_timestep = {self.model_time_variables.substep_timestep} s, n_timesteps = {self.model_time_variables.n_time_steps}"
         )
 
         # TODO(OngChia): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
 
         wall_clock_starting_time = datetime.datetime.now()
 
-        for time_step in range(self.model_time_var.n_time_steps):
+        for time_step in range(self.model_time_variables.n_time_steps):
             if self.config.profiling_stats is not None:
                 if not self.config.profiling_stats.skip_first_timestep or time_step > 0:
                     gtx_config.COLLECT_METRICS_LEVEL = (
@@ -107,11 +111,11 @@ class Icon4pyDriver:
 
             log.info(
                 f"\n"
-                f"simulation date : {self.model_time_var.simulation_date}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
+                f"simulation date : {self.model_time_variables.simulation_date}, at timestep : {time_step}, Elapsed wall clock time: {(datetime.datetime.now() - wall_clock_starting_time).total_seconds()}"
                 f"\n"
             )
 
-            self.model_time_var.next_simulation_date()
+            self.model_time_variables.next_simulation_date()
 
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
@@ -122,7 +126,7 @@ class Icon4pyDriver:
             )
             device_utils.sync(self._concrete_backend)
 
-            self.model_time_var.is_first_step_in_simulation = False
+            self.model_time_variables.is_first_step_in_simulation = False
 
             self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
 
@@ -158,14 +162,14 @@ class Icon4pyDriver:
             log.debug(f"Running {self.diffusion.__class__}")
             timer_diffusion = (
                 self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION_FIRST_STEP.value]
-                if self.model_time_var.is_first_step_in_simulation
+                if self.model_time_variables.is_first_step_in_simulation
                 else self.timer_collection.timers[driver_states.DriverTimers.DIFFUSION.value]
             )
             with timer_diffusion:
                 self.diffusion.run(
                     diffusion_diagnostic_state,
                     prognostic_states.next,
-                    self.model_time_var.dtime_in_seconds,
+                    self.model_time_variables.dtime_in_seconds,
                 )
             timer_diffusion.capture()
 
@@ -221,16 +225,16 @@ class Icon4pyDriver:
 
         timer_solve_nh = (
             self.timer_collection.timers[driver_states.DriverTimers.SOLVE_NH_FIRST_STEP.value]
-            if self.model_time_var.is_first_step_in_simulation
+            if self.model_time_variables.is_first_step_in_simulation
             else self.timer_collection.timers[driver_states.DriverTimers.SOLVE_NH.value]
         )
-        for dyn_substep in range(self.model_time_var.ndyn_substeps_var):
+        for dyn_substep in range(self.model_time_variables.ndyn_substeps_var):
             self._compute_statistics(dyn_substep, prognostic_states.current)
 
             self._update_time_levels_for_velocity_tendencies(
                 solve_nonhydro_diagnostic_state,
                 at_first_substep=self._is_first_substep(dyn_substep),
-                at_initial_timestep=self.model_time_var.is_first_step_in_simulation,
+                at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
             )
 
             timer_solve_nh.start()
@@ -239,9 +243,9 @@ class Icon4pyDriver:
                 prognostic_states,
                 prep_adv=prep_adv,
                 second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
-                dtime=self.model_time_var.substep_timestep,
-                ndyn_substeps_var=self.model_time_var.ndyn_substeps_var,
-                at_initial_timestep=self.model_time_var.is_first_step_in_simulation,
+                dtime=self.model_time_variables.substep_timestep,
+                ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
+                at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
@@ -265,21 +269,21 @@ class Icon4pyDriver:
         global_max_vertical_cfl = solve_nonhydro_diagnostic_state.max_vertical_cfl[()]
 
         if (
-            global_max_vertical_cfl > ta.wpfloat("0.81") * self.config.vertical_cfl_threshold
-            and not self.model_time_var.cfl_watch_mode
+            global_max_vertical_cfl > cfl_watchmode_factor * self.config.vertical_cfl_threshold
+            and not self.model_time_variables.cfl_watch_mode
         ):
             log.warning(
                 "High CFL number for vertical advection in dynamical core, entering watch mode"
             )
-            self.model_time_var.update_cfl_watch_mode(True)
+            self.model_time_variables.update_cfl_watch_mode(True)
 
-        if self.model_time_var.cfl_watch_mode:
+        if self.model_time_variables.cfl_watch_mode:
             substep_fraction = ta.wpfloat(
-                self.model_time_var.ndyn_substeps_var / self.config.ndyn_substeps
+                self.model_time_variables.ndyn_substeps_var / self.config.ndyn_substeps
             )
             if (
                 global_max_vertical_cfl * substep_fraction
-                > ta.wpfloat("0.9") * self.config.vertical_cfl_threshold
+                > cfl_threshold_factor * self.config.vertical_cfl_threshold
             ):
                 log.warning(
                     f"Maximum vertical CFL number {global_max_vertical_cfl} is close to critical threshold"
@@ -287,7 +291,7 @@ class Icon4pyDriver:
 
             vertical_cfl_threshold_for_increment = self.config.vertical_cfl_threshold
             vertical_cfl_threshold_for_decrement = (
-                ta.wpfloat("0.9") * self.config.vertical_cfl_threshold
+                cfl_threshold_factor * self.config.vertical_cfl_threshold
             )
 
             if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:
@@ -295,49 +299,49 @@ class Icon4pyDriver:
                     ndyn_substeps_increment = max(
                         1,
                         round(
-                            self.model_time_var.ndyn_substeps_var
+                            self.model_time_variables.ndyn_substeps_var
                             * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)
                             / vertical_cfl_threshold_for_increment
                         ),
                     )
                     new_ndyn_substeps_var = min(
-                        self.model_time_var.ndyn_substeps_var + ndyn_substeps_increment,
-                        self.model_time_var.max_ndyn_substeps,
+                        self.model_time_variables.ndyn_substeps_var + ndyn_substeps_increment,
+                        self.model_time_variables.max_ndyn_substeps,
                     )
                 else:
                     log.warning(
                         f"WARNING: max cfl {global_max_vertical_cfl} is not a number! Number of substeps is set to the max value! "
                     )
-                    new_ndyn_substeps_var = self.model_time_var.max_ndyn_substeps
-                self.model_time_var.update_ndyn_substeps(new_ndyn_substeps_var)
+                    new_ndyn_substeps_var = self.model_time_variables.max_ndyn_substeps
+                self.model_time_variables.update_ndyn_substeps(new_ndyn_substeps_var)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
                 log.warning(
-                    f"The number of dynamics substeps is increased to {self.model_time_var.ndyn_substeps_var}"
+                    f"The number of dynamics substeps is increased to {self.model_time_variables.ndyn_substeps_var}"
                 )
             if (
-                self.model_time_var.ndyn_substeps_var > self.config.ndyn_substeps
+                self.model_time_variables.ndyn_substeps_var > self.config.ndyn_substeps
                 and global_max_vertical_cfl
                 * ta.wpfloat(
-                    self.model_time_var.ndyn_substeps_var
-                    / (self.model_time_var.ndyn_substeps_var - 1)
+                    self.model_time_variables.ndyn_substeps_var
+                    / (self.model_time_variables.ndyn_substeps_var - 1)
                 )
                 < vertical_cfl_threshold_for_decrement
             ):
-                self.model_time_var.update_ndyn_substeps(self.model_time_var.ndyn_substeps_var - 1)
+                self.model_time_variables.update_ndyn_substeps(self.model_time_variables.ndyn_substeps_var - 1)
                 # TODO (Chia Rui): check if we need to set ndyn_substeps_var in advection_config as in ICON when tracer advection is implemented
                 log.warning(
-                    f"The number of dynamics substeps is decreased to {self.model_time_var.ndyn_substeps_var}"
+                    f"The number of dynamics substeps is decreased to {self.model_time_variables.ndyn_substeps_var}"
                 )
 
                 if (
-                    self.model_time_var.ndyn_substeps_var == self.config.ndyn_substeps
+                    self.model_time_variables.ndyn_substeps_var == self.config.ndyn_substeps
                     and global_max_vertical_cfl
                     < ta.wpfloat("0.76") * self.config.vertical_cfl_threshold
                 ):
                     log.warning(
                         "CFL number for vertical advection in dynamical core has decreased, leaving watch mode"
                     )
-                    self.model_time_var.update_cfl_watch_mode(False)
+                    self.model_time_variables.update_cfl_watch_mode(False)
 
         # reset max_vertical_cfl to zero
         solve_nonhydro_diagnostic_state.max_vertical_cfl = data_alloc.scalar_like_array(
@@ -347,13 +351,13 @@ class Icon4pyDriver:
     def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
         if self.config.apply_extra_second_order_divdamp:
             fourth_order_divdamp_factor = self.solve_nonhydro._config.fourth_order_divdamp_factor
-            if self.model_time_var.elapsed_time_in_seconds <= ta.wpfloat("1800.0"):
+            if self.model_time_variables.elapsed_time_in_seconds <= ta.wpfloat("1800.0"):
                 return ta.wpfloat("0.8") * fourth_order_divdamp_factor
-            elif self.model_time_var.elapsed_time_in_seconds <= ta.wpfloat("7200.0"):
+            elif self.model_time_variables.elapsed_time_in_seconds <= ta.wpfloat("7200.0"):
                 return (
                     ta.wpfloat("0.8")
                     * fourth_order_divdamp_factor
-                    * (self.model_time_var.elapsed_time_in_seconds - ta.wpfloat("1800.0"))
+                    * (self.model_time_variables.elapsed_time_in_seconds - ta.wpfloat("1800.0"))
                     / ta.wpfloat("5400.0")
                 )
             else:
@@ -388,12 +392,12 @@ class Icon4pyDriver:
             w_sign = _determine_sign(max_w)
 
             log.info(
-                f"substep / n_substeps : {current_dyn_substep:3d} / {self.model_time_var.ndyn_substeps_var:3d} == "
+                f"substep / n_substeps : {current_dyn_substep:3d} / {self.model_time_variables.ndyn_substeps_var:3d} == "
                 f"MAX RHO: {rho_sign}{abs(max_rho):.5e} at lvl {rho_arg_max[1]:4d}, MAX VN: {vn_sign}{abs(max_vn):.5e} at lvl {vn_arg_max[1]:4d}, MAX W: {w_sign}{abs(max_w):.5e} at lvl {w_arg_max[1]:4d}"
             )
         else:
             log.info(
-                f"substep / n_substeps : {current_dyn_substep:3d} / {self.model_time_var.ndyn_substeps_var:3d}"
+                f"substep / n_substeps : {current_dyn_substep:3d} / {self.model_time_variables.ndyn_substeps_var:3d}"
             )
 
     def _compute_total_mass_and_energy(
@@ -605,10 +609,10 @@ def initialize_driver(
         ),
         backend=backend,
     )
-
     icon4py_driver = Icon4pyDriver(
         config=driver_config,
         backend=backend,
+        grid=grid_manager.grid,
         grid_manager=grid_manager,
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,

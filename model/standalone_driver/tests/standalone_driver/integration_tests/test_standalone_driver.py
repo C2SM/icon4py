@@ -7,7 +7,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import pathlib
-import shutil
 
 import pytest
 
@@ -15,7 +14,6 @@ from icon4py.model.common import model_backends
 from icon4py.model.standalone_driver import main
 from icon4py.model.testing import definitions, grid_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
-
 
 @pytest.mark.embedded_remap_error
 def test_standalone_driver(

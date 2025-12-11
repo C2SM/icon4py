@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import logging
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -29,6 +30,7 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import icon as icon_grid
 
+log = logging.getLogger(__name__)
 
 class TimeSteppingScheme(enum.IntEnum):
     """Parameter called `itime_scheme` in ICON namelist."""
@@ -330,14 +332,29 @@ def initialize_solve_nonhydro_diagnostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> DiagnosticStateNonHydro:
-    _zero_edge_k_field = data_alloc.zero_field(
+    _zero_edge_k_in_predictor  = data_alloc.zero_field(
         grid,
         dims.EdgeDim,
         dims.KDim,
         allocator=allocator,
         dtype=ta.vpfloat,
     )
-    _zero_cell_k_field = data_alloc.zero_field(
+    _zero_edge_k_in_corrector = data_alloc.zero_field(
+        grid,
+        dims.EdgeDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.vpfloat,
+    )
+    _zero_cell_k_in_predictor = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=allocator,
+        dtype=ta.vpfloat,
+    )
+    _zero_cell_k_in_corrector = data_alloc.zero_field(
         grid,
         dims.CellDim,
         dims.KDim,
@@ -346,12 +363,12 @@ def initialize_solve_nonhydro_diagnostic_state(
         dtype=ta.vpfloat,
     )
     normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
-        _zero_edge_k_field,
-        _zero_edge_k_field,
+        _zero_edge_k_in_predictor,
+        _zero_edge_k_in_corrector,
     )
     vertical_wind_advective_tendency = common_utils.PredictorCorrectorPair(
-        _zero_cell_k_field,
-        _zero_cell_k_field,
+        _zero_cell_k_in_predictor,
+        _zero_cell_k_in_corrector,
     )
     max_vertical_cfl = data_alloc.scalar_like_array(0.0, allocator)
     theta_v_at_cells_on_half_levels = data_alloc.zero_field(

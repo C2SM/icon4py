@@ -181,8 +181,7 @@ def _compute_perturbed_exner(
         perturbed_exner = exner - reference_exner
     This stencil is copied from subroutine compute_exner_pert in mo_nh_init_utils in ICON. It should be called
     during the initialization to initialize perturbed_exner_at_cells_on_model_levels of DiagnosticStateHydro
-    if the model does not restart from a restart file.
-
+    if the model does not restart from a restart file
     Args:
         exner: exner function
         reference_exner: reference exner function

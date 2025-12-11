@@ -67,7 +67,6 @@ def create_grid_manager(
         grid_file_path,
         vertical_grid_config,
     )
-
     grid_manager(allocator=allocator, keep_skip_values=True)
 
     return grid_manager
