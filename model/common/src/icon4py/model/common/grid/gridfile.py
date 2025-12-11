@@ -366,7 +366,7 @@ class GridFile:
             variable = self._dataset.variables[name]
             variable_size = variable.ndim
             n = (variable.shape[0],) if variable_size > 1 else ()
-            target_shape = n + (-1,)
+            target_shape = (*n, -1)
 
             slicer = [slice(None) for _ in range(variable_size)]
             if indices is not None and indices.size > 0:

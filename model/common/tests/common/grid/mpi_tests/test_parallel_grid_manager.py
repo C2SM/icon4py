@@ -111,6 +111,7 @@ def test_grid_manager_validate_decomposer(processor_props: defs.ProcessPropertie
     assert "Need a Decomposer for multi" in e.value.args[0]
 
 
+# TODO (halungge): is this used???
 @pytest.mark.mpi
 @pytest.mark.parametrize(
     "field_offset",
@@ -331,7 +332,7 @@ def test_halo_neighbor_access_c2e(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+        f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     distributed_geometry = geometry.GridGeometry(
@@ -404,7 +405,7 @@ def test_halo_access_e2c2v(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     distributed_geometry = geometry.GridGeometry(
@@ -494,7 +495,7 @@ def test_halo_access_e2c(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     distributed_geometry = geometry.GridGeometry(
@@ -582,7 +583,7 @@ def test_halo_neighbor_access_e2v(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     vertex_lat = distributed_coordinates[dims.VertexDim]["lat"]
@@ -682,7 +683,7 @@ def test_halo_neighbor_access_v2e(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     extra_geometry_fields = multinode_grid_manager.geometry_fields
@@ -765,7 +766,7 @@ def test_halo_neighbor_access_c2e2c(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+        f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     extra_geometry_fields = multinode_grid_manager.geometry_fields
@@ -859,10 +860,10 @@ def test_halo_neighbor_access_v2c(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+        f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     print(
-        f"rank = {processor_props.rank}: halo size for 'VertexDim' (1 : {decomposition_info.get_halo_size(dims.VertexDim, defs.DecompositionFlag.FIRST_HALO_LINE)}), (2: {decomposition_info.get_halo_size(dims.VertexDim, defs.DecompositionFlag.SECOND_HALO_LINE)})"
+        f"rank = {processor_props.rank}: halo size for 'VertexDim' (1 : {decomposition_info.get_halo_size(dims.VertexDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.VertexDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     my_global_cells = decomposition_info.global_index(dims.CellDim)
     cell_k_buffer = (

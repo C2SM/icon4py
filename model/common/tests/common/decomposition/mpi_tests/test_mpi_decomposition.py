@@ -184,18 +184,18 @@ def test_decomposition_info_halo_level_mask(
     decomposition_info: definitions.DecompositionInfo,
 ) -> None:
     first_halo_level = decomposition_info.halo_level_mask(
-        dim, definitions.DecompositionFlag.FIRST_HALO_LINE
+        dim, definitions.DecompositionFlag.FIRST_HALO_LEVEL
     )
     assert first_halo_level.ndim == 1
     assert np.count_nonzero(first_halo_level) == decomposition_info.get_halo_size(
-        dim, definitions.DecompositionFlag.FIRST_HALO_LINE
+        dim, definitions.DecompositionFlag.FIRST_HALO_LEVEL
     )
     second_halo_level = decomposition_info.halo_level_mask(
-        dim, definitions.DecompositionFlag.SECOND_HALO_LINE
+        dim, definitions.DecompositionFlag.SECOND_HALO_LEVEL
     )
     assert second_halo_level.ndim == 1
     assert np.count_nonzero(second_halo_level) == decomposition_info.get_halo_size(
-        dim, definitions.DecompositionFlag.SECOND_HALO_LINE
+        dim, definitions.DecompositionFlag.SECOND_HALO_LEVEL
     )
     assert np.count_nonzero(first_halo_level) + np.count_nonzero(
         second_halo_level
@@ -210,7 +210,7 @@ def test_decomposition_info_third_level_is_empty(
     experiment: test_defs.Experiment,
     decomposition_info: definitions.DecompositionInfo,
 ) -> None:
-    level = decomposition_info.halo_level_mask(dim, definitions.DecompositionFlag.THIRD_HALO_LINE)
+    level = decomposition_info.halo_level_mask(dim, definitions.DecompositionFlag.THIRD_HALO_LEVEL)
     assert np.count_nonzero(level) == 0
 
 

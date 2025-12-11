@@ -20,7 +20,7 @@ from icon4py.model.testing.fixtures import processor_props
 
 from ...grid import utils as grid_utils
 from .. import utils
-from ..mpi_tests.test_halo import simple_neighbor_tables
+from ..fixtures import simple_neighbor_tables
 from ..utils import dummy_four_ranks
 
 

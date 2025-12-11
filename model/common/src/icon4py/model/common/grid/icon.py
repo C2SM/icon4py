@@ -82,6 +82,8 @@ class GridShape:
 _T = TypeVar("_T")
 
 
+# TODO (@halungge): fields should be removed from this object mean values computed in the geometry factory
+# as it needs global reduction... also consider _not_making_everything_ optional that causes troubles at runtime
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class GlobalGridParams:
     grid_shape: Final[GridShape | None] = None
@@ -204,18 +206,17 @@ class IconGrid(base.Grid):
     )
 
 
-# TODO (halungge): combine the last to args "into single_node_global"
-def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool, distributed: bool) -> bool:
+def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool) -> bool:
     """
     For the icosahedral global grid skip values are only present for the pentagon points.
 
-    In the local area model there are also skip values at the boundaries when
+    In the local area model or a distributed grid there are also skip values at the boundaries or halos when
     accessing neighbouring cells or edges from vertices.
     """
     dimension = offset.target[1]
     assert dimension.kind == gtx.DimensionKind.LOCAL, "only local dimensions can have skip values"
     value = dimension in CONNECTIVITIES_ON_PENTAGONS or (
-        distributed or (limited_area and dimension in CONNECTIVITIES_ON_BOUNDARIES)
+        limited_area_or_distributed and dimension in CONNECTIVITIES_ON_BOUNDARIES
     )
 
     return value
@@ -259,12 +260,13 @@ def icon_grid(
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
-    distributed = config.num_cells < global_properties.global_num_cells
+    distributed = config.num_cells < global_properties.num_cells
+    limited_area_or_distributed = config.limited_area or distributed
     connectivities = {
         offset.value: base.construct_connectivity(
             offset,
             data_alloc.import_array_ns(allocator).asarray(table),
-            skip_value=-1 if _has_skip_values(offset, config.limited_area, distributed) else None,
+            skip_value=-1 if _has_skip_values(offset, limited_area_or_distributed) else None,
             allocator=allocator,
             replace_skip_values=_should_replace_skip_values(
                 offset, config.keep_skip_values, config.limited_area

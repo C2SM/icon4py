@@ -97,7 +97,6 @@ class DecompositionInfo:
         self._owner_mask[dim] = owner_mask
         self._halo_levels[dim] = halo_levels
 
-
     def local_index(
         self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
     ) -> data_alloc.NDArray:
@@ -407,7 +406,7 @@ class DecompositionFlag(int, Enum):
     OWNED = 0
     """used for locally owned cells, vertices, edges"""
 
-    FIRST_HALO_LINE = 1
+    FIRST_HALO_LEVEL = 1
     """
     used for:
     - cells that share 1 edge with an OWNED cell
@@ -415,15 +414,15 @@ class DecompositionFlag(int, Enum):
     - edges that are on OWNED cell, but not owned
     """
 
-    SECOND_HALO_LINE = 2
+    SECOND_HALO_LEVEL = 2
     """
     used for:
-    - cells that share a vertex with an OWNED cell
+    - cells that share one vertex with an OWNED cell
     - vertices that are on a cell(FIRST_HALO_LINE) but not on an owned cell
     - edges that have _exactly_ one vertex shared with and OWNED Cell
     """
 
-    THIRD_HALO_LINE = 3
+    THIRD_HALO_LEVEL = 3
     """
     This type does not exist in ICON. It denotes the "closing/far" edges of the SECOND_HALO_LINE cells
     used for:

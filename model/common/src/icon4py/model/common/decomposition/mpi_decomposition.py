@@ -26,7 +26,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 try:
     import ghex  # type: ignore [import-not-found]
-    import mpi4py  # type: ignore [import-not-found]
+    import mpi4py
     from ghex.context import make_context  # type: ignore [import-not-found]
     from ghex.unstructured import (  # type: ignore [import-not-found]
         DomainDescriptor,
@@ -41,12 +41,12 @@ try:
     mpi4py.rc.finalize = True
 
 except ImportError:
-    mpi4py = None
+    mpi4py = None  # type: ignore   [assignment]
     ghex = None
     unstructured = None
 
 if TYPE_CHECKING:
-    import mpi4py.MPI  # type: ignore [import-not-found]
+    import mpi4py.MPI
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ def get_multinode_properties(
 
 @dataclass(frozen=True)
 class MPICommProcessProperties(definitions.ProcessProperties):
-    comm: mpi4py.MPI.Comm = None
+    comm: mpi4py.MPI.Comm
 
     @functools.cached_property
     def rank(self) -> int:  # type: ignore [override]
@@ -209,7 +209,7 @@ class GHexMultiNodeExchange:
         This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
         the granule context where fields otherwise have length nproma.
         """
-        if dim == dims.VertexDim or dim == dims.EdgeDim or dim == dims.CellDim:
+        if dim in dims.MAIN_HORIZONTAL_DIMENSIONS:
             return field.ndarray[: self._field_size[dim]]
         else:
             raise ValueError(f"Unknown dimension {dim}")

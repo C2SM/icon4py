@@ -57,9 +57,9 @@ class NoHalos(HaloConstructor):
 def _create_dummy_decomposition_arrays(
     size: int, array_ns: ModuleType = np
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
-    indices = array_ns.arange(size, dtype=gtx.int32)
+    indices = array_ns.arange(size, dtype=gtx.int32)  # type: ignore  [attr-defined]
     owner_mask = array_ns.ones((size,), dtype=bool)
-    halo_levels = array_ns.ones((size,), dtype=gtx.int32) * defs.DecompositionFlag.OWNED
+    halo_levels = array_ns.ones((size,), dtype=gtx.int32) * defs.DecompositionFlag.OWNED  # type: ignore  [attr-defined]
     return indices, owner_mask, halo_levels
 
 
@@ -77,7 +77,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         Args:
             run_properties: contains information on the communicator and local compute node.
             connectivities: connectivity arrays needed to construct the halos
-            backend: GT4Py (used to determine the array ns import)
+            allocator: GT4Py buffer allocator
         """
         self._xp = data_alloc.import_array_ns(allocator)
         self._props = run_properties
@@ -244,29 +244,67 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         """
-        Constructs the DecompositionInfo for the current rank.
+             Constructs the DecompositionInfo for the current rank.
 
-        The DecompositionInfo object is constructed for all horizontal dimension starting from the
-        cell distribution. Edges and vertices are then handled through their connectivity to the distributed cells.
+             Args:
+                 face_to_rank: a mapping of cells to a rank
+
+             The DecompositionInfo object is constructed for all horizontal dimension starting from the
+             cell distribution.
+             Edges and vertices are then handled through their connectivity to the distributed cells.
+
+             This constructs a halo similar to ICON which consists of **exactly** 2 cell-halo lines
+
+             |         /|         /|         /|
+             |        / |        / |        / |
+             |      /   |      /   |      /   |
+             |    /     |    /     |    /     |
+             |  /       |  /       |  /       |          rank 0
+             |/         |/         |/         |
+        ----------e0--------e1--------e3------------  cutting line
+             |         /|         /|         /|
+             |  c0    / |   c1   / |   c2   / |
+             |      /   |      /   |      /   |          rank 1
+             e4   e5    e6   e7    e8    e9   e10
+             |   /      |   /      |   /      |  /
+             | /   c3   | /   c4   | /   c5   | /
+             |/         |/         |/         |/
+            ------e11------e12-------e13------------
+             |         /|         /|         /|
+             |        / |        / |        / |
+             |      /   |      /   |      /   |
+             |    /     |    /     |    /     |
+             |  /       |  /       |  /       |  /
+             |/         |/         |/         |/
+
+
+             Cells:
+             The "numbered" cells and edges are relevant for the halo construction from the point of view of rank 0
+             Cells (c0, c1, c2) are the 1. HALO LEVEL: these are cells that are neighbors of an owned cell
+             Cells (c3, c4. c5) are the 2. HALO LEVEL: these are cells that are neighbors of a cell of line 1
+
+             Note that this definition of 1. and 2. line differs from the definition of boundary line counting used in [grid refinement](grid_refinement.py), in terms
+             of "distance" to the cutting line all halo cells have a distance of 1.
+
+             Edges:
+             Edges (e0, e1, e2) are on the cutting line.
+             For both ranks the edges on the cutting line sit on **owned cells**. As all elements need to have a unique owner, they are assigned by convention to the rank with the higher number, here rank 1.
+             From the point of view of rank 0 they are 1. HALO LINE edges. This conventional assignement has as an effect that there ranks (essentially rank 0) that have an *empty* first edge HALO LINE,
+             even thought they have elements in the 2. HALO LEVEL (e4, e5, e6, e7, e8, e9, e10)  which are the edges that share exactly one vertex with an owned cell.
+             The edges (e11, e12, e13) that "close" the halo cells (share exactly 2 vertices with a halo cell, but none with an owned cell) are **not** included in the halo in ICON. We include them as 3. HALO LINE which
+             makes the C2E connectivity complete (= without skip value) for a distributed setup.
+
+
+
+             # TODO(halungge): make number of halo lines (in terms of cells) a parameter
+             # icon does hard coding of 2 halo lines for cells, make this dynamic!
 
         """
-        #: icon does hard coding of 2 halo lines for cells, make this dynamic!
-
-        # TODO(halungge): make number of halo lines a parameter
 
         self._validate_mapping(face_to_rank)
-        #: cells
 
+        #: cells
         owned_cells = self.owned_cells(face_to_rank)  # global indices of owned cells
-        # cell_halos = []
-        # current = owned_cells
-        # depot = None
-        # for i in range(num_cell_halo_lines):
-        #    cell_halos[i] = self.next_halo_line(current, depot)
-        #    depot = self._xp.union1d(depot, current)
-        #    current = cell_halos[i]
-        # first_halo_cells = cell_halos[0]
-        # second_halo_cells = cell_halos[1]
 
         first_halo_cells = self.next_halo_line(owned_cells)
         second_halo_cells = self.next_halo_line(first_halo_cells, owned_cells)
@@ -280,10 +318,10 @@ class IconLikeHaloConstructor(HaloConstructor):
         )
         cell_halo_levels[cell_owner_mask] = defs.DecompositionFlag.OWNED
         cell_halo_levels[self._xp.isin(all_cells, first_halo_cells)] = (
-            defs.DecompositionFlag.FIRST_HALO_LINE
+            defs.DecompositionFlag.FIRST_HALO_LEVEL
         )
         cell_halo_levels[self._xp.isin(all_cells, second_halo_cells)] = (
-            defs.DecompositionFlag.SECOND_HALO_LINE
+            defs.DecompositionFlag.SECOND_HALO_LEVEL
         )
         decomp_info = defs.DecompositionInfo().set_dimension(
             dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels
@@ -292,9 +330,6 @@ class IconLikeHaloConstructor(HaloConstructor):
         #: vertices
         vertex_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
         vertex_on_first_halo_line = self.find_vertex_neighbors_for_cells(first_halo_cells)
-        vertex_on_second_halo_line = self.find_vertex_neighbors_for_cells(
-            second_halo_cells
-        )  # TODO(halungge): do we need that at all?
 
         vertex_on_cutting_line = self._xp.intersect1d(
             vertex_on_owned_cells, vertex_on_first_halo_line
@@ -322,9 +357,9 @@ class IconLikeHaloConstructor(HaloConstructor):
                 self._xp.logical_not(vertex_owner_mask),
                 self._xp.isin(all_vertices, vertex_on_cutting_line),
             )
-        ] = defs.DecompositionFlag.FIRST_HALO_LINE
+        ] = defs.DecompositionFlag.FIRST_HALO_LEVEL
         vertex_halo_levels[self._xp.isin(all_vertices, vertex_second_level)] = (
-            defs.DecompositionFlag.SECOND_HALO_LINE
+            defs.DecompositionFlag.SECOND_HALO_LEVEL
         )
         decomp_info.set_dimension(
             dims.VertexDim, all_vertices, vertex_owner_mask, vertex_halo_levels
@@ -334,17 +369,16 @@ class IconLikeHaloConstructor(HaloConstructor):
         edges_on_owned_cells = self.find_edge_neighbors_for_cells(owned_cells)
         edges_on_first_halo_line = self.find_edge_neighbors_for_cells(first_halo_cells)
         edges_on_cutting_line = self._xp.intersect1d(edges_on_owned_cells, edges_on_first_halo_line)
-        level_two_edges = self._xp.setdiff1d(
+        edges_on_halo_cells = self.find_edge_neighbors_for_cells(total_halo_cells)
+
+        edge_second_level = self._xp.setdiff1d(
             self.find_edge_neighbors_for_vertices(vertex_on_cutting_line), edges_on_owned_cells
         )
+        edge_second_and_third_level = self._xp.setdiff1d(edges_on_halo_cells, edges_on_cutting_line)
+        edge_third_level = self._xp.setdiff1d(edge_second_and_third_level, edge_second_level)
 
         all_edges = self._xp.unique(
-            self._xp.hstack(
-                (
-                    edges_on_owned_cells,
-                    level_two_edges,
-                )
-            )
+            self._xp.hstack((edges_on_owned_cells, edge_second_level, edge_third_level))
         )
 
         # construct the owner mask
@@ -361,21 +395,26 @@ class IconLikeHaloConstructor(HaloConstructor):
             all_edges.shape, dtype=int
         )
         edge_halo_levels[edge_owner_mask] = defs.DecompositionFlag.OWNED
-        # LEVEL_ONE edges are on a owned cell but are not owned: these are all edges on the cutting line that are not owned (by the convention)
+        # LEVEL_ONE edges are on an owned cell but are not owned: these are all edges on the cutting line that are not owned (by the convention)
 
         edge_halo_levels[
             self._xp.logical_and(
                 self._xp.logical_not(edge_owner_mask),
                 self._xp.isin(all_edges, edges_on_cutting_line),
             )
-        ] = defs.DecompositionFlag.FIRST_HALO_LINE
+        ] = defs.DecompositionFlag.FIRST_HALO_LEVEL
 
-        # LEVEL_TWO edges share exactly one vertext with an owned cell, they are on the first halo-line cells, but not on the cutting line
-        edge_halo_levels[self._xp.isin(all_edges, level_two_edges)] = (
-            defs.DecompositionFlag.SECOND_HALO_LINE
+        # LEVEL_TWO edges share exactly one vertex with an owned cell, they are on the first halo-line cells, but not on the cutting line
+        edge_halo_levels[self._xp.isin(all_edges, edge_second_level)] = (
+            defs.DecompositionFlag.SECOND_HALO_LEVEL
         )
         decomp_info.set_dimension(dims.EdgeDim, all_edges, edge_owner_mask, edge_halo_levels)
 
+        # LEVEL_THREE edges
+        # LEVEL_TWO edges share exactly one vertex with an owned cell, they are on the first halo-line cells, but not on the cutting line
+        edge_halo_levels[self._xp.isin(all_edges, edge_third_level)] = (
+            defs.DecompositionFlag.THIRD_HALO_LEVEL
+        )
         return decomp_info
 
 
@@ -431,7 +470,7 @@ class SingleNodeDecomposer(Decomposer):
         self, adjacency_matrix: data_alloc.NDArray, num_partitions: int = 1
     ) -> data_alloc.NDArray:
         """Dummy decomposer for single node: assigns all cells to rank = 0"""
-        return np.zeros(adjacency_matrix.shape[0], dtype=gtx.int32)
+        return np.zeros(adjacency_matrix.shape[0], dtype=gtx.int32)  # type: ignore  [attr-defined]
 
 
 def halo_constructor(

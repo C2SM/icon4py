@@ -184,10 +184,10 @@ def compute_domain_bounds(
     )
     owned = decomposition_info.owner_mask(dim)
     halo_level_1 = decomposition_info.halo_level_mask(
-        dim, decomposition.DecompositionFlag.FIRST_HALO_LINE
+        dim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL
     )
     halo_level_2 = decomposition_info.halo_level_mask(
-        dim, decomposition.DecompositionFlag.SECOND_HALO_LINE
+        dim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL
     )
 
     start_indices = {}
