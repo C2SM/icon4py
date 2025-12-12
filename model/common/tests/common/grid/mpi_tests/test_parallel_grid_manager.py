@@ -20,6 +20,7 @@ from gt4py.next import common as gtx_common, typing as gtx_typing
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import definitions as decomp_defs, halo, mpi_decomposition
 from icon4py.model.common.grid import (
+    base,
     geometry,
     geometry_attributes,
     geometry_stencils,
@@ -105,6 +106,14 @@ def test_grid_manager_validate_decomposer(processor_props: decomp_defs.ProcessPr
     assert "Need a Decomposer for multi" in e.value.args[0]
 
 
+def _get_neighbor_tables(grid: base.Grid) -> dict:
+    return {
+        k: v.ndarray
+        for k, v in grid.connectivities.items()
+        if gtx_common.is_neighbor_connectivity(v)
+    }
+
+
 # TODO (halungge): is this function used at all??
 @pytest.mark.mpi
 @pytest.mark.parametrize(
@@ -122,7 +131,7 @@ def test_construct_local_connectivity(
     ).grid
     partitioner = halo.SimpleMetisDecomposer()
     face_face_connectivity = grid.get_connectivity(dims.C2E2C).ndarray
-    neighbor_tables = grid.get_neighbor_tables()
+    neighbor_tables = _get_neighbor_tables(grid)
     labels = partitioner(face_face_connectivity, num_partitions=processor_props.comm_size)
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=neighbor_tables,

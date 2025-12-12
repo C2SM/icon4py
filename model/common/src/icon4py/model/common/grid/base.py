@@ -166,13 +166,6 @@ class Grid:
         assert gtx_common.is_neighbor_table(connectivity)
         return connectivity
 
-    def get_neighbor_tables(self):
-        return {
-            k: v.ndarray
-            for k, v in self.connectivities.items()
-            if gtx_common.is_neighbor_connectivity(v)
-        }
-
 
 def construct_connectivity(
     offset: gtx.FieldOffset,
