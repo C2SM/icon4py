@@ -743,33 +743,3 @@ def construct_local_connectivity(
         indices = sorted_index_of_global_idx[positions]
         local_connectivity[i, valid_neighbor_mask] = indices
     return local_connectivity
-
-
-def _single_node_decomposition_info(
-    grid_config: base.GridConfig, xp: ModuleType
-) -> decomposition.DecompositionInfo:
-    cell_size = (grid_config.num_cells,)
-    edge_size = (grid_config.num_edges,)
-    vertex_size = (grid_config.num_vertices,)
-    info = (
-        decomposition.DecompositionInfo(grid_config.num_levels)
-        .set_dimension(
-            dims.CellDim,
-            xp.arange(cell_size[0], dtype=gtx.int32),
-            xp.ones(cell_size, dtype=bool),
-            xp.zeros(cell_size),
-        )
-        .set_dimension(
-            dims.EdgeDim,
-            xp.arange(edge_size[0], dtype=gtx.int32),
-            xp.ones(edge_size, dtype=bool),
-            xp.zeros(edge_size),
-        )
-        .set_dimension(
-            dims.VertexDim,
-            xp.arange(vertex_size[0], dtype=gtx.int32),
-            xp.ones(vertex_size, dtype=bool),
-            xp.zeros(vertex_size),
-        )
-    )
-    return info

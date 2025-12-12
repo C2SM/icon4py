@@ -209,7 +209,7 @@ class GHexMultiNodeExchange:
         This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
         the granule context where fields otherwise have length nproma.
         """
-        if dim in dims.MAIN_HORIZONTAL_DIMENSIONS:
+        if dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values():
             return field.ndarray[: self._field_size[dim]]
         else:
             raise ValueError(f"Unknown dimension {dim}")

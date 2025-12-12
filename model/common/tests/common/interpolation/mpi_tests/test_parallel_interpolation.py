@@ -12,6 +12,12 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+
+try:
+    from icon4py.model.common.decomposition import mpi_decomposition
+except ImportError:
+    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (

@@ -228,15 +228,15 @@ class ConnectivityName(FieldName):
 
 
 class GeometryName(FieldName):
-    # TODO(halungge): compute from coordinates
-    CELL_AREA = "cell_area"
-    # TODO(halungge): compute from coordinates
-    DUAL_AREA = "dual_area"
-    EDGE_LENGTH = "edge_length"
-    DUAL_EDGE_LENGTH = "dual_edge_length"
     CELL_NORMAL_ORIENTATION = "orientation_of_normal"
     TANGENT_ORIENTATION = "edge_system_orientation"
     EDGE_ORIENTATION_ON_VERTEX = "edge_orientation"
+
+    # TODO(halungge): compute from coordinates
+    CELL_AREA = "cell_area"
+    DUAL_AREA = "dual_area"
+    EDGE_LENGTH = "edge_length"
+    DUAL_EDGE_LENGTH = "dual_edge_length"
     # TODO(halungge): compute from coordinates
     EDGE_CELL_DISTANCE = "edge_cell_distance"
     EDGE_VERTEX_DISTANCE = "edge_vert_distance"
@@ -245,7 +245,7 @@ class GeometryName(FieldName):
 class CoordinateName(FieldName):
     """
     Coordinates of cell centers, edge midpoints and vertices.
-    Units: radianfor both MPI-M and DWD
+    Units: radian for both MPI-M and DWD
     """
 
     CELL_LONGITUDE = "clon"

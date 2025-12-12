@@ -13,7 +13,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.testing import definitions as test_defs, parallel_helpers
 
@@ -31,6 +31,8 @@ from .. import utils
 
 try:
     import mpi4py
+
+    from icon4py.model.common.decomposition import mpi_decomposition
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 

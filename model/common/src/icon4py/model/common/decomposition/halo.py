@@ -480,8 +480,7 @@ def halo_constructor(
     allocator: gtx_typing.FieldBufferAllocationUtil | None,
 ) -> HaloConstructor:
     """
-    Factory method to create the halo constructor. We need some input data from the global grid and from
-    Run parameters, hence this method is called during grid construction.
+    Factory method to create the halo constructor.
 
     Currently there is only one halo type (except for single node dummy).
     If in the future we want to experiment with different halo types we should add an extra selection
@@ -489,8 +488,8 @@ def halo_constructor(
     Args:
         processor_props:
         full_grid_size
+        allocator:
         connectivities:
-        backend:
 
     Returns: a HaloConstructor suitable for the run_properties
 
