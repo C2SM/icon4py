@@ -695,6 +695,7 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
     return patched_ar
 
 
+# TODO (halungge): is this function used at all??
 def construct_local_connectivity(
     field_offset: gtx.FieldOffset,
     decomposition_info: decomposition.DecompositionInfo,

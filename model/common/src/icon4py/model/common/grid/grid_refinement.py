@@ -12,9 +12,9 @@ from typing import Final
 import numpy as np
 from gt4py import next as gtx
 
-import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import gridfile, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -35,11 +35,10 @@ functionality needed for single grid ordering and decomposition.
 """
 _log = logging.getLogger(__name__)
 
-# TODO(halungge): get these from grid file cell_grf, edge_grf, vertex_grf
 _MAX_ORDERED: Final[dict[gtx.Dimension, int]] = {
-    dims.CellDim: 14,
-    dims.EdgeDim: 28,
-    dims.VertexDim: 14,
+    dims.CellDim: gridfile.FixedSizeDimension.CELL_GRF.size,
+    dims.EdgeDim: gridfile.FixedSizeDimension.EDGE_GRF.size,
+    dims.VertexDim: gridfile.FixedSizeDimension.VERTEX_GRF.size,
 }
 """
 Grid points in the grid refinement fields are labeled with their distance to the lateral boundary.

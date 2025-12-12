@@ -105,13 +105,13 @@ def test_grid_manager_validate_decomposer(processor_props: decomp_defs.ProcessPr
     assert "Need a Decomposer for multi" in e.value.args[0]
 
 
-# TODO (halungge): is this used???
+# TODO (halungge): is this function used at all??
 @pytest.mark.mpi
 @pytest.mark.parametrize(
     "field_offset",
     [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
 )
-def test_local_connectivities(
+def test_construct_local_connectivity(
     processor_props: decomp_defs.ProcessProperties,
     caplog: Iterator,
     field_offset: gtx.FieldOffset,
@@ -147,7 +147,6 @@ def test_local_connectivities(
             field_offset.source, decomp_defs.DecompositionInfo.EntryType.ALL
         )
     )
-    # TODO what else to assert?
     # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
 
 
@@ -555,7 +554,6 @@ def test_halo_access_e2c(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-# @pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL, definitions.Grids.MCH_CH_R04B09_DSL))
 @pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_e2v(
     processor_props: decomp_defs.ProcessProperties,
