@@ -24,11 +24,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 log = logging.getLogger(__name__)
 
 CONNECTIVITIES_ON_BOUNDARIES = (
-    dims.C2EDim,
-    dims.C2VDim,  # should be removed by includein all vertices on level 2 edges...
+    dims.C2VDim,
     dims.E2VDim,
     dims.C2E2C2EDim,
-    dims.E2CDim,  # non on halos because of "open halo cells"
+    dims.E2CDim,
     dims.C2E2CDim,
     dims.C2E2CODim,
     dims.E2C2VDim,

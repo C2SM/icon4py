@@ -15,31 +15,25 @@ from typing import Any
 import numpy as np
 import pytest
 from gt4py import next as gtx
-from gt4py.next import typing as gtx_typing
+from gt4py.next import common as gtx_common, typing as gtx_typing
 
 from icon4py.model.common import dimension as dims, exceptions
-from icon4py.model.common.decomposition import definitions as defs, halo, mpi_decomposition
+from icon4py.model.common.decomposition import definitions as decomp_defs, halo, mpi_decomposition
 from icon4py.model.common.grid import (
-    base,
     geometry,
     geometry_attributes,
     geometry_stencils,
     grid_manager as gm,
     gridfile,
     horizontal as h_grid,
-    vertical as v_grid,
+    icon,
 )
 from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     _compute_cell_2_vertex_interpolation,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import (
-    definitions,
-    definitions as test_defs,
-    grid_utils,
-    test_utils as test_helpers,
-)
+from icon4py.model.testing import definitions as test_defs, grid_utils
 
 from ...decomposition import utils as decomp_utils
 from .. import utils
@@ -69,7 +63,7 @@ log = logging.getLogger(__file__)
 
 def run_gridmananger_for_multinode(
     file: pathlib.Path,
-    run_properties: defs.ProcessProperties,
+    run_properties: decomp_defs.ProcessProperties,
     decomposer: halo.Decomposer,
 ) -> gm.GridManager:
     manager = _grid_manager(file, num_levels=NUM_LEVELS)
@@ -88,7 +82,7 @@ def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
     manager = _grid_manager(file, NUM_LEVELS)
     manager(
         keep_skip_values=True,
-        run_properties=defs.SingleNodeProcessProperties(),
+        run_properties=decomp_defs.SingleNodeProcessProperties(),
         decomposer=halo.SingleNodeDecomposer(),
         allocator=None,
     )
@@ -97,7 +91,7 @@ def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi(min_size=2)
-def test_grid_manager_validate_decomposer(processor_props: defs.ProcessProperties) -> None:
+def test_grid_manager_validate_decomposer(processor_props: decomp_defs.ProcessProperties) -> None:
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     manager = gm.GridManager(file, NUM_LEVELS, gridfile.ToZeroBasedIndexTransformation())
     with pytest.raises(exceptions.InvalidConfigError) as e:
@@ -118,7 +112,7 @@ def test_grid_manager_validate_decomposer(processor_props: defs.ProcessPropertie
     [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
 )
 def test_local_connectivities(
-    processor_props: defs.ProcessProperties,
+    processor_props: decomp_defs.ProcessProperties,
     caplog: Iterator,
     field_offset: gtx.FieldOffset,
 ) -> None:
@@ -144,12 +138,14 @@ def test_local_connectivities(
     assert (
         connectivity.shape[0]
         == decomposition_info.global_index(
-            field_offset.target[0], defs.DecompositionInfo.EntryType.ALL
+            field_offset.target[0], decomp_defs.DecompositionInfo.EntryType.ALL
         ).size
     )
     # all neighbor indices are valid local indices
     assert np.max(connectivity) == np.max(
-        decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
+        decomposition_info.local_index(
+            field_offset.source, decomp_defs.DecompositionInfo.EntryType.ALL
+        )
     )
     # TODO what else to assert?
     # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
@@ -157,7 +153,9 @@ def test_local_connectivities(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_fields_distribute_and_gather(processor_props: defs.ProcessProperties, caplog: Any) -> None:
+def test_fields_distribute_and_gather(
+    processor_props: decomp_defs.ProcessProperties, caplog: Any
+) -> None:
     caplog.set_level(logging.INFO)
     print(f"myrank - {processor_props.rank}: running with processor_props =  {processor_props}")
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
@@ -240,8 +238,8 @@ def gather_field(field: np.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
 
 
 def assert_gathered_field_against_global(
-    decomposition_info: defs.DecompositionInfo,
-    processor_props: defs.ProcessProperties,  # F811 # fixture
+    decomposition_info: decomp_defs.DecompositionInfo,
+    processor_props: decomp_defs.ProcessProperties,  # F811 # fixture
     dim: gtx.Dimension,
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
@@ -251,14 +249,16 @@ def assert_gathered_field_against_global(
     )
     assert (
         local_field.shape[0]
-        == decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.ALL).shape[0]
+        == decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.ALL).shape[
+            0
+        ]
     )
     owned_entries = local_field[
-        decomposition_info.local_index(dim, defs.DecompositionInfo.EntryType.OWNED)
+        decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
     ]
     gathered_sizes, gathered_field = gather_field(owned_entries, processor_props.comm)
     global_index_sizes, gathered_global_indices = gather_field(
-        decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED),
+        decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED),
         processor_props.comm,
     )
     if processor_props.rank == 0:
@@ -282,11 +282,11 @@ def assert_gathered_field_against_global(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL,))
+@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_c2e(
-    processor_props: defs.ProcessProperties,
+    processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: definitions.GridDescription,
+    grid: test_defs.GridDescription,
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
@@ -332,7 +332,9 @@ def test_halo_neighbor_access_c2e(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
+        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"(1 : {decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     distributed_geometry = geometry.GridGeometry(
@@ -371,11 +373,11 @@ def test_halo_neighbor_access_c2e(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL,))
+@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_access_e2c2v(
-    processor_props: defs.ProcessProperties,
+    processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: definitions.GridDescription,
+    grid: test_defs.GridDescription,
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
@@ -405,7 +407,9 @@ def test_halo_access_e2c2v(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
+        f"rank = {processor_props.rank}: halo size for 'EdgeDim' "
+        f"(1 : {decomposition_info.get_halo_size(dims.EdgeDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {decomposition_info.get_halo_size(dims.EdgeDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     distributed_geometry = geometry.GridGeometry(
@@ -461,11 +465,11 @@ def test_halo_access_e2c2v(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL,))
+@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_access_e2c(
-    processor_props: defs.ProcessProperties,
+    processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: definitions.GridDescription,
+    grid: test_defs.GridDescription,
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
@@ -495,7 +499,9 @@ def test_halo_access_e2c(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
+        f"rank = {processor_props.rank}: halo size for 'EdgeDim' "
+        f"(1 : {decomposition_info.get_halo_size(dims.EdgeDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {decomposition_info.get_halo_size(dims.EdgeDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     distributed_geometry = geometry.GridGeometry(
@@ -550,11 +556,11 @@ def test_halo_access_e2c(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 # @pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL, definitions.Grids.MCH_CH_R04B09_DSL))
-@pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL,))
+@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_e2v(
-    processor_props: defs.ProcessProperties,
+    processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: definitions.GridDescription,
+    grid: test_defs.GridDescription,
 ) -> None:
     print(f"running on {processor_props.comm}")
     file = grid_utils.resolve_full_grid_file_name(grid)
@@ -583,7 +589,9 @@ def test_halo_neighbor_access_e2v(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
+        f"rank = {processor_props.rank}: halo size for 'EdgeDim' "
+        f"(1 : {decomposition_info.get_halo_size(dims.EdgeDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {decomposition_info.get_halo_size(dims.EdgeDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     vertex_lat = distributed_coordinates[dims.VertexDim]["lat"]
@@ -626,11 +634,11 @@ def test_halo_neighbor_access_e2v(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL,))
+@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_v2e(
-    processor_props: defs.ProcessProperties,
+    processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: definitions.GridDescription,
+    grid: test_defs.GridDescription,
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
@@ -683,7 +691,9 @@ def test_halo_neighbor_access_v2e(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'EdgeDim' (1 : {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.EdgeDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
+        f"rank = {processor_props.rank}: halo size for 'EdgeDim' "
+        f"(1 : {decomposition_info.get_halo_size(dims.EdgeDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}),"
+        f" (2: {decomposition_info.get_halo_size(dims.EdgeDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     extra_geometry_fields = multinode_grid_manager.geometry_fields
@@ -723,11 +733,11 @@ def test_halo_neighbor_access_v2e(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (definitions.Grids.R02B04_GLOBAL,))
+@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_c2e2c(
-    processor_props: defs.ProcessProperties,
+    processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: definitions.GridDescription,
+    grid: test_defs.GridDescription,
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     center_weight = 0.3
@@ -766,7 +776,9 @@ def test_halo_neighbor_access_c2e2c(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
+        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"(1 : {decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     distributed_coordinates = multinode_grid_manager.coordinates
     extra_geometry_fields = multinode_grid_manager.geometry_fields
@@ -806,7 +818,7 @@ def test_halo_neighbor_access_c2e2c(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_halo_neighbor_access_v2c(
-    processor_props: defs.ProcessProperties, backend: gtx_typing.Backend
+    processor_props: decomp_defs.ProcessProperties, backend: gtx_typing.Backend
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     print(f"running on {processor_props.comm}")
@@ -860,10 +872,14 @@ def test_halo_neighbor_access_v2c(
 
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
-        f"rank = {processor_props.rank}: halo size for 'CellDim' (1 : {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.CellDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
+        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"(1 : {decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     print(
-        f"rank = {processor_props.rank}: halo size for 'VertexDim' (1 : {decomposition_info.get_halo_size(dims.VertexDim, defs.DecompositionFlag.FIRST_HALO_LEVEL)}), (2: {decomposition_info.get_halo_size(dims.VertexDim, defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
+        f"rank = {processor_props.rank}: halo size for 'VertexDim' "
+        f"(1 : {decomposition_info.get_halo_size(dims.VertexDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {decomposition_info.get_halo_size(dims.VertexDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     my_global_cells = decomposition_info.global_index(dims.CellDim)
     cell_k_buffer = (
@@ -923,3 +939,29 @@ def test_halo_neighbor_access_v2c(
         global_reference_field=reference.asnumpy(),
         local_field=output.asnumpy(),
     )
+
+
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
+def test_validate_skip_values_in_distributed_connectivities(
+    processor_props: decomp_defs.ProcessProperties, grid: test_defs.GridDescription
+) -> None:
+    file = grid_utils.resolve_full_grid_file_name(grid)
+    multinode_grid_manager = run_gridmananger_for_multinode(
+        file=file,
+        run_properties=processor_props,
+        decomposer=halo.SimpleMetisDecomposer(),
+    )
+    distributed_grid = multinode_grid_manager.grid
+    for k, c in distributed_grid.connectivities.items():
+        if gtx_common.is_neighbor_connectivity(c):
+            skip_values_in_table = np.count_nonzero(c.asnumpy() == c.skip_value)
+            found_skips = skip_values_in_table > 0
+            assert (
+                found_skips == (c.skip_value is not None)
+            ), f"rank={processor_props.rank} / {processor_props.comm_size}: {k} - # of skip values found in table = {skip_values_in_table},  skip value is {c.skip_value}"
+            if skip_values_in_table > 0:
+                assert (
+                    c in icon.CONNECTIVITIES_ON_BOUNDARIES or icon.CONNECTIVITIES_ON_PENTAGONS
+                ), f"rank={processor_props.rank} / {processor_props.comm_size}: {k} has skip found in table"
