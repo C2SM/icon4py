@@ -911,8 +911,8 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "2025.11.26"
-source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_11_26#3eec6f6dae18ac90e2f967ab8098505bd972b92f" }
+version = "2025.12.11"
+source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_12_11#ab9eaef558b4961058c98930be6a4026597ea6c9" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1399,7 +1399,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.2+unknown.version.details"
-source = { git = "https://github.com/havogt/gt4py?branch=muphys_support#827a7a98ec3daa019ca20b75c21a22abade8236c" }
+source = { git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan#23e6ebcaa349e2705d9638bce276f3595c5e921f" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1745,7 +1745,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1762,7 +1762,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1779,7 +1779,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1796,7 +1796,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1814,7 +1814,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1877,12 +1877,12 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_11_26" },
+    { name = "dace", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2025_12_11" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1918,7 +1918,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1946,7 +1946,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1995,9 +1995,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/havogt/gt4py?branch=muphys_support" },
+    { name = "gt4py", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/havogt/gt4py?branch=better_support_for_named_collections_in_scan" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
