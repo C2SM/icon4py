@@ -20,18 +20,21 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import grid_manager as gm, gridfile, vertical as v_grid
+from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.standalone_driver import config as driver_config, driver_states, driver_utils
+from icon4py.model.standalone_driver import (
+    config as driver_config,
+    driver_constants,
+    driver_states,
+    driver_utils,
+)
 
 
 log = logging.getLogger(__name__)
-cfl_watchmode_factor = ta.wpfloat("0.81")
-cfl_threshold_factor = ta.wpfloat("0.9")
 
 
 class Icon4pyDriver:
@@ -40,7 +43,6 @@ class Icon4pyDriver:
         config: driver_config.DriverConfig,
         backend: model_backends.BackendLike,
         grid: IconGrid,
-        grid_manager: gm.GridManager,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
@@ -48,7 +50,6 @@ class Icon4pyDriver:
         self.config = config
         self.backend = backend
         self.grid = grid
-        self.grid_manager = grid_manager
         self.static_field_factories = static_field_factories
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
@@ -59,7 +60,7 @@ class Icon4pyDriver:
 
         driver_utils.display_driver_setup_in_log_file(
             self.model_time_variables.n_time_steps,
-            self.solve_nonhydro._vertical_params,
+            self.static_field_factories.metrics_field_source._vertical_grid,
             self.config,
         )
 
@@ -270,7 +271,8 @@ class Icon4pyDriver:
         global_max_vertical_cfl = solve_nonhydro_diagnostic_state.max_vertical_cfl[()]
 
         if (
-            global_max_vertical_cfl > cfl_watchmode_factor * self.config.vertical_cfl_threshold
+            global_max_vertical_cfl
+            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold
             and not self.model_time_variables.cfl_watch_mode
         ):
             log.warning(
@@ -284,7 +286,7 @@ class Icon4pyDriver:
             )
             if (
                 global_max_vertical_cfl * substep_fraction
-                > cfl_threshold_factor * self.config.vertical_cfl_threshold
+                > driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
             ):
                 log.warning(
                     f"Maximum vertical CFL number {global_max_vertical_cfl} is close to critical threshold"
@@ -292,7 +294,7 @@ class Icon4pyDriver:
 
             vertical_cfl_threshold_for_increment = self.config.vertical_cfl_threshold
             vertical_cfl_threshold_for_decrement = (
-                cfl_threshold_factor * self.config.vertical_cfl_threshold
+                driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
             )
 
             if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:
@@ -339,7 +341,8 @@ class Icon4pyDriver:
                 if (
                     self.model_time_variables.ndyn_substeps_var == self.config.ndyn_substeps
                     and global_max_vertical_cfl
-                    < ta.wpfloat("0.76") * self.config.vertical_cfl_threshold
+                    < driver_constants.CFL_LEAVE_WATCHMODE_FACTOR
+                    * self.config.vertical_cfl_threshold
                 ):
                     log.warning(
                         "CFL number for vertical advection in dynamical core has decreased, leaving watch mode"
@@ -354,14 +357,29 @@ class Icon4pyDriver:
     def _update_spinup_second_order_divergence_damping(self) -> ta.wpfloat:
         if self.config.apply_extra_second_order_divdamp:
             fourth_order_divdamp_factor = self.solve_nonhydro._config.fourth_order_divdamp_factor
-            if self.model_time_variables.elapsed_time_in_seconds <= ta.wpfloat("1800.0"):
-                return ta.wpfloat("0.8") * fourth_order_divdamp_factor
-            elif self.model_time_variables.elapsed_time_in_seconds <= ta.wpfloat("7200.0"):
+            if (
+                self.model_time_variables.elapsed_time_in_seconds
+                <= driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+            ):
                 return (
-                    ta.wpfloat("0.8")
+                    driver_constants.ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP
                     * fourth_order_divdamp_factor
-                    * (self.model_time_variables.elapsed_time_in_seconds - ta.wpfloat("1800.0"))
-                    / ta.wpfloat("5400.0")
+                )
+            elif (
+                self.model_time_variables.elapsed_time_in_seconds
+                <= driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+            ):
+                return (
+                    driver_constants.ADJUST_FACTOR_FOR_SECOND_ORDER_DIVDAMP
+                    * fourth_order_divdamp_factor
+                    * (
+                        self.model_time_variables.elapsed_time_in_seconds
+                        - driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+                    )
+                    / (
+                        driver_constants.TRANSITION_END_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+                        - driver_constants.INITIAL_PERIOD_FOR_SECOND_ORDER_DIVDAMP
+                    )
                 )
             else:
                 return ta.wpfloat("0.0")
@@ -408,9 +426,9 @@ class Icon4pyDriver:
     ) -> None:
         if self.config.enable_statistics_output:
             rho_ndarray = prognostic_states.rho.ndarray
-            cell_area_ndarray = self.grid_manager.geometry_fields[
-                gridfile.GeometryName.CELL_AREA.value
-            ].ndarray
+            cell_area_ndarray = self.static_field_factories.geometry_field_source.get(
+                geom_attr.CELL_AREA
+            ).ndarray
             cell_thickness_ndarray = self.static_field_factories.metrics_field_source.get(
                 metrics_attr.DDQZ_Z_FULL
             ).ndarray
@@ -429,9 +447,7 @@ class Icon4pyDriver:
             w_ndarray = prognostic_states.w.ndarray
             theta_v_ndarray = prognostic_states.theta_v.ndarray
             exner_ndarray = prognostic_states.exner.ndarray
-            interface_physical_height_ndarray = (
-                self.solve_nonhydro._vertical_params.interface_physical_height.ndarray
-            )
+            interface_physical_height_ndarray = self.static_field_factories.metrics_field_source._vertical_grid.interface_physical_height.ndarray
             log.info("")
             log.info(
                 "Global mean of    rho         vn           w          theta_v     exner      at model levels:"
@@ -616,7 +632,6 @@ def initialize_driver(
         config=driver_config,
         backend=backend,
         grid=grid_manager.grid,
-        grid_manager=grid_manager,
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
