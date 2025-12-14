@@ -613,7 +613,7 @@ class SolveNonhydro:
             variants={
                 "at_first_substep": [False, True],
                 "at_last_substep": [False, True],
-                "prepare_advection": [False, True],
+                "lprep_adv": [False, True],
                 "is_iau_active": [False, True] if self._grid.iau_init else [False]
             },
             horizontal_sizes={
@@ -1411,7 +1411,7 @@ class SolveNonhydro:
             is_iau_active=self._config.is_iau_active,
             iau_wgt_dyn=self._config.iau_wgt_dyn,
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
-            prepare_advection=lprep_adv,
+            lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
             ndyn_substeps_var=float(ndyn_substeps_var),
             dtime=dtime,
