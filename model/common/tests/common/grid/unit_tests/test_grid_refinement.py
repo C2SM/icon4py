@@ -159,10 +159,12 @@ def test_compute_domain_bounds_for_limited_area_grid(
     expected: dict[h_grid.Zone, tuple[int, int]],
     cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> None:
-    grid_manager = grid_utils.get_grid_manager_from_identifier(grid_description, 1, True, cpu_allocator)
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid_description, 1, True, cpu_allocator
+    )
 
     grid = grid_manager.grid
-    assert grid.limited_area == True, "Test expects limited area grid"
+    assert grid.limited_area, "Test expects limited area grid"
     refinement_field = grid.refinement_control
     decomposition_info = grid_manager.decomposition_info
 
