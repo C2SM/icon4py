@@ -152,7 +152,11 @@ class IconGridSavepoint(IconSavepoint):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
         self.global_grid_params = icon.GlobalGridParams(
-            mean_cell_area=self.mean_cell_area(), grid_shape=grid_shape
+            mean_cell_area=self.mean_cell_area(),
+            grid_shape=grid_shape,
+            num_cells=size[dims.CellDim]
+            if grid_shape.geometry_type == base.GeometryType.TORUS
+            else None,
         )
 
     def verts_vertex_lat(self):

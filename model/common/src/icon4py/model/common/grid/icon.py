@@ -24,8 +24,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 log = logging.getLogger(__name__)
 
 CONNECTIVITIES_ON_BOUNDARIES = (
-    dims.C2VDim,
-    dims.E2VDim,
     dims.C2E2C2EDim,
     dims.E2CDim,
     dims.C2E2CDim,

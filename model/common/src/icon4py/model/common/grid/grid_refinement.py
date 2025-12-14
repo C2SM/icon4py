@@ -154,7 +154,16 @@ _LAST_BOUNDARY: dict[gtx.Dimension, h_grid.Zone] = {
 }
 
 
-def _refinement_level_in_halo(domain: h_grid.Domain) -> int:
+def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
+    """There is a speciality in the setup of the ICON halos: generally halo points are located at the end of the arrays after all
+    points owned by a node. This is true for global grids and for a local area model for all points with a
+    refinement control value larger than (6, 2) for HALO level 1 and (4,1) for HALO_LEVEL_2.
+
+    That is for the local area grid some (but not all!) halo points that are lateral boundary points are placed with the lateral boundary
+    domains rather than the halo. The reason for this is mysterious (to me) as well as what advantage it might have.
+
+    Disadvantage clearly is that in the LAM case the halos are **not contigous**.
+    """
     assert domain.zone.is_halo(), "Domain must be a halo Zone."
     dim = domain.dim
     match dim:
@@ -175,9 +184,30 @@ def compute_domain_bounds(
     """
     Compute the domain bounds (start_index, end_index) based on a grid Domain.
 
-    Icon orders the field arrays according to their
+    In a local area model, ICON orders the field arrays according to their distance from the boundary. For each
+    dimension (cell, vertex, edge) points are "ordered" (moved to the beginning of the array) up to
+    the values defined in _GRID_REFINEMENT_BOUNDARY_WIDTH. We call these distance a Grid Zone. The `Dimension`
+    and the `Zone` determine a Grid `Domain`. For a given field values for a domain are located
+    in a contiguous section of the field array.
+
+    This function can be used to deterine the start_index and end_index of a `Domain`in the arrays.
+
+    For a global model grid all points are unordered. `Zone` that do not exist for a global model grid
+    return empty domains.
+
+    For distributed grids halo points build their own `Domain`and are located at the end of the field arrays, with the exception of
+    some points in the lateral boundary as described in (_refinement_level_placed_with_halo)
+
+    Args:
+        dim: Dimension one of `CellDim`. `VertexDim`, `EdgeDim`
+        refinement_fields: dict[Dimension, ndarray] containing the refinement_control values for each dimension
+        decomposition_info: DecompositionInfo needed to determine the HALO `Zone`s
+        array_ns: numpy or cupy
 
     """
+    assert (
+        dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+    ), f"Dimension must be one of {dims.MAIN_HORIZONTAL_DIMENSIONS.values()}"
     refinement_ctrl = convert_to_non_nested_refinement_values(
         refinement_fields[dim].ndarray, dim, array_ns
     )
@@ -199,14 +229,14 @@ def compute_domain_bounds(
     halo_domains = h_grid.get_halo_domains(dim)
     for domain in halo_domains:
         my_flag = decomposition.DecompositionFlag(domain.zone.level)
-        upper_boundary_level_1 = _refinement_level_in_halo(h_grid.domain(dim)(h_grid.Zone.HALO))
-        not_lateral_boundary_1 = (refinement_ctrl < 1) | (
-            refinement_ctrl > upper_boundary_level_1
-        )  # edge 6
+        upper_boundary_level_1 = _refinement_level_placed_with_halo(
+            h_grid.domain(dim)(h_grid.Zone.HALO)
+        )
+        not_lateral_boundary_1 = (refinement_ctrl < 1) | (refinement_ctrl > upper_boundary_level_1)
         halo_region_1 = array_ns.where(halo_level_1 & not_lateral_boundary_1)[0]
         not_lateral_boundary_2 = (refinement_ctrl < 1) | (
             refinement_ctrl
-            > _refinement_level_in_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
+            > _refinement_level_placed_with_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
         )
 
         halo_region_2 = array_ns.where(halo_level_2 & not_lateral_boundary_2)[0]
