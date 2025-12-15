@@ -9,7 +9,6 @@ import functools
 import logging
 import operator
 import pathlib
-from collections.abc import Iterator
 from typing import Any
 
 import numpy as np
@@ -36,18 +35,7 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, grid_utils
 
-from ...decomposition import utils as decomp_utils
-from .. import utils
-from ..fixtures import (
-    backend,
-    data_provider,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    icon_grid,
-    processor_props,
-    ranked_data_path,
-)
+from ..fixtures import backend, processor_props
 
 
 NUM_LEVELS = 10
@@ -112,51 +100,6 @@ def _get_neighbor_tables(grid: base.Grid) -> dict:
         for k, v in grid.connectivities.items()
         if gtx_common.is_neighbor_connectivity(v)
     }
-
-
-# TODO (halungge): is this function used at all??
-@pytest.mark.mpi
-@pytest.mark.parametrize(
-    "field_offset",
-    [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
-)
-def test_construct_local_connectivity(
-    processor_props: decomp_defs.ProcessProperties,
-    caplog: Iterator,
-    field_offset: gtx.FieldOffset,
-) -> None:
-    caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
-    grid = utils.run_grid_manager(
-        test_defs.Grids.R02B04_GLOBAL, keep_skip_values=True, backend=None
-    ).grid
-    partitioner = halo.SimpleMetisDecomposer()
-    face_face_connectivity = grid.get_connectivity(dims.C2E2C).ndarray
-    neighbor_tables = _get_neighbor_tables(grid)
-    labels = partitioner(face_face_connectivity, num_partitions=processor_props.comm_size)
-    halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=neighbor_tables,
-        run_properties=processor_props,
-    )
-
-    decomposition_info = halo_generator(labels)
-
-    connectivity = gm.construct_local_connectivity(
-        field_offset, decomposition_info, connectivity=grid.get_connectivity(field_offset).ndarray
-    )
-    # there is an neighbor list for each index of the target dimension on the node
-    assert (
-        connectivity.shape[0]
-        == decomposition_info.global_index(
-            field_offset.target[0], decomp_defs.DecompositionInfo.EntryType.ALL
-        ).size
-    )
-    # all neighbor indices are valid local indices
-    assert np.max(connectivity) == np.max(
-        decomposition_info.local_index(
-            field_offset.source, decomp_defs.DecompositionInfo.EntryType.ALL
-        )
-    )
-    # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
 
 
 @pytest.mark.mpi

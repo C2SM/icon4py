@@ -17,16 +17,21 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.grid.gridfile
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition, halo
+from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.decomposition import (
+    definitions as decomp_defs,
+    definitions as decomposition,
+    halo,
+)
 from icon4py.model.common.grid import (
     grid_manager as gm,
     grid_refinement as refin,
     gridfile,
     horizontal as h_grid,
+    icon,
     vertical as v_grid,
 )
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions, definitions as test_defs, grid_utils, test_utils
 
 
 if typing.TYPE_CHECKING:
@@ -42,6 +47,7 @@ except ImportError:
 
 from icon4py.model.testing.fixtures import (
     backend,
+    backend_like,
     cpu_allocator,
     data_provider,
     download_ser_data,
@@ -51,6 +57,7 @@ from icon4py.model.testing.fixtures import (
     ranked_data_path,
 )
 
+from ...decomposition import utils as decomp_utils
 from .. import utils
 
 
@@ -564,3 +571,65 @@ def test_decomposition_info_single_node(
     assert np.all(result.global_index(dim) == expected.global_index(dim))
     assert np.all(result.owner_mask(dim) == expected.owner_mask(dim))
     assert np.all(result.halo_levels(dim) == expected.halo_levels(dim))
+
+
+@pytest.mark.parametrize("rank", (0, 1, 2, 3))
+@pytest.mark.parametrize(
+    "field_offset",
+    [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
+)
+def test_local_connectivity(
+    rank: int,
+    caplog: Iterator,
+    field_offset: gtx.FieldOffset,
+    backend_like: model_backends.BackendLike,
+) -> None:
+    processor_props = decomp_utils.DummyProps(rank=rank)
+    caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
+    partitioner = halo.SimpleMetisDecomposer()
+    allocator = model_backends.get_allocator(backend_like)
+    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+    manager = gm.GridManager(num_levels=10, grid_file=file)
+    manager(
+        decomposer=partitioner,
+        allocator=allocator,
+        keep_skip_values=True,
+        run_properties=processor_props,
+    )
+    grid = manager.grid
+
+    decomposition_info = manager.decomposition_info
+    connectivity = grid.get_connectivity(field_offset).asnumpy()
+
+    assert (
+        connectivity.shape[0]
+        == decomposition_info.global_index(
+            field_offset.target[0], decomp_defs.DecompositionInfo.EntryType.ALL
+        ).size
+    ), "connectivity shapes do not match"
+
+    # all neighbor indices are valid local indices
+    max_local_index = np.max(
+        decomposition_info.local_index(
+            field_offset.source, decomp_defs.DecompositionInfo.EntryType.ALL
+        )
+    )
+    assert (
+        np.max(connectivity) == max_local_index
+    ), f"max value in the connectivity is {np.max(connectivity)} is larger than the local patch size {max_local_index}"
+    # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
+    neighbor_dim = field_offset.target[1]  # type: ignore [misc]
+    if (
+        neighbor_dim in icon.CONNECTIVITIES_ON_BOUNDARIES
+        or neighbor_dim in icon.CONNECTIVITIES_ON_PENTAGONS
+    ):
+        dim = field_offset.target[0]
+        last_halo_level = (
+            decomp_defs.DecompositionFlag.THIRD_HALO_LEVEL
+            if neighbor_dim == dims.E2CDim
+            else decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL
+        )
+        level_index = np.where(decomposition_info.halo_levels(dim) == last_halo_level)
+        assert np.count_nonzero(
+            (connectivity[level_index] == gridfile.GridFile.INVALID_INDEX) > 0
+        ), f"missing invalid index in {dim} - offset {field_offset}"

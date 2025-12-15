@@ -11,7 +11,6 @@ import pathlib
 from types import ModuleType
 from typing import Literal, TypeAlias
 
-import gt4py._core.definitions as gtx_core_defs
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
@@ -693,53 +692,3 @@ def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
         axis=0,
     )
     return patched_ar
-
-
-# TODO (halungge): is this function used at all??
-def construct_local_connectivity(
-    field_offset: gtx.FieldOffset,
-    decomposition_info: decomposition.DecompositionInfo,
-    connectivity: np.ndarray | gtx_core_defs.NDArrayObject,
-) -> np.ndarray:
-    """
-    Construct a connectivity table for use on a given rank: it maps from source to target dimension in _local_ indices.
-
-    Starting from the connectivity table on the global grid
-    - we reduce it to the lines for the locally present entries of the the target dimension
-    - the reduced connectivity then still maps to global source dimension indices:
-        we replace those source dimension indices not present on the node to SKIP_VALUE and replace the rest with the local indices
-
-    Args:
-        field_offset: FieldOffset for which we want to construct the local connectivity table
-        decomposition_info: DecompositionInfo for the current rank.
-        connectivity:
-
-    Returns:
-        connectivity are for the same FieldOffset but mapping from local target dimension indices to local source dimension indices.
-    """
-    source_dim = field_offset.source
-    target_dim = field_offset.target[0]
-    sliced_connectivity = connectivity[
-        decomposition_info.global_index(target_dim, decomposition.DecompositionInfo.EntryType.ALL)
-    ]
-
-    global_idx = decomposition_info.global_index(
-        source_dim, decomposition.DecompositionInfo.EntryType.ALL
-    )
-
-    # replace indices in the connectivity that do not exist on the local node by the SKIP_VALUE (those are for example neighbors of the outermost halo points)
-    local_connectivity = np.where(
-        np.isin(sliced_connectivity, global_idx),
-        sliced_connectivity,
-        gridfile.GridFile.INVALID_INDEX,
-    )
-
-    # map to local source indices
-    sorted_index_of_global_idx = np.argsort(global_idx)
-    global_idx_sorted = global_idx[sorted_index_of_global_idx]
-    for i in np.arange(local_connectivity.shape[0]):
-        valid_neighbor_mask = local_connectivity[i, :] != gridfile.GridFile.INVALID_INDEX
-        positions = np.searchsorted(global_idx_sorted, local_connectivity[i, valid_neighbor_mask])
-        indices = sorted_index_of_global_idx[positions]
-        local_connectivity[i, valid_neighbor_mask] = indices
-    return local_connectivity
