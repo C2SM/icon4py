@@ -325,7 +325,7 @@ def test_halo_exchange_for_sparse_field(
 
     assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())
 
-    
+
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_global_reductions_min(
