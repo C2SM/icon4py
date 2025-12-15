@@ -333,43 +333,27 @@ def initialize_solve_nonhydro_diagnostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> DiagnosticStateNonHydro:
-    _zero_edge_k_in_predictor = data_alloc.zero_field(
-        grid,
-        dims.EdgeDim,
-        dims.KDim,
-        allocator=allocator,
-        dtype=ta.vpfloat,
-    )
-    _zero_edge_k_in_corrector = data_alloc.zero_field(
-        grid,
-        dims.EdgeDim,
-        dims.KDim,
-        allocator=allocator,
-        dtype=ta.vpfloat,
-    )
-    _zero_cell_k_in_predictor = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
-        allocator=allocator,
-        dtype=ta.vpfloat,
-    )
-    _zero_cell_k_in_corrector = data_alloc.zero_field(
-        grid,
-        dims.CellDim,
-        dims.KDim,
-        extend={dims.KDim: 1},
-        allocator=allocator,
-        dtype=ta.vpfloat,
-    )
     normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
-        _zero_edge_k_in_predictor,
-        _zero_edge_k_in_corrector,
+        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat),
+        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat),
     )
     vertical_wind_advective_tendency = common_utils.PredictorCorrectorPair(
-        _zero_cell_k_in_predictor,
-        _zero_cell_k_in_corrector,
+        data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=allocator,
+            dtype=ta.vpfloat,
+        ),
+        data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=allocator,
+            dtype=ta.vpfloat,
+        ),
     )
     max_vertical_cfl = data_alloc.scalar_like_array(0.0, allocator)
     theta_v_at_cells_on_half_levels = data_alloc.zero_field(
