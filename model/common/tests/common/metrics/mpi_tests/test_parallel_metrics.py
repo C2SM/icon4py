@@ -72,7 +72,6 @@ def test_distributed_metrics_attrs(
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = metrics_factory_from_savepoint
-    print(f"computed flatlev {factory.vertical_grid.nflatlev}, expected{grid_savepoint.nflatlev()}")
 
     field = factory.get(attrs_name).asnumpy()
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()

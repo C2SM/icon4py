@@ -553,12 +553,14 @@ def _force_mass_conservation_to_c_bln_avg(
 
         exchange(residual)
 
-        # remove condition or do (inefficient) global reduction, practically
-        # the convergence criteria is never reached before the niter
+        # in practice the convergence criteria is never reached before the niter is reached for (niter <= 1000)
+        # so when parallelizing we opt for disableing the criteria instead of doing an inefficient
+        # global reduction. (We assume that there is no convergence criteria for the very same reason in the
+        # original icon code.
         # for max_ = array_ns.max(residual)
         max_ = 1.0
         if iteration >= (niter - 1) or max_ < 1e-9:
-            print(f"number of iterations: {iteration} - max residual={max_}")
+            logger.debug(f"number of iterations: {iteration} - max residual disabled")
             c_bln_avg = _enforce_mass_conservation(
                 c_bln_avg, residual, cell_owner_mask, horizontal_start
             )

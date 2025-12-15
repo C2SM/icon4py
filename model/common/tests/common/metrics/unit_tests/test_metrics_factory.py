@@ -14,9 +14,8 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry, vertical as v_grid
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
