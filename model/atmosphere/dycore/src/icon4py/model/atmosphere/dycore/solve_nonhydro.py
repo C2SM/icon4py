@@ -506,6 +506,10 @@ class SolveNonhydro:
                 "iau_wgt_dyn": self._config.iau_wgt_dyn,
                 "is_iau_active": self._config.is_iau_active,
                 "limited_area": self._grid.limited_area,
+                "divdamp_order": gtx.int32(self._config.divdamp_order),
+                "mean_cell_area": self._grid.global_properties.mean_cell_area,
+                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "dbl_eps": constants.DBL_EPS,
             },
             variants={
                 "apply_2nd_order_divergence_damping": [False, True],
@@ -1296,12 +1300,12 @@ class SolveNonhydro:
             second_order_divdamp_factor * self._grid.global_properties.mean_cell_area
         )
 
-        self._calculate_divdamp_fields(
-            interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
-            fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
-            reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            second_order_divdamp_factor=second_order_divdamp_factor,
-        )
+        #self._calculate_divdamp_fields(
+        #    interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
+        #    fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
+        #    reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+        #    second_order_divdamp_factor=second_order_divdamp_factor,
+        #)
 
         log.debug("corrector run velocity advection")
         self.velocity_advection.run_corrector_step(
@@ -1352,8 +1356,8 @@ class SolveNonhydro:
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
-            reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
+            interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
+            second_order_divdamp_factor=second_order_divdamp_factor,
             second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
             dtime=dtime,
             apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
