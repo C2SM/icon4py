@@ -9,8 +9,7 @@ import functools
 import logging
 import math
 
-import gt4py.next as gtx
-
+import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import (
@@ -33,6 +32,10 @@ from icon4py.model.common.interpolation.stencils import (
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states
 from icon4py.model.standalone_driver.testcases import utils as testcases_utils
@@ -49,7 +52,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     backend: model_backends.BackendLike,
 ) -> driver_states.DriverStates:
     """
-    Initial condition of Jablonowski-Williamson test. Set jw_up to values larger than 0.01 if
+    Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
     you want to run baroclinic case.
 
     Args:
@@ -95,27 +98,51 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
-    p_sfc = ta.wpfloat("100000.0")
-    jw_up = ta.wpfloat("0.0")  # if doing baroclinic wave test, please set it to a nonzero value
-    jw_u0 = ta.wpfloat("35.0")
+    # predefined constants used for Jablonowski-Williamson initial condition
+    p_sfc = ta.wpfloat("100000.0")  # surface pressure (Pa)
+    jw_baroclinic_amplitude = ta.wpfloat(
+        "0.0"
+    )  # if doing baroclinic wave test, please set it to a nonzero value
+    jw_u0 = ta.wpfloat("35.0")  # maximum zonal wind speed (m/s)
     jw_temp0 = ta.wpfloat("288.0")
-    # DEFINED PARAMETERS for jablonowski williamson:
     eta_0 = ta.wpfloat("0.252")
     eta_t = ta.wpfloat("0.2")  # tropopause
     gamma = ta.wpfloat("0.005")  # temperature elapse rate (K/m)
     dtemp = ta.wpfloat("4.8e5")  # empirical temperature difference (K)
-    # for baroclinic wave test
-    lon_perturbation_center = math.pi / 9.0  # longitude of the perturb centre
-    lat_perturbation_center = 2.0 * lon_perturbation_center  # latitude of the perturb centre
-    ps_o_p0ref = p_sfc / phy_const.P0REF
+    lon_perturbation_center = math.pi / ta.wpfloat(
+        "9.0"
+    )  # longitude of the perturb centre in baroclinic wave test (jw_baroclinic_amplitude !=0)
+    lat_perturbation_center = (
+        ta.wpfloat("2.0") * lon_perturbation_center
+    )  # latitude of the perturb centre in baroclinic wave test (jw_baroclinic_amplitude !=0)
 
-    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
-    exner_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
-    rho_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
-    temperature_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
-    pressure_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
-    theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
-    eta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=ta.wpfloat)
+    # Initialize prognostic state, diagnostic state and other local fields
+    prognostic_state_now = prognostics.initialize_prognostic_state(
+        grid=grid, allocator=concrete_backend.allocator
+    )
+    diagnostic_state = diagnostics.initialize_diagnostic_state(
+        grid=grid, allocator=concrete_backend.allocator
+    )
+    eta_v = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        allocator=concrete_backend.allocator,
+        dtype=ta.wpfloat,
+    )
+    eta_v_at_edge = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=concrete_backend.allocator
+    )
+
+    exner_ndarray = prognostic_state_now.exner.ndarray
+    rho_ndarray = prognostic_state_now.rho.ndarray
+    theta_v_ndarray = prognostic_state_now.theta_v.ndarray
+    temperature_ndarray = diagnostic_state.temperature.ndarray
+    pressure_ndarray = diagnostic_state.pressure.ndarray
+    eta_v_ndarray = eta_v.ndarray
+
+    # set surface pressure
+    diagnostic_state.pressure_ifc.ndarray[:, -1] = p_sfc
 
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)
@@ -182,7 +209,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         # Final update for zeta_v
         eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
         # Use analytic expressions at all model level
-        exner_ndarray[:, k_index] = (eta_old * ps_o_p0ref) ** phy_const.RD_O_CPD
+        exner_ndarray[:, k_index] = (eta_old * p_sfc / phy_const.P0REF) ** phy_const.RD_O_CPD
         theta_v_ndarray[:, k_index] = temperature_jw / exner_ndarray[:, k_index]
         rho_ndarray[:, k_index] = (
             exner_ndarray[:, k_index] ** phy_const.CVD_O_RD
@@ -197,16 +224,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         temperature_ndarray[:, k_index] = temperature_jw
     log.info("Newton iteration completed.")
 
-    eta_v = gtx.as_field(
-        (dims.CellDim, dims.KDim), eta_v_ndarray, allocator=concrete_backend.allocator
-    )
-    eta_v_e = data_alloc.zero_field(
-        grid, dims.EdgeDim, dims.KDim, allocator=concrete_backend.allocator
-    )
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(concrete_backend)(
         in_field=eta_v,
         coeff=cell_2_edge_coeff,
-        out_field=eta_v_e,
+        out_field=eta_v_at_edge,
         horizontal_start=end_edge_lateral_boundary_level_2,
         horizontal_end=end_edge_end,
         vertical_start=0,
@@ -215,58 +236,51 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
-    vn_ndarray = functools.partial(testcases_utils.zonalwind_2_normalwind_ndarray, array_ns=xp)(
+    prognostic_state_now.vn.ndarray[:, :] = functools.partial(
+        testcases_utils.zonalwind_2_normalwind_ndarray, array_ns=xp
+    )(
         grid=grid,
         jw_u0=jw_u0,
-        jw_up=jw_up,
+        jw_baroclinic_amplitude=jw_baroclinic_amplitude,
         lat_perturbation_center=lat_perturbation_center,
         lon_perturbation_center=lon_perturbation_center,
         edge_lat=edge_lat,
         edge_lon=edge_lon,
         primal_normal_x=primal_normal_x,
-        eta_v_e=eta_v_e.ndarray,
+        eta_v_at_edge=eta_v_at_edge.ndarray,
     )
 
     log.info("U2vn computation completed.")
 
-    rho_ndarray, exner_ndarray, theta_v_ndarray = functools.partial(
-        testcases_utils.hydrostatic_adjustment_ndarray, array_ns=xp
-    )(
-        wgtfac_c=wgtfac_c,
-        ddqz_z_half=ddqz_z_half,
+    functools.partial(testcases_utils.apply_hydrostatic_adjustment_ndarray, array_ns=xp)(
+        rho=rho_ndarray,
+        exner=exner_ndarray,
+        theta_v=theta_v_ndarray,
         exner_ref_mc=exner_ref_mc,
         d_exner_dz_ref_ic=d_exner_dz_ref_ic,
         theta_ref_mc=theta_ref_mc,
         theta_ref_ic=theta_ref_ic,
-        rho=rho_ndarray,
-        exner=exner_ndarray,
-        theta_v=theta_v_ndarray,
+        wgtfac_c=wgtfac_c,
+        ddqz_z_half=ddqz_z_half,
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
-    pressure_ifc_ndarray[:, -1] = p_sfc
-
-    (prognostics_states, diagnostic_state) = (
-        testcases_utils.create_gt4py_field_for_prognostic_and_diagnostic_variables(
-            vn_ndarray=vn_ndarray,
-            w_ndarray=w_ndarray,
-            exner_ndarray=exner_ndarray,
-            rho_ndarray=rho_ndarray,
-            theta_v_ndarray=theta_v_ndarray,
-            temperature_ndarray=temperature_ndarray,
-            pressure_ndarray=pressure_ndarray,
-            pressure_ifc_ndarray=pressure_ifc_ndarray,
-            grid=grid,
-            allocator=concrete_backend.allocator,
-        )
+    prognostic_state_next = prognostics.PrognosticState(
+        vn=data_alloc.as_field(prognostic_state_now.vn, allocator=concrete_backend.allocator),
+        w=data_alloc.as_field(prognostic_state_now.w, allocator=concrete_backend.allocator),
+        exner=data_alloc.as_field(prognostic_state_now.exner, allocator=concrete_backend.allocator),
+        rho=data_alloc.as_field(prognostic_state_now.rho, allocator=concrete_backend.allocator),
+        theta_v=data_alloc.as_field(
+            prognostic_state_now.theta_v, allocator=concrete_backend.allocator
+        ),
     )
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(
         concrete_backend
     )(
-        p_e_in=prognostics_states.current.vn,
+        p_e_in=prognostic_states.current.vn,
         ptr_coeff_1=rbf_vec_coeff_c1,
         ptr_coeff_2=rbf_vec_coeff_c2,
         p_u_out=diagnostic_state.u,
@@ -284,7 +298,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         grid, dims.CellDim, dims.KDim, allocator=concrete_backend.allocator
     )
     gt4py_math_op.compute_difference_on_cell_k.with_backend(concrete_backend)(
-        field_a=prognostics_states.current.exner,
+        field_a=prognostic_states.current.exner,
         field_b=metrics_field_source.get(metrics_attributes.EXNER_REF_MC),
         output_field=perturbed_exner,
         horizontal_start=0,
@@ -312,7 +326,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         prep_advection_prognostic=prep_adv,
         solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
         diffusion_diagnostic=diffusion_diagnostic_state,
-        prognostics=prognostics_states,
+        prognostics=prognostic_states,
         diagnostic=diagnostic_state,
     )
 

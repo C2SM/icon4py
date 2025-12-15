@@ -8,6 +8,7 @@
 
 from icon4py.model.common import type_alias as ta
 
+
 #: Factor multiplied to the user-defined CFL number to determine the whether to enter watchmode
 CFL_ENTER_WATCHMODE_FACTOR = ta.wpfloat("0.81")
 
