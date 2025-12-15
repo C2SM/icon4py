@@ -162,9 +162,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         Returns:
             next_halo_cells: full-grid indices of the next halo line
         """
-        assert (
-            cells.ndim == 1
-        ), "input should be 1d array"  # TODO(halungge): otherwise reshape instead
+        assert cells.ndim == 1, "input should be 1d array"
         cell_neighbors = self._find_cell_neighbors(cells)
 
         cells_so_far = self._xp.hstack((depot, cells)) if depot is not None else cells
@@ -261,7 +259,7 @@ class IconLikeHaloConstructor(HaloConstructor):
              |    /     |    /     |    /     |
              |  /       |  /       |  /       |          rank 0
              |/         |/         |/         |
-        ----------e0--------e1--------e3------------  cutting line
+        -----v0---e0----v1---e1----v2---e2----v3---e3--  cutting line
              |         /|         /|         /|
              |  c0    / |   c1   / |   c2   / |
              |      /   |      /   |      /   |          rank 1
@@ -269,7 +267,7 @@ class IconLikeHaloConstructor(HaloConstructor):
              |   /      |   /      |   /      |  /
              | /   c3   | /   c4   | /   c5   | /
              |/         |/         |/         |/
-            ------e11------e12-------e13------------
+            -v4---e11---v5---e12---v6----e13--v7---------
              |         /|         /|         /|
              |        / |        / |        / |
              |      /   |      /   |      /   |
@@ -286,18 +284,31 @@ class IconLikeHaloConstructor(HaloConstructor):
              Note that this definition of 1. and 2. line differs from the definition of boundary line counting used in [grid refinement](grid_refinement.py), in terms
              of "distance" to the cutting line all halo cells have a distance of 1.
 
+
+             Vertices:
+             - 1. HALO LEVEL: are vertices on the cutting line that are not owned, or put in a different wording: all vertices on owned cells that ar not
+             owned.
+             In ICON every element in an array needs **exactly one owner**. For elements on the cutting line (vertices and edges) there is no clear
+             indication which rank should own it, ICON uses the rank with the higher rank (see (_update_owner_mask_by_max_rank_convention))
+             In the example above (v0, v1, v2, v3) are in the 1. HALO LEVEL or rank 0 and owend by rank 1. Consequently there ranks that have no
+             1.HALO LEVEL cells.
+
+             - 2. HALO LEVEL: are vertices that are on halo 1. HALO LEVEL cells, but not on owned. For rank 0 these are (v4, v5, v6, v7)
+
+
              Edges:
-             Edges (e0, e1, e2) are on the cutting line.
-             For both ranks the edges on the cutting line sit on **owned cells**. As all elements need to have a unique owner, they are assigned by convention to the rank with the higher number, here rank 1.
-             From the point of view of rank 0 they are 1. HALO LINE edges. This conventional assignement has as an effect that there ranks (essentially rank 0) that have an *empty* first edge HALO LINE,
-             even thought they have elements in the 2. HALO LEVEL (e4, e5, e6, e7, e8, e9, e10)  which are the edges that share exactly one vertex with an owned cell.
-             The edges (e11, e12, e13) that "close" the halo cells (share exactly 2 vertices with a halo cell, but none with an owned cell) are **not** included in the halo in ICON. We include them as 3. HALO LINE which
+             For edges a similar pattern is used as for the vertices.
+             - 1. HALO LEVEl: edges that are on owned cells but not owned themselves (these are edges that share 2 vertices with and owned cell).
+             In terms of ownership the same convention is applied as for the vertices: (e0, e1, e2, e3) are in the HALO LEVEL 1 of rank 0, and owned by rank 1
+             - 2. HALO LEVEL: edges that share exactly one vertex with an owned cell. The definition via vertices is important: TODD (halungge): EXAMPLE???
+             For rank 0 above these are the edges (e4, e5, e6, e7, e8, e9, e10)
+
+             - 3. HALO LEVEL:
+             We flag the edges (e11, e12, e13) that "close" the halo cells (share exactly 2 vertices with a HALO LEVEL 2 cell, but none with
+             an owned cell). These edges are **not** included in the halo in ICON. We include them as 3. HALO LINE which
              makes the C2E connectivity complete (= without skip value) for a distributed setup.
 
-
-
-             # TODO(halungge): make number of halo lines (in terms of cells) a parameter
-             # icon does hard coding of 2 halo lines for cells, make this dynamic!
+             # TODO(halungge): make number of halo lines (in terms of cells) a parameter: icon does hard coding of 2 halo lines for cells, make this dynamic!
 
         """
 
