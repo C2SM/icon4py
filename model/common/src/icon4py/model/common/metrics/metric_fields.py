@@ -611,7 +611,7 @@ def compute_nflat_gradp(
         flat_idx_max,
         nlev,
     )
-    nflat_gradp = min_reduction(mask_array)
+    nflat_gradp = min_reduction(mask_array, array_ns=array_ns)
     return nflat_gradp
 
 
