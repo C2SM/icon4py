@@ -9,12 +9,29 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims, exceptions
+from icon4py.model.common import dimension as dims, exceptions, model_backends
 from icon4py.model.common.decomposition import definitions, halo
 from icon4py.model.common.grid import base as base_grid
 
+from ...fixtures import backend_like, processor_props
 from .. import utils
 from ..fixtures import simple_neighbor_tables
+
+
+@pytest.mark.parametrize("rank", [0, 1, 2, 4])
+def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like):
+    processor_props = utils.DummyProps(rank=rank)
+    allocator = model_backends.get_allocator(backend_like)
+    halo_generator = halo.IconLikeHaloConstructor(
+        connectivities=simple_neighbor_tables,
+        run_properties=processor_props,
+        allocator=allocator,
+    )
+    my_owned_cells = halo_generator.owned_cells(utils.SIMPLE_DISTRIBUTION)
+
+    print(f"rank {processor_props.rank} owns {my_owned_cells} ")
+    assert my_owned_cells.size == len(utils._CELL_OWN[processor_props.rank])
+    assert np.setdiff1d(my_owned_cells, utils._CELL_OWN[processor_props.rank]).size == 0
 
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
@@ -51,7 +68,7 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
 @pytest.mark.parametrize("rank", [0, 1, 2, 3])
-def test_halo_constructor_definitions_info_halo_levels(rank, dim, simple_neighbor_tables):
+def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neighbor_tables):
     processor_props = utils.DummyProps(rank=rank)
     halo_generator = halo.IconLikeHaloConstructor(
         connectivities=simple_neighbor_tables,
@@ -143,3 +160,17 @@ def test_halo_constructor_validate_rank_mapping_wrong_shape(simple_neighbor_tabl
         )
         halo_generator(np.zeros((num_cells, 3), dtype=int))
     assert f"should have shape ({num_cells},)" in e.value.args[0]
+
+
+@pytest.mark.parametrize("rank", (0, 1, 2, 3))
+def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor_tables):
+    processor_props = utils.DummyProps(rank=rank)
+    num_cells = simple_neighbor_tables["C2E2C"].shape[0]
+    distribution = (processor_props.comm_size + 1) * np.ones((num_cells,), dtype=int)
+    with pytest.raises(expected_exception=exceptions.ValidationError) as e:
+        halo_generator = halo.IconLikeHaloConstructor(
+            connectivities=simple_neighbor_tables,
+            run_properties=processor_props,
+        )
+        halo_generator(distribution)
+    assert "The distribution assumes more nodes than the current run" in e.value.args[0]
