@@ -470,7 +470,7 @@ class SimpleMetisDecomposer(Decomposer):
         Returns: np.ndarray: array with partition label (int, rank number) for each cell
         """
 
-        import pymetis  # type: ignore [import-not-found]
+        import pymetis  # type: ignore [import-untyped]
 
         _, partition_index = pymetis.part_graph(nparts=num_partitions, adjacency=adjacency_matrix)
         return np.array(partition_index)
