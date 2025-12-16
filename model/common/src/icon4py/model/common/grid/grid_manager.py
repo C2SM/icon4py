@@ -111,7 +111,7 @@ class GridManager:
 
         self.close()
 
-    def _read_coordinates(self, backend: gtx_typing.Backend | None) -> CoordinateDict:
+    def _read_coordinates(self, allocator: gtx_typing.Backend | None) -> CoordinateDict:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
@@ -123,7 +123,7 @@ class GridManager:
                         gridfile.CoordinateName.CELL_LATITUDE, indices=my_cell_indices
                     ),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
                 "lon": gtx.as_field(
                     (dims.CellDim,),
@@ -131,7 +131,7 @@ class GridManager:
                         gridfile.CoordinateName.CELL_LONGITUDE, indices=my_cell_indices
                     ),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
             },
             dims.EdgeDim: {
@@ -141,7 +141,7 @@ class GridManager:
                         gridfile.CoordinateName.EDGE_LATITUDE, indices=my_edge_indices
                     ),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
                 "lon": gtx.as_field(
                     (dims.EdgeDim,),
@@ -149,7 +149,7 @@ class GridManager:
                         gridfile.CoordinateName.EDGE_LONGITUDE, indices=my_edge_indices
                     ),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
             },
             dims.VertexDim: {
@@ -158,7 +158,7 @@ class GridManager:
                     self._reader.variable(
                         gridfile.CoordinateName.VERTEX_LATITUDE, indices=my_vertex_indices
                     ),
-                    allocator=backend,
+                    allocator=allocator,
                     dtype=ta.wpfloat,
                 ),
                 "lon": gtx.as_field(
@@ -166,7 +166,7 @@ class GridManager:
                     self._reader.variable(
                         gridfile.CoordinateName.VERTEX_LONGITUDE, indices=my_vertex_indices
                     ),
-                    allocator=backend,
+                    allocator=allocator,
                     dtype=ta.wpfloat,
                 ),
             },
