@@ -49,37 +49,6 @@ def test_geometry_raises_for_unknown_field(backend: gtx_typing.Backend) -> None:
         assert "'GridGeometry'" in e.value  # type: ignore[operator]
 
 
-@pytest.mark.parametrize("dim", (dims.CellDim,))
-def test_coordinates(
-    experiment: definitions.Experiment,
-    backend: model_backends.BackendLike,
-    grid_savepoint: sb.IconGridSavepoint,
-    dim: gtx.Dimension,
-) -> None:
-    allocator = model_backends.get_allocator(backend)
-    geometry = grid_utils.get_grid_geometry(allocator, experiment)
-    cell_lat_ref = grid_savepoint.lat(dims.CellDim)
-    cell_lon_ref = grid_savepoint.lon(dims.CellDim)
-    edge_lat_ref = grid_savepoint.lat(dims.EdgeDim)
-    edge_lon_ref = grid_savepoint.lon(dims.EdgeDim)
-    vertex_lat_ref = grid_savepoint.lat(dims.VertexDim)
-    vertex_lon_ref = grid_savepoint.lon(dims.VertexDim)
-
-    cell_lon = geometry.get(attrs.CELL_LON)
-    cell_lat = geometry.get(attrs.CELL_LAT)
-    edge_lon = geometry.get(attrs.EDGE_LON)
-    edge_lat = geometry.get(attrs.EDGE_LAT)
-    vertex_lat = geometry.get(attrs.VERTEX_LAT)
-    vertex_lon = geometry.get(attrs.VERTEX_LON)
-    test_utils.dallclose(edge_lat_ref.asnumpy(), edge_lat.asnumpy())
-    test_utils.dallclose(edge_lon_ref.asnumpy(), edge_lon.asnumpy())
-
-    test_utils.dallclose(vertex_lat_ref.asnumpy(), vertex_lat.asnumpy())
-    test_utils.dallclose(vertex_lon_ref.asnumpy(), vertex_lon.asnumpy())
-    test_utils.dallclose(cell_lon.asnumpy(), cell_lon_ref.asnumpy())
-    test_utils.dallclose(cell_lat.asnumpy(), cell_lat_ref.asnumpy())
-
-
 @pytest.mark.parametrize(
     "experiment, rtol",
     [

@@ -556,6 +556,7 @@ def test_limited_area_on_grid(grid_descriptor: definitions.GridDescription, expe
     assert expected == grid.limited_area
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.horizontal_dims())
 def test_decomposition_info_single_node(
     dim: gtx.Dimension,
