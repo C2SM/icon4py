@@ -42,7 +42,7 @@ version = "0.0.6"
 all = ["icon4py-common[distributed,io]"]
 cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
-distributed = ["ghex>=0.5.0", "mpi4py>=3.1.5", "pymetis>2022.1"]
+distributed = ["ghex>=0.5.0", "mpi4py>=3.1.5"]
 io = [
   # external dependencies
   "cartopy>=0.22.0",
@@ -52,6 +52,7 @@ io = [
   "netcdf4>=1.6.1",
   "numpy>=1.23.3",
   "scikit-learn>=1.4.0",
+  "pymetis>2022.1",
   # TODO(halungge): there are failing tests starting from uxarray==2024.4.0: when a data file does not have
   # fields of a given dimension (eg 'edge') then something in uxarray goes wrong with the dimension
   # mapping. It is not yet clear whether this is a uxarray bug or on our side.
