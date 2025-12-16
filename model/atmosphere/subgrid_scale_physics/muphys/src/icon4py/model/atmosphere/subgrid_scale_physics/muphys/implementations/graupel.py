@@ -65,7 +65,7 @@ class TempState(NamedTuple):
     activated: bool
 
 
-class PrecipState(NamedTuple):
+class IntegrationState(NamedTuple):
     r: PrecipStateQx
     s: PrecipStateQx
     i: PrecipStateQx
@@ -101,14 +101,14 @@ def precip_qx_level_update(
         vt = 0.0
 
     if current_level_activated:
-        next_q_update = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
-        next_flx = (next_q_update * rho * vt + flx_partial) * 0.5  # flux
+        x = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
+        p = (x * rho * vt + flx_partial) * 0.5  # flux
     else:
-        next_q_update = q
-        next_flx = 0.0
+        x = q
+        p = 0.0
     return PrecipStateQx(
-        x=next_q_update,
-        p=next_flx,
+        x=x,
+        p=p,
         vc=vc,
         activated=current_level_activated,
     )
@@ -119,10 +119,9 @@ def _temperature_update(
     previous_level: TempState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
-    ei_old: ta.wpfloat,
     pr: ta.wpfloat,  # precipitable rain
     pflx_tot: ta.wpfloat,  # total precipitation flux
-    qv: ta.wpfloat,
+    q: Q_scalar,
     qliq: ta.wpfloat,
     qice: ta.wpfloat,
     rho: ta.wpfloat,  # density
@@ -136,13 +135,20 @@ def _temperature_update(
             pr * (t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc)
             + (pflx_tot) * (g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc)
         )
-        e_int = ei_old + previous_level.eflx - eflx
+
+        e_int = (
+            _internal_energy_scalar(
+                t=t, qv=q.v, qliq=q.c + q.r, qice=q.s + q.i + q.g, rho=rho, dz=dz
+            )
+            + previous_level.eflx
+            - eflx
+        )
 
         #  Inlined calculation using T_from_internal_energy_scalar
         #  in order to avoid scan_operator -> field_operator
-        qtot = qliq + qice + qv  # total water specific mass
+        qtot = qliq + qice + q.v  # total water specific mass
         cv = (
-            (t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
+            (t_d.cvd * (1.0 - qtot) + t_d.cvv * q.v + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
         )  # Moist isometric specific heat
         t = (e_int + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
     else:
@@ -154,7 +160,7 @@ def _temperature_update(
 @gtx.scan_operator(
     axis=dims.KDim,
     forward=True,
-    init=PrecipState(
+    init=IntegrationState(
         r=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
         s=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
         i=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
@@ -163,8 +169,8 @@ def _temperature_update(
         rho=0.0,
     ),
 )
-def _precip(
-    previous_level: PrecipState,
+def _precip_and_t(
+    previous_level: IntegrationState,
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
     rho: ta.wpfloat,  # density
@@ -175,7 +181,7 @@ def _precip(
     mask_g: bool,
     dt: ta.wpfloat,
     dz: ta.wpfloat,
-) -> PrecipState:
+) -> IntegrationState:
     zeta = dt / (2.0 * dz)
     xrho = sqrt(g_ct.rho_00 / rho)
 
@@ -233,16 +239,13 @@ def _precip(
         mask_g,
     )
 
-    qliq = q.c + q.r
-    qice = q.s + q.i + q.g
-    ei_old = _internal_energy_scalar(t, q.v, qliq, qice, rho, dz)
     pflx_tot = s_update.p + i_update.p + g_update.p
 
     qliq = q.c + r_update.x
     qice = s_update.x + i_update.x + g_update.x
     kmin_rsig = mask_r | mask_s | mask_i | mask_g
 
-    return PrecipState(
+    return IntegrationState(
         r=r_update,
         s=s_update,
         i=i_update,
@@ -251,10 +254,9 @@ def _precip(
             previous_level.t_state,
             t=t,
             t_kp1=t_kp1,
-            ei_old=ei_old,
             pr=r_update.p,
             pflx_tot=pflx_tot,
-            qv=q.v,
+            q=q,
             qliq=qliq,
             qice=qice,
             rho=rho,
@@ -474,7 +476,7 @@ def _precipitation_effects(
 ]:
     t_kp1 = concat_where(dims.KDim < last_lev, t(Koff[1]), t)
 
-    precip_state = _precip(
+    precip_state = _precip_and_t(
         t,
         t_kp1,
         rho,
