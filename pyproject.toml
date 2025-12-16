@@ -355,7 +355,7 @@ url = "https://test.pypi.org/simple/"
 [tool.uv.sources]
 dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_11_26"}
 ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
-gt4py = {git = "https://github.com/edopao/gt4py", branch = "dace-one_sdfg_builder"}
+gt4py = {git = "https://github.com/edopao/gt4py", branch = "dace_fix_let_lambda_unused_arg"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
