@@ -23,6 +23,7 @@ from gt4py.next import allocators as gtx_allocators
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, horizontal as h_grid, icon
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -127,7 +128,7 @@ def construct_icon_grid(
     num_edges: int,
     vertical_size: int,
     limited_area: bool,
-    mean_cell_area: gtx.float64,  # type:ignore[name-defined]  # TODO(): fix type hint
+    mean_cell_area: wpfloat,  # type:ignore[name-defined]
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
 ) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")

@@ -14,6 +14,8 @@ import numpy as np
 from gt4py import eve
 from gt4py.next.type_system import type_specifications as gtx_ts
 
+from icon4py.model.common.type_alias import precision
+
 
 # As long as we use gt4py.eve, we can also just use the gt4py.next types.
 # Note that the user-facing type should be py2fgen.ScalarKind, so we can
@@ -25,6 +27,8 @@ INT32 = gtx_ts.ScalarKind.INT32
 INT64 = gtx_ts.ScalarKind.INT64
 FLOAT32 = gtx_ts.ScalarKind.FLOAT32
 FLOAT64 = gtx_ts.ScalarKind.FLOAT64
+WPFLOAT = FLOAT32 if precision == "single" else FLOAT64
+VPFLOAT = FLOAT64 if precision == "double" else FLOAT32
 
 
 class MemorySpace(eve.StrEnum):
