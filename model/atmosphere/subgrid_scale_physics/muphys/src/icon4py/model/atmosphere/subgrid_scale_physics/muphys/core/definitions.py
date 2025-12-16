@@ -18,3 +18,12 @@ class Q(NamedTuple):
     s: fa.CellKField[ta.wpfloat]  # Specific snow water
     i: fa.CellKField[ta.wpfloat]  # Specific ice water content
     g: fa.CellKField[ta.wpfloat]  # Specific graupel water content
+
+
+class Q_scalar(NamedTuple):
+    v: ta.wpfloat  # Specific humidity
+    c: ta.wpfloat  # Specific cloud water content
+    r: ta.wpfloat  # Specific rain water
+    s: ta.wpfloat  # Specific snow water
+    i: ta.wpfloat  # Specific ice water content
+    g: ta.wpfloat  # Specific graupel water content

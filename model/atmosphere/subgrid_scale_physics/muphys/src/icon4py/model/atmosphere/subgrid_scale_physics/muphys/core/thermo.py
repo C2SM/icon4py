@@ -126,6 +126,34 @@ def _internal_energy(
     return rho * dz * (cv * t - qliq * g_ct.lvc - qice * g_ct.lsc)
 
 
+@gtx.field_operator
+def _internal_energy_scalar(
+    t: ta.wpfloat,
+    qv: ta.wpfloat,
+    qliq: ta.wpfloat,
+    qice: ta.wpfloat,
+    rho: ta.wpfloat,
+    dz: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Compute the internal energy from the temperature
+
+    Args:
+        t:                 Temperature
+        qv:                Specific mass of vapor
+        qliq:              Specific mass of liquid phases
+        qice:              Specific mass of solid phases
+        rho:               Ambient density
+        dz:                Extent of grid cell
+
+    Result:                Internal energy
+    """
+    qtot = qliq + qice + qv
+    cv = t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice
+
+    return rho * dz * (cv * t - qliq * g_ct.lvc - qice * g_ct.lsc)
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def internal_energy(
     t: fa.CellKField[ta.wpfloat],  # Temperature
