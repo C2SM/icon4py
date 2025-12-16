@@ -20,7 +20,7 @@ import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
-from icon4py.model.common.grid import base, gridfile
+from icon4py.model.common.grid import base
 from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -97,6 +97,9 @@ class DecompositionInfo:
         self._owner_mask[dim] = owner_mask
         self._halo_levels[dim] = halo_levels
 
+    def is_distributed(self) -> bool:
+        return max(self._halo_levels[dims.CellDim]) > DecompositionFlag.OWNED
+
     def local_index(
         self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
     ) -> data_alloc.NDArray:
@@ -122,32 +125,6 @@ class DecompositionInfo:
 
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
-
-    def global_to_local(
-        self, dim: gtx.Dimension, indices_to_translate: data_alloc.NDArray
-    ) -> data_alloc.NDArray:
-        global_indices = self.global_index(dim)
-        sorter = np.argsort(global_indices)
-
-        mask = np.isin(indices_to_translate, global_indices)
-        positions = np.searchsorted(global_indices, indices_to_translate, sorter=sorter)
-        local_neighbors = np.full_like(indices_to_translate, gridfile.GridFile.INVALID_INDEX)
-        local_neighbors[mask] = sorter[positions[mask]]
-        return local_neighbors
-
-        # TODO (halungge): use for test reference? in test_definitions.py
-
-    def global_to_local_ref(
-        self, dim: gtx.Dimension, indices_to_translate: data_alloc.NDArray
-    ) -> data_alloc.NDArray:
-        global_indices = self.global_index(dim)
-        local_neighbors = np.full_like(indices_to_translate, gridfile.GridFile.INVALID_INDEX)
-        for i in range(indices_to_translate.shape[0]):
-            for j in range(indices_to_translate.shape[1]):
-                if np.isin(indices_to_translate[i, j], global_indices):
-                    pos = np.where(indices_to_translate[i, j] == global_indices)[0]
-                    local_neighbors[i, j] = pos
-        return local_neighbors
 
     def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]

@@ -8,14 +8,17 @@
 
 import numpy as np
 import pytest
+from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, exceptions, model_backends
 from icon4py.model.common.decomposition import definitions, halo
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.grid import base as base_grid, simple
 
 from ...fixtures import backend_like, processor_props
 from .. import utils
 from ..fixtures import simple_neighbor_tables
+from ..utils import dummy_four_ranks
+from .test_definitions import offsets
 
 
 @pytest.mark.parametrize("rank", [0, 1, 2, 4])
@@ -174,3 +177,40 @@ def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor
         )
         halo_generator(distribution)
     assert "The distribution assumes more nodes than the current run" in e.value.args[0]
+
+
+@pytest.mark.parametrize("offset", offsets)
+@pytest.mark.parametrize("rank", [0, 1, 2, 3])
+def test_global_to_local_index(offset, rank):
+    grid = simple.simple_grid()
+    neighbor_tables = {
+        k: v.ndarray
+        for k, v in grid.connectivities.items()
+        if gtx_common.is_neighbor_connectivity(v)
+    }
+    props = dummy_four_ranks(rank)
+    halo_constructor = halo.IconLikeHaloConstructor(props, neighbor_tables)
+    decomposition_info = halo_constructor(utils.SIMPLE_DISTRIBUTION)
+    source_indices_on_local_grid = decomposition_info.global_index(offset.target[0])
+
+    offset_full_grid = grid.connectivities[offset.value].ndarray[source_indices_on_local_grid]
+    neighbor_dim = offset.source
+    neighbor_index_full_grid = decomposition_info.global_index(neighbor_dim)
+
+    local_offset = halo.global_to_local(
+        decomposition_info.global_index(neighbor_dim), offset_full_grid
+    )
+
+    ## assert by backmapping
+
+    for i in range(local_offset.shape[0]):
+        for k in range(local_offset.shape[1]):
+            k_ = local_offset[i][k]
+            if k_ == -1:
+                # global index is not on this local patch:
+                assert not np.isin(offset_full_grid[i][k], neighbor_index_full_grid)
+            else:
+                (
+                    neighbor_index_full_grid[k_] == offset_full_grid[i][k],
+                    f"failed to map [{offset_full_grid[i]}] to local: [{local_offset[i]}]",
+                )

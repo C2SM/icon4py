@@ -16,7 +16,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import definitions as defs
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, gridfile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -484,7 +484,7 @@ class SingleNodeDecomposer(Decomposer):
         return np.zeros(adjacency_matrix.shape[0], dtype=gtx.int32)  # type: ignore  [attr-defined]
 
 
-def halo_constructor(
+def get_halo_constructor(
     run_properties: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
     connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
@@ -516,3 +516,24 @@ def halo_constructor(
             connectivities=connectivities,
             allocator=allocator,
         )
+
+
+def global_to_local(
+    global_indices: data_alloc.NDArray,
+    indices_to_translate: data_alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    """Translate an array of global indices into rank-local ones.
+
+    Args:
+        global_indices: global indices owned on the rank: this is the implicit mapping encoding the local to global
+        indices_to_translate: the array to map to local indices
+
+    """
+    sorter = array_ns.argsort(global_indices)
+
+    mask = array_ns.isin(indices_to_translate, global_indices)
+    positions = array_ns.searchsorted(global_indices, indices_to_translate, sorter=sorter)
+    local_neighbors = array_ns.full_like(indices_to_translate, gridfile.GridFile.INVALID_INDEX)
+    local_neighbors[mask] = sorter[positions[mask]]
+    return local_neighbors

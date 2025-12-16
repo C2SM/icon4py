@@ -10,17 +10,17 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as attrs,
     horizontal as h_grid,
     simple,
 )
-from icon4py.model.common.grid.geometry import as_sparse_field
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils, test_utils
@@ -47,6 +47,37 @@ def test_geometry_raises_for_unknown_field(backend: gtx_typing.Backend) -> None:
         geometry.get("foo")
         assert "'foo'" in e.value  # type: ignore[operator]
         assert "'GridGeometry'" in e.value  # type: ignore[operator]
+
+
+@pytest.mark.parametrize("dim", (dims.CellDim,))
+def test_coordinates(
+    experiment: definitions.Experiment,
+    backend: model_backends.BackendLike,
+    grid_savepoint: sb.IconGridSavepoint,
+    dim: gtx.Dimension,
+) -> None:
+    allocator = model_backends.get_allocator(backend)
+    geometry = grid_utils.get_grid_geometry(allocator, experiment)
+    cell_lat_ref = grid_savepoint.lat(dims.CellDim)
+    cell_lon_ref = grid_savepoint.lon(dims.CellDim)
+    edge_lat_ref = grid_savepoint.lat(dims.EdgeDim)
+    edge_lon_ref = grid_savepoint.lon(dims.EdgeDim)
+    vertex_lat_ref = grid_savepoint.lat(dims.VertexDim)
+    vertex_lon_ref = grid_savepoint.lon(dims.VertexDim)
+
+    cell_lon = geometry.get(attrs.CELL_LON)
+    cell_lat = geometry.get(attrs.CELL_LAT)
+    edge_lon = geometry.get(attrs.EDGE_LON)
+    edge_lat = geometry.get(attrs.EDGE_LAT)
+    vertex_lat = geometry.get(attrs.VERTEX_LAT)
+    vertex_lon = geometry.get(attrs.VERTEX_LON)
+    test_utils.dallclose(edge_lat_ref.asnumpy(), edge_lat.asnumpy())
+    test_utils.dallclose(edge_lon_ref.asnumpy(), edge_lon.asnumpy())
+
+    test_utils.dallclose(vertex_lat_ref.asnumpy(), vertex_lat.asnumpy())
+    test_utils.dallclose(vertex_lon_ref.asnumpy(), vertex_lon.asnumpy())
+    test_utils.dallclose(cell_lon.asnumpy(), cell_lon_ref.asnumpy())
+    test_utils.dallclose(cell_lat.asnumpy(), cell_lat_ref.asnumpy())
 
 
 @pytest.mark.parametrize(
@@ -180,7 +211,7 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     assert test_utils.dallclose(x_tangent.asnumpy(), x_tangent_ref.asnumpy(), atol=1e-12)
     assert test_utils.dallclose(y_tangent.asnumpy(), y_tangent_ref.asnumpy(), atol=1e-12)
     assert test_utils.dallclose(z_tangent.asnumpy(), z_tangent_ref.asnumpy(), atol=1e-12)
-    assert test_utils.dallclose(x_normal.asnumpy(), x_normal_ref.asnumpy(), atol=1e-13)  # 1e-16
+    assert test_utils.dallclose(x_normal.asnumpy(), x_normal_ref.asnumpy(), atol=1e-13)
     assert test_utils.dallclose(z_normal.asnumpy(), z_normal_ref.asnumpy(), atol=1e-13)
     assert test_utils.dallclose(y_normal.asnumpy(), y_normal_ref.asnumpy(), atol=1e-12)
 
@@ -360,8 +391,8 @@ def test_sparse_fields_creator() -> None:
     g1 = data_alloc.random_field(grid, dims.EdgeDim)
     g2 = data_alloc.random_field(grid, dims.EdgeDim)
 
-    sparse = as_sparse_field((dims.EdgeDim, dims.E2CDim), [(f1, f2), (g1, g2)])
-    sparse_e2c = functools.partial(as_sparse_field, (dims.EdgeDim, dims.E2CDim))
+    sparse = geometry.as_sparse_field((dims.EdgeDim, dims.E2CDim), [(f1, f2), (g1, g2)])
+    sparse_e2c = functools.partial(geometry.as_sparse_field, (dims.EdgeDim, dims.E2CDim))
     sparse2 = sparse_e2c(((f1, f2), (g1, g2)))
     assert sparse[0].asnumpy().shape == (grid.num_edges, 2)
     assert test_utils.dallclose(sparse[0].asnumpy(), sparse2[0].asnumpy())

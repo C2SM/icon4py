@@ -58,7 +58,6 @@ class GridManager:
         self._transformation = transformation
         self._file_name = str(grid_file)
         self._num_levels = num_levels
-        self._halo_constructor: halo.HaloConstructor | None = None
         # Output
         self._grid: icon.IconGrid | None = None
         self._decomposition_info: decomposition.DecompositionInfo | None = None
@@ -316,7 +315,6 @@ class GridManager:
         """
         xp = data_alloc.import_array_ns(allocator)
         ## FULL GRID PROPERTIES
-
         cell_refinement = self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         global_size = self._read_full_grid_size()
         global_params = self._construct_global_params(allocator, global_size)
@@ -339,7 +337,7 @@ class GridManager:
         # TODO(halungge): reduce the set of neighbor tables used in the halo construction
         # TODO(halungge): figure out where to do the host to device copies (xp.asarray...)
         neighbor_tables_for_halo_construction = neighbor_tables
-        halo_constructor = halo.halo_constructor(
+        halo_constructor = halo.get_halo_constructor(
             run_properties=run_properties,
             full_grid_size=global_size,
             connectivities=neighbor_tables_for_halo_construction,
@@ -349,13 +347,9 @@ class GridManager:
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
         distributed_size = self._decomposition_info.get_horizontal_size()
 
-        # TODO(halungge): run this only for distrbuted grids otherwise to nothing internally
-        neighbor_tables = {
-            k: self._decomposition_info.global_to_local(
-                k.source, v[self._decomposition_info.global_index(k.target[0])]
-            )
-            for k, v in neighbor_tables_for_halo_construction.items()
-        }
+        neighbor_tables = self._get_local_connectivities(
+            neighbor_tables_for_halo_construction, array_ns=xp
+        )
 
         # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
@@ -389,6 +383,23 @@ class GridManager:
         )
         self._grid = grid
 
+    def _get_local_connectivities(
+        self,
+        neighbor_tables_for_halo_construction: dict[gtx.FieldOffset, data_alloc.NDArray],
+        array_ns,
+    ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
+        global_to_local = functools.partial(halo.global_to_local, array_ns=array_ns)
+        if self.decomposition_info.is_distributed():
+            return {
+                k: global_to_local(
+                    self._decomposition_info.global_index(k.source),
+                    v[self._decomposition_info.global_index(k.target[0])],
+                )
+                for k, v in neighbor_tables_for_halo_construction.items()
+            }
+        else:
+            return neighbor_tables_for_halo_construction
+
     def _construct_global_params(
         self, allocator: gtx_typing.FieldBufferAllocationUtil, global_size: base.HorizontalGridSize
     ):
@@ -399,13 +410,15 @@ class GridManager:
         sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
-        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
-        mean_dual_edge_length = self._reader.try_attribute(
-            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
-        )
+
+        # TODO (@halungge): use global reduction in geometry.py
         mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
         mean_dual_cell_area = self._reader.try_attribute(
             gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
+        )
+        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
+        mean_dual_edge_length = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
         )
         # TODO (@halungge): Fix this: reads the global fields...
         edge_lengths = self._reader.variable(gridfile.GeometryName.EDGE_LENGTH)
