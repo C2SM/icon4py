@@ -19,8 +19,10 @@ from icon4py.model.common import constants, dimension as dims, utils as common_u
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.type_alias import precision, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils as testing_test_utils
+from icon4py.model.testing.test_utils import dassert_allclose
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, dycore_wrapper
@@ -42,25 +44,25 @@ def solve_nh_init(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     rayleigh_type = constants.RayleighType.KLEMP
-    rayleigh_coeff = 0.05
+    rayleigh_coeff = wpfloat(0.05)
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False
-    iau_wgt_dyn = 1.0
+    iau_wgt_dyn = wpfloat(1.0)
     divdamp_type = 3
-    divdamp_trans_start = 12500.0
-    divdamp_trans_end = 17500.0
+    divdamp_trans_start = wpfloat(12500.0)
+    divdamp_trans_end = wpfloat(17500.0)
     l_vert_nested = False
-    rhotheta_offctr = -0.1
-    veladv_offctr = 0.25
-    max_nudging_coefficient = 0.375
-    divdamp_fac = 0.004
-    divdamp_fac2 = 0.004
-    divdamp_fac3 = 0.004
-    divdamp_fac4 = 0.004
-    divdamp_z = 32500.0
-    divdamp_z2 = 40000.0
-    divdamp_z3 = 60000.0
-    divdamp_z4 = 80000.0
+    rhotheta_offctr = wpfloat(-0.1)
+    veladv_offctr = wpfloat(0.25)
+    max_nudging_coefficient = wpfloat(0.375)
+    divdamp_fac = wpfloat(0.004)
+    divdamp_fac2 = wpfloat(0.004)
+    divdamp_fac3 = wpfloat(0.004)
+    divdamp_fac4 = wpfloat(0.004)
+    divdamp_z = wpfloat(32500.0)
+    divdamp_z2 = wpfloat(40000.0)
+    divdamp_z3 = wpfloat(60000.0)
+    divdamp_z4 = wpfloat(80000.0)
 
     # vertical grid params
     vertical_size = grid_savepoint.num(dims.KDim)
@@ -232,6 +234,7 @@ def solve_nh_init(
     )
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
@@ -279,26 +282,25 @@ def test_dycore_wrapper_granule_inputs(
     iadv_rhotheta = dycore_states.RhoThetaAdvectionType.MIURA
     igradp_method = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     rayleigh_type = constants.RayleighType.KLEMP
-    rayleigh_coeff = 0.05
+    rayleigh_coeff = wpfloat(0.05)
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
     is_iau_active = False
-    iau_wgt_dyn = 1.0
+    iau_wgt_dyn = wpfloat(1.0)
     divdamp_type = 3
-    divdamp_trans_start = 12500.0
-    divdamp_trans_end = 17500.0
+    divdamp_trans_start = wpfloat(12500.0)
+    divdamp_trans_end = wpfloat(17500.0)
     l_vert_nested = False
-    rhotheta_offctr = -0.1
-    veladv_offctr = 0.25
-    max_nudging_coefficient = 0.375
-    divdamp_fac = 0.004
-    divdamp_fac2 = 0.004
-    divdamp_fac3 = 0.004
-    divdamp_fac4 = 0.004
-    divdamp_z = 32500.0
-    divdamp_z2 = 40000.0
-    divdamp_z3 = 60000.0
-    divdamp_z4 = 80000.0
-
+    rhotheta_offctr = wpfloat(-0.1)
+    veladv_offctr = wpfloat(0.25)
+    max_nudging_coefficient = wpfloat(0.375)
+    divdamp_fac = wpfloat(0.004)
+    divdamp_fac2 = wpfloat(0.004)
+    divdamp_fac3 = wpfloat(0.004)
+    divdamp_fac4 = wpfloat(0.004)
+    divdamp_z = wpfloat(32500.0)
+    divdamp_z2 = wpfloat(40000.0)
+    divdamp_z3 = wpfloat(60000.0)
+    divdamp_z4 = wpfloat(80000.0)
     # vertical grid params
     vertical_size = grid_savepoint.num(dims.KDim)
     nflat_gradp = gtx.int32(
@@ -403,9 +405,9 @@ def test_dycore_wrapper_granule_inputs(
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
 
     # Diagnostic state parameters
-    max_vertical_cfl = 0.0
+    max_vertical_cfl = wpfloat(0.0)
     max_vcfl_size1_array = test_utils.array_to_array_info(
-        np.full(1, max_vertical_cfl, dtype=np.float64)
+        np.full(1, max_vertical_cfl, dtype=wpfloat)
     )
     theta_v_ic = test_utils.array_to_array_info(sp.theta_v_ic().ndarray)
     exner_pr = test_utils.array_to_array_info(sp.exner_pr().ndarray)
@@ -797,6 +799,7 @@ def test_dycore_wrapper_granule_inputs(
         assert result, f"Last Substep comparison failed: {error_message}"
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
@@ -853,7 +856,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
 
     # Diagnostic state parameters
-    max_vertical_cfl = 0.0
+    max_vertical_cfl = wpfloat(0.0)
     max_vcfl_size1_array = test_utils.array_to_array_info(
         np.full(1, max_vertical_cfl, dtype=np.float64)
     )
@@ -950,40 +953,50 @@ def test_granule_solve_nonhydro_single_step_regional(
     )
 
     # Comparison asserts should now use py2fgen.as_array
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, theta_v_new, py2fgen.FLOAT64),
         sp_step_exit.theta_v_new().asnumpy(),
+        err_msg="theta_v_new mismatch",
     )
 
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, exner_new, py2fgen.FLOAT64), sp_step_exit.exner_new().asnumpy()
+    dassert_allclose(
+        py2fgen.as_array(ffi, exner_new, py2fgen.FLOAT64),
+        sp_step_exit.exner_new().asnumpy(),
+        err_msg="exner_new mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    tols = {"rtol": 1e-12, "atol": 1e-13} if precision == "double" else {"rtol": 1e-2, "atol": 1e-4}
+    dassert_allclose(
         py2fgen.as_array(ffi, vn_new, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-12,
-        atol=1e-13,
+        **tols,
+        err_msg="vn_new mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, rho_new, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
+        err_msg="rho_new mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    tols = {"atol": 8e-14} if precision == "double" else {"rtol": 1e-4, "atol": 1e-4}
+    dassert_allclose(
         py2fgen.as_array(ffi, w_new, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        atol=8e-14,
+        **tols,
+        err_msg="w_new mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    tols = {"atol": 1e-14} if precision == "double" else {}
+    dassert_allclose(
         py2fgen.as_array(ffi, exner_dyn_incr, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
-        atol=1e-14,
+        **tols,
+        err_msg="exner_dyn_incr mismatch",
     )
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
@@ -1033,7 +1046,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     mass_flx_ic = test_utils.array_to_array_info(sp.mass_flx_ic().ndarray)
 
     # Diagnostic state parameters
-    max_vertical_cfl = 0.0
+    max_vertical_cfl = wpfloat(0.0)
     max_vcfl_size1_array = test_utils.array_to_array_info(
         np.full(1, max_vertical_cfl, dtype=np.float64)
     )
@@ -1150,64 +1163,76 @@ def test_granule_solve_nonhydro_multi_step_regional(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
 
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, rho_ic, py2fgen.FLOAT64)[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
+        err_msg="rho_ic mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, theta_v_ic, py2fgen.FLOAT64)[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
+        err_msg="theta_v_ic mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    tol1 = {"atol": 5e-7} if precision == "double" else {"atol": 5e-2}
+    dassert_allclose(
         py2fgen.as_array(ffi, mass_fl_e, py2fgen.FLOAT64)[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
-        atol=5e-7,
+        **tol1,
+        err_msg="mass_fl_e mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, mass_flx_me, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        atol=5e-7,
+        **tol1,
+        err_msg="mass_flx_me mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, vn_traj, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        atol=1e-12,
+        **({"atol": 1e-12} if precision == "double" else {"atol": 1e-4}),
+        err_msg="vn_traj mismatch",
     )
 
     # we compare against _now fields as _new and _now are switched internally in the granule.
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, theta_v_now, py2fgen.FLOAT64),
         sp_step_exit.theta_v_new().asnumpy(),
-        atol=5e-7,
+        **tol1,
+        err_msg="theta_v_now mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, rho_now, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
+        err_msg="rho_now mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, exner_now, py2fgen.FLOAT64),
         sp_step_exit.exner_new().asnumpy(),
+        err_msg="exner_now mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, w_now, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        atol=8e-14,
+        **({"atol": 8e-14} if precision == "double" else {"atol": 1e-4}),
+        err_msg="w_now mismatch",
     )
 
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, vn_now, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        atol=5e-13,
+        **({"atol": 5e-13} if precision == "double" else {"atol": 4e-4}),
+        err_msg="vn_now mismatch",
     )
-    assert testing_test_utils.dallclose(
+    dassert_allclose(
         py2fgen.as_array(ffi, exner_dyn_incr, py2fgen.FLOAT64),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
-        atol=1e-14,
+        **({"atol": 1e-14} if precision == "double" else {"atol": 1e-5}),
+        err_msg="exner_dyn_incr mismatch",
     )
