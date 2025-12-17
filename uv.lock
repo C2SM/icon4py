@@ -22,6 +22,7 @@ members = [
     "icon4py-atmosphere-muphys",
     "icon4py-common",
     "icon4py-driver",
+    "icon4py-standalone-driver",
     "icon4py-testing",
     "icon4py-tools",
 ]
@@ -1530,6 +1531,7 @@ dependencies = [
     { name = "icon4py-atmosphere-muphys" },
     { name = "icon4py-common" },
     { name = "icon4py-driver" },
+    { name = "icon4py-standalone-driver" },
 ]
 
 [package.optional-dependencies]
@@ -1653,6 +1655,7 @@ requires-dist = [
     { name = "icon4py-common", extras = ["distributed"], marker = "extra == 'distributed'", editable = "model/common" },
     { name = "icon4py-common", extras = ["io"], marker = "extra == 'io'", editable = "model/common" },
     { name = "icon4py-driver", editable = "model/driver" },
+    { name = "icon4py-standalone-driver", editable = "model/standalone_driver" },
     { name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing" },
     { name = "icon4py-tools", marker = "extra == 'fortran'", editable = "tools" },
     { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },
@@ -1927,6 +1930,35 @@ requires-dist = [
     { name = "icon4py-testing", editable = "model/testing" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
+]
+
+[[package]]
+name = "icon4py-standalone-driver"
+version = "0.0.6"
+source = { editable = "model/standalone_driver" }
+dependencies = [
+    { name = "devtools" },
+    { name = "gt4py" },
+    { name = "icon4py-atmosphere-diffusion" },
+    { name = "icon4py-atmosphere-dycore" },
+    { name = "icon4py-common" },
+    { name = "icon4py-testing" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "devtools", specifier = ">=0.12" },
+    { name = "gt4py", specifier = "==1.1.0" },
+    { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
+    { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
+    { name = "icon4py-common", editable = "model/common" },
+    { name = "icon4py-testing", editable = "model/testing" },
+    { name = "numpy", specifier = ">=1.23.3" },
+    { name = "packaging", specifier = ">=20.0" },
+    { name = "typer", specifier = ">=0.20.0" },
 ]
 
 [[package]]
@@ -4445,7 +4477,7 @@ wheels = [
 
 [[package]]
 name = "typer"
-version = "0.16.0"
+version = "0.20.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -4453,9 +4485,9 @@ dependencies = [
     { name = "shellingham" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c5/8c/7d682431efca5fd290017663ea4588bf6f2c6aad085c7f108c5dbc316e70/typer-0.16.0.tar.gz", hash = "sha256:af377ffaee1dbe37ae9440cb4e8f11686ea5ce4e9bae01b84ae7c63b87f1dd3b", size = 102625, upload-time = "2025-05-26T14:30:31.824Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8f/28/7c85c8032b91dbe79725b6f17d2fffc595dff06a35c7a30a37bef73a1ab4/typer-0.20.0.tar.gz", hash = "sha256:1aaf6494031793e4876fb0bacfa6a912b551cf43c1e63c800df8b1a866720c37", size = 106492, upload-time = "2025-10-20T17:03:49.445Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/76/42/3efaf858001d2c2913de7f354563e3a3a2f0decae3efe98427125a8f441e/typer-0.16.0-py3-none-any.whl", hash = "sha256:1f79bed11d4d02d4310e3c1b7ba594183bcedb0ac73b27a9e5f28f6fb5b98855", size = 46317, upload-time = "2025-05-26T14:30:30.523Z" },
+    { url = "https://files.pythonhosted.org/packages/78/64/7713ffe4b5983314e9d436a90d5bd4f63b6054e2aca783a3cfc44cb95bbf/typer-0.20.0-py3-none-any.whl", hash = "sha256:5b463df6793ec1dca6213a3cf4c0f03bc6e322ac5e16e13ddd622a889489784a", size = 47028, upload-time = "2025-10-20T17:03:47.617Z" },
 ]
 
 [[package]]
