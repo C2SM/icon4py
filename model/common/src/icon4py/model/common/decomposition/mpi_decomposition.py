@@ -434,7 +434,9 @@ class GlobalReductions(Reductions):
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         local_min = array_ns.min(buffer)
         recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
-        if hasattr(array_ns, "cuda"):
+        if hasattr(
+            array_ns, "cuda"
+        ):  #  https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
             array_ns.cuda.runtime.deviceSynchronize()
         self._props.comm.Allreduce(local_min, recv_buffer, mpi4py.MPI.MIN)
         return recv_buffer.item()
