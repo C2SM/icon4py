@@ -34,6 +34,18 @@ class ProcessProperties(Protocol):
     comm_size: int
 
 
+class NoStream:
+    """Used in `exchange_and_wait()`, `exchange()` to indicate that no stream
+    synchronization is requested.
+
+    If an instance of this type is given as `stream` argument , then the normal
+    `exchange()` and `wait()` functions are using. Otherwise the
+    `schedule_exchange()` and `schedule_wait()` are used.
+    """
+
+    pass
+
+
 @dataclasses.dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):
     comm: None
@@ -149,24 +161,81 @@ class DecompositionInfo:
 
 
 class ExchangeResult(Protocol):
-    def wait(self) -> None: ...
+    def wait(self, stream: Any | type[NoStream] | None = NoStream) -> None:
+        """Perform a wait.
 
-    def is_ready(self) -> bool: ...
+        The function will wait for the communication to have finished and then
+        perform the unpacking. The condition under which the function returns
+        depends on `stream` if it is `NoStream`, the default, the function will
+        wait until all unpacking has completed. Otherwise, the function will
+        return after all unpacking has been scheduled. Thus, all further work
+        submitted to `stream` will wait until the unpacking has finished.
+        """
+        ...
+
+    def is_ready(self) -> bool:
+        """Check if communication has been finished."""
+        ...
 
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
     @overload
-    def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> ExchangeResult: ...
+    def exchange(
+        self,
+        dim: gtx.Dimension,
+        *buffers: data_alloc.NDArray,
+        stream: Any | type[NoStream] | None = NoStream,
+    ) -> ExchangeResult: ...
 
     @overload
-    def exchange(self, dim: gtx.Dimension, *buffers: data_alloc.NDArray) -> ExchangeResult: ...
+    def exchange(
+        self, dim: gtx.Dimension, *fields: gtx.Field, stream: Any | type[NoStream] | None = NoStream
+    ) -> ExchangeResult:
+        """Perform halo exchanges.
+
+        The exact behaviour depends on if the optional argument `stream` is supplied.
+        If it is given and set to `NoStream` then packing will start immediately.
+        However, if it is given and a GPU stream, then packing will wait until all
+        work on `stream` has been done.
+        """
+        ...
 
     @overload
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None: ...
+    def exchange_and_wait(
+        self,
+        dim: gtx.Dimension,
+        *buffers: data_alloc.NDArray,
+        stream: Any | type[NoStream] | None = NoStream,
+    ) -> None: ...
 
     @overload
-    def exchange_and_wait(self, dim: gtx.Dimension, *buffers: data_alloc.NDArray) -> None: ...
+    def exchange_and_wait(
+        self, dim: gtx.Dimension, *fields: gtx.Field, stream: Any | type[NoStream] | None = NoStream
+    ) -> None:
+        """Exchange and wait in one go."""
+        ...
+
+    def __call__(
+        self,
+        *args: Any,
+        dim: gtx.Dimension,
+        wait: bool = True,
+        stream: Any | type[NoStream] | None = NoStream,
+    ) -> None | ExchangeResult:
+        """Perform a halo exchange operation.
+
+        Args:
+            args: The fields to be exchanged.
+
+        Keyword Args:
+            dim: The dimension along which the exchange is performed.
+            wait: If True, the operation will block until the exchange is completed (default: True).
+            stream: Use the asynchronous exchange mode using stream `stream`. If `NoStream` is
+                passed, the default, then the normal exchange function are used. For more
+                information refer to the GHEX documentation.
+        """
+        ...
 
     def get_size(self) -> int: ...
 
@@ -179,12 +248,18 @@ class ExchangeRuntime(Protocol):
 @dataclasses.dataclass
 class SingleNodeExchange:
     def exchange(
-        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+        self,
+        dim: gtx.Dimension,
+        *fields: gtx.Field | data_alloc.NDArray,
+        stream: Any | type[NoStream] | None = NoStream,
     ) -> ExchangeResult:
         return SingleNodeResult()
 
     def exchange_and_wait(
-        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+        self,
+        dim: gtx.Dimension,
+        *fields: gtx.Field | data_alloc.NDArray,
+        stream: Any | type[NoStream] | None = NoStream,
     ) -> None:
         return None
 
@@ -194,20 +269,16 @@ class SingleNodeExchange:
     def get_size(self) -> int:
         return 1
 
-    def __call__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> ExchangeResult | None:  # type: ignore[return] # return statment in else condition
-        """Perform a halo exchange operation.
-
-        Args:
-            args: The fields to be exchanged.
-
-        Keyword Args:
-            dim: The dimension along which the exchange is performed.
-            wait: If True, the operation will block until the exchange is completed (default: True).
-        """
-
-        res = self.exchange(dim, *args)
+    def __call__(  # type: ignore[return] # return statment in else condition
+        self,
+        *args: Any,
+        dim: gtx.Dimension,
+        wait: bool = True,
+        stream: Any | type[NoStream] | None = NoStream,
+    ) -> ExchangeResult | None:
+        res = self.exchange(dim, *args, stream=stream)
         if wait:
-            res.wait()
+            res.wait(stream=stream)
         else:
             return res
 
@@ -234,8 +305,15 @@ class SingleNodeExchange:
 class HaloExchangeWaitRuntime(Protocol):
     """Protocol for halo exchange wait."""
 
-    def __call__(self, communication_handle: ExchangeResult) -> None:
-        """Wait on the communication handle."""
+    def __call__(
+        self, communication_handle: ExchangeResult, stream: Any | type[NoStream] | None = NoStream
+    ) -> None:
+        """Wait on the communication handle.
+
+        If `stream` is given then perform a scheduled wait. This means that the when
+        the function returns the unpacking has not necessarily finished. However,
+        every work that is submitted to `stream` will wait for the unpacking.
+        """
         ...
 
     def __sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
@@ -255,7 +333,10 @@ class HaloExchangeWaitRuntime(Protocol):
 class HaloExchangeWait:
     exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
 
-    def __call__(self, communication_handle: SingleNodeResult) -> None:
+    def __call__(
+        self, communication_handle: SingleNodeResult, stream: Any | type[NoStream] | None = NoStream
+    ) -> None:
+        # Stream is ignored.
         communication_handle.wait()
 
     # Implementation of DaCe SDFGConvertible interface
@@ -288,7 +369,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 
 class SingleNodeResult:
-    def wait(self) -> None:
+    def wait(self, stream: Any | type[NoStream] | None = NoStream) -> None:
         pass
 
     def is_ready(self) -> bool:
