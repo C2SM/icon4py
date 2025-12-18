@@ -336,8 +336,7 @@ class HaloExchangeWait:
     def __call__(
         self, communication_handle: SingleNodeResult, stream: Any | type[NoStream] | None = NoStream
     ) -> None:
-        # Stream is ignored.
-        communication_handle.wait()
+        communication_handle.wait(stream=stream)
 
     # Implementation of DaCe SDFGConvertible interface
     def dace__sdfg__(

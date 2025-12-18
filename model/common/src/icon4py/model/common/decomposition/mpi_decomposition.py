@@ -257,6 +257,7 @@ class GHexMultiNodeExchange:
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         # With https://github.com/ghex-org/GHEX/pull/186, ghex will schedule/sync work on the default stream,
         # otherwise we need an explicit device synchronize here.
+        # TODO(phimuell): Switch to passing the list, when bindings have catch up.
         if stream is definitions.NoStream:
             handle = self._comm.exchange(*applied_patterns)
         else:
