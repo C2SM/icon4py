@@ -386,7 +386,8 @@ class Diffusion:
         self._cell_params = cell_params
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
-            self._exchange
+            self._exchange,
+            stream=None,
         )  # wait on a communication handle
         self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
             constants.CPD - constants.GAS_CONSTANT_DRY_AIR
@@ -736,6 +737,7 @@ class Diffusion:
             prognostic_state.w,
             prognostic_state.theta_v,
             prognostic_state.exner,
+            stream=None,
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
@@ -772,12 +774,14 @@ class Diffusion:
         log.debug("rbf interpolation 1: end")
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
+        # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of vn - start")
         self._exchange(
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
             wait=True,
+            stream=None,
         )
         log.debug("communication rbf extrapolation of vn - end")
 
@@ -817,7 +821,8 @@ class Diffusion:
         # TODO(halungge): move this up and do asynchronous exchange
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
-            self._exchange(self.z_nabla2_e, dim=dims.EdgeDim, wait=True)
+            # TODO(phimuell, muellch): Is asynchronous mode okay here.
+            self._exchange(self.z_nabla2_e, dim=dims.EdgeDim, wait=True, stream=None)
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
@@ -827,12 +832,14 @@ class Diffusion:
         log.debug("2nd rbf interpolation: end")
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
+        # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of z_nable2_e - start")
         self._exchange(
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
             wait=True,
+            stream=None,
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
@@ -848,7 +855,9 @@ class Diffusion:
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
         log.debug("communication of prognistic.vn : start")
-        handle_edge_comm = self._exchange(prognostic_state.vn, dim=dims.EdgeDim, wait=False)
+        handle_edge_comm = self._exchange(
+            prognostic_state.vn, dim=dims.EdgeDim, wait=False, stream=None
+        )
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
@@ -894,7 +903,8 @@ class Diffusion:
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
 
         self.halo_exchange_wait(
-            handle_edge_comm
+            handle_edge_comm,
+            stream=None,
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
 
