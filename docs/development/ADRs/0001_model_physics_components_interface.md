@@ -1,5 +1,8 @@
 ---
-tags: [physics components, tendencies, model state]
+tags:
+  - physics components
+  - tendencies
+  - model state
 ---
 
 # Physics components interface: return values

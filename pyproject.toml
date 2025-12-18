@@ -82,7 +82,8 @@ dependencies = [
   "icon4py-atmosphere-microphysics>=0.0.6",
   "icon4py-atmosphere-muphys>=0.0.6",
   "icon4py-common>=0.0.6",
-  "icon4py-driver>=0.0.6"
+  "icon4py-driver>=0.0.6",
+  "icon4py-standalone_driver>=0.0.6"
 ]
 description = 'ICON model in Python.'
 license = {text = "BSD-3 License"}
@@ -364,6 +365,7 @@ icon4py-atmosphere-microphysics = {workspace = true}
 icon4py-atmosphere-muphys = {workspace = true}
 icon4py-common = {workspace = true}
 icon4py-driver = {workspace = true}
+icon4py-standalone_driver = {workspace = true}
 icon4py-testing = {workspace = true}
 icon4py-tools = {workspace = true}
 serialbox4py = {index = "test.pypi"}
@@ -377,6 +379,7 @@ members = [
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
   "model/driver",
+  "model/standalone_driver",
   "model/testing",
   "tools"
 ]
