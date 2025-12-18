@@ -30,6 +30,8 @@ FLOAT64 = gtx_ts.ScalarKind.FLOAT64
 WPFLOAT = FLOAT32 if precision == "single" else FLOAT64
 VPFLOAT = FLOAT64 if precision == "double" else FLOAT32
 
+PRECISION_FLAG = f"-D__{precision.upper()}_PRECISION"  # for fortran compiler
+
 
 class MemorySpace(eve.StrEnum):
     """

@@ -9,13 +9,13 @@
 module random_utils
 contains
    subroutine fill_random_1d(array, low, high)
-      use, intrinsic :: iso_c_binding, only: c_double
+      use mo_kind, only: wp
       implicit none
 
-      real(c_double), intent(inout) :: array(:)
-      real(c_double), intent(in) :: low, high
+      real(wp), intent(inout) :: array(:)
+      real(wp), intent(in) :: low, high
       integer :: i
-      real(c_double) :: rnd
+      real(wp) :: rnd
 
       do i = 1, size(array)
          call random_number(rnd)
@@ -24,13 +24,13 @@ contains
    end subroutine fill_random_1d
 
    subroutine fill_random_2d(array, low, high)
-      use, intrinsic :: iso_c_binding, only: c_double
+      use mo_kind, only: wp
       implicit none
 
-      real(c_double), intent(inout) :: array(:, :)
-      real(c_double), intent(in) :: low, high
+      real(wp), intent(inout) :: array(:, :)
+      real(wp), intent(in) :: low, high
       integer :: i, j
-      real(c_double) :: rnd
+      real(wp) :: rnd
 
       do i = 1, size(array, 1)
          do j = 1, size(array, 2)
@@ -41,13 +41,13 @@ contains
    end subroutine fill_random_2d
 
    subroutine fill_random_2d_int(array, low, high)
-     use, intrinsic :: iso_c_binding, only: c_int
+     use, intrinsic :: iso_c_binding, only: c_int, c_double
      implicit none
 
      integer(c_int), intent(inout) :: array(:, :)
      integer(c_int), intent(in) :: low, high
      integer :: i, j
-     real(c_int) :: rnd
+     real(c_double) :: rnd
 
      do i = 1, size(array, 1)
         do j = 1, size(array, 2)
@@ -59,6 +59,7 @@ contains
 
    subroutine fill_random_3d_int(array, low, high)
       use, intrinsic :: iso_c_binding, only: c_int
+      use mo_kind, only: wp
       implicit none
 
       integer(c_int), intent(inout) :: array(:, :, :)
@@ -77,13 +78,13 @@ contains
    end subroutine fill_random_3d_int
 
    subroutine fill_random_3d(array, low, high)
-      use, intrinsic :: iso_c_binding, only: c_double
+      use mo_kind, only: wp
       implicit none
 
-      real(c_double), intent(inout) :: array(:, :, :)
-      real(c_double), intent(in) :: low, high
+      real(wp), intent(inout) :: array(:, :, :)
+      real(wp), intent(in) :: low, high
       integer :: i, j, k
-      real :: rnd
+      real(wp) :: rnd
 
       do i = 1, size(array, 1)
          do j = 1, size(array, 2)
@@ -137,7 +138,8 @@ contains
 end module random_utils
 
 program solve_nh_simulation
-   use, intrinsic :: iso_c_binding, only: c_double, c_int
+   use, intrinsic :: iso_c_binding, only: c_int
+   use mo_kind, only: wp
    use random_utils, only: fill_random_1d, fill_random_2d, fill_random_2d_int, fill_random_2d_bool, fill_random_1d_bool, &
                             fill_random_3d_int, fill_random_3d
    use dycore_plugin
@@ -159,37 +161,37 @@ program solve_nh_simulation
    integer(c_int), parameter :: num_e2c2eo = 3  !todo: check
    integer(c_int), parameter :: nnow = 1
    integer(c_int), parameter :: nnew = 2
-   real(c_double), parameter :: mean_cell_area = 24907282236.708576
+   real(wp), parameter :: mean_cell_area = 24907282236.708576
 
-   real(c_double), parameter :: dtime = 10.0
-   real(c_double), parameter :: rayleigh_damping_height = 12500.0
-   real(c_double), parameter :: flat_height = 16000.0
+   real(wp), parameter :: dtime = 10.0
+   real(wp), parameter :: rayleigh_damping_height = 12500.0
+   real(wp), parameter :: flat_height = 16000.0
    integer(c_int), parameter :: idyn_timestep = 0
    integer(c_int), parameter :: nflat_gradp = 59
-   real(c_double), parameter :: ndyn_substeps = 2.0
+   real(wp), parameter :: ndyn_substeps = 2.0
 
    integer(c_int), parameter :: itime_scheme = 4    ! itime scheme can only be 4
    integer(c_int), parameter :: iadv_rhotheta = 2
    integer(c_int), parameter :: igradp_method = 3
    integer(c_int), parameter :: rayleigh_type = 1
-   real(c_double), parameter :: rayleigh_coeff = 0.1
+   real(wp), parameter :: rayleigh_coeff = 0.1
    integer(c_int), parameter :: divdamp_order = 24  ! divdamp order can only be 24
    logical(c_int), parameter :: is_iau_active = .false.
-   real(c_double), parameter :: iau_wgt_dyn = 0.5
-   real(c_double), parameter :: divdamp_fac_o2 = 0.5
+   real(wp), parameter :: iau_wgt_dyn = 0.5
+   real(wp), parameter :: divdamp_fac_o2 = 0.5
    integer(c_int), parameter :: divdamp_type = 1
-   real(c_double), parameter :: divdamp_trans_start = 1000.0
-   real(c_double), parameter :: divdamp_trans_end = 2000.0
+   real(wp), parameter :: divdamp_trans_start = 1000.0
+   real(wp), parameter :: divdamp_trans_end = 2000.0
    logical(c_int), parameter :: l_vert_nested = .false.  ! vertical nesting support is not implemented
-   real(c_double), parameter :: divdamp_fac = 1.0
-   real(c_double), parameter :: divdamp_fac2 = 2.0
-   real(c_double), parameter :: divdamp_fac3 = 3.0
-   real(c_double), parameter :: divdamp_fac4 = 4.0
-   real(c_double), parameter :: divdamp_z = 1.0
-   real(c_double), parameter :: divdamp_z2 = 2.0
-   real(c_double), parameter :: divdamp_z3 = 3.0
-   real(c_double), parameter :: divdamp_z4 = 4.0
-   real(c_double), parameter :: htop_moist_proc = 1000.0
+   real(wp), parameter :: divdamp_fac = 1.0
+   real(wp), parameter :: divdamp_fac2 = 2.0
+   real(wp), parameter :: divdamp_fac3 = 3.0
+   real(wp), parameter :: divdamp_fac4 = 4.0
+   real(wp), parameter :: divdamp_z = 1.0
+   real(wp), parameter :: divdamp_z2 = 2.0
+   real(wp), parameter :: divdamp_z3 = 3.0
+   real(wp), parameter :: divdamp_z4 = 4.0
+   real(wp), parameter :: htop_moist_proc = 1000.0
    logical(c_int), parameter :: limited_area = .true.
    logical(c_int), parameter :: lprep_adv = .false.
    logical(c_int), parameter :: clean_mflx = .true.
@@ -197,12 +199,12 @@ program solve_nh_simulation
    logical(c_int), parameter :: linit = .false.
    integer(c_int), parameter :: global_root = 4
    integer(c_int), parameter :: global_level = 9
-   real(c_double), parameter :: lowest_layer_thickness = 20.0
-   real(c_double), parameter :: model_top_height = 23000.0
-   real(c_double), parameter :: stretch_factor = 0.65
-   real(c_double), parameter :: rhotheta_offctr = -0.1
-   real(c_double), parameter :: veladv_offctr = 0.25
-   real(c_double), parameter :: max_nudging_coeff = 0.075
+   real(wp), parameter :: lowest_layer_thickness = 20.0
+   real(wp), parameter :: model_top_height = 23000.0
+   real(wp), parameter :: stretch_factor = 0.65
+   real(wp), parameter :: rhotheta_offctr = -0.1
+   real(wp), parameter :: veladv_offctr = 0.25
+   real(wp), parameter :: max_nudging_coeff = 0.075
    integer(c_int), parameter :: vertical_size = num_levels
 
 
@@ -215,111 +217,111 @@ program solve_nh_simulation
    integer(c_int), dimension(:), allocatable :: edge_starts, edge_ends
 
    ! Declaring arrays
-    real(c_double), dimension(:), allocatable :: vct_a, vct_b
-    real(c_double), dimension(:), allocatable :: rayleigh_w
-    real(c_double), dimension(:), allocatable :: tangent_orientation
-    real(c_double), dimension(:), allocatable :: inverse_primal_edge_lengths
-    real(c_double), dimension(:), allocatable :: inv_dual_edge_length
-    real(c_double), dimension(:), allocatable :: inv_vert_vert_length
-    real(c_double), dimension(:), allocatable :: edge_areas
-    real(c_double), dimension(:), allocatable :: f_e
-    real(c_double), dimension(:), allocatable :: cell_areas
-    real(c_double), dimension(:), allocatable :: vwind_expl_wgt
-    real(c_double), dimension(:), allocatable :: vwind_impl_wgt
-    real(c_double), dimension(:), allocatable :: scalfac_dd3d
-    real(c_double), dimension(:), allocatable :: nudgecoeff_e
-    real(c_double), dimension(:), allocatable :: hmask_dd3d
+    real(wp), dimension(:), allocatable :: vct_a, vct_b
+    real(wp), dimension(:), allocatable :: rayleigh_w
+    real(wp), dimension(:), allocatable :: tangent_orientation
+    real(wp), dimension(:), allocatable :: inverse_primal_edge_lengths
+    real(wp), dimension(:), allocatable :: inv_dual_edge_length
+    real(wp), dimension(:), allocatable :: inv_vert_vert_length
+    real(wp), dimension(:), allocatable :: edge_areas
+    real(wp), dimension(:), allocatable :: f_e
+    real(wp), dimension(:), allocatable :: cell_areas
+    real(wp), dimension(:), allocatable :: vwind_expl_wgt
+    real(wp), dimension(:), allocatable :: vwind_impl_wgt
+    real(wp), dimension(:), allocatable :: scalfac_dd3d
+    real(wp), dimension(:), allocatable :: nudgecoeff_e
+    real(wp), dimension(:), allocatable :: hmask_dd3d
     logical(c_int), dimension(:), allocatable :: bdy_halo_c
     logical(c_int), dimension(:), allocatable :: mask_prog_halo_c
     logical(c_int), dimension(:), allocatable :: c_owner_mask
 
-    real(c_double), dimension(:, :), allocatable :: theta_ref_mc
-    real(c_double), dimension(:, :), allocatable :: exner_pr
-    real(c_double), dimension(:, :), allocatable :: exner_dyn_incr
-    real(c_double), dimension(:, :), allocatable :: wgtfac_c
-    real(c_double), dimension(:, :), allocatable :: e_bln_c_s
-    real(c_double), dimension(:, :), allocatable :: geofac_div
-    real(c_double), dimension(:, :), allocatable :: geofac_grg_x
-    real(c_double), dimension(:, :), allocatable :: geofac_grg_y
-    real(c_double), dimension(:, :), allocatable :: geofac_n2s
-    real(c_double), dimension(:, :), allocatable :: rbf_coeff_1
-    real(c_double), dimension(:, :), allocatable :: rbf_coeff_2
-    real(c_double), dimension(:, :), allocatable :: w_now
-    real(c_double), dimension(:, :), allocatable :: w_new
-    real(c_double), dimension(:, :), allocatable :: vn_now
-    real(c_double), dimension(:, :), allocatable :: vn_new
-    real(c_double), dimension(:, :), allocatable :: exner_now
-    real(c_double), dimension(:, :), allocatable :: exner_new
-    real(c_double), dimension(:, :), allocatable :: theta_v_now
-    real(c_double), dimension(:, :), allocatable :: theta_v_new
-    real(c_double), dimension(:, :), allocatable :: rho_now
-    real(c_double), dimension(:, :), allocatable :: rho_new
-    real(c_double), dimension(:, :), allocatable :: dual_normal_cell_x
-    real(c_double), dimension(:, :), allocatable :: dual_normal_cell_y
-    real(c_double), dimension(:, :), allocatable :: dual_normal_vert_x
-    real(c_double), dimension(:, :), allocatable :: dual_normal_vert_y
-    real(c_double), dimension(:, :), allocatable :: primal_normal_cell_x
-    real(c_double), dimension(:, :), allocatable :: primal_normal_cell_y
-    real(c_double), dimension(:, :), allocatable :: primal_normal_vert_x
-    real(c_double), dimension(:, :), allocatable :: primal_normal_vert_y
-    real(c_double), dimension(:, :), allocatable :: exner_exfac
-    real(c_double), dimension(:, :), allocatable :: exner_ref_mc
-    real(c_double), dimension(:, :), allocatable :: wgtfacq_c_dsl
-    real(c_double), dimension(:, :), allocatable :: inv_ddqz_z_full
-    real(c_double), dimension(:, :), allocatable :: d_exner_dz_ref_ic
-    real(c_double), dimension(:, :), allocatable :: ddqz_z_half
-    real(c_double), dimension(:, :), allocatable :: theta_ref_ic
-    real(c_double), dimension(:, :), allocatable :: d2dexdz2_fac1_mc
-    real(c_double), dimension(:, :), allocatable :: d2dexdz2_fac2_mc
-    real(c_double), dimension(:, :), allocatable :: rho_ref_me
-    real(c_double), dimension(:, :), allocatable :: theta_ref_me
-    real(c_double), dimension(:, :), allocatable :: ddxn_z_full
-    real(c_double), dimension(:, :), allocatable :: pg_exdist
-    real(c_double), dimension(:, :), allocatable :: ddqz_z_full_e
-    real(c_double), dimension(:, :), allocatable :: ddxt_z_full
-    real(c_double), dimension(:, :), allocatable :: wgtfac_e
-    real(c_double), dimension(:, :), allocatable :: wgtfacq_e
-    real(c_double), dimension(:, :), allocatable :: coeff1_dwdz
-    real(c_double), dimension(:, :), allocatable :: coeff2_dwdz
-    real(c_double), dimension(:, :), allocatable :: grf_tend_rho
-    real(c_double), dimension(:, :), allocatable :: grf_tend_thv
-    real(c_double), dimension(:, :), allocatable :: grf_tend_w
-    real(c_double), dimension(:, :), allocatable :: mass_fl_e
-    real(c_double), dimension(:, :), allocatable :: ddt_vn_phy
-    real(c_double), dimension(:, :), allocatable :: grf_tend_vn
-    real(c_double), dimension(:, :), allocatable :: vn_ie
-    real(c_double), dimension(:, :), allocatable :: vt
-    real(c_double), dimension(:, :), allocatable :: vn_incr
-    real(c_double), dimension(:, :), allocatable :: mass_flx_me
-    real(c_double), dimension(:, :), allocatable :: mass_flx_ic
-    real(c_double), dimension(:, :), allocatable :: vn_traj
-    real(c_double), dimension(:, :), allocatable :: ddt_vn_apc_ntl1
-    real(c_double), dimension(:, :), allocatable :: ddt_vn_apc_ntl2
-    real(c_double), dimension(:, :), allocatable :: ddt_w_adv_ntl1
-    real(c_double), dimension(:, :), allocatable :: ddt_w_adv_ntl2
-    real(c_double), dimension(:, :), allocatable :: c_lin_e
-    real(c_double), dimension(:, :), allocatable :: pos_on_tplane_e_1
-    real(c_double), dimension(:, :), allocatable :: pos_on_tplane_e_2
-    real(c_double), dimension(:, :), allocatable :: rbf_vec_coeff_e
-    real(c_double), dimension(:, :), allocatable :: w_concorr_c
-    real(c_double), dimension(:, :), allocatable :: theta_v_ic
-    real(c_double), dimension(:, :), allocatable :: rho_ref_mc
-    real(c_double), dimension(:, :), allocatable :: rho_ic
-    real(c_double), dimension(:, :), allocatable :: e_flx_avg
-    real(c_double), dimension(:, :), allocatable :: ddt_exner_phy
+    real(wp), dimension(:, :), allocatable :: theta_ref_mc
+    real(wp), dimension(:, :), allocatable :: exner_pr
+    real(wp), dimension(:, :), allocatable :: exner_dyn_incr
+    real(wp), dimension(:, :), allocatable :: wgtfac_c
+    real(wp), dimension(:, :), allocatable :: e_bln_c_s
+    real(wp), dimension(:, :), allocatable :: geofac_div
+    real(wp), dimension(:, :), allocatable :: geofac_grg_x
+    real(wp), dimension(:, :), allocatable :: geofac_grg_y
+    real(wp), dimension(:, :), allocatable :: geofac_n2s
+    real(wp), dimension(:, :), allocatable :: rbf_coeff_1
+    real(wp), dimension(:, :), allocatable :: rbf_coeff_2
+    real(wp), dimension(:, :), allocatable :: w_now
+    real(wp), dimension(:, :), allocatable :: w_new
+    real(wp), dimension(:, :), allocatable :: vn_now
+    real(wp), dimension(:, :), allocatable :: vn_new
+    real(wp), dimension(:, :), allocatable :: exner_now
+    real(wp), dimension(:, :), allocatable :: exner_new
+    real(wp), dimension(:, :), allocatable :: theta_v_now
+    real(wp), dimension(:, :), allocatable :: theta_v_new
+    real(wp), dimension(:, :), allocatable :: rho_now
+    real(wp), dimension(:, :), allocatable :: rho_new
+    real(wp), dimension(:, :), allocatable :: dual_normal_cell_x
+    real(wp), dimension(:, :), allocatable :: dual_normal_cell_y
+    real(wp), dimension(:, :), allocatable :: dual_normal_vert_x
+    real(wp), dimension(:, :), allocatable :: dual_normal_vert_y
+    real(wp), dimension(:, :), allocatable :: primal_normal_cell_x
+    real(wp), dimension(:, :), allocatable :: primal_normal_cell_y
+    real(wp), dimension(:, :), allocatable :: primal_normal_vert_x
+    real(wp), dimension(:, :), allocatable :: primal_normal_vert_y
+    real(wp), dimension(:, :), allocatable :: exner_exfac
+    real(wp), dimension(:, :), allocatable :: exner_ref_mc
+    real(wp), dimension(:, :), allocatable :: wgtfacq_c_dsl
+    real(wp), dimension(:, :), allocatable :: inv_ddqz_z_full
+    real(wp), dimension(:, :), allocatable :: d_exner_dz_ref_ic
+    real(wp), dimension(:, :), allocatable :: ddqz_z_half
+    real(wp), dimension(:, :), allocatable :: theta_ref_ic
+    real(wp), dimension(:, :), allocatable :: d2dexdz2_fac1_mc
+    real(wp), dimension(:, :), allocatable :: d2dexdz2_fac2_mc
+    real(wp), dimension(:, :), allocatable :: rho_ref_me
+    real(wp), dimension(:, :), allocatable :: theta_ref_me
+    real(wp), dimension(:, :), allocatable :: ddxn_z_full
+    real(wp), dimension(:, :), allocatable :: pg_exdist
+    real(wp), dimension(:, :), allocatable :: ddqz_z_full_e
+    real(wp), dimension(:, :), allocatable :: ddxt_z_full
+    real(wp), dimension(:, :), allocatable :: wgtfac_e
+    real(wp), dimension(:, :), allocatable :: wgtfacq_e
+    real(wp), dimension(:, :), allocatable :: coeff1_dwdz
+    real(wp), dimension(:, :), allocatable :: coeff2_dwdz
+    real(wp), dimension(:, :), allocatable :: grf_tend_rho
+    real(wp), dimension(:, :), allocatable :: grf_tend_thv
+    real(wp), dimension(:, :), allocatable :: grf_tend_w
+    real(wp), dimension(:, :), allocatable :: mass_fl_e
+    real(wp), dimension(:, :), allocatable :: ddt_vn_phy
+    real(wp), dimension(:, :), allocatable :: grf_tend_vn
+    real(wp), dimension(:, :), allocatable :: vn_ie
+    real(wp), dimension(:, :), allocatable :: vt
+    real(wp), dimension(:, :), allocatable :: vn_incr
+    real(wp), dimension(:, :), allocatable :: mass_flx_me
+    real(wp), dimension(:, :), allocatable :: mass_flx_ic
+    real(wp), dimension(:, :), allocatable :: vn_traj
+    real(wp), dimension(:, :), allocatable :: ddt_vn_apc_ntl1
+    real(wp), dimension(:, :), allocatable :: ddt_vn_apc_ntl2
+    real(wp), dimension(:, :), allocatable :: ddt_w_adv_ntl1
+    real(wp), dimension(:, :), allocatable :: ddt_w_adv_ntl2
+    real(wp), dimension(:, :), allocatable :: c_lin_e
+    real(wp), dimension(:, :), allocatable :: pos_on_tplane_e_1
+    real(wp), dimension(:, :), allocatable :: pos_on_tplane_e_2
+    real(wp), dimension(:, :), allocatable :: rbf_vec_coeff_e
+    real(wp), dimension(:, :), allocatable :: w_concorr_c
+    real(wp), dimension(:, :), allocatable :: theta_v_ic
+    real(wp), dimension(:, :), allocatable :: rho_ref_mc
+    real(wp), dimension(:, :), allocatable :: rho_ic
+    real(wp), dimension(:, :), allocatable :: e_flx_avg
+    real(wp), dimension(:, :), allocatable :: ddt_exner_phy
     logical(c_int), dimension(:, :), allocatable :: ipeidx_dsl
-    real(c_double), dimension(:, :), allocatable :: coeff_gradekin
-    real(c_double), dimension(:, :), allocatable :: geofac_grdiv
-    real(c_double), dimension(:, :), allocatable :: geofac_rot
-    real(c_double), dimension(:, :), allocatable :: c_intp
+    real(wp), dimension(:, :), allocatable :: coeff_gradekin
+    real(wp), dimension(:, :), allocatable :: geofac_grdiv
+    real(wp), dimension(:, :), allocatable :: geofac_rot
+    real(wp), dimension(:, :), allocatable :: c_intp
     integer(c_int), dimension(:, :, :), allocatable :: vertoffset_gradp
-    real(c_double), dimension(:, :, :), allocatable :: zdiff_gradp
-    real(c_double), dimension(:), allocatable :: cell_center_lat
-    real(c_double), dimension(:), allocatable :: cell_center_lon
-    real(c_double), dimension(:), allocatable :: edge_center_lat
-    real(c_double), dimension(:), allocatable :: edge_center_lon
-    real(c_double), dimension(:), allocatable :: primal_normal_x
-    real(c_double), dimension(:), allocatable :: primal_normal_y
+    real(wp), dimension(:, :, :), allocatable :: zdiff_gradp
+    real(wp), dimension(:), allocatable :: cell_center_lat
+    real(wp), dimension(:), allocatable :: cell_center_lon
+    real(wp), dimension(:), allocatable :: edge_center_lat
+    real(wp), dimension(:), allocatable :: edge_center_lon
+    real(wp), dimension(:), allocatable :: primal_normal_x
+    real(wp), dimension(:), allocatable :: primal_normal_y
 
    !$acc enter data create (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
@@ -520,106 +522,106 @@ program solve_nh_simulation
    vct_b = vct_a
 
    ! Fill arrays with random numbers
-   call fill_random_1d(rayleigh_w, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(tangent_orientation, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(nudgecoeff_e, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(hmask_dd3d, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(inverse_primal_edge_lengths, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(inv_dual_edge_length, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(inv_vert_vert_length, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(edge_areas, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(f_e, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(cell_areas, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(vwind_expl_wgt, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(vwind_impl_wgt, 0.0_c_double, 1.0_c_double)
-   call fill_random_1d(scalfac_dd3d, 0.0_c_double, 1.0_c_double)
+   call fill_random_1d(rayleigh_w, 0.0_wp, 1.0_wp)
+   call fill_random_1d(tangent_orientation, 0.0_wp, 1.0_wp)
+   call fill_random_1d(nudgecoeff_e, 0.0_wp, 1.0_wp)
+   call fill_random_1d(hmask_dd3d, 0.0_wp, 1.0_wp)
+   call fill_random_1d(inverse_primal_edge_lengths, 0.0_wp, 1.0_wp)
+   call fill_random_1d(inv_dual_edge_length, 0.0_wp, 1.0_wp)
+   call fill_random_1d(inv_vert_vert_length, 0.0_wp, 1.0_wp)
+   call fill_random_1d(edge_areas, 0.0_wp, 1.0_wp)
+   call fill_random_1d(f_e, 0.0_wp, 1.0_wp)
+   call fill_random_1d(cell_areas, 0.0_wp, 1.0_wp)
+   call fill_random_1d(vwind_expl_wgt, 0.0_wp, 1.0_wp)
+   call fill_random_1d(vwind_impl_wgt, 0.0_wp, 1.0_wp)
+   call fill_random_1d(scalfac_dd3d, 0.0_wp, 1.0_wp)
    call fill_random_1d_bool(mask_prog_halo_c)
    call fill_random_1d_bool(c_owner_mask)
    call fill_random_1d_bool(bdy_halo_c)
 
 
-   call fill_random_2d(theta_ref_mc, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(exner_pr, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(exner_dyn_incr, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(wgtfac_c, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(e_bln_c_s, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(geofac_div, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(geofac_grg_x, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(geofac_grg_y, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(geofac_n2s, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(rbf_coeff_1, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(rbf_coeff_2, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(w_now, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(w_new, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(vn_now, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(vn_new, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(exner_now, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(exner_new, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(theta_v_now, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(theta_v_new, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(rho_now, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(rho_new, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(dual_normal_cell_x, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(dual_normal_cell_y, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(dual_normal_vert_x, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(dual_normal_vert_y, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(primal_normal_cell_x, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(primal_normal_cell_y, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(primal_normal_vert_x, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(primal_normal_vert_y, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(exner_exfac, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(exner_ref_mc, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(wgtfacq_c_dsl, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(inv_ddqz_z_full, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(d_exner_dz_ref_ic, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(ddqz_z_half, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(theta_ref_ic, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(d2dexdz2_fac1_mc, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(d2dexdz2_fac2_mc, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(rho_ref_me, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(theta_ref_me, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(ddxn_z_full, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(pg_exdist, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(ddqz_z_full_e, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(ddxt_z_full, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(wgtfac_e, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(wgtfacq_e, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(coeff1_dwdz, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(coeff2_dwdz, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(grf_tend_rho, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(grf_tend_thv, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(grf_tend_w, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(mass_fl_e, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(ddt_vn_phy, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(grf_tend_vn, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(vn_ie, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(vt, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(vn_incr, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(mass_flx_me, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(mass_flx_ic, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(vn_traj, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(ddt_vn_apc_ntl1, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(ddt_vn_apc_ntl2, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(ddt_w_adv_ntl1, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(ddt_w_adv_ntl2, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(c_lin_e, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(pos_on_tplane_e_1, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(pos_on_tplane_e_2, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(rbf_vec_coeff_e, 0.0_c_double, 1.0_c_double)
+   call fill_random_2d(theta_ref_mc, 0.0_wp, 1.0_wp)
+   call fill_random_2d(exner_pr, 0.0_wp, 1.0_wp)
+   call fill_random_2d(exner_dyn_incr, 0.0_wp, 1.0_wp)
+   call fill_random_2d(wgtfac_c, 0.0_wp, 1.0_wp)
+   call fill_random_2d(e_bln_c_s, 0.0_wp, 1.0_wp)
+   call fill_random_2d(geofac_div, 0.0_wp, 1.0_wp)
+   call fill_random_2d(geofac_grg_x, 0.0_wp, 1.0_wp)
+   call fill_random_2d(geofac_grg_y, 0.0_wp, 1.0_wp)
+   call fill_random_2d(geofac_n2s, 0.0_wp, 1.0_wp)
+   call fill_random_2d(rbf_coeff_1, 0.0_wp, 1.0_wp)
+   call fill_random_2d(rbf_coeff_2, 0.0_wp, 1.0_wp)
+   call fill_random_2d(w_now, 0.0_wp, 1.0_wp)
+   call fill_random_2d(w_new, 0.0_wp, 1.0_wp)
+   call fill_random_2d(vn_now, 0.0_wp, 1.0_wp)
+   call fill_random_2d(vn_new, 0.0_wp, 1.0_wp)
+   call fill_random_2d(exner_now, 0.0_wp, 1.0_wp)
+   call fill_random_2d(exner_new, 0.0_wp, 1.0_wp)
+   call fill_random_2d(theta_v_now, 0.0_wp, 1.0_wp)
+   call fill_random_2d(theta_v_new, 0.0_wp, 1.0_wp)
+   call fill_random_2d(rho_now, 0.0_wp, 1.0_wp)
+   call fill_random_2d(rho_new, 0.0_wp, 1.0_wp)
+   call fill_random_2d(dual_normal_cell_x, 0.0_wp, 1.0_wp)
+   call fill_random_2d(dual_normal_cell_y, 0.0_wp, 1.0_wp)
+   call fill_random_2d(dual_normal_vert_x, 0.0_wp, 1.0_wp)
+   call fill_random_2d(dual_normal_vert_y, 0.0_wp, 1.0_wp)
+   call fill_random_2d(primal_normal_cell_x, 0.0_wp, 1.0_wp)
+   call fill_random_2d(primal_normal_cell_y, 0.0_wp, 1.0_wp)
+   call fill_random_2d(primal_normal_vert_x, 0.0_wp, 1.0_wp)
+   call fill_random_2d(primal_normal_vert_y, 0.0_wp, 1.0_wp)
+   call fill_random_2d(exner_exfac, 0.0_wp, 1.0_wp)
+   call fill_random_2d(exner_ref_mc, 0.0_wp, 1.0_wp)
+   call fill_random_2d(wgtfacq_c_dsl, 0.0_wp, 1.0_wp)
+   call fill_random_2d(inv_ddqz_z_full, 0.0_wp, 1.0_wp)
+   call fill_random_2d(d_exner_dz_ref_ic, 0.0_wp, 1.0_wp)
+   call fill_random_2d(ddqz_z_half, 0.0_wp, 1.0_wp)
+   call fill_random_2d(theta_ref_ic, 0.0_wp, 1.0_wp)
+   call fill_random_2d(d2dexdz2_fac1_mc, 0.0_wp, 1.0_wp)
+   call fill_random_2d(d2dexdz2_fac2_mc, 0.0_wp, 1.0_wp)
+   call fill_random_2d(rho_ref_me, 0.0_wp, 1.0_wp)
+   call fill_random_2d(theta_ref_me, 0.0_wp, 1.0_wp)
+   call fill_random_2d(ddxn_z_full, 0.0_wp, 1.0_wp)
+   call fill_random_2d(pg_exdist, 0.0_wp, 1.0_wp)
+   call fill_random_2d(ddqz_z_full_e, 0.0_wp, 1.0_wp)
+   call fill_random_2d(ddxt_z_full, 0.0_wp, 1.0_wp)
+   call fill_random_2d(wgtfac_e, 0.0_wp, 1.0_wp)
+   call fill_random_2d(wgtfacq_e, 0.0_wp, 1.0_wp)
+   call fill_random_2d(coeff1_dwdz, 0.0_wp, 1.0_wp)
+   call fill_random_2d(coeff2_dwdz, 0.0_wp, 1.0_wp)
+   call fill_random_2d(grf_tend_rho, 0.0_wp, 1.0_wp)
+   call fill_random_2d(grf_tend_thv, 0.0_wp, 1.0_wp)
+   call fill_random_2d(grf_tend_w, 0.0_wp, 1.0_wp)
+   call fill_random_2d(mass_fl_e, 0.0_wp, 1.0_wp)
+   call fill_random_2d(ddt_vn_phy, 0.0_wp, 1.0_wp)
+   call fill_random_2d(grf_tend_vn, 0.0_wp, 1.0_wp)
+   call fill_random_2d(vn_ie, 0.0_wp, 1.0_wp)
+   call fill_random_2d(vt, 0.0_wp, 1.0_wp)
+   call fill_random_2d(vn_incr, 0.0_wp, 1.0_wp)
+   call fill_random_2d(mass_flx_me, 0.0_wp, 1.0_wp)
+   call fill_random_2d(mass_flx_ic, 0.0_wp, 1.0_wp)
+   call fill_random_2d(vn_traj, 0.0_wp, 1.0_wp)
+   call fill_random_2d(ddt_vn_apc_ntl1, 0.0_wp, 1.0_wp)
+   call fill_random_2d(ddt_vn_apc_ntl2, 0.0_wp, 1.0_wp)
+   call fill_random_2d(ddt_w_adv_ntl1, 0.0_wp, 1.0_wp)
+   call fill_random_2d(ddt_w_adv_ntl2, 0.0_wp, 1.0_wp)
+   call fill_random_2d(c_lin_e, 0.0_wp, 1.0_wp)
+   call fill_random_2d(pos_on_tplane_e_1, 0.0_wp, 1.0_wp)
+   call fill_random_2d(pos_on_tplane_e_2, 0.0_wp, 1.0_wp)
+   call fill_random_2d(rbf_vec_coeff_e, 0.0_wp, 1.0_wp)
    call fill_random_2d_bool(ipeidx_dsl)
-   call fill_random_2d(coeff_gradekin, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(geofac_grdiv, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(e_flx_avg, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(geofac_rot, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(c_intp, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(w_concorr_c, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(theta_v_ic, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(rho_ref_mc, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(rho_ic, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d(ddt_exner_phy, 0.0_c_double, 1.0_c_double)
+   call fill_random_2d(coeff_gradekin, 0.0_wp, 1.0_wp)
+   call fill_random_2d(geofac_grdiv, 0.0_wp, 1.0_wp)
+   call fill_random_2d(e_flx_avg, 0.0_wp, 1.0_wp)
+   call fill_random_2d(geofac_rot, 0.0_wp, 1.0_wp)
+   call fill_random_2d(c_intp, 0.0_wp, 1.0_wp)
+   call fill_random_2d(w_concorr_c, 0.0_wp, 1.0_wp)
+   call fill_random_2d(theta_v_ic, 0.0_wp, 1.0_wp)
+   call fill_random_2d(rho_ref_mc, 0.0_wp, 1.0_wp)
+   call fill_random_2d(rho_ic, 0.0_wp, 1.0_wp)
+   call fill_random_2d(ddt_exner_phy, 0.0_wp, 1.0_wp)
 
    ! For 3D arrays
-   call fill_random_3d(zdiff_gradp, 0.0_c_double, 1.0_c_double)
+   call fill_random_3d(zdiff_gradp, 0.0_wp, 1.0_wp)
    call fill_random_3d_int(vertoffset_gradp, 0, 1)
 
    ! Fill connectivities with random values

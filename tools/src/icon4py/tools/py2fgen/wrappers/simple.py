@@ -22,7 +22,7 @@ grid = simple_grid()
 def _square(
     inp: gtx.Field[[dims.CellDim, dims.KDim], wpfloat],
 ) -> gtx.Field[[dims.CellDim, dims.KDim], wpfloat]:
-    return inp**2
+    return inp ** wpfloat(2)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

@@ -7,13 +7,15 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 
 program call_square_wrapper_cffi_plugin
-   use, intrinsic :: iso_c_binding
+   use mo_kind, only: wp
+   use, intrinsic :: iso_c_binding, only: c_int
    use square_plugin
    implicit none
+   
    character(len=100) :: str_buffer
    integer(c_int) :: cdim, kdim, i, j, rc, n
    logical :: computation_correct
-   real(c_double), dimension(:, :), allocatable :: input, result
+   real(wp), dimension(:, :), allocatable :: input, result
 
    ! array dimensions
    cdim = 18

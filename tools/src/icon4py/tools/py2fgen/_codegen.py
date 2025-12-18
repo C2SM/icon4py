@@ -20,6 +20,12 @@ CFFI_DECORATOR = "@ffi.def_extern()"
 BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "real(c_double)",
     _definitions.FLOAT32: "real(c_float)",
+    _definitions.WPFLOAT: "real(c_float)"
+    if _definitions.precision == "single"
+    else "real(c_double)",
+    _definitions.VPFLOAT: "real(c_double)"
+    if _definitions.precision == "double"
+    else "real(c_float)",
     _definitions.BOOL: "logical(c_int)",
     _definitions.INT32: "integer(c_int)",
     _definitions.INT64: "integer(c_long)",
@@ -27,6 +33,8 @@ BUILTIN_TO_ISO_C_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
 BUILTIN_TO_CPP_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "double",
     _definitions.FLOAT32: "float",
+    _definitions.WPFLOAT: "float" if _definitions.precision == "single" else "double",
+    _definitions.VPFLOAT: "double" if _definitions.precision == "double" else "float",
     _definitions.BOOL: "int",
     _definitions.INT32: "int",
     _definitions.INT64: "long",
@@ -34,6 +42,8 @@ BUILTIN_TO_CPP_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
 BUILTIN_TO_NUMPY_TYPE: Final[dict[_definitions.ScalarKind, str]] = {
     _definitions.FLOAT64: "xp.float64",
     _definitions.FLOAT32: "xp.float32",
+    _definitions.WPFLOAT: "xp.float32" if _definitions.precision == "single" else "xp.float64",
+    _definitions.VPFLOAT: "xp.float64" if _definitions.precision == "double" else "xp.float32",
     _definitions.BOOL: "xp.int32",
     _definitions.INT32: "xp.int32",
     _definitions.INT64: "xp.int64",
@@ -256,7 +266,7 @@ class CHeaderGenerator(codegen.TemplatedGenerator):
 
 
 def _render_parameter_declaration(name: str, attributes: Sequence[str | None]) -> str:
-    return f"{','.join(attribute for attribute in  attributes if attribute is not None)} :: {name}"
+    return f"{','.join(attribute for attribute in attributes if attribute is not None)} :: {name}"
 
 
 def _size_arg_name(name: str, i: int) -> str:

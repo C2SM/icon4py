@@ -15,6 +15,7 @@ from click.testing import CliRunner
 
 import icon4py.tools.py2fgen._utils as utils
 from icon4py.tools.py2fgen._cli import main
+from icon4py.tools.py2fgen._definitions import PRECISION_FLAG
 
 
 @pytest.fixture
@@ -37,11 +38,13 @@ def compile_fortran_code(
         "-I.",
         "-Wl,-rpath=.",
         "-L.",
+        str(samples_path / "mo_kind.f90"),
         f"{library_name}.f90",
         str(samples_path / f"{fortran_driver}.f90"),
         f"-l{shared_library}",
         "-o",
         library_name,
+        PRECISION_FLAG,
         *list(extra_compiler_flags),
     ]
     subprocess.run(command, check=True, capture_output=True, text=True)
@@ -121,6 +124,7 @@ def compile_and_run_fortran(
         pytest.fail(f"Execution of compiled Fortran code failed: {e}\nOutput:\n{e.stdout}")
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "run_backend, extra_flags",
     [
@@ -145,6 +149,7 @@ def test_py2fgen_compilation_and_execution_square_cpu(
     )
 
 
+@pytest.mark.single_precision_ready
 def test_py2fgen_python_error_propagation_to_fortran(
     cli_runner, samples_path, square_wrapper_module, test_temp_dir
 ):
@@ -162,6 +167,7 @@ def test_py2fgen_python_error_propagation_to_fortran(
     )
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 @pytest.mark.parametrize(
     "function_name, library_name, test_name, extra_flags",
@@ -198,6 +204,7 @@ def test_py2fgen_compilation_and_execution_gpu(
     )
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.parametrize(
     "extra_flags",
     [
@@ -228,6 +235,7 @@ def test_py2fgen_compilation_and_profiling(
     assert (tmp_path / "viztracer.json").exists()
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")
 def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_path, test_temp_dir):
     run_test_case(
@@ -244,6 +252,7 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_pat
     )
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")
 def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, test_temp_dir):
     run_test_case(
@@ -257,6 +266,7 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, t
     )
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.skip("Fortran driver needs to pass connectivities to construct grid.")
 def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test_temp_dir):
     run_test_case(
@@ -270,6 +280,7 @@ def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test
     )
 
 
+@pytest.mark.single_precision_ready
 @pytest.mark.skip("Fortran driver needs to pass connectivities to construct grid.")
 def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path, test_temp_dir):
     run_test_case(
