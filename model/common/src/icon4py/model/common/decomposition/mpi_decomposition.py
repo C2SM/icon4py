@@ -435,7 +435,7 @@ class MultiNodeResult:
             # NOTE: GHEX interprets `None` as default stream.
             # TODO(phimuell): Fixing named arguments in GHEX.
             self.handle.schedule_wait(
-                stream=(None if stream is definitions.DefaultStream else stream),
+                None if stream is definitions.DefaultStream else stream,
             )
         # TODO(reviewer, phimuell): Is it safe to delete that here, even in the scheduled mode?
         del self.pattern_refs
