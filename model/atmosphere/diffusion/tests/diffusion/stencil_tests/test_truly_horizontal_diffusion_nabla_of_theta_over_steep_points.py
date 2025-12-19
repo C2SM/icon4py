@@ -88,7 +88,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         )
         return dict(z_temp=z_temp)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         mask = random_mask(grid, dims.CellDim, dims.KDim)
 

@@ -23,7 +23,7 @@ class TestDepositionFactor(StencilTest):
     def reference(grid, t: np.ndarray, qvsi: np.ndarray, **kwargs) -> dict:
         return dict(deposition_rate=np.full(t.shape, 1.3234329478493952e-05))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 272.731, dims.CellDim, dims.KDim, dtype=wpfloat),

@@ -92,7 +92,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         )
         return dict(z_q=z_q_ref, w=w_ref)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base_grid.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
         theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

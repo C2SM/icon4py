@@ -23,7 +23,7 @@ class TestIceSticking(StencilTest):
     def reference(grid, t: np.ndarray, **kwargs) -> dict:
         return dict(sticking_factor=np.full(t.shape, 0.8697930232044021))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 271.6, dims.CellDim, dims.KDim, dtype=wpfloat),

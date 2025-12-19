@@ -44,7 +44,7 @@ class TestCalculateNabla2ForW(StencilTest):
         z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w, geofac_n2s)
         return dict(z_nabla2_c=z_nabla2_c)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict:
         w = constant_field(grid, 1.0, dims.CellDim, dims.KDim)
         geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)

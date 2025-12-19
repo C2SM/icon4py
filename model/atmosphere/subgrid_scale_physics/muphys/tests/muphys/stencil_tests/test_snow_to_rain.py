@@ -31,7 +31,7 @@ class TestSnowToRainDefault(StencilTest):
     ) -> dict:
         return dict(conversion_rate=np.full(t.shape, 3.7268547760462804e-07))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 275.83, dims.CellDim, dims.KDim, dtype=wpfloat),
