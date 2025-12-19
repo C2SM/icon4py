@@ -1183,8 +1183,8 @@ class SolveNonhydro:
             normal_wind_tendency_due_to_slow_physics_process=diagnostic_state_nh.normal_wind_tendency_due_to_slow_physics_process,
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
             grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
-            is_iau_active=self._config.is_iau_active,
-            iau_wgt_dyn=self._config.iau_wgt_dyn,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
             dtime=dtime,
         )
 
@@ -1234,8 +1234,8 @@ class SolveNonhydro:
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             dtime=dtime,
             at_first_substep=at_first_substep,
-            is_iau_active=self._config.is_iau_active,
-            iau_wgt_dyn=self._config.iau_wgt_dyn,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
         )
 
         if self._grid.limited_area:
@@ -1362,8 +1362,8 @@ class SolveNonhydro:
             dtime=dtime,
             apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
             apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
-            is_iau_active=self._config.is_iau_active,
-            iau_wgt_dyn=self._config.iau_wgt_dyn,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
         )
 
         log.debug("exchanging prognostic field 'vn'")
@@ -1408,8 +1408,8 @@ class SolveNonhydro:
             exner_tendency_due_to_slow_physics=diagnostic_state_nh.exner_tendency_due_to_slow_physics,
             rho_iau_increment=diagnostic_state_nh.rho_iau_increment,
             exner_iau_increment=diagnostic_state_nh.exner_iau_increment,
-            is_iau_active=self._config.is_iau_active,
-            iau_wgt_dyn=self._config.iau_wgt_dyn,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
             rayleigh_damping_factor=self._get_rayleigh_damping_factor(dtime),
             lprep_adv=lprep_adv,
             r_nsubsteps=r_nsubsteps,
