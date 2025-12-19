@@ -18,11 +18,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
     forward=True,
     init=(
         vpfloat("0.0"),
-        0.0,
+        wpfloat("0.0"),
     ),  # boundary condition for upper tridiagonal element and w at model top
 )
 def tridiagonal_forward_sweep_for_w(
-    state_kminus1: tuple[vpfloat, float],
+    state_kminus1: tuple[vpfloat, wpfloat],
     a: vpfloat,
     b: vpfloat,
     c: vpfloat,

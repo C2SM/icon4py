@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.dycore_utils import (
-    _broadcast_zero_to_three_edge_kdim_fields_wp,
+    _broadcast_zero_to_three_edge_kdim_fields_2wp1vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -28,7 +28,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperat
 )
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_kdim_field_with_zero_wp,
+    _init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
@@ -38,14 +38,15 @@ from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
 )
 from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_test_fields(
-    z_rho_e: fa.EdgeKField[float],
-    z_theta_v_e: fa.EdgeKField[float],
-    z_dwdz_dd: fa.CellKField[float],
-    z_graddiv_vn: fa.EdgeKField[float],
+    z_rho_e: fa.EdgeKField[wpfloat],
+    z_theta_v_e: fa.EdgeKField[wpfloat],
+    z_dwdz_dd: fa.CellKField[vpfloat],
+    z_graddiv_vn: fa.EdgeKField[vpfloat],
     edges_start: gtx.int32,
     edges_end: gtx.int32,
     cells_start: gtx.int32,
@@ -53,11 +54,11 @@ def init_test_fields(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _broadcast_zero_to_three_edge_kdim_fields_wp(
+    _broadcast_zero_to_three_edge_kdim_fields_2wp1vp(
         out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
         domain={dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
     )
-    _init_cell_kdim_field_with_zero_wp(
+    _init_cell_kdim_field_with_zero_vp(
         out=z_dwdz_dd,
         domain={dims.CellDim: (cells_start, cells_end), dims.KDim: (vertical_start, vertical_end)},
     )
@@ -65,28 +66,28 @@ def init_test_fields(
 
 @gtx.field_operator
 def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
-    rho: fa.CellKField[float],
-    z_rth_pr_1: fa.CellKField[float],
-    z_rth_pr_2: fa.CellKField[float],
-    rho_ref_mc: fa.CellKField[float],
-    theta_v: fa.CellKField[float],
-    theta_ref_mc: fa.CellKField[float],
-    rho_ic: fa.CellKField[float],
-    wgtfac_c: fa.CellKField[float],
-    vwind_expl_wgt: fa.CellField[float],
-    exner_pr: fa.CellKField[float],
-    d_exner_dz_ref_ic: fa.CellKField[float],
-    ddqz_z_half: fa.CellKField[float],
-    z_theta_v_pr_ic: fa.CellKField[float],
-    theta_v_ic: fa.CellKField[float],
-    z_th_ddz_exner_c: fa.CellKField[float],
+    rho: fa.CellKField[wpfloat],
+    z_rth_pr_1: fa.CellKField[vpfloat],
+    z_rth_pr_2: fa.CellKField[vpfloat],
+    rho_ref_mc: fa.CellKField[vpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[vpfloat],
+    rho_ic: fa.CellKField[wpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    vwind_expl_wgt: fa.CellField[wpfloat],
+    exner_pr: fa.CellKField[wpfloat],
+    d_exner_dz_ref_ic: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    z_theta_v_pr_ic: fa.CellKField[vpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    z_th_ddz_exner_c: fa.CellKField[vpfloat],
 ) -> tuple[
-    fa.CellKField[float],
-    fa.CellKField[float],
-    fa.CellKField[float],
-    fa.CellKField[float],
-    fa.CellKField[float],
-    fa.CellKField[float],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[vpfloat],
 ]:
     (z_rth_pr_1, z_rth_pr_2) = concat_where(
         dims.KDim == 0,
@@ -121,22 +122,22 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
 
 @gtx.field_operator
 def _predictor_stencils_35_36(
-    vn: fa.EdgeKField[float],
-    ddxn_z_full: fa.EdgeKField[float],
-    ddxt_z_full: fa.EdgeKField[float],
-    vt: fa.EdgeKField[float],
-    z_w_concorr_me: fa.EdgeKField[float],
-    wgtfac_e: fa.EdgeKField[float],
-    vn_ie: fa.EdgeKField[float],
-    z_vt_ie: fa.EdgeKField[float],
-    z_kin_hor_e: fa.EdgeKField[float],
+    vn: fa.EdgeKField[wpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_vt_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     k_field: fa.KField[gtx.int32],
     nflatlev_startindex: gtx.int32,
 ) -> tuple[
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     z_w_concorr_me = concat_where(
         dims.KDim >= nflatlev_startindex,
@@ -153,15 +154,15 @@ def _predictor_stencils_35_36(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def predictor_stencils_35_36(
-    vn: fa.EdgeKField[float],
-    ddxn_z_full: fa.EdgeKField[float],
-    ddxt_z_full: fa.EdgeKField[float],
-    vt: fa.EdgeKField[float],
-    z_w_concorr_me: fa.EdgeKField[float],
-    wgtfac_e: fa.EdgeKField[float],
-    vn_ie: fa.EdgeKField[float],
-    z_vt_ie: fa.EdgeKField[float],
-    z_kin_hor_e: fa.EdgeKField[float],
+    vn: fa.EdgeKField[wpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_vt_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     k_field: fa.KField[gtx.int32],
     nflatlev_startindex: gtx.int32,
     horizontal_start: gtx.int32,
@@ -191,12 +192,12 @@ def predictor_stencils_35_36(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def predictor_stencils_37_38(
-    vn: fa.EdgeKField[float],
-    vt: fa.EdgeKField[float],
-    vn_ie: fa.EdgeKField[float],
-    z_vt_ie: fa.EdgeKField[float],
-    z_kin_hor_e: fa.EdgeKField[float],
-    wgtfacq_e_dsl: fa.EdgeKField[float],
+    vn: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_vt_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    wgtfacq_e_dsl: fa.EdgeKField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -212,8 +213,8 @@ def predictor_stencils_37_38(
         },
     )
     _extrapolate_at_top(
-        vn,
         wgtfacq_e_dsl,
+        vn,
         out=vn_ie,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -224,16 +225,16 @@ def predictor_stencils_37_38(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def stencils_61_62(
-    rho_now: fa.CellKField[float],
-    grf_tend_rho: fa.CellKField[float],
-    theta_v_now: fa.CellKField[float],
-    grf_tend_thv: fa.CellKField[float],
-    w_now: fa.CellKField[float],
-    grf_tend_w: fa.CellKField[float],
-    rho_new: fa.CellKField[float],
-    exner_new: fa.CellKField[float],
-    w_new: fa.CellKField[float],
-    dtime: float,
+    rho_now: fa.CellKField[wpfloat],
+    grf_tend_rho: fa.CellKField[wpfloat],
+    theta_v_now: fa.CellKField[wpfloat],
+    grf_tend_thv: fa.CellKField[wpfloat],
+    w_now: fa.CellKField[wpfloat],
+    grf_tend_w: fa.CellKField[wpfloat],
+    rho_new: fa.CellKField[wpfloat],
+    exner_new: fa.CellKField[wpfloat],
+    w_new: fa.CellKField[wpfloat],
+    dtime: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

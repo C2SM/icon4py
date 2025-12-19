@@ -152,11 +152,16 @@ def test_model(
     _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
+
+    posargs_list = list(session.posargs)
+    if "--single-precision" in posargs_list:
+        session.env["FLOAT_PRECISION"] = "single"
+        posargs_list.remove("--single-precision")
     with session.chdir(f"model/{subpackage}"):
         session.run(
             *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
-            *session.posargs,
+            *posargs_list,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
         )
 
