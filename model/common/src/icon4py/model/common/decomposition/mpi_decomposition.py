@@ -245,7 +245,7 @@ class GHexMultiNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: Any | type[definitions.NoStream] | None = definitions.NoStream,
+        stream: definitions.StreamLike | None = definitions.DefaultStream,
     ) -> MultiNodeResult:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
@@ -255,12 +255,16 @@ class GHexMultiNodeExchange:
         ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
-        # With https://github.com/ghex-org/GHEX/pull/186, ghex will schedule/sync work on the default stream,
-        # otherwise we need an explicit device synchronize here.
-        if stream is definitions.NoStream:
+
+        if stream is None:
+            # Normal exchange.
             handle = self._comm.exchange(applied_patterns)
         else:
-            handle = self._comm.schedule_exchange(applied_patterns, stream=stream)
+            # Stream given, perform a scheduled exchange..
+            # NOTE: GHEX interprets `None` as default stream.
+            handle = self._comm.schedule_exchange(
+                applied_patterns, stream=(None if stream is definitions.DefaultStream else stream)
+            )
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
@@ -268,7 +272,7 @@ class GHexMultiNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: Any | type[definitions.NoStream] | None = definitions.NoStream,
+        stream: definitions.StreamLike | None = definitions.DefaultStream,
     ) -> None:
         res = self.exchange(dim, *fields, stream=stream)
         res.wait(stream=stream)
@@ -279,20 +283,8 @@ class GHexMultiNodeExchange:
         *args: Any,
         dim: gtx.Dimension,
         wait: bool = True,
-        stream: Any | type[definitions.NoStream] | None = definitions.NoStream,
+        stream: definitions.StreamLike | None = definitions.DefaultStream,
     ) -> MultiNodeResult | None:
-        """Perform a halo exchange operation.
-
-        Args:
-            args: The fields to be exchanged.
-
-        Keyword Args:
-            dim: The dimension along which the exchange is performed.
-            wait: If True, the operation will block until the exchange is completed (default: True).
-            stream: Use the asynchronous exchange mode using stream `stream`. If `NoStream` is
-                passed, the default, then the normal exchange function are used. For more
-                information refer to the GHEX documentation.
-        """
         if dim is None:
             raise ValueError("Need to define a dimension.")
 
@@ -355,7 +347,7 @@ class HaloExchangeWait:
     def __call__(
         self,
         communication_handle: MultiNodeResult,
-        stream: Any | type[definitions.NoStream] | None = definitions.NoStream,
+        stream: definitions.StreamLike | None = definitions.DefaultStream,
     ) -> None:
         """Wait on the communication handle."""
         communication_handle.wait(stream=stream)
@@ -429,11 +421,20 @@ class MultiNodeResult:
     handle: Any
     pattern_refs: Any
 
-    def wait(self, stream: Any | type[definitions.NoStream] | None = definitions.NoStream) -> None:
-        if stream is definitions.NoStream:
+    def wait(
+        self,
+        stream: definitions.StreamLike | None = definitions.DefaultStream,
+    ) -> None:
+        if stream is None:
+            # No stream given, perform full blocking wait.
             self.handle.wait()
         else:
-            self.handle.schedule_wait(stream=stream)
+            # Stream given, perform a scheduled wait.
+            # NOTE: GHEX interprets `None` as default stream.
+            self.handle.schedule_wait(
+                stream=(None if stream is definitions.DefaultStream else stream)
+            )
+        # TODO(reviewer, phimuell): Is it safe to delete that here, even in the scheduled mode?
         del self.pattern_refs
 
     def is_ready(self) -> bool:
