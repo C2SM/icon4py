@@ -371,7 +371,7 @@ class SolveNonhydro:
         | None,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):
-        self._exchange = exchange if (exchange is not None) else decomposition.SingleNodeExchange()
+        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         self._grid = grid
         self._config = config
