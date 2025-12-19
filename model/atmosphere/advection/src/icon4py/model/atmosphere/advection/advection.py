@@ -271,7 +271,11 @@ class GodunovSplittingAdvection(Advection):
         log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
-        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic, stream=None)
+        self._exchange.exchange_and_wait(
+            dims.CellDim,
+            prep_adv.mass_flx_ic,
+            stream=decomposition.DefaultStream,
+        )
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         # reintegrate density for conservation of mass
@@ -364,7 +368,11 @@ class GodunovSplittingAdvection(Advection):
 
         # exchange updated tracer values, originally happens only if iforcing /= inwp
         log.debug("communication of advection cell field: p_tracer_new - start")
-        self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new, stream=None)
+        self._exchange.exchange_and_wait(
+            dims.CellDim,
+            p_tracer_new,
+            stream=decomposition.DefaultStream,
+        )
         log.debug("communication of advection cell field: p_tracer_new - end")
 
         # finalize step

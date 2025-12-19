@@ -1193,7 +1193,7 @@ class SolveNonhydro:
             dims.EdgeDim,
             prognostic_states.next.vn,
             z_fields.rho_at_edges_on_model_levels,
-            stream=None,
+            stream=decomposition.DefaultStream,
         )
 
         self._compute_horizontal_velocity_quantities_and_fluxes(
@@ -1268,11 +1268,15 @@ class SolveNonhydro:
                 dims.CellDim,
                 prognostic_states.next.w,
                 z_fields.dwdz_at_cells_on_model_levels,
-                stream=None,
+                stream=decomposition.DefaultStream,
             )
         else:
             log.debug("exchanging prognostic field 'w'")
-            self._exchange.exchange_and_wait(dims.CellDim, prognostic_states.next.w, stream=None)
+            self._exchange.exchange_and_wait(
+                dims.CellDim,
+                prognostic_states.next.w,
+                stream=decomposition.DefaultStream,
+            )
 
     def run_corrector_step(
         self,
@@ -1367,7 +1371,11 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn'")
-        self._exchange.exchange_and_wait(dims.EdgeDim, prognostic_states.next.vn, stream=None)
+        self._exchange.exchange_and_wait(
+            dims.EdgeDim,
+            prognostic_states.next.vn,
+            stream=decomposition.DefaultStream,
+        )
 
         self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
             spatially_averaged_vn=self.z_vn_avg,
@@ -1439,5 +1447,5 @@ class SolveNonhydro:
                 prognostic_states.next.rho,
                 prognostic_states.next.exner,
                 prognostic_states.next.w,
-                stream=None,
+                stream=decomposition.DefaultStream,
             )

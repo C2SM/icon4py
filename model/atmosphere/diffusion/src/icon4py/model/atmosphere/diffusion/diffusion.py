@@ -736,7 +736,7 @@ class Diffusion:
             prognostic_state.w,
             prognostic_state.theta_v,
             prognostic_state.exner,
-            stream=None,
+            stream=decomposition.DefaultStream,
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
@@ -780,7 +780,7 @@ class Diffusion:
             self.v_vert,
             dim=dims.VertexDim,
             wait=True,
-            stream=None,
+            stream=decomposition.DefaultStream,
         )
         log.debug("communication rbf extrapolation of vn - end")
 
@@ -821,7 +821,12 @@ class Diffusion:
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
             # TODO(phimuell, muellch): Is asynchronous mode okay here.
-            self._exchange(self.z_nabla2_e, dim=dims.EdgeDim, wait=True, stream=None)
+            self._exchange(
+                self.z_nabla2_e,
+                dim=dims.EdgeDim,
+                wait=True,
+                stream=decomposition.DefaultStream,
+            )
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
@@ -838,7 +843,7 @@ class Diffusion:
             self.v_vert,
             dim=dims.VertexDim,
             wait=True,
-            stream=None,
+            stream=decomposition.DefaultStream,
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
@@ -855,7 +860,10 @@ class Diffusion:
 
         log.debug("communication of prognistic.vn : start")
         handle_edge_comm = self._exchange(
-            prognostic_state.vn, dim=dims.EdgeDim, wait=False, stream=None
+            prognostic_state.vn,
+            dim=dims.EdgeDim,
+            wait=False,
+            stream=decomposition.DefaultStream,
         )
 
         log.debug(
@@ -903,7 +911,7 @@ class Diffusion:
 
         self.halo_exchange_wait(
             handle_edge_comm,
-            stream=None,
+            stream=decomposition.DefaultStream,
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
 
