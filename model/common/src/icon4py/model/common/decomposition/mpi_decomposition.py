@@ -262,8 +262,10 @@ class GHexMultiNodeExchange:
         else:
             # Stream given, perform a scheduled exchange..
             # NOTE: GHEX interprets `None` as default stream.
+            # TODO(phimuell): Fix named arguments in GHEX.
             handle = self._comm.schedule_exchange(
-                applied_patterns, stream=(None if stream is definitions.DefaultStream else stream)
+                None if stream is definitions.DefaultStream else stream,
+                applied_patterns,
             )
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
@@ -431,9 +433,8 @@ class MultiNodeResult:
         else:
             # Stream given, perform a scheduled wait.
             # NOTE: GHEX interprets `None` as default stream.
-            self.handle.schedule_wait(
-                stream=(None if stream is definitions.DefaultStream else stream)
-            )
+            # TODO(phimuell): Fixing named arguments in GHEX.
+            self.handle.schedule_wait(None if stream is definitions.DefaultStream else stream)
         # TODO(reviewer, phimuell): Is it safe to delete that here, even in the scheduled mode?
         del self.pattern_refs
 
