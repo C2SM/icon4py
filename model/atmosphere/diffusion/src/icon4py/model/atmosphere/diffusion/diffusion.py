@@ -387,7 +387,6 @@ class Diffusion:
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
             self._exchange,
-            stream=None,
         )  # wait on a communication handle
         self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
             constants.CPD - constants.GAS_CONSTANT_DRY_AIR
