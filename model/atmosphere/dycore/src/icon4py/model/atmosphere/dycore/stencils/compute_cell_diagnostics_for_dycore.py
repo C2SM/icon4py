@@ -177,59 +177,16 @@ def _compute_perturbed_quantities_and_interpolation(
 def _surface_computations(
     wgtfacq_c: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    time_extrapolation_parameter_for_exner: fa.CellKField[ta.vpfloat],
-    current_exner: fa.CellKField[ta.vpfloat],
-    reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
-    perturbed_rho_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
-    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     igradp_method: gtx.int32,
-    surface_level: gtx.int32,
-) -> tuple[
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
-]:
-    (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels) = (
-        concat_where(
-            dims.KDim < surface_level - 1,
-            _extrapolate_temporally_exner_pressure(
-                exner_exfac=time_extrapolation_parameter_for_exner,
-                exner=current_exner,
-                exner_ref_mc=reference_exner_at_cells_on_model_levels,
-                exner_pr=perturbed_exner_at_cells_on_model_levels,
-            ),
-            (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels),
-        )
-    )
-
-    temporal_extrapolation_of_perturbed_exner = concat_where(
-        dims.KDim == surface_level - 1,
-        _init_cell_kdim_field_with_zero_wp(),
-        temporal_extrapolation_of_perturbed_exner,
-    )
-
-    exner_at_cells_on_half_levels = concat_where(
-        dims.KDim == surface_level - 1,
+) -> fa.CellKField[ta.vpfloat]:
+    return (
         _interpolate_to_surface(
-            wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
+            wgtfacq_c=wgtfacq_c,
+            interpolant=temporal_extrapolation_of_perturbed_exner,
         )
         if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
-        else exner_at_cells_on_half_levels,
-        exner_at_cells_on_half_levels,
-    )
-
-    return (
-        temporal_extrapolation_of_perturbed_exner,
-        exner_at_cells_on_half_levels,
-        temporal_extrapolation_of_perturbed_exner,
-        perturbed_exner_at_cells_on_model_levels,
-        perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels,
+        else exner_at_cells_on_half_levels
     )
 
 
@@ -424,29 +381,38 @@ def compute_perturbed_quantities_and_interpolation(
         },
     )
 
-    _surface_computations(
-        wgtfacq_c=wgtfacq_c,
-        exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
-        time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
-        current_exner=current_exner,
-        reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
-        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
-        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
-        perturbed_rho_at_cells_on_model_levels=perturbed_rho_at_cells_on_model_levels,
-        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
-        igradp_method=igradp_method,
-        surface_level=surface_level,
-        out=(
-            temporal_extrapolation_of_perturbed_exner,
-            exner_at_cells_on_half_levels,
-            temporal_extrapolation_of_perturbed_exner,
-            perturbed_exner_at_cells_on_model_levels,
-            perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels,
-        ),
+    _init_cell_kdim_field_with_zero_wp(
+        out=temporal_extrapolation_of_perturbed_exner,
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
             dims.KDim: (model_top, surface_level),
+        },
+    )
+
+    _extrapolate_temporally_exner_pressure(
+        exner_exfac=time_extrapolation_parameter_for_exner,
+        exner=current_exner,
+        exner_ref_mc=reference_exner_at_cells_on_model_levels,
+        exner_pr=perturbed_exner_at_cells_on_model_levels,
+        out=(
+            temporal_extrapolation_of_perturbed_exner,
+            perturbed_exner_at_cells_on_model_levels,
+        ),
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+            dims.KDim: (model_top, surface_level - 1),
+        },
+    )
+
+    _surface_computations(
+        wgtfacq_c=wgtfacq_c,
+        exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
+        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
+        igradp_method=igradp_method,
+        out=exner_at_cells_on_half_levels,
+        domain={
+            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+            dims.KDim: (surface_level - 1, surface_level),
         },
     )
 
