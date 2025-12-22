@@ -192,7 +192,6 @@ def _surface_computations(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
-    fa.CellKField[ta.vpfloat],
 ]:
     (temporal_extrapolation_of_perturbed_exner, perturbed_exner_at_cells_on_model_levels) = (
         concat_where(
@@ -226,7 +225,6 @@ def _surface_computations(
     return (
         temporal_extrapolation_of_perturbed_exner,
         exner_at_cells_on_half_levels,
-        temporal_extrapolation_of_perturbed_exner,
         perturbed_exner_at_cells_on_model_levels,
         perturbed_rho_at_cells_on_model_levels,
         perturbed_theta_v_at_cells_on_model_levels,
@@ -462,7 +460,6 @@ def compute_perturbed_quantities_and_interpolation(
         out=(
             temporal_extrapolation_of_perturbed_exner,
             exner_at_cells_on_half_levels,
-            temporal_extrapolation_of_perturbed_exner,
             perturbed_exner_at_cells_on_model_levels,
             perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels,
