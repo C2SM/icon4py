@@ -1359,7 +1359,7 @@ wheels = [
 [[package]]
 name = "ghex"
 version = "0.4.1"
-source = { git = "https://github.com/philip-paul-mueller/GHEX/?branch=phimuell__async-mpi-2#5fec2d116c123d459fb002b713b21f8914a3f290" }
+source = { git = "https://github.com/philip-paul-mueller/GHEX/?branch=phimuell__async-mpi-2#473ebd0959027f77fd35c2f13f7a4e113197d818" }
 dependencies = [
     { name = "mpi4py" },
     { name = "numpy" },
