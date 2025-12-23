@@ -137,7 +137,7 @@ class GridManager:
 
     def _read_coordinates(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil | None,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
         geometry_type: base.GeometryType,
     ) -> CoordinateDict:
         coordinates = {
