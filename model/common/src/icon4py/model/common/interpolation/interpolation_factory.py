@@ -155,7 +155,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_geofac_n2s,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                ),
             ),
             fields=(attrs.GEOFAC_N2S,),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -175,7 +177,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         geofac_grdiv = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_geofac_grdiv,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                ),
                 array_ns=self._xp,
             ),
             fields=(attrs.GEOFAC_GRDIV,),
@@ -199,7 +203,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                ),
             ),
             fields=(attrs.C_BLN_AVG,),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -226,7 +232,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_c_lin_e,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                ),
             ),
             fields=(attrs.C_LIN_E,),
             domain=(dims.EdgeDim, dims.E2CDim),
@@ -247,7 +255,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_geofac_grg,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                ),
             ),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
             domain=(dims.CellDim, dims.C2E2CODim),
@@ -271,7 +281,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_e_flx_avg,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                ),
             ),
             fields=(attrs.E_FLX_AVG,),
             domain=(dims.EdgeDim, dims.E2C2EODim),
@@ -319,7 +331,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_pos_on_tplane_e_x_y,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                ),
             ),
             fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
             domain=(dims.EdgeDim, dims.E2CDim),
@@ -348,7 +362,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_cells_aw_verts,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.VertexDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.VertexDim, stream=None
+                ),
             ),
             fields=(attrs.CELL_AW_VERTS,),
             domain=(dims.VertexDim, dims.V2CDim),
@@ -375,7 +391,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 rbf.compute_rbf_interpolation_coeffs_cell,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                ),
             ),
             fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
             domain=(dims.CellDim, dims.C2E2C2EDim),
@@ -407,7 +425,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 rbf.compute_rbf_interpolation_coeffs_edge,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                ),
             ),
             fields=(attrs.RBF_VEC_COEFF_E,),
             domain=(dims.EdgeDim, dims.E2C2EDim),
@@ -438,7 +458,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 rbf.compute_rbf_interpolation_coeffs_vertex,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.VertexDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.VertexDim, stream=None
+                ),
             ),
             fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
             domain=(dims.VertexDim, dims.V2EDim),

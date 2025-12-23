@@ -147,7 +147,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 v_grid.compute_vertical_coordinate,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                ),
             ),
             fields=(attrs.CELL_HEIGHT_ON_HALF_LEVEL,),
             domain=(dims.CellDim, dims.KHalfDim),
@@ -636,7 +638,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         max_flat_index_provider = factory.NumpyDataProvider(
             func=functools.partial(
                 mf.compute_flat_max_idx,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                ),
                 array_ns=self._xp,
             ),
             deps={
@@ -748,7 +752,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                ),
             ),
             deps={
                 "z_mc": attrs.Z_MC,
@@ -808,7 +814,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 weight_factors.compute_wgtfacq_e_dsl,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                ),
             ),
             deps={
                 "z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL,
@@ -870,7 +878,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_diffusion_metrics.compute_max_nbhgt_array_ns,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
+                exchange=functools.partial(
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                ),
             ),
             deps={
                 "z_mc": attrs.Z_MC,

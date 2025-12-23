@@ -321,6 +321,6 @@ def test_halo_exchange_for_sparse_field(
         f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {result.asnumpy().shape}"
     )
 
-    exchange.exchange_and_wait(dims.CellDim, result)
+    exchange.exchange_and_wait(dims.CellDim, result, stream=None)
 
     assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())

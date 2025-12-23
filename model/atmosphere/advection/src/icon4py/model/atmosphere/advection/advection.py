@@ -188,7 +188,9 @@ class NoAdvection(Advection):
         log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
-        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
+        self._exchange.exchange_and_wait(
+            dims.CellDim, prep_adv.mass_flx_ic, stream=decomposition.DefaultStream
+        )
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         log.debug("running stencil copy_cell_kdim_field - start")
