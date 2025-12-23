@@ -36,6 +36,11 @@ from ...fixtures import (
 )
 
 
+try:
+    from icon4py.model.common.decomposition import mpi_decomposition
+except ImportError:
+    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 

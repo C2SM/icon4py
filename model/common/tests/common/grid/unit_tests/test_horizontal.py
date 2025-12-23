@@ -17,6 +17,7 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 
 from .. import utils
+from ..fixtures import *  # noqa: F403
 
 
 if TYPE_CHECKING:
@@ -58,3 +59,10 @@ def test_halo_zones(zone: h_grid.Zone) -> None:
         assert zone.is_halo()
     else:
         assert not zone.is_halo()
+
+
+@pytest.mark.parametrize(
+    "dim, expected", [(dims.CellDim, 4), (dims.VertexDim, 4), (dims.EdgeDim, 8)]
+)
+def test_max_boundary_level(dim: gtx.Dimension, expected: int) -> None:
+    assert expected == h_grid.max_boundary_level(dim)
