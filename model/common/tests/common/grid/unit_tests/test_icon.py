@@ -550,7 +550,7 @@ def test_global_grid_params_from_grid_manager(
         case base.GeometryType.ICOSAHEDRON:
             assert params.subdivision == subdivision
         case base.GeometryType.TORUS:
-            # get the value for tours' subdivision without hardcoding it here
+            # get the value for torus' subdivision without hardcoding it here
             # (it's actually not relevant to check this)
             assert params.subdivision == icon.GridShape(base.GeometryType.TORUS).subdivision
     assert pytest.approx(params.radius) == radius

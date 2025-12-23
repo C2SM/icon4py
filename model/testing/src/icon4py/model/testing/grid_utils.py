@@ -135,7 +135,7 @@ def get_grid_geometry(
         )
         grid = gm.grid
         decomposition_info = construct_decomposition_info(grid, backend)
-        return geometry.GridGeometry.with_geometry_type(
+        return geometry.GridGeometry(
             grid,
             decomposition_info,
             backend,

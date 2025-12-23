@@ -126,7 +126,9 @@ def _compute_distance_pairwise(
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
-    Compute the pairwise arc lengths between points in each row of v.
+    Compute the distance between points in each row of v.
+    For the icosahedron geometry this is the arc lengths (in radians), for the
+    torus it is the Euclidean distance taking into account periodic boundaries.
 
     Args:
         v: 3D array of shape (n, m, 3) where n is the number of elements,
@@ -169,7 +171,10 @@ def _compute_distance_vector_matrix(
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
-    Compute the arc lengths between each point in v1 and the points in v2 at the same row.
+    Compute the distance between each point in v1 and the points in v2 at the
+    same row.
+    For the icosahedron geometry this is the arc lengths (in radians), for the
+    torus it is the Euclidean distance taking into account periodic boundaries.
 
     Args:
         v1: 2D array of shape (n, 3) where n is the number of elements and 3 is

@@ -175,24 +175,6 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(input_fields_provider)
         self._register_computed_fields()
 
-    @staticmethod
-    def with_geometry_type(
-        grid: icon.IconGrid,
-        decomposition_info: decomposition.DecompositionInfo,
-        backend: gtx_typing.Backend | None,
-        coordinates: gm.CoordinateDict,
-        extra_fields: gm.GeometryDict,
-        metadata: dict[str, model.FieldMetaData],
-    ) -> "GridGeometry":
-        return GridGeometry(
-            grid,
-            decomposition_info,
-            backend,
-            coordinates,
-            extra_fields,
-            metadata,
-        )
-
     def _inverse_field_provider(self, field_name: str) -> factory.FieldProvider:
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
         name = meta["standard_name"]
