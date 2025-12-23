@@ -781,6 +781,7 @@ def coriolis_parameter_on_edges(
     """
     return 2.0 * angular_velocity * sin(edge_center_lat)
 
+
 def coriolis_parameter_on_edges_torus(
     coriolis_coefficient: float,
     num_edges: int,
