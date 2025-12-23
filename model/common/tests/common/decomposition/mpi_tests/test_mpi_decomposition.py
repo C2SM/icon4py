@@ -272,7 +272,7 @@ def test_exchange_on_dummy_data(
         dimension, definitions.DecompositionInfo.EntryType.OWNED
     )
     assert np.all(input_field.asnumpy() == number)
-    exchange.exchange_and_wait(dimension, input_field)
+    exchange.exchange_and_wait(dimension, input_field, stream=None)
     result = input_field.asnumpy()
     print(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
     print(

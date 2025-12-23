@@ -188,7 +188,7 @@ class DecompositionInfo:
 class ExchangeResult(Protocol):
     def wait(
         self,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> None:
         """Performs a wait.
 
@@ -213,7 +213,7 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> ExchangeResult: ...
 
     @overload
@@ -221,14 +221,15 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> ExchangeResult:
         """Perform halo exchanges.
 
         The exact behaviour depends on the optional argument `stream` is supplied.
-        If it is a GPU stream, by default it is the default stream, then the
-        exchange will wait until the work previously submitted to the stream has
-        concluded. If it is `None` then the exchange will start immediately.
+        If it is a GPU stream then the exchange will wait until the work previously
+        submitted to the stream has concluded. To select the default stream use the
+        special value `DefaultStream`.
+        If it is `None` then the exchange will start immediately.
 
         It is important that `wait` is called on the returned handle.
         """
@@ -239,7 +240,7 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> None: ...
 
     @overload
@@ -247,7 +248,7 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> None:
         """Exchange and wait in one go."""
         ...
@@ -257,7 +258,7 @@ class ExchangeRuntime(Protocol):
         *args: Any,
         dim: gtx.Dimension,
         wait: bool = True,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> None | ExchangeResult:
         """Perform a halo exchange operation.
 
@@ -285,7 +286,7 @@ class SingleNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> ExchangeResult:
         return SingleNodeResult()
 
@@ -293,7 +294,7 @@ class SingleNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> None:
         return None
 
@@ -308,7 +309,7 @@ class SingleNodeExchange:
         *args: Any,
         dim: gtx.Dimension,
         wait: bool = True,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> ExchangeResult | None:
         res = self.exchange(dim, *args, stream=stream)
         if wait:
@@ -343,7 +344,7 @@ class HaloExchangeWaitRuntime(Protocol):
     def __call__(
         self,
         communication_handle: ExchangeResult,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> None:
         """Calls `wait()` on the provided communication handle, `stream` is forwarded."""
         ...
@@ -368,7 +369,7 @@ class HaloExchangeWait:
     def __call__(
         self,
         communication_handle: SingleNodeResult,
-        stream: StreamLike | None = DefaultStream,
+        stream: StreamLike | None,
     ) -> None:
         communication_handle.wait(stream=stream)
 
@@ -403,7 +404,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 
 class SingleNodeResult:
-    def wait(self, stream: StreamLike | None = DefaultStream) -> None:
+    def wait(self, stream: StreamLike | None) -> None:
         pass
 
     def is_ready(self) -> bool:

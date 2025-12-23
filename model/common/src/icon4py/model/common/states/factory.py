@@ -112,7 +112,8 @@ class NeedsExchange(Protocol):
                     first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
                 ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
                 with as_exchangeable_field(field) as buffer:
-                    exchange.exchange_and_wait(first_dim, buffer)
+                    # Synchronous exchange.
+                    exchange.exchange_and_wait(first_dim, buffer, stream=None)
                 log.debug(f"exchanged buffer for {name}")
 
 

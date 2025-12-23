@@ -245,7 +245,7 @@ class GHexMultiNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: definitions.StreamLike | None = definitions.DefaultStream,
+        stream: definitions.StreamLike | None,
     ) -> MultiNodeResult:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
@@ -261,7 +261,8 @@ class GHexMultiNodeExchange:
             handle = self._comm.exchange(applied_patterns)
         else:
             # Stream given, perform a scheduled exchange..
-            # NOTE: GHEX interprets `None` as default stream.
+            # NOTE: GHEX interprets `None` as default stream. Furthermore, if no
+            #   GPU is present, passing `None` is mandatory.
             # TODO(phimuell): Fix named arguments in GHEX.
             handle = self._comm.schedule_exchange(
                 patterns=applied_patterns,
@@ -274,7 +275,7 @@ class GHexMultiNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: definitions.StreamLike | None = definitions.DefaultStream,
+        stream: definitions.StreamLike | None,
     ) -> None:
         res = self.exchange(dim, *fields, stream=stream)
         res.wait(stream=stream)
@@ -285,7 +286,7 @@ class GHexMultiNodeExchange:
         *args: Any,
         dim: gtx.Dimension,
         wait: bool = True,
-        stream: definitions.StreamLike | None = definitions.DefaultStream,
+        stream: definitions.StreamLike | None,
     ) -> MultiNodeResult | None:
         if dim is None:
             raise ValueError("Need to define a dimension.")
@@ -349,7 +350,7 @@ class HaloExchangeWait:
     def __call__(
         self,
         communication_handle: MultiNodeResult,
-        stream: definitions.StreamLike | None = definitions.DefaultStream,
+        stream: definitions.StreamLike | None,
     ) -> None:
         """Wait on the communication handle."""
         communication_handle.wait(stream=stream)
@@ -425,14 +426,15 @@ class MultiNodeResult:
 
     def wait(
         self,
-        stream: definitions.StreamLike | None = definitions.DefaultStream,
+        stream: definitions.StreamLike | None,
     ) -> None:
         if stream is None:
             # No stream given, perform full blocking wait.
             self.handle.wait()
         else:
             # Stream given, perform a scheduled wait.
-            # NOTE: GHEX interprets `None` as default stream.
+            # NOTE: GHEX interprets `None` as default stream. Furthermore, if no
+            #   GPU is present, passing `None` is mandatory.
             # TODO(phimuell): Fixing named arguments in GHEX.
             self.handle.schedule_wait(
                 None if stream is definitions.DefaultStream else stream,
