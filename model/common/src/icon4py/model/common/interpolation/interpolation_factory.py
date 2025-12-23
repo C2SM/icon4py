@@ -62,7 +62,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         mean_dual_edge_length = self._grid.global_properties.mean_dual_edge_length
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
-            "divavg_cntrwgt": 0.5,
+            "divergence_averaging_central_cell_weight": 0.5,
             "weighting_factor": 0.0,
             "max_nudging_coefficient": 0.375,
             "nudge_efold_width": 2.0,
@@ -222,7 +222,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "horizontal_start_level_3": self.grid.start_index(
                             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
                         ),
-                        "divavg_cntrwgt": self._config["divavg_cntrwgt"],
+                        "divergence_averaging_central_cell_weight": self._config["divergence_averaging_central_cell_weight"],
                     },
                 )
                 self.register_provider(cell_average_weight)
@@ -247,7 +247,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         "horizontal_start_level_3": self.grid.start_index(
                             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
                         ),
-                        "divavg_cntrwgt": self._config["divavg_cntrwgt"],
+                        "divergence_averaging_central_cell_weight": self._config["divergence_averaging_central_cell_weight"],
                     },
                 )
                 self.register_provider(cell_average_weight)

@@ -8,6 +8,7 @@
 
 from types import ModuleType
 
+import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py import next as gtx
 from gt4py.next import sin, where
@@ -73,7 +74,7 @@ def cartesian_coordinates_of_edge_tangent_torus(
     """
     Compute normalized cartesian vector tangential to an edge on a torus grid.
 
-    That is: computes the delta between the two vertices adjacent to the edge:
+    This is done by taking the difference between the two vertices adjacent to the edge
     t = d(v1, v2)
 
     Args:
@@ -779,6 +780,28 @@ def coriolis_parameter_on_edges(
         coriolis parameter
     """
     return 2.0 * angular_velocity * sin(edge_center_lat)
+
+def coriolis_parameter_on_edges_torus(
+    coriolis_coefficient: float,
+    num_edges: int,
+    backend: gtx_typing.Backend,
+) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Create a coriolis parameter field on edges for a torus grid.
+    Args:
+       coriolis_coefficient: coriolis coefficient
+
+    Returns:
+        coriolis parameter
+    """
+    xp = data_alloc.import_array_ns(backend)
+    coriolis_parameter = gtx.as_field(
+        (dims.EdgeDim,),
+        coriolis_coefficient * xp.ones(num_edges),
+        dtype=ta.wpfloat,
+        allocator=backend,
+    )
+    return coriolis_parameter
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)

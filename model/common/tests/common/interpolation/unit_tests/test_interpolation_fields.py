@@ -263,7 +263,7 @@ def test_compute_c_bln_avg(
     xp = data_alloc.import_array_ns(backend)
     cell_areas = grid_savepoint.cell_areas().ndarray
     # both experiment use the default value
-    divavg_cntrwgt = 0.5
+    divergence_averaging_central_cell_weight = 0.5
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     horizontal_start_p2 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
@@ -282,7 +282,7 @@ def test_compute_c_bln_avg(
                 lon,
                 cell_areas,
                 cell_owner_mask,
-                divavg_cntrwgt,
+                divergence_averaging_central_cell_weight,
                 horizontal_start,
                 horizontal_start_p2,
                 exchange=utils.dummy_exchange,
@@ -293,7 +293,7 @@ def test_compute_c_bln_avg(
                 c2e2c0,
                 cell_areas,
                 cell_owner_mask,
-                divavg_cntrwgt,
+                divergence_averaging_central_cell_weight,
                 horizontal_start,
                 horizontal_start_p2,
                 exchange=utils.dummy_exchange,

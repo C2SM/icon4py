@@ -314,16 +314,12 @@ class GridGeometry(factory.FieldSource):
             case base.GeometryType.TORUS:
                 coriolis_param = factory.PrecomputedFieldProvider(
                     {
-                        "coriolis_parameter": gtx.as_field(
-                            (dims.EdgeDim,),
-                            # TODO(jcanton): this should eventually come from
-                            # the config: const * ones
-                            self._xp.zeros(
-                                self._grid.start_index(self._edge_domain(h_grid.Zone.END))
-                                - self._grid.start_index(self._edge_domain(h_grid.Zone.LOCAL))
-                            ),
-                            dtype=ta.wpfloat,
-                            allocator=self._backend,
+                        # TODO(jcanton): this constant (0.0) should eventually
+                        # come from the config
+                        "coriolis_parameter": stencils.coriolis_parameter_on_edges_torus(
+                            coriolis_coefficient=0.0,
+                            num_edges=self._grid.num_edges,
+                            backend=self._backend,
                         )
                     }
                 )
@@ -559,7 +555,7 @@ class GridGeometry(factory.FieldSource):
 
     def _register_normals_and_tangents_torus(self) -> None:
         """Register normals and tangents specific to torus geometry."""
-        # 1. edges%primal_cart_normal (cartesian coordinates for primal_normal)
+        # cartesian coordinates for primal_normal
         tangent_normal_coordinates = factory.ProgramFieldProvider(
             func=stencils.compute_cartesian_coordinates_of_edge_tangent_and_normal_torus,
             deps={
