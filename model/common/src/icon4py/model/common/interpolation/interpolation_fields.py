@@ -581,25 +581,26 @@ def _force_mass_conservation_to_c_bln_avg(
 def _compute_uniform_c_bln_avg(
     c2e2c: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
-    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute bilinear cell average weight for a torus grid.
 
     Args:
-        c2e2c: representing a gtx.Field[gtx.Dims[EdgeDim, C2E2CDim], gtx.int32]
+        c2e2c
         divergence_averaging_central_cell_weight: weight for local / center contribution
-        horizontal_start: start index of the horizontal domain
 
     Returns:
-        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        c_bln_avg
     """
     local_weight = divergence_averaging_central_cell_weight
     neighbor_weight = (1.0 - divergence_averaging_central_cell_weight) / 3.0
-    c_bln_avg = array_ns.full(
-        (c2e2c.shape[0], c2e2c.shape[1] + 1),
-        [local_weight, neighbor_weight, neighbor_weight, neighbor_weight],
+
+    weights = array_ns.asarray([local_weight, neighbor_weight, neighbor_weight, neighbor_weight])
+
+    c_bln_avg = array_ns.tile(
+        weights,
+        (c2e2c.shape[0], 1),
     )
 
     return c_bln_avg
@@ -645,13 +646,14 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
-    horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_uniform_c_bln_avg(
-        c2e2c0[:, 1:], divergence_averaging_central_cell_weight, horizontal_start, array_ns
+        c2e2c0[:, 1:],
+        divergence_averaging_central_cell_weight,
+        array_ns=array_ns,
     )
     exchange(c_bln_avg)
     # TODO(msimberg): Exact result for torus without the following. 1e-16 error

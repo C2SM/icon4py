@@ -243,9 +243,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     },
                     connectivities={"c2e2c0": dims.C2E2CODim},
                     params={
-                        "horizontal_start": self.grid.start_index(
-                            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-                        ),
                         "horizontal_start_level_3": self.grid.start_index(
                             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
                         ),
