@@ -581,6 +581,7 @@ def _force_mass_conservation_to_c_bln_avg(
 def _compute_uniform_c_bln_avg(
     c2e2c: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -589,6 +590,7 @@ def _compute_uniform_c_bln_avg(
     Args:
         c2e2c
         divergence_averaging_central_cell_weight: weight for local / center contribution
+        horizontal_start: start index of the horizontal domain
 
     Returns:
         c_bln_avg
@@ -646,6 +648,7 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
+    horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
@@ -653,6 +656,7 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     c_bln_avg = _compute_uniform_c_bln_avg(
         c2e2c0[:, 1:],
         divergence_averaging_central_cell_weight,
+        horizontal_start,
         array_ns=array_ns,
     )
     exchange(c_bln_avg)
