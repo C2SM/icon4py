@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import functools
 import logging
+import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
@@ -256,8 +257,14 @@ class GHexMultiNodeExchange:
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
 
-        if stream is None:
-            # Normal exchange.
+        if stream is None or (not ghex.__config__["gpu"]):
+            if stream is not None:
+                warnings.warn(
+                    "Requested 'scheduled exchange' mode in GHEX, which is only available"
+                    " if GHEX was compiled with GPU support, but it was not."
+                    " Falling back to normal exchange.",
+                    stacklevel=0,
+                )
             handle = self._comm.exchange(applied_patterns)
         else:
             # Stream given, perform a scheduled exchange..
@@ -429,6 +436,13 @@ class MultiNodeResult:
         stream: definitions.StreamLike | None,
     ) -> None:
         if stream is None:
+            if stream is not None:
+                warnings.warn(
+                    "Requested 'scheduled wait' mode in GHEX, which is only available"
+                    " if GHEX was compiled with GPU support, but it was not."
+                    " Falling back to normal exchange.",
+                    stacklevel=0,
+                )
             # No stream given, perform full blocking wait.
             self.handle.wait()
         else:
