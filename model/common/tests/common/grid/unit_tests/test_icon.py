@@ -545,13 +545,19 @@ def test_global_grid_params_from_grid_manager(
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
     params = grid.global_properties
     assert params is not None
-    assert pytest.approx(params.geometry_type) == geometry_type
-    assert pytest.approx(params.subdivision) == subdivision
+    assert params.geometry_type == geometry_type
+    match geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            assert params.subdivision == subdivision
+        case base.GeometryType.TORUS:
+            # get the value for torus' subdivision without hardcoding it here
+            # (it's actually not relevant to check this)
+            assert params.subdivision == icon.GridShape(base.GeometryType.TORUS).subdivision
     assert pytest.approx(params.radius) == radius
     assert pytest.approx(params.domain_length) == domain_length
     assert pytest.approx(params.domain_height) == domain_height
-    assert pytest.approx(params.global_num_cells) == global_num_cells
-    assert pytest.approx(params.num_cells) == num_cells
+    assert params.global_num_cells == global_num_cells
+    assert params.num_cells == num_cells
     assert pytest.approx(params.mean_edge_length) == mean_edge_length
     assert pytest.approx(params.mean_dual_edge_length) == mean_dual_edge_length
     assert pytest.approx(params.mean_cell_area) == mean_cell_area

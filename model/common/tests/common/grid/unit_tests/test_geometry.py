@@ -13,8 +13,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import (
+    base,
     geometry,
     geometry_attributes as attrs,
     horizontal as h_grid,
@@ -41,8 +42,11 @@ if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
 
-def test_geometry_raises_for_unknown_field(backend: gtx_typing.Backend) -> None:
-    geometry = grid_utils.get_grid_geometry(backend, definitions.Experiments.EXCLAIM_APE)
+@pytest.mark.datatest
+def test_geometry_raises_for_unknown_field(
+    backend: gtx_typing.Backend, experiment: definitions.Experiment
+) -> None:
+    geometry = grid_utils.get_grid_geometry(backend, experiment)
     with pytest.raises(ValueError) as e:
         geometry.get("foo")
         assert "'foo'" in e.value  # type: ignore[operator]
@@ -54,6 +58,7 @@ def test_geometry_raises_for_unknown_field(backend: gtx_typing.Backend) -> None:
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-7),
         (definitions.Experiments.EXCLAIM_APE, 3e-12),
+        (definitions.Experiments.GAUSS3D, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -141,6 +146,7 @@ def test_compute_inverse_dual_edge_length(
     [
         (definitions.Experiments.MCH_CH_R04B09, 5e-10),
         (definitions.Experiments.EXCLAIM_APE, 1e-12),
+        (definitions.Experiments.GAUSS3D, 1e-14),
     ],
 )
 @pytest.mark.datatest
@@ -152,9 +158,16 @@ def test_compute_inverse_vertex_vertex_length(
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
 
-    expected = grid_savepoint.inv_vert_vert_length()
-    result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH)
-    assert test_utils.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
+    expected = grid_savepoint.inv_vert_vert_length().asnumpy()
+    result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH).asnumpy()
+    if grid_geometry.grid.geometry_type == base.GeometryType.TORUS:
+        # TODO(msimberg, jcanton): icon fortran multiplies sphere radius even
+        # for torus grids. Fix submitted upstream. The following can be removed
+        # when fixed serialized data is available.
+        # https://gitlab.dkrz.de/icon-libraries/libiconmath/-/merge_requests/82
+        # https://gitlab.dkrz.de/icon/icon-nwp/-/merge_requests/1916
+        result = result / constants.EARTH_RADIUS
+    assert test_utils.dallclose(result, expected, rtol=rtol)
 
 
 @pytest.mark.datatest
@@ -304,6 +317,7 @@ def test_dual_normal_vert(
     assert test_utils.dallclose(dual_normal_vert_v.asnumpy(), dual_normal_vert_v_ref, atol=1e-12)
 
 
+@pytest.mark.datatest
 def test_cartesian_centers_edge(
     backend: gtx_typing.Backend, experiment: definitions.Experiment
 ) -> None:
@@ -315,12 +329,23 @@ def test_cartesian_centers_edge(
     assert x.ndarray.shape == (grid.num_edges,)
     assert y.ndarray.shape == (grid.num_edges,)
     assert z.ndarray.shape == (grid.num_edges,)
-    # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, allocator=backend)
-    math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+    match grid.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            # those are coordinates on the unit sphere: hence norm should be 1
+            norm = data_alloc.zero_field(grid, dims.EdgeDim, dtype=x.dtype, allocator=backend)
+            math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
+            assert test_utils.dallclose(norm.asnumpy(), 1.0)
+        case base.GeometryType.TORUS:
+            # on a torus coordinates should be within the domain
+            assert all(x.asnumpy() >= 0.0)
+            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(y.asnumpy() >= 0.0)
+            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(z.asnumpy() == 0.0)
 
 
+@pytest.mark.datatest
 def test_cartesian_centers_cell(
     backend: gtx_typing.Backend, experiment: definitions.Experiment
 ) -> None:
@@ -332,12 +357,23 @@ def test_cartesian_centers_cell(
     assert x.ndarray.shape == (grid.num_cells,)
     assert y.ndarray.shape == (grid.num_cells,)
     assert z.ndarray.shape == (grid.num_cells,)
-    # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, allocator=backend)
-    math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+    match grid.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            # those are coordinates on the unit sphere: hence norm should be 1
+            norm = data_alloc.zero_field(grid, dims.CellDim, dtype=x.dtype, allocator=backend)
+            math_helpers.norm2_on_cells(x, z, y, out=norm, offset_provider={})
+            assert test_utils.dallclose(norm.asnumpy(), 1.0)
+        case base.GeometryType.TORUS:
+            # on a torus coordinates should be within the domain
+            assert all(x.asnumpy() >= 0.0)
+            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(y.asnumpy() >= 0.0)
+            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(z.asnumpy() == 0.0)
 
 
+@pytest.mark.datatest
 def test_vertex(backend: gtx_typing.Backend, experiment: definitions.Experiment) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     grid = grid_geometry.grid
@@ -347,10 +383,20 @@ def test_vertex(backend: gtx_typing.Backend, experiment: definitions.Experiment)
     assert x.ndarray.shape == (grid.num_vertices,)
     assert y.ndarray.shape == (grid.num_vertices,)
     assert z.ndarray.shape == (grid.num_vertices,)
-    # those are coordinates on the unit sphere: hence norm should be 1
-    norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, allocator=backend)
-    math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+    match grid.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            # those are coordinates on the unit sphere: hence norm should be 1
+            norm = data_alloc.zero_field(grid, dims.VertexDim, dtype=x.dtype, allocator=backend)
+            math_helpers.norm2_on_vertices(x, z, y, out=norm, offset_provider={})
+            assert test_utils.dallclose(norm.asnumpy(), 1.0)
+        case base.GeometryType.TORUS:
+            # on a torus coordinates should be within the domain
+            assert all(x.asnumpy() >= 0.0)
+            assert all(x.asnumpy() <= grid.global_properties.domain_length)
+            assert all(y.asnumpy() >= 0.0)
+            assert all(y.asnumpy() <= grid.global_properties.domain_height)
+            assert all(z.asnumpy() == 0.0)
 
 
 def test_sparse_fields_creator() -> None:

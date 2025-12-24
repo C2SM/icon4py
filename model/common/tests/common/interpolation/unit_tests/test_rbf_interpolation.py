@@ -147,6 +147,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     [
         (definitions.Experiments.EXCLAIM_APE, 3e-9),
         (definitions.Experiments.MCH_CH_R04B09, 3e-2),
+        (definitions.Experiments.GAUSS3D, 1e-14),
     ],
 )
 def test_rbf_interpolation_coeffs_cell(
@@ -165,6 +166,12 @@ def test_rbf_interpolation_coeffs_cell(
     )
     assert horizontal_start < grid.num_cells
 
+    geometry_type = (
+        grid.global_properties.geometry_type
+        if grid.global_properties.geometry_type
+        else pytest.fail("geometry_type cannot be None")
+    )
+
     rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_coeffs_cell(  # type: ignore[misc] # function returns two vars
         geometry.get(geometry_attrs.CELL_LAT).ndarray,
         geometry.get(geometry_attrs.CELL_LON).ndarray,
@@ -179,8 +186,16 @@ def test_rbf_interpolation_coeffs_cell(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        geometry_type.value,
+        rbf.compute_default_rbf_scale(
+            geometry_type,
+            grid.global_properties.characteristic_length,
+            grid.global_properties.mean_dual_edge_length,
+            rbf_dim,
+        ),
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
         exchange=utils.dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
@@ -217,6 +232,7 @@ def test_rbf_interpolation_coeffs_cell(
     [
         (definitions.Experiments.EXCLAIM_APE, 3e-10),
         (definitions.Experiments.MCH_CH_R04B09, 3e-3),
+        (definitions.Experiments.GAUSS3D, 1e-15),
     ],
 )
 def test_rbf_interpolation_coeffs_vertex(
@@ -235,6 +251,12 @@ def test_rbf_interpolation_coeffs_vertex(
     )
     assert horizontal_start < grid.num_vertices
 
+    geometry_type = (
+        grid.global_properties.geometry_type
+        if grid.global_properties.geometry_type
+        else pytest.fail("geometry_type cannot be None")
+    )
+
     rbf_vec_coeff_v1, rbf_vec_coeff_v2 = rbf.compute_rbf_interpolation_coeffs_vertex(
         geometry.get(geometry_attrs.VERTEX_LAT).ndarray,
         geometry.get(geometry_attrs.VERTEX_LON).ndarray,
@@ -249,8 +271,16 @@ def test_rbf_interpolation_coeffs_vertex(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        geometry_type.value,
+        rbf.compute_default_rbf_scale(
+            geometry_type,
+            grid.global_properties.characteristic_length,
+            grid.global_properties.mean_dual_edge_length,
+            rbf_dim,
+        ),
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
         exchange=utils.dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
@@ -287,6 +317,7 @@ def test_rbf_interpolation_coeffs_vertex(
     [
         (definitions.Experiments.EXCLAIM_APE, 8e-14),
         (definitions.Experiments.MCH_CH_R04B09, 2e-9),
+        (definitions.Experiments.GAUSS3D, 0),
     ],
 )
 def test_rbf_interpolation_coeffs_edge(
@@ -305,6 +336,12 @@ def test_rbf_interpolation_coeffs_edge(
     )
     assert horizontal_start < grid.num_edges
 
+    geometry_type = (
+        grid.global_properties.geometry_type
+        if grid.global_properties.geometry_type
+        else pytest.fail("geometry_type cannot be None")
+    )
+
     rbf_vec_coeff_e = rbf.compute_rbf_interpolation_coeffs_edge(
         geometry.get(geometry_attrs.EDGE_LAT).ndarray,
         geometry.get(geometry_attrs.EDGE_LON).ndarray,
@@ -321,8 +358,16 @@ def test_rbf_interpolation_coeffs_edge(
         # coefficients in savepoint.
         grid_savepoint.e2c2e(),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        geometry_type.value,
+        rbf.compute_default_rbf_scale(
+            geometry_type,
+            grid.global_properties.characteristic_length,
+            grid.global_properties.mean_dual_edge_length,
+            rbf_dim,
+        ),
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
         exchange=utils.dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
