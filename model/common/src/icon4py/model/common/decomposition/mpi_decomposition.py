@@ -257,7 +257,11 @@ class GHexMultiNodeExchange:
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
 
-        if stream is None or (not ghex.__config__["gpu"]):
+        # NOTE: We should actually also test if `ghex.__config__["gpu"]` is `False`
+        #   and then use the normal `exchange` call, because in that case
+        #   `scheduled_exchange()` is not present. However, for some reason GHEX is
+        #   compiled with `-DGHEX_USE_GPU=OFF` by `uv`.
+        if stream is None:  # or (not ghex.__config__["gpu"]):
             if stream is not None:
                 warnings.warn(
                     "Requested 'scheduled exchange' mode in GHEX, which is only available"
@@ -436,7 +440,11 @@ class MultiNodeResult:
         stream: definitions.StreamLike | None,
     ) -> None:
         if stream is None:
-            if stream is not None:
+            # NOTE: We should actually also test if `ghex.__config__["gpu"]` is `False`
+            #   and then use the normal `exchange` call, because in that case
+            #   `scheduled_wait()` is not present. However, for some reason GHEX is
+            #   compiled with `-DGHEX_USE_GPU=OFF` by `uv`.
+            if stream is not None:  # or (not ghex.__config__["gpu"]):
                 warnings.warn(
                     "Requested 'scheduled wait' mode in GHEX, which is only available"
                     " if GHEX was compiled with GPU support, but it was not."
