@@ -208,7 +208,6 @@ class GridGeometry(factory.FieldSource):
 
         match self._geometry_type:
             case base.GeometryType.ICOSAHEDRON:
-
                 self._register_cartesian_coordinates_icosahedron()
 
                 vertex_vertex_distance = factory.ProgramFieldProvider(
