@@ -550,14 +550,14 @@ def arc_distance_of_far_edges_in_diamond(
 
     Neighboring edges of an edge span up a diamond with 4 edges (E2C2E)  and 4 vertices (E2C2V). Here we compute the
     arc length between the two vertices in this diamond that are not directly connected to the edge:
-    between d(v1, v3)
-    v1-------v4
+    between d(v2, v3)
+    v2-------v1
     |       /|
     |      / |
     |    e   |
     |  /     |
     |/       |
-    v2 ------v3
+    v0 ------v3
 
 
 
@@ -571,16 +571,15 @@ def arc_distance_of_far_edges_in_diamond(
 
     """
     x, y, z = geographical_to_cartesian_on_vertices(vertex_lat, vertex_lon)
-    x2 = x(E2C2V[2])
-    x3 = x(E2C2V[3])
-    y2 = y(E2C2V[2])
-    y3 = y(E2C2V[3])
-    z2 = z(E2C2V[2])
-    z3 = z(E2C2V[3])
-    # (xi, yi, zi) are normalized by construction
-
-    far_vertex_vertex_length = arc_length_on_edges(x2, x3, y2, y3, z2, z3, radius)
-    return far_vertex_vertex_length
+    return arc_length_on_edges(
+        x(E2C2V[2]),
+        x(E2C2V[3]),
+        y(E2C2V[2]),
+        y(E2C2V[3]),
+        z(E2C2V[2]),
+        z(E2C2V[3]),
+        radius,
+    )
 
 
 @gtx.field_operator
