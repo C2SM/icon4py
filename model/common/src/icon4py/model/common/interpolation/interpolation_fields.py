@@ -1140,9 +1140,12 @@ def compute_pos_on_tplane_e_x_y_torus(
     #   normal and the second neighbor is in the direction of the primal normal.
     half_dual_edge_length = 0.5 * dual_edge_length[0]
     num_edges = e2c.shape[0]
-    pos_on_tplane_e_x, pos_on_tplane_e_y = (
-        array_ns.full([num_edges, 2], [-half_dual_edge_length, half_dual_edge_length]),
-        array_ns.zeros([num_edges, 2]),
-    )
+
+    pos_on_tplane_e_x = array_ns.empty((num_edges, 2), dtype=dual_edge_length.dtype)
+    pos_on_tplane_e_x[:, 0] = -half_dual_edge_length
+    pos_on_tplane_e_x[:, 1] = half_dual_edge_length
+
+    pos_on_tplane_e_y = array_ns.zeros((num_edges, 2), dtype=dual_edge_length.dtype)
+
     exchange(pos_on_tplane_e_x, pos_on_tplane_e_y)
     return pos_on_tplane_e_x, pos_on_tplane_e_y
