@@ -206,14 +206,11 @@ class GridGeometry(factory.FieldSource):
         inverse_dual_edge_length = self._inverse_field_provider(attrs.DUAL_EDGE_LENGTH)
         self.register_provider(inverse_dual_edge_length)
 
-        # Cartesian coordinates for icosahedron geometry (the torus reads them
-        # from the grid file)
-        if self._geometry_type == base.GeometryType.ICOSAHEDRON:
-            self._register_cartesian_coordinates_icosahedron()
-
-        # vertex-vertex distance (geometry-specific)
         match self._geometry_type:
             case base.GeometryType.ICOSAHEDRON:
+
+                self._register_cartesian_coordinates_icosahedron()
+
                 vertex_vertex_distance = factory.ProgramFieldProvider(
                     func=stencils.compute_arc_distance_of_far_edges_in_diamond,
                     domain={
@@ -230,6 +227,25 @@ class GridGeometry(factory.FieldSource):
                     params={"radius": self._grid.global_properties.radius},
                     do_exchange=True,
                 )
+                self.register_provider(vertex_vertex_distance)
+
+                coriolis_param = factory.ProgramFieldProvider(
+                    func=stencils.compute_coriolis_parameter_on_edges,
+                    deps={"edge_center_lat": attrs.EDGE_LAT},
+                    params={"angular_velocity": constants.EARTH_ANGULAR_VELOCITY},
+                    fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
+                    domain={
+                        dims.EdgeDim: (
+                            self._edge_domain(h_grid.Zone.LOCAL),
+                            self._edge_domain(h_grid.Zone.END),
+                        )
+                    },
+                    do_exchange=False,
+                )
+                self.register_provider(coriolis_param)
+
+                self._register_normals_and_tangents_icosahedron()
+
             case base.GeometryType.TORUS:
                 vertex_vertex_distance = factory.ProgramFieldProvider(
                     func=stencils.compute_distance_of_far_edges_in_diamond_torus,
@@ -250,7 +266,22 @@ class GridGeometry(factory.FieldSource):
                     },
                     do_exchange=True,
                 )
-        self.register_provider(vertex_vertex_distance)
+                self.register_provider(vertex_vertex_distance)
+
+                coriolis_param = factory.PrecomputedFieldProvider(
+                    {
+                        # TODO(jcanton): this constant (0.0) should eventually
+                        # come from the config
+                        "coriolis_parameter": stencils.coriolis_parameter_on_edges_torus(
+                            coriolis_coefficient=0.0,
+                            num_edges=self._grid.num_edges,
+                            backend=self._backend,
+                        )
+                    }
+                )
+                self.register_provider(coriolis_param)
+
+                self._register_normals_and_tangents_torus()
 
         # Inverse of vertex-vertex distance
         inverse_far_edge_distance_provider = self._inverse_field_provider(
@@ -276,43 +307,6 @@ class GridGeometry(factory.FieldSource):
             do_exchange=True,
         )
         self.register_provider(edge_areas)
-
-        # Coriolis parameter (geometry-specific)
-        match self._geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                coriolis_param = factory.ProgramFieldProvider(
-                    func=stencils.compute_coriolis_parameter_on_edges,
-                    deps={"edge_center_lat": attrs.EDGE_LAT},
-                    params={"angular_velocity": constants.EARTH_ANGULAR_VELOCITY},
-                    fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
-                    domain={
-                        dims.EdgeDim: (
-                            self._edge_domain(h_grid.Zone.LOCAL),
-                            self._edge_domain(h_grid.Zone.END),
-                        )
-                    },
-                    do_exchange=False,
-                )
-            case base.GeometryType.TORUS:
-                coriolis_param = factory.PrecomputedFieldProvider(
-                    {
-                        # TODO(jcanton): this constant (0.0) should eventually
-                        # come from the config
-                        "coriolis_parameter": stencils.coriolis_parameter_on_edges_torus(
-                            coriolis_coefficient=0.0,
-                            num_edges=self._grid.num_edges,
-                            backend=self._backend,
-                        )
-                    }
-                )
-        self.register_provider(coriolis_param)
-
-        # Tangent and normal coordinates (geometry-specific)
-        match self._geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                self._register_normals_and_tangents_icosahedron()
-            case base.GeometryType.TORUS:
-                self._register_normals_and_tangents_torus()
 
     def _register_normals_and_tangents_icosahedron(self) -> None:
         """Register normals and tangents specific to icosahedron geometry."""

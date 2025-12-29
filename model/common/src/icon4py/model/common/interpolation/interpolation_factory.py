@@ -228,6 +228,54 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     },
                 )
                 self.register_provider(cell_average_weight)
+
+                e_bln_c_s = factory.NumpyDataProvider(
+                    func=functools.partial(
+                        interpolation_fields.compute_e_bln_c_s,
+                        array_ns=self._xp,
+                    ),
+                    fields=(attrs.E_BLN_C_S,),
+                    domain=(dims.CellDim, dims.C2EDim),
+                    deps={
+                        "cells_lat": geometry_attrs.CELL_LAT,
+                        "cells_lon": geometry_attrs.CELL_LON,
+                        "edges_lat": geometry_attrs.EDGE_LAT,
+                        "edges_lon": geometry_attrs.EDGE_LON,
+                    },
+                    connectivities={"c2e": dims.C2EDim},
+                    params={"weighting_factor": self._config["weighting_factor"]},
+                )
+                self.register_provider(e_bln_c_s)
+
+                pos_on_tplane_e_x_y = factory.NumpyDataProvider(
+                    func=functools.partial(
+                        interpolation_fields.compute_pos_on_tplane_e_x_y,
+                        exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
+                        array_ns=self._xp,
+                    ),
+                    fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
+                    domain=(dims.EdgeDim, dims.E2CDim),
+                    deps={
+                        "primal_normal_v1": geometry_attrs.EDGE_NORMAL_U,
+                        "primal_normal_v2": geometry_attrs.EDGE_NORMAL_V,
+                        "dual_normal_v1": geometry_attrs.EDGE_DUAL_U,
+                        "dual_normal_v2": geometry_attrs.EDGE_DUAL_V,
+                        "cells_lon": geometry_attrs.CELL_LON,
+                        "cells_lat": geometry_attrs.CELL_LAT,
+                        "edges_lon": geometry_attrs.EDGE_LON,
+                        "edges_lat": geometry_attrs.EDGE_LAT,
+                        "owner_mask": "edge_owner_mask",
+                    },
+                    connectivities={"e2c": dims.E2CDim},
+                    params={
+                        "grid_sphere_radius": constants.EARTH_RADIUS,
+                        "horizontal_start": self.grid.start_index(
+                            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                        ),
+                    },
+                )
+                self.register_provider(pos_on_tplane_e_x_y)
+
             case base.GeometryType.TORUS:
                 cell_average_weight = factory.NumpyDataProvider(
                     func=functools.partial(
@@ -255,6 +303,35 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                     },
                 )
                 self.register_provider(cell_average_weight)
+
+                e_bln_c_s = factory.NumpyDataProvider(
+                    func=functools.partial(
+                        interpolation_fields.compute_e_bln_c_s_torus,
+                        array_ns=self._xp,
+                    ),
+                    fields=(attrs.E_BLN_C_S,),
+                    domain=(dims.CellDim, dims.C2EDim),
+                    deps={},
+                    connectivities={"c2e": dims.C2EDim},
+                    params={},
+                )
+                self.register_provider(e_bln_c_s)
+
+                pos_on_tplane_e_x_y = factory.NumpyDataProvider(
+                    func=functools.partial(
+                        interpolation_fields.compute_pos_on_tplane_e_x_y_torus,
+                        exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
+                        array_ns=self._xp,
+                    ),
+                    fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
+                    domain=(dims.EdgeDim, dims.E2CDim),
+                    deps={
+                        "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
+                    },
+                    connectivities={"e2c": dims.E2CDim},
+                    params={},
+                )
+                self.register_provider(pos_on_tplane_e_x_y)
 
         c_lin_e = factory.NumpyDataProvider(
             func=functools.partial(
@@ -333,86 +410,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(e_flx_avg)
-
-        match self.grid.global_properties.geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                e_bln_c_s = factory.NumpyDataProvider(
-                    func=functools.partial(
-                        interpolation_fields.compute_e_bln_c_s,
-                        array_ns=self._xp,
-                    ),
-                    fields=(attrs.E_BLN_C_S,),
-                    domain=(dims.CellDim, dims.C2EDim),
-                    deps={
-                        "cells_lat": geometry_attrs.CELL_LAT,
-                        "cells_lon": geometry_attrs.CELL_LON,
-                        "edges_lat": geometry_attrs.EDGE_LAT,
-                        "edges_lon": geometry_attrs.EDGE_LON,
-                    },
-                    connectivities={"c2e": dims.C2EDim},
-                    params={"weighting_factor": self._config["weighting_factor"]},
-                )
-                self.register_provider(e_bln_c_s)
-            case base.GeometryType.TORUS:
-                e_bln_c_s = factory.NumpyDataProvider(
-                    func=functools.partial(
-                        interpolation_fields.compute_e_bln_c_s_torus,
-                        array_ns=self._xp,
-                    ),
-                    fields=(attrs.E_BLN_C_S,),
-                    domain=(dims.CellDim, dims.C2EDim),
-                    deps={},
-                    connectivities={"c2e": dims.C2EDim},
-                    params={},
-                )
-                self.register_provider(e_bln_c_s)
-
-        match self.grid.global_properties.geometry_type:
-            case base.GeometryType.ICOSAHEDRON:
-                pos_on_tplane_e_x_y = factory.NumpyDataProvider(
-                    func=functools.partial(
-                        interpolation_fields.compute_pos_on_tplane_e_x_y,
-                        exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
-                        array_ns=self._xp,
-                    ),
-                    fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
-                    domain=(dims.EdgeDim, dims.E2CDim),
-                    deps={
-                        "primal_normal_v1": geometry_attrs.EDGE_NORMAL_U,
-                        "primal_normal_v2": geometry_attrs.EDGE_NORMAL_V,
-                        "dual_normal_v1": geometry_attrs.EDGE_DUAL_U,
-                        "dual_normal_v2": geometry_attrs.EDGE_DUAL_V,
-                        "cells_lon": geometry_attrs.CELL_LON,
-                        "cells_lat": geometry_attrs.CELL_LAT,
-                        "edges_lon": geometry_attrs.EDGE_LON,
-                        "edges_lat": geometry_attrs.EDGE_LAT,
-                        "owner_mask": "edge_owner_mask",
-                    },
-                    connectivities={"e2c": dims.E2CDim},
-                    params={
-                        "grid_sphere_radius": constants.EARTH_RADIUS,
-                        "horizontal_start": self.grid.start_index(
-                            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-                        ),
-                    },
-                )
-                self.register_provider(pos_on_tplane_e_x_y)
-            case base.GeometryType.TORUS:
-                pos_on_tplane_e_x_y = factory.NumpyDataProvider(
-                    func=functools.partial(
-                        interpolation_fields.compute_pos_on_tplane_e_x_y_torus,
-                        exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
-                        array_ns=self._xp,
-                    ),
-                    fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
-                    domain=(dims.EdgeDim, dims.E2CDim),
-                    deps={
-                        "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
-                    },
-                    connectivities={"e2c": dims.E2CDim},
-                    params={},
-                )
-                self.register_provider(pos_on_tplane_e_x_y)
 
         cells_aw_verts = factory.NumpyDataProvider(
             func=functools.partial(
