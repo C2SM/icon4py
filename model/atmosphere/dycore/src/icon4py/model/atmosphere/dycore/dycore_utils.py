@@ -64,7 +64,7 @@ def _calculate_fourth_order_divdamp_scaling_coeff(
         if divdamp_order == 24
         else interpolated_fourth_order_divdamp_factor
     )
-    return -interpolated_fourth_order_divdamp_factor * mean_cell_area**2
+    return -interpolated_fourth_order_divdamp_factor * mean_cell_area ** wpfloat(2)
 
 
 @gtx.field_operator
