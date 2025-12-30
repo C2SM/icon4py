@@ -293,9 +293,7 @@ class VelocityAdvection:
             .ravel(order="K")
             .max()
         )
-        # TODO(pstark):  Why doesn't it work without this in single precision?
-        if self.vertical_cfl.array_ns.__name__ == "cupy":
-            max_vertical_cfl = vpfloat(max_vertical_cfl.get())
+
         diagnostic_state.max_vertical_cfl = self.vertical_cfl.array_ns.maximum(
             max_vertical_cfl, diagnostic_state.max_vertical_cfl
         )
@@ -370,8 +368,7 @@ class VelocityAdvection:
             .ravel(order="K")
             .max()
         )
-        if self.vertical_cfl.array_ns.__name__ == "cupy":
-            max_vertical_cfl = vpfloat(max_vertical_cfl.get())
+
         diagnostic_state.max_vertical_cfl = self.vertical_cfl.array_ns.maximum(
             max_vertical_cfl, diagnostic_state.max_vertical_cfl
         )
