@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# ruff: noqa: ERA001
 
 from __future__ import annotations
 
@@ -24,12 +23,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
 )
-from icon4py.model.common import (
-    dimension as dims,
-    field_type_aliases as fa,
-    model_backends,
-    type_alias as ta,
-)
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
 from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon as icon_grid,
@@ -38,6 +32,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -62,8 +57,8 @@ class VelocityAdvection:
         self.edge_params = edge_params
         self.c_owner_mask = owner_mask
 
-        self.cfl_w_limit: float = 0.65
-        self.scalfac_exdiff: float = 0.05
+        self.cfl_w_limit: vpfloat = vpfloat(0.65)
+        self.scalfac_exdiff: wpfloat = wpfloat(0.05)
         self._allocate_local_fields(model_backends.get_allocator(backend))
         self._determine_local_domains()
 
@@ -183,21 +178,21 @@ class VelocityAdvection:
 
     def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
         self._horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
-            self.grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+            self.grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=vpfloat
         )
         """
         Declared as z_v_grad_w in ICON. vn dw/dn + vt dw/dt. NOTE THAT IT ONLY HAS nlev LEVELS because w[nlevp1-1] is diagnostic.
         """
 
         self._contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+            self.grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=vpfloat
         )
         """
         Declared as z_w_con_c_full in ICON. w - (vn dz/dn + vt dz/dt), z is topography height
         """
 
         self.vertical_cfl = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+            self.grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=vpfloat
         )
 
     def _determine_local_domains(self):
@@ -238,11 +233,11 @@ class VelocityAdvection:
         skip_compute_predictor_vertical_advection: bool,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-        tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat],
-        dtime: ta.wpfloat,
-        cell_areas: fa.CellField[ta.wpfloat],
+        contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+        tangential_wind_on_half_levels: fa.EdgeKField[vpfloat],
+        dtime: wpfloat,
+        cell_areas: fa.CellField[wpfloat],
     ):
         """
         Compute some diagnostic variables that are used in the predictor step
@@ -291,11 +286,14 @@ class VelocityAdvection:
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = self.vertical_cfl.array_ns.max(
+        max_vertical_cfl = (
             self.vertical_cfl.ndarray[
                 self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
-            ].ravel(order="K")
+            ]
+            .ravel(order="K")
+            .max()
         )
+
         diagnostic_state.max_vertical_cfl = self.vertical_cfl.array_ns.maximum(
             max_vertical_cfl, diagnostic_state.max_vertical_cfl
         )
@@ -317,18 +315,20 @@ class VelocityAdvection:
         )
 
     def _scale_factors_by_dtime(self, dtime):
-        scaled_cfl_w_limit = self.cfl_w_limit / dtime
-        scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
-        return scaled_cfl_w_limit, scalfac_exdiff
+        scaled_cfl_w_limit = gtx.astype(self.cfl_w_limit, wpfloat) / dtime
+        scalfac_exdiff = self.scalfac_exdiff / (
+            dtime * (wpfloat(0.85) - scaled_cfl_w_limit * dtime)
+        )
+        return gtx.astype(scaled_cfl_w_limit, vpfloat), scalfac_exdiff
 
     def run_corrector_step(
         self,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
-        tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat],
-        dtime: ta.wpfloat,
-        cell_areas: fa.CellField[ta.wpfloat],
+        horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
+        tangential_wind_on_half_levels: fa.EdgeKField[vpfloat],
+        dtime: wpfloat,
+        cell_areas: fa.CellField[wpfloat],
     ):
         """
         Compute some diagnostic variables that are used in the corrector step
@@ -361,10 +361,12 @@ class VelocityAdvection:
 
         # Reductions should be performed on flat, contiguous arrays for best cupy performance
         # as otherwise cupy won't use cub optimized kernels.
-        max_vertical_cfl = self.vertical_cfl.array_ns.max(
+        max_vertical_cfl = (
             self.vertical_cfl.ndarray[
                 self._start_cell_lateral_boundary_level_4 : self._end_cell_halo, :
-            ].ravel(order="K")
+            ]
+            .ravel(order="K")
+            .max()
         )
 
         diagnostic_state.max_vertical_cfl = self.vertical_cfl.array_ns.maximum(
