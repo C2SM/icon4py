@@ -23,7 +23,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_mome
 from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
     compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
 )
-from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    type_alias as ta,
+    utils as common_utils,
+)
 from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
@@ -34,14 +39,13 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, serialbox, test_utils
-from icon4py.model.testing.test_utils import vp_eps, wp_eps
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
-atol_2eps = 2 * vp_eps  # for double ≈ 4.44e-16, for single ≈ 2.38e-7
-rtol_8eps = 8 * vp_eps  # for double ≈ 1.78e-15, for single ≈ 9.54e-7
+ATOL_2EPS = 2 * constants.VP_EPS  # for double ≈ 4.44e-16, for single ≈ 2.38e-7
+RTOL_8EPS = 8 * constants.WP_EPS  # for double ≈ 1.78e-15, for single ≈ 9.54e-7
 
 log = logging.getLogger(__name__)
 
@@ -54,8 +58,8 @@ def _compare_cfl(
     horizontal_end: int,
     vertical_start: int,
     vertical_end: int,
-    rtol: vpfloat = rtol_8eps,
-    atol: vpfloat = atol_2eps,
+    rtol: vpfloat = RTOL_8EPS,
+    atol: vpfloat = ATOL_2EPS,
 ) -> None:
     cfl_clipping_mask = np.where(np.abs(vertical_cfl) > 0.0, True, False)
     assert (
@@ -862,8 +866,8 @@ def test_compute_advection_in_vertical_momentum_equation(
     assert test_utils.dallclose(
         icon_result_z_w_con_c_full.asnumpy(),
         contravariant_corrected_w_at_cells_on_model_levels.asnumpy(),
-        rtol=rtol_8eps,
-        atol=atol_2eps,
+        rtol=RTOL_8EPS,
+        atol=ATOL_2EPS,
     )
 
     start_idx = start_cell_nudging_for_vertical_wind_advective_tendency
@@ -871,7 +875,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     fortran_res = icon_result_ddt_w_adv[start_idx:end_idx, :].asnumpy()
     icon4py_res = vertical_wind_advective_tendency[start_idx:end_idx, :].asnumpy()
 
-    assert test_utils.dallclose(fortran_res, icon4py_res, rtol=rtol_8eps, atol=atol_2eps)
+    assert test_utils.dallclose(fortran_res, icon4py_res, rtol=RTOL_8EPS, atol=ATOL_2EPS)
 
     # TODO(OngChia): currently direct comparison of vcfl_dsl is not possible because it is not properly updated in icon run
     _compare_cfl(
@@ -987,6 +991,6 @@ def test_compute_advection_in_horizontal_momentum_equation(
     assert test_utils.dallclose(
         icon_result_ddt_vn_apc.asnumpy(),
         normal_wind_advective_tendency.asnumpy(),
-        rtol=rtol_8eps,
-        atol=atol_2eps,
+        rtol=RTOL_8EPS,
+        atol=ATOL_2EPS,
     )
