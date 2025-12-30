@@ -16,21 +16,15 @@ import pytest
 from typing_extensions import Buffer
 
 from icon4py.model.common import model_options
-from icon4py.model.common.constants import VP_EPS, WP_EPS
+from icon4py.model.common.constants import VP_EPS
 from icon4py.model.common.type_alias import vpfloat
-
-
-wp_eps = WP_EPS  # to enable to set tolerances with eps dependance
-vp_eps = VP_EPS  # (make epsilons available as test_utils.vp_eps)
-
-tol_big = 5e3 * vp_eps  # for double ≈ 1.11e-12
 
 
 def dallclose(
     a: npt.ArrayLike,
     b: npt.ArrayLike,
-    rtol: vpfloat = tol_big,
-    atol: vpfloat = vp_eps,
+    rtol: vpfloat = 5e3 * VP_EPS,  # for double ≈ 1.11e-12
+    atol: vpfloat = VP_EPS,
     equal_nan: bool = False,
 ) -> bool:
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
