@@ -528,10 +528,9 @@ def initialize(
 )
 @click.option(
     "--enable_profiling",
-    is_flag=False,
-    flag_value="gt4py_metrics.json",
-    default="",
-    help="Enable detailed profiling with GT4Py metrics. Can be a flag (--enable_profiling) or provide a filename (--enable_profiling='gt4py_metrics.json').",
+    is_flag=True,
+    default=False,
+    help="Enable detailed profiling with GT4Py metrics.",
 )
 @click.option(
     "--icon4py_driver_backend",
