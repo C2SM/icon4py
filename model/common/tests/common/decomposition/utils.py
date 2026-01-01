@@ -160,7 +160,11 @@ THIRD_HALO_INE = {
 def assert_same_entries(
     dim: gtx.Dimension, my_owned: np.ndarray, reference: dict[gtx.Dimension, dict], rank: int
 ) -> None:
-    assert my_owned.size == len(reference[dim][rank])
+    print(f"myowned {my_owned}")
+    print(reference[dim][rank])
+    assert (
+        my_owned.size == len(reference[dim][rank])
+    ), f"{dim}(rank = {rank}) : wrong size expected {len(reference[dim][rank])} but was {my_owned.size}"
     assert np.setdiff1d(my_owned, reference[dim][rank], assume_unique=True).size == 0
 
 

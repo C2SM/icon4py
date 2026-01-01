@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.common.decomposition import definitions as defs
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.testing import parallel_helpers
 from icon4py.model.testing.fixtures import processor_props
 
@@ -59,7 +59,9 @@ def test_element_ownership_is_unique(
     )
 
     decomposition_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
-    owned = decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
+    owned = decomposition_info.global_index(
+        dim, decomposition_defs.DecompositionInfo.EntryType.OWNED
+    )
     print(f"\nrank {processor_props.rank} owns {dim} : {owned} ")
     # assert that each cell is only owned by one rank
     comm = processor_props.comm

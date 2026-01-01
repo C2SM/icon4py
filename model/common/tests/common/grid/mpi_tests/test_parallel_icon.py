@@ -9,13 +9,16 @@
 from __future__ import annotations
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
+from gt4py.next.common import is_neighbor_table
 
 import icon4py.model.common.dimension as dims
-import icon4py.model.common.grid.horizontal as h_grid
+import icon4py.model.common.grid.icon
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import base as base_grid
-from icon4py.model.testing import definitions as test_defs, parallel_helpers
+from icon4py.model.common.decomposition.halo import SimpleMetisDecomposer
+from icon4py.model.common.grid import base as base_grid, gridfile, horizontal as h_grid, icon
+from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
 
 from ...fixtures import (
     backend,
@@ -27,6 +30,7 @@ from ...fixtures import (
     ranked_data_path,
 )
 from .. import utils
+from . import utils as parallel_utils
 
 
 try:
@@ -169,3 +173,23 @@ def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
     assert end_index == expected, f"expected start index {1}, but was {start_index}"
 
 
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.mpi
+@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
+def test_skip_values_on_distributed_grid(
+    processor_props: decomposition.ProcessProperties,
+    grid: test_defs.GridDescription,
+) -> None:
+    file = grid_utils.resolve_full_grid_file_name(grid)
+    grid_manager = parallel_utils.run_gridmananger_for_multinode(
+        file, processor_props, decomposer=SimpleMetisDecomposer()
+    )
+    mesh = grid_manager.grid
+    assert not np.any(mesh.get_connectivity(dims.C2V).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert not np.any(mesh.get_connectivity(dims.E2V).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert not np.any(mesh.get_connectivity(dims.E2V).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert not np.any(mesh.get_connectivity(dims.C2E).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert np.any(mesh.get_connectivity(dims.E2C).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert np.any(mesh.get_connectivity(dims.C2E2C).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert np.any(mesh.get_connectivity(dims.V2E).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert np.any(mesh.get_connectivity(dims.V2C).asnumpy() == gridfile.GridFile.INVALID_INDEX)

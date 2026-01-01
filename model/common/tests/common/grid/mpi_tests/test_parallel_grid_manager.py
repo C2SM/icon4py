@@ -8,7 +8,6 @@
 import functools
 import logging
 import operator
-import pathlib
 from typing import Any
 
 import numpy as np
@@ -36,9 +35,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, grid_utils
 
 from ..fixtures import backend, processor_props
+from . import utils
 
-
-NUM_LEVELS = 10
 
 try:
     import mpi4py
@@ -50,39 +48,11 @@ except ImportError:
 log = logging.getLogger(__file__)
 
 
-def run_gridmananger_for_multinode(
-    file: pathlib.Path,
-    run_properties: decomp_defs.ProcessProperties,
-    decomposer: halo.Decomposer,
-) -> gm.GridManager:
-    manager = _grid_manager(file, num_levels=NUM_LEVELS)
-    manager(
-        keep_skip_values=True, allocator=None, run_properties=run_properties, decomposer=decomposer
-    )
-    return manager
-
-
-def _grid_manager(file: pathlib.Path, num_levels: int) -> gm.GridManager:
-    manager = gm.GridManager(str(file), num_levels=num_levels)
-    return manager
-
-
-def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
-    manager = _grid_manager(file, NUM_LEVELS)
-    manager(
-        keep_skip_values=True,
-        run_properties=decomp_defs.SingleNodeProcessProperties(),
-        decomposer=halo.SingleNodeDecomposer(),
-        allocator=None,
-    )
-    return manager
-
-
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi(min_size=2)
 def test_grid_manager_validate_decomposer(processor_props: decomp_defs.ProcessProperties) -> None:
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
-    manager = gm.GridManager(file, NUM_LEVELS, gridfile.ToZeroBasedIndexTransformation())
+    manager = gm.GridManager(file, utils.NUM_LEVELS, gridfile.ToZeroBasedIndexTransformation())
     with pytest.raises(exceptions.InvalidConfigError) as e:
         manager(
             keep_skip_values=True,
@@ -110,13 +80,13 @@ def test_fields_distribute_and_gather(
     caplog.set_level(logging.INFO)
     print(f"myrank - {processor_props.rank}: running with processor_props =  {processor_props}")
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
-    single_node = run_grid_manager_for_singlenode(file)
+    single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     global_cell_area = single_node.geometry_fields[gridfile.GeometryName.CELL_AREA]
     global_edge_lat = single_node.coordinates[dims.EdgeDim]["lat"]
     global_vertex_lon = single_node.coordinates[dims.VertexDim]["lon"]
 
-    multinode = run_gridmananger_for_multinode(
+    multinode = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
@@ -212,6 +182,14 @@ def assert_gathered_field_against_global(
         decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED),
         processor_props.comm,
     )
+    if np.any(
+        decomposition_info.global_index(
+            dims.VertexDim, decomp_defs.DecompositionInfo.EntryType.OWNED
+        )
+        == 3855
+    ):
+        print(f"owning rank is {processor_props.rank}")
+
     if processor_props.rank == 0:
         print(f"rank = {processor_props.rank}: asserting gathered fields: ")
         assert np.all(
@@ -228,6 +206,8 @@ def assert_gathered_field_against_global(
         print(
             f" global reference field {global_reference_field.shape} gathered = {gathered_field.shape}"
         )
+        print(f"{ np.where(np.abs(sorted_-global_reference_field) > 1e-12)}")
+
         np.testing.assert_allclose(sorted_, global_reference_field, rtol=1e-12, verbose=True)
 
 
@@ -241,7 +221,7 @@ def test_halo_neighbor_access_c2e(
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_node = run_grid_manager_for_singlenode(file)
+    single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -272,7 +252,7 @@ def test_halo_neighbor_access_c2e(
     print(
         f"rank = {processor_props.rank} : single node computed field reference has size  {reference.asnumpy().shape}"
     )
-    multinode_grid_manager = run_gridmananger_for_multinode(
+    multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
@@ -332,7 +312,7 @@ def test_halo_access_e2c2v(
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
-    single_node = run_grid_manager_for_singlenode(file)
+    single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -347,7 +327,7 @@ def test_halo_access_e2c2v(
     )
     reference_u = single_node_geometry.get(geometry_attributes.EDGE_NORMAL_VERTEX_U).asnumpy()
     reference_v = single_node_geometry.get(geometry_attributes.EDGE_NORMAL_VERTEX_V).asnumpy()
-    multinode_grid_manager = run_gridmananger_for_multinode(
+    multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
@@ -355,7 +335,6 @@ def test_halo_access_e2c2v(
     distributed_grid = multinode_grid_manager.grid
     extra_geometry_fields = multinode_grid_manager.geometry_fields
     decomposition_info = multinode_grid_manager.decomposition_info
-
     print(f"rank = {processor_props.rank} : {decomposition_info.get_horizontal_size()!r}")
     print(
         f"rank = {processor_props.rank}: halo size for 'EdgeDim' "
@@ -424,7 +403,7 @@ def test_halo_access_e2c(
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
-    single_node = run_grid_manager_for_singlenode(file)
+    single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -439,7 +418,7 @@ def test_halo_access_e2c(
     )
     reference_u = single_node_geometry.get(geometry_attributes.EDGE_NORMAL_CELL_U).asnumpy()
     reference_v = single_node_geometry.get(geometry_attributes.EDGE_NORMAL_CELL_V).asnumpy()
-    multinode_grid_manager = run_gridmananger_for_multinode(
+    multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
@@ -514,7 +493,7 @@ def test_halo_neighbor_access_e2v(
 ) -> None:
     print(f"running on {processor_props.comm}")
     file = grid_utils.resolve_full_grid_file_name(grid)
-    single_node = run_grid_manager_for_singlenode(file)
+    single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -529,7 +508,7 @@ def test_halo_neighbor_access_e2v(
     print(
         f"rank = {processor_props.rank} : single node computed field reference has size  {reference_tangent_x.shape}"
     )
-    multinode_grid_manager = run_gridmananger_for_multinode(
+    multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
@@ -592,7 +571,7 @@ def test_halo_neighbor_access_v2e(
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     print(f"running on {processor_props.comm}")
-    single_node = run_grid_manager_for_singlenode(file)
+    single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -631,7 +610,7 @@ def test_halo_neighbor_access_v2e(
     print(
         f"rank = {processor_props.rank} : single node computed field reference has size  {reference.asnumpy().shape}"
     )
-    multinode_grid_manager = run_gridmananger_for_multinode(
+    multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
@@ -694,7 +673,7 @@ def test_halo_neighbor_access_c2e2c(
     xp = data_alloc.import_array_ns(allocator=backend)
     start_zone = h_grid.cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     print(f"running on {processor_props.comm}")
-    single_node = run_grid_manager_for_singlenode(file)
+    single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
@@ -716,7 +695,7 @@ def test_halo_neighbor_access_c2e2c(
     print(
         f"rank = {processor_props.rank} : single node computed field reference has size  {reference.shape}"
     )
-    multinode_grid_manager = run_gridmananger_for_multinode(
+    multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
@@ -772,11 +751,13 @@ def test_halo_neighbor_access_v2c(
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     print(f"running on {processor_props.comm}")
-    single_node = run_grid_manager_for_singlenode(file)
+    single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
 
     data = np.repeat(
-        single_node.coordinates[dims.CellDim]["lat"].asnumpy()[:, None], repeats=NUM_LEVELS, axis=1
+        single_node.coordinates[dims.CellDim]["lat"].asnumpy()[:, None],
+        repeats=utils.NUM_LEVELS,
+        axis=1,
     )
     full_cell_k_field = gtx.as_field(
         (dims.CellDim, dims.KDim),
@@ -812,7 +793,7 @@ def test_halo_neighbor_access_v2c(
     print(
         f"rank = {processor_props.rank}/ {processor_props.comm_size} : single node computed field reference has size  {reference.asnumpy().shape}"
     )
-    multinode_grid_manager = run_gridmananger_for_multinode(
+    multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
@@ -834,7 +815,7 @@ def test_halo_neighbor_access_v2c(
     my_global_cells = decomposition_info.global_index(dims.CellDim)
     cell_k_buffer = (
         full_cell_k_field.asnumpy()[my_global_cells, :]
-        .ravel(order="K")
+        # .ravel(order="K")
         .reshape(distributed_grid.num_cells, 10)
     )
     assert_gathered_field_against_global(
@@ -898,7 +879,7 @@ def test_validate_skip_values_in_distributed_connectivities(
     processor_props: decomp_defs.ProcessProperties, grid: test_defs.GridDescription
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
-    multinode_grid_manager = run_gridmananger_for_multinode(
+    multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
         decomposer=halo.SimpleMetisDecomposer(),
