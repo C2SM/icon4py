@@ -148,7 +148,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 v_grid.compute_vertical_coordinate,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.NoStreaming
                 ),
             ),
             fields=(attrs.CELL_HEIGHT_ON_HALF_LEVEL,),
@@ -639,7 +639,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 mf.compute_flat_max_idx,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
                 ),
                 array_ns=self._xp,
             ),
@@ -753,7 +753,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
                 ),
             ),
             deps={
@@ -815,7 +815,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 weight_factors.compute_wgtfacq_e_dsl,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
                 ),
             ),
             deps={
@@ -879,7 +879,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 compute_diffusion_metrics.compute_max_nbhgt_array_ns,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.NoStreaming
                 ),
             ),
             deps={

@@ -246,7 +246,7 @@ class GHexMultiNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: definitions.StreamLike | None,
+        stream: definitions.StreamLike | type[definitions.NoStreaming],
     ) -> MultiNodeResult:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
@@ -257,8 +257,8 @@ class GHexMultiNodeExchange:
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
 
-        if stream is None or (not ghex.__config__["gpu"]):
-            if stream is not None:
+        if stream is definitions.NoStreaming or (not ghex.__config__["gpu"]):
+            if stream is not definitions.NoStreaming:
                 warnings.warn(
                     "Requested 'scheduled exchange' mode in GHEX, which is only available"
                     " if GHEX was compiled with GPU support, but it was not."
@@ -270,7 +270,6 @@ class GHexMultiNodeExchange:
             # Stream given, perform a scheduled exchange..
             # NOTE: GHEX interprets `None` as default stream. Furthermore, if no
             #   GPU is present, passing `None` is mandatory.
-            # TODO(phimuell): Fix named arguments in GHEX.
             handle = self._comm.schedule_exchange(
                 patterns=applied_patterns,
                 stream=(None if stream is definitions.DefaultStream else stream),
@@ -282,7 +281,7 @@ class GHexMultiNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: definitions.StreamLike | None,
+        stream: definitions.StreamLike | type[definitions.NoStreaming],
     ) -> None:
         res = self.exchange(dim, *fields, stream=stream)
         res.wait(stream=stream)
@@ -293,7 +292,7 @@ class GHexMultiNodeExchange:
         *args: Any,
         dim: gtx.Dimension,
         wait: bool = True,
-        stream: definitions.StreamLike | None,
+        stream: definitions.StreamLike | type[definitions.NoStreaming],
     ) -> MultiNodeResult | None:
         if dim is None:
             raise ValueError("Need to define a dimension.")
@@ -357,7 +356,7 @@ class HaloExchangeWait:
     def __call__(
         self,
         communication_handle: MultiNodeResult,
-        stream: definitions.StreamLike | None,
+        stream: definitions.StreamLike | type[definitions.NoStreaming],
     ) -> None:
         """Wait on the communication handle."""
         communication_handle.wait(stream=stream)
@@ -433,7 +432,7 @@ class MultiNodeResult:
 
     def wait(
         self,
-        stream: definitions.StreamLike | None,
+        stream: definitions.StreamLike | type[definitions.NoStreaming],
     ) -> None:
         if stream is None or (not ghex.__config__["gpu"]):
             # No stream given, perform full blocking wait.

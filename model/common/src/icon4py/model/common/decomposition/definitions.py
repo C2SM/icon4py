@@ -32,7 +32,15 @@ log = logging.getLogger(__name__)
 
 class DefaultStream:
     """Used in `exchange_and_wait()`, `exchange()` to indicate that synchronization
-    with the default stream is requested.
+    with the default stream is requested, see there for more information. If there
+    is no GPU, or the data is stored on the host, then the behaviour falls back to
+    `NoStreaming`, see there for more.
+    """
+
+
+class NoStreaming:
+    """Used in `exchange_and_wait()`, `exchange()` to indicate that no streaming
+    support is requested, see there for more information.
     """
 
 
@@ -188,16 +196,25 @@ class DecompositionInfo:
 class ExchangeResult(Protocol):
     def wait(
         self,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> None:
-        """Performs a wait.
+        """Wait on the halo exchange.
 
         The function will wait until the communication has ended and then start the
-        unpacking of the data. If `stream` is `None` then the function will wait
-        until the unpacking has completed. If it is a CUDA stream or the
-        `DefaultStream` singleton, then the function will return after the unpacking
-        has been scheduled. It will add synchronizations, such that all work
-        that will be submitted to `stream` will wait until the unpacking has finished.
+        unpacking of the data. Depending on `stream` the behaviour when the function
+        returns are different. If it is a CUDA stream, see `StreamLike`, then the
+        function will return as soon as the unpacking has been scheduled. Furthermore,
+        the unpacking will synchronize with `stream`, i.e. all work that is submitted
+        to `stream`, after this function returns will not start before the unpacking
+        has finished. If `stream` is the special constant `NoStreaming`, then the
+        function will only return once the unpacking has finished.
+
+        Note:
+            - To select the default stream the special constant `DefaultStream` can be used.
+            - If there is no GPU, then using `DefaultStream` is the same as `NoStreaming`.
+            - If `stream` is used then "scheduling exchange" in GHEX are used.
+            - For data located on the host the behaviour is always the same as if
+                specifying `NoStreaming`.
         """
         ...
 
@@ -213,7 +230,7 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> ExchangeResult: ...
 
     @overload
@@ -221,17 +238,28 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> ExchangeResult:
         """Perform halo exchanges.
 
-        The exact behaviour depends on the optional argument `stream` is supplied.
-        If it is a GPU stream then the exchange will wait until the work previously
-        submitted to the stream has concluded. To select the default stream use the
-        special value `DefaultStream`.
-        If it is `None` then the exchange will start immediately.
+        The function packs the data and transmit it to the neighboring nodes, on the
+        returned handle a user must call `wait()`, to complete the process, see
+        `ExchangeResult.wait()` for more.
+        The function will only return once the data has been send.
 
-        It is important that `wait` is called on the returned handle.
+        The exact behaviour depends on the `stream` argument. If `stream` is the
+        constant `NoStreaming` then the function will start to pack the data
+        immediately, this means the caller must make sure that the computation has
+        been completed.
+        If it is a CUDA stream, see `StreamLike` or the constant `DefaultStream`,
+        then the packing will wait until all work, that has been submitted to `stream`
+        before this function was called, has been completed.
+
+        Note:
+            - If there is no GPU then specifying `DefaultStream` is the same as
+                `NoStreaming`.
+            - For data located on the host the behaviour is always the same as if
+                specifying `NoStreaming`.
         """
         ...
 
@@ -240,7 +268,7 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> None: ...
 
     @overload
@@ -248,7 +276,7 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> None:
         """Exchange and wait in one go."""
         ...
@@ -258,7 +286,7 @@ class ExchangeRuntime(Protocol):
         *args: Any,
         dim: gtx.Dimension,
         wait: bool = True,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> None | ExchangeResult:
         """Perform a halo exchange operation.
 
@@ -286,7 +314,7 @@ class SingleNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> ExchangeResult:
         return SingleNodeResult()
 
@@ -294,7 +322,7 @@ class SingleNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> None:
         return None
 
@@ -309,7 +337,7 @@ class SingleNodeExchange:
         *args: Any,
         dim: gtx.Dimension,
         wait: bool = True,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> ExchangeResult | None:
         res = self.exchange(dim, *args, stream=stream)
         if wait:
@@ -344,7 +372,7 @@ class HaloExchangeWaitRuntime(Protocol):
     def __call__(
         self,
         communication_handle: ExchangeResult,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> None:
         """Calls `wait()` on the provided communication handle, `stream` is forwarded."""
         ...
@@ -369,7 +397,7 @@ class HaloExchangeWait:
     def __call__(
         self,
         communication_handle: SingleNodeResult,
-        stream: StreamLike | None,
+        stream: StreamLike | type[NoStreaming],
     ) -> None:
         communication_handle.wait(stream=stream)
 
@@ -404,7 +432,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 
 class SingleNodeResult:
-    def wait(self, stream: StreamLike | None) -> None:
+    def wait(self, stream: StreamLike | type[NoStreaming]) -> None:
         pass
 
     def is_ready(self) -> bool:

@@ -16,6 +16,7 @@ import numpy as np
 import scipy.linalg as sla
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -355,7 +356,7 @@ def _compute_rbf_interpolation_coeffs(
         rbf_vec_coeff[j][horizontal_start:] /= array_ns.sum(
             nxnx[j] * rbf_vec_coeff[j][horizontal_start:], axis=1
         )[:, array_ns.newaxis]
-    exchange(*rbf_vec_coeff, stream=None)
+    exchange(*rbf_vec_coeff, stream=decomposition.NoStreaming)
     return rbf_vec_coeff
 
 

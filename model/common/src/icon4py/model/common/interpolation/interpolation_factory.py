@@ -156,7 +156,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 interpolation_fields.compute_geofac_n2s,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.NoStreaming
                 ),
             ),
             fields=(attrs.GEOFAC_N2S,),
@@ -178,7 +178,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_geofac_grdiv,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
                 ),
                 array_ns=self._xp,
             ),
@@ -204,7 +204,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.NoStreaming
                 ),
             ),
             fields=(attrs.C_BLN_AVG,),
@@ -233,7 +233,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 interpolation_fields.compute_c_lin_e,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
                 ),
             ),
             fields=(attrs.C_LIN_E,),
@@ -256,7 +256,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 interpolation_fields.compute_geofac_grg,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.NoStreaming
                 ),
             ),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
@@ -282,7 +282,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 interpolation_fields.compute_e_flx_avg,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
                 ),
             ),
             fields=(attrs.E_FLX_AVG,),
@@ -332,7 +332,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 interpolation_fields.compute_pos_on_tplane_e_x_y,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
                 ),
             ),
             fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
@@ -363,7 +363,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 interpolation_fields.compute_cells_aw_verts,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.VertexDim, stream=None
+                    self._exchange.exchange_and_wait,
+                    dims.VertexDim,
+                    stream=decomposition.NoStreaming,
                 ),
             ),
             fields=(attrs.CELL_AW_VERTS,),
@@ -392,7 +394,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 rbf.compute_rbf_interpolation_coeffs_cell,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.CellDim, stream=None
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.NoStreaming
                 ),
             ),
             fields=(attrs.RBF_VEC_COEFF_C1, attrs.RBF_VEC_COEFF_C2),
@@ -426,7 +428,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 rbf.compute_rbf_interpolation_coeffs_edge,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=None
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
                 ),
             ),
             fields=(attrs.RBF_VEC_COEFF_E,),
@@ -459,7 +461,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 rbf.compute_rbf_interpolation_coeffs_vertex,
                 array_ns=self._xp,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.VertexDim, stream=None
+                    self._exchange.exchange_and_wait,
+                    dims.VertexDim,
+                    stream=decomposition.NoStreaming,
                 ),
             ),
             fields=(attrs.RBF_VEC_COEFF_V1, attrs.RBF_VEC_COEFF_V2),
