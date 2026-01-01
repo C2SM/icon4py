@@ -267,6 +267,12 @@ class GHexMultiNodeExchange:
                 )
             handle = self._comm.exchange(applied_patterns)
         else:
+            if stream is None:
+                warnings.warn(
+                    "Passed `None` as `stream` argument. This is discouraged but allowed"
+                    " `stream` is interpreted as `DefaultStream`.",
+                    stacklevel=0,
+                )
             # Stream given, perform a scheduled exchange..
             # NOTE: GHEX interprets `None` as default stream. Furthermore, if no
             #   GPU is present, passing `None` is mandatory.
