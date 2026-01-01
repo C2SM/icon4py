@@ -76,7 +76,7 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
     ],
 )
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_distributed_local(
+def test_start_index_end_index_local_zone_on_distributed_lam_grid(
     processor_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     icon_grid: base_grid.Grid,
@@ -147,7 +147,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
     ],
 )
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
-def test_distributed_halo(
+def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
     processor_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     zone: h_grid.Zone,
@@ -167,3 +167,5 @@ def test_distributed_halo(
     assert start_index == expected, f"expected start index {expected}, but was {start_index}"
     expected = HALO_IDX[processor_props.comm_size][dim][rank][level]
     assert end_index == expected, f"expected start index {1}, but was {start_index}"
+
+
