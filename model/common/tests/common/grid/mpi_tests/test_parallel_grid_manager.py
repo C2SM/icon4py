@@ -185,6 +185,7 @@ def assert_gathered_field_against_global(
     rtol = 1e-12
     if processor_props.rank == 0:
         print(f"rank = {processor_props.rank}: asserting gathered fields: ")
+
         assert np.all(
             gathered_sizes == global_index_sizes
         ), f"gathered field sizes do not match  {gathered_sizes}"
@@ -199,12 +200,6 @@ def assert_gathered_field_against_global(
         print(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
-
-        mismatch = np.where(
-            np.abs(sorted_ - global_reference_field) / np.abs(global_reference_field) > rtol
-        )
-        print(f"rank = {processor_props.rank}: mismatch found in {mismatch}")
-
         np.testing.assert_allclose(sorted_, global_reference_field, rtol=rtol, verbose=True)
 
 
@@ -299,6 +294,7 @@ def test_halo_neighbor_access_c2e(
     print(f"rank = {processor_props.rank} - DONE")
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
@@ -390,6 +386,7 @@ def test_halo_access_e2c2v(
     )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
