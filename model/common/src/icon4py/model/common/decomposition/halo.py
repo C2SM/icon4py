@@ -196,6 +196,11 @@ class IconLikeHaloConstructor(HaloConstructor):
     def find_vertex_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
         return self._find_neighbors(cell_line, connectivity=self.face_node_connectivity)
 
+    def find_cell_neighbors_for_vertices(
+        self, vertex_line: data_alloc.NDArray
+    ) -> data_alloc.NDArray:
+        return self._find_neighbors(vertex_line, connectivity=self.node_face_connectivity)
+
     def owned_cells(self, face_to_rank: data_alloc.NDArray) -> data_alloc.NDArray:
         """Returns the full-grid indices of the cells owned by this rank"""
         owned_cells = face_to_rank == self._props.rank
@@ -215,7 +220,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         according to a remark in `mo_decomposition_tools.f90` ICON puts them to the node
         with the higher rank.
 
-        # TODO(halungge): can we add an assert for the target dimension of the connectivity being cells.
+        # TODO(halungge): can we add an assert for the target dimension of the connectivity being cells?
         Args:
             owner_mask: owner mask for the dimension
             all_indices: (global) indices of the dimension
@@ -311,19 +316,42 @@ class IconLikeHaloConstructor(HaloConstructor):
              # TODO(halungge): make number of halo lines (in terms of cells) a parameter: icon does hard coding of 2 halo lines for cells, make this dynamic!
 
         """
-        decomp_info = defs.DecompositionInfo()
+
         self._validate_mapping(face_to_rank)
 
         #: cells
         owned_cells = self.owned_cells(face_to_rank)  # global indices of owned cells
-
         first_halo_cells = self.next_halo_line(owned_cells)
         second_halo_cells = self.next_halo_line(first_halo_cells, owned_cells)
-        total_halo_cells = self._xp.hstack((first_halo_cells, second_halo_cells))
-        all_cells = self._xp.hstack((owned_cells, total_halo_cells))
+        total_halo_cells = self._xp.union1d(first_halo_cells, second_halo_cells)
 
+        #: vertices
+        vertex_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
+        vertex_on_halo_cells = self.find_vertex_neighbors_for_cells(total_halo_cells)
+        vertex_on_cutting_line = self._xp.intersect1d(vertex_on_owned_cells, vertex_on_halo_cells)
+        all_vertices = self._xp.union1d(vertex_on_owned_cells, vertex_on_halo_cells)
+
+        #: update cells to include all cells of the "dual cell" (hexagon) for nodes on the cutting line
+        dual_cells = self.find_cell_neighbors_for_vertices(vertex_on_cutting_line)
+        total_halo_cells = self._xp.setdiff1d(dual_cells, owned_cells)
+        all_cells = self._xp.union1d(owned_cells, total_halo_cells)
+
+        #: edges
+        edges_on_owned_cells = self.find_edge_neighbors_for_cells(owned_cells)
+        edges_on_any_halo_line = self.find_edge_neighbors_for_cells(total_halo_cells)
+
+        edges_on_cutting_line = self._xp.intersect1d(edges_on_owned_cells, edges_on_any_halo_line)
+
+        # needs to be defined as vertex neighbor due to "corners" in the cut.
+        edge_second_level = self._xp.setdiff1d(
+            self.find_edge_neighbors_for_vertices(vertex_on_cutting_line), edges_on_owned_cells
+        )
+        edge_third_level = self._xp.setdiff1d(edges_on_any_halo_line, edge_second_level)
+
+        all_edges = self._xp.union1d(edges_on_owned_cells, edges_on_any_halo_line)
+        #: construct decomposition info
+        decomp_info = defs.DecompositionInfo()
         cell_owner_mask = self._xp.isin(all_cells, owned_cells)
-        # initialize cell halo levels
         cell_halo_levels = defs.DecompositionFlag.UNDEFINED * self._xp.ones(
             all_cells.size, dtype=int
         )
@@ -335,19 +363,8 @@ class IconLikeHaloConstructor(HaloConstructor):
             defs.DecompositionFlag.SECOND_HALO_LEVEL
         )
         decomp_info.set_dimension(dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels)
-
-        #: vertices
-        vertex_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
-        vertex_on_halo_cells = self.find_vertex_neighbors_for_cells(total_halo_cells)
-
-        vertex_on_cutting_line = self._xp.intersect1d(vertex_on_owned_cells, vertex_on_halo_cells)
-
-        # create decomposition_info for vertices
-        all_vertices = self._xp.unique(
-            self._xp.hstack((vertex_on_owned_cells, vertex_on_halo_cells))
-        )
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
-        vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(  # icon specific
+        vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
             face_to_rank,
             vertex_owner_mask,
             all_vertices,
@@ -371,24 +388,6 @@ class IconLikeHaloConstructor(HaloConstructor):
             dims.VertexDim, all_vertices, vertex_owner_mask, vertex_halo_levels
         )
 
-        # edges
-        edges_on_owned_cells = self.find_edge_neighbors_for_cells(owned_cells)
-        edges_on_first_halo_line = self.find_edge_neighbors_for_cells(first_halo_cells)
-        edges_on_second_halo_line = self.find_edge_neighbors_for_cells(second_halo_cells)
-
-        edges_on_cutting_line = self._xp.intersect1d(edges_on_owned_cells, edges_on_first_halo_line)
-
-        # needs to be defined as vertex neighbor due to "corners" in the cut.
-        edge_second_level = self._xp.setdiff1d(
-            self.find_edge_neighbors_for_vertices(vertex_on_cutting_line), edges_on_owned_cells
-        )
-        edge_third_level = self._xp.setdiff1d(edges_on_second_halo_line, edge_second_level)
-
-        all_edges = self._xp.unique(
-            self._xp.hstack((edges_on_owned_cells, edge_second_level, edge_third_level))
-        )
-
-        # construct the owner mask
         edge_owner_mask = self._xp.isin(all_edges, edges_on_owned_cells)
         edge_owner_mask = self._update_owner_mask_by_max_rank_convention(
             face_to_rank,

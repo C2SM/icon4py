@@ -182,14 +182,7 @@ def assert_gathered_field_against_global(
         decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED),
         processor_props.comm,
     )
-    if np.any(
-        decomposition_info.global_index(
-            dims.VertexDim, decomp_defs.DecompositionInfo.EntryType.OWNED
-        )
-        == 3855
-    ):
-        print(f"owning rank is {processor_props.rank}")
-
+    rtol = 1e-12
     if processor_props.rank == 0:
         print(f"rank = {processor_props.rank}: asserting gathered fields: ")
         assert np.all(
@@ -204,11 +197,15 @@ def assert_gathered_field_against_global(
         sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)  # type: ignore [attr-defined]
         sorted_[gathered_global_indices] = gathered_field
         print(
-            f" global reference field {global_reference_field.shape} gathered = {gathered_field.shape}"
+            f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
-        print(f"{ np.where(np.abs(sorted_-global_reference_field) > 1e-12)}")
 
-        np.testing.assert_allclose(sorted_, global_reference_field, rtol=1e-12, verbose=True)
+        mismatch = np.where(
+            np.abs(sorted_ - global_reference_field) / np.abs(global_reference_field) > rtol
+        )
+        print(f"rank = {processor_props.rank}: mismatch found in {mismatch}")
+
+        np.testing.assert_allclose(sorted_, global_reference_field, rtol=rtol, verbose=True)
 
 
 @pytest.mark.mpi
@@ -754,21 +751,21 @@ def test_halo_neighbor_access_v2c(
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
 
-    data = np.repeat(
+    buffer = np.repeat(
         single_node.coordinates[dims.CellDim]["lat"].asnumpy()[:, None],
         repeats=utils.NUM_LEVELS,
         axis=1,
     )
     full_cell_k_field = gtx.as_field(
         (dims.CellDim, dims.KDim),
-        data=data,  # type: ignore [arg-type]
+        data=buffer,  # type: ignore [arg-type]
         dtype=float,
         allocator=backend,
     )
     print(
         f"rank = {processor_props.rank}  / {processor_props.comm_size}: single node input field has size  {full_cell_k_field.asnumpy().shape}"
     )
-    buffer = single_node.coordinates[dims.VertexDim]["lat"].asnumpy()
+    buffer = single_node.coordinates[dims.VertexDim]["lat"].asnumpy() + 1.0
     full_coef = gtx.as_field(
         (dims.VertexDim, dims.V2CDim),
         data=np.repeat((buffer / np.max(buffer))[:, None], 6, axis=1),  # type: ignore [arg-type]
@@ -813,35 +810,41 @@ def test_halo_neighbor_access_v2c(
         f"(2: {decomposition_info.get_halo_size(dims.VertexDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
     my_global_cells = decomposition_info.global_index(dims.CellDim)
-    cell_k_buffer = (
+    distributed_cell_k_buffer = (
         full_cell_k_field.asnumpy()[my_global_cells, :]
-        # .ravel(order="K")
-        .reshape(distributed_grid.num_cells, 10)
+        .ravel(order="K")
+        .reshape(distributed_grid.num_cells, utils.NUM_LEVELS)
     )
+    # validate the input data distribution
     assert_gathered_field_against_global(
         decomposition_info,
         processor_props,
         dims.CellDim,
         global_reference_field=full_cell_k_field.asnumpy(),
-        local_field=cell_k_buffer,
+        local_field=distributed_cell_k_buffer,
     )
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: input field shape = ([{cell_k_buffer.shape})"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: input field shape = ([{distributed_cell_k_buffer.shape})"
     )
 
-    cell_k_field = gtx.as_field(
+    distributed_cell_k_field = gtx.as_field(
         (dims.CellDim, dims.KDim),
-        data=cell_k_buffer,  # type: ignore [arg-type]
-        dtype=cell_k_buffer.dtype,
+        data=distributed_cell_k_buffer,  # type: ignore [arg-type]
+        dtype=distributed_cell_k_buffer.dtype,
         allocator=backend,
     )
 
     my_global_vertices = decomposition_info.global_index(dims.VertexDim)
 
-    coef = (
+    distributed_coef_buffer = (
         full_coef.asnumpy()[my_global_vertices, :]
         .ravel(order="K")
         .reshape((distributed_grid.num_vertices, 6))
+    )
+    distributed_coef = gtx.as_field(
+        (dims.VertexDim, dims.V2CDim),
+        data=distributed_coef_buffer,  # type: ignore  [arg-type]
+        allocator=backend,
     )
 
     assert_gathered_field_against_global(
@@ -849,16 +852,15 @@ def test_halo_neighbor_access_v2c(
         processor_props,
         dims.VertexDim,
         global_reference_field=full_coef.asnumpy(),
-        local_field=coef,
+        local_field=distributed_coef_buffer,
     )
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: coefficient shape = ([{coef.shape})"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: coefficient shape = ([{distributed_coef_buffer.shape})"
     )
-    coef_field = gtx.as_field((dims.VertexDim, dims.V2CDim), data=coef, allocator=backend)  # type: ignore  [arg-type]
     output = data_alloc.zero_field(distributed_grid, dims.VertexDim, dims.KDim, allocator=backend)
     _compute_cell_2_vertex_interpolation(
-        cell_k_field,
-        coef_field,
+        distributed_cell_k_field,
+        distributed_coef,
         out=output,
         offset_provider={"V2C": distributed_grid.get_connectivity(dims.V2C)},
     )
@@ -870,6 +872,12 @@ def test_halo_neighbor_access_v2c(
         global_reference_field=reference.asnumpy(),
         local_field=output.asnumpy(),
     )
+    nn = np.where(single_node_grid.get_connectivity(dims.V2C).asnumpy() == 3855)
+    if processor_props.rank == 0:
+        print(nn)
+        print(single_node_grid.get_connectivity(dims.V2C).asnumpy()[nn[0]])
+
+    print(f"rank={processor_props.rank}/{processor_props.comm_size}: ")
 
 
 @pytest.mark.mpi
