@@ -32,7 +32,7 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
     _compute_cell_2_vertex_interpolation,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_defs, grid_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils, test_utils
 
 from ..fixtures import backend, processor_props
 from . import utils
@@ -132,25 +132,25 @@ def test_fields_distribute_and_gather(
     )
 
 
-def gather_field(field: np.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
-    constant_dims = field.shape[1:]
+def gather_field(field: np.ndarray, props: decomp_defs.ProcessProperties) -> tuple:
+    constant_dims = tuple(field.shape[1:])
+    print(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
     constant_length = functools.reduce(operator.mul, constant_dims) if len(constant_dims) > 0 else 1
-
-    local_sizes = np.array(comm.gather(field.size, root=0))
-
-    if comm.rank == 0:
+    local_sizes = np.array(props.comm.gather(field.size, root=0))
+    if props.rank == 0:
         recv_buffer = np.empty(np.sum(local_sizes), dtype=field.dtype)
-        log.debug(
-            f"rank:{comm} - {comm.rank} - setup receive buffer with size {sum(local_sizes)} on rank 0"
+        print(
+            f"gather_field on rank = {props.rank} - setup receive buffer with size {sum(local_sizes)} on rank 0"
         )
     else:
         recv_buffer = None
 
-    comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
-    if comm.rank == 0:
-        log.debug("fields gathered:")
-        log.debug(f"field sizes {local_sizes}")
-        local_first_dim = tuple(size / constant_length for size in local_sizes)
+    props.comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
+    if props.rank == 0:
+        local_first_dim = tuple(sz // constant_length for sz in local_sizes)
+        print(
+            f" gather_field on rank = 0: computed local dims {local_first_dim} - constant dims {constant_dims}"
+        )
         gathered_field = recv_buffer.reshape((-1, *constant_dims))  # type: ignore [union-attr]
     else:
         gathered_field = None
@@ -177,10 +177,11 @@ def assert_gathered_field_against_global(
     owned_entries = local_field[
         decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
     ]
-    gathered_sizes, gathered_field = gather_field(owned_entries, processor_props.comm)
+    gathered_sizes, gathered_field = gather_field(owned_entries, processor_props)
+
     global_index_sizes, gathered_global_indices = gather_field(
         decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED),
-        processor_props.comm,
+        processor_props,
     )
     rtol = 1e-12
     if processor_props.rank == 0:
@@ -188,9 +189,9 @@ def assert_gathered_field_against_global(
 
         assert np.all(
             gathered_sizes == global_index_sizes
-        ), f"gathered field sizes do not match  {gathered_sizes}"
+        ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
         print(
-            f"rank = {processor_props.rank}: Checking field size: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
+            f"rank = {processor_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
         print(
             f"rank = {processor_props.rank}:                      --- gathered field has size {gathered_sizes}"
@@ -303,8 +304,10 @@ def test_halo_access_e2c2v(
     backend: gtx_typing.Backend | None,
     grid: test_defs.GridDescription,
 ) -> None:
+    if test_utils.is_dace(backend):
+        pytest.xfail("dace backend make test fail: direct offset access in test function?")
+
     file = grid_utils.resolve_full_grid_file_name(grid)
-    print(f"running on {processor_props.comm}")
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
@@ -395,8 +398,11 @@ def test_halo_access_e2c(
     backend: gtx_typing.Backend | None,
     grid: test_defs.GridDescription,
 ) -> None:
+    if test_utils.is_dace(backend):
+        pytest.xfail(
+            "dace backend make test fail (and following tests): direct offset access in test function?"
+        )
     file = grid_utils.resolve_full_grid_file_name(grid)
-    print(f"running on {processor_props.comm}")
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
