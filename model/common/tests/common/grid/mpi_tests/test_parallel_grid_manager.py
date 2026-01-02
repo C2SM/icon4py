@@ -299,7 +299,7 @@ def test_halo_neighbor_access_c2e(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
-def test_halo_access_e2c2v(
+def test_halo_neighbor_access_e2c2v(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     grid: test_defs.GridDescription,
@@ -360,6 +360,7 @@ def test_halo_access_e2c2v(
     v2 = data_alloc.random_field(distributed_grid, dims.EdgeDim, allocator=backend)
     u3 = data_alloc.random_field(distributed_grid, dims.EdgeDim, allocator=backend)
     v3 = data_alloc.random_field(distributed_grid, dims.EdgeDim, allocator=backend)
+    horizontal_end = distributed_grid.end_index(h_grid.edge_domain(h_grid.Zone.HALO))
 
     geometry_stencils.zonal_and_meridional_component_of_edge_field_at_vertex.with_backend(backend)(
         vertex_lat,
@@ -367,6 +368,7 @@ def test_halo_access_e2c2v(
         x,
         y,
         z,
+        domain={dims.EdgeDim: (0, horizontal_end)},
         out=(u0, v0, u1, v1, u2, v2, u3, v3),
         offset_provider={"E2C2V": distributed_grid.get_connectivity(dims.E2C2V)},
     )
@@ -393,7 +395,7 @@ def test_halo_access_e2c2v(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
-def test_halo_access_e2c(
+def test_halo_neighbor_access_e2c(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     grid: test_defs.GridDescription,
@@ -452,6 +454,7 @@ def test_halo_access_e2c(
     v0 = data_alloc.random_field(distributed_grid, dims.EdgeDim, allocator=backend)
     u1 = data_alloc.random_field(distributed_grid, dims.EdgeDim, allocator=backend)
     v1 = data_alloc.random_field(distributed_grid, dims.EdgeDim, allocator=backend)
+    horizontal_end = distributed_grid.end_index(h_grid.edge_domain(h_grid.Zone.HALO))
 
     geometry_stencils.zonal_and_meridional_component_of_edge_field_at_cell_center.with_backend(
         backend
@@ -462,6 +465,7 @@ def test_halo_access_e2c(
         y,
         z,
         out=(u0, v0, u1, v1),
+        domain={dims.EdgeDim: (0, horizontal_end)},
         offset_provider={"E2C": distributed_grid.get_connectivity(dims.E2C)},
     )
     u_component = np.vstack((u0.asnumpy(), u1.asnumpy())).T
