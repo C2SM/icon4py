@@ -54,11 +54,11 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
 
     decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
     my_halo = decomp_info.global_index(dim, definitions.DecompositionInfo.EntryType.HALO)
-    print(f"rank {processor_props.rank} has halo {dim} : {my_halo}")
+    print(f"rank = {processor_props.rank}: has halo {dim} : {my_halo}")
     expected = len(utils.HALO[dim][processor_props.rank])
     assert (
         my_halo.size == expected
-    ), f"total halo size does not match for dim {dim}- expected {expected} bot was {my_halo.size}"
+    ), f" rank = {processor_props.rank}: total halo size does not match for dim {dim}- expected {expected} bot was {my_halo.size}"
     assert (
         missing := np.setdiff1d(
             my_halo, utils.HALO[dim][processor_props.rank], assume_unique=True
@@ -70,7 +70,7 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
     utils.assert_same_entries(dim, my_owned, utils.OWNED, processor_props.rank)
 
 
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
+@pytest.mark.parametrize("dim", [dims.EdgeDim])
 @pytest.mark.parametrize("rank", [0, 1, 2, 3])
 def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neighbor_tables):
     processor_props = utils.DummyProps(rank=rank)

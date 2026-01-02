@@ -260,9 +260,9 @@ class IconLikeHaloConstructor(HaloConstructor):
 
              |         /|         /|         /|
              |        / |        / |        / |
-             |      /   |      /   |      /   |
-             |    /     |    /     |    /     |
-             |  /       |  /       |  /       |          rank 0
+             |      /   |      /   |  cy  /   |
+             |    /     |    / cx  |    /     |
+             |  /       |  /       |  /   cz  |          rank 0
              |/         |/         |/         |
         -----v0---e0----v1---e1----v2---e2----v3---e3--  cutting line
              |         /|         /|         /|
@@ -284,7 +284,10 @@ class IconLikeHaloConstructor(HaloConstructor):
              Cells:
              The "numbered" cells and edges are relevant for the halo construction from the point of view of rank 0
              Cells (c0, c1, c2) are the 1. HALO LEVEL: these are cells that are neighbors of an owned cell
-             Cells (c3, c4. c5) are the 2. HALO LEVEL: these are cells that are neighbors of a cell of line 1
+             Cells (c3, c4. c5) are the 2. HALO LEVEL: cells that "close" the hexagon of a vertex on the cutting line and do not share an edge with an owned cell (that is are not LEVEL 1 cells)
+                                                       this is _not_ the same as the neighboring cells of LEVEL 1 cells, and the definition might be different from ICON.
+                                                       In the above picture if the cut was along a corner (e0 -> e1-> e8) then cy is part of the 2. LEVEL because it is part of the hexagon on v2, but it is not
+                                                       in c2e2c(c2e2c(c4))
 
              Note that this definition of 1. and 2. line differs from the definition of boundary line counting used in [grid refinement](grid_refinement.py), in terms
              of "distance" to the cutting line all halo cells have a distance of 1.
@@ -349,6 +352,7 @@ class IconLikeHaloConstructor(HaloConstructor):
             self.find_edge_neighbors_for_vertices(vertex_on_cutting_line), edges_on_owned_cells
         )
         edge_third_level = self._xp.setdiff1d(edges_on_any_halo_line, edge_second_level)
+        edge_third_level = self._xp.setdiff1d(edge_third_level, edges_on_cutting_line)
 
         all_edges = self._xp.union1d(edges_on_owned_cells, edges_on_any_halo_line)
         #: construct decomposition info
