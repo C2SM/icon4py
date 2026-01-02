@@ -322,8 +322,9 @@ class IconLikeHaloConstructor(HaloConstructor):
         #: cells
         owned_cells = self.owned_cells(face_to_rank)  # global indices of owned cells
         first_halo_cells = self.next_halo_line(owned_cells)
-        second_halo_cells = self.next_halo_line(first_halo_cells, owned_cells)
-        total_halo_cells = self._xp.union1d(first_halo_cells, second_halo_cells)
+        total_halo_cells = self._xp.union1d(
+            first_halo_cells, self.next_halo_line(first_halo_cells, owned_cells)
+        )
 
         #: vertices
         vertex_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
@@ -334,6 +335,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         #: update cells to include all cells of the "dual cell" (hexagon) for nodes on the cutting line
         dual_cells = self.find_cell_neighbors_for_vertices(vertex_on_cutting_line)
         total_halo_cells = self._xp.setdiff1d(dual_cells, owned_cells)
+        second_halo_cells = self._xp.setdiff1d(total_halo_cells, first_halo_cells)
         all_cells = self._xp.union1d(owned_cells, total_halo_cells)
 
         #: edges

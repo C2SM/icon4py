@@ -13,14 +13,12 @@ from gt4py.next import common as gtx_common
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils.data_allocation as data_alloc
-from icon4py.model.common.decomposition import definitions, halo
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import simple
 from icon4py.model.testing import definitions as test_defs
 from icon4py.model.testing.fixtures import processor_props
 
 from ...grid import utils as grid_utils
-from .. import utils
-from ..utils import dummy_four_ranks
 
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
@@ -42,50 +40,6 @@ def get_neighbor_tables_for_simple_grid() -> dict[str, data_alloc.NDArray]:
 
 
 offsets = [dims.E2C, dims.E2V, dims.C2E, dims.C2E2C, dims.V2C, dims.V2E, dims.C2V, dims.E2C2V]
-
-
-@pytest.mark.parametrize("dim", grid_utils.main_horizontal_dims())
-@pytest.mark.parametrize("rank", [0, 1, 2, 3])
-def test_halo_constructor_decomposition_info_global_indices(dim, rank):
-    simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
-    props = dummy_four_ranks(rank)
-    halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
-        run_properties=props,
-    )
-
-    decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
-    my_halo = decomp_info.global_index(dim, definitions.DecompositionInfo.EntryType.HALO)
-    print(f"rank {props.rank} has halo {dim} : {my_halo}")
-    assert my_halo.size == len(utils.HALO[dim][props.rank])
-    assert np.setdiff1d(my_halo, utils.HALO[dim][props.rank], assume_unique=True).size == 0
-    my_owned = decomp_info.global_index(dim, definitions.DecompositionInfo.EntryType.OWNED)
-    print(f"rank {props.rank} owns {dim} : {my_owned} ")
-    utils.assert_same_entries(dim, my_owned, utils.OWNED, props.rank)
-
-
-@pytest.mark.parametrize("rank", (0, 1, 2, 3))
-def test_horizontal_size(rank):
-    simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
-    props = dummy_four_ranks(rank)
-    halo_generator = halo.IconLikeHaloConstructor(
-        connectivities=simple_neighbor_tables,
-        run_properties=props,
-    )
-    decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
-    horizontal_size = decomp_info.get_horizontal_size()
-    expected_verts = len(utils.OWNED[dims.VertexDim][rank]) + len(utils.HALO[dims.VertexDim][rank])
-    assert (
-        horizontal_size.num_vertices == expected_verts
-    ), f"local size mismatch on rank={rank} for {dims.VertexDim}: expected {expected_verts}, but was {horizontal_size.num_vertices}"
-    expected_edges = len(utils.OWNED[dims.EdgeDim][rank]) + len(utils.HALO[dims.EdgeDim][rank])
-    assert (
-        horizontal_size.num_edges == expected_edges
-    ), f"local size mismatch on rank={rank} for {dims.EdgeDim}: expected {expected_edges}, but was {horizontal_size.num_edges}"
-    expected_cells = len(utils.OWNED[dims.CellDim][rank]) + len(utils.HALO[dims.CellDim][rank])
-    assert (
-        horizontal_size.num_cells == expected_cells
-    ), f"local size mismatch on rank={rank}  for {dims.CellDim}: expected {expected_cells}, but was {horizontal_size.num_cells}"
 
 
 @pytest.mark.parametrize("dim", grid_utils.main_horizontal_dims())
@@ -124,9 +78,10 @@ def test_decomposition_info_single_node_empty_halo(
         (definitions.DecompositionFlag.UNDEFINED, False),
     ],
 )
-def test_decomposition_info_is_distributed(flag, expected):
+def test_decomposition_info_is_distributed(flag, expected) -> None:
     mesh = simple.simple_grid(allocator=None, num_levels=10)
-    decomp = definitions.DecompositionInfo().set_dimension(
+    decomp = definitions.DecompositionInfo()
+    decomp.set_dimension(
         dims.CellDim,
         np.arange(mesh.num_cells),
         np.arange(mesh.num_cells),

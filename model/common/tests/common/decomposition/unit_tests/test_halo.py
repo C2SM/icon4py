@@ -15,10 +15,11 @@ from icon4py.model.common.decomposition import definitions, halo
 from icon4py.model.common.grid import base as base_grid, simple
 
 from ...fixtures import backend_like, processor_props
+from ...grid import utils as grid_utils
 from .. import utils
 from ..fixtures import simple_neighbor_tables
 from ..utils import dummy_four_ranks
-from .test_definitions import offsets
+from .test_definitions import get_neighbor_tables_for_simple_grid, offsets
 
 
 @pytest.mark.parametrize("rank", [0, 1, 2, 4])
@@ -40,7 +41,7 @@ def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
 @pytest.mark.parametrize("rank", [0, 1, 2, 4])
 def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbor_tables, dim):
-    processor_props = utils.DummyProps(rank=rank)
+    processor_props = utils.dummy_four_ranks(rank=rank)
     if processor_props.comm_size != 4:
         pytest.skip(
             f"This test requires exactly 4 MPI ranks, current run has {processor_props.comm_size}"
@@ -214,3 +215,27 @@ def test_global_to_local_index(offset, rank):
                     neighbor_index_full_grid[k_] == offset_full_grid[i][k],
                     f"failed to map [{offset_full_grid[i]}] to local: [{local_offset[i]}]",
                 )
+
+
+@pytest.mark.parametrize("rank", (0, 1, 2, 3))
+def test_horizontal_size(rank):
+    simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
+    props = dummy_four_ranks(rank)
+    halo_generator = halo.IconLikeHaloConstructor(
+        connectivities=simple_neighbor_tables,
+        run_properties=props,
+    )
+    decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
+    horizontal_size = decomp_info.get_horizontal_size()
+    expected_verts = len(utils.OWNED[dims.VertexDim][rank]) + len(utils.HALO[dims.VertexDim][rank])
+    assert (
+        horizontal_size.num_vertices == expected_verts
+    ), f"local size mismatch on rank={rank} for {dims.VertexDim}: expected {expected_verts}, but was {horizontal_size.num_vertices}"
+    expected_edges = len(utils.OWNED[dims.EdgeDim][rank]) + len(utils.HALO[dims.EdgeDim][rank])
+    assert (
+        horizontal_size.num_edges == expected_edges
+    ), f"local size mismatch on rank={rank} for {dims.EdgeDim}: expected {expected_edges}, but was {horizontal_size.num_edges}"
+    expected_cells = len(utils.OWNED[dims.CellDim][rank]) + len(utils.HALO[dims.CellDim][rank])
+    assert (
+        horizontal_size.num_cells == expected_cells
+    ), f"local size mismatch on rank={rank}  for {dims.CellDim}: expected {expected_cells}, but was {horizontal_size.num_cells}"
