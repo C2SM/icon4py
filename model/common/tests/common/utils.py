@@ -16,4 +16,3 @@ def dummy_exchange(*field: data_alloc.NDArray, **kwargs: Any) -> None:
     #  exchange. We have to ignore it as we never do an exchange.
     # TODO(phimuell): Is this the best way?
     assert len(kwargs) == 0 or (len(kwargs) == 1 and "stream" in kwargs)
-    return None
