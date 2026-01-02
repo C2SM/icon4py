@@ -12,6 +12,12 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+
+try:
+    from icon4py.model.common.decomposition import mpi_decomposition
+except ImportError:
+    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
