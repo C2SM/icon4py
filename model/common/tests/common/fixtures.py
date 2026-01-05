@@ -16,7 +16,7 @@ from icon4py.model.common.grid import geometry, geometry_attributes, gridfile, v
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.testing import serialbox
-from icon4py.model.testing.definitions import metrics_config
+from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
@@ -147,7 +147,7 @@ def metrics_factory_from_savepoint(
         exner_expol,
         vwind_offctr,
         rayleigh_type,
-    ) = metrics_config(experiment)
+    ) = construct_metrics_config(experiment)
     vertical_config = vertical.VerticalGridConfig(
         geometry_source.grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
