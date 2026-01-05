@@ -68,6 +68,9 @@ def _calculate_pressure_buoyancy_acceleration_at_cells_on_half_levels(
 
 @gtx.field_operator
 def _compute_perturbed_quantities_and_interpolation(
+    time_extrapolation_parameter_for_exner: fa.CellKField[ta.vpfloat],
+    current_exner: fa.CellKField[ta.wpfloat],
+    reference_exner_at_cells_on_model_levels: fa.CellKField[ta.vpfloat],
     current_rho: fa.CellKField[ta.wpfloat],
     reference_rho_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     current_theta_v: fa.CellKField[ta.wpfloat],
@@ -80,7 +83,7 @@ def _compute_perturbed_quantities_and_interpolation(
     pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
+    # temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
@@ -93,7 +96,19 @@ def _compute_perturbed_quantities_and_interpolation(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
 ]:
+    (
+        temporal_extrapolation_of_perturbed_exner,
+        perturbed_exner_at_cells_on_model_levels,
+    ) = _extrapolate_temporally_exner_pressure(
+        exner_exfac=time_extrapolation_parameter_for_exner,
+        exner=current_exner,
+        exner_ref_mc=reference_exner_at_cells_on_model_levels,
+        exner_pr=perturbed_exner_at_cells_on_model_levels,
+    )
+
     exner_at_cells_on_half_levels = (
         concat_where(
             maximum(1, nflatlev) <= dims.KDim,
@@ -164,6 +179,8 @@ def _compute_perturbed_quantities_and_interpolation(
         perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels,
         pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        temporal_extrapolation_of_perturbed_exner,
+        perturbed_exner_at_cells_on_model_levels,
     )
 
 
@@ -344,22 +361,10 @@ def compute_perturbed_quantities_and_interpolation(
         - d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
     """
 
-    _extrapolate_temporally_exner_pressure(
-        exner_exfac=time_extrapolation_parameter_for_exner,
-        exner=current_exner,
-        exner_ref_mc=reference_exner_at_cells_on_model_levels,
-        exner_pr=perturbed_exner_at_cells_on_model_levels,
-        out=(
-            temporal_extrapolation_of_perturbed_exner,
-            perturbed_exner_at_cells_on_model_levels,
-        ),
-        domain={
-            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (model_top, surface_level - 1),
-        },
-    )
-
     _compute_perturbed_quantities_and_interpolation(
+        time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
+        current_exner=current_exner,
+        reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
         current_rho=current_rho,
         reference_rho_at_cells_on_model_levels=reference_rho_at_cells_on_model_levels,
         current_theta_v=current_theta_v,
@@ -372,7 +377,6 @@ def compute_perturbed_quantities_and_interpolation(
         pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
-        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
         igradp_method=igradp_method,
         nflatlev=nflatlev,
@@ -385,6 +389,8 @@ def compute_perturbed_quantities_and_interpolation(
             perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels,
             pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            temporal_extrapolation_of_perturbed_exner,
+            perturbed_exner_at_cells_on_model_levels,
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
