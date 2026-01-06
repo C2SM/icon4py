@@ -31,6 +31,7 @@ ModelSubpackagePath: TypeAlias = Literal[
     "atmosphere/subgrid_scale_physics/muphys",
     "common",
     "driver",
+    "standalone_driver",
     "testing",
 ]
 MODEL_SUBPACKAGE_PATHS: Final[Sequence[nox.Param]] = [
@@ -59,9 +60,8 @@ def benchmark_model(session: nox.Session) -> None:
         *f"pytest \
         -v \
         -m continuous_benchmarking \
-        --benchmark-only \
         --benchmark-warmup=on \
-        --benchmark-warmup-iterations=30 \
+        --benchmark-warmup-iterations=10 \
         --benchmark-json=pytest_benchmark_results_{session.python}.json \
         ./model".split(),
         *session.posargs,

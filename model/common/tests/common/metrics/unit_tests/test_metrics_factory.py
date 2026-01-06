@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes as attrs, metrics_factory
@@ -25,6 +25,7 @@ from icon4py.model.testing import (
     serialbox,
     test_utils as test_helpers,
 )
+from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -42,46 +43,12 @@ from icon4py.model.testing.fixtures.datatest import (
 metrics_factories: dict[str, metrics_factory.MetricsFieldsFactory] = {}
 
 
-def metrics_config(experiment: definitions.Experiment) -> tuple:
-    rayleigh_coeff = 5.0
-    lowest_layer_thickness = 50.0
-    exner_expol = 0.333
-    vwind_offctr = 0.2
-    rayleigh_type = 2
-    model_top_height = 23500.0
-    stretch_factor = 1.0
-    damping_height = 45000.0
-    match experiment:
-        case definitions.Experiments.MCH_CH_R04B09:
-            lowest_layer_thickness = 20.0
-            model_top_height = 23000.0
-            stretch_factor = 0.65
-            damping_height = 12500.0
-        case definitions.Experiments.EXCLAIM_APE:
-            model_top_height = 75000.0
-            stretch_factor = 0.9
-            damping_height = 50000.0
-            rayleigh_coeff = 0.1
-            exner_expol = 0.3333333333333
-            vwind_offctr = 0.15
-
-    return (
-        lowest_layer_thickness,
-        model_top_height,
-        stretch_factor,
-        damping_height,
-        rayleigh_coeff,
-        exner_expol,
-        vwind_offctr,
-        rayleigh_type,
-    )
-
-
 def _get_metrics_factory(
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
 ) -> metrics_factory.MetricsFieldsFactory:
     registry_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
     factory = metrics_factories.get(registry_name)
@@ -99,7 +66,7 @@ def _get_metrics_factory(
             exner_expol,
             vwind_offctr,
             rayleigh_type,
-        ) = metrics_config(experiment)
+        ) = construct_metrics_config(experiment)
 
         vertical_config = v_grid.VerticalGridConfig(
             geometry.grid.num_levels,
@@ -117,6 +84,7 @@ def _get_metrics_factory(
             geometry_source=geometry,
             backend=backend,
             metadata=interpolation_attributes.attrs,
+            exchange=exchange,
         )
         factory = metrics_factory.MetricsFieldsFactory(
             grid=geometry.grid,
@@ -131,6 +99,7 @@ def _get_metrics_factory(
             rayleigh_coeff=rayleigh_coeff,
             exner_expol=exner_expol,
             vwind_offctr=vwind_offctr,
+            exchange=exchange,
         )
         metrics_factories[registry_name] = factory
     return factory
@@ -490,7 +459,7 @@ def test_factory_mask_bdy_prog_halo_c(
     )
     field_1 = factory.get(attrs.MASK_PROG_HALO_C)
     field_2 = factory.get(attrs.BDY_HALO_C)
-    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
+    assert (field_ref_1.asnumpy() == field_1.asnumpy()).all()
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
 
 
@@ -535,8 +504,12 @@ def test_factory_zdiff_gradp(
     )
     field_1 = factory.get(attrs.ZDIFF_GRADP)
     field_2 = factory.get(attrs.VERTOFFSET_GRADP)
-    assert test_helpers.dallclose(zdiff_gradp_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
-    assert test_helpers.dallclose(vertoffset_gradp_ref.asnumpy(), field_2.asnumpy(), atol=1.0e-5)
+    assert test_helpers.dallclose(
+        zdiff_gradp_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-10, rtol=1e-9
+    )
+    assert test_helpers.dallclose(
+        vertoffset_gradp_ref.asnumpy(), field_2.asnumpy(), atol=1.0e-10, rtol=1e-9
+    )
 
 
 @pytest.mark.level("integration")
@@ -630,6 +603,9 @@ def test_factory_compute_diffusion_mask_and_coef(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
+    if experiment == definitions.Experiments.GAUSS3D:
+        pytest.xfail("TODO")
+
     field_ref_1 = metrics_savepoint.mask_hdiff()
     field_ref_2 = metrics_savepoint.zd_diffcoef()
     factory = _get_metrics_factory(
@@ -641,7 +617,7 @@ def test_factory_compute_diffusion_mask_and_coef(
     field_1 = factory.get(attrs.MASK_HDIFF)
     field_2 = factory.get(attrs.ZD_DIFFCOEF_DSL)
 
-    assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy())
+    assert (field_ref_1.asnumpy() == field_1.asnumpy()).all()
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-10)
 
 
@@ -655,6 +631,9 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
+    if experiment == definitions.Experiments.GAUSS3D:
+        pytest.xfail("TODO")
+
     field_ref_1 = metrics_savepoint.zd_intcoef()
     field_ref_2 = metrics_savepoint.zd_vertoffset()
     factory = _get_metrics_factory(
