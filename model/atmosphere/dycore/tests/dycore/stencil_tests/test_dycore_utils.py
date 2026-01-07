@@ -28,12 +28,9 @@ if TYPE_CHECKING:
 
 
 def fourth_order_divdamp_scaling_coeff_numpy(
-    a: np.ndarray, divdamp_order: np.int32, factor: float, mean_cell_area: float
+    a: np.ndarray, divdamp_order: int, factor: float, mean_cell_area: float
 ) -> np.ndarray:
-    if divdamp_order == 24:
-        b = np.maximum(0.0, a - 0.25 * factor)
-    else:
-        b = factor
+    b = np.maximum(0.0, a - 0.25 * factor) if divdamp_order == 24 else np.full_like(a, factor)
     return -b * mean_cell_area**2
 
 
@@ -110,7 +107,7 @@ def test_calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
     assert test_utils.dallclose(
         out.asnumpy(),
         calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
-            coeff, fourth_order_divdamp_scaling_coeff.asnumpy()
+            fourth_order_divdamp_scaling_coeff.asnumpy(), coeff
         ),
     )
 
@@ -127,13 +124,16 @@ def test_calculate_divdamp_fields(backend: gtx_typing.Backend) -> None:
     second_order_divdamp_factor = 0.7
     max_nudging_coefficient = 0.3
 
-    scaled_ref = fourth_order_divdamp_scaling_coeff_for_order_24_numpy(
-        divdamp_field.asnumpy(), second_order_divdamp_factor, mean_cell_area
+    scaled_ref = fourth_order_divdamp_scaling_coeff_numpy(
+        divdamp_field.asnumpy(),
+        divdamp_order,
+        second_order_divdamp_factor,
+        mean_cell_area,
     )
 
     reduced_fourth_order_divdamp_coeff_at_nest_boundary_ref = (
         calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
-            max_nudging_coefficient, scaled_ref
+            scaled_ref, max_nudging_coefficient
         )
     )
 

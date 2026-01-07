@@ -1637,9 +1637,7 @@ def test_apply_divergence_damping_and_update_vn(
 
     iau_wgt_dyn = config.iau_wgt_dyn
     divdamp_order = config.divdamp_order
-    second_order_divdamp_scaling_coeff = (
-        sp_nh_init.divdamp_fac_o2() * mean_cell_area
-    )
+    second_order_divdamp_scaling_coeff = sp_nh_init.divdamp_fac_o2() * mean_cell_area
     second_order_divdamp_factor = savepoint_nonhydro_init.divdamp_fac_o2()
     apply_2nd_order_divergence_damping = (
         divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED

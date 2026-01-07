@@ -19,9 +19,12 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from model.atmosphere.dycore.tests.dycore.stencil_tests.test_dycore_utils import \
-    fourth_order_divdamp_scaling_coeff_numpy, \
-    calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy
+
+from .test_dycore_utils import (
+    calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy,
+    fourth_order_divdamp_scaling_coeff_numpy,
+)
+
 
 divergence_damp_order = DivergenceDampingOrder()
 
@@ -91,7 +94,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             interpolated_fourth_order_divdamp_factor,
             divdamp_order,
             second_order_divdamp_factor,
-            mean_cell_area
+            mean_cell_area,
         )
 
         reduced_fourth_order_divdamp_coeff_at_nest_boundary = (

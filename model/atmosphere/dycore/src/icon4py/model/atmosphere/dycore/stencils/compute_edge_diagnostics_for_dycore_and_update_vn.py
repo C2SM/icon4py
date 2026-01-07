@@ -9,7 +9,7 @@
 
 import gt4py.next as gtx
 from gt4py.eve import utils as eve_utils
-from gt4py.next import broadcast, GridType
+from gt4py.next import GridType, broadcast
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.dycore_utils import _calculate_divdamp_fields
@@ -304,8 +304,7 @@ def _apply_divergence_damping_and_update_vn(
     max_nudging_coefficient: float,
     dbl_eps: float,
 ) -> fa.EdgeKField[ta.wpfloat]:
-
-    (fourth_order_divdamp_scaling_coeff, reduced_fourth_order_divdamp_coeff_at_nest_boundary) = \
+    (fourth_order_divdamp_scaling_coeff, reduced_fourth_order_divdamp_coeff_at_nest_boundary) = (
         _calculate_divdamp_fields(
             interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
             divdamp_order=divdamp_order,
@@ -314,6 +313,7 @@ def _apply_divergence_damping_and_update_vn(
             max_nudging_coefficient=max_nudging_coefficient,
             dbl_eps=dbl_eps,
         )
+    )
     # add dw/dz for divergence damping term. In ICON, this stencil starts from k = kstart_dd3d until k = nlev - 1.
     # Since scaling_factor_for_3d_divdamp is zero when k < kstart_dd3d, it is meaningless to execute computation
     # above level kstart_dd3d. But we have decided to remove this manual optimization in icon4py.
