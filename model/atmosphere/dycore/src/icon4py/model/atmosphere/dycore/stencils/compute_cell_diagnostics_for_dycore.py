@@ -80,8 +80,6 @@ def _compute_perturbed_quantities_and_interpolation(
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     ddz_of_reference_exner_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     ddqz_z_half: fa.CellKField[ta.vpfloat],
-    pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     wgtfacq_c: fa.CellKField[ta.vpfloat],
     reference_theta_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
@@ -139,11 +137,7 @@ def _compute_perturbed_quantities_and_interpolation(
         reference_theta_at_cells_on_model_levels,
     )
 
-    rho_at_cells_on_half_levels = concat_where(
-        dims.KDim >= 1,
-        _interpolate_cell_field_to_half_levels_wp(wgtfac_c, current_rho),
-        rho_at_cells_on_half_levels,
-    )
+    rho_at_cells_on_half_levels = _interpolate_cell_field_to_half_levels_wp(wgtfac_c, current_rho)
 
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
@@ -167,8 +161,7 @@ def _compute_perturbed_quantities_and_interpolation(
 
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
-    pressure_buoyancy_acceleration_at_cells_on_half_levels = concat_where(
-        dims.KDim >= 1,
+    pressure_buoyancy_acceleration_at_cells_on_half_levels = (
         _calculate_pressure_buoyancy_acceleration_at_cells_on_half_levels(
             exner_w_explicit_weight_parameter,
             theta_v_at_cells_on_half_levels,
@@ -176,8 +169,7 @@ def _compute_perturbed_quantities_and_interpolation(
             ddqz_z_half_wp,
             perturbed_theta_v_at_cells_on_half_levels,
             ddz_of_reference_exner_at_cells_on_half_levels,
-        ),
-        pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        )
     )
 
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
@@ -409,8 +401,6 @@ def compute_perturbed_quantities_and_interpolation(
         perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
         ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
-        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
         wgtfacq_c=wgtfacq_c,
         reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
@@ -449,7 +439,7 @@ def compute_perturbed_quantities_and_interpolation(
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-                dims.KDim: (model_top, surface_level - 1),
+                dims.KDim: (1, surface_level - 1),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
@@ -465,7 +455,7 @@ def compute_perturbed_quantities_and_interpolation(
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-                dims.KDim: (model_top, surface_level - 1),
+                dims.KDim: (1, surface_level - 1),
             },
             {
                 dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
