@@ -260,7 +260,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         )
 
         # initialize also nest boundary points with zero
-        if limited_area:
+        if limited_area:  # TODO check this
             (rho_at_edges_on_model_levels, theta_v_at_edges_on_model_levels) = np.where(
                 (horz_idx >= start_edge_lateral_boundary) & (horz_idx < end_edge_halo),
                 (
