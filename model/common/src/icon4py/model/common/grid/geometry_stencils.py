@@ -8,6 +8,7 @@
 
 from types import ModuleType
 
+import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py import next as gtx
 from gt4py.next import sin, where
@@ -17,12 +18,14 @@ from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
 from icon4py.model.common.math.helpers import (
     arc_length_on_edges,
     cross_product_on_edges,
+    diff_on_edges_torus,
+    distance_on_edges_torus,
     geographical_to_cartesian_on_edges,
     geographical_to_cartesian_on_vertices,
     normalize_cartesian_vector_on_edges,
     zonal_and_meridional_components_on_edges,
 )
-from icon4py.model.common.utils import data_allocation as alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -52,6 +55,51 @@ def cartesian_coordinates_of_edge_tangent(
     x = edge_orientation * (vertex_x(E2V[1]) - vertex_x(E2V[0]))
     y = edge_orientation * (vertex_y(E2V[1]) - vertex_y(E2V[0]))
     z = edge_orientation * (vertex_z(E2V[1]) - vertex_z(E2V[0]))
+
+    return normalize_cartesian_vector_on_edges(x, y, z)
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def cartesian_coordinates_of_edge_tangent_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    edge_orientation: fa.EdgeField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+) -> tuple[
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+]:
+    """
+    Compute normalized cartesian vector tangential to an edge on a torus grid.
+
+    This is done by taking the difference between the two vertices adjacent to the edge
+    t = d(v1, v2)
+
+    Args:
+        vertex_x: x coordinates of vertices
+        vertex_y: y coordinates of vertices
+        edge_orientation: encoding of the edge orientation: (-1, +1) depending on whether the
+            edge is directed from first to second neighbor of vice versa.
+    Returns:
+          x: x coordinate of normalized tangent vector
+          y: y coordinate of normalized tangent vector
+          z: z coordinate of normalized tangent vector
+    """
+    xdiff, ydiff = diff_on_edges_torus(
+        vertex_x(E2V[0]),
+        vertex_x(E2V[1]),
+        vertex_y(E2V[0]),
+        vertex_y(E2V[1]),
+        domain_length,
+        domain_height,
+    )
+    x = edge_orientation * xdiff
+    y = edge_orientation * ydiff
+    z = 0.0 * x
+    # TODO(msimberg): This should use something like numpy.zeros_like if and
+    # when that becomes available in gt4py.
 
     return normalize_cartesian_vector_on_edges(x, y, z)
 
@@ -94,6 +142,32 @@ def cartesian_coordinates_of_edge_normal(
 
 
 @gtx.field_operator
+def cartesian_coordinates_of_edge_normal_torus(
+    edge_tangent_x: fa.EdgeField[ta.wpfloat],
+    edge_tangent_y: fa.EdgeField[ta.wpfloat],
+) -> tuple[
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+]:
+    """
+    Compute the normal to the edge tangent vector on a torus grid.
+
+    Args:
+        edge_tangent_x: x coordinate of the tangent
+        edge_tangent_y: y coordinate of the tangent
+    Returns:
+        edge_normal_x: x coordinate of the normal
+        edge_normal_y: y coordinate of the normal
+        edge_normal_z: y coordinate of the normal
+    """
+    z = 0.0 * edge_tangent_x
+    # TODO(msimberg): This should use something like numpy.zeros_like if and
+    # when that becomes available in gt4py.
+    return normalize_cartesian_vector_on_edges(-edge_tangent_y, edge_tangent_x, z)
+
+
+@gtx.field_operator
 def cartesian_coordinates_edge_tangent_and_normal(
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
@@ -123,6 +197,59 @@ def cartesian_coordinates_edge_tangent_and_normal(
     return tangent_x, tangent_y, tangent_z, normal_x, normal_y, normal_z
 
 
+@gtx.field_operator
+def cartesian_coordinates_edge_tangent_and_normal_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    edge_x: fa.EdgeField[ta.wpfloat],
+    edge_y: fa.EdgeField[ta.wpfloat],
+    edge_orientation: fa.EdgeField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+) -> tuple[
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+]:
+    """Compute normalized cartesian vectors of edge tangent and edge normal."""
+    tangent_x, tangent_y, tangent_z = cartesian_coordinates_of_edge_tangent_torus(
+        vertex_x,
+        vertex_y,
+        edge_orientation,
+        domain_length,
+        domain_height,
+    )
+    tangent_u = tangent_x
+    tangent_v = tangent_y
+
+    normal_x, normal_y, normal_z = cartesian_coordinates_of_edge_normal_torus(
+        tangent_x,
+        tangent_y,
+    )
+    normal_u = normal_x
+    normal_v = normal_y
+
+    return (
+        tangent_x,
+        tangent_y,
+        tangent_z,
+        tangent_u,
+        tangent_v,
+        normal_x,
+        normal_y,
+        normal_z,
+        normal_u,
+        normal_v,
+    )
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_of_edge_tangent_and_normal(
     vertex_lat: fa.VertexField[ta.wpfloat],
@@ -146,6 +273,52 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal(
         edge_lon,
         edge_orientation,
         out=(tangent_x, tangent_y, tangent_z, normal_x, normal_y, normal_z),
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_cartesian_coordinates_of_edge_tangent_and_normal_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    edge_x: fa.EdgeField[ta.wpfloat],
+    edge_y: fa.EdgeField[ta.wpfloat],
+    edge_orientation: fa.EdgeField[ta.wpfloat],
+    tangent_x: fa.EdgeField[ta.wpfloat],
+    tangent_y: fa.EdgeField[ta.wpfloat],
+    tangent_z: fa.EdgeField[ta.wpfloat],
+    tangent_u: fa.EdgeField[ta.wpfloat],
+    tangent_v: fa.EdgeField[ta.wpfloat],
+    normal_x: fa.EdgeField[ta.wpfloat],
+    normal_y: fa.EdgeField[ta.wpfloat],
+    normal_z: fa.EdgeField[ta.wpfloat],
+    normal_u: fa.EdgeField[ta.wpfloat],
+    normal_v: fa.EdgeField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    cartesian_coordinates_edge_tangent_and_normal_torus(
+        vertex_x,
+        vertex_y,
+        edge_x,
+        edge_y,
+        edge_orientation,
+        domain_length,
+        domain_height,
+        out=(
+            tangent_x,
+            tangent_y,
+            tangent_z,
+            tangent_u,
+            tangent_v,
+            normal_x,
+            normal_y,
+            normal_z,
+            normal_u,
+            normal_v,
+        ),
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
@@ -377,14 +550,14 @@ def arc_distance_of_far_edges_in_diamond(
 
     Neighboring edges of an edge span up a diamond with 4 edges (E2C2E)  and 4 vertices (E2C2V). Here we compute the
     arc length between the two vertices in this diamond that are not directly connected to the edge:
-    between d(v1, v3)
-    v1-------v4
+    between d(v2, v3)
+    v2-------v1
     |       /|
     |      / |
     |    e   |
     |  /     |
     |/       |
-    v2 ------v3
+    v0 ------v3
 
 
 
@@ -398,16 +571,47 @@ def arc_distance_of_far_edges_in_diamond(
 
     """
     x, y, z = geographical_to_cartesian_on_vertices(vertex_lat, vertex_lon)
-    x2 = x(E2C2V[2])
-    x3 = x(E2C2V[3])
-    y2 = y(E2C2V[2])
-    y3 = y(E2C2V[3])
-    z2 = z(E2C2V[2])
-    z3 = z(E2C2V[3])
-    # (xi, yi, zi) are normalized by construction
+    return arc_length_on_edges(
+        x(E2C2V[2]),
+        x(E2C2V[3]),
+        y(E2C2V[2]),
+        y(E2C2V[3]),
+        z(E2C2V[2]),
+        z(E2C2V[3]),
+        radius,
+    )
 
-    far_vertex_vertex_length = arc_length_on_edges(x2, x3, y2, y3, z2, z3, radius)
-    return far_vertex_vertex_length
+
+@gtx.field_operator
+def distance_of_far_edges_in_diamond_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Compute the distance between the "far" vertices of an edge on a torus grid.
+
+    See arc_distance_of_far_edges_in_diamond for details.
+
+    Args:
+        vertex_x: x coordinate of vertices
+        vertex_y: y coordinate of vertices
+        domain_length: length of the domain
+        domain_height: height of the domain
+
+    Returns:
+        distance between the "far" vertices in the diamond.
+
+    """
+    return distance_on_edges_torus(
+        vertex_x(E2C2V[2]),
+        vertex_x(E2C2V[3]),
+        vertex_y(E2C2V[2]),
+        vertex_y(E2C2V[3]),
+        domain_length,
+        domain_height,
+    )
 
 
 @gtx.field_operator
@@ -502,6 +706,26 @@ def compute_arc_distance_of_far_edges_in_diamond(
     )
 
 
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_distance_of_far_edges_in_diamond_torus(
+    vertex_x: fa.VertexField[ta.wpfloat],
+    vertex_y: fa.VertexField[ta.wpfloat],
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+    far_vertex_distance: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    distance_of_far_edges_in_diamond_torus(
+        vertex_x,
+        vertex_y,
+        domain_length,
+        domain_height,
+        out=far_vertex_distance,
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
 @gtx.field_operator
 def edge_area(
     owner_mask: fa.EdgeField[bool],
@@ -557,6 +781,29 @@ def coriolis_parameter_on_edges(
     return 2.0 * angular_velocity * sin(edge_center_lat)
 
 
+def coriolis_parameter_on_edges_torus(
+    coriolis_coefficient: float,
+    num_edges: int,
+    backend: gtx_typing.Backend,
+) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Create a coriolis parameter field on edges for a torus grid.
+    Args:
+       coriolis_coefficient: coriolis coefficient
+
+    Returns:
+        coriolis parameter
+    """
+    xp = data_alloc.import_array_ns(backend)
+    coriolis_parameter = gtx.as_field(
+        (dims.EdgeDim,),
+        coriolis_coefficient * xp.ones(num_edges),
+        dtype=ta.wpfloat,
+        allocator=backend,
+    )
+    return coriolis_parameter
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_coriolis_parameter_on_edges(
     edge_center_lat: fa.EdgeField[ta.wpfloat],
@@ -574,11 +821,11 @@ def compute_coriolis_parameter_on_edges(
 
 
 def compute_primal_cart_normal(
-    primal_cart_normal_x: alloc.NDArray,
-    primal_cart_normal_y: alloc.NDArray,
-    primal_cart_normal_z: alloc.NDArray,
+    primal_cart_normal_x: data_alloc.NDArray,
+    primal_cart_normal_y: data_alloc.NDArray,
+    primal_cart_normal_z: data_alloc.NDArray,
     array_ns: ModuleType = np,
-) -> alloc.NDArray:
+) -> data_alloc.NDArray:
     primal_cart_normal = array_ns.transpose(
         array_ns.stack(
             (
