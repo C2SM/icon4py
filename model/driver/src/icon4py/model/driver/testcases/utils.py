@@ -11,14 +11,11 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 
-from icon4py.model.atmosphere.diffusion import diffusion_states
-from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
     field_type_aliases as fa,
     type_alias as ta,
-    utils as common_utils,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -184,8 +181,7 @@ def _compute_perturbed_exner(
         perturbed_exner = exner - reference_exner
     This stencil is copied from subroutine compute_exner_pert in mo_nh_init_utils in ICON. It should be called
     during the initialization to initialize perturbed_exner_at_cells_on_model_levels of DiagnosticStateHydro
-    if the model does not restart from a restart file.
-
+    if the model does not restart from a restart file
     Args:
         exner: exner function
         reference_exner: reference exner function
@@ -217,101 +213,6 @@ def compute_perturbed_exner(
     )
 
 
-def initialize_diffusion_diagnostic_state(
-    grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None
-) -> diffusion_states.DiffusionDiagnosticState:
-    return diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        div_ic=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        dwdx=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        dwdy=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-    )
-
-
-def initialize_solve_nonhydro_diagnostic_state(
-    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
-    grid: icon_grid.IconGrid,
-    backend: gtx_typing.Backend | None,
-) -> dycore_states.DiagnosticStateNonHydro:
-    normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
-        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend),
-        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend),
-    )
-    vertical_wind_advective_tendency = common_utils.PredictorCorrectorPair(
-        data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-    )
-    return dycore_states.DiagnosticStateNonHydro(
-        max_vertical_cfl=data_alloc.scalar_like_array(0.0, backend),
-        theta_v_at_cells_on_half_levels=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
-        rho_at_cells_on_half_levels=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        exner_tendency_due_to_slow_physics=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
-        ),
-        grf_tend_rho=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
-        grf_tend_thv=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
-        grf_tend_w=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        mass_flux_at_edges_on_model_levels=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, allocator=backend
-        ),
-        normal_wind_tendency_due_to_slow_physics_process=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, allocator=backend
-        ),
-        grf_tend_vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend),
-        normal_wind_advective_tendency=normal_wind_advective_tendency,
-        vertical_wind_advective_tendency=vertical_wind_advective_tendency,
-        tangential_wind=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend),
-        vn_on_half_levels=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        contravariant_correction_at_cells_on_half_levels=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        rho_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
-        normal_wind_iau_increment=data_alloc.zero_field(
-            grid, dims.EdgeDim, dims.KDim, allocator=backend
-        ),
-        exner_iau_increment=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend),
-        exner_dynamical_increment=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, allocator=backend
-        ),
-    )
-
-
-def initialize_prep_advection(
-    grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None
-) -> dycore_states.PrepAdvection:
-    return dycore_states.PrepAdvection(
-        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend),
-        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=backend),
-        dynamical_vertical_mass_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
-        ),
-    )
-
-
 def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     vn_ndarray: data_alloc.NDArray,
     w_ndarray: data_alloc.NDArray,
@@ -322,7 +223,7 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     pressure_ndarray: data_alloc.NDArray,
     pressure_ifc_ndarray: data_alloc.NDArray,
     grid: icon_grid.IconGrid,
-    backend: gtx_typing.Backend | None,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> tuple[
     fa.EdgeKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -341,26 +242,28 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
-    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
-    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
-    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
-    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend)
+    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)
+    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)
+    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
+    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
+    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator)
     virutal_temperature = gtx.as_field(
-        (dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend
+        (dims.CellDim, dims.KDim), temperature_ndarray, allocator=allocator
     )
-    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=backend)
-    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
-    pressure_ifc = gtx.as_field((dims.CellDim, dims.KDim), pressure_ifc_ndarray, allocator=backend)
+    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=allocator)
+    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)
+    pressure_ifc = gtx.as_field(
+        (dims.CellDim, dims.KDim), pressure_ifc_ndarray, allocator=allocator
+    )
 
-    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
-    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
-    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
-    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
-    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
+    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=allocator)
+    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=allocator)
+    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=allocator)
+    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=allocator)
+    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=allocator)
 
-    u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
-    v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=backend)
+    u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
+    v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)
 
     return (
         vn,

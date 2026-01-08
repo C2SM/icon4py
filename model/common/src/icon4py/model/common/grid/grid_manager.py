@@ -63,7 +63,9 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         )
 
 
-CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+CoordinateDict: TypeAlias = dict[
+    gtx.Dimension, dict[Literal["lat", "lon", "x", "y", "z"], gtx.Field]
+]
 # TODO (halungge): use a TypeDict for that
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
@@ -120,25 +122,37 @@ class GridManager:
     def __call__(self, allocator: gtx_typing.FieldBufferAllocationUtil, keep_skip_values: bool):
         if not self._reader:
             self.open()
+
+        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
+            geometry_type = base.GeometryType(geometry_type)
+        else:
+            geometry_type = base.GeometryType.ICOSAHEDRON
+
         self._geometry = self._read_geometry_fields(allocator)
-        self._grid = self._construct_grid(allocator=allocator, with_skip_values=keep_skip_values)
-        self._coordinates = self._read_coordinates(allocator)
+        self._grid = self._construct_grid(
+            allocator=allocator, with_skip_values=keep_skip_values, geometry_type=geometry_type
+        )
+        self._coordinates = self._read_coordinates(allocator, geometry_type)
         self.close()
 
-    def _read_coordinates(self, backend: gtx_typing.Backend | None) -> CoordinateDict:
-        return {
+    def _read_coordinates(
+        self,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
+        geometry_type: base.GeometryType,
+    ) -> CoordinateDict:
+        coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
                     (dims.CellDim,),
                     self._reader.variable(gridfile.CoordinateName.CELL_LATITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
                 "lon": gtx.as_field(
                     (dims.CellDim,),
                     self._reader.variable(gridfile.CoordinateName.CELL_LONGITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
             },
             dims.EdgeDim: {
@@ -146,32 +160,93 @@ class GridManager:
                     (dims.EdgeDim,),
                     self._reader.variable(gridfile.CoordinateName.EDGE_LATITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
                 "lon": gtx.as_field(
                     (dims.EdgeDim,),
                     self._reader.variable(gridfile.CoordinateName.EDGE_LONGITUDE),
                     dtype=ta.wpfloat,
-                    allocator=backend,
+                    allocator=allocator,
                 ),
             },
             dims.VertexDim: {
                 "lat": gtx.as_field(
                     (dims.VertexDim,),
                     self._reader.variable(gridfile.CoordinateName.VERTEX_LATITUDE),
-                    allocator=backend,
+                    allocator=allocator,
                     dtype=ta.wpfloat,
                 ),
                 "lon": gtx.as_field(
                     (dims.VertexDim,),
                     self._reader.variable(gridfile.CoordinateName.VERTEX_LONGITUDE),
-                    allocator=backend,
+                    allocator=allocator,
                     dtype=ta.wpfloat,
                 ),
             },
         }
 
-    def _read_geometry_fields(self, allocator: gtx_typing.FieldBufferAllocationUtil):
+        if geometry_type == base.GeometryType.TORUS:
+            coordinates[dims.CellDim]["x"] = gtx.as_field(
+                (dims.CellDim,),
+                self._reader.variable(gridfile.CoordinateName.CELL_X),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.CellDim]["y"] = gtx.as_field(
+                (dims.CellDim,),
+                self._reader.variable(gridfile.CoordinateName.CELL_Y),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.CellDim]["z"] = gtx.as_field(
+                (dims.CellDim,),
+                self._reader.variable(gridfile.CoordinateName.CELL_Z),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.EdgeDim]["x"] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.CoordinateName.EDGE_X),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.EdgeDim]["y"] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.CoordinateName.EDGE_Y),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.EdgeDim]["z"] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.CoordinateName.EDGE_Z),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.VertexDim]["x"] = gtx.as_field(
+                (dims.VertexDim,),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_X),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.VertexDim]["y"] = gtx.as_field(
+                (dims.VertexDim,),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_Y),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.VertexDim]["z"] = gtx.as_field(
+                (dims.VertexDim,),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_Z),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+
+        return coordinates
+
+    def _read_geometry_fields(
+        self,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
+    ) -> GeometryDict:
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
@@ -242,7 +317,7 @@ class GridManager:
 
         Args:
             decomposition_info: Optional decomposition information, if not provided the grid is assumed to be a single node run.
-            backend: Optional backend to use for reading the fields, if not provided the default backend is used.
+            allocator: Optional allocator to use for reading the fields, if not provided the default backend is used.
         Returns:
             dict[gtx.Dimension, gtx.Field]: A dictionary containing the refinement control fields for each dimension.
         """
@@ -274,7 +349,10 @@ class GridManager:
         return self._coordinates
 
     def _construct_grid(
-        self, allocator: gtx_typing.FieldBufferAllocationUtil, with_skip_values: bool
+        self,
+        allocator: gtx_typing.FieldBufferAllocationUtil | None,
+        with_skip_values: bool,
+        geometry_type: base.GeometryType,
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -294,8 +372,6 @@ class GridManager:
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
-            geometry_type = base.GeometryType(geometry_type)
         sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
