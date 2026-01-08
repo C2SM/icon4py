@@ -374,7 +374,7 @@ class VelocityAdvection:
         # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
         # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
         apply_extra_diffusion_on_vn = True
-        self._compute_advection_in_horizontal_momentum_equation(
+        self._compute_advection_in_horizontal_momentum(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
             vn=prognostic_state.vn,
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
