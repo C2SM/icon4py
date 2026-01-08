@@ -22,7 +22,7 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import astype, broadcast, maximum
+from gt4py.next import astype, maximum
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDiscretizationType
@@ -83,9 +83,11 @@ def _compute_perturbed_quantities_and_interpolation(
     pressure_buoyancy_acceleration_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     rho_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
     exner_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
-    theta_v_at_cells_on_half_levels: fa.CellKField[ta.wpfloat],
+    wgtfacq_c: fa.CellKField[ta.vpfloat],
+    reference_theta_at_cells_on_half_levels: fa.CellKField[ta.vpfloat],
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
+    surface_level: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -109,11 +111,13 @@ def _compute_perturbed_quantities_and_interpolation(
 
     exner_at_cells_on_half_levels = (
         concat_where(
-            maximum(1, nflatlev) <= dims.KDim,
+            dims.KDim < surface_level - 1,
             _interpolate_cell_field_to_half_levels_vp(
                 wgtfac_c=wgtfac_c, interpolant=temporal_extrapolation_of_perturbed_exner
             ),
-            exner_at_cells_on_half_levels,
+            _interpolate_to_surface(
+                wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
+            ),
         )
         if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
         else exner_at_cells_on_half_levels
@@ -138,19 +142,22 @@ def _compute_perturbed_quantities_and_interpolation(
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
     perturbed_theta_v_at_cells_on_half_levels = concat_where(
-        dims.KDim >= 1,
+        dims.KDim < surface_level - 1,
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
         ),
-        broadcast(0.0, (dims.CellDim, dims.KDim)),
+        _interpolate_to_surface(
+            wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
+        ),
     )
 
     theta_v_at_cells_on_half_levels = concat_where(
-        dims.KDim >= 1,
+        dims.KDim < surface_level - 1,
         _interpolate_cell_field_to_half_levels_wp(
             wgtfac_c=wgtfac_c_wp, interpolant=current_theta_v
         ),
-        theta_v_at_cells_on_half_levels,
+        reference_theta_at_cells_on_half_levels + perturbed_theta_v_at_cells_on_half_levels,
+        # theta_v_at_cells_on_half_levels,
     )
 
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
@@ -223,7 +230,6 @@ def _compute_first_and_second_vertical_derivative_of_exner(
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
         concat_where(
             nflatlev <= dims.KDim,
@@ -375,9 +381,11 @@ def compute_perturbed_quantities_and_interpolation(
         pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         exner_at_cells_on_half_levels=exner_at_cells_on_half_levels,
-        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        wgtfacq_c=wgtfacq_c,
+        reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
         igradp_method=igradp_method,
         nflatlev=nflatlev,
+        surface_level=surface_level,
         out=(
             perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels,
@@ -389,26 +397,44 @@ def compute_perturbed_quantities_and_interpolation(
             pressure_buoyancy_acceleration_at_cells_on_half_levels,
             temporal_extrapolation_of_perturbed_exner,
         ),
-        domain={
-            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (model_top, surface_level - 1),
-        },
-    )
-
-    _set_theta_v_and_exner_on_surface_level(
-        temporal_extrapolation_of_perturbed_exner=temporal_extrapolation_of_perturbed_exner,
-        wgtfacq_c=wgtfacq_c,
-        perturbed_theta_v_at_cells_on_model_levels=perturbed_theta_v_at_cells_on_model_levels,
-        reference_theta_at_cells_on_half_levels=reference_theta_at_cells_on_half_levels,
-        out = (
-            perturbed_theta_v_at_cells_on_half_levels,
-            theta_v_at_cells_on_half_levels,
-            exner_at_cells_on_half_levels,
+        domain=(
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.KDim: (model_top, surface_level - 1),
+            },
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.KDim: (model_top, surface_level - 1),
+            },
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.KDim: (model_top, surface_level - 1),
+            },
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.KDim: (model_top, surface_level - 1),
+            },
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.KDim: (maximum(1, nflatlev), surface_level),
+            },
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.KDim: (1, surface_level),
+            },
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.KDim: (1, surface_level),
+            },
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.KDim: (model_top, surface_level - 1),
+            },
+            {
+                dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
+                dims.KDim: (model_top, surface_level - 1),
+            },
         ),
-        domain={
-            dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (surface_level - 1, surface_level),
-        },
     )
 
     _compute_first_and_second_vertical_derivative_of_exner(
@@ -429,7 +455,7 @@ def compute_perturbed_quantities_and_interpolation(
         ),
         domain={
             dims.CellDim: (start_cell_lateral_boundary_level_3, end_cell_halo),
-            dims.KDim: (model_top, surface_level-1),
+            dims.KDim: (model_top, surface_level - 1),
         },
     )
 
