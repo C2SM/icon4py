@@ -444,26 +444,10 @@ icon4py.model.atmosphere.dycore.stencils.extrapolate\_temporally\_exner\_pressur
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.init\_cell\_kdim\_field\_with\_zero\_vp module
----------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.init\_cell\_kdim\_field\_with\_zero\_wp module
 ---------------------------------------------------------------------------------------
 
 .. automodule:: icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-icon4py.model.atmosphere.dycore.stencils.init\_two\_cell\_kdim\_fields\_with\_zero\_vp module
----------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp
    :members:
    :undoc-members:
    :show-inheritance:
