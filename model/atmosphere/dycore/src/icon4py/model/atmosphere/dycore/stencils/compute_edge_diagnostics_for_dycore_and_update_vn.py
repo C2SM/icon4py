@@ -289,6 +289,7 @@ def _apply_divergence_damping_and_update_vn(
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     nudgecoeff_e: fa.EdgeField[ta.wpfloat],
     geofac_grdiv: gtx.Field[[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
+    interpolated_fourth_order_divdamp_factor: fa.KField[ta.wpfloat],
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
     dtime: ta.wpfloat,
@@ -297,7 +298,6 @@ def _apply_divergence_damping_and_update_vn(
     limited_area: bool,
     apply_2nd_order_divergence_damping: bool,
     apply_4th_order_divergence_damping: bool,
-    interpolated_fourth_order_divdamp_factor: fa.KField[ta.wpfloat],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
     second_order_divdamp_factor: float,
@@ -557,6 +557,7 @@ def apply_divergence_damping_and_update_vn(
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     nudgecoeff_e: fa.EdgeField[ta.wpfloat],
     geofac_grdiv: gtx.Field[[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
+    interpolated_fourth_order_divdamp_factor: fa.KField[ta.wpfloat],
     advection_explicit_weight_parameter: ta.wpfloat,
     advection_implicit_weight_parameter: ta.wpfloat,
     dtime: ta.wpfloat,
@@ -565,7 +566,6 @@ def apply_divergence_damping_and_update_vn(
     limited_area: bool,
     apply_2nd_order_divergence_damping: bool,
     apply_4th_order_divergence_damping: bool,
-    interpolated_fourth_order_divdamp_factor: fa.KField[ta.wpfloat],
     divdamp_order: gtx.int32,
     mean_cell_area: float,
     second_order_divdamp_factor: float,
@@ -601,18 +601,20 @@ def apply_divergence_damping_and_update_vn(
         - inv_dual_edge_length: inverse dual edge length
         - nudgecoeff_e: nudging coefficient for fourth order divergence damping at nest boundary
         - geofac_grdiv: metric coefficient for computation of horizontal gradient of divergence
-        - fourth_order_divdamp_factor: scaling factor for fourth order divergence damping
-        - second_order_divdamp_factor: scaling factor for second order divergence damping
+        - interpolated_fourth_order_divdamp_factor
         - advection_explicit_weight_parameter: explicitness weight of normal_wind_advective_tendency
         - advection_implicit_weight_parameter: implicitness weight of normal_wind_advective_tendency
         - dtime: time step [s]
         - iau_wgt_dyn: a scaling factor for iau increment
         - is_iau_active: option for iau increment analysis
-        - itime_scheme: ICON itime scheme (see ICON tutorial)
         - limited_area: option indicating the grid is limited area or not
+        - apply_2nd_order_divergence_damping: scaling factor for second order divergence damping
+        - apply_4th_order_divergence_damping: scaling factor for fourth order divergence damping
         - divdamp_order: divergence damping order (see the class DivergenceDampingOrder)
-        - start_edge_nudging_level_2: start index of second nudging level zone for edges
-        - end_edge_local: end index of local zone for edges
+        - mean_cell_area
+        - second_order_divdamp_factor
+        - max_nudging_coefficient
+        - dbl_eps
 
     Returns:
         - next_vn: normal wind to be updated [m s-1]
@@ -634,6 +636,7 @@ def apply_divergence_damping_and_update_vn(
         inv_dual_edge_length=inv_dual_edge_length,
         nudgecoeff_e=nudgecoeff_e,
         geofac_grdiv=geofac_grdiv,
+        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
         advection_explicit_weight_parameter=advection_explicit_weight_parameter,
         advection_implicit_weight_parameter=advection_implicit_weight_parameter,
         dtime=dtime,
@@ -642,7 +645,6 @@ def apply_divergence_damping_and_update_vn(
         limited_area=limited_area,
         apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
         apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
-        interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
         divdamp_order=divdamp_order,
         mean_cell_area=mean_cell_area,
         second_order_divdamp_factor=second_order_divdamp_factor,

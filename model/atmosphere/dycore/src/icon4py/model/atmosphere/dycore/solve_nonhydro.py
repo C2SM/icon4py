@@ -688,16 +688,6 @@ class SolveNonhydro:
                 "vertical_end": gtx.int32(self._grid.num_levels),
             },
         )
-        self._calculate_divdamp_fields = setup_program(
-            backend=backend,
-            program=dycore_utils.calculate_divdamp_fields,
-            constant_args={
-                "divdamp_order": gtx.int32(self._config.divdamp_order),
-                "mean_cell_area": self._grid.global_properties.mean_cell_area,
-                "max_nudging_coefficient": self._config.max_nudging_coefficient,
-                "dbl_eps": constants.DBL_EPS,
-            },
-        )
         self._compute_rayleigh_damping_factor = setup_program(
             backend=backend,
             program=dycore_utils.compute_rayleigh_damping_factor,
