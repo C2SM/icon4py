@@ -90,19 +90,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         vertical_start: gtx.int32,
         vertical_end: gtx.int32,
     ) -> dict:
-        fourth_order_divdamp_scaling_coeff = fourth_order_divdamp_scaling_coeff_numpy(
-            interpolated_fourth_order_divdamp_factor,
-            divdamp_order,
-            second_order_divdamp_factor,
-            mean_cell_area,
-        )
-
-        reduced_fourth_order_divdamp_coeff_at_nest_boundary = (
-            calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
-                fourth_order_divdamp_scaling_coeff, max_nudging_coefficient
-            )
-        )
-
         horz_idx = np.arange(horizontal_end)[:, np.newaxis]
 
         scaling_factor_for_3d_divdamp = np.expand_dims(scaling_factor_for_3d_divdamp, axis=0)
@@ -135,6 +122,14 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             next_vn,
         )
 
+        if apply_2nd_order_divergence_damping:
+            next_vn = np.where(
+                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
+                next_vn
+                + (second_order_divdamp_scaling_coeff * horizontal_gradient_of_total_divergence),
+                next_vn,
+            )
+
         if apply_4th_order_divergence_damping:
             e2c2eO = connectivities[dims.E2C2EODim]
             # verified for e-10
@@ -151,16 +146,17 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
                 ),
                 np.zeros_like(horizontal_gradient_of_total_divergence),
             )
-
-        if apply_2nd_order_divergence_damping:
-            next_vn = np.where(
-                (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),
-                next_vn
-                + (second_order_divdamp_scaling_coeff * horizontal_gradient_of_total_divergence),
-                next_vn,
+            fourth_order_divdamp_scaling_coeff = fourth_order_divdamp_scaling_coeff_numpy(
+                interpolated_fourth_order_divdamp_factor,
+                divdamp_order,
+                second_order_divdamp_factor,
+                mean_cell_area,
             )
-
-        if apply_4th_order_divergence_damping:
+            reduced_fourth_order_divdamp_coeff_at_nest_boundary = (
+                calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
+                    fourth_order_divdamp_scaling_coeff, max_nudging_coefficient
+                )
+            )
             if limited_area:
                 next_vn = np.where(
                     (horizontal_start <= horz_idx) & (horz_idx < horizontal_end),

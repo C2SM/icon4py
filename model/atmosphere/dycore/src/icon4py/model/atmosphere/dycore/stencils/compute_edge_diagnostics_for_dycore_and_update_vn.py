@@ -304,16 +304,6 @@ def _apply_divergence_damping_and_update_vn(
     max_nudging_coefficient: float,
     dbl_eps: float,
 ) -> fa.EdgeKField[ta.wpfloat]:
-    (fourth_order_divdamp_scaling_coeff, reduced_fourth_order_divdamp_coeff_at_nest_boundary) = (
-        _calculate_divdamp_fields(
-            interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
-            divdamp_order=divdamp_order,
-            mean_cell_area=mean_cell_area,
-            second_order_divdamp_factor=second_order_divdamp_factor,
-            max_nudging_coefficient=max_nudging_coefficient,
-            dbl_eps=dbl_eps,
-        )
-    )
     # add dw/dz for divergence damping term. In ICON, this stencil starts from k = kstart_dd3d until k = nlev - 1.
     # Since scaling_factor_for_3d_divdamp is zero when k < kstart_dd3d, it is meaningless to execute computation
     # above level kstart_dd3d. But we have decided to remove this manual optimization in icon4py.
@@ -349,6 +339,17 @@ def _apply_divergence_damping_and_update_vn(
     if apply_4th_order_divergence_damping:
         squared_horizontal_gradient_of_total_divergence = _compute_graddiv2_of_vn(
             geofac_grdiv=geofac_grdiv, z_graddiv_vn=horizontal_gradient_of_total_divergence
+        )
+        (
+            fourth_order_divdamp_scaling_coeff,
+            reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+        ) = _calculate_divdamp_fields(
+            interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
+            divdamp_order=divdamp_order,
+            mean_cell_area=mean_cell_area,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            max_nudging_coefficient=max_nudging_coefficient,
+            dbl_eps=dbl_eps,
         )
         if limited_area:
             next_vn = _apply_weighted_2nd_and_4th_order_divergence_damping(
