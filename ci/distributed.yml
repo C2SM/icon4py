@@ -74,8 +74,8 @@ build_distributed_cpu:
     TEST_DATA_PATH: "/icon4py/testdata"
     ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_003:$TEST_DATA_PATH"]'
-    ICON4PY_MPI_PREFIX: "mpirun --bind-to socket -n ${ICON4PY_MPI_TASKS}"
-    #ICON4PY_MPI_PREFIX: ""
+    # ICON4PY_MPI_PREFIX: "mpirun --bind-to socket -n ${ICON4PY_MPI_TASKS}"
+    # ICON4PY_MPI_PREFIX: ""
 
 
 .test_distributed_aarch64:
@@ -92,10 +92,11 @@ build_distributed_cpu:
     - export SLURM_NTASKS=${ICON4PY_MPI_TASKS}
     - echo "using SLURM_NTASKS=${SLURM_NTASKS}"
     - echo "running with $(python --version)"
-    - echo "using MPI_PREFIX ${ICON4PY_MPI_PREFIX}"
+    # - echo "using MPI_PREFIX ${ICON4PY_MPI_PREFIX}"
   script:
       #- ${ICON4PY_MPI_PREFIX} pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
-    - uv run --no-sync pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
+    # - uv run --no-sync pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
+    - pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
       - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]  # [atmosphere/advection,microphysics,driver]
