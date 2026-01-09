@@ -91,7 +91,7 @@ build_distributed_cpu:
     - echo "using MPI_PREFIX ${ICON4PY_MPI_PREFIX}"
   script:
       #- ${ICON4PY_MPI_PREFIX} pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
-    - uv run pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
+    - uv run --no-sync pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
       - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]  # [atmosphere/advection,microphysics,driver]
