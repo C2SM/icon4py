@@ -184,7 +184,7 @@ def main():
     start_time = None
     for _x in range(int(args.itime) + 1):
         if _x == 1:  # Only start timing second iteration
-            device_utils.sync(backend)
+            device_utils.sync(allocator)
             start_time = time.time()
 
         muphys_step(
@@ -203,7 +203,7 @@ def main():
             pre=out.pre,
         )
 
-    device_utils.sync(backend)
+    device_utils.sync(allocator)
     end_time = time.time()
 
     if start_time is not None:
