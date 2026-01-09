@@ -9,7 +9,7 @@
 
 import gt4py.next as gtx
 from gt4py.eve import utils as eve_utils
-from gt4py.next import GridType, broadcast
+from gt4py.next import broadcast
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
@@ -270,7 +270,7 @@ def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     )
 
 
-@gtx.field_operator(grid_type=GridType.UNSTRUCTURED)
+@gtx.field_operator
 def _apply_divergence_damping_and_update_vn(
     horizontal_gradient_of_normal_wind_divergence: fa.EdgeKField[ta.vpfloat],
     next_vn: fa.EdgeKField[ta.wpfloat],
