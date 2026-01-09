@@ -44,6 +44,8 @@ build_distributed_baseimage_aarch64:
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION
     USE_MPI: NO
     SLURM_MPI_TYPE: pmix
+    SLURM_UNBUFFEREDIO: 1
+    SLURM_LABELIO: 1
 
 .build_distributed_cpu:
   extends: [.build_distributed_template]
