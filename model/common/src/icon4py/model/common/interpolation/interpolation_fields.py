@@ -950,7 +950,27 @@ def compute_e_bln_c_s(
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
-    Compute e_bln_c_s.
+    e_bln_c_s = interpolation coefficient from neighboring edges to cell center
+    array size = [num_edges, 3] if triangular grid, [num_edges, 6] if hexagonal grid. 
+    If torus ...
+
+         v1
+        /  \
+       /    \
+      v2----v3
+    
+    Derivation:
+    based on barycentric coordinates
+    v1 = (x1, y1), v2 = (x2, y2), v3 = (x3, y3)
+    x = a3 x3 + a2 x2 + (1 - a2 - a3) x1
+    y = a3 y3 + a2 y2 + (1 - a2 - a3) y1
+    
+    a3 = (-y1 + m x1) / (y3 - y1 - m (x3 - x1))
+    a2 = - (x3 - x1) / (x2 - x1) a3 - x1 / (x2 - x1)
+    a1 = 1 - a2 - a3
+    m = (y2 - y1) / (x2 - x1)
+    
+    e_bln_c_s = (a1 a2 a3)
 
     Args:
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
