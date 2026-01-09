@@ -330,10 +330,31 @@ class Reductions(Protocol):
         self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
     ) -> state_utils.ScalarType: ...
 
+    def max(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+    def mean(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+    def sum(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
 
 class SingleNodeReductions(Reductions):
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         return array_ns.min(buffer).item()
+
+    def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.max(buffer).item()
+
+    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.mean(buffer).item()
+
+    def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.sum(buffer).item()
 
 
 @overload
