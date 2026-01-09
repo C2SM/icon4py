@@ -1633,7 +1633,6 @@ def test_apply_divergence_damping_and_update_vn(
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
     config = definitions.construct_nonhydrostatic_config(experiment)
     mean_cell_area = grid_savepoint.mean_cell_area()
-    max_nudging_coefficient = grid_savepoint.nudge_max_coeff()
 
     iau_wgt_dyn = config.iau_wgt_dyn
     divdamp_order = config.divdamp_order
@@ -1685,7 +1684,7 @@ def test_apply_divergence_damping_and_update_vn(
         divdamp_order=divdamp_order,
         mean_cell_area=mean_cell_area,
         second_order_divdamp_factor=second_order_divdamp_factor,
-        max_nudging_coefficient=max_nudging_coefficient,
+        max_nudging_coefficient=config.max_nudging_coefficient,
         dbl_eps=constants.DBL_EPS,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,
