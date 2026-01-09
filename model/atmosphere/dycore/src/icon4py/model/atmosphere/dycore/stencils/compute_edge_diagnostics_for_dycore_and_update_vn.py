@@ -359,8 +359,6 @@ def _apply_divergence_damping_and_update_vn(
                 divdamp_order=divdamp_order,
                 mean_cell_area=mean_cell_area,
                 second_order_divdamp_factor=second_order_divdamp_factor,
-                max_nudging_coefficient=max_nudging_coefficient,
-                dbl_eps=dbl_eps,
             )
 
     if is_iau_active:
