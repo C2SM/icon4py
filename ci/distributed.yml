@@ -46,6 +46,8 @@ build_distributed_baseimage_aarch64:
     SLURM_MPI_TYPE: pmix
     SLURM_UNBUFFEREDIO: 1
     SLURM_LABELIO: 1
+    PMIX_MCA_psec: native
+    PMIX_MCA_gds: "^shmem2"
 
 .build_distributed_cpu:
   extends: [.build_distributed_template]
