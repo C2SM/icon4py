@@ -9,7 +9,6 @@
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from model.atmosphere.dycore.tests.dycore.stencil_tests import test_dycore_utils
 
 import icon4py.model.common.type_alias as ta
 import icon4py.model.testing.stencil_tests as test_helpers
@@ -21,10 +20,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-from .test_dycore_utils import (
-    calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy,
-    fourth_order_divdamp_scaling_coeff_numpy,
-)
+from . import test_dycore_utils
 
 
 divergence_damp_order = DivergenceDampingOrder()

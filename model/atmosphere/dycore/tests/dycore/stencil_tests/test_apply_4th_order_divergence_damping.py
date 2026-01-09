@@ -10,7 +10,6 @@ from typing import Any
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from model.atmosphere.dycore.tests.dycore.stencil_tests import test_dycore_utils
 
 from icon4py.model.atmosphere.dycore.stencils.apply_4th_order_divergence_damping import (
     apply_4th_order_divergence_damping,
@@ -21,6 +20,8 @@ from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
+
+from . import test_dycore_utils
 
 
 def apply_4th_order_divergence_damping_numpy(
