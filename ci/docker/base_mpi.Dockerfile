@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:25.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -10,6 +10,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     tar \
     wget \
     curl \
+    libboost-dev \
     libnuma-dev \
     libopenmpi-dev\
     ca-certificates \
@@ -25,15 +26,17 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
 
 # Set environment variables
 # Install Boost
-RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz && \
-    echo be0d91732d5b0cc6fbb275c7939974457e79b54d6f07ce2e3dfdd68bef883b0b boost_1_85_0.tar.gz > boost_hash.txt && \
-    sha256sum -c boost_hash.txt && \
-    tar xzf boost_1_85_0.tar.gz && \
-    mv boost_1_85_0/boost /usr/local/include/ && \
-    rm boost_1_85_0.tar.gz boost_hash.txt
+# RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz && \
+#     echo be0d91732d5b0cc6fbb275c7939974457e79b54d6f07ce2e3dfdd68bef883b0b boost_1_85_0.tar.gz > boost_hash.txt && \
+#     sha256sum -c boost_hash.txt && \
+#     tar xzf boost_1_85_0.tar.gz && \
+#     mv boost_1_85_0/boost /usr/local/include/ && \
+#     rm boost_1_85_0.tar.gz boost_hash.txt
 
-ENV BOOST_ROOT /usr/local/
+# ENV BOOST_ROOT /usr/local/
 
 ARG PYVERSION
+# TODO
 # install uv
-COPY --from=ghcr.io/astral-sh/uv:0.7.3 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# RUN curl -LsSf https://astral.sh/uv/install.sh | sh
