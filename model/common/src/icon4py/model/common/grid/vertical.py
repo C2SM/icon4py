@@ -11,6 +11,7 @@ import functools
 import logging
 import math
 import pathlib
+from collections.abc import Callable
 from types import ModuleType
 from typing import Final
 
@@ -180,7 +181,7 @@ class VerticalGrid:
         vct_a_array = self._vct_a.ndarray
         dvct = vct_a_array[:-1] - vct_a_array[1:]
         array_value = [
-            f"   0   {vct_a_array[0]:12.3f}",
+            f"   0   {vct_a_array[0]:12.3f}             ",
             *(
                 f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}"
                 for k in range(vct_a_array.shape[0] - 1)
@@ -565,6 +566,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
     SLEVE_decay_scale_1: ta.wpfloat,
     SLEVE_decay_exponent: ta.wpfloat,
     SLEVE_decay_scale_2: ta.wpfloat,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -595,6 +597,7 @@ def _compute_SLEVE_coordinate_from_vcta_and_topography(
         cell_areas=cell_areas,
         geofac_n2s=geofac_n2s,
         c2e2co=c2e2co,
+        exchange=exchange,
     )
 
     vertical_coordinate = array_ns.zeros((num_cells, num_levels + 1), dtype=ta.wpfloat)
@@ -749,6 +752,7 @@ def compute_vertical_coordinate(
     SLEVE_minimum_layer_thickness_2: ta.wpfloat,
     SLEVE_minimum_relative_layer_thickness_2: ta.wpfloat,
     lowest_layer_thickness: ta.wpfloat,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -784,6 +788,7 @@ def compute_vertical_coordinate(
         SLEVE_decay_exponent=SLEVE_decay_exponent,
         SLEVE_decay_scale_2=SLEVE_decay_scale_2,
         array_ns=array_ns,
+        exchange=exchange,
     )
 
     vertical_coordinate = _check_and_correct_layer_thickness(

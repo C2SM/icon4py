@@ -6,9 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
+from typing import TYPE_CHECKING
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import icon as icon_grid
 
 
 @dataclasses.dataclass
@@ -29,3 +39,47 @@ class PrognosticState:
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:
         return self.w[dims.KDim(0)]
+
+
+def initialize_prognostic_state(
+    grid: icon_grid.IconGrid,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
+) -> PrognosticState:
+    """Initialize the prognostic state with zero fields."""
+    rho = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    w = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    vn = data_alloc.zero_field(
+        grid,
+        dims.EdgeDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    exner = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    theta_v = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    return PrognosticState(rho=rho, w=w, vn=vn, exner=exner, theta_v=theta_v)

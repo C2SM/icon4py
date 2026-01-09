@@ -51,6 +51,7 @@ from .test_update_mass_volume_flux import update_mass_volume_flux_numpy
 
 
 @pytest.mark.uses_concat_where
+@pytest.mark.continuous_benchmarking
 class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_corrector_step
     OUTPUTS = (
@@ -62,6 +63,33 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         "dynamical_vertical_volumetric_flux_at_cells_on_half_levels",
         "exner_dynamical_increment",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "start_cell_index_nudging",
+            "end_cell_index_local",
+            "end_index_of_damping_layer",
+            "kstart_moist",
+            "vertical_start_index_model_top",
+            "vertical_end_index_model_surface",
+            "at_first_substep",
+            "at_last_substep",
+            "lprep_adv",
+            "is_iau_active",
+            "rayleigh_type",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "end_index_of_damping_layer",
+            "kstart_moist",
+            "vertical_start_index_model_top",
+            "vertical_end_index_model_surface",
+            "at_first_substep",
+            "at_last_substep",
+            "lprep_adv",
+            "is_iau_active",
+            "rayleigh_type",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -370,8 +398,26 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             exner_dynamical_increment=exner_dynamical_increment,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @pytest.fixture(
+        params=[
+            {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la, "is_iau_active": ia}
+            for afs, als, la, ia in [
+                (True, True, True, True),  # For testing the whole functionality of the stencil
+                (True, False, True, False),  # For benchmarking against MCH experiments
+                (False, True, True, False),  # For benchmarking against MCH experiments
+                (False, False, True, False),  # For benchmarking against MCH experiments
+            ]
+        ],
+        ids=lambda p: (
+            f"at_first_substep[{p['at_first_substep']}]__"
+            f"at_last_substep[{p['at_last_substep']}]__"
+            f"lprep_adv[{p['lprep_adv']}]__"
+            f"is_iau_active[{p['is_iau_active']}]"
+        ),
+    )
+    def input_data(
+        self, request: pytest.FixtureRequest, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
@@ -418,7 +464,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         next_rho = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
         next_exner = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
         next_theta_v = data_alloc.constant_field(grid, 1.0e-5, dims.CellDim, dims.KDim)
-        exner_dynamical_increment = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        exner_dynamical_increment = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
@@ -426,14 +472,14 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
 
-        lprep_adv = True
+        lprep_adv = request.param["lprep_adv"]
         r_nsubsteps = 0.5
-        is_iau_active = True
-        at_first_substep = True
+        is_iau_active = request.param["is_iau_active"]
+        at_first_substep = request.param["at_first_substep"]
         rayleigh_type = 2
-        end_index_of_damping_layer = 3
-        at_last_substep = True
-        kstart_moist = 1
+        end_index_of_damping_layer = 12  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        at_last_substep = request.param["at_last_substep"]
+        kstart_moist = 0  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
         dtime = 0.001
         veladv_offctr = 0.25
         advection_explicit_weight_parameter = 0.5 - veladv_offctr
