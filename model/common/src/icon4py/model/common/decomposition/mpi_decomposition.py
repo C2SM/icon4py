@@ -12,6 +12,7 @@ import functools
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
 import dace  # type: ignore[import-untyped]
@@ -20,8 +21,9 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import SingleNodeExchange
+from icon4py.model.common.decomposition.definitions import Reductions, SingleNodeExchange
 from icon4py.model.common.orchestration import halo_exchange
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -423,3 +425,23 @@ def create_multinode_node_exchange(
         return GHexMultiNodeExchange(props, decomp_info)
     else:
         return SingleNodeExchange()
+
+
+class GlobalReductions(Reductions):
+    def __init__(self, props: definitions.ProcessProperties):
+        self._props = props
+
+    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        local_min = array_ns.min(buffer)
+        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
+        if hasattr(
+            array_ns, "cuda"
+        ):  #  https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
+            array_ns.cuda.runtime.deviceSynchronize()
+        self._props.comm.Allreduce(local_min, recv_buffer, mpi4py.MPI.MIN)
+        return recv_buffer.item()
+
+
+@definitions.create_global_reduction.register(MPICommProcessProperties)
+def create_global_reduction_exchange(props: MPICommProcessProperties) -> Reductions:
+    return GlobalReductions(props)
