@@ -390,7 +390,7 @@ def _compute_c_bln_avg(
     c2e2c: data_alloc.NDArray,
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
-    divavg_cntrwgt: ta.wpfloat,
+    divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
@@ -398,7 +398,7 @@ def _compute_c_bln_avg(
     Compute bilinear cell average weight.
 
     Args:
-        divavg_cntrwgt:
+        divergence_averaging_central_cell_weight:
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
         c2e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, C2E2CDim], gtx.int32]
         lat: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
@@ -421,11 +421,11 @@ def _compute_c_bln_avg(
         xtemp,
         lat[horizontal_start:],
         lon[horizontal_start:],
-        divavg_cntrwgt,
+        divergence_averaging_central_cell_weight,
         array_ns=array_ns,
     )
     c_bln_avg = array_ns.zeros((c2e2c.shape[0], c2e2c.shape[1] + 1))
-    c_bln_avg[horizontal_start:, 0] = divavg_cntrwgt
+    c_bln_avg[horizontal_start:, 0] = divergence_averaging_central_cell_weight
     c_bln_avg[horizontal_start:, 1] = wgt[0]
     c_bln_avg[horizontal_start:, 2] = wgt[1]
     c_bln_avg[horizontal_start:, 3] = wgt[2]
@@ -437,7 +437,7 @@ def _force_mass_conservation_to_c_bln_avg(
     c_bln_avg: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
-    divavg_cntrwgt: ta.wpfloat,
+    divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
@@ -458,7 +458,7 @@ def _force_mass_conservation_to_c_bln_avg(
         c_bln_avg: input field: bilinear cell weight average
         cell_areas: area of cells
         cell_owner_mask:
-        divavg_cntrwgt: configured central weight
+        divergence_averaging_central_cell_weight: configured central weight
         horizontal_start:
         niter: max number of iterations
 
@@ -498,12 +498,12 @@ def _force_mass_conservation_to_c_bln_avg(
         c_bln_avg: data_alloc.NDArray,
         residual: data_alloc.NDArray,
         c2e2c0: data_alloc.NDArray,
-        divavg_cntrwgt: float,
+        divergence_averaging_central_cell_weight: float,
         horizontal_start: gtx.int32,
     ) -> data_alloc.NDArray:
         """Apply correction to local weigths based on the computed residuals."""
-        maxwgt_loc = divavg_cntrwgt + 0.003
-        minwgt_loc = divavg_cntrwgt - 0.003
+        maxwgt_loc = divergence_averaging_central_cell_weight + 0.003
+        minwgt_loc = divergence_averaging_central_cell_weight - 0.003
         relax_coeff = 0.46
         c_bln_avg[horizontal_start:, :] = (
             c_bln_avg[horizontal_start:, :] - relax_coeff * residual[c2e2c0][horizontal_start:, :]
@@ -569,11 +569,41 @@ def _force_mass_conservation_to_c_bln_avg(
                 c_bln_avg=c_bln_avg,
                 residual=residual,
                 c2e2c0=c2e2c0,
-                divavg_cntrwgt=divavg_cntrwgt,
+                divergence_averaging_central_cell_weight=divergence_averaging_central_cell_weight,
                 horizontal_start=horizontal_start,
             )
 
         exchange(c_bln_avg)
+
+    return c_bln_avg
+
+
+def _compute_uniform_c_bln_avg(
+    c2e2c: data_alloc.NDArray,
+    divergence_averaging_central_cell_weight: ta.wpfloat,
+    horizontal_start: gtx.int32,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    """
+    Compute bilinear cell average weight for a torus grid.
+
+    Args:
+        c2e2c
+        divergence_averaging_central_cell_weight: weight for local / center contribution
+        horizontal_start: start index of the horizontal domain
+
+    Returns:
+        c_bln_avg
+    """
+    local_weight = divergence_averaging_central_cell_weight
+    neighbor_weight = (1.0 - divergence_averaging_central_cell_weight) / 3.0
+
+    weights = array_ns.asarray([local_weight, neighbor_weight, neighbor_weight, neighbor_weight])
+
+    c_bln_avg = array_ns.tile(
+        weights,
+        (c2e2c.shape[0], 1),
+    )
 
     return c_bln_avg
 
@@ -584,7 +614,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     lon: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
-    divavg_cntrwgt: ta.wpfloat,
+    divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
     exchange: Callable[[data_alloc.NDArray], None],
@@ -594,7 +624,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         c2e2c0[:, 1:],
         lat,
         lon,
-        divavg_cntrwgt,
+        divergence_averaging_central_cell_weight,
         horizontal_start,
         array_ns=array_ns,
     )
@@ -606,10 +636,41 @@ def compute_mass_conserving_bilinear_cell_average_weight(
         c_bln_avg,
         cell_areas,
         cell_owner_mask,
-        divavg_cntrwgt,
+        divergence_averaging_central_cell_weight,
         horizontal_start_level_3,
-        array_ns=array_ns,
         exchange=exchange,
+        array_ns=array_ns,
+    )
+
+
+def compute_mass_conserving_bilinear_cell_average_weight_torus(
+    c2e2c0: data_alloc.NDArray,
+    cell_areas: data_alloc.NDArray,
+    cell_owner_mask: data_alloc.NDArray,
+    divergence_averaging_central_cell_weight: ta.wpfloat,
+    horizontal_start: gtx.int32,
+    horizontal_start_level_3: gtx.int32,
+    exchange: Callable[[data_alloc.NDArray], None],
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    c_bln_avg = _compute_uniform_c_bln_avg(
+        c2e2c0[:, 1:],
+        divergence_averaging_central_cell_weight,
+        horizontal_start,
+        array_ns=array_ns,
+    )
+    exchange(c_bln_avg)
+    # TODO(msimberg): Exact result for torus without the following. 1e-16 error
+    # with the the following. Is it needed?
+    return _force_mass_conservation_to_c_bln_avg(
+        c2e2c0,
+        c_bln_avg,
+        cell_areas,
+        cell_owner_mask,
+        divergence_averaging_central_cell_weight,
+        horizontal_start_level_3,
+        exchange=exchange,
+        array_ns=array_ns,
     )
 
 
@@ -929,6 +990,22 @@ def compute_e_bln_c_s(
     return e_bln_c_s
 
 
+def compute_e_bln_c_s_torus(
+    c2e: data_alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    """
+    Compute e_bln_c_s.
+
+    Args:
+        c2e: connectivity from cell to its neighboring edges
+
+    Returns:
+        e_bln_c_s
+    """
+    return array_ns.full_like(c2e, 1.0 / 3.0, dtype=ta.wpfloat)
+
+
 def compute_pos_on_tplane_e_x_y(
     grid_sphere_radius: ta.wpfloat,
     primal_normal_v1: data_alloc.NDArray,
@@ -1021,5 +1098,54 @@ def compute_pos_on_tplane_e_x_y(
         ),
         pos_on_tplane_e_y[llb:, 1],
     )
+
+    exchange(pos_on_tplane_e_x, pos_on_tplane_e_y)
+    return pos_on_tplane_e_x, pos_on_tplane_e_y
+
+
+def compute_pos_on_tplane_e_x_y_torus(
+    dual_edge_length: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    exchange: Callable[[data_alloc.NDArray], None],
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    """
+    Compute pos_on_tplane_e_x_y.
+    get geographical coordinates of edge midpoint
+    get line and block indices of neighbour cells
+    get geographical coordinates of first cell center
+    projection first cell center into local \\lambda-\\Phi-system
+    get geographical coordinates of second cell center
+    projection second cell center into local \\lambda-\\Phi-system
+
+    Args:
+        dual_edge_length
+        e2c
+        exchange: halo exchange callback
+
+    Returns:
+        pos_on_tplane_e_x
+        pos_on_tplane_e_y
+    """
+    # The implementation makes the simplifying assumptions that:
+    # - The torus grid consists of equilateral triangles, which means that the
+    #   neighboring cell centers must always be at 0.5 * dual_edge_length from
+    #   the edge center (the edge lies symmetrically perpendicular to the primal
+    #   edge).
+    # - The neighboring cell centers are exactly along the primal normal/dual
+    #   tangent direction, which means the x component in the local coordinate
+    #   system is always zero, and the y component is always 0.5 *
+    #   dual_edge_length.
+    # - The first neighbor cell is in the opposite direction of the primal
+    #   normal and the second neighbor is in the direction of the primal normal.
+    half_dual_edge_length = 0.5 * dual_edge_length[0]
+    num_edges = e2c.shape[0]
+
+    pos_on_tplane_e_x = array_ns.empty((num_edges, 2), dtype=dual_edge_length.dtype)
+    pos_on_tplane_e_x[:, 0] = -half_dual_edge_length
+    pos_on_tplane_e_x[:, 1] = half_dual_edge_length
+
+    pos_on_tplane_e_y = array_ns.zeros((num_edges, 2), dtype=dual_edge_length.dtype)
+
     exchange(pos_on_tplane_e_x, pos_on_tplane_e_y)
     return pos_on_tplane_e_x, pos_on_tplane_e_y
