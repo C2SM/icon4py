@@ -42,7 +42,8 @@ build_distributed_baseimage_aarch64:
     # Unique image name based on commit SHA,
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION
-    #USE_MPI: "YES"
+    USE_MPI: NO
+    SLURM_MPI_TYPE: pmix
 
 .build_distributed_cpu:
   extends: [.build_distributed_template]
