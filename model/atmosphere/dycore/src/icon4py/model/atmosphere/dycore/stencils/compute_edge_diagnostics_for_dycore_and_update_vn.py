@@ -12,7 +12,6 @@ from gt4py.eve import utils as eve_utils
 from gt4py.next import GridType, broadcast
 from gt4py.next.experimental import concat_where
 
-from icon4py.model.atmosphere.dycore.dycore_utils import _calculate_divdamp_fields
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     _add_analysis_increments_to_vn,
 )
@@ -340,30 +339,28 @@ def _apply_divergence_damping_and_update_vn(
         squared_horizontal_gradient_of_total_divergence = _compute_graddiv2_of_vn(
             geofac_grdiv=geofac_grdiv, z_graddiv_vn=horizontal_gradient_of_total_divergence
         )
-        (
-            fourth_order_divdamp_scaling_coeff,
-            reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-        ) = _calculate_divdamp_fields(
-            interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
-            divdamp_order=divdamp_order,
-            mean_cell_area=mean_cell_area,
-            second_order_divdamp_factor=second_order_divdamp_factor,
-            max_nudging_coefficient=max_nudging_coefficient,
-            dbl_eps=dbl_eps,
-        )
         if limited_area:
             next_vn = _apply_weighted_2nd_and_4th_order_divergence_damping(
-                scal_divdamp=fourth_order_divdamp_scaling_coeff,
-                bdy_divdamp=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+                interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
                 nudgecoeff_e=nudgecoeff_e,
                 z_graddiv2_vn=squared_horizontal_gradient_of_total_divergence,
                 vn=next_vn,
+                divdamp_order=divdamp_order,
+                mean_cell_area=mean_cell_area,
+                second_order_divdamp_factor=second_order_divdamp_factor,
+                max_nudging_coefficient=max_nudging_coefficient,
+                dbl_eps=dbl_eps,
             )
         else:
             next_vn = _apply_4th_order_divergence_damping(
-                scal_divdamp=fourth_order_divdamp_scaling_coeff,
+                interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
                 z_graddiv2_vn=squared_horizontal_gradient_of_total_divergence,
                 vn=next_vn,
+                divdamp_order=divdamp_order,
+                mean_cell_area=mean_cell_area,
+                second_order_divdamp_factor=second_order_divdamp_factor,
+                max_nudging_coefficient=max_nudging_coefficient,
+                dbl_eps=dbl_eps,
             )
 
     if is_iau_active:

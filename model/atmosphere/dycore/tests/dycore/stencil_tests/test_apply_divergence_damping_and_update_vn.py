@@ -9,6 +9,7 @@
 import gt4py.next as gtx
 import numpy as np
 import pytest
+from model.atmosphere.dycore.tests.dycore.stencil_tests import test_dycore_utils
 
 import icon4py.model.common.type_alias as ta
 import icon4py.model.testing.stencil_tests as test_helpers
@@ -71,6 +72,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         inv_dual_edge_length: np.ndarray,
         nudgecoeff_e: np.ndarray,
         geofac_grdiv: np.ndarray,
+        interpolated_fourth_order_divdamp_factor: np.ndarray,
         advection_explicit_weight_parameter: ta.wpfloat,
         advection_implicit_weight_parameter: ta.wpfloat,
         dtime: ta.wpfloat,
@@ -79,7 +81,6 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         limited_area: bool,
         apply_2nd_order_divergence_damping: bool,
         apply_4th_order_divergence_damping: bool,
-        interpolated_fourth_order_divdamp_factor: np.ndarray,
         divdamp_order: gtx.int32,
         mean_cell_area: float,
         second_order_divdamp_factor: float,
@@ -146,16 +147,16 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
                 ),
                 np.zeros_like(horizontal_gradient_of_total_divergence),
             )
-            fourth_order_divdamp_scaling_coeff = fourth_order_divdamp_scaling_coeff_numpy(
-                interpolated_fourth_order_divdamp_factor,
-                divdamp_order,
-                second_order_divdamp_factor,
-                mean_cell_area,
-            )
-            reduced_fourth_order_divdamp_coeff_at_nest_boundary = (
-                calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
-                    fourth_order_divdamp_scaling_coeff, max_nudging_coefficient
+            fourth_order_divdamp_scaling_coeff = (
+                test_dycore_utils.fourth_order_divdamp_scaling_coeff_numpy(
+                    interpolated_fourth_order_divdamp_factor,
+                    divdamp_order,
+                    second_order_divdamp_factor,
+                    mean_cell_area,
                 )
+            )
+            reduced_fourth_order_divdamp_coeff_at_nest_boundary = test_dycore_utils.calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
+                fourth_order_divdamp_scaling_coeff, max_nudging_coefficient
             )
             if limited_area:
                 next_vn = np.where(
