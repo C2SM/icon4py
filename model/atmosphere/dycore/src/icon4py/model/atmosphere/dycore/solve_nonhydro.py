@@ -941,18 +941,6 @@ class SolveNonhydro:
             self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
-        Declared as enh_divdamp_fac in ICON.
-        """
-        self.reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        )
-        """
-        Declared as bdy_divdamp in ICON.
-        """
-        self.fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        )
-        """
         Declared as scal_divdamp in ICON.
         """
         self.intermediate_fields = IntermediateFields.allocate(grid=self._grid, allocator=allocator)

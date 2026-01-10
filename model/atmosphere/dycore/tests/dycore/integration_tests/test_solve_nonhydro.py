@@ -585,16 +585,6 @@ def test_nonhydro_corrector_step(
         at_last_substep=at_last_substep,
     )
 
-    if icon_grid.limited_area:
-        assert test_utils.dallclose(
-            solve_nonhydro.reduced_fourth_order_divdamp_coeff_at_nest_boundary.asnumpy(),
-            init_savepoint.bdy_divdamp().asnumpy(),
-        )
-
-    assert test_utils.dallclose(
-        solve_nonhydro.fourth_order_divdamp_scaling_coeff.asnumpy(),
-        init_savepoint.scal_divdamp().asnumpy(),
-    )
     # stencil 10
     assert test_utils.dallclose(
         diagnostic_state_nh.rho_at_cells_on_half_levels.asnumpy(),
