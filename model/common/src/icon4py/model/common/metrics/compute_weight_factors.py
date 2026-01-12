@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Callable
 from types import ModuleType
 
 import gt4py.next as gtx
@@ -58,7 +59,7 @@ def _compute_wgtfac_c(
 
 
 # TODO(halungge): missing test?
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=gtx.gtfn_cpu)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_wgtfac_c(
     wgtfac_c: fa.CellKField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],
@@ -118,12 +119,13 @@ def compute_wgtfacq_c_dsl(
 
 
 def compute_wgtfacq_e_dsl(
-    e2c,
+    e2c: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
     wgtfacq_c_dsl: data_alloc.NDArray,
     n_edges: int,
     nlev: int,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ):
     """
@@ -153,6 +155,7 @@ def compute_wgtfacq_e_dsl(
 
     c_lin_e = c_lin_e[:, :, array_ns.newaxis]
     z_aux_e = array_ns.sum(c_lin_e * z_aux_c[e2c], axis=1)
+    exchange(z_aux_e)
 
     wgtfacq_e_dsl[:, nlev] = z_aux_e[:, 0]
     wgtfacq_e_dsl[:, nlev - 1] = z_aux_e[:, 1]
