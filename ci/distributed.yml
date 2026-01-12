@@ -60,7 +60,6 @@ build_distributed_cpu:
   extends: [.container-runner-santis-gh200, .build_distributed_cpu]
   needs: [build_distributed_cpu]
   variables:
-    SLURM_TIMELIMIT: '00:30:00'
     SLURM_JOB_NUM_NODES: 1
     SLURM_CPU_BIND: 'verbose'
     SLURM_NTASKS: 4
@@ -84,7 +83,18 @@ build_distributed_cpu:
       - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
         BACKEND: [embedded, gtfn_cpu, dace_cpu]
   rules:
+    - if: $COMPONENT == 'atmosphere/diffusion'
+      variables:
+        SLURM_TIMELIMIT: '00:05:00'
+    - if: $COMPONENT == 'atmosphere/dycore' && $BACKEND == 'dace_cpu'
+      variables:
+        SLURM_TIMELIMIT: '00:20:00'
+    - if: $COMPONENT == 'atmosphere/dycore'
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
     - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:30:00'
   artifacts:
     paths:
       - pytest-log-rank-*.txt
