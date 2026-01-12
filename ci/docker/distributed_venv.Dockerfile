@@ -1,10 +1,12 @@
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
+
+COPY . /icon4py
+WORKDIR /icon4py
+
 ARG PYVERSION
 ARG VENV
-COPY . /icon4py
 ENV UV_PROJECT_ENVIRONMENT=$VENV
 ENV MPI4PY_BUILD_BACKEND="scikit-build-core"
-WORKDIR /icon4py
-RUN echo "UV_PROJECT_ENVIRONMENT=$UV_PROJECT_ENVIRONMENT"
-RUN uv sync --extra distributed --python=$PYVERSION
+RUN echo "UV_PROJECT_ENVIRONMENT=$UV_PROJECT_ENVIRONMENT" && \
+        uv sync --extra distributed --python=$PYVERSION
