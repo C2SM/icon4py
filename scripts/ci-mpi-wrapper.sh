@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-log_file="pytest-log-rank-${SLURM_PROCID}.txt"
+log_file="${CI_PROJECT_DIR:+${CI_PROJECT_DIR}/}pytest-log-rank-${SLURM_PROCID}.txt"
 
 if [[ "${SLURM_PROCID}" -eq 0  ]]; then
     echo "Starting pytest on rank ${SLURM_PROCID}, logging to stdout and ${log_file}"
