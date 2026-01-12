@@ -87,7 +87,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             "igradp_method",
             "nflatlev",
             "nflat_gradp",
-            "start_cell_lateral_boundary",
             "start_cell_lateral_boundary_level_3",
             "start_cell_halo_level_2",
             "end_cell_halo",

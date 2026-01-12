@@ -6,19 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
 from typing import Final
 
 import gt4py.next as gtx
@@ -211,84 +198,6 @@ def _compute_perturbed_quantities_and_interpolation(
     )
 
 
-@gtx.field_operator
-def _set_theta_v_and_exner_on_surface_level(
-    temporal_extrapolation_of_perturbed_exner: fa.CellKField[vpfloat],
-    wgtfacq_c: fa.CellKField[vpfloat],
-    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    reference_theta_at_cells_on_half_levels: fa.CellKField[vpfloat],
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat], fa.CellKField[vpfloat]]:
-    perturbed_theta_v_at_cells_on_half_levels = _interpolate_to_surface(
-        wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
-    )
-    theta_v_at_cells_on_half_levels = (
-        reference_theta_at_cells_on_half_levels + perturbed_theta_v_at_cells_on_half_levels
-    )
-
-    exner_at_cells_on_half_levels = _interpolate_to_surface(
-        wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
-    )
-
-    return (
-        perturbed_theta_v_at_cells_on_half_levels,
-        astype(theta_v_at_cells_on_half_levels, wpfloat),
-        exner_at_cells_on_half_levels,
-    )
-
-
-@gtx.field_operator
-def _compute_first_and_second_vertical_derivative_of_exner(
-    exner_at_cells_on_half_levels: fa.CellKField[vpfloat],
-    inv_ddqz_z_full: fa.CellKField[vpfloat],
-    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
-    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[vpfloat],
-    perturbed_theta_v_at_cells_on_half_levels: fa.CellKField[vpfloat],
-    d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
-    d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
-    perturbed_theta_v_at_cells_on_model_levels: fa.CellKField[vpfloat],
-    igradp_method: gtx.int32,
-    nflatlev: gtx.int32,
-    nflat_gradp: gtx.int32,
-) -> tuple[
-    fa.CellKField[vpfloat],
-    fa.CellKField[vpfloat],
-]:
-    ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-        concat_where(
-            nflatlev <= dims.KDim,
-            _compute_first_vertical_derivative_at_cells(
-                exner_at_cells_on_half_levels, inv_ddqz_z_full
-            ),
-            ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
-        else ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
-    )
-
-    d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels = (
-        concat_where(
-            nflat_gradp <= dims.KDim,
-            -vpfloat("0.5")
-            * (
-                (
-                    perturbed_theta_v_at_cells_on_half_levels
-                    - perturbed_theta_v_at_cells_on_half_levels(Koff[1])
-                )
-                * d2dexdz2_fac1_mc
-                + perturbed_theta_v_at_cells_on_model_levels * d2dexdz2_fac2_mc
-            ),
-            d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        )
-        if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
-        else d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
-    )
-
-    return (
-        ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-        d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
-    )
-
-
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_perturbed_quantities_and_interpolation(
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
@@ -321,7 +230,6 @@ def compute_perturbed_quantities_and_interpolation(
     igradp_method: gtx.int32,
     nflatlev: gtx.int32,
     nflat_gradp: gtx.int32,
-    start_cell_lateral_boundary: gtx.int32,
     start_cell_lateral_boundary_level_3: gtx.int32,
     start_cell_halo_level_2: gtx.int32,
     end_cell_halo: gtx.int32,
