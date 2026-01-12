@@ -6,18 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Any
 
 import gt4py.next as gtx
@@ -136,7 +124,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         igradp_method: gtx.int32,
         nflatlev: gtx.int32,
         nflat_gradp: gtx.int32,
-        start_cell_lateral_boundary: gtx.int32,
         start_cell_lateral_boundary_level_3: gtx.int32,
         start_cell_halo_level_2: gtx.int32,
         end_cell_halo: gtx.int32,
@@ -152,8 +139,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1],
         ) = np.where(
-            (start_cell_lateral_boundary <= horz_idx)
-            & (horz_idx < start_cell_lateral_boundary_level_3),
+            horz_idx < start_cell_lateral_boundary_level_3,
             (
                 np.zeros_like(perturbed_rho_at_cells_on_model_levels),
                 np.zeros_like(perturbed_theta_v_at_cells_on_model_levels[:, : surface_level - 1]),
@@ -411,7 +397,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         igradp_method = horzpres_discr_type.TAYLOR_HYDRO
 
         cell_domain = h_grid.domain(dims.CellDim)
-        start_cell_lateral_boundary = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
         start_cell_lateral_boundary_level_3 = grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
@@ -453,7 +438,6 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             igradp_method=igradp_method,
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
-            start_cell_lateral_boundary=start_cell_lateral_boundary,
             start_cell_lateral_boundary_level_3=start_cell_lateral_boundary_level_3,
             start_cell_halo_level_2=start_cell_halo_level_2,
             end_cell_halo=end_cell_halo,
