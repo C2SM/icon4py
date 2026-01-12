@@ -23,7 +23,7 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
-  'gt4py==1.1.2',
+  'gt4py==1.1.3',
   'packaging>=20.0',
   'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
