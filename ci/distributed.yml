@@ -73,6 +73,7 @@ build_distributed_cpu:
   stage: test
   extends: [.test_template_distributed]
   before_script:
+    - cd /icon4py
     - echo "using virtual environment at ${UV_PROJECT_ENVIRONMENT}"
     - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
