@@ -1089,6 +1089,10 @@ def test_compute_perturbed_quantities_and_interpolation(
     start_cell_halo_level_2 = icon_grid.start_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     end_cell_halo_level_2 = icon_grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2))
+    print("start_cell_lateral_boundary_level_3", start_cell_lateral_boundary_level_3)
+    print("end_cell_halo", end_cell_halo)
+    print("start_cell_halo_level_2", start_cell_halo_level_2)
+    print("end_cell_halo_level_2", end_cell_halo_level_2)
 
     reference_rho_at_cells_on_model_levels = metrics_savepoint.rho_ref_mc()
     reference_theta_at_cells_on_model_levels = metrics_savepoint.theta_ref_mc()

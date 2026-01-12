@@ -77,6 +77,8 @@ def _compute_perturbed_quantities_and_interpolation(
     d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
     igradp_method: gtx.int32,
     surface_level: gtx.int32,
+    start_cell_halo_level_2: gtx.int32,
+    end_cell_halo_level_2: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -181,6 +183,23 @@ def _compute_perturbed_quantities_and_interpolation(
         )
         if igradp_method == horzpres_discr_type.TAYLOR_HYDRO
         else d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels
+    )
+
+    (
+        perturbed_rho_at_cells_on_model_levels,
+        perturbed_theta_v_at_cells_on_model_levels,
+    ) = concat_where(
+        (dims.CellDim >= start_cell_halo_level_2) & (dims.CellDim < end_cell_halo_level_2),
+        _compute_perturbation_of_rho_and_theta(
+            rho=current_rho,
+            rho_ref_mc=reference_rho_at_cells_on_model_levels,
+            theta_v=current_theta_v,
+            theta_ref_mc=reference_theta_at_cells_on_model_levels,
+        ),
+        (
+            perturbed_rho_at_cells_on_model_levels,
+            perturbed_theta_v_at_cells_on_model_levels,
+        ),
     )
 
     return (
@@ -319,6 +338,8 @@ def compute_perturbed_quantities_and_interpolation(
         d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         igradp_method=igradp_method,
         surface_level=surface_level,
+        start_cell_halo_level_2=start_cell_halo_level_2,
+        end_cell_halo_level_2=end_cell_halo_level_2,
         out=(
             perturbed_rho_at_cells_on_model_levels,
             perturbed_theta_v_at_cells_on_model_levels,
@@ -378,21 +399,6 @@ def compute_perturbed_quantities_and_interpolation(
                 dims.KDim: (nflat_gradp, surface_level - 1),
             },
         ),
-    )
-
-    _compute_perturbation_of_rho_and_theta(
-        rho=current_rho,
-        rho_ref_mc=reference_rho_at_cells_on_model_levels,
-        theta_v=current_theta_v,
-        theta_ref_mc=reference_theta_at_cells_on_model_levels,
-        out=(
-            perturbed_rho_at_cells_on_model_levels,
-            perturbed_theta_v_at_cells_on_model_levels,
-        ),
-        domain={
-            dims.CellDim: (start_cell_halo_level_2, end_cell_halo_level_2),
-            dims.KDim: (model_top, surface_level - 1),
-        },
     )
 
 
