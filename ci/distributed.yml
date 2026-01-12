@@ -71,8 +71,8 @@ build_distributed_cpu:
 .test_distributed_aarch64:
   stage: test
   extends: [.test_template_distributed]
-  working_directory: /icon4py
   before_script:
+    - cd /icon4py
     - echo "using virtual environment at ${UV_PROJECT_ENVIRONMENT}"
     - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
@@ -97,7 +97,7 @@ build_distributed_cpu:
         SLURM_TIMELIMIT: '00:30:00'
   artifacts:
     paths:
-      - pytest-log-rank-*.txt
+      - /icon4py/pytest-log-rank-*.txt
 
 test_model_distributed:
   extends: [.test_distributed_aarch64]
