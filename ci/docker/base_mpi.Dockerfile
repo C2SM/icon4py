@@ -23,20 +23,5 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     git && \
     rm -rf /var/lib/apt/lists/*
 
-
-# Set environment variables
-# Install Boost
-# RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz && \
-#     echo be0d91732d5b0cc6fbb275c7939974457e79b54d6f07ce2e3dfdd68bef883b0b boost_1_85_0.tar.gz > boost_hash.txt && \
-#     sha256sum -c boost_hash.txt && \
-#     tar xzf boost_1_85_0.tar.gz && \
-#     mv boost_1_85_0/boost /usr/local/include/ && \
-#     rm boost_1_85_0.tar.gz boost_hash.txt
-
-# ENV BOOST_ROOT /usr/local/
-
-ARG PYVERSION
-# TODO
-# install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-# RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+# Install uv: https://docs.astral.sh/uv/guides/integration/docker
+COPY --from=ghcr.io/astral-sh/uv:0.9.24@sha256:816fdce3387ed2142e37d2e56e1b1b97ccc1ea87731ba199dc8a25c04e4997c5 /uv /uvx /bin/
