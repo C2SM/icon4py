@@ -70,7 +70,6 @@ def test_distributed_geometry_attrs(
     attrs_name: str,
     grid_name: str,
 ) -> None:
-    pytest.xfail()
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
@@ -134,7 +133,6 @@ def test_geometry_attr_no_halos(
     attrs_name: str,
     grid_name: str,
 ) -> None:
-    pytest.xfail()
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
@@ -166,7 +164,6 @@ def test_cartesian_geometry_attr_no_halos(
     z: str,
     dimension: gtx.Dimension,
 ) -> None:
-    pytest.xfail()
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)

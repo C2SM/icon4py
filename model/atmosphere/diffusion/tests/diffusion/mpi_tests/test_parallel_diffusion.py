@@ -58,6 +58,8 @@ def test_parallel_diffusion(
     backend: gtx_typing.Backend,
     orchestration: bool,
 ) -> None:
+    if test_utils.is_embedded(backend):
+        pytest.xfail("Embedded backend does not support concat_where")
     if orchestration and not test_utils.is_dace(backend):
         raise pytest.skip("This test is only executed for `dace` backends.")
     caplog.set_level("INFO")
