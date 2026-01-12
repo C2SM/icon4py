@@ -18,7 +18,7 @@ variables:
   before_script:
     # include build arguments in hash since we use a parameterized Docker file
     - DOCKER_TAG=`echo "$(cat $DOCKERFILE) $DOCKER_BUILD_ARGS" | sha256sum | head -c 16`
-    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG-$PYVERSION
+    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG-$PYVERSION-mpi
     - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
   artifacts:
     reports:
@@ -28,24 +28,19 @@ variables:
     # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
     CSCS_REBUILD_POLICY: if-not-exists
 
-
 build_distributed_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_distributed_baseimage]
   variables:
     DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "PYVERSION=$PYVERSION"]'
-
-
 
 .build_distributed_template:
   variables:
     DOCKERFILE: ci/docker/distributed_venv.Dockerfile
     # Unique image name based on commit SHA,
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
-    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
     USE_MPI: NO
     SLURM_MPI_TYPE: pmix
-    SLURM_UNBUFFEREDIO: 1
-    SLURM_LABELIO: 1
     PMIX_MCA_psec: native
     PMIX_MCA_gds: "^shmem2"
 
@@ -54,7 +49,6 @@ build_distributed_baseimage_aarch64:
   variables:
     UV_PROJECT_ENVIRONMENT: venv_dist
 
-
 build_distributed_cpu:
   stage: image
   extends: [.container-builder-cscs-gh200, .build_distributed_cpu]
@@ -62,47 +56,37 @@ build_distributed_cpu:
 
 .test_template_distributed:
   timeout: 8h
-  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
   extends: [.container-runner-santis-gh200, .build_distributed_cpu]
   needs: [build_distributed_cpu]
   variables:
     SLURM_TIMELIMIT: '00:30:00'
     SLURM_JOB_NUM_NODES: 1
     SLURM_CPU_BIND: 'verbose'
-    ICON4PY_MPI_TASKS: 4
-    SLURM_NTASKS: ${ICON4PY_MPI_TASKS}
+    SLURM_NTASKS: 4
     TEST_DATA_PATH: "/icon4py/testdata"
-    ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
+    ICON4PY_ENABLE_GRID_DOWNLOAD: false
+    ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_003:$TEST_DATA_PATH"]'
-    # ICON4PY_MPI_PREFIX: "mpirun --bind-to socket -n ${ICON4PY_MPI_TASKS}"
-    # ICON4PY_MPI_PREFIX: ""
-
 
 .test_distributed_aarch64:
   stage: test
   extends: [.test_template_distributed]
   before_script:
-    - cd /icon4py
-    - echo "icon4py workdir listing -  $(ls)"
-    - echo "test_data folder listing - $(ls -lah testdata/*)"
     - echo "using virtual environment at ${UV_PROJECT_ENVIRONMENT}"
-    - . ${UV_PROJECT_ENVIRONMENT}/bin/activate
-    - echo "slurm ntasks from outer environment SLURM_NTASKS=${SLURM_NTASKS}"
-    - echo "resetting SLURM_NTASKS"
-    - export SLURM_NTASKS=${ICON4PY_MPI_TASKS}
-    - echo "using SLURM_NTASKS=${SLURM_NTASKS}"
+    - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
-    # - echo "using MPI_PREFIX ${ICON4PY_MPI_PREFIX}"
   script:
-      #- ${ICON4PY_MPI_PREFIX} pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
-    # - uv run --no-sync pytest -sv --datatest-only --backend=$BACKEND model/$COMPONENT
-    - pytest -sv -k "mpi_tests" --with-mpi --backend=$BACKEND model/$COMPONENT
+    - scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
-      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]  # [atmosphere/advection,microphysics,driver]
-        BACKEND: [gtfn_cpu]  # dace_cpu
+      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
+        BACKEND: [embedded, gtfn_cpu, dace_cpu]
   rules:
     - when: on_success
+  artifacts:
+    paths:
+      - pytest-log-rank-*.txt
 
 test_model_distributed:
   extends: [.test_distributed_aarch64]

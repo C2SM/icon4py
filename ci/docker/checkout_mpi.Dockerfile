@@ -8,5 +8,4 @@ ARG PYVERSION
 ARG VENV
 ENV UV_PROJECT_ENVIRONMENT=$VENV
 ENV MPI4PY_BUILD_BACKEND="scikit-build-core"
-RUN echo "UV_PROJECT_ENVIRONMENT=$UV_PROJECT_ENVIRONMENT" && \
-        uv sync --extra distributed --python=$PYVERSION
+RUN uv sync --extra distributed --python=$PYVERSION
