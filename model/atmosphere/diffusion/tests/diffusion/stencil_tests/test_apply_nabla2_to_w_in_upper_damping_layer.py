@@ -34,7 +34,7 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
     PROGRAM = apply_nabla2_to_w_in_upper_damping_layer
     OUTPUTS = ("w",)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid):
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         diff_multfac_n2w = random_field(grid, dims.KDim, dtype=wpfloat)

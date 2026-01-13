@@ -32,7 +32,7 @@ class TestInternalEnergy(StencilTest):
     ) -> dict:
         return dict(energy=np.full(t.shape, 38265357.270336017))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 255.756, dims.CellDim, dims.KDim, dtype=wpfloat),

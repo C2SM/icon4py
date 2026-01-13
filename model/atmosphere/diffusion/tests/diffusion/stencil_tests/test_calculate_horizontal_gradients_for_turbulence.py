@@ -51,7 +51,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
         )
         return dict(dwdx=dwdx, dwdy=dwdy)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)

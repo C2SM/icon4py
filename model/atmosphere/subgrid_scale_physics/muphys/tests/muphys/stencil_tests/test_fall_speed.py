@@ -26,7 +26,7 @@ class TestFallSpeed(StencilTest):
     ) -> dict:
         return dict(speed=np.full(density.shape, 0.67882452435647411))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             density=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat),

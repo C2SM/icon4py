@@ -23,7 +23,7 @@ class TestQsatRho(StencilTest):
     def reference(grid, qs: np.ndarray, t: np.ndarray, **kwargs) -> dict:
         return dict(derivative=np.full(t.shape, 0.00030825070286492049))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             qs=data_alloc.constant_field(grid, 0.00448941, dims.CellDim, dims.KDim, dtype=wpfloat),

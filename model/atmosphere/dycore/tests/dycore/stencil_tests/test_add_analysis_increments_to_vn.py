@@ -45,7 +45,7 @@ class TestAddAnalysisIncrementsToVn(StencilTest):
         vn = add_analysis_increments_to_vn_numpy(vn_incr, vn, iau_wgt_dyn)
         return dict(vn=vn)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn_incr = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

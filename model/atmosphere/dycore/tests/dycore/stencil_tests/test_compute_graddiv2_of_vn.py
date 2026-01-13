@@ -49,7 +49,7 @@ class TestComputeGraddiv2OfVn(StencilTest):
         z_graddiv2_vn = compute_graddiv2_of_vn_numpy(connectivities, geofac_grdiv, z_graddiv_vn)
         return dict(z_graddiv2_vn=z_graddiv2_vn)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_graddiv_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)

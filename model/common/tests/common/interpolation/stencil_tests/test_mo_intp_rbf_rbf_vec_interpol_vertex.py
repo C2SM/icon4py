@@ -70,7 +70,7 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
         return dict(p_v_out=p_v_final_out, p_u_out=p_u_final_out)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict:
         p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ptr_coeff_1 = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
