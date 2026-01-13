@@ -102,10 +102,3 @@ known-third-party = ['gt4py']
 [tool.setuptools.packages]
 find = {namespaces = true, where = ['src']}
 
-[[tool.uv.index]]
-explicit = true
-name = 'gridtools'
-url = 'https://gridtools.github.io/pypi/'
-
-[tool.uv.sources]
-dace = {index = "gridtools"}
