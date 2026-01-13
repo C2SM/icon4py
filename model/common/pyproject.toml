@@ -28,7 +28,7 @@ dependencies = [
   'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
   'scipy>=1.14.1',
-  "dace>=1.0"
+  'dace==43!2026.01.13'  # uses custom index at 'https://github.com/GridTools/pypi'
 ]
 description = "Shared code for the icon4py model."
 license = {text = "BSD-3 License"}
@@ -101,3 +101,11 @@ known-third-party = ['gt4py']
 
 [tool.setuptools.packages]
 find = {namespaces = true, where = ['src']}
+
+[[tool.uv.index]]
+explicit = true
+name = 'gridtools'
+url = 'https://gridtools.github.io/pypi/'
+
+[tool.uv.sources]
+dace = {index = "gridtools"}

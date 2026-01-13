@@ -912,8 +912,8 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "1.0.0"
-source = { git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2026_01_12#0362ff303a8f46509bbd24d0096e28f594f95efc" }
+version = "43!2026.1.13"
+source = { registry = "https://gridtools.github.io/pypi/" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -926,6 +926,9 @@ dependencies = [
     { name = "pyreadline", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
     { name = "pyyaml" },
     { name = "sympy" },
+]
+wheels = [
+    { url = "https://gridtools.github.io/pypi/dace/dace-43!2026.1.13-py3-none-any.whl", hash = "sha256:0a0b6ea03254372043bd8c9532dffddfe336729efb9148195f2523d9aa8ed331" },
 ]
 
 [[package]]
@@ -1399,8 +1402,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.2.post14+20b10415"
-source = { git = "https://github.com/GridTools/gt4py?branch=main#20b10415ca13e9fb25dae4e8ffc5b84f76603fd9" }
+version = "1.1.2.post15+ed19fb86"
+source = { git = "https://github.com/GridTools/gt4py?branch=main#ed19fb86812af5b8824d60f3075dc2a95864eb8e" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1878,7 +1881,7 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", git = "https://github.com/GridTools/dace?tag=__gt4py-next-integration_2026_01_12" },
+    { name = "dace", specifier = "==43!2026.1.13", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
     { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
