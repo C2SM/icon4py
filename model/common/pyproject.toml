@@ -101,4 +101,3 @@ known-third-party = ['gt4py']
 
 [tool.setuptools.packages]
 find = {namespaces = true, where = ['src']}
-
