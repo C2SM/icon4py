@@ -32,11 +32,11 @@ from .test_compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers 
 from .test_compute_virtual_potential_temperatures_and_pressure_gradient import (
     compute_virtual_potential_temperatures_and_pressure_gradient_numpy,
 )
+from .test_extrapolate_quadratically_to_surface import extrapolate_quadratically_to_surface_numpy
 from .test_extrapolate_temporally_exner_pressure import extrapolate_temporally_exner_pressure_numpy
 from .test_interpolate_cell_field_to_half_levels_vp import (
     interpolate_cell_field_to_half_levels_vp_numpy,
 )
-from .test_interpolate_to_surface import interpolate_to_surface_numpy
 from .test_set_theta_v_prime_ic_at_lower_boundary import (
     set_theta_v_prime_ic_at_lower_boundary_numpy,
 )
@@ -180,7 +180,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
                 (start_cell_lateral_boundary_level_3 <= horz_idx)
                 & (horz_idx < end_cell_halo)
                 & (vert_idx == surface_level - 1),
-                interpolate_to_surface_numpy(
+                extrapolate_quadratically_to_surface_numpy(
                     interpolant=temporal_extrapolation_of_perturbed_exner,
                     wgtfacq_c=wgtfacq_c,
                     interpolation_to_surface=exner_at_cells_on_half_levels,

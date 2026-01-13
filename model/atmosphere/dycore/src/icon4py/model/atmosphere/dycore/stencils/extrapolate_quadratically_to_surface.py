@@ -13,21 +13,21 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @gtx.field_operator
-def _interpolate_to_surface(
+def _extrapolate_quadratically_to_surface(
     wgtfacq_c: fa.CellKField[vpfloat],
     interpolant: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_04."""
-    interpolation_to_surface = (
+    extrapolate_quadratically_to_surface = (  # rename extrapolation_to_surface
         wgtfacq_c(Koff[-1]) * interpolant(Koff[-1])
         + wgtfacq_c(Koff[-2]) * interpolant(Koff[-2])
         + wgtfacq_c(Koff[-3]) * interpolant(Koff[-3])
     )
-    return interpolation_to_surface
+    return extrapolate_quadratically_to_surface
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def interpolate_to_surface(
+def extrapolate_quadratically_to_surface(
     wgtfacq_c: fa.CellKField[vpfloat],
     interpolant: fa.CellKField[vpfloat],
     interpolation_to_surface: fa.CellKField[vpfloat],
@@ -36,7 +36,7 @@ def interpolate_to_surface(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _interpolate_to_surface(
+    _extrapolate_quadratically_to_surface(
         wgtfacq_c,
         interpolant,
         out=interpolation_to_surface,

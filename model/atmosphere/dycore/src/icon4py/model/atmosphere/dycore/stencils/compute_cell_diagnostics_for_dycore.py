@@ -16,10 +16,12 @@ from icon4py.model.atmosphere.dycore.dycore_states import HorizontalPressureDisc
 from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
 )
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_quadratically_to_surface import (
+    _extrapolate_quadratically_to_surface,
+)
 from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.interpolation.stencils.interpolate_cell_field_to_half_levels_vp import (
@@ -108,7 +110,7 @@ def _compute_perturbed_quantities_and_interpolation(
             _interpolate_cell_field_to_half_levels_vp(
                 wgtfac_c=wgtfac_c, interpolant=temporal_extrapolation_of_perturbed_exner
             ),
-            _interpolate_to_surface(
+            _extrapolate_quadratically_to_surface(
                 wgtfacq_c=wgtfacq_c, interpolant=temporal_extrapolation_of_perturbed_exner
             ),
         )
@@ -135,7 +137,7 @@ def _compute_perturbed_quantities_and_interpolation(
         _interpolate_cell_field_to_half_levels_vp(
             wgtfac_c=wgtfac_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
         ),
-        _interpolate_to_surface(
+        _extrapolate_quadratically_to_surface(
             wgtfacq_c=wgtfacq_c, interpolant=perturbed_theta_v_at_cells_on_model_levels
         ),
     )
