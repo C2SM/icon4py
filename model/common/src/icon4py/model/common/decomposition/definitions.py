@@ -339,7 +339,7 @@ class Reductions(Protocol):
     ) -> state_utils.ScalarType: ...
 
     def mean(
-        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+        self, buffer: data_alloc.NDArray, buffer_mean: float, array_ns: ModuleType = np
     ) -> state_utils.ScalarType: ...
 
 
@@ -353,8 +353,12 @@ class SingleNodeReductions(Reductions):
     def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         return array_ns.sum(buffer).item()
 
-    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        return array_ns.mean(buffer).item()
+    def mean(
+        self, buffer: data_alloc.NDArray, buffer_mean: float, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType:
+        if buffer_mean is not None:
+            return buffer_mean
+        return array_ns.sum(buffer).item() / buffer.siz
 
 
 @overload
@@ -402,7 +406,7 @@ def create_single_node_exchange(
 @functools.singledispatch
 def create_global_reduction(props: ProcessProperties) -> Reductions:
     """
-    Create an Exchange depending on the runtime size.
+    Create a Global Reduction depending on the runtime size.
 
     Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
     """

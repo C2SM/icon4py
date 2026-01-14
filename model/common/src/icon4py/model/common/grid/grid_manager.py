@@ -8,6 +8,7 @@
 import functools
 import logging
 import pathlib
+from collections.abc import Callable
 from types import ModuleType
 from typing import Literal, Protocol, TypeAlias
 
@@ -87,6 +88,7 @@ class GridManager:
         transformation: IndexTransformation,
         grid_file: pathlib.Path | str,
         config: v_grid.VerticalGridConfig,  # TODO(halungge): remove to separate vertical and horizontal grid
+        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._transformation = transformation
         self._file_name = str(grid_file)
@@ -96,6 +98,7 @@ class GridManager:
         self._geometry: GeometryDict = {}
         self._reader = None
         self._coordinates: CoordinateDict = {}
+        self._global_reductions = global_reductions
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -130,7 +133,10 @@ class GridManager:
 
         self._geometry = self._read_geometry_fields(allocator)
         self._grid = self._construct_grid(
-            allocator=allocator, with_skip_values=keep_skip_values, geometry_type=geometry_type
+            allocator=allocator,
+            with_skip_values=keep_skip_values,
+            geometry_type=geometry_type,
+            mean_reduction=self._global_reductions.mean,
         )
         self._coordinates = self._read_coordinates(allocator, geometry_type)
         self.close()
@@ -353,6 +359,9 @@ class GridManager:
         allocator: gtx_typing.FieldBufferAllocationUtil | None,
         with_skip_values: bool,
         geometry_type: base.GeometryType,
+        mean_reduction: Callable[
+            [data_alloc.NDArray, data_alloc.ScalarT], data_alloc.ScalarT
+        ] = decomposition.single_node_reductions.mean,
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -412,6 +421,7 @@ class GridManager:
             dual_edge_lengths=dual_edge_lengths,
             cell_areas=cell_areas,
             dual_cell_areas=dual_cell_areas,
+            mean_reduction=mean_reduction,
         )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells

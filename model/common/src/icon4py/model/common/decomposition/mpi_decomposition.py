@@ -8,9 +8,10 @@
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
@@ -427,41 +428,40 @@ def create_multinode_node_exchange(
         return SingleNodeExchange()
 
 
+@dataclasses.dataclass
 class GlobalReductions(Reductions):
-    def __init__(self, props: definitions.ProcessProperties):
-        self._props = props
+    props: definitions.ProcessProperties
+
+    def _reduce(
+        self,
+        buffer: data_alloc.NDArray,
+        local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
+        global_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        local_red_val = local_reduction(buffer)
+        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
+        if hasattr(
+            array_ns, "cuda"
+        ):  # https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
+            array_ns.cuda.runtime.deviceSynchronize()
+        self.props.comm.Allreduce(local_red_val, recv_buffer, global_reduction)
+        return recv_buffer.item()
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        local_min = array_ns.min(buffer)
-        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
-        if hasattr(
-            array_ns, "cuda"
-        ):  #  https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
-            array_ns.cuda.runtime.deviceSynchronize()
-        self._props.comm.Allreduce(local_min, recv_buffer, mpi4py.MPI.MIN)
-        return recv_buffer.item()
+        return self._reduce(buffer, array_ns.min, mpi4py.MPI.MIN, array_ns)
 
     def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        local_max = array_ns.max(buffer)
-        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
-        if hasattr(
-            array_ns, "cuda"
-        ):  #  https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
-            array_ns.cuda.runtime.deviceSynchronize()
-        self._props.comm.Allreduce(local_max, recv_buffer, mpi4py.MPI.MAX)
-        return recv_buffer.item()
+        return self._reduce(buffer, array_ns.max, mpi4py.MPI.MAX, array_ns)
 
     def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        local_sum = array_ns.sum(buffer)
-        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
-        if hasattr(
-            array_ns, "cuda"
-        ):  #  https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
-            array_ns.cuda.runtime.deviceSynchronize()
-        self._props.comm.Allreduce(local_sum, recv_buffer, mpi4py.MPI.SUM)
-        return recv_buffer.item()
+        return self._reduce(buffer, array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
-    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+    def mean(
+        self, buffer: data_alloc.NDArray, buffer_mean: float, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType:
+        if buffer_mean is not None:
+            return buffer_mean
         return self.sum(buffer) / buffer.size
 
 
