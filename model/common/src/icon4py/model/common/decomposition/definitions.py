@@ -356,7 +356,6 @@ class SingleNodeReductions(Reductions):
     def mean(
         self, buffer: data_alloc.NDArray, buffer_mean: float, array_ns: ModuleType = np
     ) -> state_utils.ScalarType:
-        breakpoint()
         if buffer_mean is not None:
             return buffer_mean
         return array_ns.sum(buffer).item() / buffer.size
