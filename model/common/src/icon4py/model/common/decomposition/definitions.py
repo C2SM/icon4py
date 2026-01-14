@@ -358,7 +358,7 @@ class SingleNodeReductions(Reductions):
     ) -> state_utils.ScalarType:
         if buffer_mean is not None:
             return buffer_mean
-        return array_ns.sum(buffer).item() / buffer.siz
+        return array_ns.sum(buffer).item() / buffer.size
 
 
 @overload

@@ -462,7 +462,9 @@ class GlobalReductions(Reductions):
     ) -> state_utils.ScalarType:
         if buffer_mean is not None:
             return buffer_mean
-        return self.sum(buffer) / buffer.size
+        buffer_ones = array_ns.ones_like(buffer)
+        buffer_size = self._reduce(buffer_ones, array_ns.sum, mpi4py.MPI.SUM, array_ns)
+        return self.sum(buffer) / buffer_size
 
 
 @definitions.create_global_reduction.register(MPICommProcessProperties)
