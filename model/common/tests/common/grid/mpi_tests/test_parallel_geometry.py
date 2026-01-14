@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import typing
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -20,7 +19,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry, geometry_attributes as attrs, horizontal as h_grid
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import parallel_helpers, test_utils
+from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
 
 from ...fixtures import (
     backend,
@@ -62,6 +61,9 @@ lb_lateral = edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         (attrs.EDGE_TANGENT_VERTEX_V, "dual_normal_vert_y"),
     ],
 )
+@pytest.mark.parametrize(
+    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
+)
 def test_distributed_geometry_attrs(
     grid_savepoint: sb.IconGridSavepoint,
     processor_props: decomposition.ProcessProperties,
@@ -89,6 +91,9 @@ def test_distributed_geometry_attrs(
         ("inverse_of_" + attrs.VERTEX_VERTEX_LENGTH, "inv_vert_vert_length", lb_local),
         ("inverse_of_" + attrs.EDGE_LENGTH, "inverse_primal_edge_lengths", lb_local),
     ),
+)
+@pytest.mark.parametrize(
+    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
 )
 def test_distributed_geometry_attrs_for_inverse(
     grid_savepoint: sb.IconGridSavepoint,
@@ -124,6 +129,9 @@ def test_distributed_geometry_attrs_for_inverse(
         (attrs.EDGE_NORMAL_Z, "primal_cart_normal_z"),
     ],
 )
+@pytest.mark.parametrize(
+    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
+)
 def test_geometry_attr_no_halos(
     grid_savepoint: sb.IconGridSavepoint,
     processor_props: decomposition.ProcessProperties,
@@ -151,6 +159,9 @@ def test_geometry_attr_no_halos(
         (attrs.EDGE_CENTER_X, attrs.EDGE_CENTER_Y, attrs.EDGE_CENTER_Z, dims.EdgeDim),
         (attrs.VERTEX_X, attrs.VERTEX_Y, attrs.VERTEX_Z, dims.VertexDim),
     ],
+)
+@pytest.mark.parametrize(
+    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
 )
 def test_cartesian_geometry_attr_no_halos(
     grid_savepoint: sb.IconGridSavepoint,

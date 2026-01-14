@@ -189,7 +189,7 @@ class GridGeometry(factory.FieldSource):
                     self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
-            do_exchange=False,
+            do_exchange=True,
         )
         return provider
 
