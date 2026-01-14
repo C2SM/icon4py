@@ -57,9 +57,6 @@ if TYPE_CHECKING:
         (attrs.COEFF_GRADEKIN, "coeff_gradekin"),
     ],
 )
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_distributed_metrics_attrs(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
@@ -110,9 +107,6 @@ def test_distributed_metrics_attrs(
         (attrs.EXNER_EXFAC, "exner_exfac"),
     ],
 )
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_distributed_metrics_attrs_no_halo(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
@@ -146,9 +140,6 @@ def test_distributed_metrics_attrs_no_halo(
         (attrs.ZD_VERTOFFSET_DSL, "zd_vertoffset"),
     ],
 )
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_distributed_metrics_attrs_no_halo_regional(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
@@ -175,9 +166,6 @@ def test_distributed_metrics_attrs_no_halo_regional(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_distributed_metrics_wgtfacq_e(
     backend: gtx_typing.Backend,
     metrics_savepoint: sb.MetricSavepoint,
@@ -200,9 +188,6 @@ def test_distributed_metrics_wgtfacq_e(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_distributed_metrics_nflat_gradp(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,

@@ -60,9 +60,6 @@ if TYPE_CHECKING:
         (attrs.POS_ON_TPLANE_E_Y, "pos_on_tplane_e_y", 1e-9, 1e-8),
     ],
 )
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_distributed_interpolation_with_custom_tolerance(
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
@@ -102,9 +99,6 @@ def test_distributed_interpolation_with_custom_tolerance(
         (attrs.CELL_AW_VERTS, "c_intp"),
     ],
 )
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_distributed_interpolation_fields(
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
@@ -128,9 +122,6 @@ def test_distributed_interpolation_fields(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_distributed_interpolation_grg(
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
@@ -165,9 +156,6 @@ def test_distributed_interpolation_grg(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_distributed_interpolation_geofac_rot(
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
@@ -203,9 +191,6 @@ def test_distributed_interpolation_geofac_rot(
         (attrs.RBF_VEC_COEFF_V1, "rbf_vec_coeff_v1", 3e-3),
         (attrs.RBF_VEC_COEFF_V2, "rbf_vec_coeff_v2", 3e-3),
     ],
-)
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
 )
 def test_distributed_interpolation_rbf(
     backend: gtx_typing.Backend,

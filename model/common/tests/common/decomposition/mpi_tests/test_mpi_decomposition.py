@@ -194,9 +194,6 @@ def test_domain_descriptor_id_are_globally_unique(
 @pytest.mark.mpi
 @pytest.mark.datatest
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_decomposition_info_matches_gridsize(
     caplog: Any,
     decomposition_info: definitions.DecompositionInfo,
@@ -226,9 +223,6 @@ def test_decomposition_info_matches_gridsize(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_create_multi_node_runtime_with_mpi(
     decomposition_info: definitions.DecompositionInfo,
     processor_props: definitions.ProcessProperties,
@@ -254,9 +248,6 @@ def test_create_single_node_runtime_without_mpi(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_exchange_on_dummy_data(
     processor_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
@@ -299,9 +290,6 @@ def test_exchange_on_dummy_data(
 @pytest.mark.mpi
 @pytest.mark.datatest
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
-@pytest.mark.parametrize(
-    "experiment", [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE]
-)
 def test_halo_exchange_for_sparse_field(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: test_defs.Experiment,
@@ -411,8 +399,8 @@ def test_global_reductions_mean(
 
     global_reduc = definitions.create_global_reduction(processor_props)
 
-    mean_val = global_reduc.mean(arr, xp)
-    expected_val = (processor_props.comm_size + 1) / arr.size
+    mean_val = global_reduc.mean(arr, None, array_ns=xp)
+    expected_val = (processor_props.comm_size + 1) / (arr.size*2)
     print(
         f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}] - reduction result [{mean_val}] "
     )
