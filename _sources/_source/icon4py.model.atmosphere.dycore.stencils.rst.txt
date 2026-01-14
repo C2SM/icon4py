@@ -196,10 +196,10 @@ icon4py.model.atmosphere.dycore.stencils.compute\_contravariant\_correction\_of\
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.compute\_derived\_horizontal\_winds\_and\_ke\_and\_contravariant\_correction module
-----------------------------------------------------------------------------------------------------------------------------
+icon4py.model.atmosphere.dycore.stencils.compute\_diagnostics\_from\_normal\_wind module
+----------------------------------------------------------------------------------------
 
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wind
    :members:
    :undoc-members:
    :show-inheritance:
