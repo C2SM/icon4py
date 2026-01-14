@@ -726,7 +726,6 @@ class SolveNonhydro:
                 "start_cell_halo_level_2": self._start_cell_halo_level_2,
                 "end_cell_halo": self._end_cell_halo,
                 "end_cell_halo_level_2": self._end_cell_halo_level_2,
-                "start_cell_lateral_boundary": self._start_cell_lateral_boundary,
             },
             vertical_sizes={
                 "nflatlev": self._vertical_params.nflatlev,

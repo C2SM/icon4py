@@ -11,7 +11,9 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import interpolate_to_surface
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_quadratically_to_surface import (
+    extrapolate_quadratically_to_surface,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
@@ -20,7 +22,7 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
-def interpolate_to_surface_numpy(
+def extrapolate_quadratically_to_surface_numpy(
     interpolant: np.ndarray, wgtfacq_c: np.ndarray, interpolation_to_surface: np.ndarray
 ) -> np.ndarray:
     interpolation_to_surface = np.copy(interpolation_to_surface)
@@ -33,7 +35,7 @@ def interpolate_to_surface_numpy(
 
 
 class TestInterpolateToSurface(StencilTest):
-    PROGRAM = interpolate_to_surface
+    PROGRAM = extrapolate_quadratically_to_surface
     OUTPUTS = ("interpolation_to_surface",)
 
     @staticmethod
@@ -44,7 +46,7 @@ class TestInterpolateToSurface(StencilTest):
         interpolation_to_surface: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        interpolation_to_surface = interpolate_to_surface_numpy(
+        interpolation_to_surface = extrapolate_quadratically_to_surface_numpy(
             wgtfacq_c=wgtfacq_c,
             interpolant=interpolant,
             interpolation_to_surface=interpolation_to_surface,
