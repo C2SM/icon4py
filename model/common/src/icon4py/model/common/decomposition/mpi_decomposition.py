@@ -451,16 +451,6 @@ class GlobalReductions(Reductions):
         self._props.comm.Allreduce(local_max, recv_buffer, mpi4py.MPI.MAX)
         return recv_buffer.item()
 
-    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        local_mean = array_ns.mean(buffer)
-        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
-        if hasattr(
-            array_ns, "cuda"
-        ):  #  https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
-            array_ns.cuda.runtime.deviceSynchronize()
-        self._props.comm.Allreduce(local_mean, recv_buffer, mpi4py.MPI.MEAN)
-        return recv_buffer.item()
-
     def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         local_sum = array_ns.sum(buffer)
         recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
