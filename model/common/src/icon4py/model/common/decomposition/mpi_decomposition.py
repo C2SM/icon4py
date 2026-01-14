@@ -461,6 +461,9 @@ class GlobalReductions(Reductions):
         self._props.comm.Allreduce(local_sum, recv_buffer, mpi4py.MPI.SUM)
         return recv_buffer.item()
 
+    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return self.sum(buffer) / buffer.size
+
 
 @definitions.create_global_reduction.register(MPICommProcessProperties)
 def create_global_reduction_exchange(props: MPICommProcessProperties) -> Reductions:

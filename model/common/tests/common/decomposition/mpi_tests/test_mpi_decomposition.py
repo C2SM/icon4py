@@ -353,7 +353,7 @@ def test_global_reductions_min(
     min_val = global_reduc.min(arr, xp)
     expected_val = -(processor_props.comm_size - 1)
     print(
-        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}]  - reduction result [{min_val}] "
+        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}] - reduction result [{min_val}] "
     )
 
     assert expected_val == min_val
@@ -374,7 +374,7 @@ def test_global_reductions_max(
     max_val = global_reduc.max(arr, xp)
     expected_val = processor_props.comm_size - my_rank
     print(
-        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}]  - reduction result [{max_val}] "
+        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}] - reduction result [{max_val}] "
     )
     assert expected_val == max_val
 
@@ -394,6 +394,26 @@ def test_global_reductions_sum(
     sum_val = global_reduc.sum(arr, xp)
     expected_val = processor_props.comm_size + 1
     print(
-        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}]  - reduction result [{sum_val}] "
+        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}] - reduction result [{sum_val}] "
     )
     assert expected_val == sum_val
+
+
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_global_reductions_mean(
+    processor_props: definitions.ProcessProperties, backend_like: model_backends.BackendLike
+) -> None:
+    my_rank = processor_props.rank
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
+
+    arr = np.arange(3) - my_rank
+
+    global_reduc = definitions.create_global_reduction(processor_props)
+
+    mean_val = global_reduc.mean(arr, xp)
+    expected_val = (processor_props.comm_size + 1) / arr.size
+    print(
+        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}] - reduction result [{mean_val}] "
+    )
+    assert expected_val == mean_val
