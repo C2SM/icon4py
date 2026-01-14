@@ -457,12 +457,8 @@ class GlobalReductions(Reductions):
     def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         return self._reduce(buffer, array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
-    def mean(
-        self, buffer: data_alloc.NDArray, buffer_mean: float, array_ns: ModuleType = np
-    ) -> state_utils.ScalarType:
-        if buffer_mean is not None:
-            return buffer_mean
-        return self.sum(buffer) / self.sum([buffer.size()])
+    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return self.sum(buffer) / self.sum(array_ns.asarray(buffer.size))
 
 
 @definitions.create_global_reduction.register(MPICommProcessProperties)

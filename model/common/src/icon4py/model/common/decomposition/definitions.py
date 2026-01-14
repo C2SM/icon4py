@@ -339,7 +339,7 @@ class Reductions(Protocol):
     ) -> state_utils.ScalarType: ...
 
     def mean(
-        self, buffer: data_alloc.NDArray, buffer_mean: float, array_ns: ModuleType = np
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
     ) -> state_utils.ScalarType: ...
 
 
@@ -353,11 +353,7 @@ class SingleNodeReductions(Reductions):
     def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         return array_ns.sum(buffer).item()
 
-    def mean(
-        self, buffer: data_alloc.NDArray, buffer_mean: float, array_ns: ModuleType = np
-    ) -> state_utils.ScalarType:
-        if buffer_mean is not None:
-            return buffer_mean
+    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         return array_ns.sum(buffer).item() / buffer.size
 
 

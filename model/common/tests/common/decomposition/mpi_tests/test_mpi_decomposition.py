@@ -399,8 +399,8 @@ def test_global_reductions_mean(
 
     global_reduc = definitions.create_global_reduction(processor_props)
 
-    mean_val = global_reduc.mean(arr, None, array_ns=xp)
-    expected_val = (processor_props.comm_size + 1) / (arr.size*2)
+    mean_val = global_reduc.mean(arr, array_ns=xp)
+    expected_val = (processor_props.comm_size + 1) / (arr.size * 2)
     print(
         f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}] - reduction result [{mean_val}] "
     )

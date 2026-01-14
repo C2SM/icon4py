@@ -103,14 +103,21 @@ class GlobalGridParams:
         ] = decomposition.single_node_reductions.mean,
         **kwargs,
     ) -> _T:
-        mean_edge_length = mean_reduction(edge_lengths, mean_edge_length, array_ns=array_ns)
-        mean_dual_edge_length = mean_reduction(
-            dual_edge_lengths, mean_dual_edge_length, array_ns=array_ns
+        def init_mean(
+            value: float | None, data: data_alloc.NDArray | None, array_ns: ModuleType
+        ) -> float | None:
+            if value is not None:
+                return value
+            if data is not None:
+                return mean_reduction(data, array_ns=array_ns)
+            return None
+
+        mean_edge_length = init_mean(mean_edge_length, edge_lengths, array_ns=array_ns)
+        mean_dual_edge_length = init_mean(
+            mean_dual_edge_length, dual_edge_lengths, array_ns=array_ns
         )
-        mean_cell_area = mean_reduction(cell_areas, mean_cell_area, array_ns=array_ns)
-        mean_dual_cell_area = mean_reduction(
-            dual_cell_areas, mean_dual_cell_area, array_ns=array_ns
-        )
+        mean_cell_area = init_mean(mean_cell_area, cell_areas, array_ns=array_ns)
+        mean_dual_cell_area = init_mean(mean_dual_cell_area, dual_cell_areas, array_ns=array_ns)
 
         return cls(
             mean_edge_length=mean_edge_length,
