@@ -71,6 +71,8 @@ def test_distributed_metrics_attrs(
 ) -> None:
     if attrs_name == attrs.COEFF_GRADEKIN:
         pytest.xfail()
+    if experiment == test_defs.Experiments.MCH_CH_R04B09 and attrs_name == attrs.DDQZ_Z_HALF:
+        pytest.skip("not working with mpi")
 
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)

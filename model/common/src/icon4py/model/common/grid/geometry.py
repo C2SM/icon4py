@@ -186,7 +186,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.END),
                 )
             },
             do_exchange=False,
