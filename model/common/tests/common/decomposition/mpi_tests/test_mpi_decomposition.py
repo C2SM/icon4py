@@ -326,82 +326,89 @@ def test_halo_exchange_for_sparse_field(
     assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())
 
 
+inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], []]
+
+
+@pytest.mark.parametrize("global_list", inputs_ls)
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_global_reductions_min(
-    processor_props: definitions.ProcessProperties, backend_like: model_backends.BackendLike
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[float],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-
-    arr = np.arange(3) - my_rank
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
 
     global_reduc = definitions.create_global_reduction(processor_props)
 
-    min_val = global_reduc.min(arr, xp)
-    expected_val = -(processor_props.comm_size - 1)
-    print(
-        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}] - reduction result [{min_val}] "
-    )
+    min_val = global_reduc.min(local_data, array_ns=xp)
+    expected_val = np.min(global_list) if len(local_data) > 0 else None
 
     assert expected_val == min_val
 
 
+@pytest.mark.parametrize("global_list", inputs_ls)
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_global_reductions_max(
-    processor_props: definitions.ProcessProperties, backend_like: model_backends.BackendLike
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[float],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-
-    arr = np.arange(3) - my_rank
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
 
     global_reduc = definitions.create_global_reduction(processor_props)
 
-    max_val = global_reduc.max(arr, xp)
-    expected_val = processor_props.comm_size - my_rank
-    print(
-        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}] - reduction result [{max_val}] "
-    )
+    max_val = global_reduc.max(local_data, array_ns=xp)
+    expected_val = np.max(global_list) if len(local_data) > 0 else None
+
     assert expected_val == max_val
 
 
+@pytest.mark.parametrize("global_list", inputs_ls)
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_global_reductions_sum(
-    processor_props: definitions.ProcessProperties, backend_like: model_backends.BackendLike
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[float],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-
-    arr = np.arange(3) - my_rank
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
 
     global_reduc = definitions.create_global_reduction(processor_props)
 
-    sum_val = global_reduc.sum(arr, xp)
-    expected_val = processor_props.comm_size + 1
-    print(
-        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}] - reduction result [{sum_val}] "
-    )
+    sum_val = global_reduc.sum(local_data, array_ns=xp)
+    expected_val = np.sum(global_list) if len(global_list) > 0 else None
     assert expected_val == sum_val
 
 
+@pytest.mark.parametrize("global_list", inputs_ls)
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_global_reductions_mean(
-    processor_props: definitions.ProcessProperties, backend_like: model_backends.BackendLike
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[float],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
-
-    arr = np.arange(3) - my_rank
-
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
     global_reduc = definitions.create_global_reduction(processor_props)
 
-    mean_val = global_reduc.mean(arr, array_ns=xp)
-    expected_val = (processor_props.comm_size + 1) / (arr.size * 2)
-    print(
-        f"rank={my_rank}/{processor_props.comm_size}: input data [{arr}] - reduction result [{mean_val}] "
-    )
+    mean_val = global_reduc.__getattribute__("mean")(local_data, array_ns=xp)
+    expected_val = np.mean(global_list) if len(global_list) > 0 else None
     assert expected_val == mean_val

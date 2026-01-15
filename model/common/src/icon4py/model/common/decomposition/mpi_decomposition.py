@@ -448,17 +448,46 @@ class GlobalReductions(Reductions):
         self.props.comm.Allreduce(local_red_val, recv_buffer, global_reduction)
         return recv_buffer.item()
 
+    def _calc_buffer_size(
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        return self._reduce(array_ns.asarray(buffer.size), array_ns.sum, mpi4py.MPI.SUM, array_ns)
+
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        buffer_size = self._calc_buffer_size(buffer, array_ns)
+        if buffer_size == 1:
+            try:
+                return buffer.item()
+            except ValueError:
+                return None
+        elif buffer_size == 0:
+            return None
         return self._reduce(buffer, array_ns.min, mpi4py.MPI.MIN, array_ns)
 
     def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        buffer_size = self._calc_buffer_size(buffer, array_ns)
+        if buffer_size == 1:
+            try:
+                return buffer.item()
+            except ValueError:
+                return None
+        elif buffer_size == 0:
+            return None
         return self._reduce(buffer, array_ns.max, mpi4py.MPI.MAX, array_ns)
 
     def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        buffer_size = self._calc_buffer_size(buffer, array_ns)
+        if buffer_size == 0:
+            return None
         return self._reduce(buffer, array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
     def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        return self.sum(buffer) / self.sum(array_ns.asarray(buffer.size))
+        buffer_size = self._calc_buffer_size(buffer, array_ns)
+        if buffer_size == 0:
+            return None
+        return self._reduce(buffer, array_ns.sum, mpi4py.MPI.SUM, array_ns) / buffer_size
 
 
 @definitions.create_global_reduction.register(MPICommProcessProperties)
