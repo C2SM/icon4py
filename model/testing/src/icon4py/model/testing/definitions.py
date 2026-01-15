@@ -153,8 +153,8 @@ class Experiments:
         num_levels=60,
         partitioned_data={
             1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download",
-            2: "https://polybox.ethz.ch/index.php/s/GQNcLtp4CN7ERbi/download",
-            4: "https://polybox.ethz.ch/index.php/s/XCcE34Ry5EQckoK/download",
+            2: "https://polybox.ethz.ch/index.php/s/nTBgWgzfSBMn2zM/download",
+            4: "https://polybox.ethz.ch/index.php/s/9iq8pW4AHY5mnfc/download",
         },
     )
     MCH_CH_R04B09: Final = Experiment(
@@ -164,8 +164,8 @@ class Experiments:
         num_levels=65,
         partitioned_data={
             1: "https://polybox.ethz.ch/index.php/s/f42nsmvgOoWZPzi/download",
-            2: "https://polybox.ethz.ch/index.php/s/P6F6ZbzWHI881dZ/download",
-            4: "https://polybox.ethz.ch/index.php/s/NfES3j9no15A0aX/download",
+            2: "https://polybox.ethz.ch/index.php/s/ZSwAoox8WnPSmYc/download",
+            4: "https://polybox.ethz.ch/index.php/s/y7AnTai3g5eSnsC/download",
         },
     )
     JW: Final = Experiment(
@@ -173,21 +173,33 @@ class Experiments:
         description="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
         num_levels=35,
-        partitioned_data={1: "https://polybox.ethz.ch/index.php/s/5W3Z2K6pyo0egzo/download"},
+        partitioned_data={
+            1: "https://polybox.ethz.ch/index.php/s/5W3Z2K6pyo0egzo/download",
+            2: "https://polybox.ethz.ch/index.php/s/caPLb5TfNCZsRN6/download",
+            4: "https://polybox.ethz.ch/index.php/s/pbxteJRfpzDBWYf/download",
+        },
     )
     GAUSS3D: Final = Experiment(
         name="gauss3d_torus",
         description="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
         num_levels=35,
-        partitioned_data={1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/download"},
+        partitioned_data={
+            1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/download",
+            2: "https://polybox.ethz.ch/index.php/s/LoHe823TX5KNNGn/download",
+            4: "https://polybox.ethz.ch/index.php/s/zmW4wZ3btbGLFC7/download",
+        },
     )
     WEISMAN_KLEMP_TORUS: Final = Experiment(
         name="weisman_klemp_torus",
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
         num_levels=64,
-        partitioned_data={1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download"},
+        partitioned_data={
+            1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download",
+            2: "https://polybox.ethz.ch/index.php/s/dAq2BWe5scmj28D/download",
+            4: "https://polybox.ethz.ch/index.php/s/cw3g9KbTQZ4Ko74/download",
+        },
     )
 
 
