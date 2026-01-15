@@ -13,7 +13,7 @@ import functools
 import logging
 from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Literal, Protocol, overload, runtime_checkable
+from typing import Any, Literal, Protocol, TypeAlias, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
@@ -25,6 +25,51 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
+
+# TODO(reviewer): I am pretty sure that the protocols I added should go
+#   somewhere else, but I have no plan where.
+
+
+class DefaultStream:
+    """Used in `exchange_and_wait()`, `exchange()` to indicate that synchronization
+    with the default stream is requested, see there for more information. If there
+    is no GPU, or the data is stored on the host, then the behaviour falls back to
+    `NoStreaming`, see there for more.
+    """
+
+
+class NoStreaming:
+    """Used in `exchange_and_wait()`, `exchange()` to indicate that no streaming
+    support is requested, see there for more information.
+    """
+
+
+class CupyLikeStream(Protocol):
+    """The type follows the CuPy convention of a stream.
+
+    This means they have an attribute `ptr` that returns the address of the
+    underlying GPU stream.
+    See: https://docs.cupy.dev/en/stable/reference/generated/cupy.cuda.Stream.html#cupy-cuda-stream
+    """
+
+    @property
+    def ptr(self) -> int: ...
+
+
+class CudaStreamProtocolLike(Protocol):
+    """The type follows the CUDA stream protocol.
+
+    This means it provides a method called `__cuda_stream__()` returning a pair of
+    integers. The first is the protocol version and the second value is the
+    address of the stream.
+    See: https://nvidia.github.io/cuda-python/cuda-core/latest/interoperability.html#cuda-stream-protocol
+    """
+
+    def __cuda_stream__(self) -> tuple[int, int]: ...
+
+
+#: Types that are supported as streams.
+StreamLike: TypeAlias = type[DefaultStream] | CupyLikeStream | CudaStreamProtocolLike
 
 
 class ProcessProperties(Protocol):
@@ -149,24 +194,111 @@ class DecompositionInfo:
 
 
 class ExchangeResult(Protocol):
-    def wait(self) -> None: ...
+    def wait(
+        self,
+        stream: StreamLike | type[NoStreaming],
+    ) -> None:
+        """Wait on the halo exchange.
 
-    def is_ready(self) -> bool: ...
+        The function will wait until the communication has ended and then start the
+        unpacking of the data. Depending on `stream` the behaviour when the function
+        returns are different. If it is a CUDA stream, see `StreamLike`, then the
+        function will return as soon as the unpacking has been scheduled. Furthermore,
+        the unpacking will synchronize with `stream`, i.e. all work that is submitted
+        to `stream`, after this function returns will not start before the unpacking
+        has finished. If `stream` is the special constant `NoStreaming`, then the
+        function will only return once the unpacking has finished.
+
+        Note:
+            - To select the default stream the special constant `DefaultStream` can be used.
+            - If there is no GPU, then using `DefaultStream` is the same as `NoStreaming`.
+            - If `stream` is used then "scheduling exchange" in GHEX are used.
+            - For data located on the host the behaviour is always the same as if
+                specifying `NoStreaming`.
+        """
+        ...
+
+    def is_ready(self) -> bool:
+        """Check if communication has been finished."""
+        ...
 
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
     @overload
-    def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> ExchangeResult: ...
+    def exchange(
+        self,
+        dim: gtx.Dimension,
+        *buffers: data_alloc.NDArray,
+        stream: StreamLike | type[NoStreaming],
+    ) -> ExchangeResult: ...
 
     @overload
-    def exchange(self, dim: gtx.Dimension, *buffers: data_alloc.NDArray) -> ExchangeResult: ...
+    def exchange(
+        self,
+        dim: gtx.Dimension,
+        *fields: gtx.Field,
+        stream: StreamLike | type[NoStreaming],
+    ) -> ExchangeResult:
+        """Perform halo exchanges.
+
+        The function packs the data and transmit it to the neighboring nodes, on the
+        returned handle a user must call `wait()`, to complete the process, see
+        `ExchangeResult.wait()` for more.
+        The function will only return once the data has been send.
+
+        The exact behaviour depends on the `stream` argument. If `stream` is the
+        constant `NoStreaming` then the function will start to pack the data
+        immediately, this means the caller must make sure that the computation has
+        been completed.
+        If it is a CUDA stream, see `StreamLike` or the constant `DefaultStream`,
+        then the packing will wait until all work, that has been submitted to `stream`
+        before this function was called, has been completed.
+
+        Note:
+            - If there is no GPU then specifying `DefaultStream` is the same as
+                `NoStreaming`.
+            - For data located on the host the behaviour is always the same as if
+                specifying `NoStreaming`.
+        """
+        ...
 
     @overload
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None: ...
+    def exchange_and_wait(
+        self,
+        dim: gtx.Dimension,
+        *buffers: data_alloc.NDArray,
+        stream: StreamLike | type[NoStreaming],
+    ) -> None: ...
 
     @overload
-    def exchange_and_wait(self, dim: gtx.Dimension, *buffers: data_alloc.NDArray) -> None: ...
+    def exchange_and_wait(
+        self,
+        dim: gtx.Dimension,
+        *fields: gtx.Field,
+        stream: StreamLike | type[NoStreaming],
+    ) -> None:
+        """Exchange and wait in one go."""
+        ...
+
+    def __call__(
+        self,
+        *args: Any,
+        dim: gtx.Dimension,
+        wait: bool = True,
+        stream: StreamLike | type[NoStreaming],
+    ) -> None | ExchangeResult:
+        """Perform a halo exchange operation.
+
+        Args:
+            args: The fields to be exchanged.
+
+        Keyword Args:
+            dim: The dimension along which the exchange is performed.
+            wait: If True, the operation will block until the exchange is completed (default: True).
+            stream: How stream synchronization works, see `self.exchange()` for more.
+        """
+        ...
 
     def get_size(self) -> int: ...
 
@@ -179,12 +311,18 @@ class ExchangeRuntime(Protocol):
 @dataclasses.dataclass
 class SingleNodeExchange:
     def exchange(
-        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+        self,
+        dim: gtx.Dimension,
+        *fields: gtx.Field | data_alloc.NDArray,
+        stream: StreamLike | type[NoStreaming],
     ) -> ExchangeResult:
         return SingleNodeResult()
 
     def exchange_and_wait(
-        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+        self,
+        dim: gtx.Dimension,
+        *fields: gtx.Field | data_alloc.NDArray,
+        stream: StreamLike | type[NoStreaming],
     ) -> None:
         return None
 
@@ -194,25 +332,22 @@ class SingleNodeExchange:
     def get_size(self) -> int:
         return 1
 
-    def __call__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> ExchangeResult | None:  # type: ignore[return] # return statment in else condition
-        """Perform a halo exchange operation.
-
-        Args:
-            args: The fields to be exchanged.
-
-        Keyword Args:
-            dim: The dimension along which the exchange is performed.
-            wait: If True, the operation will block until the exchange is completed (default: True).
-        """
-
-        res = self.exchange(dim, *args)
+    def __call__(  # type: ignore[return] # return statment in else condition
+        self,
+        *args: Any,
+        dim: gtx.Dimension,
+        wait: bool = True,
+        stream: StreamLike | type[NoStreaming],
+    ) -> ExchangeResult | None:
+        res = self.exchange(dim, *args, stream=stream)
         if wait:
-            res.wait()
+            res.wait(stream=stream)
         else:
             return res
 
     # Implementation of DaCe SDFGConvertible interface
     # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
+    # TODO(phimuell): Add the `stream` keyword as well.
     def dace__sdfg__(
         self, *args: Any, dim: gtx.Dimension, wait: bool = True
     ) -> dace.sdfg.sdfg.SDFG:
@@ -234,8 +369,12 @@ class SingleNodeExchange:
 class HaloExchangeWaitRuntime(Protocol):
     """Protocol for halo exchange wait."""
 
-    def __call__(self, communication_handle: ExchangeResult) -> None:
-        """Wait on the communication handle."""
+    def __call__(
+        self,
+        communication_handle: ExchangeResult,
+        stream: StreamLike | type[NoStreaming],
+    ) -> None:
+        """Calls `wait()` on the provided communication handle, `stream` is forwarded."""
         ...
 
     def __sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
@@ -255,10 +394,15 @@ class HaloExchangeWaitRuntime(Protocol):
 class HaloExchangeWait:
     exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
 
-    def __call__(self, communication_handle: SingleNodeResult) -> None:
-        communication_handle.wait()
+    def __call__(
+        self,
+        communication_handle: SingleNodeResult,
+        stream: StreamLike | type[NoStreaming],
+    ) -> None:
+        communication_handle.wait(stream=stream)
 
     # Implementation of DaCe SDFGConvertible interface
+    # TODO(phimuell): Add `stream` argument.
     def dace__sdfg__(
         self, *args: Any, dim: gtx.Dimension, wait: bool = True
     ) -> dace.sdfg.sdfg.SDFG:
@@ -288,7 +432,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 
 class SingleNodeResult:
-    def wait(self) -> None:
+    def wait(self, stream: StreamLike | type[NoStreaming]) -> None:
         pass
 
     def is_ready(self) -> bool:
