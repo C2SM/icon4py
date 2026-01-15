@@ -132,7 +132,6 @@ class GridManager:
         self._grid = self._construct_grid(
             allocator=allocator,
             with_skip_values=keep_skip_values,
-            geometry_type=geometry_type,
         )
         self._coordinates = self._read_coordinates(allocator, geometry_type)
         self.close()
