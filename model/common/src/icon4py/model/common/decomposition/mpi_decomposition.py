@@ -479,7 +479,7 @@ class GlobalReductions(Reductions):
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
-            buffer if buffer.size != 0 else array_ns.asarray([0]),
+            buffer if buffer.size != 0 else array_ns.asarray(0),
             array_ns.sum,
             mpi4py.MPI.SUM,
             array_ns,
