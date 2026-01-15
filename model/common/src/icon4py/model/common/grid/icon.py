@@ -112,8 +112,12 @@ class GlobalGridParams:
                 compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells),
             )
 
-        if self.characteristic_length is None and self.mean_cell_area is not None:
-            object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
+        if self.characteristic_length is None:
+            object.__setattr__(
+                self,
+                "characteristic_length",
+                math.sqrt(compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells)),
+            )
 
     @property
     def geometry_type(self) -> base.GeometryType | None:
