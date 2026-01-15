@@ -459,7 +459,7 @@ class GlobalReductions(Reductions):
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
-            buffer if buffer.size != 0 else array_ns.asarray(array_ns.inf),
+            buffer if buffer.size != 0 else array_ns.asarray([array_ns.inf]),
             array_ns.min,
             mpi4py.MPI.MIN,
             array_ns,
@@ -469,7 +469,7 @@ class GlobalReductions(Reductions):
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
-            buffer if buffer.size != 0 else array_ns.asarray(-np.inf),
+            buffer if buffer.size != 0 else array_ns.asarray([-np.inf]),
             array_ns.max,
             mpi4py.MPI.MAX,
             array_ns,
@@ -479,7 +479,7 @@ class GlobalReductions(Reductions):
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
-            buffer if buffer.size != 0 else array_ns.asarray(0),
+            buffer if buffer.size != 0 else array_ns.asarray([0]),
             array_ns.sum,
             mpi4py.MPI.SUM,
             array_ns,
@@ -490,12 +490,15 @@ class GlobalReductions(Reductions):
         if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
 
-        return self._reduce(
-            buffer if buffer.size != 0 else array_ns.asarray([0]),
-            array_ns.sum,
-            mpi4py.MPI.SUM,
-            array_ns,
-        ) / global_buffer_size
+        return (
+            self._reduce(
+                buffer if buffer.size != 0 else array_ns.asarray([0]),
+                array_ns.sum,
+                mpi4py.MPI.SUM,
+                array_ns,
+            )
+            / global_buffer_size
+        )
 
 
 @definitions.create_global_reduction.register(MPICommProcessProperties)
