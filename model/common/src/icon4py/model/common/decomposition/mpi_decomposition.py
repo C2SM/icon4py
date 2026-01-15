@@ -486,7 +486,8 @@ class GlobalReductions(Reductions):
         )
 
     def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
-        if self._calc_buffer_size(buffer, array_ns) == 0:
+        global_buffer_size = self._calc_buffer_size(buffer, array_ns)
+        if global_buffer_size == 0:
             raise ValueError("global_mean requires a non-empty buffer")
 
         return self._reduce(
@@ -494,7 +495,7 @@ class GlobalReductions(Reductions):
             array_ns.sum,
             mpi4py.MPI.SUM,
             array_ns,
-        ) / self._calc_buffer_size(buffer, array_ns)
+        ) / global_buffer_size
 
 
 @definitions.create_global_reduction.register(MPICommProcessProperties)
