@@ -552,7 +552,6 @@ def initialize_driver(
     )
 
     configuration_file_path = pathlib.Path(configuration_file_path)
-    global_reductions = decomposition_defs.create_global_reduction(parallel_props)
     grid_file_path = pathlib.Path(grid_file_path)
     if pathlib.Path(output_path).exists():
         current_time = datetime.datetime.now()
@@ -579,7 +578,6 @@ def initialize_driver(
         grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
         allocator=allocator,
-        global_reductions=global_reductions,
     )
 
     log.info("creating the decomposition info")

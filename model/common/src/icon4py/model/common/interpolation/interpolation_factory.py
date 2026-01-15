@@ -59,7 +59,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._exchange = exchange
         geometry_type = self._grid.global_properties.geometry_type
         characteristic_length = self._grid.global_properties.characteristic_length
-        mean_dual_edge_length = self._grid.global_properties.mean_dual_edge_length
+        self._mean_dual_edge_length = geometry_attrs.MEAN_EDGE_LENGTH
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
             "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON
@@ -71,13 +71,22 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
             "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
             "rbf_scale_cell": rbf.compute_default_rbf_scale(
-                geometry_type, characteristic_length, mean_dual_edge_length, rbf.RBFDimension.CELL
+                geometry_type,
+                characteristic_length,
+                self._mean_dual_edge_length,
+                rbf.RBFDimension.CELL,
             ),
             "rbf_scale_edge": rbf.compute_default_rbf_scale(
-                geometry_type, characteristic_length, mean_dual_edge_length, rbf.RBFDimension.EDGE
+                geometry_type,
+                characteristic_length,
+                self._mean_dual_edge_length,
+                rbf.RBFDimension.EDGE,
             ),
             "rbf_scale_vertex": rbf.compute_default_rbf_scale(
-                geometry_type, characteristic_length, mean_dual_edge_length, rbf.RBFDimension.VERTEX
+                geometry_type,
+                characteristic_length,
+                self._mean_dual_edge_length,
+                rbf.RBFDimension.VERTEX,
             ),
         }
         log.info(

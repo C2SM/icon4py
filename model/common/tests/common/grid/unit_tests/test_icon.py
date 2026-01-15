@@ -302,10 +302,6 @@ def test_global_grid_params(
         domain_height=100.5,
         global_num_cells=global_num_cells,
         num_cells=num_cells,
-        mean_edge_length=13.0,
-        mean_dual_edge_length=None,
-        mean_cell_area=mean_cell_area,
-        mean_dual_cell_area=None,
     )
     assert geometry_type == params.geometry_type
     if geometry_type == base.GeometryType.TORUS:
