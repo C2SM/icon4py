@@ -44,9 +44,9 @@ def get_dace_options(
                 )
             )
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
-    # We keep it `True` for 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn' as performance drops,
+    # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
-    if program_name == "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn":
+    if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
