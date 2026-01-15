@@ -132,6 +132,7 @@ class GridManager:
         self._grid = self._construct_grid(
             allocator=allocator,
             with_skip_values=keep_skip_values,
+            geometry_type=geometry_type,
         )
         self._coordinates = self._read_coordinates(allocator, geometry_type)
         self.close()
@@ -353,6 +354,7 @@ class GridManager:
         self,
         allocator: gtx_typing.FieldBufferAllocationUtil | None,
         with_skip_values: bool,
+        geometry_type: base.GeometryType,
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -396,6 +398,14 @@ class GridManager:
             refinement.compute_domain_bounds, refinement_fields=refinement_fields, array_ns=xp
         )
         start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
+        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
+        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+        global_grid_params = icon.GlobalGridParams(
+            grid_shape=icon.GridShape(
+                geometry_type=geometry_type,
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            )
+        )
 
         return icon.icon_grid(
             id_=uuid_,
@@ -404,6 +414,7 @@ class GridManager:
             neighbor_tables=neighbor_tables,
             start_index=start_index,
             end_index=end_index,
+            global_properties=global_grid_params,
             refinement_control=refinement_fields,
         )
 
