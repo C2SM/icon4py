@@ -382,6 +382,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.NoStreaming
                 ),
+                array_ns=self._xp,
             ),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
             domain=(dims.CellDim, dims.C2E2CODim),
