@@ -346,7 +346,7 @@ def test_global_reductions_min(
     global_reduc = definitions.create_global_reduction(processor_props)
 
     min_val = global_reduc.min(local_data, array_ns=xp)
-    expected_val = np.min(global_list) if len(local_data) > 0 else None
+    expected_val = np.min(global_list) if len(global_list) > 0 else None
 
     assert expected_val == min_val
 
