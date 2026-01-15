@@ -5,12 +5,24 @@
 
 set -euo pipefail
 
-log_file="${CI_PROJECT_DIR:+${CI_PROJECT_DIR}/}pytest-log-rank-${SLURM_PROCID}.txt"
+# Check a few different possibilities for the rank.
+if [[ ! -z "${PMI_RANK:-}" ]]; then
+    rank="${PMI_RANK}"
+elif [[ ! -z "${OMPI_COMM_WORLD_RANK:-}" ]]; then
+    rank="${OMPI_COMM_WORLD_RANK}"
+elif [[ ! -z "${SLURM_PROCID:-}" ]]; then
+    rank="${SLURM_PROCID}"
+else
+    echo "Could not determine MPI rank. Set PMI_RANK, OMPI_COMM_WORLD_RANK, or SLURM_PROCID."
+    exit 1
+fi
 
-if [[ "${SLURM_PROCID}" -eq 0  ]]; then
-    echo "Starting pytest on rank ${SLURM_PROCID}, logging to stdout and ${log_file}"
+log_file="${CI_PROJECT_DIR:+${CI_PROJECT_DIR}/}pytest-log-rank-${rank}.txt"
+
+if [[ "${rank}" -eq 0  ]]; then
+    echo "Starting pytest on rank ${rank}, logging to stdout and ${log_file}"
     $@ |& tee "${log_file}"
 else
-    echo "Starting pytest on rank ${SLURM_PROCID}, logging to ${log_file}"
+    echo "Starting pytest on rank ${rank}, logging to ${log_file}"
     $@ >& "${log_file}"
 fi
