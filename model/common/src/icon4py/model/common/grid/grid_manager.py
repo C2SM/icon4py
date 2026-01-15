@@ -395,7 +395,6 @@ class GridManager:
         mean_dual_cell_area = self._reader.try_attribute(
             gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
         )
-
         edge_lengths = self.geometry_fields[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
         dual_edge_lengths = self.geometry_fields[
             gridfile.GeometryName.DUAL_EDGE_LENGTH.value
