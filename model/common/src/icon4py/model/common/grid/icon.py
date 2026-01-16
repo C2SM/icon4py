@@ -99,7 +99,7 @@ class GlobalGridParams:
         mean_dual_cell_area: float | None = None,
         dual_cell_areas: data_alloc.NDArray | None = None,
         mean_reduction: Callable[
-            [data_alloc.NDArray, data_alloc.ScalarT], data_alloc.ScalarT
+            [data_alloc.NDArray, ModuleType], data_alloc.ScalarT
         ] = decomposition.single_node_reductions.mean,
         **kwargs,
     ) -> _T:
