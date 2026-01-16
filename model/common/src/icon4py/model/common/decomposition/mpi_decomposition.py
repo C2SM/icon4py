@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import functools
 import logging
 from collections.abc import Callable, Sequence
