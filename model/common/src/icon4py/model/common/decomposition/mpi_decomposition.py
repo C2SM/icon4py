@@ -453,7 +453,7 @@ class GlobalReductions(Reductions):
         buffer: data_alloc.NDArray,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
-        return self._reduce(array_ns.asarray(buffer.size), array_ns.sum, mpi4py.MPI.SUM, array_ns)
+        return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         if self._calc_buffer_size(buffer, array_ns) == 0:
