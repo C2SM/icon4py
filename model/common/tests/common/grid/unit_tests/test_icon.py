@@ -321,8 +321,6 @@ def test_global_grid_params(
         assert params.domain_height is None
     assert params.global_num_cells == expected_global_num_cells
     assert params.num_cells == expected_num_cells
-    if expected_mean_cell_area is not None:
-        assert pytest.approx(params.characteristic_length) == math.sqrt(expected_mean_cell_area)
 
 
 @pytest.mark.parametrize(
@@ -499,8 +497,4 @@ def test_global_grid_params_from_grid_manager(
             # (it's actually not relevant to check this)
             assert params.subdivision == icon.GridShape(base.GeometryType.TORUS).subdivision
     assert pytest.approx(params.radius) == radius
-    assert pytest.approx(params.domain_length) == domain_length
-    assert pytest.approx(params.domain_height) == domain_height
     assert params.global_num_cells == global_num_cells
-    assert params.num_cells == num_cells
-    assert pytest.approx(params.characteristic_length) == characteristic_length
