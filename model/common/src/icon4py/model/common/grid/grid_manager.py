@@ -360,7 +360,7 @@ class GridManager:
         with_skip_values: bool,
         geometry_type: base.GeometryType,
         mean_reduction: Callable[
-            [data_alloc.NDArray, data_alloc.ScalarT], data_alloc.ScalarT
+            [data_alloc.NDArray, ModuleType], data_alloc.ScalarT
         ] = decomposition.single_node_reductions.mean,
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
