@@ -77,12 +77,11 @@ build_distributed_cpu:
     - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
   script:
-    - scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT -k $GRID
+    - scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
       - COMPONENT: [common]
         BACKEND: [dace_cpu]
-        GRID: [exclaim_ape_R02B04, mch_ch_r04b09_dsl]
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
