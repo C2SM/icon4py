@@ -400,7 +400,7 @@ def create_single_node_exchange(
 
 
 @functools.singledispatch
-def create_global_reduction(props: ProcessProperties) -> Reductions:
+def create_reduction(props: ProcessProperties) -> Reductions:
     """
     Create a Global Reduction depending on the runtime size.
 
@@ -409,8 +409,8 @@ def create_global_reduction(props: ProcessProperties) -> Reductions:
     raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
 
 
-@create_global_reduction.register(SingleNodeProcessProperties)
-def create_global_reduction_exchange(props: SingleNodeProcessProperties) -> Reductions:
+@create_reduction.register(SingleNodeProcessProperties)
+def create_single_reduction_exchange(props: SingleNodeProcessProperties) -> Reductions:
     return SingleNodeReductions()
 
 

@@ -135,7 +135,7 @@ def metrics_factory_from_savepoint(
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> Generator[metrics_factory.MetricsFieldsFactory]:
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
-    global_reductions = decomposition.create_global_reduction(processor_props)
+    global_reductions = decomposition.create_reduction(processor_props)
     geometry_source = geometry_from_savepoint
     interpolation_field_source = interpolation_factory_from_savepoint
     topography = topography_savepoint.topo_c()

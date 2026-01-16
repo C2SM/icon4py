@@ -501,6 +501,6 @@ class GlobalReductions(Reductions):
         )
 
 
-@definitions.create_global_reduction.register(MPICommProcessProperties)
-def create_global_reduction_exchange(props: MPICommProcessProperties) -> Reductions:
+@definitions.create_reduction.register(MPICommProcessProperties)
+def create_global_reduction(props: MPICommProcessProperties) -> Reductions:
     return GlobalReductions(props)

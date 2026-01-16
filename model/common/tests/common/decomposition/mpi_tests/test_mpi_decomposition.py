@@ -343,7 +343,7 @@ def test_global_reductions_min(
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
 
-    global_reduc = definitions.create_global_reduction(processor_props)
+    global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
         min_val = global_reduc.min(local_data, array_ns=xp)
@@ -368,7 +368,7 @@ def test_global_reductions_max(
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
 
-    global_reduc = definitions.create_global_reduction(processor_props)
+    global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
         max_val = global_reduc.max(local_data, array_ns=xp)
@@ -393,7 +393,7 @@ def test_global_reductions_sum(
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
 
-    global_reduc = definitions.create_global_reduction(processor_props)
+    global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
         sum_val = global_reduc.sum(local_data, array_ns=xp)
@@ -417,7 +417,7 @@ def test_global_reductions_mean(
     comm_size = processor_props.comm_size
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
-    global_reduc = definitions.create_global_reduction(processor_props)
+    global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
         mean_val = global_reduc.mean(local_data, array_ns=xp)
