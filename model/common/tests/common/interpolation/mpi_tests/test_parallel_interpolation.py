@@ -122,7 +122,6 @@ def test_distributed_interpolation_fields(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.skip("not working with mpi")
 def test_distributed_interpolation_grg(
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
