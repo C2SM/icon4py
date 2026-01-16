@@ -469,7 +469,7 @@ class GlobalReductions(Reductions):
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
-            buffer if buffer.size != 0 else array_ns.asarray([-np.inf]),
+            buffer if buffer.size != 0 else array_ns.asarray([-array_ns.inf]),
             array_ns.max,
             mpi4py.MPI.MAX,
             array_ns,
