@@ -112,7 +112,12 @@ class GlobalGridParams:
                 compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells),
             )
 
-        if self.characteristic_length is None:
+        if (
+            self.characteristic_length is None
+            and self.radius is not None
+            and self.global_num_cells is not None
+            and self.geometry_type is base.GeometryType.ICOSAHEDRON
+        ):
             object.__setattr__(
                 self,
                 "characteristic_length",

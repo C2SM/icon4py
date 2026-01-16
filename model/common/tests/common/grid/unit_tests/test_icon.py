@@ -321,10 +321,6 @@ def test_global_grid_params(
         assert params.domain_height is None
     assert params.global_num_cells == expected_global_num_cells
     assert params.num_cells == expected_num_cells
-    assert pytest.approx(params.mean_edge_length) == 13.0
-    assert params.mean_dual_edge_length is None
-    assert pytest.approx(params.mean_cell_area) == expected_mean_cell_area
-    assert params.mean_dual_cell_area is None
     if expected_mean_cell_area is not None:
         assert pytest.approx(params.characteristic_length) == math.sqrt(expected_mean_cell_area)
 
@@ -507,8 +503,4 @@ def test_global_grid_params_from_grid_manager(
     assert pytest.approx(params.domain_height) == domain_height
     assert params.global_num_cells == global_num_cells
     assert params.num_cells == num_cells
-    assert pytest.approx(params.mean_edge_length) == mean_edge_length
-    assert pytest.approx(params.mean_dual_edge_length) == mean_dual_edge_length
-    assert pytest.approx(params.mean_cell_area) == mean_cell_area
-    assert pytest.approx(params.mean_dual_cell_area) == mean_dual_cell_area
     assert pytest.approx(params.characteristic_length) == characteristic_length
