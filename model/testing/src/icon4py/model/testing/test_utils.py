@@ -34,8 +34,8 @@ def dallclose(
 def dassert_allclose(
     actual,
     desired,
-    rtol=tol_big,
-    atol=vp_eps,
+    rtol=5e3 * VP_EPS,
+    atol=VP_EPS,
     equal_nan=False,
     err_msg="Verification failed for <NAME>",
 ):
