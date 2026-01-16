@@ -130,7 +130,9 @@ class GridManager:
 
         self._geometry = self._read_geometry_fields(allocator)
         self._grid = self._construct_grid(
-            allocator=allocator, with_skip_values=keep_skip_values, geometry_type=geometry_type
+            allocator=allocator,
+            with_skip_values=keep_skip_values,
+            geometry_type=geometry_type,
         )
         self._coordinates = self._read_coordinates(allocator, geometry_type)
         self.close()
@@ -370,49 +372,7 @@ class GridManager:
         num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
         num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
-        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
-        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
-        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
-        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
 
-        # TODO(msimberg): Compute these in GridGeometry once FieldProviders can produce scalars.
-        # This will also allow easier handling once grids are distributed.
-        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
-        mean_dual_edge_length = self._reader.try_attribute(
-            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
-        )
-        mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
-        mean_dual_cell_area = self._reader.try_attribute(
-            gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
-        )
-
-        edge_lengths = self.geometry_fields[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
-        dual_edge_lengths = self.geometry_fields[
-            gridfile.GeometryName.DUAL_EDGE_LENGTH.value
-        ].ndarray
-        cell_areas = self.geometry_fields[gridfile.GeometryName.CELL_AREA.value].ndarray
-        dual_cell_areas = self.geometry_fields[gridfile.GeometryName.DUAL_AREA.value].ndarray
-
-        global_params = icon.GlobalGridParams.from_fields(
-            array_ns=xp,
-            grid_shape=icon.GridShape(
-                geometry_type=geometry_type,
-                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-            ),
-            radius=sphere_radius,
-            domain_length=domain_length,
-            domain_height=domain_height,
-            num_cells=num_cells,
-            mean_edge_length=mean_edge_length,
-            mean_dual_edge_length=mean_dual_edge_length,
-            mean_cell_area=mean_cell_area,
-            mean_dual_cell_area=mean_dual_cell_area,
-            edge_lengths=edge_lengths,
-            dual_edge_lengths=dual_edge_lengths,
-            cell_areas=cell_areas,
-            dual_cell_areas=dual_cell_areas,
-        )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
@@ -438,6 +398,14 @@ class GridManager:
             refinement.compute_domain_bounds, refinement_fields=refinement_fields, array_ns=xp
         )
         start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
+        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
+        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+        global_grid_params = icon.GlobalGridParams(
+            grid_shape=icon.GridShape(
+                geometry_type=geometry_type,
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            )
+        )
 
         return icon.icon_grid(
             id_=uuid_,
@@ -446,7 +414,7 @@ class GridManager:
             neighbor_tables=neighbor_tables,
             start_index=start_index,
             end_index=end_index,
-            global_properties=global_params,
+            global_properties=global_grid_params,
             refinement_control=refinement_fields,
         )
 

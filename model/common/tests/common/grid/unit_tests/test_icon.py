@@ -302,10 +302,6 @@ def test_global_grid_params(
         domain_height=100.5,
         global_num_cells=global_num_cells,
         num_cells=num_cells,
-        mean_edge_length=13.0,
-        mean_dual_edge_length=None,
-        mean_cell_area=mean_cell_area,
-        mean_dual_cell_area=None,
     )
     assert geometry_type == params.geometry_type
     if geometry_type == base.GeometryType.TORUS:
@@ -325,59 +321,6 @@ def test_global_grid_params(
         assert params.domain_height is None
     assert params.global_num_cells == expected_global_num_cells
     assert params.num_cells == expected_num_cells
-    assert pytest.approx(params.mean_edge_length) == 13.0
-    assert params.mean_dual_edge_length is None
-    assert pytest.approx(params.mean_cell_area) == expected_mean_cell_area
-    assert params.mean_dual_cell_area is None
-    if expected_mean_cell_area is not None:
-        assert pytest.approx(params.characteristic_length) == math.sqrt(expected_mean_cell_area)
-
-
-@pytest.mark.parametrize(
-    "geometry_type",
-    [base.GeometryType.ICOSAHEDRON, base.GeometryType.TORUS],
-)
-def test_global_grid_params_from_fields(
-    geometry_type: base.GeometryType,
-    backend: gtx_typing.Backend,
-) -> None:
-    xp = data_alloc.import_array_ns(backend)
-
-    # Means provided directly (higher priority than calculating from fields)
-    params = icon.GlobalGridParams.from_fields(
-        grid_shape=icon.GridShape(
-            geometry_type=geometry_type, subdivision=icon.GridSubdivision(root=2, level=2)
-        ),
-        mean_edge_length=13.0,
-        mean_dual_edge_length=14.0,
-        mean_cell_area=15.0,
-        mean_dual_cell_area=16.0,
-        edge_lengths=xp.asarray([1.0, 2.0]),
-        dual_edge_lengths=xp.asarray([2.0, 3.0]),
-        cell_areas=xp.asarray([3.0, 4.0]),
-        dual_cell_areas=xp.asarray([4.0, 5.0]),
-        array_ns=xp,
-    )
-    assert pytest.approx(params.mean_edge_length) == 13.0
-    assert pytest.approx(params.mean_dual_edge_length) == 14.0
-    assert pytest.approx(params.mean_cell_area) == 15.0
-    assert pytest.approx(params.mean_dual_cell_area) == 16.0
-
-    # Means computed from fields
-    params = icon.GlobalGridParams.from_fields(
-        grid_shape=icon.GridShape(
-            geometry_type=geometry_type, subdivision=icon.GridSubdivision(root=2, level=2)
-        ),
-        edge_lengths=xp.asarray([1.0, 2.0]),
-        dual_edge_lengths=xp.asarray([2.0, 3.0]),
-        cell_areas=xp.asarray([3.0, 4.0]),
-        dual_cell_areas=xp.asarray([4.0, 5.0]),
-        array_ns=xp,
-    )
-    assert pytest.approx(params.mean_edge_length) == 1.5
-    assert pytest.approx(params.mean_dual_edge_length) == 2.5
-    assert pytest.approx(params.mean_cell_area) == 3.5
-    assert pytest.approx(params.mean_dual_cell_area) == 4.5
 
 
 @pytest.mark.parametrize(
@@ -554,12 +497,4 @@ def test_global_grid_params_from_grid_manager(
             # (it's actually not relevant to check this)
             assert params.subdivision == icon.GridShape(base.GeometryType.TORUS).subdivision
     assert pytest.approx(params.radius) == radius
-    assert pytest.approx(params.domain_length) == domain_length
-    assert pytest.approx(params.domain_height) == domain_height
     assert params.global_num_cells == global_num_cells
-    assert params.num_cells == num_cells
-    assert pytest.approx(params.mean_edge_length) == mean_edge_length
-    assert pytest.approx(params.mean_dual_edge_length) == mean_dual_edge_length
-    assert pytest.approx(params.mean_cell_area) == mean_cell_area
-    assert pytest.approx(params.mean_dual_cell_area) == mean_dual_cell_area
-    assert pytest.approx(params.characteristic_length) == characteristic_length

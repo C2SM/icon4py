@@ -73,6 +73,10 @@ EDGE_CENTER_X: Final[str] = "x_coordinate_of_edge_center"
 EDGE_CENTER_Y: Final[str] = "y_coordinate_of_edge_center"
 EDGE_CENTER_Z: Final[str] = "z_coordinate_of_edge_center"
 
+MEAN_EDGE_LENGTH: Final[str] = "mean_edge_length"
+MEAN_DUAL_EDGE_LENGTH: Final[str] = "mean_dual_edge_length"
+MEAN_CELL_AREA: Final[str] = "mean_cell_area"
+MEAN_DUAL_AREA: Final[str] = "mean_dual_area"
 
 attrs: dict[str, model.FieldMetaData] = {
     CELL_LAT: dict(
@@ -426,6 +430,34 @@ attrs: dict[str, model.FieldMetaData] = {
         units="1",
         dims=(dims.EdgeDim,),
         icon_var_name="t_grid_edges%cartesian_center%x(3)",
+        dtype=ta.wpfloat,
+    ),
+    MEAN_EDGE_LENGTH: dict(
+        standard_name=MEAN_EDGE_LENGTH,
+        long_name="mean_edge_length",
+        units="",
+        icon_var_name="",
+        dtype=ta.wpfloat,
+    ),
+    MEAN_DUAL_EDGE_LENGTH: dict(
+        standard_name=MEAN_DUAL_EDGE_LENGTH,
+        long_name="mean_dual_edge_length",
+        units="",
+        icon_var_name="",
+        dtype=ta.wpfloat,
+    ),
+    MEAN_CELL_AREA: dict(
+        standard_name=MEAN_CELL_AREA,
+        long_name="mean_cell_area",
+        units="",
+        icon_var_name="",
+        dtype=ta.wpfloat,
+    ),
+    MEAN_DUAL_AREA: dict(
+        standard_name=MEAN_DUAL_AREA,
+        long_name="mean_dual_area",
+        units="",
+        icon_var_name="",
         dtype=ta.wpfloat,
     ),
 }
