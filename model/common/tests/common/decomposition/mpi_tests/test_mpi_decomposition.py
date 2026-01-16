@@ -350,9 +350,8 @@ def test_global_reductions_min(
         expected_val = np.min(global_list)
         assert expected_val == min_val
     else:
-        with pytest.raises(ValueError, match="global_min requires a non-empty buffer") as excinfo:
+        with pytest.raises(ValueError, match="global_min requires a non-empty buffer"):
             global_reduc.min(local_data, array_ns=xp)
-        assert excinfo.type is ValueError
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -376,9 +375,8 @@ def test_global_reductions_max(
         expected_val = np.max(global_list)
         assert expected_val == max_val
     else:
-        with pytest.raises(ValueError, match="global_max requires a non-empty buffer") as excinfo:
+        with pytest.raises(ValueError, match="global_max requires a non-empty buffer"):
             global_reduc.max(local_data, array_ns=xp)
-        assert excinfo.type is ValueError
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -402,9 +400,8 @@ def test_global_reductions_sum(
         expected_val = np.sum(global_list)
         assert expected_val == sum_val
     else:
-        with pytest.raises(ValueError, match="global_sum requires a non-empty buffer") as excinfo:
+        with pytest.raises(ValueError, match="global_sum requires a non-empty buffer"):
             global_reduc.sum(local_data, array_ns=xp)
-        assert excinfo.type is ValueError
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -427,6 +424,5 @@ def test_global_reductions_mean(
         expected_val = np.mean(global_list)
         assert expected_val == mean_val
     else:
-        with pytest.raises(ValueError, match="global_mean requires a non-empty buffer") as excinfo:
+        with pytest.raises(ValueError, match="global_mean requires a non-empty buffer"):
             global_reduc.mean(local_data, array_ns=xp)
-        assert excinfo.type is ValueError

@@ -436,7 +436,7 @@ class GlobalReductions(Reductions):
         self,
         buffer: data_alloc.NDArray,
         local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
-        global_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
+        global_reduction: mpi4py.MPI.Op,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
         local_red_val = local_reduction(buffer)
