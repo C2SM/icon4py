@@ -36,12 +36,12 @@ from icon4py.model.common.utils import device_utils
 def allocate_data(
     allocator: gtx_typing.FieldBufferAllocationUtil | None,
     input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
+) -> dict[str, Any]:
     def _allocate_field(f: gtx.Field) -> gtx.Field:
         return constructors.as_field(domain=f.domain, data=f.ndarray, allocator=allocator)
 
     input_data = {
-        k: gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
+        k: gtx_named_collections.tree_map_named_collection(_allocate_field)(v)  # type: ignore[misc] # difficult to type `tree_map_named_collection`
         if not gtx.is_scalar_type(v) and k != "domain"
         else v
         for k, v in input_data.items()
@@ -208,7 +208,7 @@ class StencilTest:
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         backend_like: model_backends.BackendLike,
-    ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
+    ) -> dict[str, Any]:
         # TODO(havogt): this is a workaround,
         # because in the `input_data` fixture provided by the user
         # it does not allocate for the correct device.
