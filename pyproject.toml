@@ -231,6 +231,7 @@ pythonpath = [
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
   "model/driver",
+  "model/standalone_driver",
   "model/testing",
   "tools"
 ]
