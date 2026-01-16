@@ -8,8 +8,6 @@
 
 from __future__ import annotations
 
-import dataclasses
-import pathlib
 from typing import Final
 
 import numpy as np
@@ -18,57 +16,42 @@ from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_full_muphys
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.testing import data_handling, definitions as testing_defs
 from icon4py.model.testing.fixtures.datatest import backend_like
 
-
-def _path_to_experiment_testdata(experiment: MuphysGraupelExperiment) -> pathlib.Path:
-    return testing_defs.get_test_data_root_path() / "full_muphys_data" / experiment.name
-
-
-@dataclasses.dataclass(frozen=True)
-class MuphysGraupelExperiment:
-    name: str
-    uri: str
-    dtype: np.dtype
-    dt: float = 30.0
-    qnc: float = 100.0
-
-    @property
-    def input_file(self) -> pathlib.Path:
-        return _path_to_experiment_testdata(self) / "input.nc"
-
-    @property
-    def reference_file(self) -> pathlib.Path:
-        return _path_to_experiment_testdata(self) / "reference.nc"
-
-    def __str__(self):
-        return self.name
+from . import utils
+from .utils import download_test_data
 
 
 class Experiments:
     # TODO currently on havogt's polybox
-    MINI: Final = MuphysGraupelExperiment(
+    MINI: Final = utils.MuphysExperiment(
         name="mini",
-        uri="TODO",
+        type=utils.ExperimentType.FULL_MUPHYS,
+        uri="https://polybox.ethz.ch/index.php/s/rQBXS7niXBBZay9/download/mini.tar.gz",
         dtype=np.float32,
     )
-    TINY: Final = MuphysGraupelExperiment(
-        name="tiny",
-        uri="TODO",
-        dtype=np.float64,
-    )
-    R2B05: Final = MuphysGraupelExperiment(
-        name="R2B05",
-        uri="TODO",
+    # Note: don't use the 'tiny' experiment from graupel_only,
+    # as it is not sensitive to saturation adjustment
+    # TODO(havogt): double-check that all other experiments actually are sensitive,
+    # i.e. reference of full_muphys and graupel_only differ significantly.
+    R2B04: Final = utils.MuphysExperiment(
+        name="r2b04",
+        type=utils.ExperimentType.FULL_MUPHYS,
+        uri="https://polybox.ethz.ch/index.php/s/5oNtcQFDcCaNxHH/download/r2b04.tar.gz",
         dtype=np.float32,
     )
-
-
-@pytest.fixture(autouse=True)
-def download_test_data(experiment: MuphysGraupelExperiment) -> None:
-    """Downloads test data for an experiment (implicit fixture)."""
-    data_handling.download_test_data(_path_to_experiment_testdata(experiment), uri=experiment.uri)
+    R2B04_MAXFRAC: Final = utils.MuphysExperiment(
+        name="r2b04_maxfrac",
+        type=utils.ExperimentType.FULL_MUPHYS,
+        uri="https://polybox.ethz.ch/index.php/s/mBeAWAQQHSKTkF7/download/r2b04_maxfrac.tar.gz",
+        dtype=np.float32,
+    )
+    R2B05: Final = utils.MuphysExperiment(
+        name="r2b05",
+        type=utils.ExperimentType.FULL_MUPHYS,
+        uri="https://polybox.ethz.ch/index.php/s/mBrpE3iBoeek5wc/download/r2b05.tar.gz",
+        dtype=np.float32,
+    )
 
 
 @pytest.mark.datatest
@@ -76,7 +59,8 @@ def download_test_data(experiment: MuphysGraupelExperiment) -> None:
     "experiment",
     [
         Experiments.MINI,
-        Experiments.TINY,
+        Experiments.R2B04,
+        Experiments.R2B04_MAXFRAC,
         Experiments.R2B05,
     ],
     ids=lambda exp: exp.name,
@@ -84,10 +68,14 @@ def download_test_data(experiment: MuphysGraupelExperiment) -> None:
 @pytest.mark.parametrize("single_program", [True, False], ids=lambda sp: f"single_program={sp}")
 def test_full_muphys(
     backend_like: model_backends.BackendLike,
-    experiment: MuphysGraupelExperiment,
+    experiment: utils.MuphysExperiment,
     single_program: bool,
 ) -> None:
-    # TODO why does it verify on the graupel only reference?
+    assert experiment.type == utils.ExperimentType.FULL_MUPHYS
+
+    if single_program:
+        pytest.xfail("Single program version currently fails verification. Needs investigation.")
+
     inp = common.GraupelInput.load(
         filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
     )

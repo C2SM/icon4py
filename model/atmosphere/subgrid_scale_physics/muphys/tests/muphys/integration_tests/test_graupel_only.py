@@ -8,8 +8,6 @@
 
 from __future__ import annotations
 
-import dataclasses
-import pathlib
 from typing import Final
 
 import numpy as np
@@ -17,59 +15,33 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_graupel_only
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.testing import data_handling, definitions as testing_defs
 from icon4py.model.testing.fixtures.datatest import backend_like
 
-
-def _path_to_experiment_testdata(experiment: MuphysGraupelExperiment) -> pathlib.Path:
-    return testing_defs.get_test_data_root_path() / "muphys_graupel_data" / experiment.name
-
-
-@dataclasses.dataclass(frozen=True)
-class MuphysGraupelExperiment:
-    name: str
-    uri: str
-    dtype: np.dtype
-    dt: float = 30.0
-    qnc: float = 100.0
-
-    @property
-    def input_file(self) -> pathlib.Path:
-        return _path_to_experiment_testdata(self) / "input.nc"
-
-    @property
-    def reference_file(self) -> pathlib.Path:
-        return _path_to_experiment_testdata(self) / "reference.nc"
-
-    def __str__(self):
-        return self.name
+from . import utils
+from .utils import download_test_data
 
 
 class Experiments:
     # TODO currently on havogt's polybox
-    MINI: Final = MuphysGraupelExperiment(
+    MINI: Final = utils.MuphysExperiment(
         name="mini",
+        type=utils.ExperimentType.GRAUPEL_ONLY,
         uri="https://polybox.ethz.ch/index.php/s/55oHBDxS2SiqAGN/download/mini.tar.gz",
         dtype=np.float32,
     )
-    TINY: Final = MuphysGraupelExperiment(
+    TINY: Final = utils.MuphysExperiment(
         name="tiny",
+        type=utils.ExperimentType.GRAUPEL_ONLY,
         uri="https://polybox.ethz.ch/index.php/s/5Ceop3iaWkbc7gf/download/tiny.tar.gz",
         dtype=np.float64,
     )
-    R2B05: Final = MuphysGraupelExperiment(
+    R2B05: Final = utils.MuphysExperiment(
         name="R2B05",
+        type=utils.ExperimentType.GRAUPEL_ONLY,
         uri="https://polybox.ethz.ch/index.php/s/RBib8rFSEd7Eomo/download/R2B05.tar.gz",
         dtype=np.float32,
     )
-
-
-@pytest.fixture(autouse=True)
-def download_test_data(experiment: MuphysGraupelExperiment) -> None:
-    """Downloads test data for an experiment (implicit fixture)."""
-    data_handling.download_test_data(_path_to_experiment_testdata(experiment), uri=experiment.uri)
 
 
 @pytest.mark.datatest
@@ -83,8 +55,9 @@ def download_test_data(experiment: MuphysGraupelExperiment) -> None:
     ids=lambda exp: exp.name,
 )
 def test_graupel_only(
-    backend_like: model_backends.BackendLike, experiment: MuphysGraupelExperiment
+    backend_like: model_backends.BackendLike, experiment: utils.MuphysExperiment
 ) -> None:
+    assert experiment.type == utils.ExperimentType.GRAUPEL_ONLY
     inp = common.GraupelInput.load(
         filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
     )
