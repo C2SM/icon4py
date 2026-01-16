@@ -131,9 +131,6 @@ def test_distributed_interpolation_grg(
     decomposition_info: decomposition.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
-    if test_utils.is_dace(backend):
-        pytest.xfail("Segmentation fault with dace backend")
-
     parallel_helpers.check_comm_size(processor_props)
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.geofac_grg()
