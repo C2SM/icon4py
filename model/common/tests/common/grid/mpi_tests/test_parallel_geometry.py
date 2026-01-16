@@ -19,7 +19,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry, geometry_attributes as attrs, horizontal as h_grid
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
+from icon4py.model.testing import parallel_helpers, test_utils
 
 from ...fixtures import (
     backend,
