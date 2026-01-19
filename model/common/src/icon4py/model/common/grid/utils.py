@@ -34,7 +34,7 @@ def compute_field_mean(
     mean_reduction: Callable[
         [data_alloc.NDArray], data_alloc.ScalarT
     ] = decomposition.single_node_reductions.mean,
-) -> int:
+) -> float:
     """
     compute the mean value of input_field.
     """

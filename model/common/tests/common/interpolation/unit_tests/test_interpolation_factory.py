@@ -73,6 +73,7 @@ def _get_interpolation_factory(
             cell_center_lat=geometry.get(geometry_meta.CELL_LAT),
             cell_center_lon=geometry.get(geometry_meta.CELL_LON),
             area=geometry.get(geometry_meta.CELL_AREA),
+            mean_cell_area=geometry.get(geometry_meta.MEAN_CELL_AREA),
         )
 
         factory = interpolation_factory.InterpolationFieldsFactory(
@@ -98,6 +99,7 @@ def test_factory_raises_error_on_unknown_field(
         cell_center_lat=geometry.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry.get(geometry_meta.CELL_LON),
         area=geometry.get(geometry_meta.CELL_AREA),
+        mean_cell_area=geometry.get(geometry_meta.MEAN_CELL_AREA),
     )
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
