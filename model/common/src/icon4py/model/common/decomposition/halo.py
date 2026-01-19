@@ -308,15 +308,12 @@ class IconLikeHaloConstructor(HaloConstructor):
              For edges a similar pattern is used as for the vertices.
              - 1. HALO LEVEL: edges that are on owned cells but not owned themselves (these are edges that share 2 vertices with a owned cell).
              In terms of ownership the same convention is applied as for the vertices: (e0, e1, e2, e3) are in the HALO LEVEL 1 of rank 0, and are owned by rank 1
-             - 2. HALO LEVEL: edges that share exactly one vertex with an owned cell. The definition via vertices is important: TODD (halungge): EXAMPLE???
+             - 2. HALO LEVEL: edges that share exactly one vertex with an owned cell. The definition via vertices is important: TODO (halungge): EXAMPLE???
              For rank 0 these are the edges (e4, e5, e6, e7, e8, e9, e10) in the example above.
              - 3. HALO LEVEL:
              In **ICON4Py ONLY**, edges that "close" the halo cells and share exactly 2 vertices with a HALO LEVEL 2 cell, but none with
              an owned cell. These edges are **not** included in the halo in ICON. These are (e11, e12, e13) for rank 0 in the example above.
              This is the HALO LINE which makes the C2E connectivity complete (= without skip value) for a distributed setup.
-
-             # TODO(halungge): make number of halo lines (in terms of cells) a parameter: icon does hard coding of 2 halo lines for cells, make this dynamic!
-
         """
 
         self._validate_mapping(face_to_rank)
