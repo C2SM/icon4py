@@ -11,6 +11,7 @@ import logging
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
+import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -44,6 +45,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         grid: icon.IconGrid,
         decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
+        cell_geometry: grid_states.CellParams,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
@@ -59,7 +61,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._exchange = exchange
         geometry_type = self._grid.global_properties.geometry_type
         characteristic_length = self._grid.global_properties.characteristic_length
-        self._mean_dual_edge_length = geometry_attrs.MEAN_EDGE_LENGTH
+        self._mean_dual_edge_length = cell_geometry.mean_cell_area
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
             "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON

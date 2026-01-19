@@ -8,7 +8,6 @@
 import dataclasses
 import logging
 import math
-import types
 from collections.abc import Callable
 from typing import Final, TypeVar
 
@@ -16,7 +15,6 @@ import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -81,43 +79,6 @@ class GlobalGridParams:
     global_num_cells: int | None = None
     num_cells: int | None = None
     characteristic_length: float | None = None
-
-    @classmethod
-    def from_fields(
-        cls: type[_T],
-        array_ns: types.ModuleType,
-        mean_edge_length: float | None = None,
-        edge_lengths: data_alloc.NDArray | None = None,
-        mean_dual_edge_length: float | None = None,
-        dual_edge_lengths: data_alloc.NDArray | None = None,
-        mean_cell_area: float | None = None,
-        cell_areas: data_alloc.NDArray | None = None,
-        mean_dual_cell_area: float | None = None,
-        dual_cell_areas: data_alloc.NDArray | None = None,
-        mean_reduction: Callable[
-            [data_alloc.NDArray, types.ModuleType], data_alloc.ScalarT
-        ] = decomposition.single_node_reductions.mean,
-        **kwargs,
-    ) -> _T:
-        def init_mean(value: float | None, data: data_alloc.NDArray | None) -> float | None:
-            if value is not None:
-                return value
-            if data is not None:
-                return mean_reduction(data, array_ns=array_ns)
-            return None
-
-        mean_edge_length = init_mean(mean_edge_length, edge_lengths)
-        mean_dual_edge_length = init_mean(mean_dual_edge_length, dual_edge_lengths)
-        mean_cell_area = init_mean(mean_cell_area, cell_areas)
-        mean_dual_cell_area = init_mean(mean_dual_cell_area, dual_cell_areas)
-
-        return cls(
-            mean_edge_length=mean_edge_length,
-            mean_dual_edge_length=mean_dual_edge_length,
-            mean_cell_area=mean_cell_area,
-            mean_dual_cell_area=mean_dual_cell_area,
-            **kwargs,
-        )
 
     def __post_init__(self) -> None:
         if self.geometry_type is not None:

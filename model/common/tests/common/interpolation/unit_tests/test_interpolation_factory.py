@@ -9,13 +9,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
 import pytest
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition.definitions import single_node_default
-from icon4py.model.common.grid import geometry, horizontal as h_grid
+from icon4py.model.common.grid import (
+    geometry,
+    geometry_attributes as geometry_meta,
+    horizontal as h_grid,
+    states as grid_states,
+)
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
@@ -66,11 +69,17 @@ def _get_interpolation_factory(
     factory = interpolation_factories.get(registry_key)
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+        cell_geometry = grid_states.CellParams(
+            cell_center_lat=geometry.get(geometry_meta.CELL_LAT),
+            cell_center_lon=geometry.get(geometry_meta.CELL_LON),
+            area=geometry.get(geometry_meta.CELL_AREA),
+        )
 
         factory = interpolation_factory.InterpolationFieldsFactory(
             grid=geometry.grid,
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
+            cell_geometry=cell_geometry,
             backend=backend,
             metadata=attrs.attrs,
         )
@@ -85,10 +94,16 @@ def test_factory_raises_error_on_unknown_field(
     decomposition_info: decomposition.DecompositionInfo,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    cell_geometry = grid_states.CellParams(
+        cell_center_lat=geometry.get(geometry_meta.CELL_LAT),
+        cell_center_lon=geometry.get(geometry_meta.CELL_LON),
+        area=geometry.get(geometry_meta.CELL_AREA),
+    )
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry,
+        cell_geometry=cell_geometry,
         backend=backend,
         metadata=attrs.attrs,
     )
