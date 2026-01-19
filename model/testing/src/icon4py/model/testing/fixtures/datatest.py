@@ -148,7 +148,7 @@ def _download_ser_data(
         ) from err
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def download_ser_data(
     request: pytest.FixtureRequest,
     processor_props: decomposition.ProcessProperties,
@@ -173,7 +173,7 @@ def download_ser_data(
     _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def data_provider(
     download_ser_data: None,  # downloads data as side-effect
     ranked_data_path: pathlib.Path,
@@ -185,7 +185,7 @@ def data_provider(
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def grid_savepoint(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> serialbox.IconGridSavepoint:
@@ -193,7 +193,7 @@ def grid_savepoint(
     return data_provider.from_savepoint_grid(experiment.name, grid_shape)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def icon_grid(
     grid_savepoint: serialbox.IconGridSavepoint, backend: gtx_typing.Backend
 ) -> base_grid.Grid:
@@ -205,7 +205,7 @@ def icon_grid(
     return grid_savepoint.construct_icon_grid(keep_skip_values=False, backend=backend)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def decomposition_info(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
