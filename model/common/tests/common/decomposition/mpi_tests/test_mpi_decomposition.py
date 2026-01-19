@@ -343,16 +343,15 @@ def test_global_reductions_min(
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
 
-    global_reduc = definitions.create_global_reduction(processor_props)
+    global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
         min_val = global_reduc.min(local_data, array_ns=xp)
         expected_val = np.min(global_list)
         assert expected_val == min_val
     else:
-        with pytest.raises(ValueError, match="global_min requires a non-empty buffer") as excinfo:
+        with pytest.raises(ValueError, match="global_min requires a non-empty buffer"):
             global_reduc.min(local_data, array_ns=xp)
-        assert excinfo.type is ValueError
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -369,16 +368,15 @@ def test_global_reductions_max(
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
 
-    global_reduc = definitions.create_global_reduction(processor_props)
+    global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
         max_val = global_reduc.max(local_data, array_ns=xp)
         expected_val = np.max(global_list)
         assert expected_val == max_val
     else:
-        with pytest.raises(ValueError, match="global_max requires a non-empty buffer") as excinfo:
+        with pytest.raises(ValueError, match="global_max requires a non-empty buffer"):
             global_reduc.max(local_data, array_ns=xp)
-        assert excinfo.type is ValueError
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -395,16 +393,15 @@ def test_global_reductions_sum(
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
 
-    global_reduc = definitions.create_global_reduction(processor_props)
+    global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
         sum_val = global_reduc.sum(local_data, array_ns=xp)
         expected_val = np.sum(global_list)
         assert expected_val == sum_val
     else:
-        with pytest.raises(ValueError, match="global_sum requires a non-empty buffer") as excinfo:
+        with pytest.raises(ValueError, match="global_sum requires a non-empty buffer"):
             global_reduc.sum(local_data, array_ns=xp)
-        assert excinfo.type is ValueError
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -420,13 +417,12 @@ def test_global_reductions_mean(
     comm_size = processor_props.comm_size
     chunks = np.array_split(global_list, comm_size)
     local_data = xp.array(chunks[my_rank])
-    global_reduc = definitions.create_global_reduction(processor_props)
+    global_reduc = definitions.create_reduction(processor_props)
 
     if len(global_list) > 0:
         mean_val = global_reduc.mean(local_data, array_ns=xp)
         expected_val = np.mean(global_list)
         assert expected_val == mean_val
     else:
-        with pytest.raises(ValueError, match="global_mean requires a non-empty buffer") as excinfo:
+        with pytest.raises(ValueError, match="global_mean requires a non-empty buffer"):
             global_reduc.mean(local_data, array_ns=xp)
-        assert excinfo.type is ValueError

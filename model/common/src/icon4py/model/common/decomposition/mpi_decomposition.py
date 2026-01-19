@@ -436,7 +436,7 @@ class GlobalReductions(Reductions):
         self,
         buffer: data_alloc.NDArray,
         local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
-        global_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
+        global_reduction: mpi4py.MPI.Op,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
         local_red_val = local_reduction(buffer)
@@ -453,7 +453,7 @@ class GlobalReductions(Reductions):
         buffer: data_alloc.NDArray,
         array_ns: ModuleType = np,
     ) -> state_utils.ScalarType:
-        return self._reduce(array_ns.asarray(buffer.size), array_ns.sum, mpi4py.MPI.SUM, array_ns)
+        return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
 
     def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
         if self._calc_buffer_size(buffer, array_ns) == 0:
@@ -469,7 +469,7 @@ class GlobalReductions(Reductions):
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
-            buffer if buffer.size != 0 else array_ns.asarray([-np.inf]),
+            buffer if buffer.size != 0 else array_ns.asarray([-array_ns.inf]),
             array_ns.max,
             mpi4py.MPI.MAX,
             array_ns,
@@ -501,6 +501,6 @@ class GlobalReductions(Reductions):
         )
 
 
-@definitions.create_global_reduction.register(MPICommProcessProperties)
-def create_global_reduction_exchange(props: MPICommProcessProperties) -> Reductions:
+@definitions.create_reduction.register(MPICommProcessProperties)
+def create_global_reduction(props: MPICommProcessProperties) -> Reductions:
     return GlobalReductions(props)

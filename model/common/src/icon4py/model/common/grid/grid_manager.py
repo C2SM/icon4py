@@ -8,6 +8,7 @@
 import functools
 import logging
 import pathlib
+from collections.abc import Callable
 from types import ModuleType
 from typing import Literal, Protocol, TypeAlias
 
@@ -87,6 +88,7 @@ class GridManager:
         transformation: IndexTransformation,
         grid_file: pathlib.Path | str,
         config: v_grid.VerticalGridConfig,  # TODO(halungge): remove to separate vertical and horizontal grid
+        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._transformation = transformation
         self._file_name = str(grid_file)
@@ -96,6 +98,7 @@ class GridManager:
         self._geometry: GeometryDict = {}
         self._reader = None
         self._coordinates: CoordinateDict = {}
+        self._global_reductions = global_reductions
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -133,6 +136,7 @@ class GridManager:
             allocator=allocator,
             with_skip_values=keep_skip_values,
             geometry_type=geometry_type,
+            mean_reduction=self._global_reductions.mean,
         )
         self._coordinates = self._read_coordinates(allocator, geometry_type)
         self.close()
@@ -355,6 +359,9 @@ class GridManager:
         allocator: gtx_typing.FieldBufferAllocationUtil | None,
         with_skip_values: bool,
         geometry_type: base.GeometryType,
+        mean_reduction: Callable[
+            [data_alloc.NDArray, ModuleType], data_alloc.ScalarT
+        ] = decomposition.single_node_reductions.mean,
     ) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
@@ -373,6 +380,49 @@ class GridManager:
         num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
 
+        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
+        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
+        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
+        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
+
+        # TODO(msimberg): Compute these in GridGeometry once FieldProviders can produce scalars.
+        # This will also allow easier handling once grids are distributed.
+        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
+        mean_dual_edge_length = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
+        )
+        mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
+        mean_dual_cell_area = self._reader.try_attribute(
+            gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
+        )
+        edge_lengths = self.geometry_fields[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
+        dual_edge_lengths = self.geometry_fields[
+            gridfile.GeometryName.DUAL_EDGE_LENGTH.value
+        ].ndarray
+        cell_areas = self.geometry_fields[gridfile.GeometryName.CELL_AREA.value].ndarray
+        dual_cell_areas = self.geometry_fields[gridfile.GeometryName.DUAL_AREA.value].ndarray
+
+        global_params = icon.GlobalGridParams.from_fields(
+            array_ns=xp,
+            grid_shape=icon.GridShape(
+                geometry_type=geometry_type,
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            ),
+            radius=sphere_radius,
+            domain_length=domain_length,
+            domain_height=domain_height,
+            num_cells=num_cells,
+            mean_edge_length=mean_edge_length,
+            mean_dual_edge_length=mean_dual_edge_length,
+            mean_cell_area=mean_cell_area,
+            mean_dual_cell_area=mean_dual_cell_area,
+            edge_lengths=edge_lengths,
+            dual_edge_lengths=dual_edge_lengths,
+            cell_areas=cell_areas,
+            dual_cell_areas=dual_cell_areas,
+            mean_reduction=mean_reduction,
+        )
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
