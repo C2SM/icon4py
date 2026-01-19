@@ -8,6 +8,7 @@
 import dataclasses
 import logging
 import math
+import types
 from collections.abc import Callable
 from typing import Final, TypeVar
 
@@ -84,7 +85,7 @@ class GlobalGridParams:
     @classmethod
     def from_fields(
         cls: type[_T],
-        array_ns: ModuleType,
+        array_ns: types.ModuleType,
         mean_edge_length: float | None = None,
         edge_lengths: data_alloc.NDArray | None = None,
         mean_dual_edge_length: float | None = None,
@@ -94,7 +95,7 @@ class GlobalGridParams:
         mean_dual_cell_area: float | None = None,
         dual_cell_areas: data_alloc.NDArray | None = None,
         mean_reduction: Callable[
-            [data_alloc.NDArray, ModuleType], data_alloc.ScalarT
+            [data_alloc.NDArray, types.ModuleType], data_alloc.ScalarT
         ] = decomposition.single_node_reductions.mean,
         **kwargs,
     ) -> _T:
