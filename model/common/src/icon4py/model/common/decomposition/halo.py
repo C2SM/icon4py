@@ -294,27 +294,26 @@ class IconLikeHaloConstructor(HaloConstructor):
 
 
              Vertices:
-             - 1. HALO LEVEL: are vertices on the cutting line that are not owned, or in a different wording: all vertices on owned cells that ar not
+             - 1. HALO LEVEL: are vertices on the cutting line that are not owned, or in a different wording: all vertices of owned cells that are not
              owned.
-             In ICON every element in an array needs **exactly one owner**. For elements on the cutting line (vertices and edges) there is no clear
-             indication which rank should own it, ICON uses the rank with the higher rank (see (_update_owner_mask_by_max_rank_convention))
-             In the example above (v0, v1, v2, v3) are in the 1. HALO LEVEL or rank 0 and owend by rank 1. Consequently there ranks that have no
-             1.HALO LEVEL cells.
-
+             In ICON every element in an array needs **exactly one owner** (otherwise there would be duplicates and double-counting).
+             For elements on the cutting line (vertices and edges) there is no clear indication which rank should own it,
+             ICON uses the rank with the higher rank value (see (_update_owner_mask_by_max_rank_convention))
+             In the example above (v0, v1, v2, v3) are in the 1. HALO LEVEL of rank 0 and owned by rank 1.
+             As a consequence, there are ranks that have no 1. HALO LEVEL vertices.
              - 2. HALO LEVEL: are vertices that are on HALO LEVEL cells, but not on owned. For rank 0 these are (v4, v5, v6, v7)
 
 
              Edges:
              For edges a similar pattern is used as for the vertices.
-             - 1. HALO LEVEl: edges that are on owned cells but not owned themselves (these are edges that share 2 vertices with and owned cell).
-             In terms of ownership the same convention is applied as for the vertices: (e0, e1, e2, e3) are in the HALO LEVEL 1 of rank 0, and owned by rank 1
+             - 1. HALO LEVEL: edges that are on owned cells but not owned themselves (these are edges that share 2 vertices with a owned cell).
+             In terms of ownership the same convention is applied as for the vertices: (e0, e1, e2, e3) are in the HALO LEVEL 1 of rank 0, and are owned by rank 1
              - 2. HALO LEVEL: edges that share exactly one vertex with an owned cell. The definition via vertices is important: TODD (halungge): EXAMPLE???
-             For rank 0 above these are the edges (e4, e5, e6, e7, e8, e9, e10)
-
+             For rank 0 these are the edges (e4, e5, e6, e7, e8, e9, e10) in the example above.
              - 3. HALO LEVEL:
-             We flag the edges (e11, e12, e13) that "close" the halo cells (share exactly 2 vertices with a HALO LEVEL 2 cell, but none with
-             an owned cell). These edges are **not** included in the halo in ICON. We include them as 3. HALO LINE which
-             makes the C2E connectivity complete (= without skip value) for a distributed setup.
+             In **ICON4Py ONLY**, edges that "close" the halo cells and share exactly 2 vertices with a HALO LEVEL 2 cell, but none with
+             an owned cell. These edges are **not** included in the halo in ICON. These are (e11, e12, e13) for rank 0 in the example above.
+             This is the HALO LINE which makes the C2E connectivity complete (= without skip value) for a distributed setup.
 
              # TODO(halungge): make number of halo lines (in terms of cells) a parameter: icon does hard coding of 2 halo lines for cells, make this dynamic!
 
