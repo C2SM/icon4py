@@ -11,6 +11,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import pathlib
+from typing import ClassVar
 
 import netCDF4
 import numpy as np
@@ -142,11 +143,25 @@ class GraupelOutput:
     pg: gtx.Field[dims.CellDim, dims.KDim] | None
     pre: gtx.Field[dims.CellDim, dims.KDim] | None
 
+    _surface_fields: ClassVar[list[str]] = ["pflx", "pr", "ps", "pi", "pg", "pre"]
+
     @classmethod
     def allocate(cls, allocator: gtx_typing.FieldBufferAllocationUtil, domain: gtx.Domain):
-        zeros = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
-        # TODO +1 size fields?
-        return cls(**{field.name: zeros() for field in dataclasses.fields(cls)})
+        zeros_full = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
+        surface_domain = gtx.Domain(
+            dims=domain.dims,
+            ranges=(
+                domain.ranges[0],
+                gtx.unit_range((domain.ranges[1].stop - 1, domain.ranges[1].stop)),
+            ),
+        )
+        zeros_surface = functools.partial(gtx.zeros, domain=surface_domain, allocator=allocator)
+        return cls(
+            **{
+                field.name: zeros_surface() if field.name in cls._surface_fields else zeros_full()
+                for field in dataclasses.fields(cls)
+            }
+        )
 
     @classmethod
     def load(cls, filename: pathlib.Path | str, allocator: gtx_typing.FieldBufferAllocationUtil):
@@ -186,13 +201,13 @@ class GraupelOutput:
         with netCDF4.Dataset(filename, mode="w") as ncfile:
             ncfile.createDimension("ncells", ncells)
             ncfile.createDimension("height", nlev)
-            ncfile.createDimension("height1", nlev + 1)  # what's the reason for the +1 fields here?
+            ncfile.createDimension("surface", 1)
 
             write_height_field = functools.partial(
                 _field_to_nc, ncfile, ("height", "ncells"), dtype=np.float64
             )
-            write_height1_field = functools.partial(  # TODO
-                _field_to_nc, ncfile, ("height1", "ncells"), dtype=np.float64
+            write_surface_field = functools.partial(
+                _field_to_nc, ncfile, ("surface", "ncells"), dtype=np.float64
             )
 
             write_height_field("ta", self.t)
@@ -203,14 +218,14 @@ class GraupelOutput:
             write_height_field("qs", self.qs)
             write_height_field("qg", self.qg)
             if self.pflx is not None:
-                write_height_field("pflx", self.pflx)
+                write_surface_field("pflx", self.pflx)
             if self.pr is not None:
-                write_height_field("prr_gsp", self.pr)  # TODO height1?
+                write_surface_field("prr_gsp", self.pr)
             if self.ps is not None:
-                write_height_field("prs_gsp", self.ps)  # TODO
+                write_surface_field("prs_gsp", self.ps)
             if self.pi is not None:
-                write_height_field("pri_gsp", self.pi)  # TODO
+                write_surface_field("pri_gsp", self.pi)
             if self.pg is not None:
-                write_height_field("prg_gsp", self.pg)  # TODO
+                write_surface_field("prg_gsp", self.pg)
             if self.pre is not None:
-                write_height_field("pre_gsp", self.pre)  # TODO
+                write_surface_field("pre_gsp", self.pre)

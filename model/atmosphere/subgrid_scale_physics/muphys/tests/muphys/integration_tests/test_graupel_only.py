@@ -62,13 +62,13 @@ def test_graupel_only(
         filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
     )
 
-    graupel_run_program = run_graupel_only.setup_graupel(
-        inp, dt=experiment.dt, qnc=experiment.qnc, backend=backend_like
-    )
-
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+    )
+
+    graupel_run_program = run_graupel_only.setup_graupel(
+        inp, dt=experiment.dt, qnc=experiment.qnc, backend=backend_like
     )
 
     graupel_run_program(
