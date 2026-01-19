@@ -143,7 +143,7 @@ class GraupelOutput:
     pg: gtx.Field[dims.CellDim, dims.KDim] | None
     pre: gtx.Field[dims.CellDim, dims.KDim] | None
 
-    _surface_fields: ClassVar[list[str]] = ["pflx", "pr", "ps", "pi", "pg", "pre"]
+    _surface_fields: ClassVar[list[str]] = ["pr", "ps", "pi", "pg", "pre"]
 
     @classmethod
     def allocate(cls, allocator: gtx_typing.FieldBufferAllocationUtil, domain: gtx.Domain):
@@ -218,7 +218,7 @@ class GraupelOutput:
             write_height_field("qs", self.qs)
             write_height_field("qg", self.qg)
             if self.pflx is not None:
-                write_surface_field("pflx", self.pflx)
+                write_height_field("pflx", self.pflx)
             if self.pr is not None:
                 write_surface_field("prr_gsp", self.pr)
             if self.ps is not None:

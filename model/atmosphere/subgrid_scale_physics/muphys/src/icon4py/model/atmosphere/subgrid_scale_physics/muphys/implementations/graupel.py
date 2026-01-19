@@ -605,7 +605,7 @@ def graupel_run(
             # pflx
             {
                 dims.CellDim: (horizontal_start, horizontal_end),
-                dims.KDim: (vertical_end - 1, vertical_end),
+                dims.KDim: (vertical_start, vertical_end),
             },
             # pr
             {
