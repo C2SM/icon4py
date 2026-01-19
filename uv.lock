@@ -1402,8 +1402,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.2.post22+ed71f11b"
-source = { git = "https://github.com/GridTools/gt4py?branch=main#ed71f11b9b34cc106bdb170ac06ad06f926b8afa" }
+version = "1.1.2.post26+57bddc32"
+source = { git = "https://github.com/GridTools/gt4py?branch=main#57bddc3237365cd28f8f262774c7df8bd3460501" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
