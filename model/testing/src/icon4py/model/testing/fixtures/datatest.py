@@ -88,6 +88,7 @@ def cpu_allocator() -> gtx_typing.FieldBufferAllocationUtil:
 
 
 @pytest.fixture(
+    scope="session",
     params=[
         definitions.Experiments.MCH_CH_R04B09,
         definitions.Experiments.EXCLAIM_APE,
