@@ -235,6 +235,14 @@ def test_get_mass_conserving_cell_average_weight(
 
 @pytest.mark.level("integration")
 @pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        (definitions.Experiments.MCH_CH_R04B09),
+        (definitions.Experiments.EXCLAIM_APE),
+        # (definitions.Experiments.GAUSS3D),
+    ],
+)
 def test_e_flx_avg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
