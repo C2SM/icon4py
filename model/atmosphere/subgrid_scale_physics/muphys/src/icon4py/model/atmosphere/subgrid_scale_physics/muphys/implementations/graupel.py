@@ -90,7 +90,7 @@ def precip_qx_level_update(
     current_level_activated = previous_level_q.activated | mask
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0 * previous_level_q.p
-    #   Inlined calculation using _fall_speed_scalar
+    # Inlined calculation using _fall_speed_scalar
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
 
     rhox_prev = (previous_level_q.x + q) * 0.5 * previous_level_rho
@@ -500,9 +500,9 @@ def _precipitation_effects(
     t = precip_state.t_state.t
     eflx = precip_state.t_state.eflx
 
-    pflx_tot = ps + pi + pg
+    pflx_tot = ps + pi + pg + pr
 
-    return qr, qs, qi, qg, t, pflx_tot + pr, pr, ps, pi, pg, eflx / dt
+    return qr, qs, qi, qg, t, pflx_tot, pr, ps, pi, pg, eflx / dt
 
 
 @gtx.field_operator

@@ -28,7 +28,6 @@ class Experiments:
         name="mini",
         type=utils.ExperimentType.FULL_MUPHYS,
         uri="https://polybox.ethz.ch/index.php/s/rQBXS7niXBBZay9/download/mini.tar.gz",
-        dtype=np.float32,
     )
     # Note: don't use the 'tiny' experiment from graupel_only,
     # as it is not sensitive to saturation adjustment
@@ -38,19 +37,16 @@ class Experiments:
         name="r2b04",
         type=utils.ExperimentType.FULL_MUPHYS,
         uri="https://polybox.ethz.ch/index.php/s/5oNtcQFDcCaNxHH/download/r2b04.tar.gz",
-        dtype=np.float32,
     )
     R2B04_MAXFRAC: Final = utils.MuphysExperiment(
         name="r2b04_maxfrac",
         type=utils.ExperimentType.FULL_MUPHYS,
         uri="https://polybox.ethz.ch/index.php/s/mBeAWAQQHSKTkF7/download/r2b04_maxfrac.tar.gz",
-        dtype=np.float32,
     )
     R2B05: Final = utils.MuphysExperiment(
         name="r2b05",
         type=utils.ExperimentType.FULL_MUPHYS,
         uri="https://polybox.ethz.ch/index.php/s/mBrpE3iBoeek5wc/download/r2b05.tar.gz",
-        dtype=np.float32,
     )
 
 
@@ -113,10 +109,8 @@ def test_full_muphys(
         filename=experiment.reference_file, allocator=model_backends.get_allocator(backend_like)
     )
 
-    # TODO check tolerances
-    rtol = 1e-14 if experiment.dtype == np.float64 else 1e-7
-    atol = 1e-16 if experiment.dtype == np.float64 else 1e-8
-    # TODO we run the float32 input experiments with float64
+    rtol = 1e-14
+    atol = 1e-16
 
     np.testing.assert_allclose(ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol)
     np.testing.assert_allclose(ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol)
