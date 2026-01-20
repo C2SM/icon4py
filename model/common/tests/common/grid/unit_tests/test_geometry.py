@@ -169,10 +169,10 @@ def test_compute_inverse_vertex_vertex_length(
     assert test_utils.dallclose(result, expected, rtol=rtol)
 
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment",
     [
-        (definitions.Experiments.MCH_CH_R04B09, 1e-7),
-        (definitions.Experiments.EXCLAIM_APE, 3e-12),
+        (definitions.Experiments.MCH_CH_R04B09),
+        (definitions.Experiments.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -203,10 +203,10 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     assert test_utils.dallclose(y_normal.asnumpy(), y_normal_ref.asnumpy(), atol=1e-12)
 
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment",
     [
-        (definitions.Experiments.MCH_CH_R04B09, 1e-7),
-        (definitions.Experiments.EXCLAIM_APE, 3e-12),
+        (definitions.Experiments.MCH_CH_R04B09),
+        (definitions.Experiments.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -328,10 +328,10 @@ def test_dual_normal_vert(
     assert test_utils.dallclose(dual_normal_vert_v.asnumpy(), dual_normal_vert_v_ref, atol=1e-12)
 
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment",
     [
-        (definitions.Experiments.MCH_CH_R04B09, 1e-7),
-        (definitions.Experiments.EXCLAIM_APE, 3e-12),
+        (definitions.Experiments.MCH_CH_R04B09),
+        (definitions.Experiments.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -362,10 +362,10 @@ def test_cartesian_centers_edge(
             assert all(z.asnumpy() == 0.0)
 
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment",
     [
-        (definitions.Experiments.MCH_CH_R04B09, 1e-7),
-        (definitions.Experiments.EXCLAIM_APE, 3e-12),
+        (definitions.Experiments.MCH_CH_R04B09),
+        (definitions.Experiments.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
@@ -396,10 +396,10 @@ def test_cartesian_centers_cell(
             assert all(z.asnumpy() == 0.0)
 
 @pytest.mark.parametrize(
-    "experiment, rtol",
+    "experiment",
     [
-        (definitions.Experiments.MCH_CH_R04B09, 1e-7),
-        (definitions.Experiments.EXCLAIM_APE, 3e-12),
+        (definitions.Experiments.MCH_CH_R04B09),
+        (definitions.Experiments.EXCLAIM_APE),
     ],
 )
 @pytest.mark.datatest
