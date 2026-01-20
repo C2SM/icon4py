@@ -7,7 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dace
+from dace.transformation import dataflow as dace_dataflow
 
 
 def graupel_run_top_level_post(sdfg: dace.SDFG) -> None:
+    sdfg.apply_transformations(dace_dataflow.TaskletFusion)
     sdfg.save("graupel_run_top_level_post.sdfg")
