@@ -190,6 +190,8 @@ def test_get_geofac_n2s(
     assert test_helpers.dallclose(field_ref.asnumpy(), field)
 
 
+@pytest.mark.level("integration")
+@pytest.mark.datatest
 def test_get_geofac_grg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
@@ -223,6 +225,8 @@ def test_get_mass_conserving_cell_average_weight(
     assert test_helpers.dallclose(field_ref.asnumpy(), field, rtol=1e-11)
 
 
+@pytest.mark.level("integration")
+@pytest.mark.datatest
 def test_e_flx_avg(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,

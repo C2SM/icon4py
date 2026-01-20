@@ -497,4 +497,7 @@ def test_global_grid_params_from_grid_manager(
             # (it's actually not relevant to check this)
             assert params.subdivision == icon.GridShape(base.GeometryType.TORUS).subdivision
     assert pytest.approx(params.radius) == radius
+    assert pytest.approx(params.domain_length) == domain_length
+    assert pytest.approx(params.domain_height) == domain_height
     assert params.global_num_cells == global_num_cells
+    assert params.num_cells == num_cells

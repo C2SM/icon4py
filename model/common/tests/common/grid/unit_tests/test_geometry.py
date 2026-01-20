@@ -146,6 +146,7 @@ def test_compute_inverse_dual_edge_length(
     [
         (definitions.Experiments.MCH_CH_R04B09, 5e-10),
         (definitions.Experiments.EXCLAIM_APE, 1e-12),
+        (definitions.Experiments.GAUSS3D, 1e-14),
     ],
 )
 @pytest.mark.datatest
