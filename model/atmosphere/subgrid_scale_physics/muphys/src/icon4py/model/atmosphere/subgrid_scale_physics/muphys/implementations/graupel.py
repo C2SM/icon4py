@@ -72,6 +72,7 @@ class IntegrationState(NamedTuple):
     g: PrecipStateQx
     t_state: TempState
     rho: ta.wpfloat
+    pflx_tot: ta.wpfloat
 
 
 @gtx.field_operator
@@ -90,7 +91,7 @@ def precip_qx_level_update(
     current_level_activated = previous_level_q.activated | mask
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0 * previous_level_q.p
-    #   Inlined calculation using _fall_speed_scalar
+    # Inlined calculation using _fall_speed_scalar
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
 
     rhox_prev = (previous_level_q.x + q) * 0.5 * previous_level_rho
@@ -131,17 +132,16 @@ def _temperature_update(
 ) -> TempState:
     current_level_activated = previous_level.activated | mask
     if current_level_activated:
-        eflx = dt * (
-            pr * (t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc)
-            + (pflx_tot) * (g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc)
+        eflx = pr * (t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc) + (pflx_tot) * (
+            g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc
         )
 
         e_int = (
             _internal_energy_scalar(
                 t=t, qv=q.v, qliq=q.c + q.r, qice=q.s + q.i + q.g, rho=rho, dz=dz
             )
-            + previous_level.eflx
-            - eflx
+            + dt * previous_level.eflx
+            - dt * eflx
         )
 
         #  Inlined calculation using T_from_internal_energy_scalar
@@ -167,6 +167,7 @@ def _temperature_update(
         g=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
         t_state=TempState(t=0.0, eflx=0.0, activated=False),
         rho=0.0,
+        pflx_tot=0.0,
     ),
 )
 def _precip_and_t(
@@ -239,8 +240,6 @@ def _precip_and_t(
         mask_g,
     )
 
-    pflx_tot = s_update.p + i_update.p + g_update.p
-
     qliq = q.c + r_update.x
     qice = s_update.x + i_update.x + g_update.x
     kmin_rsig = mask_r | mask_s | mask_i | mask_g
@@ -255,7 +254,7 @@ def _precip_and_t(
             t=t,
             t_kp1=t_kp1,
             pr=r_update.p,
-            pflx_tot=pflx_tot,
+            pflx_tot=s_update.p + i_update.p + g_update.p,
             q=q,
             qliq=qliq,
             qice=qice,
@@ -265,6 +264,10 @@ def _precip_and_t(
             mask=kmin_rsig,
         ),
         rho=rho,
+        pflx_tot=s_update.p  # TODO double-check that this is correct (as there is another pflx_tot that doesn't include `r`)
+        + i_update.p
+        + g_update.p
+        + r_update.p,
     )
 
 
@@ -500,9 +503,9 @@ def _precipitation_effects(
     t = precip_state.t_state.t
     eflx = precip_state.t_state.eflx
 
-    pflx_tot = ps + pi + pg
+    pflx_tot = precip_state.pflx_tot
 
-    return qr, qs, qi, qg, t, pflx_tot + pr, pr, ps, pi, pg, eflx / dt
+    return qr, qs, qi, qg, t, pflx_tot, pr, ps, pi, pg, eflx
 
 
 @gtx.field_operator

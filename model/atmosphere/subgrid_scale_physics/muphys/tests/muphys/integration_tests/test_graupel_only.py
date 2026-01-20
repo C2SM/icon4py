@@ -28,19 +28,16 @@ class Experiments:
         name="mini",
         type=utils.ExperimentType.GRAUPEL_ONLY,
         uri="https://polybox.ethz.ch/index.php/s/55oHBDxS2SiqAGN/download/mini.tar.gz",
-        dtype=np.float32,
     )
     TINY: Final = utils.MuphysExperiment(
         name="tiny",
         type=utils.ExperimentType.GRAUPEL_ONLY,
         uri="https://polybox.ethz.ch/index.php/s/5Ceop3iaWkbc7gf/download/tiny.tar.gz",
-        dtype=np.float64,
     )
     R2B05: Final = utils.MuphysExperiment(
         name="R2B05",
         type=utils.ExperimentType.GRAUPEL_ONLY,
         uri="https://polybox.ethz.ch/index.php/s/RBib8rFSEd7Eomo/download/R2B05.tar.gz",
-        dtype=np.float32,
     )
 
 
@@ -91,10 +88,8 @@ def test_graupel_only(
         filename=experiment.reference_file, allocator=model_backends.get_allocator(backend_like)
     )
 
-    # TODO check tolerances
-    rtol = 1e-14 if experiment.dtype == np.float64 else 1e-7
-    atol = 1e-16 if experiment.dtype == np.float64 else 1e-8
-    # TODO we run the float32 input experiments with float64
+    rtol = 1e-14
+    atol = 1e-16
 
     np.testing.assert_allclose(ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol)
     np.testing.assert_allclose(ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol)

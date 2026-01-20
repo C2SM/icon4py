@@ -12,7 +12,6 @@ import dataclasses
 import enum
 import pathlib
 
-import numpy as np
 import pytest
 
 from icon4py.model.testing import data_handling, definitions as testing_defs
@@ -37,7 +36,6 @@ class MuphysExperiment:
     name: str
     type: ExperimentType
     uri: str
-    dtype: np.dtype
     dt: float = 30.0
     qnc: float = 100.0
 
