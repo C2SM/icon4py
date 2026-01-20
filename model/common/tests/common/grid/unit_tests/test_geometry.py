@@ -255,7 +255,13 @@ def test_cell_area(
 
     assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
 
-
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        (definitions.Experiments.MCH_CH_R04B09),
+        (definitions.Experiments.EXCLAIM_APE),
+    ],
+)
 @pytest.mark.datatest
 def test_primal_normal_cell(
     backend: gtx_typing.Backend,
@@ -275,7 +281,13 @@ def test_primal_normal_cell(
         primal_normal_cell_v.asnumpy(), primal_normal_cell_v_ref, atol=1e-12
     )
 
-
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        (definitions.Experiments.MCH_CH_R04B09),
+        (definitions.Experiments.EXCLAIM_APE),
+    ],
+)
 @pytest.mark.datatest
 def test_dual_normal_cell(
     backend: gtx_typing.Backend,
@@ -291,7 +303,13 @@ def test_dual_normal_cell(
     assert test_utils.dallclose(dual_normal_cell_u.asnumpy(), dual_normal_cell_u_ref, atol=1e-12)
     assert test_utils.dallclose(dual_normal_cell_v.asnumpy(), dual_normal_cell_v_ref, atol=1e-12)
 
-
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        (definitions.Experiments.MCH_CH_R04B09),
+        (definitions.Experiments.EXCLAIM_APE),
+    ],
+)
 @pytest.mark.datatest
 def test_primal_normal_vert(
     backend: gtx_typing.Backend,
@@ -311,7 +329,13 @@ def test_primal_normal_vert(
         primal_normal_vert_v.asnumpy(), primal_normal_vert_v_ref, atol=1e-12
     )
 
-
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        (definitions.Experiments.MCH_CH_R04B09),
+        (definitions.Experiments.EXCLAIM_APE),
+    ],
+)
 @pytest.mark.datatest
 def test_dual_normal_vert(
     backend: gtx_typing.Backend,
