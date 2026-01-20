@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import dace_opt, model_backends
 
 
 log = logging.getLogger(__name__)
@@ -48,6 +48,12 @@ def get_dace_options(
     # due to it falling into a less optimized code generation (on santis).
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
+    if program_name == "graupel_run":
+        backend_descriptor["use_zero_origin"] = True
+        optimization_args["make_persistent"] = True
+        optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPost] = (
+            dace_opt.graupel_run_top_level_post
+        )
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
