@@ -375,6 +375,10 @@ class GridManager:
         num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
 
+        sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
+        domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
+        domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
+
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
@@ -406,7 +410,11 @@ class GridManager:
             grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-            )
+            ),
+            radius=sphere_radius,
+            domain_length=domain_length,
+            domain_height=domain_height,
+            num_cells=num_cells,
         )
 
         return icon.icon_grid(

@@ -58,7 +58,7 @@ def test_geometry_raises_for_unknown_field(
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-7),
         (definitions.Experiments.EXCLAIM_APE, 3e-12),
-        #(definitions.Experiments.GAUSS3D, 1e-13),
+        (definitions.Experiments.GAUSS3D, 1e-13),
     ],
 )
 @pytest.mark.datatest
@@ -168,13 +168,7 @@ def test_compute_inverse_vertex_vertex_length(
         result = result / constants.EARTH_RADIUS
     assert test_utils.dallclose(result, expected, rtol=rtol)
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        (definitions.Experiments.MCH_CH_R04B09),
-        (definitions.Experiments.EXCLAIM_APE),
-    ],
-)
+
 @pytest.mark.datatest
 def test_compute_coordinates_of_edge_tangent_and_normal(
     backend: gtx_typing.Backend,
@@ -202,13 +196,7 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     assert test_utils.dallclose(z_normal.asnumpy(), z_normal_ref.asnumpy(), atol=1e-13)
     assert test_utils.dallclose(y_normal.asnumpy(), y_normal_ref.asnumpy(), atol=1e-12)
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        (definitions.Experiments.MCH_CH_R04B09),
-        (definitions.Experiments.EXCLAIM_APE),
-    ],
-)
+
 @pytest.mark.datatest
 def test_compute_primal_normals(
     backend: gtx_typing.Backend,
@@ -255,13 +243,7 @@ def test_cell_area(
 
     assert test_utils.dallclose(result.asnumpy(), expected.asnumpy())
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        (definitions.Experiments.MCH_CH_R04B09),
-        (definitions.Experiments.EXCLAIM_APE),
-    ],
-)
+
 @pytest.mark.datatest
 def test_primal_normal_cell(
     backend: gtx_typing.Backend,
@@ -281,13 +263,7 @@ def test_primal_normal_cell(
         primal_normal_cell_v.asnumpy(), primal_normal_cell_v_ref, atol=1e-12
     )
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        (definitions.Experiments.MCH_CH_R04B09),
-        (definitions.Experiments.EXCLAIM_APE),
-    ],
-)
+
 @pytest.mark.datatest
 def test_dual_normal_cell(
     backend: gtx_typing.Backend,
@@ -303,13 +279,7 @@ def test_dual_normal_cell(
     assert test_utils.dallclose(dual_normal_cell_u.asnumpy(), dual_normal_cell_u_ref, atol=1e-12)
     assert test_utils.dallclose(dual_normal_cell_v.asnumpy(), dual_normal_cell_v_ref, atol=1e-12)
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        (definitions.Experiments.MCH_CH_R04B09),
-        (definitions.Experiments.EXCLAIM_APE),
-    ],
-)
+
 @pytest.mark.datatest
 def test_primal_normal_vert(
     backend: gtx_typing.Backend,
@@ -329,13 +299,7 @@ def test_primal_normal_vert(
         primal_normal_vert_v.asnumpy(), primal_normal_vert_v_ref, atol=1e-12
     )
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        (definitions.Experiments.MCH_CH_R04B09),
-        (definitions.Experiments.EXCLAIM_APE),
-    ],
-)
+
 @pytest.mark.datatest
 def test_dual_normal_vert(
     backend: gtx_typing.Backend,
@@ -351,13 +315,7 @@ def test_dual_normal_vert(
     assert test_utils.dallclose(dual_normal_vert_u.asnumpy(), dual_normal_vert_u_ref, atol=1e-12)
     assert test_utils.dallclose(dual_normal_vert_v.asnumpy(), dual_normal_vert_v_ref, atol=1e-12)
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        (definitions.Experiments.MCH_CH_R04B09),
-        (definitions.Experiments.EXCLAIM_APE),
-    ],
-)
+
 @pytest.mark.datatest
 def test_cartesian_centers_edge(
     backend: gtx_typing.Backend, experiment: definitions.Experiment
@@ -385,13 +343,7 @@ def test_cartesian_centers_edge(
             assert all(y.asnumpy() <= grid.global_properties.domain_height)
             assert all(z.asnumpy() == 0.0)
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        (definitions.Experiments.MCH_CH_R04B09),
-        (definitions.Experiments.EXCLAIM_APE),
-    ],
-)
+
 @pytest.mark.datatest
 def test_cartesian_centers_cell(
     backend: gtx_typing.Backend, experiment: definitions.Experiment
@@ -419,13 +371,7 @@ def test_cartesian_centers_cell(
             assert all(y.asnumpy() <= grid.global_properties.domain_height)
             assert all(z.asnumpy() == 0.0)
 
-@pytest.mark.parametrize(
-    "experiment",
-    [
-        (definitions.Experiments.MCH_CH_R04B09),
-        (definitions.Experiments.EXCLAIM_APE),
-    ],
-)
+
 @pytest.mark.datatest
 def test_vertex(backend: gtx_typing.Backend, experiment: definitions.Experiment) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
