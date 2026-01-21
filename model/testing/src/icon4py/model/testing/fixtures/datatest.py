@@ -168,7 +168,6 @@ def download_ser_data(
     if with_mpi and experiment == definitions.Experiments.GAUSS3D:
         # TODO(msimberg): Fix? Need serialized data.
         pytest.skip("GAUSS3D experiment does not support MPI tests")
-
     _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
 
 
