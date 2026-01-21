@@ -6,11 +6,11 @@
 set -euo pipefail
 
 # Check a few different possibilities for the rank.
-if [[ ! -z "${PMI_RANK:-}" ]]; then
+if [[ -n "${PMI_RANK:-}" ]]; then
     rank="${PMI_RANK}"
-elif [[ ! -z "${OMPI_COMM_WORLD_RANK:-}" ]]; then
+elif [[ -n "${OMPI_COMM_WORLD_RANK:-}" ]]; then
     rank="${OMPI_COMM_WORLD_RANK}"
-elif [[ ! -z "${SLURM_PROCID:-}" ]]; then
+elif [[ -n "${SLURM_PROCID:-}" ]]; then
     rank="${SLURM_PROCID}"
 else
     echo "Could not determine MPI rank. Set PMI_RANK, OMPI_COMM_WORLD_RANK, or SLURM_PROCID."
