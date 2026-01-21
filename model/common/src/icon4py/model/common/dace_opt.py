@@ -10,6 +10,6 @@ import dace
 from dace.transformation import dataflow as dace_dataflow
 
 
-def graupel_run_top_level_post(sdfg: dace.SDFG) -> None:
+def graupel_run_top_level_dataflow_step(sdfg: dace.SDFG) -> None:
     sdfg.apply_transformations_repeated(dace_dataflow.TaskletFusion, validate=False)
-    sdfg.save("graupel_run_top_level_post.sdfg")
+    sdfg.save("graupel_run_top_level_dataflow_step.sdfg")

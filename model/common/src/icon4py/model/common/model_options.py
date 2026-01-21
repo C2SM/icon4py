@@ -52,8 +52,8 @@ def get_dace_options(
         backend_descriptor["use_zero_origin"] = True
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
-        optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPost] = (
-            dace_opt.graupel_run_top_level_post
+        optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep] = (
+            dace_opt.graupel_run_top_level_dataflow_step
         )
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
