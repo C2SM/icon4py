@@ -95,6 +95,7 @@ build_distributed_cpu:
       variables:
         SLURM_TIMELIMIT: '00:30:00'
   artifacts:
+    when: always
     paths:
       - pytest-log-rank-*.txt
 
