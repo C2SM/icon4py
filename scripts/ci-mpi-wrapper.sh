@@ -19,7 +19,7 @@ fi
 
 log_file="${CI_PROJECT_DIR:+${CI_PROJECT_DIR}/}pytest-log-rank-${rank}.txt"
 
-if [[ "${rank}" -eq 0  ]]; then
+if [[ "${rank}" -eq 0 ]]; then
     echo "Starting pytest on rank ${rank}, logging to stdout and ${log_file}"
     $@ |& tee "${log_file}"
 else
