@@ -99,7 +99,7 @@ def test_distributed_geometry_attrs_for_inverse(
     grid_name: str,
     lb_domain: h_grid.Domain,
 ) -> None:
-    pytest.xfail()
+    pytest.xfail("Wrong results")
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)

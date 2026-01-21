@@ -70,7 +70,7 @@ def test_distributed_metrics_attrs(
     experiment: test_defs.Experiment,
 ) -> None:
     if attrs_name == attrs.COEFF_GRADEKIN:
-        pytest.xfail()
+        pytest.xfail("Wrong results")
 
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
