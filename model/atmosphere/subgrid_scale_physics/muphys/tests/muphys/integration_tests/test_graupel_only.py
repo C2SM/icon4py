@@ -60,7 +60,11 @@ def test_graupel_only(
     )
 
     graupel_run_program = run_graupel_only.setup_graupel(
-        inp, dt=experiment.dt, qnc=experiment.qnc, backend=backend_like
+        inp,
+        dt=experiment.dt,
+        qnc=experiment.qnc,
+        backend=backend_like,
+        enable_masking=True,  # `False` would require different reference data (or relaxing thresholds)
     )
 
     out = common.GraupelOutput.allocate(
