@@ -66,6 +66,14 @@ def test_graupel_only(
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+        references={
+            "qv": inp.qv,
+            "qc": inp.qc,
+            "qi": inp.qi,
+            "qr": inp.qr,
+            "qs": inp.qs,
+            "qg": inp.qg,
+        },
     )
 
     graupel_run_program(
