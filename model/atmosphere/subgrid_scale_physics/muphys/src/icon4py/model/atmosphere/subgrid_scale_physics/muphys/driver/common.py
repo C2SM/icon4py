@@ -94,7 +94,10 @@ class GraupelInput:
 
     @classmethod
     def load(
-        cls, filename: pathlib.Path | str, allocator: gtx_typing.FieldBufferAllocationUtil
+        cls,
+        filename: pathlib.Path | str,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
+        dtype=np.float64,
     ) -> None:
         with netCDF4.Dataset(filename, mode="r") as ncfile:
             try:
@@ -104,11 +107,9 @@ class GraupelInput:
 
             nlev = len(ncfile.dimensions["height"])
 
-            dz = _calc_dz(ncfile.variables["zg"])
+            dz = _calc_dz(np.asarray(ncfile.variables["zg"]).astype(dtype))
 
-            field_from_nc = functools.partial(
-                _as_field_from_nc, ncfile, allocator, dtype=np.float64
-            )
+            field_from_nc = functools.partial(_as_field_from_nc, ncfile, allocator, dtype=dtype)
             return cls(
                 ncells=ncells,
                 nlev=nlev,
