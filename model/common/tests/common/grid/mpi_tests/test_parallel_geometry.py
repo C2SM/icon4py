@@ -174,3 +174,39 @@ def test_cartesian_geometry_attr_no_halos(
     )
     math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
     assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "experiment, grid_name, value_ref",
+    [
+        (test_defs.Experiments.EXCLAIM_APE, "mean_edge_length", 240221.1036647776),
+        (test_defs.Experiments.EXCLAIM_APE, "mean_dual_edge_length", 138710.63736114913),
+        (test_defs.Experiments.EXCLAIM_APE, "mean_cell_area", 24906292887.251026),
+        (test_defs.Experiments.EXCLAIM_APE, "mean_dual_area", 49802858653.68937),
+        (test_defs.Experiments.MCH_CH_R04B09, "mean_edge_length", 3803.019140934253),
+        (test_defs.Experiments.MCH_CH_R04B09, "mean_dual_edge_length", 2180.911493355989),
+        (test_defs.Experiments.MCH_CH_R04B09, "mean_cell_area", 6256048.940145881),
+        (test_defs.Experiments.MCH_CH_R04B09, "mean_dual_area", 12259814.063180268),
+    ],
+)
+
+def test_distributed_metrics_mean_fields(
+    backend: gtx_typing.Backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    geometry_from_savepoint: geometry.GridGeometry,
+    experiment: test_defs.Experiment,
+    grid_name: str,
+    value_ref: float,
+) -> None:
+    if processor_props.comm_size > 1:
+        pytest.skip("Values not serialized for multiple processors")
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    value = geometry_from_savepoint.get(grid_name)
+    assert value == value_ref
