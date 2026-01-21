@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
+import math
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
@@ -308,8 +309,9 @@ class GridGeometry(factory.FieldSource):
             },
             do_exchange=True,
         )
+        self.register_provider(edge_areas)
 
-        mean_edge_length = factory.NumpyDataProvider(
+        mean_edge_length_np = factory.NumpyDataProvider(
             func=functools.partial(
                 utils.compute_field_mean,
                 array_ns=self._xp,
@@ -321,9 +323,9 @@ class GridGeometry(factory.FieldSource):
             },
             fields=(attrs.MEAN_EDGE_LENGTH,),
         )
-        self.register_provider(mean_edge_length)
+        self.register_provider(mean_edge_length_np)
 
-        mean_dual_edge_length = factory.NumpyDataProvider(
+        mean_dual_edge_length_np = factory.NumpyDataProvider(
             func=functools.partial(
                 utils.compute_field_mean,
                 array_ns=self._xp,
@@ -335,9 +337,9 @@ class GridGeometry(factory.FieldSource):
             },
             fields=(attrs.MEAN_DUAL_EDGE_LENGTH,),
         )
-        self.register_provider(mean_dual_edge_length)
+        self.register_provider(mean_dual_edge_length_np)
 
-        mean_cell_area = factory.NumpyDataProvider(
+        mean_cell_area_np = factory.NumpyDataProvider(
             func=functools.partial(
                 utils.compute_field_mean,
                 array_ns=self._xp,
@@ -349,9 +351,9 @@ class GridGeometry(factory.FieldSource):
             },
             fields=(attrs.MEAN_CELL_AREA,),
         )
-        self.register_provider(mean_cell_area)
+        self.register_provider(mean_cell_area_np)
 
-        mean_dual_cell_area = factory.NumpyDataProvider(
+        mean_dual_cell_area_np = factory.NumpyDataProvider(
             func=functools.partial(
                 utils.compute_field_mean,
                 array_ns=self._xp,
@@ -363,9 +365,21 @@ class GridGeometry(factory.FieldSource):
             },
             fields=(attrs.MEAN_DUAL_AREA,),
         )
-        self.register_provider(mean_dual_cell_area)
+        self.register_provider(mean_dual_cell_area_np)
 
-        self.register_provider(edge_areas)
+        characteristic_length_np = factory.NumpyDataProvider(
+            func=functools.partial(
+                math.sqrt,
+                array_ns=self._xp,
+            ),
+            domain=(),
+            deps={
+                "input_field": attrs.MEAN_DUAL_AREA,
+            },
+            fields=(attrs.CHARACTERISTIC_LENGTH,),
+        )
+        self.register_provider(characteristic_length_np)
+
 
     def _register_normals_and_tangents_icosahedron(self) -> None:
         """Register normals and tangents specific to icosahedron geometry."""

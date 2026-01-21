@@ -101,29 +101,6 @@ class GlobalGridParams:
         if self.num_cells is None and self.global_num_cells is not None:
             object.__setattr__(self, "num_cells", self.global_num_cells)
 
-        if (
-            self.radius is not None
-            and self.global_num_cells is not None
-            and self.geometry_type is base.GeometryType.ICOSAHEDRON
-        ):
-            object.__setattr__(
-                self,
-                "mean_cell_area",
-                compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells),
-            )
-
-        if (
-            self.characteristic_length is None
-            and self.radius is not None
-            and self.global_num_cells is not None
-            and self.geometry_type is base.GeometryType.ICOSAHEDRON
-        ):
-            object.__setattr__(
-                self,
-                "characteristic_length",
-                math.sqrt(compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells)),
-            )
-
     @property
     def geometry_type(self) -> base.GeometryType | None:
         return self.grid_shape.geometry_type if self.grid_shape else None

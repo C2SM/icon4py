@@ -189,7 +189,7 @@ def test_rbf_interpolation_coeffs_cell(
         geometry_type.value,
         rbf.compute_default_rbf_scale(
             geometry_type,
-            grid.global_properties.characteristic_length,
+            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
             rbf_dim,
         ),
@@ -274,7 +274,7 @@ def test_rbf_interpolation_coeffs_vertex(
         geometry_type.value,
         rbf.compute_default_rbf_scale(
             geometry_type,
-            grid.global_properties.characteristic_length,
+            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
             rbf_dim,
         ),
@@ -361,7 +361,7 @@ def test_rbf_interpolation_coeffs_edge(
         geometry_type.value,
         rbf.compute_default_rbf_scale(
             geometry_type,
-            grid.global_properties.characteristic_length,
+            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
             rbf_dim,
         ),
