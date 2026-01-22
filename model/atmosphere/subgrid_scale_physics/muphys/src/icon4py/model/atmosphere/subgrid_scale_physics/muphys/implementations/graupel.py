@@ -264,10 +264,7 @@ def _precip_and_t(
             mask=kmin_rsig,
         ),
         rho=rho,
-        pflx_tot=s_update.p  # TODO double-check that this is correct (as there is another pflx_tot that doesn't include `r`)
-        + i_update.p
-        + g_update.p
-        + r_update.p,
+        pflx_tot=s_update.p + i_update.p + g_update.p + r_update.p,
     )
 
 
@@ -311,21 +308,26 @@ def sink_saturation(
 
 
 @gtx.field_operator
-def _q_t_update(
+def _q_t_update(  # noqa: PLR0915
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
     q: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
+    enable_masking: bool,
 ) -> tuple[
     Q,
     fa.CellKField[ta.wpfloat],
 ]:
-    mask = (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > g_ct.qmin) | (
-        (t < g_ct.tfrz_het2) & (q.v > _qsat_ice_rho(t, rho))
-    )
-    is_sig_present = maximum(q.g, maximum(q.i, q.s)) > g_ct.qmin
+    if enable_masking:
+        mask = (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > g_ct.qmin) | (
+            (t < g_ct.tfrz_het2) & (q.v > _qsat_ice_rho(t, rho))
+        )
+        is_sig_present = maximum(q.g, maximum(q.i, q.s)) > g_ct.qmin
+    else:
+        mask = broadcast(True, (dims.CellDim, dims.KDim))
+        is_sig_present = broadcast(True, (dims.CellDim, dims.KDim))
 
     dvsw = q.v - _qsat_rho(t, rho)
     qvsi = _qsat_ice_rho(t, rho)
@@ -518,6 +520,7 @@ def graupel(
     q: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
+    enable_masking: bool,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     Q,
@@ -532,7 +535,7 @@ def graupel(
     kmin_i = where(q.i > g_ct.qmin, True, False)
     kmin_s = where(q.s > g_ct.qmin, True, False)
     kmin_g = where(q.g > g_ct.qmin, True, False)
-    q, t = _q_t_update(te, p, rho, q, dt, qnc)
+    q, t = _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
         last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
@@ -561,6 +564,7 @@ def graupel_run(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
+    enable_masking: bool,
 ):
     graupel(
         last_level=vertical_end - 1,
@@ -571,6 +575,7 @@ def graupel_run(
         q=q_in,
         dt=dt,
         qnc=qnc,
+        enable_masking=enable_masking,
         out=(t_out, q_out, pflx, pr, ps, pi, pg, pre),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

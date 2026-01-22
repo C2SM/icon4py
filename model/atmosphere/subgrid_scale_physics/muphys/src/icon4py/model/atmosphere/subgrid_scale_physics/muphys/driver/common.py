@@ -144,10 +144,30 @@ class GraupelOutput:
     pre: gtx.Field[dims.CellDim, dims.KDim] | None
 
     @classmethod
-    def allocate(cls, allocator: gtx_typing.FieldBufferAllocationUtil, domain: gtx.Domain):
+    def allocate(
+        cls,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
+        domain: gtx.Domain,
+        references: dict[str, gtx.Field] | None = None,
+    ):
+        """
+        Returns a GraupelOutput with allocated fields.
+
+        :param domain: Full domain of the Muphys fields.
+        :param references: Dictionary of fields that should be re-used instead of allocated.
+        """
+        # TODO(havogt): maybe this function should become an __init__ with defaults
+        if references is None:
+            references = {}
+
         zeros = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
         # TODO +1 size fields?
-        return cls(**{field.name: zeros() for field in dataclasses.fields(cls)})
+        return cls(
+            **{
+                field.name: zeros() if field.name not in references else references[field.name]
+                for field in dataclasses.fields(cls)
+            }
+        )
 
     @classmethod
     def load(cls, filename: pathlib.Path | str, allocator: gtx_typing.FieldBufferAllocationUtil):

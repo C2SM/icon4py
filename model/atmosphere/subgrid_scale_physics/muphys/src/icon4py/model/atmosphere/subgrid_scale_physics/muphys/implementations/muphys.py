@@ -51,6 +51,7 @@ def _muphys(
         Q(v=qve, c=qce, r=q_in.r, s=q_in.s, i=q_in.i, g=q_in.g),
         dt,
         qnc,
+        enable_masking=True,  # TODO(havogt): expose this option when optimizing full muphys
     )
 
     te, qve, qce = _saturation_adjustment(
