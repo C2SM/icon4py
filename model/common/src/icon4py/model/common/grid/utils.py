@@ -39,8 +39,7 @@ def compute_field_mean(
     """
     compute the mean value of input_field.
     """
-    mean_val = mean_reduction(input_field, array_ns=array_ns)
-    return mean_val
+    return mean_reduction(input_field, array_ns=array_ns)
 
 
 def compute_sqrt(
