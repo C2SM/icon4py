@@ -16,6 +16,7 @@ import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators
 
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -97,13 +98,16 @@ class GlobalGridParams:
         cell_areas: data_alloc.NDArray | None = None,
         mean_dual_cell_area: float | None = None,
         dual_cell_areas: data_alloc.NDArray | None = None,
+        mean_reduction: Callable[
+            [data_alloc.NDArray, ModuleType], data_alloc.ScalarT
+        ] = decomposition.single_node_reductions.mean,
         **kwargs,
     ) -> _T:
         def init_mean(value: float | None, data: data_alloc.NDArray | None) -> float | None:
             if value is not None:
                 return value
             if data is not None:
-                return array_ns.mean(data).item()
+                return mean_reduction(data, array_ns=array_ns)
             return None
 
         mean_edge_length = init_mean(mean_edge_length, edge_lengths)
