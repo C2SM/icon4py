@@ -328,7 +328,7 @@ def test_halo_exchange_for_sparse_field(
     assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())
 
 
-inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], []]
+inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], [], [-10, 20, 4]]
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -337,7 +337,7 @@ inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], []]
 def test_global_reductions_min(
     processor_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    global_list: list[float],
+    global_list: list[data_alloc.ScalarT],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
@@ -362,7 +362,7 @@ def test_global_reductions_min(
 def test_global_reductions_max(
     processor_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    global_list: list[float],
+    global_list: list[data_alloc.ScalarT],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
@@ -387,7 +387,7 @@ def test_global_reductions_max(
 def test_global_reductions_sum(
     processor_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    global_list: list[float],
+    global_list: list[data_alloc.ScalarT],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
@@ -412,7 +412,7 @@ def test_global_reductions_sum(
 def test_global_reductions_mean(
     processor_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    global_list: list[float],
+    global_list: list[data_alloc.ScalarT],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
