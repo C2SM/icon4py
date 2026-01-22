@@ -76,7 +76,6 @@ def test_diffusion_benchmark(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        mean_cell_area=geometry_field_source.get(geometry_meta.MEAN_CELL_AREA),
     )
     edge_geometry = grid_states.EdgeParams(
         edge_center_lat=geometry_field_source.get(geometry_meta.EDGE_LAT),

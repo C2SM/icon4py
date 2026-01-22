@@ -212,4 +212,3 @@ class CellParams:
     #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
     area: fa.CellField[float] = None
     mean_cell_area: float = None
-    characteristic_length: float = None

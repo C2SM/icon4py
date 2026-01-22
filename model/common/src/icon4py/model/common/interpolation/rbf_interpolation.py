@@ -50,11 +50,9 @@ DEFAULT_RBF_KERNEL: dict[RBFDimension, int] = {
 
 
 def compute_default_rbf_scale_cell(
-    geometry_type: int,  # base_grid.GeometryType,
-    # buffer_field: fa.CellField[ta.wpfloat],
+    geometry_type: int,
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
-    # dim: RBFDimension,
 ) -> ta.wpfloat:
     """Compute the default RBF scale factor. This assumes that the Gaussian
     kernel is used for vertices and cells, and that the inverse multiquadratic
@@ -77,11 +75,9 @@ def compute_default_rbf_scale_cell(
 
 
 def compute_default_rbf_scale_edge(
-    geometry_type: int,  # base_grid.GeometryType,
-    # buffer_field: fa.EdgeField[ta.wpfloat],
+    geometry_type: int,
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
-    # dim: RBFDimension,
 ) -> ta.wpfloat:
     """Compute the default RBF scale factor. This assumes that the Gaussian
     kernel is used for vertices and cells, and that the inverse multiquadratic
@@ -104,11 +100,9 @@ def compute_default_rbf_scale_edge(
 
 
 def compute_default_rbf_scale_vertex(
-    geometry_type: int,  # base_grid.GeometryType,
-    # buffer_field: fa.VertexField[ta.wpfloat],
+    geometry_type: int,
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
-    # dim: RBFDimension,
 ) -> ta.wpfloat:
     """Compute the default RBF scale factor. This assumes that the Gaussian
     kernel is used for vertices and cells, and that the inverse multiquadratic
