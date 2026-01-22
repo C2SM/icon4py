@@ -432,6 +432,28 @@ def create_multinode_node_exchange(
 class GlobalReductions(Reductions):
     props: definitions.ProcessProperties
 
+    @staticmethod
+    def _min_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
+        if array_ns.issubdtype(dtype, array_ns.integer):
+            return array_ns.asarray([dtype.type(array_ns.iinfo(dtype).max)])
+        elif array_ns.issubdtype(dtype, array_ns.floating):
+            return array_ns.asarray([dtype.type(array_ns.inf)])
+        else:
+            raise TypeError(f"Unsupported dtype for min identity: {dtype}")
+
+    @staticmethod
+    def _max_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
+        if array_ns.issubdtype(dtype, array_ns.integer):
+            return array_ns.asarray([dtype.type(array_ns.iinfo(dtype).min)])
+        elif array_ns.issubdtype(dtype, array_ns.floating):
+            return array_ns.asarray([dtype.type(-array_ns.inf)])
+        else:
+            raise TypeError(f"Unsupported dtype for max identity: {dtype}")
+
+    @staticmethod
+    def _sum_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
+        return array_ns.asarray([dtype.type(0)])
+
     def _reduce(
         self,
         buffer: data_alloc.NDArray,
@@ -459,7 +481,7 @@ class GlobalReductions(Reductions):
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_min requires a non-empty buffer")
         return self._reduce(
-            buffer if buffer.size != 0 else array_ns.asarray([array_ns.inf]),
+            buffer if buffer.size != 0 else self._min_identity(buffer.dtype, array_ns),
             array_ns.min,
             mpi4py.MPI.MIN,
             array_ns,
@@ -469,7 +491,7 @@ class GlobalReductions(Reductions):
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_max requires a non-empty buffer")
         return self._reduce(
-            buffer if buffer.size != 0 else array_ns.asarray([-array_ns.inf]),
+            buffer if buffer.size != 0 else self._max_identity(buffer.dtype, array_ns),
             array_ns.max,
             mpi4py.MPI.MAX,
             array_ns,
@@ -479,7 +501,7 @@ class GlobalReductions(Reductions):
         if self._calc_buffer_size(buffer, array_ns) == 0:
             raise ValueError("global_sum requires a non-empty buffer")
         return self._reduce(
-            buffer if buffer.size != 0 else array_ns.asarray([0]),
+            buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
             array_ns.sum,
             mpi4py.MPI.SUM,
             array_ns,
@@ -492,7 +514,7 @@ class GlobalReductions(Reductions):
 
         return (
             self._reduce(
-                buffer if buffer.size != 0 else array_ns.asarray([0]),
+                (buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)),
                 array_ns.sum,
                 mpi4py.MPI.SUM,
                 array_ns,
