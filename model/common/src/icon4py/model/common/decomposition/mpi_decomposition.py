@@ -433,9 +433,7 @@ class GlobalReductions(Reductions):
     props: definitions.ProcessProperties
 
     @staticmethod
-    def _min_identity(
-        dtype: data_alloc.ScalarT, array_ns: ModuleType = np
-    ) -> data_alloc.ScalarT:
+    def _min_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
         if array_ns.issubdtype(dtype, array_ns.integer):
             return array_ns.asarray([dtype.type(array_ns.iinfo(dtype).max)])
         elif array_ns.issubdtype(dtype, array_ns.floating):
@@ -444,9 +442,7 @@ class GlobalReductions(Reductions):
             raise TypeError(f"Unsupported dtype for min identity: {dtype}")
 
     @staticmethod
-    def _max_identity(
-        dtype: data_alloc.ScalarT, array_ns: ModuleType = np
-    ) -> data_alloc.ScalarT:
+    def _max_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
         if array_ns.issubdtype(dtype, array_ns.integer):
             return array_ns.asarray([dtype.type(array_ns.iinfo(dtype).min)])
         elif array_ns.issubdtype(dtype, array_ns.floating):
@@ -455,10 +451,8 @@ class GlobalReductions(Reductions):
             raise TypeError(f"Unsupported dtype for max identity: {dtype}")
 
     @staticmethod
-    def _sum_identity(
-        dtype: data_alloc.ScalarT, array_ns: ModuleType = np
-    ) -> data_alloc.ScalarT:
-        return array_ns.asarray([dtype.type(array_ns.add.identity)])
+    def _sum_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
+        return array_ns.asarray([dtype.type(0)])
 
     def _reduce(
         self,
@@ -520,11 +514,7 @@ class GlobalReductions(Reductions):
 
         return (
             self._reduce(
-                (
-                    buffer
-                    if buffer.size != 0
-                    else self._sum_identity(buffer.dtype, array_ns)
-                ),
+                (buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)),
                 array_ns.sum,
                 mpi4py.MPI.SUM,
                 array_ns,
