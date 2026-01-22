@@ -264,10 +264,7 @@ def _precip_and_t(
             mask=kmin_rsig,
         ),
         rho=rho,
-        pflx_tot=s_update.p  # TODO double-check that this is correct (as there is another pflx_tot that doesn't include `r`)
-        + i_update.p
-        + g_update.p
-        + r_update.p,
+        pflx_tot=s_update.p + i_update.p + g_update.p + r_update.p,
     )
 
 
@@ -311,7 +308,7 @@ def sink_saturation(
 
 
 @gtx.field_operator
-def _q_t_update(
+def _q_t_update(  # noqa: PLR0915
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
