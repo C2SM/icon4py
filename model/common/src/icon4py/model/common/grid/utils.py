@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import math
 from collections.abc import Callable
 from types import ModuleType
 
@@ -40,3 +41,13 @@ def compute_field_mean(
     """
     mean_val = mean_reduction(input_field, array_ns=array_ns)
     return mean_val
+
+
+def compute_sqrt(
+    input_val: data_alloc.NDArray,
+) -> float:
+    """
+    compute the mean value of input_field.
+    """
+    sqrt_val = math.sqrt(input_val)
+    return sqrt_val

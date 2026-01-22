@@ -117,7 +117,6 @@ def interpolation_factory_from_savepoint(
         grid=geometry_source.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_source,
-        cell_geometry=grid_savepoint.construct_cell_geometry(),
         backend=backend,
         metadata=interpolation_attributes.attrs,
         exchange=exchange,

@@ -31,6 +31,9 @@ RBF_VEC_COEFF_C2: Final[str] = "rbf_interpolation_coefficient_cell_2"
 RBF_VEC_COEFF_E: Final[str] = "rbf_interpolation_coefficient_edge"
 RBF_VEC_COEFF_V1: Final[str] = "rbf_interpolation_coefficient_vertex_1"
 RBF_VEC_COEFF_V2: Final[str] = "rbf_interpolation_coefficient_vertex_2"
+RBF_SCALE_CELL: Final[str] = "rbf_scale_cell"
+RBF_SCALE_EDGE: Final[str] = "rbf_scale_edge"
+RBF_SCALE_VERTEX: Final[str] = "rbf_scale_vertex"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
@@ -183,6 +186,30 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.VertexDim, dims.V2EDim),
         icon_var_name="rbf_vec_coeff_v2",
+        dtype=ta.wpfloat,
+    ),
+    RBF_SCALE_CELL: dict(
+        standard_name=RBF_SCALE_CELL,
+        long_name="rbf_scale_cell",
+        units="",
+        dims=(),
+        icon_var_name="rbf_scale_cell",
+        dtype=ta.wpfloat,
+    ),
+    RBF_SCALE_EDGE: dict(
+        standard_name=RBF_SCALE_EDGE,
+        long_name="rbf_scale_edge",
+        units="",
+        dims=(),
+        icon_var_name="rbf_scale_edge",
+        dtype=ta.wpfloat,
+    ),
+    RBF_SCALE_VERTEX: dict(
+        standard_name=RBF_SCALE_VERTEX,
+        long_name="rbf_scale_vertex",
+        units="",
+        dims=(),
+        icon_var_name="rbf_scale_vertex",
         dtype=ta.wpfloat,
     ),
 }

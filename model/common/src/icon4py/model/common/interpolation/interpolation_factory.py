@@ -11,7 +11,6 @@ import logging
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -45,7 +44,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         grid: icon.IconGrid,
         decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        cell_geometry: grid_states.CellParams,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
@@ -59,9 +57,8 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         self._exchange = exchange
-        geometry_type = self._grid.global_properties.geometry_type
-        self._characteristic_length = cell_geometry.characteristic_length
-        self._mean_dual_edge_length = cell_geometry.mean_cell_area
+        self._characteristic_length = geometry_source.metadata["characteristic_length"]
+        self._mean_dual_edge_length = geometry_source.metadata["mean_cell_area"]
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
             "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON
@@ -72,24 +69,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
             "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
             "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
-            "rbf_scale_cell": rbf.compute_default_rbf_scale(
-                geometry_type,
-                self._characteristic_length,
-                self._mean_dual_edge_length,
-                rbf.RBFDimension.CELL,
-            ),
-            "rbf_scale_edge": rbf.compute_default_rbf_scale(
-                geometry_type,
-                self._characteristic_length,
-                self._mean_dual_edge_length,
-                rbf.RBFDimension.EDGE,
-            ),
-            "rbf_scale_vertex": rbf.compute_default_rbf_scale(
-                geometry_type,
-                self._characteristic_length,
-                self._mean_dual_edge_length,
-                rbf.RBFDimension.VERTEX,
-            ),
         }
         log.info(
             f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -208,6 +187,48 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
 
         self.register_provider(geofac_grdiv)
+
+        rbf_scale_cell_np = factory.NumpyDataProvider(
+            func=functools.partial(rbf.compute_default_rbf_scale_cell),
+            domain=(),
+            deps={
+                "mean_characteristic_length": geometry_attrs.CHARACTERISTIC_LENGTH,
+                "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
+            },
+            params={
+                "geometry_type": self.grid.global_properties.geometry_type.value,
+            },
+            fields=(attrs.RBF_SCALE_CELL,),
+        )
+        self.register_provider(rbf_scale_cell_np)
+
+        rbf_scale_edge_np = factory.NumpyDataProvider(
+            func=functools.partial(rbf.compute_default_rbf_scale_edge),
+            domain=(),
+            deps={
+                "mean_characteristic_length": geometry_attrs.CHARACTERISTIC_LENGTH,
+                "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
+            },
+            params={
+                "geometry_type": self.grid.global_properties.geometry_type.value,
+            },
+            fields=(attrs.RBF_SCALE_EDGE,),
+        )
+        self.register_provider(rbf_scale_edge_np)
+
+        rbf_scale_vertex_np = factory.NumpyDataProvider(
+            func=functools.partial(rbf.compute_default_rbf_scale_vertex),
+            domain=(),
+            deps={
+                "mean_characteristic_length": geometry_attrs.CHARACTERISTIC_LENGTH,
+                "mean_dual_edge_length": geometry_attrs.MEAN_DUAL_EDGE_LENGTH,
+            },
+            params={
+                "geometry_type": self.grid.global_properties.geometry_type.value,
+            },
+            fields=(attrs.RBF_SCALE_VERTEX,),
+        )
+        self.register_provider(rbf_scale_vertex_np)
 
         match self.grid.global_properties.geometry_type:
             case base.GeometryType.ICOSAHEDRON:
@@ -469,12 +490,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edge_normal_x": geometry_attrs.EDGE_NORMAL_X,
                 "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
                 "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
+                "scale_factor": attrs.RBF_SCALE_CELL,  # self._config["rbf_scale_cell"],
             },
             connectivities={"rbf_offset": dims.C2E2C2EDim},
             params={
                 "rbf_kernel": self._config["rbf_kernel_cell"].value,
                 "geometry_type": self._grid.global_properties.geometry_type.value,
-                "scale_factor": self._config["rbf_scale_cell"],
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -507,12 +528,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
                 "edge_dual_normal_u": geometry_attrs.EDGE_DUAL_U,
                 "edge_dual_normal_v": geometry_attrs.EDGE_DUAL_V,
+                "scale_factor": attrs.RBF_SCALE_EDGE,  # self._config["rbf_scale_edge"],
             },
             connectivities={"rbf_offset": dims.E2C2EDim},
             params={
                 "rbf_kernel": self._config["rbf_kernel_edge"].value,
                 "geometry_type": self._grid.global_properties.geometry_type.value,
-                "scale_factor": self._config["rbf_scale_edge"],
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -546,12 +567,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edge_normal_x": geometry_attrs.EDGE_NORMAL_X,
                 "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
                 "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
+                "scale_factor": attrs.RBF_SCALE_VERTEX,  # self._config["rbf_scale_vertex"],
             },
             connectivities={"rbf_offset": dims.V2EDim},
             params={
                 "rbf_kernel": self._config["rbf_kernel_vertex"].value,
                 "geometry_type": self._grid.global_properties.geometry_type.value,
-                "scale_factor": self._config["rbf_scale_vertex"],
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),

@@ -122,18 +122,11 @@ def create_static_field_factories(
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
     )
-    cell_geometry = grid_states.CellParams(
-        cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
-        cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
-        area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        mean_cell_area=geometry_field_source.get(geometry_meta.MEAN_CELL_AREA),
-    )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        cell_geometry=cell_geometry,
         backend=concrete_backend,
         metadata=interpolation_attributes.attrs,
     )

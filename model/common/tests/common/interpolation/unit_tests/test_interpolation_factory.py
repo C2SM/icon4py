@@ -69,18 +69,11 @@ def _get_interpolation_factory(
     factory = interpolation_factories.get(registry_key)
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment)
-        cell_geometry = grid_states.CellParams(
-            cell_center_lat=geometry.get(geometry_meta.CELL_LAT),
-            cell_center_lon=geometry.get(geometry_meta.CELL_LON),
-            area=geometry.get(geometry_meta.CELL_AREA),
-            mean_cell_area=geometry.get(geometry_meta.MEAN_CELL_AREA),
-        )
 
         factory = interpolation_factory.InterpolationFieldsFactory(
             grid=geometry.grid,
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
-            cell_geometry=cell_geometry,
             backend=backend,
             metadata=attrs.attrs,
         )
@@ -95,17 +88,10 @@ def test_factory_raises_error_on_unknown_field(
     decomposition_info: decomposition.DecompositionInfo,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
-    cell_geometry = grid_states.CellParams(
-        cell_center_lat=geometry.get(geometry_meta.CELL_LAT),
-        cell_center_lon=geometry.get(geometry_meta.CELL_LON),
-        area=geometry.get(geometry_meta.CELL_AREA),
-        mean_cell_area=geometry.get(geometry_meta.MEAN_CELL_AREA),
-    )
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry,
-        cell_geometry=cell_geometry,
         backend=backend,
         metadata=attrs.attrs,
     )

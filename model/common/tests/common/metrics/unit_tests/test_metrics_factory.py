@@ -82,7 +82,6 @@ def _get_metrics_factory(
             grid=geometry.grid,
             decomposition_info=geometry._decomposition_info,
             geometry_source=geometry,
-            cell_geometry=grid_savepoint.construct_cell_geometry(),
             backend=backend,
             metadata=interpolation_attributes.attrs,
             exchange=exchange,

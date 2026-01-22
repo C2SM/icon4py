@@ -190,9 +190,12 @@ def test_cartesian_geometry_attr_no_halos(
         (test_defs.Experiments.MCH_CH_R04B09, "mean_dual_edge_length", 2180.911493355989),
         (test_defs.Experiments.MCH_CH_R04B09, "mean_cell_area", 6256048.940145881),
         (test_defs.Experiments.MCH_CH_R04B09, "mean_dual_area", 12259814.063180268),
+        (test_defs.Experiments.GAUSS3D, "mean_edge_length", 757.5757575757576),
+        (test_defs.Experiments.GAUSS3D, "mean_dual_edge_length", 437.3865675678984),
+        (test_defs.Experiments.GAUSS3D, "mean_cell_area", 248515.09520903317),
+        (test_defs.Experiments.GAUSS3D, "mean_dual_area", 497030.1904180664),
     ],
 )
-
 def test_distributed_metrics_mean_fields(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,

@@ -13,7 +13,6 @@ import gt4py.next as gtx
 import pytest
 
 import icon4py.model.common.dimension as dims
-import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import (
@@ -61,7 +60,6 @@ def geometry_field_source(
 def interpolation_field_source(
     grid_manager: gm.GridManager,
     geometry_field_source: grid_geometry.GridGeometry,
-    cell_geometry: grid_states.CellParams,
     backend_like: model_backends.BackendLike,
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory, None, None]:
     mesh = grid_manager.grid
@@ -74,7 +72,6 @@ def interpolation_field_source(
         grid=mesh,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        cell_geometry=cell_geometry,
         backend=generic_concrete_backend,
         metadata=interpolation_attributes.attrs,
     )

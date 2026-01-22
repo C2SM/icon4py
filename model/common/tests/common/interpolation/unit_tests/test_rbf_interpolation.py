@@ -187,11 +187,11 @@ def test_rbf_interpolation_coeffs_cell(
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         geometry_type.value,
-        rbf.compute_default_rbf_scale(
-            geometry_type,
+        rbf.compute_default_rbf_scale_cell(
+            geometry_type.value,
             geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
-            rbf_dim,
+            # rbf_dim,
         ),
         horizontal_start,
         grid.global_properties.domain_length,
@@ -272,11 +272,11 @@ def test_rbf_interpolation_coeffs_vertex(
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         geometry_type.value,
-        rbf.compute_default_rbf_scale(
-            geometry_type,
+        rbf.compute_default_rbf_scale_vertex(
+            geometry_type.value,
             geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
-            rbf_dim,
+            # rbf_dim,
         ),
         horizontal_start,
         grid.global_properties.domain_length,
