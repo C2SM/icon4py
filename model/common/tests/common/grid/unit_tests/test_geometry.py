@@ -360,7 +360,7 @@ def test_cartesian_centers_edge(
 def test_cartesian_centers_cell(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment
+    experiment: definitions.Experiment,
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     grid = grid_geometry.grid
@@ -399,7 +399,7 @@ def test_cartesian_centers_cell(
 def test_vertex(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment
+    experiment: definitions.Experiment,
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     grid = grid_geometry.grid
