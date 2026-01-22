@@ -452,7 +452,7 @@ class GlobalReductions(Reductions):
 
     @staticmethod
     def _sum_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
-        return array_ns.asarray([dtype.type(array_ns.add.identity)])
+        return array_ns.asarray([dtype.type(0)])
 
     def _reduce(
         self,
