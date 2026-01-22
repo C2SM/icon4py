@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import typing
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
