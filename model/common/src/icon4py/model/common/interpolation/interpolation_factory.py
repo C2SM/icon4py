@@ -57,8 +57,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         self._exchange = exchange
-        self._characteristic_length = geometry_source.metadata["characteristic_length"]
-        self._mean_dual_edge_length = geometry_source.metadata["mean_cell_area"]
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
             "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON

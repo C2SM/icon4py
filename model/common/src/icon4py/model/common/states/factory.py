@@ -54,6 +54,7 @@ from typing import Any, Literal, Protocol, TypeVar, overload
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import xarray as xa
 from gt4py.next import common as gtx_common
 
@@ -722,10 +723,12 @@ class NumpyDataProvider(FieldProvider):
         for dep_key in self._dependencies:
             parameter_annotation = annotations.get(dep_key)
             checked = _is_compatible_union(parameter_annotation, expected=data_alloc.NDArray)
-            # assert checked, (
-            #     f"Dependency '{dep_key}' in function '{_func_name(self._func)}':  does not exist or has "
-            #     f"wrong type ('expected ndarray') but was '{parameter_annotation}'."
-            # )
+            if not checked:
+                checked = _is_compatible_union(parameter_annotation, expected=np.float64)
+            assert checked, (
+                f"Dependency '{dep_key}' in function '{_func_name(self._func)}':  does not exist or has "
+                f"wrong type ('expected ndarray or float64') but was '{parameter_annotation}'."
+            )
 
         supported_scalars = state_utils.IntegerType | state_utils.FloatType
         for param_key, param_value in self._params.items():
@@ -734,10 +737,10 @@ class NumpyDataProvider(FieldProvider):
                 parameter_annotation, expected=supported_scalars
             ) and _is_compatible_value(param_value, expected=supported_scalars)
 
-            # assert checked, (
-            #     f"Parameter '{param_key}' in function '{_func_name(self._func)}' does not "
-            #     f"exist or has the wrong type: '{type(param_value)}'."
-            # )
+            assert checked, (
+                f"Parameter '{param_key}' in function '{_func_name(self._func)}' does not "
+                f"exist or has the wrong type: '{type(param_value)}'."
+            )
 
     @property
     def func(self) -> Callable:
