@@ -488,7 +488,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edge_normal_x": geometry_attrs.EDGE_NORMAL_X,
                 "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
                 "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
-                "scale_factor": attrs.RBF_SCALE_CELL,  # self._config["rbf_scale_cell"],
+                "scale_factor": attrs.RBF_SCALE_CELL,
             },
             connectivities={"rbf_offset": dims.C2E2C2EDim},
             params={
