@@ -35,7 +35,9 @@ from icon4py.model.common.utils import device_utils
 
 def allocate_data(
     allocator: gtx_typing.FieldBufferAllocationUtil | None,
-    input_data: dict[str, Any], # `Field`s or collection of `Field`s are re-allocated, the rest is passed through
+    input_data: dict[
+        str, Any
+    ],  # `Field`s or collection of `Field`s are re-allocated, the rest is passed through
 ) -> dict[str, Any]:
     def _allocate_field(f: gtx.Field) -> gtx.Field:
         return constructors.as_field(domain=f.domain, data=f.ndarray, allocator=allocator)
