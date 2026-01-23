@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -196,22 +197,20 @@ GRID_REFERENCE_VALUES = {
         "mean_dual_area": 497030.1904180664,
     },
 }
+
+
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid_name", [
-    "mean_edge_length",
-    "mean_dual_edge_length",
-    "mean_cell_area",
-    "mean_dual_area"
-])
-def test_distributed_metrics_mean_fields(
+@pytest.mark.parametrize(
+    "grid_name", ["mean_edge_length", "mean_dual_edge_length", "mean_cell_area", "mean_dual_area"]
+)
+def test_distributed_geometry_mean_fields(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
-    experiment,
     grid_name: str,
 ) -> None:
     if processor_props.comm_size > 1:
@@ -220,6 +219,45 @@ def test_distributed_metrics_mean_fields(
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
+    assert hasattr(experiment, "name")
     value_ref = GRID_REFERENCE_VALUES[experiment.name][grid_name]
     value = geometry_from_savepoint.get(grid_name)
     assert value == pytest.approx(value_ref)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_distributed_mean_cell_area(
+    backend: gtx_typing.Backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    geometry_from_savepoint: geometry.GridGeometry,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    value_ref = grid_savepoint.mean_cell_area()
+    value = geometry_from_savepoint.get("mean_cell_area")
+    assert math.floor(math.log10(value)) == math.floor(math.log10(value_ref))  # type: ignore[arg-type] # mypy does not pick up that value_ref is a value, not a field
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_distributed_mean_dual_edge_length(
+    backend: gtx_typing.Backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    geometry_from_savepoint: geometry.GridGeometry,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    import numpy as np
+
+    value_ref = 1.0 / np.mean(grid_savepoint.inv_dual_edge_length().asnumpy())
+    value = geometry_from_savepoint.get("mean_dual_edge_length")
+    assert math.floor(math.log10(value)) == math.floor(math.log10(value_ref))  # type: ignore[arg-type] # mypy does not pick up that value_ref is a value, not a field
