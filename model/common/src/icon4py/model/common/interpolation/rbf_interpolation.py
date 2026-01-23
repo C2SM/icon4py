@@ -58,8 +58,8 @@ def compute_default_rbf_scale_cell(
     kernel is used for vertices and cells, and that the inverse multiquadratic
     kernel is used for edges."""
 
-    match geometry_type:
-        case 1:  # base_grid.GeometryType.ICOSAHEDRON:
+    match base_grid.GeometryType(geometry_type):
+        case base_grid.GeometryType.ICOSAHEDRON:
             threshold = 2.5
             c1 = 1.8
             c2 = 3.75
@@ -70,7 +70,7 @@ def compute_default_rbf_scale_cell(
                 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
             )
             return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
-        case 2:  # base_grid.GeometryType.TORUS:
+        case base_grid.GeometryType.TORUS:
             return mean_dual_edge_length
 
 
