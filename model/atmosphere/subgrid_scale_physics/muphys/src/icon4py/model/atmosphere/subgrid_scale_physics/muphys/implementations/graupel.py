@@ -8,7 +8,7 @@
 from typing import NamedTuple
 
 import gt4py.next as gtx
-from gt4py.next import broadcast, maximum, minimum, power, sqrt, where
+from gt4py.next import maximum, minimum, power, sqrt, where
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, idx, t_d
@@ -438,20 +438,10 @@ def _q_t_update(
     q: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
-    enable_masking: bool,
 ) -> tuple[
     Q,
     fa.CellKField[ta.wpfloat],
 ]:
-    if enable_masking:
-        mask = (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > g_ct.qmin) | (
-            (t < g_ct.tfrz_het2) & (q.v > _qsat_ice_rho(t, rho))
-        )
-        is_sig_present = maximum(q.g, maximum(q.i, q.s)) > g_ct.qmin
-    else:
-        mask = broadcast(True, (dims.CellDim, dims.KDim))
-        is_sig_present = broadcast(True, (dims.CellDim, dims.KDim))
-
     dvsw = q.v - _qsat_rho(t, rho)
     qvsi = _qsat_ice_rho(t, rho)
     dvsi = q.v - qvsi
@@ -479,9 +469,7 @@ def _q_t_update(
     x_ice = _ice_sticking(t)
 
     eta = where(t_below_tmelt, _deposition_factor(t, qvsi), 0.0)
-    v2i, i2v = cond_symmetric(
-        t_below_tmelt & is_sig_present, _vapor_x_ice(q.i, m_ice, eta, dvsi, rho, dt)
-    )
+    v2i, i2v = cond_symmetric(t_below_tmelt, _vapor_x_ice(q.i, m_ice, eta, dvsi, rho, dt))
     v2i = where(
         t_below_tmelt, v2i + _ice_deposition_nucleation(t, q.c, q.i, n_ice, dvsi, dt), 0.0
     )  # 0.0 or v2i both OK
@@ -489,30 +477,27 @@ def _q_t_update(
     ice_dep = where(t_below_tmelt, minimum(v2i, dvsi / dt), 0.0)
     # TODO(): _deposition_auto_conversion yields roundoff differences in i2s
     i2s = where(
-        t_below_tmelt & is_sig_present,
+        t_below_tmelt,
         _deposition_auto_conversion(q.i, m_ice, ice_dep) + _ice_to_snow(q.i, n_snow, l_snow, x_ice),
         0.0,
     )
-    i2g = where(t_below_tmelt & is_sig_present, _ice_to_graupel(rho, q.r, q.g, q.i, x_ice), 0.0)
-    s2g = where(t_below_tmelt & is_sig_present, _snow_to_graupel(t, rho, q.c, q.s), 0.0)
+    i2g = where(t_below_tmelt, _ice_to_graupel(rho, q.r, q.g, q.i, x_ice), 0.0)
+    s2g = where(t_below_tmelt, _snow_to_graupel(t, rho, q.c, q.s), 0.0)
     r2g = where(
-        t_below_tmelt & is_sig_present,
+        t_below_tmelt,
         _rain_to_graupel(t, rho, q.c, q.r, q.i, q.s, m_ice, dvsw, dt),
         0.0,
     )
 
     dvsw0 = q.v - _qsat_rho_tmelt(rho)
-    v2s, s2v = cond_symmetric(
-        is_sig_present,
-        _vapor_x_snow(t, p, rho, q.s, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt),
+    v2s, s2v = symmetric(
+        _vapor_x_snow(t, p, rho, q.s, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt)
     )
 
-    v2g, g2v = cond_symmetric(
-        is_sig_present, _vapor_x_graupel(t, p, rho, q.g, dvsw, dvsi, dvsw0, dt)
-    )
+    v2g, g2v = symmetric(_vapor_x_graupel(t, p, rho, q.g, dvsw, dvsi, dvsw0, dt))
 
-    s2r = where(is_sig_present, _snow_to_rain(t, p, rho, dvsw0, q.s), 0.0)
-    g2r = where(is_sig_present, _graupel_to_rain(t, p, rho, dvsw0, q.g), 0.0)
+    s2r = _snow_to_rain(t, p, rho, dvsw0, q.s)
+    g2r = _graupel_to_rain(t, p, rho, dvsw0, q.g)
 
     # The following transitions are not physically meaningful, would be 0.0 in other implementation
     # here they are simply never used:
@@ -524,26 +509,24 @@ def _q_t_update(
     sink_v, v2s, v2i, v2g = sink_saturation3((v2s, v2i, v2g), q.v, dt)
     sink_c, c2r, c2s, c2i, c2g = sink_saturation4((c2r, c2s, c2i, c2g), q.c, dt)
     sink_r, r2v, r2g = sink_saturation2((r2v, r2g), q.r, dt)
-    sink_s, s2v, s2r, s2g = sink_saturation3_masked((s2v, s2r, s2g), q.s, dt, where_=is_sig_present)
-    sink_i, i2v, i2c, i2s, i2g = sink_saturation4_masked(
-        (i2v, i2c, i2s, i2g), q.i, dt, where_=is_sig_present
-    )
-    sink_g, g2v, g2r = sink_saturation2_masked((g2v, g2r), q.g, dt, where_=is_sig_present)
+    sink_s, s2v, s2r, s2g = sink_saturation3((s2v, s2r, s2g), q.s, dt)
+    sink_i, i2v, i2c, i2s, i2g = sink_saturation4((i2v, i2c, i2s, i2g), q.i, dt)
+    sink_g, g2v, g2r = sink_saturation2((g2v, g2r), q.g, dt)
 
     # water content updates:
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
     dqdt_v = r2v + s2v + i2v + g2v - sink_v  # Missing: c2v
-    qv = where(mask, maximum(0.0, q.v + dqdt_v * dt), q.v)
+    qv = maximum(0.0, q.v + dqdt_v * dt)
     dqdt_c = i2c - sink_c  # Missing: v2c, r2c, s2c, g2c
-    qc = where(mask, maximum(0.0, q.c + dqdt_c * dt), q.c)
+    qc = maximum(0.0, q.c + dqdt_c * dt)
     dqdt_r = c2r + s2r + g2r - sink_r  # Missing: v2r + i2r
-    qr = where(mask, maximum(0.0, q.r + dqdt_r * dt), q.r)
+    qr = maximum(0.0, q.r + dqdt_r * dt)
     dqdt_s = v2s + c2s + i2s - sink_s  # Missing: r2s + g2s
-    qs = where(mask, maximum(0.0, q.s + dqdt_s * dt), q.s)
+    qs = maximum(0.0, q.s + dqdt_s * dt)
     dqdt_i = v2i + c2i - sink_i  # Missing: r2i + s2i + g2i
-    qi = where(mask, maximum(0.0, q.i + dqdt_i * dt), q.i)
+    qi = maximum(0.0, q.i + dqdt_i * dt)
     dqdt_g = v2g + c2g + r2g + s2g + i2g - sink_g
-    qg = where(mask, maximum(0.0, q.g + dqdt_g * dt), q.g)
+    qg = maximum(0.0, q.g + dqdt_g * dt)
 
     qice = qs + qi + qg
     qliq = qc + qr
@@ -555,16 +538,14 @@ def _q_t_update(
         + (t_d.clw - t_d.cvv) * qliq
         + (g_ct.ci - t_d.cvv) * qice
     )
-    t = where(
-        mask,
+    t = (
         t
         + dt
         * (
             (dqdt_c + dqdt_r) * (g_ct.lvc - (t_d.clw - t_d.cvv) * t)
             + (dqdt_i + dqdt_s + dqdt_g) * (g_ct.lsc - (g_ct.ci - t_d.cvv) * t)
         )
-        / cv,
-        t,
+        / cv
     )
     return Q(v=qv, c=qc, r=qr, s=qs, i=qi, g=qg), t
 
@@ -650,7 +631,7 @@ def graupel(
     kmin_i = where(q.i > g_ct.qmin, True, False)
     kmin_s = where(q.s > g_ct.qmin, True, False)
     kmin_g = where(q.g > g_ct.qmin, True, False)
-    q, t = _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking)
+    q, t = _q_t_update(te, p, rho, q, dt, qnc)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
         last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
