@@ -175,15 +175,14 @@ def _precip_and_t(
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
     rho: ta.wpfloat,  # density
-    q_in: Q_scalar,
     q: Q_scalar,
+    mask_r: bool,
+    mask_s: bool,
+    mask_i: bool,
+    mask_g: bool,
     dt: ta.wpfloat,
     dz: ta.wpfloat,
 ) -> IntegrationState:
-    mask_r = q_in.r > g_ct.qmin
-    mask_i = q_in.i > g_ct.qmin
-    mask_s = q_in.s > g_ct.qmin
-    mask_g = q_in.g > g_ct.qmin
     zeta = dt / (2.0 * dz)
     xrho = sqrt(g_ct.rho_00 / rho)
 
@@ -458,8 +457,11 @@ def _q_t_update(  # noqa: PLR0915
 @gtx.field_operator
 def _precipitation_effects(
     last_lev: gtx.int32,
+    kmin_r: fa.CellKField[bool],  # rain minimum level
+    kmin_i: fa.CellKField[bool],  # ice minimum level
+    kmin_s: fa.CellKField[bool],  # snow minimum level
+    kmin_g: fa.CellKField[bool],  # graupel minimum level
     q_in: Q,
-    q: Q,
     t: fa.CellKField[ta.wpfloat],  # temperature,
     rho: fa.CellKField[ta.wpfloat],  # density
     dz: fa.CellKField[ta.wpfloat],
@@ -484,7 +486,10 @@ def _precipitation_effects(
         t_kp1,
         rho,
         q_in,
-        q,
+        kmin_r,
+        kmin_s,
+        kmin_i,
+        kmin_g,
         dt,
         dz,
     )
@@ -512,7 +517,7 @@ def graupel(
     te: fa.CellKField[ta.wpfloat],  # Temperature
     p: fa.CellKField[ta.wpfloat],  # Pressure
     rho: fa.CellKField[ta.wpfloat],  # Density containing dry air and water constituents
-    q_in: Q,
+    q: Q,
     dt: ta.wpfloat,
     qnc: ta.wpfloat,
     enable_masking: bool,
@@ -526,9 +531,13 @@ def graupel(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    q, t = _q_t_update(te, p, rho, q_in, dt, qnc, enable_masking=enable_masking)
+    kmin_r = where(q.r > g_ct.qmin, True, False)
+    kmin_i = where(q.i > g_ct.qmin, True, False)
+    kmin_s = where(q.s > g_ct.qmin, True, False)
+    kmin_g = where(q.g > g_ct.qmin, True, False)
+    q, t = _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
-        last_level, q_in, q, t, rho, dz, dt
+        last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
 
     return t, Q(v=q.v, c=q.c, r=qr, s=qs, i=qi, g=qg), pflx, pr, ps, pi, pg, pre
@@ -563,7 +572,7 @@ def graupel_run(
         te=te,
         p=p,
         rho=rho,
-        q_in=q_in,
+        q=q_in,
         dt=dt,
         qnc=qnc,
         enable_masking=enable_masking,
