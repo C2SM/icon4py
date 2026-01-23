@@ -6,12 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import math
-from collections.abc import Callable
 from types import ModuleType
 
 import numpy as np
 
-from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import gridfile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -27,19 +25,6 @@ def revert_repeated_index_to_invalid(offset: np.ndarray, array_ns: ModuleType):
                 rep_indices = array_ns.where(array_ns.isin(offset[i, :], rep_values))[0]
                 offset[i, rep_indices[1:]] = gridfile.GridFile.INVALID_INDEX
     return offset
-
-
-def compute_field_mean(
-    input_field: data_alloc.NDArray,
-    array_ns: ModuleType = np,
-    mean_reduction: Callable[
-        [data_alloc.NDArray], data_alloc.ScalarT
-    ] = decomposition.single_node_reductions.mean,
-) -> float:
-    """
-    compute the mean value of input_field.
-    """
-    return mean_reduction(input_field, array_ns=array_ns)
 
 
 def compute_sqrt(

@@ -722,9 +722,9 @@ class NumpyDataProvider(FieldProvider):
             annotations = typing.get_type_hints(obj)
         for dep_key in self._dependencies:
             parameter_annotation = annotations.get(dep_key)
-            checked = _is_compatible_union(parameter_annotation, expected=data_alloc.NDArray)
-            if not checked:
-                checked = _is_compatible_union(parameter_annotation, expected=np.float64)
+            checked = _is_compatible_union(
+                parameter_annotation, expected=data_alloc.NDArray | np.float64
+            )
             assert checked, (
                 f"Dependency '{dep_key}' in function '{_func_name(self._func)}':  does not exist or has "
                 f"wrong type ('expected ndarray or float64') but was '{parameter_annotation}'."

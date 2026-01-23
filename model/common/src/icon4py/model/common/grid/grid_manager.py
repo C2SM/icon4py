@@ -378,6 +378,18 @@ class GridManager:
         sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
+        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
+        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+        global_grid_params = icon.GlobalGridParams(
+            grid_shape=icon.GridShape(
+                geometry_type=geometry_type,
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            ),
+            radius=sphere_radius,
+            domain_length=domain_length,
+            domain_height=domain_height,
+            num_cells=num_cells,
+        )
 
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
@@ -404,18 +416,6 @@ class GridManager:
             refinement.compute_domain_bounds, refinement_fields=refinement_fields, array_ns=xp
         )
         start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
-        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
-        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        global_grid_params = icon.GlobalGridParams(
-            grid_shape=icon.GridShape(
-                geometry_type=geometry_type,
-                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-            ),
-            radius=sphere_radius,
-            domain_length=domain_length,
-            domain_height=domain_height,
-            num_cells=num_cells,
-        )
 
         return icon.icon_grid(
             id_=uuid_,

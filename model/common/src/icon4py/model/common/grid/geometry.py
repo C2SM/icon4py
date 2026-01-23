@@ -312,13 +312,12 @@ class GridGeometry(factory.FieldSource):
 
         mean_edge_length_np = factory.NumpyDataProvider(
             func=functools.partial(
-                utils.compute_field_mean,
+                self._global_reductions.mean,
                 array_ns=self._xp,
-                mean_reduction=self._global_reductions.mean,
             ),
             domain=(),
             deps={
-                "input_field": attrs.EDGE_LENGTH,
+                "buffer": attrs.EDGE_LENGTH,
             },
             fields=(attrs.MEAN_EDGE_LENGTH,),
         )
@@ -326,13 +325,12 @@ class GridGeometry(factory.FieldSource):
 
         mean_dual_edge_length_np = factory.NumpyDataProvider(
             func=functools.partial(
-                utils.compute_field_mean,
+                self._global_reductions.mean,
                 array_ns=self._xp,
-                mean_reduction=self._global_reductions.mean,
             ),
             domain=(),
             deps={
-                "input_field": attrs.DUAL_EDGE_LENGTH,
+                "buffer": attrs.DUAL_EDGE_LENGTH,
             },
             fields=(attrs.MEAN_DUAL_EDGE_LENGTH,),
         )
@@ -340,13 +338,12 @@ class GridGeometry(factory.FieldSource):
 
         mean_cell_area_np = factory.NumpyDataProvider(
             func=functools.partial(
-                utils.compute_field_mean,
+                self._global_reductions.mean,
                 array_ns=self._xp,
-                mean_reduction=self._global_reductions.mean,
             ),
             domain=(),
             deps={
-                "input_field": attrs.CELL_AREA,
+                "buffer": attrs.CELL_AREA,
             },
             fields=(attrs.MEAN_CELL_AREA,),
         )
@@ -354,13 +351,12 @@ class GridGeometry(factory.FieldSource):
 
         mean_dual_cell_area_np = factory.NumpyDataProvider(
             func=functools.partial(
-                utils.compute_field_mean,
+                self._global_reductions.mean,
                 array_ns=self._xp,
-                mean_reduction=self._global_reductions.mean,
             ),
             domain=(),
             deps={
-                "input_field": attrs.DUAL_AREA,
+                "buffer": attrs.DUAL_AREA,
             },
             fields=(attrs.MEAN_DUAL_AREA,),
         )
