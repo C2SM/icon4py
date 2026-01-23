@@ -165,15 +165,15 @@ class IconGridSavepoint(IconSavepoint):
 
     def verts_vertex_cart_x(self):
         """vertex cartesian x coordinate"""
-        return self._get_field("verts_vertex_cartesian_x", dims.VertexDim)
+        return self._get_field("verts_vertex_cart_x", dims.VertexDim)
 
     def verts_vertex_cart_y(self):
         """vertex cartesian y coordinate"""
-        return self._get_field("verts_vertex_cartesian_y", dims.VertexDim)
+        return self._get_field("verts_vertex_cart_y", dims.VertexDim)
 
     def verts_vertex_cart_z(self):
         """vertex cartesian z coordinate"""
-        return self._get_field("verts_vertex_cartesian_z", dims.VertexDim)
+        return self._get_field("verts_vertex_cart_z", dims.VertexDim)
 
     def primal_normal_v1(self):
         return self._get_field("primal_normal_v1", dims.EdgeDim)
@@ -197,15 +197,15 @@ class IconGridSavepoint(IconSavepoint):
 
     def edges_center_cart_x(self):
         """edge center cartesian x coordinate"""
-        return self._get_field("edges_center_cartesian_x", dims.EdgeDim)
+        return self._get_field("edges_center_cart_x", dims.EdgeDim)
 
     def edges_center_cart_y(self):
         """edge center cartesian y coordinate"""
-        return self._get_field("edges_center_cartesian_y", dims.EdgeDim)
+        return self._get_field("edges_center_cart_y", dims.EdgeDim)
 
     def edges_center_cart_z(self):
         """edge center cartesian z coordinate"""
-        return self._get_field("edges_center_cartesian_z", dims.EdgeDim)
+        return self._get_field("edges_center_cart_z", dims.EdgeDim)
 
     def edge_vert_length(self):
         """length of edge midpoint to vertex"""
@@ -320,15 +320,15 @@ class IconGridSavepoint(IconSavepoint):
 
     def cell_center_cart_x(self):
         """cell center cartesian x coordinate"""
-        return self._get_field("cell_center_cartesian_x", dims.CellDim)
+        return self._get_field("cell_center_cart_x", dims.CellDim)
 
     def cell_center_cart_y(self):
         """cell center cartesian y coordinate"""
-        return self._get_field("cell_center_cartesian_y", dims.CellDim)
+        return self._get_field("cell_center_cart_y", dims.CellDim)
 
     def cell_center_cart_z(self):
         """cell center cartesian z coordinate"""
-        return self._get_field("cell_center_cartesian_z", dims.CellDim)
+        return self._get_field("cell_center_cart_z", dims.CellDim)
 
     def edge_center_lat(self):
         return self._get_field("edges_center_lat", dims.EdgeDim)
