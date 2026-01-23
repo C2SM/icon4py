@@ -31,7 +31,7 @@ def compute_sqrt(
     input_val: data_alloc.NDArray,
 ) -> float:
     """
-    compute the mean value of input_field.
+    compute the sqrt value of input_field.
     """
     sqrt_val = math.sqrt(input_val)
     return sqrt_val
