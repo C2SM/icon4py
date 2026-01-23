@@ -13,7 +13,6 @@ from typing import Any
 import gt4py.next.typing as gtx_typing
 from gt4py import next as gtx
 
-import icon4py.model.common.math.helpers as math_helpers
 from icon4py.model.common import (
     constants,
     dimension as dims,
@@ -29,8 +28,8 @@ from icon4py.model.common.grid import (
     gridfile,
     horizontal as h_grid,
     icon,
-    utils,
 )
+from icon4py.model.common.math import helpers as math_helpers, xp_utils
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
@@ -363,7 +362,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(mean_dual_cell_area_np)
 
         characteristic_length_np = factory.NumpyDataProvider(
-            func=functools.partial(utils.compute_sqrt),
+            func=functools.partial(xp_utils.compute_sqrt),
             domain=(),
             deps={
                 "input_val": attrs.MEAN_DUAL_AREA,

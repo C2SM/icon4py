@@ -83,8 +83,8 @@ def compute_default_rbf_scale_edge(
     kernel is used for vertices and cells, and that the inverse multiquadratic
     kernel is used for edges."""
 
-    match geometry_type:
-        case 1:  # base_grid.GeometryType.ICOSAHEDRON:
+    match base_grid.GeometryType(geometry_type):
+        case base_grid.GeometryType.ICOSAHEDRON:
             threshold = 2.0
             c1 = 0.4
             c2 = 2.0
@@ -95,7 +95,7 @@ def compute_default_rbf_scale_edge(
                 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
             )
             return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
-        case 2:  # base_grid.GeometryType.TORUS:
+        case base_grid.GeometryType.TORUS:
             return mean_dual_edge_length
 
 
@@ -108,8 +108,8 @@ def compute_default_rbf_scale_vertex(
     kernel is used for vertices and cells, and that the inverse multiquadratic
     kernel is used for edges."""
 
-    match geometry_type:
-        case 1:  # base_grid.GeometryType.ICOSAHEDRON:
+    match base_grid.GeometryType(geometry_type):
+        case base_grid.GeometryType.ICOSAHEDRON:
             threshold = 2.0
             c1 = 1.8
             c2 = 3.0
@@ -120,7 +120,7 @@ def compute_default_rbf_scale_vertex(
                 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
             )
             return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
-        case 2:  # base_grid.GeometryType.TORUS:
+        case base_grid.GeometryType.TORUS:
             return mean_dual_edge_length
 
 
