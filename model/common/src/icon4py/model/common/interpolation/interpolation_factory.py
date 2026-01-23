@@ -565,7 +565,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edge_normal_x": geometry_attrs.EDGE_NORMAL_X,
                 "edge_normal_y": geometry_attrs.EDGE_NORMAL_Y,
                 "edge_normal_z": geometry_attrs.EDGE_NORMAL_Z,
-                "scale_factor": attrs.RBF_SCALE_VERTEX,  # self._config["rbf_scale_vertex"],
+                "scale_factor": attrs.RBF_SCALE_VERTEX,
             },
             connectivities={"rbf_offset": dims.V2EDim},
             params={
