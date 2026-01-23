@@ -201,7 +201,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="rbf_scale_edge",
         units="",
         dims=(),
-        icon_var_name="rbf_scale_edge",
+        icon_var_name="rbf_vec_scale_e",
         dtype=ta.wpfloat,
     ),
     RBF_SCALE_VERTEX: dict(
