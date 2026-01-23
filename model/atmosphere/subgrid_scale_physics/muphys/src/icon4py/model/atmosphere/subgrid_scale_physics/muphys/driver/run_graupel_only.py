@@ -117,11 +117,6 @@ def main():
             t_out=out.t,
             q_out=out.q,
             pflx=out.pflx,
-            pr=out.pr,
-            ps=out.ps,
-            pi=out.pi,
-            pg=out.pg,
-            pre=out.pre,
         )
     device_utils.sync(allocator)
     end_time = time.time()

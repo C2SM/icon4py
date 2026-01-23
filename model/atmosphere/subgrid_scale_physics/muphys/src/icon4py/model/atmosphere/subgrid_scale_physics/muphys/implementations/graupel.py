@@ -473,11 +473,6 @@ def _precipitation_effects(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
 ]:
     t_kp1 = concat_where(dims.KDim < last_lev, t(Koff[1]), t)
 
@@ -494,20 +489,15 @@ def _precipitation_effects(
         dz,
     )
     qr = precip_state.r.x
-    pr = precip_state.r.p
     qs = precip_state.s.x
-    ps = precip_state.s.p
     qi = precip_state.i.x
-    pi = precip_state.i.p
     qg = precip_state.g.x
-    pg = precip_state.g.p
 
     t = precip_state.t_state.t
-    eflx = precip_state.t_state.eflx
 
     pflx_tot = precip_state.pflx_tot
 
-    return qr, qs, qi, qg, t, pflx_tot, pr, ps, pi, pg, eflx
+    return qr, qs, qi, qg, t, pflx_tot
 
 
 @gtx.field_operator
@@ -525,22 +515,17 @@ def graupel(
     fa.CellKField[ta.wpfloat],
     Q,
     fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
 ]:
     kmin_r = where(q.r > g_ct.qmin, True, False)
     kmin_i = where(q.i > g_ct.qmin, True, False)
     kmin_s = where(q.s > g_ct.qmin, True, False)
     kmin_g = where(q.g > g_ct.qmin, True, False)
     q, t = _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking)
-    qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
+    qr, qs, qi, qg, t, pflx = _precipitation_effects(
         last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
 
-    return t, Q(v=q.v, c=q.c, r=qr, s=qs, i=qi, g=qg), pflx, pr, ps, pi, pg, pre
+    return t, Q(v=q.v, c=q.c, r=qr, s=qs, i=qi, g=qg), pflx
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -555,11 +540,6 @@ def graupel_run(
     q_out: Q,
     t_out: fa.CellKField[ta.wpfloat],  # Revised temperature
     pflx: fa.CellKField[ta.wpfloat],  # Total precipitation flux
-    pr: fa.CellKField[ta.wpfloat],  # Precipitation of rain
-    ps: fa.CellKField[ta.wpfloat],  # Precipitation of snow
-    pi: fa.CellKField[ta.wpfloat],  # Precipitation of ice
-    pg: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
-    pre: fa.CellKField[ta.wpfloat],  # Precipitation of graupel
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -576,7 +556,7 @@ def graupel_run(
         dt=dt,
         qnc=qnc,
         enable_masking=enable_masking,
-        out=(t_out, q_out, pflx, pr, ps, pi, pg, pre),
+        out=(t_out, q_out, pflx),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

@@ -91,11 +91,6 @@ def test_graupel_only(
         t_out=out.t,
         q_out=out.q,
         pflx=out.pflx,
-        pr=out.pr,
-        ps=out.ps,
-        pi=out.pi,
-        pg=out.pg,
-        pre=out.pre,
     )
 
     ref = common.GraupelOutput.load(
