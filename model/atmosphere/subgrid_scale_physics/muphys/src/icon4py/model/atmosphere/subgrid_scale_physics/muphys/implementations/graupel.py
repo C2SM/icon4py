@@ -315,6 +315,24 @@ def sink_saturation2(
     ],
     x: fa.CellKField[ta.wpfloat],
     dt: ta.wpfloat,
+):
+    sink = t[0] + t[1]
+    stot = x / dt
+    sink_saturated = (sink > stot) & (x > g_ct.qmin)
+    t0 = where(sink_saturated, t[0] * stot / sink, t[0])
+    t1 = where(sink_saturated, t[1] * stot / sink, t[1])
+    sink = where(sink_saturated, t0 + t1, sink)
+    return sink, t0, t1
+
+
+@gtx.field_operator
+def sink_saturation2_masked(
+    t: tuple[
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+    ],
+    x: fa.CellKField[ta.wpfloat],
+    dt: ta.wpfloat,
     where_: fa.CellKField[bool],
 ):
     sink = where(where_, t[0] + t[1], 0.0)
@@ -328,6 +346,26 @@ def sink_saturation2(
 
 @gtx.field_operator
 def sink_saturation3(
+    t: tuple[
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+    ],
+    x: fa.CellKField[ta.wpfloat],
+    dt: ta.wpfloat,
+):
+    sink = t[0] + t[1] + t[2]
+    stot = x / dt
+    sink_saturated = (sink > stot) & (x > g_ct.qmin)
+    t0 = where(sink_saturated, t[0] * stot / sink, t[0])
+    t1 = where(sink_saturated, t[1] * stot / sink, t[1])
+    t2 = where(sink_saturated, t[2] * stot / sink, t[2])
+    sink = where(sink_saturated, t0 + t1 + t2, sink)
+    return sink, t0, t1, t2
+
+
+@gtx.field_operator
+def sink_saturation3_masked(
     t: tuple[
         fa.CellKField[ta.wpfloat],
         fa.CellKField[ta.wpfloat],
@@ -357,6 +395,28 @@ def sink_saturation4(
     ],
     x: fa.CellKField[ta.wpfloat],
     dt: ta.wpfloat,
+):
+    sink = t[0] + t[1] + t[2] + t[3]
+    stot = x / dt
+    sink_saturated = (sink > stot) & (x > g_ct.qmin)
+    t0 = where(sink_saturated, t[0] * stot / sink, t[0])
+    t1 = where(sink_saturated, t[1] * stot / sink, t[1])
+    t2 = where(sink_saturated, t[2] * stot / sink, t[2])
+    t3 = where(sink_saturated, t[3] * stot / sink, t[3])
+    sink = where(sink_saturated, t0 + t1 + t2 + t3, sink)
+    return sink, t0, t1, t2, t3
+
+
+@gtx.field_operator
+def sink_saturation4_masked(
+    t: tuple[
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+        fa.CellKField[ta.wpfloat],
+    ],
+    x: fa.CellKField[ta.wpfloat],
+    dt: ta.wpfloat,
     where_: fa.CellKField[bool],
 ):
     sink = where(where_, t[0] + t[1] + t[2] + t[3], 0.0)
@@ -371,7 +431,7 @@ def sink_saturation4(
 
 
 @gtx.field_operator
-def _q_t_update(  # noqa: PLR0915
+def _q_t_update(
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
@@ -461,15 +521,14 @@ def _q_t_update(  # noqa: PLR0915
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
     # SINK calculation
 
-    EVERYWHERE = broadcast(True, (dims.CellDim, dims.KDim))
-    sink_v, v2s, v2i, v2g = sink_saturation3((v2s, v2i, v2g), q.v, dt, where_=EVERYWHERE)
-    sink_c, c2r, c2s, c2i, c2g = sink_saturation4((c2r, c2s, c2i, c2g), q.c, dt, where_=EVERYWHERE)
-    sink_r, r2v, r2g = sink_saturation2((r2v, r2g), q.r, dt, where_=EVERYWHERE)
-    sink_s, s2v, s2r, s2g = sink_saturation3((s2v, s2r, s2g), q.s, dt, where_=is_sig_present)
-    sink_i, i2v, i2c, i2s, i2g = sink_saturation4(
+    sink_v, v2s, v2i, v2g = sink_saturation3((v2s, v2i, v2g), q.v, dt)
+    sink_c, c2r, c2s, c2i, c2g = sink_saturation4((c2r, c2s, c2i, c2g), q.c, dt)
+    sink_r, r2v, r2g = sink_saturation2((r2v, r2g), q.r, dt)
+    sink_s, s2v, s2r, s2g = sink_saturation3_masked((s2v, s2r, s2g), q.s, dt, where_=is_sig_present)
+    sink_i, i2v, i2c, i2s, i2g = sink_saturation4_masked(
         (i2v, i2c, i2s, i2g), q.i, dt, where_=is_sig_present
     )
-    sink_g, g2v, g2r = sink_saturation2((g2v, g2r), q.g, dt, where_=is_sig_present)
+    sink_g, g2v, g2r = sink_saturation2_masked((g2v, g2r), q.g, dt, where_=is_sig_present)
 
     # water content updates:
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
