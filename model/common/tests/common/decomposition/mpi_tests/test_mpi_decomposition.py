@@ -46,17 +46,6 @@ from ...fixtures import (
 )
 
 
-"""
-running tests with mpi:
-
-mpirun -np 2 python -m pytest -v --with-mpi tests/mpi_tests/test_mpi_decomposition.py
-
-mpirun -np 2 pytest -v --with-mpi -k mpi_tests/
-
-
-"""
-
-
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props: definitions.ProcessProperties) -> None:
     assert processor_props.comm
