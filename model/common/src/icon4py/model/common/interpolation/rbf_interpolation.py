@@ -78,7 +78,7 @@ def compute_default_rbf_scale_edge(
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
 ) -> ta.wpfloat:
-    """Compute the default RBF scale factor for edges. This assumes that the Gaussian
+    """Compute the default RBF scale factor for edges. This assumes that the inverse multiquadratic
     kernel is used."""
 
     match base_grid.GeometryType(geometry_type):
