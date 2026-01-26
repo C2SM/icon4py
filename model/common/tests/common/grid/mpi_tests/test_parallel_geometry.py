@@ -8,11 +8,11 @@
 
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
@@ -235,8 +235,7 @@ def test_distributed_mean_dual_edge_length(
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    import numpy as np
 
-    value_ref = 1.0 / np.mean(grid_savepoint.inv_dual_edge_length().asnumpy())
+    value_ref = np.mean(grid_savepoint.dual_edge_length().asnumpy())
     value = geometry_from_savepoint.get("mean_dual_edge_length")
-    assert math.floor(math.log10(value)) == math.floor(math.log10(value_ref))  # type: ignore[arg-type] # mypy does not pick up that value_ref is a value, not a field
+    assert value == pytest.approx(value_ref, rel=1e-1)
