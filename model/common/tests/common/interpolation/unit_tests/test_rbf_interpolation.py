@@ -357,11 +357,10 @@ def test_rbf_interpolation_coeffs_edge(
         grid_savepoint.e2c2e(),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         geometry_type.value,
-        rbf.compute_default_rbf_scale(
-            geometry_type,
+        rbf.compute_default_rbf_scale_edge(
+            geometry_type.value,
             geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
-            rbf_dim,
         ),
         horizontal_start,
         grid.global_properties.domain_length,

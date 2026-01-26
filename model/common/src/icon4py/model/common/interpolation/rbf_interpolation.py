@@ -54,8 +54,8 @@ def compute_default_rbf_scale_cell(
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
 ) -> ta.wpfloat:
-"""Compute the default RBF scale factor for cells. This assumes that the Gaussian
-   kernel is used."""
+    """Compute the default RBF scale factor for cells. This assumes that the Gaussian
+    kernel is used."""
 
     match base_grid.GeometryType(geometry_type):
         case base_grid.GeometryType.ICOSAHEDRON:
@@ -78,9 +78,8 @@ def compute_default_rbf_scale_edge(
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
 ) -> ta.wpfloat:
-    """Compute the default RBF scale factor. This assumes that the Gaussian
-    kernel is used for vertices and cells, and that the inverse multiquadratic
-    kernel is used for edges."""
+    """Compute the default RBF scale factor for edges. This assumes that the Gaussian
+    kernel is used."""
 
     match base_grid.GeometryType(geometry_type):
         case base_grid.GeometryType.ICOSAHEDRON:
@@ -103,9 +102,8 @@ def compute_default_rbf_scale_vertex(
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
 ) -> ta.wpfloat:
-    """Compute the default RBF scale factor. This assumes that the Gaussian
-    kernel is used for vertices and cells, and that the inverse multiquadratic
-    kernel is used for edges."""
+    """Compute the default RBF scale factor for vertexes. This assumes that the Gaussian
+    kernel is used."""
 
     match base_grid.GeometryType(geometry_type):
         case base_grid.GeometryType.ICOSAHEDRON:
@@ -478,8 +476,8 @@ def compute_rbf_interpolation_coeffs_cell(
     edge_normal_x: data_alloc.NDArray,
     edge_normal_y: data_alloc.NDArray,
     edge_normal_z: data_alloc.NDArray,
-    # TODO(): Can't pass enum as "params" in NumpyFieldsProvider?
     rbf_offset: data_alloc.NDArray,
+    # TODO(): Can't pass enum as "params" in NumpyFieldsProvider?
     rbf_kernel: int,
     geometry_type: int,
     scale_factor: ta.wpfloat,

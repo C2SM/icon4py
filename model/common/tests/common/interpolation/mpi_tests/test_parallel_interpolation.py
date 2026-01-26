@@ -83,6 +83,7 @@ def test_distributed_interpolation_with_custom_tolerance(
     ), f"comparison of {attrs_name} failed"
 
 
+# attrs.E_FLX_AVG should work here
 @pytest.mark.level("integration")
 @pytest.mark.datatest
 @pytest.mark.mpi

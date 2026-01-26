@@ -190,7 +190,7 @@ def test_distributed_geometry_mean_fields(
     processor_props: decomposition.ProcessProperties,
     decomposition_info: decomposition.DecompositionInfo,
     geometry_from_savepoint: geometry.GridGeometry,
-    grid_name: str,
+    attr_name: str,
 ) -> None:
     if processor_props.comm_size > 1:
         pytest.skip("Values not serialized for multiple processors")
@@ -199,8 +199,8 @@ def test_distributed_geometry_mean_fields(
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     assert hasattr(experiment, "name")
-    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][grid_name]
-    value = geometry_from_savepoint.get(grid_name)
+    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][attr_name]
+    value = geometry_from_savepoint.get(attr_name)
     assert value == pytest.approx(value_ref)
 
 

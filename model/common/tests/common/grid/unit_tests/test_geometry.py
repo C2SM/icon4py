@@ -479,15 +479,15 @@ def test_create_auxiliary_orientation_coordinates(
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize(
-    "grid_name", ["mean_edge_length", "mean_dual_edge_length", "mean_cell_area", "mean_dual_area"]
+    "attr_name", ["mean_edge_length", "mean_dual_edge_length", "mean_cell_area", "mean_dual_area"]
 )
 def test_distributed_geometry_mean_fields(
     backend: gtx_typing.Backend,
     grid_savepoint: sb.IconGridSavepoint,
     geometry_from_savepoint: geometry.GridGeometry,
-    grid_name: str,
+    attr_name: str,
 ) -> None:
     assert hasattr(experiment, "name")
-    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][grid_name]
-    value = geometry_from_savepoint.get(grid_name)
+    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][attr_name]
+    value = geometry_from_savepoint.get(attr_name)
     assert value == pytest.approx(value_ref)

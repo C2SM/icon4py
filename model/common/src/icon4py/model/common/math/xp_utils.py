@@ -8,14 +8,14 @@
 
 import math
 
-from icon4py.model.common.utils import data_allocation as data_alloc
+import numpy as np
 
 
 def compute_sqrt(
-    input_val: data_alloc.NDArray,
-) -> float:
+    input_val: np.float64,
+) -> np.float64:
     """
     Compute the square root of input_val.
+    math.sqrt is not sufficiently typed for the validation happening in the factories.
     """
-    sqrt_val = math.sqrt(input_val)
-    return sqrt_val
+    return np.float64(math.sqrt(input_val))

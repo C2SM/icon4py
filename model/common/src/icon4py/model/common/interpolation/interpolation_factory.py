@@ -201,7 +201,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(rbf_scale_cell_np)
 
         rbf_scale_edge_np = factory.NumpyDataProvider(
-            func=functools.partial(rbf.compute_default_rbf_scale_edge),
+            func=rbf.compute_default_rbf_scale_edge,
             domain=(),
             deps={
                 "mean_characteristic_length": geometry_attrs.CHARACTERISTIC_LENGTH,
@@ -215,7 +215,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(rbf_scale_edge_np)
 
         rbf_scale_vertex_np = factory.NumpyDataProvider(
-            func=functools.partial(rbf.compute_default_rbf_scale_vertex),
+            func=rbf.compute_default_rbf_scale_vertex,
             domain=(),
             deps={
                 "mean_characteristic_length": geometry_attrs.CHARACTERISTIC_LENGTH,
