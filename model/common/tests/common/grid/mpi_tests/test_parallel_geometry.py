@@ -182,7 +182,7 @@ def test_cartesian_geometry_attr_no_halos(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "grid_name", ["mean_edge_length", "mean_dual_edge_length", "mean_cell_area", "mean_dual_area"]
+    "attr_name", ["mean_edge_length", "mean_dual_edge_length", "mean_cell_area", "mean_dual_area"]
 )
 def test_distributed_geometry_mean_fields(
     backend: gtx_typing.Backend,
