@@ -249,7 +249,7 @@ def test_create_single_node_runtime_without_mpi(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
+@pytest.mark.parametrize("dimension", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_exchange_on_dummy_data(
     processor_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
