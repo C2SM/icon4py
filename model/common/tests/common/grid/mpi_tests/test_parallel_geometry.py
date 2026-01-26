@@ -34,6 +34,7 @@ from ...fixtures import (
     processor_props,
     ranked_data_path,
 )
+from .. import utils
 
 
 if TYPE_CHECKING:
@@ -177,28 +178,6 @@ def test_cartesian_geometry_attr_no_halos(
     assert test_utils.dallclose(norm.asnumpy(), 1.0)
 
 
-GRID_REFERENCE_VALUES = {
-    test_defs.Experiments.EXCLAIM_APE.name: {
-        "mean_edge_length": 240221.1036647776,
-        "mean_dual_edge_length": 138710.63736114913,
-        "mean_cell_area": 24906292887.251026,
-        "mean_dual_area": 49802858653.68937,
-    },
-    test_defs.Experiments.MCH_CH_R04B09.name: {
-        "mean_edge_length": 3803.019140934253,
-        "mean_dual_edge_length": 2180.911493355989,
-        "mean_cell_area": 6256048.940145881,
-        "mean_dual_area": 12259814.063180268,
-    },
-    test_defs.Experiments.GAUSS3D.name: {
-        "mean_edge_length": 757.5757575757576,
-        "mean_dual_edge_length": 437.3865675678984,
-        "mean_cell_area": 248515.09520903317,
-        "mean_dual_area": 497030.1904180664,
-    },
-}
-
-
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -220,7 +199,7 @@ def test_distributed_geometry_mean_fields(
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     assert hasattr(experiment, "name")
-    value_ref = GRID_REFERENCE_VALUES[experiment.name][grid_name]
+    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][grid_name]
     value = geometry_from_savepoint.get(grid_name)
     assert value == pytest.approx(value_ref)
 

@@ -35,6 +35,8 @@ from icon4py.model.testing.fixtures import (
     ranked_data_path,
 )
 
+from .. import utils
+
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
@@ -472,3 +474,20 @@ def test_create_auxiliary_orientation_coordinates(
     assert test_utils.dallclose(
         lon_1.asnumpy()[cell_coordinates_1], cell_lon.asnumpy()[connectivity[cell_coordinates_1, 1]]
     )
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize(
+    "grid_name", ["mean_edge_length", "mean_dual_edge_length", "mean_cell_area", "mean_dual_area"]
+)
+def test_distributed_geometry_mean_fields(
+    backend: gtx_typing.Backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    geometry_from_savepoint: geometry.GridGeometry,
+    grid_name: str,
+) -> None:
+    assert hasattr(experiment, "name")
+    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][grid_name]
+    value = geometry_from_savepoint.get(grid_name)
+    assert value == pytest.approx(value_ref)
