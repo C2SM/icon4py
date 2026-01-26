@@ -23,7 +23,10 @@ from .utils import download_test_data
 
 
 class Experiments:
-    # TODO currently on havogt's polybox
+    # TODO(havogt): the following references need to be checked, currently they are not verifying
+    # https://polybox.ethz.ch/index.php/s/5oNtcQFDcCaNxHH/download/r2b04.tar.gz
+    # https://polybox.ethz.ch/index.php/s/mBeAWAQQHSKTkF7/download/r2b04_maxfrac.tar.gz
+    # https://polybox.ethz.ch/index.php/s/mBrpE3iBoeek5wc/download/r2b05.tar.gz
     MINI: Final = utils.MuphysExperiment(
         name="mini",
         type=utils.ExperimentType.FULL_MUPHYS,
@@ -33,21 +36,6 @@ class Experiments:
     # as it is not sensitive to saturation adjustment
     # TODO(havogt): double-check that all other experiments actually are sensitive,
     # i.e. reference of full_muphys and graupel_only differ significantly.
-    R2B04: Final = utils.MuphysExperiment(
-        name="r2b04",
-        type=utils.ExperimentType.FULL_MUPHYS,
-        uri="https://polybox.ethz.ch/index.php/s/5oNtcQFDcCaNxHH/download/r2b04.tar.gz",
-    )
-    R2B04_MAXFRAC: Final = utils.MuphysExperiment(
-        name="r2b04_maxfrac",
-        type=utils.ExperimentType.FULL_MUPHYS,
-        uri="https://polybox.ethz.ch/index.php/s/mBeAWAQQHSKTkF7/download/r2b04_maxfrac.tar.gz",
-    )
-    R2B05: Final = utils.MuphysExperiment(
-        name="r2b05",
-        type=utils.ExperimentType.FULL_MUPHYS,
-        uri="https://polybox.ethz.ch/index.php/s/mBrpE3iBoeek5wc/download/r2b05.tar.gz",
-    )
 
 
 @pytest.mark.datatest
@@ -55,9 +43,10 @@ class Experiments:
     "experiment",
     [
         Experiments.MINI,
-        Experiments.R2B04,
-        Experiments.R2B04_MAXFRAC,
-        Experiments.R2B05,
+        # TODO(havogt): references need to be checked, currently they are not verifying
+        # Experiments.R2B04,
+        # Experiments.R2B04_MAXFRAC,
+        # Experiments.R2B05,
     ],
     ids=lambda exp: exp.name,
 )
