@@ -187,7 +187,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(geofac_grdiv)
 
         rbf_scale_cell_np = factory.NumpyDataProvider(
-            func=functools.partial(rbf.compute_default_rbf_scale_cell),
+            func=rbf.compute_default_rbf_scale_cell,
             domain=(),
             deps={
                 "mean_characteristic_length": geometry_attrs.CHARACTERISTIC_LENGTH,
