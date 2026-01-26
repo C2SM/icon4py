@@ -102,7 +102,7 @@ def compute_default_rbf_scale_vertex(
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
 ) -> ta.wpfloat:
-    """Compute the default RBF scale factor for vertexes. This assumes that the Gaussian
+    """Compute the default RBF scale factor for vertices. This assumes that the Gaussian
     kernel is used."""
 
     match base_grid.GeometryType(geometry_type):
