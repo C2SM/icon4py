@@ -179,7 +179,6 @@ def test_distributed_interpolation_geofac_rot(
     ), f"comparison of {attrs.GEOFAC_ROT} failed"
 
 
-@pytest.mark.xfail(reason="Tests hang in CI")
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -205,6 +204,10 @@ def test_distributed_interpolation_rbf(
     intrp_name: str,
     atol: int,
 ) -> None:
+    # xfail inside function body, because we don't actually want to run the test
+    # since it hangs.
+    pytest.xfail("Tests hang in CI")
+
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
