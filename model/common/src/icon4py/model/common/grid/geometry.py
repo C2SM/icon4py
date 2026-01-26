@@ -362,7 +362,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(mean_dual_cell_area_np)
 
         characteristic_length_np = factory.NumpyDataProvider(
-            func=functools.partial(xp_utils.compute_sqrt),
+            func=xp_utils.compute_sqrt,
             domain=(),
             deps={
                 "input_val": attrs.MEAN_DUAL_AREA,
