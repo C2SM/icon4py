@@ -54,9 +54,8 @@ def compute_default_rbf_scale_cell(
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
 ) -> ta.wpfloat:
-    """Compute the default RBF scale factor. This assumes that the Gaussian
-    kernel is used for vertices and cells, and that the inverse multiquadratic
-    kernel is used for edges."""
+"""Compute the default RBF scale factor for cells. This assumes that the Gaussian
+   kernel is used."""
 
     match base_grid.GeometryType(geometry_type):
         case base_grid.GeometryType.ICOSAHEDRON:
