@@ -157,6 +157,7 @@ def test_distributed_metrics_attrs_no_halo_regional(
     experiment: test_defs.Experiment,
 ) -> None:
     if test_utils.is_embedded(backend):
+        # https://github.com/GridTools/gt4py/issues/1583
         pytest.xfail("ValueError: axes don't match array")
     if experiment == test_defs.Experiments.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")

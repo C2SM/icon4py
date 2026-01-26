@@ -63,6 +63,7 @@ def test_run_solve_nonhydro_single_step(
     backend: gtx_typing.Backend | None,
 ) -> None:
     if test_utils.is_embedded(backend):
+        # https://github.com/GridTools/gt4py/issues/1583
         pytest.xfail("ValueError: axes don't match array")
 
     parallel_helpers.check_comm_size(processor_props)
