@@ -219,7 +219,7 @@ def test_distributed_mean_cell_area(
     parallel_helpers.log_local_field_size(decomposition_info)
     value_ref = grid_savepoint.mean_cell_area()
     value = geometry_from_savepoint.get("mean_cell_area")
-    assert math.floor(math.log10(value)) == math.floor(math.log10(value_ref))  # type: ignore[arg-type] # mypy does not pick up that value_ref is a value, not a field
+    assert value == pytest.approx(value_ref, rel=1e-1)
 
 
 @pytest.mark.datatest
