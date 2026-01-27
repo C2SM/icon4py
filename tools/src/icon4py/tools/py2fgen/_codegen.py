@@ -315,7 +315,7 @@ class FortranISOCBindingsGenerator(codegen.TemplatedGenerator):
     Func = as_jinja(
         """
 function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
-   import :: c_int, c_double, c_bool, c_ptr
+   import :: c_int, c_double, c_float, c_bool, c_ptr
    integer(c_int) :: rc  ! Stores the return code
    {% for param in param_declarations %}
    {{ param }}
