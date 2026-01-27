@@ -56,13 +56,11 @@ class PrecipStateQx(NamedTuple):
     x: ta.wpfloat
     p: ta.wpfloat
     vc: ta.wpfloat
-    activated: bool
 
 
 class TempState(NamedTuple):
     t: ta.wpfloat
     eflx: ta.wpfloat
-    activated: bool
 
 
 class IntegrationState(NamedTuple):
@@ -86,9 +84,7 @@ def precip_qx_level_update(
     vc: ta.wpfloat,  # state dependent fall speed correction
     q: ta.wpfloat,  # specific mass of hydrometeor
     rho: ta.wpfloat,  # density
-    mask: bool,
 ) -> PrecipStateQx:
-    current_level_activated = previous_level_q.activated | mask
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0 * previous_level_q.p
     # Inlined calculation using _fall_speed_scalar
@@ -96,22 +92,14 @@ def precip_qx_level_update(
 
     rhox_prev = (previous_level_q.x + q) * 0.5 * previous_level_rho
 
-    if previous_level_q.activated:
-        vt = previous_level_q.vc * prefactor * power((rhox_prev + offset), exponent)
-    else:
-        vt = 0.0
+    vt = previous_level_q.vc * prefactor * power((rhox_prev + offset), exponent)
 
-    if current_level_activated:
-        x = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
-        p = (x * rho * vt + flx_partial) * 0.5  # flux
-    else:
-        x = q
-        p = 0.0
+    x = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
+    p = (x * rho * vt + flx_partial) * 0.5  # flux
     return PrecipStateQx(
         x=x,
         p=p,
         vc=vc,
-        activated=current_level_activated,
     )
 
 
@@ -128,44 +116,37 @@ def _temperature_update(
     rho: ta.wpfloat,  # density
     dz: ta.wpfloat,
     dt: ta.wpfloat,
-    mask: bool,
 ) -> TempState:
-    current_level_activated = previous_level.activated | mask
-    if current_level_activated:
-        eflx = pr * (t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc) + (pflx_tot) * (
-            g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc
-        )
+    eflx = pr * (t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc) + (pflx_tot) * (
+        g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc
+    )
 
-        e_int = (
-            _internal_energy_scalar(
-                t=t, qv=q.v, qliq=q.c + q.r, qice=q.s + q.i + q.g, rho=rho, dz=dz
-            )
-            + dt * previous_level.eflx
-            - dt * eflx
-        )
+    e_int = (
+        _internal_energy_scalar(t=t, qv=q.v, qliq=q.c + q.r, qice=q.s + q.i + q.g, rho=rho, dz=dz)
+        + dt * previous_level.eflx
+        - dt * eflx
+    )
 
-        #  Inlined calculation using T_from_internal_energy_scalar
-        #  in order to avoid scan_operator -> field_operator
-        qtot = qliq + qice + q.v  # total water specific mass
-        cv = (
-            (t_d.cvd * (1.0 - qtot) + t_d.cvv * q.v + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
-        )  # Moist isometric specific heat
-        t = (e_int + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
-    else:
-        eflx = previous_level.eflx
+    #  Inlined calculation using T_from_internal_energy_scalar
+    #  in order to avoid scan_operator -> field_operator
+    qtot = qliq + qice + q.v  # total water specific mass
+    cv = (
+        (t_d.cvd * (1.0 - qtot) + t_d.cvv * q.v + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
+    )  # Moist isometric specific heat
+    t = (e_int + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
 
-    return TempState(t=t, eflx=eflx, activated=current_level_activated)
+    return TempState(t=t, eflx=eflx)
 
 
 @gtx.scan_operator(
     axis=dims.KDim,
     forward=True,
     init=IntegrationState(
-        r=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
-        s=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
-        i=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
-        g=PrecipStateQx(x=0.0, p=0.0, vc=0.0, activated=False),
-        t_state=TempState(t=0.0, eflx=0.0, activated=False),
+        r=PrecipStateQx(x=0.0, p=0.0, vc=0.0),
+        s=PrecipStateQx(x=0.0, p=0.0, vc=0.0),
+        i=PrecipStateQx(x=0.0, p=0.0, vc=0.0),
+        g=PrecipStateQx(x=0.0, p=0.0, vc=0.0),
+        t_state=TempState(t=0.0, eflx=0.0),
         rho=0.0,
         pflx_tot=0.0,
     ),
@@ -176,10 +157,6 @@ def _precip_and_t(
     t_kp1: ta.wpfloat,
     rho: ta.wpfloat,  # density
     q: Q_scalar,
-    mask_r: bool,
-    mask_s: bool,
-    mask_i: bool,
-    mask_g: bool,
     dt: ta.wpfloat,
     dz: ta.wpfloat,
 ) -> IntegrationState:
@@ -201,7 +178,6 @@ def _precip_and_t(
         vc_r,
         q.r,
         rho,
-        mask_r,
     )
     s_update = precip_qx_level_update(
         previous_level.s,
@@ -213,7 +189,6 @@ def _precip_and_t(
         vc_s,
         q.s,
         rho,
-        mask_s,
     )
     i_update = precip_qx_level_update(
         previous_level.i,
@@ -225,7 +200,6 @@ def _precip_and_t(
         vc_i,
         q.i,
         rho,
-        mask_i,
     )
     g_update = precip_qx_level_update(
         previous_level.g,
@@ -237,12 +211,10 @@ def _precip_and_t(
         vc_g,
         q.g,
         rho,
-        mask_g,
     )
 
     qliq = q.c + r_update.x
     qice = s_update.x + i_update.x + g_update.x
-    kmin_rsig = mask_r | mask_s | mask_i | mask_g
 
     return IntegrationState(
         r=r_update,
@@ -261,7 +233,6 @@ def _precip_and_t(
             rho=rho,
             dz=dz,
             dt=dt,
-            mask=kmin_rsig,
         ),
         rho=rho,
         pflx_tot=s_update.p + i_update.p + g_update.p + r_update.p,
@@ -457,10 +428,6 @@ def _q_t_update(  # noqa: PLR0915
 @gtx.field_operator
 def _precipitation_effects(
     last_lev: gtx.int32,
-    kmin_r: fa.CellKField[bool],  # rain minimum level
-    kmin_i: fa.CellKField[bool],  # ice minimum level
-    kmin_s: fa.CellKField[bool],  # snow minimum level
-    kmin_g: fa.CellKField[bool],  # graupel minimum level
     q_in: Q,
     t: fa.CellKField[ta.wpfloat],  # temperature,
     rho: fa.CellKField[ta.wpfloat],  # density
@@ -486,10 +453,6 @@ def _precipitation_effects(
         t_kp1,
         rho,
         q_in,
-        kmin_r,
-        kmin_s,
-        kmin_i,
-        kmin_g,
         dt,
         dz,
     )
@@ -531,13 +494,9 @@ def graupel(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    kmin_r = where(q.r > g_ct.qmin, True, False)
-    kmin_i = where(q.i > g_ct.qmin, True, False)
-    kmin_s = where(q.s > g_ct.qmin, True, False)
-    kmin_g = where(q.g > g_ct.qmin, True, False)
-    q, t = _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking)
+    q, t = _q_t_update(te, p, rho, q, dt, qnc)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
-        last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
+        last_level, q, t, rho, dz, dt
     )
 
     return t, Q(v=q.v, c=q.c, r=qr, s=qs, i=qi, g=qg), pflx, pr, ps, pi, pg, pre
