@@ -14,14 +14,14 @@ from gt4py.next import typing as gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
-    compute_advection_in_horizontal_momentum_equation,
+    compute_advection_in_horizontal_momentum,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_momentum_equation import (
-    compute_advection_in_vertical_momentum_equation,
-    compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
+    compute_advection_in_corrector_vertical_momentum,
+    compute_advection_in_predictor_vertical_momentum,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
-    compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
+from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wind import (
+    compute_diagnostics_from_normal_wind,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta, utils as common_utils
 from icon4py.model.common.grid import (
@@ -464,7 +464,7 @@ def test_velocity_corrector_step(
         (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
+def test_compute_diagnostics_from_normal_wind(
     experiment,
     step_date_init,
     step_date_exit,
@@ -514,7 +514,7 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w()
 
-    compute_derived_horizontal_winds_and_ke_and_contravariant_correction.with_backend(backend)(
+    compute_diagnostics_from_normal_wind.with_backend(backend)(
         tangential_wind=tangential_wind,
         tangential_wind_on_half_levels=tangential_wind_on_half_levels,
         vn_on_half_levels=vn_on_half_levels,
@@ -601,7 +601,7 @@ def test_compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
-def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
+def test_compute_advection_in_predictor_vertical_momentum(
     experiment,
     step_date_init,
     step_date_exit,
@@ -658,9 +658,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     horizontal_end = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     vertical_start = 0
     vertical_end = icon_grid.num_levels
-    compute_contravariant_correction_and_advection_in_vertical_momentum_equation.with_backend(
-        backend
-    )(
+    compute_advection_in_predictor_vertical_momentum.with_backend(backend)(
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         vertical_wind_advective_tendency=vertical_wind_advective_tendency,
         contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
@@ -753,7 +751,7 @@ def test_compute_contravariant_correction_and_advection_in_vertical_momentum_equ
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
-def test_compute_advection_in_vertical_momentum_equation(
+def test_compute_advection_in_corrector_vertical_momentum(
     experiment,
     step_date_init,
     step_date_exit,
@@ -811,7 +809,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     horizontal_end = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     vertical_start = 0
     vertical_end = icon_grid.num_levels
-    compute_advection_in_vertical_momentum_equation.with_backend(backend)(
+    compute_advection_in_corrector_vertical_momentum.with_backend(backend)(
         vertical_wind_advective_tendency=vertical_wind_advective_tendency,
         contravariant_corrected_w_at_cells_on_model_levels=contravariant_corrected_w_at_cells_on_model_levels,
         vertical_cfl=vertical_cfl,
@@ -893,7 +891,7 @@ def test_compute_advection_in_vertical_momentum_equation(
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
-def test_compute_advection_in_horizontal_momentum_equation(
+def test_compute_advection_in_horizontal_momentum(
     experiment,
     step_date_init,
     step_date_exit,
@@ -941,7 +939,7 @@ def test_compute_advection_in_horizontal_momentum_equation(
     max_vertical_cfl = savepoint_velocity_exit.max_vcfl_dyn()
     apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime
 
-    compute_advection_in_horizontal_momentum_equation.with_backend(backend)(
+    compute_advection_in_horizontal_momentum.with_backend(backend)(
         normal_wind_advective_tendency=normal_wind_advective_tendency,
         vn=vn,
         horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,

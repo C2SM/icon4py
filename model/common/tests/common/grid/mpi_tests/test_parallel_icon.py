@@ -8,14 +8,20 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py.next.common import is_neighbor_table
 
 import icon4py.model.common.dimension as dims
+import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.common.grid.icon
-from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.decomposition import (
+    definitions as decomp_defs,
+    definitions as decomposition,
+)
 from icon4py.model.common.decomposition.halo import SimpleMetisDecomposer
 from icon4py.model.common.grid import base as base_grid, gridfile, horizontal as h_grid, icon
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
@@ -31,6 +37,12 @@ from ...fixtures import (
 )
 from .. import utils
 from . import utils as parallel_utils
+
+
+if TYPE_CHECKING:
+    import gt4py.next as gtx
+
+    from icon4py.model.common.grid import base as base_grid
 
 
 try:

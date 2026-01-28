@@ -32,7 +32,9 @@ class IconGridError(RuntimeError):
     pass
 
 
-CoordinateDict: TypeAlias = dict[gtx.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+CoordinateDict: TypeAlias = dict[
+    gtx.Dimension, dict[Literal["lat", "lon", "x", "y", "z"], gtx.Field]
+]
 # TODO (halungge): use a TypeDict for that
 GeometryDict: TypeAlias = dict[gridfile.GeometryName, gtx.Field]
 
@@ -54,6 +56,7 @@ class GridManager:
         grid_file: pathlib.Path | str,
         num_levels: int,
         transformation: gridfile.IndexTransformation = _fortan_to_python_transformer,
+        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._transformation = transformation
         self._file_name = str(grid_file)
@@ -64,6 +67,7 @@ class GridManager:
         self._geometry: GeometryDict = {}
         self._coordinates: CoordinateDict = {}
         self._reader = None
+        self._global_reductions = global_reductions
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -100,22 +104,32 @@ class GridManager:
         if not self._reader:
             self.open()
 
+        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
+            geometry_type = base.GeometryType(geometry_type)
+        else:
+            geometry_type = base.GeometryType.ICOSAHEDRON
+
         self._construct_decomposed_grid(
             allocator=allocator,
             with_skip_values=keep_skip_values,
+            geometry_type=geometry_type,
             decomposer=decomposer,
             run_properties=run_properties,
         )
-        self._coordinates = self._read_coordinates(allocator)
+        self._coordinates = self._read_coordinates(allocator, geometry_type)
         self._geometry = self._read_geometry_fields(allocator)
 
         self.close()
 
-    def _read_coordinates(self, allocator: gtx_typing.Backend | None) -> CoordinateDict:
+    def _read_coordinates(
+        self,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
+        geometry_type: base.GeometryType,
+    ) -> CoordinateDict:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
-        return {
+        coordinates = {
             dims.CellDim: {
                 "lat": gtx.as_field(
                     (dims.CellDim,),
@@ -172,7 +186,68 @@ class GridManager:
             },
         }
 
-    def _read_geometry_fields(self, allocator: gtx_typing.FieldBufferAllocationUtil):
+        if geometry_type == base.GeometryType.TORUS:
+            coordinates[dims.CellDim]["x"] = gtx.as_field(
+                (dims.CellDim,),
+                self._reader.variable(gridfile.CoordinateName.CELL_X, indices=my_cell_indices),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.CellDim]["y"] = gtx.as_field(
+                (dims.CellDim,),
+                self._reader.variable(gridfile.CoordinateName.CELL_Y, indices=my_cell_indices),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.CellDim]["z"] = gtx.as_field(
+                (dims.CellDim,),
+                self._reader.variable(gridfile.CoordinateName.CELL_Z, indices=my_cell_indices),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.EdgeDim]["x"] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.CoordinateName.EDGE_X, indices=my_edge_indices),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.EdgeDim]["y"] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.CoordinateName.EDGE_Y, indices=my_edge_indices),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.EdgeDim]["z"] = gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(gridfile.CoordinateName.EDGE_Z, indices=my_edge_indices),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.VertexDim]["x"] = gtx.as_field(
+                (dims.VertexDim,),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_X, indices=my_vertex_indices),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.VertexDim]["y"] = gtx.as_field(
+                (dims.VertexDim,),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_Y, indices=my_vertex_indices),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+            coordinates[dims.VertexDim]["z"] = gtx.as_field(
+                (dims.VertexDim,),
+                self._reader.variable(gridfile.CoordinateName.VERTEX_Z, indices=my_vertex_indices),
+                dtype=ta.wpfloat,
+                allocator=allocator,
+            )
+
+        return coordinates
+
+    def _read_geometry_fields(
+        self,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
+    ) -> GeometryDict:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
         my_vertex_indices = self._decomposition_info.global_index(dims.VertexDim)
@@ -260,7 +335,8 @@ class GridManager:
         see [grid_refinement.py](grid_refinement.py)
 
         Args:
-            backend: Optional backend to use for reading the fields, if not provided the default backend is used.
+            decomposition_info: Optional decomposition information, if not provided the grid is assumed to be a single node run.
+            allocator: Optional allocator to use for reading the fields, if not provided the default backend is used.
         Returns:
             dict[gtx.Dimension, gtx.Field]: A dictionary containing the refinement control fields for each dimension.
         """
@@ -302,8 +378,9 @@ class GridManager:
 
     def _construct_decomposed_grid(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.FieldBufferAllocationUtil | None,
         with_skip_values: bool,
+        geometry_type: base.GeometryType,
         decomposer: halo.Decomposer,
         run_properties: decomposition.ProcessProperties,
     ) -> None:
@@ -317,7 +394,7 @@ class GridManager:
         ## FULL GRID PROPERTIES
         cell_refinement = self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
         global_size = self._read_full_grid_size()
-        global_params = self._construct_global_params(allocator, global_size)
+        global_params = self._construct_global_params(allocator, global_size, geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
@@ -401,63 +478,26 @@ class GridManager:
             return neighbor_tables_for_halo_construction
 
     def _construct_global_params(
-        self, allocator: gtx_typing.FieldBufferAllocationUtil, global_size: base.HorizontalGridSize
+        self,
+        allocator: gtx_typing.FieldBufferAllocationUtil,
+        global_size: base.HorizontalGridSize,
+        geometry_type: base.GeometryType,
     ):
         grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
         grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
-        if geometry_type := self._reader.try_attribute(gridfile.MPIMPropertyName.GEOMETRY):
-            geometry_type = base.GeometryType(geometry_type)
         sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
 
-        # TODO (@halungge): use global reduction in geometry.py
-        mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
-        mean_dual_cell_area = self._reader.try_attribute(
-            gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
-        )
-        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
-        mean_dual_edge_length = self._reader.try_attribute(
-            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
-        )
-        # TODO (@halungge): Fix this: reads the global fields...
-        edge_lengths = self._reader.variable(gridfile.GeometryName.EDGE_LENGTH)
-        dual_edge_lengths = self._reader.variable(gridfile.GeometryName.DUAL_EDGE_LENGTH)
-        cell_areas = self._reader.variable(gridfile.GeometryName.CELL_AREA.value)
-        dual_cell_areas = self._reader.variable(gridfile.GeometryName.DUAL_AREA)
-        shape = icon.GridShape(
-            geometry_type=geometry_type,
-            subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
-        )
-        xp = data_alloc.import_array_ns(allocator)
-        global_params = icon.GlobalGridParams.from_fields(
-            grid_shape=shape,
+        return icon.GlobalGridParams(
+            grid_shape=icon.GridShape(
+                geometry_type=geometry_type,
+                subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
+            ),
             radius=sphere_radius,
             domain_length=domain_length,
             domain_height=domain_height,
             num_cells=global_size.num_cells,
-            mean_edge_length=mean_edge_length,
-            mean_dual_edge_length=mean_dual_edge_length,
-            mean_cell_area=mean_cell_area,
-            mean_dual_cell_area=mean_dual_cell_area,
-            edge_lengths=edge_lengths,
-            dual_edge_lengths=dual_edge_lengths,
-            cell_areas=cell_areas,
-            dual_cell_areas=dual_cell_areas,
-            array_ns=xp,
-        )
-
-        return global_params
-
-    def _get_index_field(
-        self,
-        field: gridfile.GridFileName,
-        indices: np.ndarray | None = None,
-        transpose=True,
-        apply_offset=True,
-    ):
-        return self._reader.int_variable(
-            field, indices=indices, transpose=transpose, apply_transformation=apply_offset
         )
 
     def _read_full_grid_size(self) -> base.HorizontalGridSize:
@@ -474,6 +514,17 @@ class GridManager:
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
         return full_grid_size
+
+    def _get_index_field(
+        self,
+        field: gridfile.GridFileName,
+        indices: np.ndarray | None = None,
+        transpose=True,
+        apply_offset=True,
+    ):
+        return self._reader.int_variable(
+            field, indices=indices, transpose=transpose, apply_transformation=apply_offset
+        )
 
 
 def _get_derived_connectivities(

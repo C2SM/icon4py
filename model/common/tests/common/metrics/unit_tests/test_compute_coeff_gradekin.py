@@ -27,6 +27,8 @@ from icon4py.model.testing.fixtures.datatest import (
     ranked_data_path,
 )
 
+from ... import utils
+
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as base_grid
@@ -51,5 +53,6 @@ def test_compute_coeff_gradekin(
         edge_cell_length,
         inv_dual_edge_length,
         horizontal_start,
+        exchange=utils.dummy_exchange,
     )
     assert test_utils.dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full)

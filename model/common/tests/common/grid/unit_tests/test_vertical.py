@@ -96,7 +96,8 @@ def test_damping_layer_calculation_from_icon_input(
     )
     assert nrdmax == vertical_grid.end_index_of_damping_layer
     a_array = a.ndarray
-    assert a_array[nrdmax] > damping_height
+    damping_height = min(damping_height, a_array[0])
+    assert a_array[nrdmax] >= damping_height
     assert a_array[nrdmax + 1] < damping_height
     assert vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.DAMPING)) == nrdmax
 

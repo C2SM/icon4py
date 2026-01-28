@@ -27,14 +27,14 @@ except ImportError:
 import gt4py.next as gtx
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox
-from icon4py.model.testing.parallel_helpers import check_comm_size
 
 from ...fixtures import (
     backend,
+    backend_like,
     data_provider,
     decomposition_info,
     download_ser_data,
@@ -50,17 +50,6 @@ from ..utils import dummy_four_ranks
 
 
 _log = logging.getLogger(__name__)
-
-
-"""
-running tests with mpi:
-
-mpirun -np 2 python -m pytest -v --with-mpi tests/mpi_tests/test_mpi_decomposition.py
-
-mpirun -np 2 pytest -v --with-mpi -k mpi_tests/
-
-
-"""
 
 
 @pytest.mark.mpi(min_size=2)
@@ -97,7 +86,7 @@ def test_decomposition_info_masked(
     processor_props: definitions.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
-    check_comm_size(processor_props, sizes=(2,))
+    parallel_helpers.check_comm_size(processor_props, sizes=(2,))
     my_rank = processor_props.rank
     all_indices = decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
@@ -296,7 +285,7 @@ def test_create_single_node_runtime_without_mpi(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
+@pytest.mark.parametrize("dimension", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_exchange_on_dummy_data(
     processor_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
@@ -370,7 +359,108 @@ def test_halo_exchange_for_sparse_field(
     print(
         f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {result.asnumpy().shape}"
     )
-
     exchange.exchange_and_wait(dims.CellDim, result)
 
     assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())
+
+
+inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], [], [-10, 20, 4]]
+
+
+@pytest.mark.parametrize("global_list", inputs_ls)
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_global_reductions_min(
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[data_alloc.ScalarT],
+) -> None:
+    my_rank = processor_props.rank
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
+
+    global_reduc = definitions.create_reduction(processor_props)
+
+    if len(global_list) > 0:
+        min_val = global_reduc.min(local_data, array_ns=xp)
+        expected_val = np.min(global_list)
+        assert expected_val == min_val
+    else:
+        with pytest.raises(ValueError, match="global_min requires a non-empty buffer"):
+            global_reduc.min(local_data, array_ns=xp)
+
+
+@pytest.mark.parametrize("global_list", inputs_ls)
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_global_reductions_max(
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[data_alloc.ScalarT],
+) -> None:
+    my_rank = processor_props.rank
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
+
+    global_reduc = definitions.create_reduction(processor_props)
+
+    if len(global_list) > 0:
+        max_val = global_reduc.max(local_data, array_ns=xp)
+        expected_val = np.max(global_list)
+        assert expected_val == max_val
+    else:
+        with pytest.raises(ValueError, match="global_max requires a non-empty buffer"):
+            global_reduc.max(local_data, array_ns=xp)
+
+
+@pytest.mark.parametrize("global_list", inputs_ls)
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_global_reductions_sum(
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[data_alloc.ScalarT],
+) -> None:
+    my_rank = processor_props.rank
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
+
+    global_reduc = definitions.create_reduction(processor_props)
+
+    if len(global_list) > 0:
+        sum_val = global_reduc.sum(local_data, array_ns=xp)
+        expected_val = np.sum(global_list)
+        assert expected_val == sum_val
+    else:
+        with pytest.raises(ValueError, match="global_sum requires a non-empty buffer"):
+            global_reduc.sum(local_data, array_ns=xp)
+
+
+@pytest.mark.parametrize("global_list", inputs_ls)
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_global_reductions_mean(
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[data_alloc.ScalarT],
+) -> None:
+    my_rank = processor_props.rank
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
+    global_reduc = definitions.create_reduction(processor_props)
+
+    if len(global_list) > 0:
+        mean_val = global_reduc.mean(local_data, array_ns=xp)
+        expected_val = np.mean(global_list)
+        assert expected_val == mean_val
+    else:
+        with pytest.raises(ValueError, match="global_mean requires a non-empty buffer"):
+            global_reduc.mean(local_data, array_ns=xp)

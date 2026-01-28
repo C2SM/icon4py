@@ -110,7 +110,7 @@ def get_grid_geometry(
             keep_skip_values=True,
             allocator=model_backends.get_allocator(backend),
         )
-        geometry_source = geometry.GridGeometry(
+        return geometry.GridGeometry(
             gm.grid,
             gm.decomposition_info,
             backend,
@@ -118,7 +118,6 @@ def get_grid_geometry(
             gm.geometry_fields,
             geometry_attrs.attrs,
         )
-        return geometry_source
 
     if not grid_geometries.get(register_name):
         grid_geometries[register_name] = _construct_grid_geometry()
