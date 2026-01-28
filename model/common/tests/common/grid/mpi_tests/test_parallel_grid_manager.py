@@ -304,9 +304,6 @@ def test_halo_neighbor_access_e2c2v(
     backend: gtx_typing.Backend | None,
     grid: test_defs.GridDescription,
 ) -> None:
-    if test_utils.is_dace(backend):
-        pytest.xfail("dace backend make test fail: direct offset access in test function?")
-
     file = grid_utils.resolve_full_grid_file_name(grid)
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
@@ -400,10 +397,6 @@ def test_halo_neighbor_access_e2c(
     backend: gtx_typing.Backend | None,
     grid: test_defs.GridDescription,
 ) -> None:
-    if test_utils.is_dace(backend):
-        pytest.xfail(
-            "dace backend make test fail (and following tests): direct offset access in test function?"
-        )
     file = grid_utils.resolve_full_grid_file_name(grid)
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
