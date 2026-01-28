@@ -85,7 +85,6 @@ def test_distributed_geometry_attrs(
     assert test_utils.dallclose(field, field_ref, atol=1e-12)
 
 
-@pytest.mark.xfail(reason="Wrong results")
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
