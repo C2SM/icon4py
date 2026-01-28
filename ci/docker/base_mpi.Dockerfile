@@ -4,23 +4,25 @@ ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
-    strace \
-    build-essential \
-    tar \
-    wget \
-    curl \
-    libboost-dev \
-    libnuma-dev \
-    libopenmpi-dev \
-    ca-certificates \
-    libssl-dev \
-    autoconf \
-    automake \
-    libtool \
-    pkg-config \
-    libreadline-dev \
-    git && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        autoconf \
+        automake \
+        build-essential \
+        ca-certificates \
+        curl \
+        git \
+        libboost-dev \
+        libnuma-dev \
+        libopenmpi-dev \
+        libreadline-dev \
+        libssl-dev \
+        libtool \
+        nvidia-cuda-dev \
+        pkg-config \
+        strace \
+        tar \
+        wget && \
     rm -rf /var/lib/apt/lists/*
 
 # Install uv: https://docs.astral.sh/uv/guides/integration/docker
