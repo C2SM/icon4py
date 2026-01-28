@@ -8,4 +8,4 @@ ARG PYVERSION
 ARG VENV
 ENV UV_PROJECT_ENVIRONMENT=$VENV
 ENV MPI4PY_BUILD_BACKEND="scikit-build-core"
-RUN uv sync --extra all --python=$PYVERSION
+RUN uv sync --extra all --extra cuda12 --python=$PYVERSION
