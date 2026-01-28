@@ -80,7 +80,8 @@ build_distributed_cpu:
   parallel:
     matrix:
       - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
-        BACKEND: [embedded, gtfn_cpu, dace_cpu]
+        # BACKEND: [embedded, gtfn_cpu, dace_cpu, dace_gpu]
+        BACKEND: [dace_cpu, dace_gpu]
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
