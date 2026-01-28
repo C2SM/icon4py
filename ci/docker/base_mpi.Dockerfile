@@ -19,6 +19,7 @@ RUN apt-get update && \
         libssl-dev \
         libtool \
         nvidia-cuda-dev \
+        nvidia-cuda-toolkit \
         pkg-config \
         strace \
         tar \
