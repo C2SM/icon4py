@@ -187,11 +187,10 @@ def test_rbf_interpolation_coeffs_cell(
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         geometry_type.value,
-        rbf.compute_default_rbf_scale(
-            geometry_type,
-            grid.global_properties.characteristic_length,
-            grid.global_properties.mean_dual_edge_length,
-            rbf_dim,
+        rbf.compute_default_rbf_scale_cell(
+            geometry_type.value,
+            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
         grid.global_properties.domain_length,
@@ -272,11 +271,10 @@ def test_rbf_interpolation_coeffs_vertex(
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         geometry_type.value,
-        rbf.compute_default_rbf_scale(
-            geometry_type,
-            grid.global_properties.characteristic_length,
-            grid.global_properties.mean_dual_edge_length,
-            rbf_dim,
+        rbf.compute_default_rbf_scale_vertex(
+            geometry_type.value,
+            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
         grid.global_properties.domain_length,
@@ -359,11 +357,10 @@ def test_rbf_interpolation_coeffs_edge(
         grid_savepoint.e2c2e(),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
         geometry_type.value,
-        rbf.compute_default_rbf_scale(
-            geometry_type,
-            grid.global_properties.characteristic_length,
-            grid.global_properties.mean_dual_edge_length,
-            rbf_dim,
+        rbf.compute_default_rbf_scale_edge(
+            geometry_type.value,
+            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
         grid.global_properties.domain_length,

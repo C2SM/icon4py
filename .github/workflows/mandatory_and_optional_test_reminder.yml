@@ -28,6 +28,10 @@ jobs:
 
             * `cscs-ci run dace`
 
+            To run tests with MPI you can use:
+
+            * `cscs-ci run distributed`
+
             To run test levels ignored by the default test suite (mostly simple datatest for static fields computations) you can use:
              * `cscs-ci run extra`
 
