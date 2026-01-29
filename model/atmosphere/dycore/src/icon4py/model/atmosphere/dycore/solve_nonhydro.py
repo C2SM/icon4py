@@ -941,7 +941,7 @@ class SolveNonhydro:
             self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
         )
         """
-        Declared as scal_divdamp in ICON.
+        Declared as enh_divdamp_fac in ICON.
         """
         self.intermediate_fields = IntermediateFields.allocate(grid=self._grid, allocator=allocator)
 

@@ -1615,7 +1615,6 @@ def test_apply_divergence_damping_and_update_vn(
     corrector_normal_wind_advective_tendency = sp_stencil_init.ddt_vn_apc_ntl(1)
     normal_wind_tendency_due_to_slow_physics_process = sp_stencil_init.ddt_vn_phy()
     normal_wind_iau_increment = sp_stencil_init.vn_incr()
-    interpolated_fourth_order_divdamp_factor = sp_nh_init.enh_divdamp_fac()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
     horizontal_pressure_gradient = sp_stencil_init.z_gradh_exner()
     current_vn = sp_stencil_init.vn()
@@ -1623,6 +1622,13 @@ def test_apply_divergence_damping_and_update_vn(
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
     config = definitions.construct_nonhydrostatic_config(experiment)
     mean_cell_area = grid_savepoint.mean_cell_area()
+
+    # TODO(): Use serialized data ('enh_divdamp_fac' in icon) instead of computing 'interpolated_fourth_order_divdamp_factor'
+    interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
+        icon_grid,
+        dims.KDim,
+        allocator=backend,
+    )
 
     iau_wgt_dyn = config.iau_wgt_dyn
     divdamp_order = config.divdamp_order
@@ -1642,6 +1648,20 @@ def test_apply_divergence_damping_and_update_vn(
     is_iau_active = config.is_iau_active
 
     vn_ref = sp_nh_exit.vn_new()
+
+    smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
+        grid_savepoint.vct_a(),
+        config.fourth_order_divdamp_factor,
+        config.fourth_order_divdamp_factor2,
+        config.fourth_order_divdamp_factor3,
+        config.fourth_order_divdamp_factor4,
+        config.fourth_order_divdamp_z,
+        config.fourth_order_divdamp_z2,
+        config.fourth_order_divdamp_z3,
+        config.fourth_order_divdamp_z4,
+        interpolated_fourth_order_divdamp_factor,
+        offset_provider={"Koff": dims.KDim},
+    )
 
     compute_edge_diagnostics_for_dycore_and_update_vn.apply_divergence_damping_and_update_vn.with_backend(
         backend
