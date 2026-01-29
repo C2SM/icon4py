@@ -173,7 +173,7 @@ class Experiments:
         },
     )
     MCH_CH_R04B09: Final = Experiment(
-        name="mch_ch_r04b09_dsl",
+        name="exclaim_ch_r04b09_dsl",
         description="Regional setup used by EXCLAIM to validate the icon-exclaim.",
         grid=Grids.MCH_CH_R04B09_DSL,
         num_levels=65,
@@ -184,7 +184,7 @@ class Experiments:
         },
     )
     JW: Final = Experiment(
-        name="jabw_R02B04",
+        name="exclaim_nh35_tri_jws",
         description="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
         num_levels=35,
@@ -195,7 +195,7 @@ class Experiments:
         },
     )
     GAUSS3D: Final = Experiment(
-        name="gauss3d_torus",
+        name="exclaim_gauss3d",
         description="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
         num_levels=35,
@@ -206,7 +206,7 @@ class Experiments:
         },
     )
     WEISMAN_KLEMP_TORUS: Final = Experiment(
-        name="weisman_klemp_torus",
+        name="exclaim_nh_weisman_klemp",
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
         num_levels=64,
