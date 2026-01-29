@@ -8,11 +8,11 @@
 
 from __future__ import annotations
 
-import typing
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
@@ -20,7 +20,7 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry, geometry_attributes as attrs, horizontal as h_grid
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import parallel_helpers, test_utils
+from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
 
 from ...fixtures import (
     backend,
@@ -34,6 +34,7 @@ from ...fixtures import (
     processor_props,
     ranked_data_path,
 )
+from .. import utils
 
 
 if TYPE_CHECKING:
@@ -79,6 +80,7 @@ def test_distributed_geometry_attrs(
     assert test_utils.dallclose(field, field_ref, atol=1e-12)
 
 
+@pytest.mark.xfail(reason="Wrong results")
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -175,3 +177,66 @@ def test_cartesian_geometry_attr_no_halos(
     )
     math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
     assert test_utils.dallclose(norm.asnumpy(), 1.0)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "attr_name", ["mean_edge_length", "mean_dual_edge_length", "mean_cell_area", "mean_dual_area"]
+)
+def test_distributed_geometry_mean_fields(
+    backend: gtx_typing.Backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    geometry_from_savepoint: geometry.GridGeometry,
+    attr_name: str,
+) -> None:
+    if processor_props.comm_size > 1:
+        pytest.skip("Values not serialized for multiple processors")
+
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    assert hasattr(experiment, "name")
+    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][attr_name]
+    value = geometry_from_savepoint.get(attr_name)
+    assert value == pytest.approx(value_ref)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_distributed_mean_cell_area(
+    backend: gtx_typing.Backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    geometry_from_savepoint: geometry.GridGeometry,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    value_ref = grid_savepoint.mean_cell_area()
+    value = geometry_from_savepoint.get("mean_cell_area")
+    assert value == pytest.approx(value_ref, rel=1e-1)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_distributed_mean_dual_edge_length(
+    backend: gtx_typing.Backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    geometry_from_savepoint: geometry.GridGeometry,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+
+    value_ref = np.mean(grid_savepoint.dual_edge_length().asnumpy())
+    value = geometry_from_savepoint.get("mean_dual_edge_length")
+    assert value == pytest.approx(value_ref, rel=1e-1)

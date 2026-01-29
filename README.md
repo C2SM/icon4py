@@ -106,6 +106,18 @@ nox -s 'test_common'
 nox -s 'test_atmosphere_advection-3.10(datatest=True)'
 ```
 
+To run distributed tests, make sure an MPI implementation is installed and run `uv sync --extra distributed` or `uv sync --extra all`. Then run tests using `mpirun`, the `--with-mpi` pytest flag, and the `-k mpi_tests` filter:
+
+```bash
+mpirun -np 4 pytest -v -s --with-mpi -k mpi_tests
+```
+
+To avoid all ranks writing their test output to stdout, use the helper script `scripts/ci-mpi-wrapper.sh` around the `pytest` command:
+
+```bash
+mpirun -np 4 scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi -k mpi_tests
+```
+
 ### Benchmarking
 
 We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) to benchmark the execution time of stencils in icon4py. To disable benchmarking during testing you can use `--benchmark-disable` when invoking `pytest`.

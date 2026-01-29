@@ -15,14 +15,14 @@ from gt4py.next import allocators as gtx_allocators  # TODO(havogt): expose in g
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
-    compute_advection_in_horizontal_momentum_equation,
+    compute_advection_in_horizontal_momentum,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_momentum_equation import (
-    compute_advection_in_vertical_momentum_equation,
-    compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
+    compute_advection_in_corrector_vertical_momentum,
+    compute_advection_in_predictor_vertical_momentum,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
-    compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
+from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wind import (
+    compute_diagnostics_from_normal_wind,
 )
 from icon4py.model.common import (
     dimension as dims,
@@ -67,9 +67,9 @@ class VelocityAdvection:
         self._allocate_local_fields(model_backends.get_allocator(backend))
         self._determine_local_domains()
 
-        self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction = setup_program(
+        self._compute_diagnostics_from_normal_wind = setup_program(
             backend=backend,
-            program=compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
+            program=compute_diagnostics_from_normal_wind,
             constant_args={
                 "rbf_vec_coeff_e": self.interpolation_state.rbf_vec_coeff_e,
                 "wgtfac_e": self.metric_state.wgtfac_e,
@@ -96,9 +96,9 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation = setup_program(
+        self._compute_advection_in_predictor_vertical_momentum = setup_program(
             backend=backend,
-            program=compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
+            program=compute_advection_in_predictor_vertical_momentum,
             constant_args={
                 "coeff1_dwdz": self.metric_state.coeff1_dwdz,
                 "coeff2_dwdz": self.metric_state.coeff2_dwdz,
@@ -124,9 +124,9 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        self._compute_advection_in_vertical_momentum_equation = setup_program(
+        self._compute_advection_in_corrector_vertical_momentum = setup_program(
             backend=backend,
-            program=compute_advection_in_vertical_momentum_equation,
+            program=compute_advection_in_corrector_vertical_momentum,
             constant_args={
                 "coeff1_dwdz": self.metric_state.coeff1_dwdz,
                 "coeff2_dwdz": self.metric_state.coeff2_dwdz,
@@ -151,9 +151,9 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-        self._compute_advection_in_horizontal_momentum_equation = setup_program(
+        self._compute_advection_in_horizontal_momentum = setup_program(
             backend=backend,
-            program=compute_advection_in_horizontal_momentum_equation,
+            program=compute_advection_in_horizontal_momentum,
             constant_args={
                 "e_bln_c_s": self.interpolation_state.e_bln_c_s,
                 "geofac_rot": self.interpolation_state.geofac_rot,
@@ -261,7 +261,7 @@ class VelocityAdvection:
 
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
-        self._compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
+        self._compute_diagnostics_from_normal_wind(
             tangential_wind=diagnostic_state.tangential_wind,
             tangential_wind_on_half_levels=tangential_wind_on_half_levels,
             vn_on_half_levels=diagnostic_state.vn_on_half_levels,
@@ -274,7 +274,7 @@ class VelocityAdvection:
         )
 
         # TODO(havogt): however, our test data is probably not able to catch cfl_clipping conditons
-        self._compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
+        self._compute_advection_in_predictor_vertical_momentum(
             contravariant_correction_at_cells_on_half_levels=diagnostic_state.contravariant_correction_at_cells_on_half_levels,
             vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.predictor,
             contravariant_corrected_w_at_cells_on_model_levels=self._contravariant_corrected_w_at_cells_on_model_levels,
@@ -303,7 +303,7 @@ class VelocityAdvection:
         # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
         # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
         apply_extra_diffusion_on_vn = True
-        self._compute_advection_in_horizontal_momentum_equation(
+        self._compute_advection_in_horizontal_momentum(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
             vn=prognostic_state.vn,
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,
@@ -345,7 +345,7 @@ class VelocityAdvection:
 
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
-        self._compute_advection_in_vertical_momentum_equation(
+        self._compute_advection_in_corrector_vertical_momentum(
             vertical_wind_advective_tendency=diagnostic_state.vertical_wind_advective_tendency.corrector,
             contravariant_corrected_w_at_cells_on_model_levels=self._contravariant_corrected_w_at_cells_on_model_levels,
             vertical_cfl=self.vertical_cfl,
@@ -374,7 +374,7 @@ class VelocityAdvection:
         # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
         # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
         apply_extra_diffusion_on_vn = True
-        self._compute_advection_in_horizontal_momentum_equation(
+        self._compute_advection_in_horizontal_momentum(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
             vn=prognostic_state.vn,
             horizontal_kinetic_energy_at_edges_on_model_levels=horizontal_kinetic_energy_at_edges_on_model_levels,

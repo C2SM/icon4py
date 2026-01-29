@@ -293,7 +293,7 @@ def test_nonhydro_predictor_step(
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert test_utils.dallclose(
-        solve_nonhydro.pressure_buoyancy_acceleration_at_cells_on_half_levels.asnumpy()[
+        solve_nonhydro.nonhydro_buoy_at_cells_on_half_levels.asnumpy()[
             cell_start_lateral_boundary_level_2:, 1:
         ],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
@@ -1058,7 +1058,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
-    pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
+    nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
     exner_at_cells_on_half_levels = data_alloc.zero_field(
@@ -1137,7 +1137,7 @@ def test_compute_perturbed_quantities_and_interpolation(
         exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
         ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
         ddqz_z_half=ddqz_z_half,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
         current_exner=current_exner,
         reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,
@@ -1220,7 +1220,7 @@ def test_compute_perturbed_quantities_and_interpolation(
         ),
     ],
 )
-def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
+def test_compute_interpolation_and_nonhydro_buoy(
     at_initial_timestep,
     istep_init,
     istep_exit,
@@ -1265,7 +1265,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     perturbed_theta_v_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
-    pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
+    nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
 
@@ -1287,13 +1287,13 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     theta_v_ic_ref = sp_ref.theta_v_ic()
     z_th_ddz_exner_c_ref = sp_exit.z_th_ddz_exner_c()
 
-    compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration.with_backend(
+    compute_cell_diagnostics_for_dycore.compute_interpolation_and_nonhydro_buoy.with_backend(
         backend
     )(
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
         theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         w=w,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         current_rho=current_rho,
@@ -1337,7 +1337,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
     )
 
     assert test_utils.dallclose(
-        pressure_buoyancy_acceleration_at_cells_on_half_levels.asnumpy()[
+        nonhydro_buoy_at_cells_on_half_levels.asnumpy()[
             start_cell_lateral_boundary_level_3:end_cell_local, 1 : icon_grid.num_levels
         ],
         z_th_ddz_exner_c_ref.asnumpy()[
@@ -1365,7 +1365,7 @@ def test_interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_ac
         ),
     ],
 )
-def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
+def test_compute_rho_theta_pgrad_and_update_vn(
     experiment,
     step_date_init,
     step_date_exit,
@@ -1480,7 +1480,7 @@ def test_compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
             hydrostatic_correction.ndarray[:, lowest_level],
             allocator=backend,
         )
-    compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn.with_backend(
+    compute_edge_diagnostics_for_dycore_and_update_vn.compute_rho_theta_pgrad_and_update_vn.with_backend(
         backend
     )(
         rho_at_edges_on_model_levels=rho_at_edges_on_model_levels,
@@ -1892,7 +1892,7 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
         ),
     ],
 )
-def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+def test_compute_averaged_vn_and_fluxes(
     istep_init,
     istep_exit,
     substep_init,
@@ -1936,9 +1936,7 @@ def test_compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
     vn_traj_ref = savepoint_dycore_30_to_38_exit.vn_traj()
     mass_flx_me_ref = savepoint_dycore_30_to_38_exit.mass_flx_me()
 
-    compute_horizontal_velocity_quantities.compute_averaged_vn_and_fluxes_and_prepare_tracer_advection.with_backend(
-        backend
-    )(
+    compute_horizontal_velocity_quantities.compute_averaged_vn_and_fluxes.with_backend(backend)(
         spatially_averaged_vn=z_vn_avg,
         mass_flux_at_edges_on_model_levels=mass_fl_e,
         theta_v_flux_at_edges_on_model_levels=z_theta_v_fl_e,
@@ -2054,7 +2052,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     mass_flux_at_edges_on_model_levels = sp_stencil_init.mass_fl_e()
     theta_v_flux_at_edges_on_model_levels = sp_stencil_init.z_theta_v_fl_e()
     predictor_vertical_wind_advective_tendency = sp_stencil_init.ddt_w_adv_pc(0)
-    pressure_buoyancy_acceleration_at_cells_on_half_levels = sp_stencil_init.z_th_ddz_exner_c()
+    nonhydro_buoy_at_cells_on_half_levels = sp_stencil_init.z_th_ddz_exner_c()
     rho_at_cells_on_half_levels = sp_stencil_init.rho_ic()
     contravariant_correction_at_cells_on_half_levels = savepoint_nonhydro_init.w_concorr_c()
     current_exner = sp_stencil_init.exner_nnow()
@@ -2115,7 +2113,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
         theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),
@@ -2258,7 +2256,7 @@ def test_vertically_implicit_solver_at_corrector_step(
     theta_v_flux_at_edges_on_model_levels = sp_stencil_init.z_theta_v_fl_e()
     predictor_vertical_wind_advective_tendency = sp_stencil_init.ddt_w_adv_pc(0)
     corrector_vertical_wind_advective_tendency = sp_stencil_init.ddt_w_adv_pc(1)
-    pressure_buoyancy_acceleration_at_cells_on_half_levels = sp_stencil_init.z_th_ddz_exner_c()
+    nonhydro_buoy_at_cells_on_half_levels = sp_stencil_init.z_th_ddz_exner_c()
     rho_at_cells_on_half_levels = sp_stencil_init.rho_ic()
     contravariant_correction_at_cells_on_half_levels = sp_stencil_init.w_concorr_c()
     current_exner = sp_stencil_init.exner_nnow()
@@ -2320,7 +2318,7 @@ def test_vertically_implicit_solver_at_corrector_step(
         theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
         predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
         corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+        nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         exner_w_explicit_weight_parameter=metrics_savepoint.vwind_expl_wgt(),

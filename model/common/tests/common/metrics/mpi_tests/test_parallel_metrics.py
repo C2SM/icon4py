@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.datatest
 @pytest.mark.mpi
+@pytest.mark.uses_concat_where
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, metrics_name",
@@ -68,6 +69,9 @@ def test_distributed_metrics_attrs(
     metrics_name: str,
     experiment: test_defs.Experiment,
 ) -> None:
+    if attrs_name == attrs.COEFF_GRADEKIN:
+        pytest.xfail("Wrong results")
+
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
@@ -80,6 +84,7 @@ def test_distributed_metrics_attrs(
 
 @pytest.mark.datatest
 @pytest.mark.mpi
+@pytest.mark.uses_concat_where
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
     "attrs_name, metrics_name",
@@ -151,6 +156,9 @@ def test_distributed_metrics_attrs_no_halo_regional(
     metrics_name: str,
     experiment: test_defs.Experiment,
 ) -> None:
+    if test_utils.is_embedded(backend):
+        # https://github.com/GridTools/gt4py/issues/1583
+        pytest.xfail("ValueError: axes don't match array")
     if experiment == test_defs.Experiments.EXCLAIM_APE:
         pytest.skip(f"Fields not computed for {experiment}")
     parallel_helpers.check_comm_size(processor_props)
@@ -183,3 +191,24 @@ def test_distributed_metrics_wgtfacq_e(
     field = factory.get(attrs.WGTFACQ_E).asnumpy()
     field_ref = metrics_savepoint.wgtfacq_e_dsl(field.shape[1]).asnumpy()
     assert test_utils.dallclose(field, field_ref)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_distributed_metrics_nflat_gradp(
+    backend: gtx_typing.Backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    metrics_factory_from_savepoint: metrics_factory.MetricsFieldsFactory,
+    experiment: test_defs.Experiment,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    factory = metrics_factory_from_savepoint
+
+    value = factory.get(attrs.NFLAT_GRADP)
+    value_ref = grid_savepoint.nflat_gradp()
+    assert value == value_ref

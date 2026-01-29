@@ -9,7 +9,6 @@ import dataclasses
 import logging
 import math
 from collections.abc import Callable
-from types import ModuleType
 from typing import Final, TypeVar
 
 import gt4py.next as gtx
@@ -79,45 +78,7 @@ class GlobalGridParams:
     domain_height: float | None = None
     global_num_cells: int | None = None
     num_cells: int | None = None
-    mean_edge_length: float | None = None
-    mean_dual_edge_length: float | None = None
-    mean_cell_area: float | None = None
-    mean_dual_cell_area: float | None = None
     characteristic_length: float | None = None
-
-    @classmethod
-    def from_fields(
-        cls: type[_T],
-        array_ns: ModuleType,
-        mean_edge_length: float | None = None,
-        edge_lengths: data_alloc.NDArray | None = None,
-        mean_dual_edge_length: float | None = None,
-        dual_edge_lengths: data_alloc.NDArray | None = None,
-        mean_cell_area: float | None = None,
-        cell_areas: data_alloc.NDArray | None = None,
-        mean_dual_cell_area: float | None = None,
-        dual_cell_areas: data_alloc.NDArray | None = None,
-        **kwargs,
-    ) -> _T:
-        def init_mean(value: float | None, data: data_alloc.NDArray | None) -> float | None:
-            if value is not None:
-                return value
-            if data is not None:
-                return array_ns.mean(data).item()
-            return None
-
-        mean_edge_length = init_mean(mean_edge_length, edge_lengths)
-        mean_dual_edge_length = init_mean(mean_dual_edge_length, dual_edge_lengths)
-        mean_cell_area = init_mean(mean_cell_area, cell_areas)
-        mean_dual_cell_area = init_mean(mean_dual_cell_area, dual_cell_areas)
-
-        return cls(
-            mean_edge_length=mean_edge_length,
-            mean_dual_edge_length=mean_dual_edge_length,
-            mean_cell_area=mean_cell_area,
-            mean_dual_cell_area=mean_dual_cell_area,
-            **kwargs,
-        )
 
     def __post_init__(self) -> None:
         if self.geometry_type is not None:
@@ -139,21 +100,6 @@ class GlobalGridParams:
 
         if self.num_cells is None and self.global_num_cells is not None:
             object.__setattr__(self, "num_cells", self.global_num_cells)
-
-        if (
-            self.mean_cell_area is None
-            and self.radius is not None
-            and self.global_num_cells is not None
-            and self.geometry_type is base.GeometryType.ICOSAHEDRON
-        ):
-            object.__setattr__(
-                self,
-                "mean_cell_area",
-                compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells),
-            )
-
-        if self.characteristic_length is None and self.mean_cell_area is not None:
-            object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
 
     @property
     def geometry_type(self) -> base.GeometryType | None:

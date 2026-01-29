@@ -31,7 +31,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import
     compute_exner_from_rhotheta,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
-    compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
+    compute_averaged_vn_and_fluxes,
     compute_horizontal_velocity_quantities_and_fluxes,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
@@ -449,9 +449,9 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn = setup_program(
+        self._compute_rho_theta_pgrad_and_update_vn = setup_program(
             backend=backend,
-            program=compute_edge_diagnostics_for_dycore_and_update_vn.compute_theta_rho_face_values_and_pressure_gradient_and_update_vn,
+            program=compute_edge_diagnostics_for_dycore_and_update_vn.compute_rho_theta_pgrad_and_update_vn,
             constant_args={
                 "reference_rho_at_edges_on_model_levels": self._metric_state_nonhydro.reference_rho_at_edges_on_model_levels,
                 "reference_theta_at_edges_on_model_levels": self._metric_state_nonhydro.reference_theta_at_edges_on_model_levels,
@@ -551,9 +551,9 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection = setup_program(
+        self._compute_averaged_vn_and_fluxes = setup_program(
             backend=backend,
-            program=compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
+            program=compute_averaged_vn_and_fluxes,
             constant_args={
                 "e_flx_avg": self._interpolation_state.e_flx_avg,
                 "ddqz_z_full_e": self._metric_state_nonhydro.ddqz_z_full_e,
@@ -731,9 +731,9 @@ class SolveNonhydro:
             offset_provider=self._grid.connectivities,
         )
 
-        self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration = setup_program(
+        self._compute_interpolation_and_nonhydro_buoy = setup_program(
             backend=backend,
-            program=compute_cell_diagnostics_for_dycore.interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration,
+            program=compute_cell_diagnostics_for_dycore.compute_interpolation_and_nonhydro_buoy,
             constant_args={
                 "reference_theta_at_cells_on_model_levels": self._metric_state_nonhydro.reference_theta_at_cells_on_model_levels,
                 "ddz_of_reference_exner_at_cells_on_half_levels": self._metric_state_nonhydro.ddz_of_reference_exner_at_cells_on_half_levels,
@@ -862,7 +862,7 @@ class SolveNonhydro:
         """
         Declared as z_theta_v_pr_ic in ICON.
         """
-        self.pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
+        self.nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat, allocator=allocator
         )
         """
@@ -1137,20 +1137,18 @@ class SolveNonhydro:
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             current_rho=prognostic_states.current.rho,
             current_theta_v=prognostic_states.current.theta_v,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             current_exner=prognostic_states.current.exner,
         )
 
-        log.debug(
-            "predictor: start stencil compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"
-        )
+        log.debug("predictor: start stencil compute_rho_theta_pgrad_and_update_vn")
         self._compute_hydrostatic_correction_term(
             theta_v=prognostic_states.current.theta_v,
             theta_v_ic=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
             z_hydro_corr=self.hydrostatic_correction_on_lowest_level,
         )
 
-        self._compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
+        self._compute_rho_theta_pgrad_and_update_vn(
             rho_at_edges_on_model_levels=z_fields.rho_at_edges_on_model_levels,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
@@ -1201,7 +1199,7 @@ class SolveNonhydro:
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             contravariant_correction_at_edges_on_model_levels=self._contravariant_correction_at_edges_on_model_levels,
             current_exner=prognostic_states.current.exner,
@@ -1275,7 +1273,7 @@ class SolveNonhydro:
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
         second_order_divdamp_scaling_coeff = (
-            second_order_divdamp_factor * self._grid.global_properties.mean_cell_area
+            second_order_divdamp_factor * self._cell_params.mean_cell_area
         )
 
         log.debug("corrector run velocity advection")
@@ -1288,11 +1286,11 @@ class SolveNonhydro:
             cell_areas=self._cell_params.area,
         )
 
-        self._interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration(
+        self._compute_interpolation_and_nonhydro_buoy(
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels=self.perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=diagnostic_state_nh.theta_v_at_cells_on_half_levels,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             w=prognostic_states.next.w,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             current_rho=prognostic_states.current.rho,
@@ -1338,7 +1336,7 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
 
-        self._compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+        self._compute_averaged_vn_and_fluxes(
             spatially_averaged_vn=self.z_vn_avg,
             mass_flux_at_edges_on_model_levels=diagnostic_state_nh.mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
@@ -1365,7 +1363,7 @@ class SolveNonhydro:
             theta_v_flux_at_edges_on_model_levels=self.theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
             corrector_vertical_wind_advective_tendency=diagnostic_state_nh.vertical_wind_advective_tendency.corrector,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=self.pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=self.nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=diagnostic_state_nh.rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
             current_exner=prognostic_states.current.exner,

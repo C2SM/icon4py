@@ -129,7 +129,7 @@ def _compute_horizontal_pressure_gradient(
 
 
 @gtx.field_operator
-def _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
+def _compute_rho_theta_pgrad_and_update_vn(
     next_vn: fa.EdgeKField[ta.wpfloat],
     current_vn: fa.EdgeKField[ta.wpfloat],
     tangential_wind: fa.EdgeKField[ta.vpfloat],
@@ -370,7 +370,7 @@ def _apply_divergence_damping_and_update_vn(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
+def compute_rho_theta_pgrad_and_update_vn(
     rho_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     horizontal_pressure_gradient: fa.EdgeKField[ta.vpfloat],
@@ -480,7 +480,7 @@ def compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
     Returns:
         - next_vn: normal wind to be updated [m s-1]
     """
-    _compute_theta_rho_face_values_and_pressure_gradient_and_update_vn(
+    _compute_rho_theta_pgrad_and_update_vn(
         next_vn=next_vn,
         current_vn=current_vn,
         tangential_wind=tangential_wind,

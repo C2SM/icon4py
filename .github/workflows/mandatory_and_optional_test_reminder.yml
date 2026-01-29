@@ -17,6 +17,7 @@ jobs:
             Please make sure you run these tests via comment before you merge!
 
             * `cscs-ci run default`
+            * `cscs-ci run distributed`
 
             **Optional Tests**
 

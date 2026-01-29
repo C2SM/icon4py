@@ -302,10 +302,6 @@ def test_global_grid_params(
         domain_height=100.5,
         global_num_cells=global_num_cells,
         num_cells=num_cells,
-        mean_edge_length=13.0,
-        mean_dual_edge_length=None,
-        mean_cell_area=mean_cell_area,
-        mean_dual_cell_area=None,
     )
     assert geometry_type == params.geometry_type
     if geometry_type == base.GeometryType.TORUS:
@@ -325,59 +321,6 @@ def test_global_grid_params(
         assert params.domain_height is None
     assert params.global_num_cells == expected_global_num_cells
     assert params.num_cells == expected_num_cells
-    assert pytest.approx(params.mean_edge_length) == 13.0
-    assert params.mean_dual_edge_length is None
-    assert pytest.approx(params.mean_cell_area) == expected_mean_cell_area
-    assert params.mean_dual_cell_area is None
-    if expected_mean_cell_area is not None:
-        assert pytest.approx(params.characteristic_length) == math.sqrt(expected_mean_cell_area)
-
-
-@pytest.mark.parametrize(
-    "geometry_type",
-    [base.GeometryType.ICOSAHEDRON, base.GeometryType.TORUS],
-)
-def test_global_grid_params_from_fields(
-    geometry_type: base.GeometryType,
-    backend: gtx_typing.Backend,
-) -> None:
-    xp = data_alloc.import_array_ns(backend)
-
-    # Means provided directly (higher priority than calculating from fields)
-    params = icon.GlobalGridParams.from_fields(
-        grid_shape=icon.GridShape(
-            geometry_type=geometry_type, subdivision=icon.GridSubdivision(root=2, level=2)
-        ),
-        mean_edge_length=13.0,
-        mean_dual_edge_length=14.0,
-        mean_cell_area=15.0,
-        mean_dual_cell_area=16.0,
-        edge_lengths=xp.asarray([1.0, 2.0]),
-        dual_edge_lengths=xp.asarray([2.0, 3.0]),
-        cell_areas=xp.asarray([3.0, 4.0]),
-        dual_cell_areas=xp.asarray([4.0, 5.0]),
-        array_ns=xp,
-    )
-    assert pytest.approx(params.mean_edge_length) == 13.0
-    assert pytest.approx(params.mean_dual_edge_length) == 14.0
-    assert pytest.approx(params.mean_cell_area) == 15.0
-    assert pytest.approx(params.mean_dual_cell_area) == 16.0
-
-    # Means computed from fields
-    params = icon.GlobalGridParams.from_fields(
-        grid_shape=icon.GridShape(
-            geometry_type=geometry_type, subdivision=icon.GridSubdivision(root=2, level=2)
-        ),
-        edge_lengths=xp.asarray([1.0, 2.0]),
-        dual_edge_lengths=xp.asarray([2.0, 3.0]),
-        cell_areas=xp.asarray([3.0, 4.0]),
-        dual_cell_areas=xp.asarray([4.0, 5.0]),
-        array_ns=xp,
-    )
-    assert pytest.approx(params.mean_edge_length) == 1.5
-    assert pytest.approx(params.mean_dual_edge_length) == 2.5
-    assert pytest.approx(params.mean_cell_area) == 3.5
-    assert pytest.approx(params.mean_dual_cell_area) == 4.5
 
 
 @pytest.mark.parametrize(
@@ -402,7 +345,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "grid_descriptor, geometry_type, subdivision, radius, domain_length, domain_height, global_num_cells, num_cells, mean_edge_length, mean_dual_edge_length, mean_cell_area, mean_dual_cell_area, characteristic_length",
+    "grid_descriptor, geometry_type, subdivision, radius, domain_length, domain_height, global_num_cells, num_cells, characteristic_length",
     [
         (
             definitions.Grids.R02B04_GLOBAL,
@@ -413,10 +356,6 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             None,
             20480,
             20480,
-            240221.1036647776,
-            138710.63736114913,
-            24906292887.251026,
-            49802858653.68937,
             157817.27689721118,
         ),
         (
@@ -428,10 +367,6 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             None,
             1310720,
             1310720,
-            30050.07607616417,
-            17349.90054929857,
-            389176284.94852674,
-            778350194.5608561,
             19727.55141796687,
         ),
         (
@@ -443,10 +378,6 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             None,
             118292480,
             283876,
-            3092.8086192896153,
-            1782.4707626479924,
-            4119096.374920686,
-            8192823.87559748,
             2029.555708750239,
         ),
         (
@@ -458,10 +389,6 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             None,
             5242880,
             10700,
-            14295.416301386269,
-            8173.498324820434,
-            87967127.69851978,
-            170825432.57740065,
             9379.079256436624,
         ),
         (
@@ -473,10 +400,6 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             None,
             473169920,
             44528,
-            1546.76182117618,
-            889.1206039451661,
-            1029968.5064089653,
-            2032098.7893505183,
             1014.8736406119558,
         ),
         (
@@ -488,10 +411,6 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             None,
             83886080,
             20896,
-            3803.019140934253,
-            2180.911493355989,
-            6256048.940145881,
-            12259814.063180268,
             2501.209495453326,
         ),
         (
@@ -503,10 +422,6 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             100458.94683899487,
             None,
             23200,
-            1000.0,
-            577.3502691896258,
-            433012.7018922193,
-            866025.4037844389,
             658.0370064762462,
         ),
         (
@@ -518,10 +433,6 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             5248.638810814779,
             None,
             1056,
-            757.5757575757576,
-            437.3865675678984,
-            248515.09520903317,
-            497030.1904180664,
             498.51288369412595,
         ),
     ],
@@ -536,10 +447,6 @@ def test_global_grid_params_from_grid_manager(
     domain_height: float,
     global_num_cells: int,
     num_cells: int,
-    mean_edge_length: float,
-    mean_dual_edge_length: float,
-    mean_cell_area: float,
-    mean_dual_cell_area: float,
     characteristic_length: float,
 ) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
@@ -558,8 +465,3 @@ def test_global_grid_params_from_grid_manager(
     assert pytest.approx(params.domain_height) == domain_height
     assert params.global_num_cells == global_num_cells
     assert params.num_cells == num_cells
-    assert pytest.approx(params.mean_edge_length) == mean_edge_length
-    assert pytest.approx(params.mean_dual_edge_length) == mean_dual_edge_length
-    assert pytest.approx(params.mean_cell_area) == mean_cell_area
-    assert pytest.approx(params.mean_dual_cell_area) == mean_dual_cell_area
-    assert pytest.approx(params.characteristic_length) == characteristic_length
