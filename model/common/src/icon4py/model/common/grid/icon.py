@@ -70,8 +70,6 @@ class GridShape:
 _T = TypeVar("_T")
 
 
-# TODO (@halungge): fields should be removed from this object mean values computed in the geometry factory
-# as it needs global reduction... also consider _not_making_everything_ optional that causes troubles at runtime
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class GlobalGridParams:
     grid_shape: Final[GridShape | None] = None
