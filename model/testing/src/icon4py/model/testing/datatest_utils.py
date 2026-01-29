@@ -52,7 +52,9 @@ def get_ranked_data_path(base_path: pathlib.Path, comm_size: int) -> pathlib.Pat
     return base_path.absolute().joinpath(f"mpitask{comm_size}")
 
 
-def get_datapath_subdir_for_experiment(experiment: definitions.Experiment = definitions.Experiments.MCH_CH_R04B09) -> pathlib.Path:
+def get_datapath_subdir_for_experiment(
+    experiment: definitions.Experiment = definitions.Experiments.MCH_CH_R04B09,
+) -> pathlib.Path:
     return pathlib.Path(f"{experiment.name}/ser_data")
 
 
