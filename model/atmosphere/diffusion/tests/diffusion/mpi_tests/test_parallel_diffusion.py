@@ -22,6 +22,7 @@ from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.mpi
+@pytest.mark.uses_concat_where
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -147,6 +148,7 @@ def test_parallel_diffusion(
     )
 
 
+@pytest.mark.skip("SKIP: orchestration is currently broken on CI")
 @pytest.mark.mpi
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",

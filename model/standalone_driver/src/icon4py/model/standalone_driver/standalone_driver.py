@@ -552,7 +552,7 @@ def initialize_driver(
     )
 
     configuration_file_path = pathlib.Path(configuration_file_path)
-    global_reductions = decomposition_defs.create_global_reduction(parallel_props)
+    global_reductions = decomposition_defs.create_reduction(parallel_props)
     grid_file_path = pathlib.Path(grid_file_path)
     if pathlib.Path(output_path).exists():
         current_time = datetime.datetime.now()

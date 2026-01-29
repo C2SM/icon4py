@@ -89,7 +89,7 @@ def geometry_from_savepoint(
     }
 
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
-
+    global_reductions = decomposition.create_reduction(processor_props)
     grid_geometry = geometry.GridGeometry(
         grid=grid,
         decomposition_info=decomposition_info,
@@ -98,6 +98,7 @@ def geometry_from_savepoint(
         coordinates=coordinates,
         extra_fields=extra_fields,
         exchange=exchange,
+        global_reductions=global_reductions,
     )
     yield grid_geometry
 
