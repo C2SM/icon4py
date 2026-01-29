@@ -1623,7 +1623,7 @@ def test_apply_divergence_damping_and_update_vn(
     config = definitions.construct_nonhydrostatic_config(experiment)
     mean_cell_area = grid_savepoint.mean_cell_area()
 
-    # TODO(): Use serialized data ('enh_divdamp_fac' in icon) instead of computing 'interpolated_fourth_order_divdamp_factor'
+    # TODO: Use serialized data ('enh_divdamp_fac' in icon) instead of computing 'interpolated_fourth_order_divdamp_factor'
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
