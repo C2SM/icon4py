@@ -151,7 +151,10 @@ class IconGridSavepoint(IconSavepoint):
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
-        self.global_grid_params = icon.GlobalGridParams(grid_shape=grid_shape)
+        self.global_grid_params = icon.GlobalGridParams(
+            grid_shape=grid_shape,
+            num_cells=size[dims.CellDim],
+        )
 
     def verts_vertex_lat(self):
         """vertex latituted"""
