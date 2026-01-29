@@ -18,30 +18,6 @@ from icon4py.model.common.grid import base, icon
 from icon4py.model.testing import definitions, serialbox
 
 
-def guess_grid_shape(experiment: definitions.Experiment) -> icon.GridShape:
-    """Guess the grid type, root, and level from the experiment name.
-
-    Reads the level and root parameters from a string in the canonical ICON gridfile format
-        RxyBab where 'xy' and 'ab' are numbers and denote the root and level of the icosahedron grid construction.
-
-        Args: experiment: str: The experiment name.
-        Returns: tuple[int, int]: The grid root and level.
-    """
-    if "torus" in experiment.name.lower():
-        return icon.GridShape(geometry_type=base.GeometryType.TORUS)
-
-    try:
-        root, level = map(int, re.search(r"[Rr](\d+)[Bb](\d+)", experiment.name).groups())  # type:ignore[union-attr]
-        return icon.GridShape(
-            geometry_type=base.GeometryType.ICOSAHEDRON,
-            subdivision=icon.GridSubdivision(root=root, level=level),
-        )
-    except AttributeError as err:
-        raise ValueError(
-            f"Could not parse grid_root and grid_level from experiment: {experiment.name} no 'rXbY'pattern."
-        ) from err
-
-
 def get_processor_properties_for_run(
     run_instance: decomposition.RunType,
 ) -> decomposition.ProcessProperties:
