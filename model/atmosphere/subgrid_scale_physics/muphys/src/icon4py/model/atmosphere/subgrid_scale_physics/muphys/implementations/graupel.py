@@ -25,7 +25,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
     _vel_scale_factor_default_scalar,
     _vel_scale_factor_ice_scalar,
     _vel_scale_factor_snow_scalar,
-    _vel_scale_factor_snow_scalar_masked,
 )
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import (
     _internal_energy_scalar,
@@ -190,7 +189,6 @@ def _precip_and_t(
     t: ta.wpfloat,
     t_kp1: ta.wpfloat,
     rho: ta.wpfloat,  # density
-    # original_q: Q_scalar,
     q: Q_scalar,
     mask_r: bool,
     mask_s: bool,
@@ -199,19 +197,17 @@ def _precip_and_t(
     dt: ta.wpfloat,
     dz: ta.wpfloat,
 ) -> IntegrationState:
-    # mask_r = original_q.r > g_ct.qmin
-    # mask_s = original_q.s > g_ct.qmin
-    # mask_i = original_q.i > g_ct.qmin
-    # mask_g = original_q.g > g_ct.qmin
-    # kmin_rsig = mask_r | mask_s | mask_i | mask_g
     zeta = dt / (2.0 * dz)
     xrho = sqrt(g_ct.rho_00 / rho)
 
     vc_r = _vel_scale_factor_default_scalar(xrho)
-    vc_s = _vel_scale_factor_snow_scalar(xrho)
+    vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q.s)
     vc_i = _vel_scale_factor_ice_scalar(xrho)
     vc_g = _vel_scale_factor_default_scalar(xrho)
-    if mask_r | mask_s | mask_i | mask_g | previous_level.r.activated | previous_level.s.activated | previous_level.i.activated | previous_level.g.activated | previous_level.t_state.activated:
+    mask_activated = mask_r | mask_s | mask_i | mask_g
+    previous_level_activated = previous_level.r.activated | previous_level.s.activated | previous_level.i.activated | previous_level.g.activated | previous_level.t_state.activated
+    current_level_activated = mask_activated | previous_level_activated
+    if current_level_activated:
         r_update = precip_qx_level_update(
             previous_level.r,
             previous_level.rho,
@@ -224,8 +220,6 @@ def _precip_and_t(
             rho,
             mask_r,
         )
-        if q.s > g_ct.qmin:
-            vc_s = _vel_scale_factor_snow_scalar_masked(xrho, rho, t, q.s)
         s_update = precip_qx_level_update(
             previous_level.s,
             previous_level.rho,
@@ -277,7 +271,7 @@ def _precip_and_t(
             rho=rho,
             dz=dz,
             dt=dt,
-            mask=mask_r | mask_s | mask_i | mask_g,
+            mask=mask_activated,
         )
     else:
         r_update = PrecipStateQx(x=q.r, p=0.0, vc=vc_r, activated=False)
