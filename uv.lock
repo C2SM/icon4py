@@ -1402,8 +1402,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.0.4.post646+d1fac9cd"
-source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=better_in_map_dataflow_optimization_order_public#d1fac9cd2c85453cfab94fc6990e4a65ae68ca38" }
+version = "1.0.4.post648+9d092c44"
+source = { git = "https://github.com/philip-paul-mueller/gt4py?branch=better_in_map_dataflow_optimization_order_public#9d092c44cfe2e3881f50406dc772b1060c7747e9" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
