@@ -38,7 +38,7 @@ build_distributed_baseimage_aarch64:
     DOCKERFILE: ci/docker/checkout_mpi.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
-    USE_MPI: NO
+    USE_MPI: YES
     SLURM_MPI_TYPE: pmix
     PMIX_MCA_psec: native
     PMIX_MCA_gds: "^shmem2"
