@@ -14,7 +14,8 @@ import pathlib
 import time
 
 from gt4py import next as gtx
-from gt4py.next import config as gtx_config, metrics as gtx_metrics
+from gt4py.next import config as gtx_config
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
