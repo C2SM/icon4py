@@ -36,13 +36,14 @@ def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "download
     pathlib.Path(data_file).unlink(missing_ok=True)
 
 
-def download_test_data(dst: pathlib.Path, uri: str) -> None:
+def download_test_data(dst_root: pathlib.Path, dst_subdir: pathlib.Path, uri: str) -> None:
+    dst = dst_root.joinpath(dst_subdir)
     if config.ENABLE_TESTDATA_DOWNLOAD:
         # We create and lock the *parent* directory as we later check for existence of `dst`.
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        with locking.lock(dst.parent):
+        dst_root.mkdir(parents=True, exist_ok=True)
+        with locking.lock(dst_root):
             if not dst.exists():
-                download_and_extract(uri, dst)
+                download_and_extract(uri, dst_root)
     else:
         # If test data download is disabled, we check if the directory exists
         # without locking. We assume the location is managed by the user
