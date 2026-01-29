@@ -13,8 +13,8 @@ RUN apt-get update && \
         curl \
         git \
         libboost-dev \
+        libmpich-dev \
         libnuma-dev \
-        libopenmpi-dev \
         libreadline-dev \
         libssl-dev \
         libtool \
