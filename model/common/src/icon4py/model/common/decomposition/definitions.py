@@ -100,7 +100,7 @@ class DecompositionInfo:
         self._halo_levels[dim] = halo_levels
 
     def is_distributed(self) -> bool:
-        return max(self._halo_levels[dims.CellDim]) > DecompositionFlag.OWNED
+        return max(self._halo_levels[dims.CellDim]).item() > DecompositionFlag.OWNED
 
     def local_index(
         self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
@@ -120,13 +120,7 @@ class DecompositionInfo:
     def _to_local_index(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         data = self._global_index[dim]
         assert data.ndim == 1
-        if isinstance(data, np.ndarray):
-            import numpy as xp
-        else:
-            import cupy as xp  # type: ignore[import-not-found, no-redef]
-
-            xp.arange(data.shape[0])
-        return xp.arange(data.shape[0])
+        return data_alloc.array_ns_from_array(data).arange(data.shape[0])
 
     def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
@@ -154,13 +148,16 @@ class DecompositionInfo:
         )
 
     def get_halo_size(self, dim: gtx.Dimension, flag: DecompositionFlag) -> int:
-        return np.count_nonzero(self.halo_level_mask(dim, flag))
+        level_mask = self.halo_level_mask(dim, flag)
+        # TODO: Just do array_ns?
+        return data_alloc.array_ns_from_array(level_mask).count_nonzero(level_mask)
 
     def halo_levels(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._halo_levels[dim]
 
     def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag) -> data_alloc.NDArray:
-        return np.where(self._halo_levels[dim] == level, True, False)
+        levels = self._halo_levels[dim]
+        return data_alloc.array_ns_from_array(levels).where(levels == level.value, True, False)
 
 
 class ExchangeResult(Protocol):

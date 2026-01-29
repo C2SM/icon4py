@@ -58,8 +58,8 @@ def _create_dummy_decomposition_arrays(
     size: int, array_ns: ModuleType = np
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
     indices = array_ns.arange(size, dtype=gtx.int32)  # type: ignore  [attr-defined]
-    owner_mask = array_ns.ones((size,), dtype=bool)
-    halo_levels = array_ns.ones((size,), dtype=gtx.int32) * defs.DecompositionFlag.OWNED  # type: ignore  [attr-defined]
+    owner_mask = array_ns.full((size,), True, dtype=bool)
+    halo_levels = array_ns.full((size,), defs.DecompositionFlag.OWNED.value, dtype=gtx.int32)  # type: ignore  [attr-defined]
     return indices, owner_mask, halo_levels
 
 
@@ -462,13 +462,13 @@ class SimpleMetisDecomposer(Decomposer):
         Args:
             n_part: int, number of partitions to create
             adjacency_matrix: nd array: neighbor table describing of the main dimension object to be distributed: for example cell -> cell neighbors
-        Returns: np.ndarray: array with partition label (int, rank number) for each cell
+        Returns: data_alloc.NDArray: array with partition label (int, rank number) for each cell
         """
 
         import pymetis  # type: ignore [import-untyped]
 
         _, partition_index = pymetis.part_graph(nparts=num_partitions, adjacency=adjacency_matrix)
-        return np.array(partition_index)
+        return data_alloc.array_ns_from_array(adjacency_matrix).array(partition_index)
 
 
 class SingleNodeDecomposer(Decomposer):
@@ -476,7 +476,7 @@ class SingleNodeDecomposer(Decomposer):
         self, adjacency_matrix: data_alloc.NDArray, num_partitions: int = 1
     ) -> data_alloc.NDArray:
         """Dummy decomposer for single node: assigns all cells to rank = 0"""
-        return np.zeros(adjacency_matrix.shape[0], dtype=gtx.int32)  # type: ignore  [attr-defined]
+        return data_alloc.array_ns_from_array(adjacency_matrix).zeros(adjacency_matrix.shape[0], dtype=gtx.int32)  # type: ignore  [attr-defined]
 
 
 def get_halo_constructor(

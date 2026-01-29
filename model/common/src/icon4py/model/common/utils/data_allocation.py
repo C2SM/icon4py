@@ -78,6 +78,15 @@ def array_ns(try_cupy: bool) -> ModuleType:
     return np
 
 
+def array_ns_from_array(array: NDArray) -> ModuleType:
+        if isinstance(array, np.ndarray):
+            import numpy as xp
+        else:
+            import cupy as xp  # type: ignore[import-not-found, no-redef]
+
+        return xp
+
+
 def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
     return array_ns(device_utils.is_cupy_device(allocator))

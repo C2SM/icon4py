@@ -392,21 +392,21 @@ class GridManager:
         """
         xp = data_alloc.import_array_ns(allocator)
         ## FULL GRID PROPERTIES
-        cell_refinement = self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
+        cell_refinement = xp.asarray(self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS))
         global_size = self._read_full_grid_size()
         global_params = self._construct_global_params(allocator, global_size, geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
-        cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C)
+        cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C, array_ns=xp)
         neighbor_tables = {
             dims.C2E2C: cell_to_cell_neighbors,
-            dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E),
-            dims.E2C: self._get_index_field(gridfile.ConnectivityName.E2C),
-            dims.V2E: self._get_index_field(gridfile.ConnectivityName.V2E),
-            dims.V2C: self._get_index_field(gridfile.ConnectivityName.V2C),
-            dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V),
-            dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V),
-            dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V),
+            dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E, array_ns=xp),
+            dims.E2C: self._get_index_field(gridfile.ConnectivityName.E2C, array_ns=xp),
+            dims.V2E: self._get_index_field(gridfile.ConnectivityName.V2E, array_ns=xp),
+            dims.V2C: self._get_index_field(gridfile.ConnectivityName.V2C, array_ns=xp),
+            dims.C2V: self._get_index_field(gridfile.ConnectivityName.C2V, array_ns=xp),
+            dims.V2E2V: self._get_index_field(gridfile.ConnectivityName.V2E2V, array_ns=xp),
+            dims.E2V: self._get_index_field(gridfile.ConnectivityName.E2V, array_ns=xp),
         }
 
         cells_to_rank_mapping = decomposer(cell_to_cell_neighbors, run_properties.comm_size)
@@ -518,13 +518,14 @@ class GridManager:
     def _get_index_field(
         self,
         field: gridfile.GridFileName,
-        indices: np.ndarray | None = None,
+        indices: data_alloc.NDArray | None = None,
         transpose=True,
         apply_offset=True,
+        array_ns: ModuleType = np,
     ):
-        return self._reader.int_variable(
+        return array_ns.asarray(self._reader.int_variable(
             field, indices=indices, transpose=transpose, apply_transformation=apply_offset
-        )
+        ))
 
 
 def _get_derived_connectivities(
