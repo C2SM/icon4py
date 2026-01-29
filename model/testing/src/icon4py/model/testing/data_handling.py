@@ -6,13 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import pathlib
 import tarfile
+from pathlib import Path
 
-from icon4py.model.testing import config, locking
 
-
-def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "downloaded.tar.gz") -> None:
+def download_and_extract(uri: str, dst: Path, data_file: str = "downloaded.tar.gz") -> None:
     """
     Download data archive from remote server.
 
@@ -33,19 +31,4 @@ def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "download
         raise OSError(f"{data_file} needs to be a valid tar file")
     with tarfile.open(data_file, mode="r:*") as tf:
         tf.extractall(path=dst)
-    pathlib.Path(data_file).unlink(missing_ok=True)
-
-
-def download_test_data(dst: pathlib.Path, uri: str) -> None:
-    if config.ENABLE_TESTDATA_DOWNLOAD:
-        # We create and lock the *parent* directory as we later check for existence of `dst`.
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        with locking.lock(dst.parent):
-            if not dst.exists():
-                download_and_extract(uri, dst)
-    else:
-        # If test data download is disabled, we check if the directory exists
-        # without locking. We assume the location is managed by the user
-        # and avoid locking shared directories (e.g. on CI).
-        if not dst.exists():
-            raise RuntimeError(f"Test data {dst} does not exist, and downloading is disabled.")
+    Path(data_file).unlink(missing_ok=True)
