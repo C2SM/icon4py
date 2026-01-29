@@ -398,7 +398,7 @@ def _snow_number_scalar(
     y = exp(N0S2 * tc)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
-    return minimum(n0smx, maximum(n0smn, n0s)) if qs > g_ct.qmin else N0S0
+    return minimum(n0smx, maximum(n0smn, n0s)) # if qs > g_ct.qmin else N0S0
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -467,6 +467,24 @@ def _vel_scale_factor_snow(
 
 @gtx.field_operator
 def _vel_scale_factor_snow_scalar(
+    xrho: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Compute the velocity scaling factor of snow
+
+    Args:
+        xrho:              sqrt(rho_00/rho)
+        rho:               Density of condensate
+        t:                 Temperature
+        qs:                Specific mass
+
+    Result:                Velocity scaling factor of snow
+    """
+    B_S = -0.16666666666666667
+    return xrho * power(8.00e5, B_S)
+
+@gtx.field_operator
+def _vel_scale_factor_snow_scalar_masked(
     xrho: ta.wpfloat,
     rho: ta.wpfloat,
     t: ta.wpfloat,
