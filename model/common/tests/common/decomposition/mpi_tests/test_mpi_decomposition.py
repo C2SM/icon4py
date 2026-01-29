@@ -28,7 +28,7 @@ import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.testing import definitions as test_defs, serialbox
-from icon4py.model.testing.parallel_helpers import check_comm_size, processor_props
+from icon4py.model.testing.parallel_helpers import check_comm_size
 
 from ...fixtures import (
     backend,
@@ -41,24 +41,15 @@ from ...fixtures import (
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
+    processor_props,
     ranked_data_path,
 )
-
-
-"""
-running tests with mpi:
-
-mpirun -np 2 python -m pytest -v --with-mpi tests/mpi_tests/test_parallel_setup.py
-
-mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
-
-
-"""
 
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props: definitions.ProcessProperties) -> None:
     assert processor_props.comm
+    assert processor_props.comm_size > 1
 
 
 @pytest.mark.mpi(min_size=2)
@@ -247,7 +238,7 @@ def test_create_single_node_runtime_without_mpi(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
+@pytest.mark.parametrize("dimension", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_exchange_on_dummy_data(
     processor_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
@@ -258,7 +249,7 @@ def test_exchange_on_dummy_data(
     exchange = definitions.create_exchange(processor_props, decomposition_info)
     grid = grid_savepoint.construct_icon_grid()
 
-    number = processor_props.rank + 10.0
+    number = processor_props.rank + 10
     input_field = data_alloc.constant_field(
         grid,
         number,
@@ -326,7 +317,7 @@ def test_halo_exchange_for_sparse_field(
     assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())
 
 
-inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], []]
+inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], [], [-10, 20, 4]]
 
 
 @pytest.mark.parametrize("global_list", inputs_ls)
@@ -335,7 +326,7 @@ inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], []]
 def test_global_reductions_min(
     processor_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    global_list: list[float],
+    global_list: list[data_alloc.ScalarT],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
@@ -360,7 +351,7 @@ def test_global_reductions_min(
 def test_global_reductions_max(
     processor_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    global_list: list[float],
+    global_list: list[data_alloc.ScalarT],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
@@ -385,7 +376,7 @@ def test_global_reductions_max(
 def test_global_reductions_sum(
     processor_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    global_list: list[float],
+    global_list: list[data_alloc.ScalarT],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
@@ -410,7 +401,7 @@ def test_global_reductions_sum(
 def test_global_reductions_mean(
     processor_props: definitions.ProcessProperties,
     backend_like: model_backends.BackendLike,
-    global_list: list[float],
+    global_list: list[data_alloc.ScalarT],
 ) -> None:
     my_rank = processor_props.rank
     xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))

@@ -689,7 +689,7 @@ class SolveNonhydro:
             program=dycore_utils.calculate_divdamp_fields,
             constant_args={
                 "divdamp_order": gtx.int32(self._config.divdamp_order),
-                "mean_cell_area": self._grid.global_properties.mean_cell_area,
+                "mean_cell_area": self._cell_params.mean_cell_area,
                 "max_nudging_coefficient": self._config.max_nudging_coefficient,
                 "dbl_eps": constants.DBL_EPS,
             },
@@ -1291,7 +1291,7 @@ class SolveNonhydro:
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
         second_order_divdamp_scaling_coeff = (
-            second_order_divdamp_factor * self._grid.global_properties.mean_cell_area
+            second_order_divdamp_factor * self._cell_params.mean_cell_area
         )
 
         self._calculate_divdamp_fields(

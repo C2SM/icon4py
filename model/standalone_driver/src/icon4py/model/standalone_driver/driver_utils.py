@@ -173,6 +173,7 @@ def initialize_granules(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
+        mean_cell_area=geometry_field_source.get(geometry_meta.MEAN_CELL_AREA),
     )
 
     log.info("creating edge geometry")
