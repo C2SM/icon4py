@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run serialized MPI jobs, collect ser_data, and archive outputs."""
+"""Run serialization jobs, collect ser_data and NAMELISTS, and archive outputs."""
 
 from __future__ import annotations
 
@@ -56,6 +56,15 @@ MAX_THREADS: int = 5
 # ======================================
 # END USER CONFIGURATION
 # ======================================
+
+
+# Serialization helper functions
+def get_slurm_name(exp: Experiment) -> str:
+	return f"{exp.name}_sb"
+
+
+def get_script_name(exp: Experiment) -> str:
+	return f"exp.{get_slurm_name(exp)}.run"
 
 
 def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -199,7 +208,7 @@ def wait_for_success(job_id: str) -> None:
 
 
 def copy_ser_data(exp, mpi_ranks: int) -> Path:
-	exp_dir = EXPERIMENTS_DIR / exp.slurm_name
+	exp_dir = EXPERIMENTS_DIR / get_slurm_name(exp)
 	src_dir = exp_dir / "ser_data"
 	if not src_dir.exists():
 		raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
@@ -236,7 +245,7 @@ def tar_folder(folder: Path, exp) -> Path:
 def run_experiment(exp: Experiment, mpi_ranks: int) -> None:
 	"""Execute a single experiment with the given rank configuration."""
 	try:
-		script_path = RUNSCRIPTS_DIR / exp.script_name
+		script_path = RUNSCRIPTS_DIR / get_script_name(exp)
 		if not script_path.exists():
 			raise FileNotFoundError(f"Missing slurm script: {script_path}")
 

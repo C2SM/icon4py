@@ -162,14 +162,6 @@ class Experiment:
     version: int = 0
 
     @property
-    def slurm_name(self) -> str:
-        return f"{self.name}_sb"
-
-    @property
-    def script_name(self) -> str:
-        return f"exp.{self.slurm_name}.run"
-
-    @property
     def name_with_version(self) -> str:
         return f"{self.name}_v{self.version:02d}"
 
