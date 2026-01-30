@@ -6,28 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# Please, refer to the LICENSE file in the root directory.
-# SPDX-License-Identifier: BSD-3-Clause
-
-from __future__ import annotations
-
 import os
 import pathlib
 import tarfile
-from typing import TYPE_CHECKING
 
 from icon4py.model.testing import config, locking
-
-if TYPE_CHECKING:
-    from icon4py.model.testing.definitions import Experiment
+from icon4py.model.testing.definitions import Experiment
 
 
-def experiment_name_with_version(experiment: Experiment) -> str:
+def experiment_name_with_version(exp: Experiment) -> str:
     """Generate experiment name with version suffix.
 
     Args:
@@ -36,10 +23,10 @@ def experiment_name_with_version(experiment: Experiment) -> str:
     Returns:
         Name with version in format '{name}_v{version:02d}'
     """
-    return f"{experiment.name}_v{experiment.version:02d}"
+    return f"{exp.name}_v{exp.version:02d}"
 
 
-def experiment_archive_filename(experiment: Experiment) -> str:
+def experiment_archive_filename(exp: Experiment) -> str:
     """Generate archive filename for an experiment.
 
     Args:
@@ -48,7 +35,7 @@ def experiment_archive_filename(experiment: Experiment) -> str:
     Returns:
         Archive filename in format '{name}_v{version:02d}.tar.gz'
     """
-    return f"{experiment_name_with_version(experiment)}.tar.gz"
+    return f"{experiment_name_with_version(exp)}.tar.gz"
 
 
 def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "downloaded.tar.gz") -> None:
