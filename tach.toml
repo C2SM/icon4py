@@ -23,10 +23,12 @@ exclude = [
     "dace",
     "mpi4py",
     "netcdf4",
+    "pymetis",
     "xarray",
     "uxarray",
     "cftime",
     "viztracer",
+
 ]
 rename = ["serialbox:serialbox4py"]
 

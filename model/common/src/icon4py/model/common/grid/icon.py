@@ -137,18 +137,19 @@ class IconGrid(base.Grid):
     )
 
 
-def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool) -> bool:
+def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool) -> bool:
     """
     For the icosahedral global grid skip values are only present for the pentagon points.
 
-    In the local area model there are also skip values at the boundaries when
+    In the local area model or a distributed grid there are also skip values at the boundaries or halos when
     accessing neighbouring cells or edges from vertices.
     """
     dimension = offset.target[1]
     assert dimension.kind == gtx.DimensionKind.LOCAL, "only local dimensions can have skip values"
     value = dimension in CONNECTIVITIES_ON_PENTAGONS or (
-        limited_area and dimension in CONNECTIVITIES_ON_BOUNDARIES
+        limited_area_or_distributed and dimension in CONNECTIVITIES_ON_BOUNDARIES
     )
+
     return value
 
 
@@ -190,11 +191,22 @@ def icon_grid(
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
+    # TODO(msimberg): What should we do about this. (The global) num_cells is
+    # not guaranteed to be set here when used through fortran. Should we:
+    # 1. Ignore distributed?
+    # 2. Compute num_cells with a reduction?
+    # 3. Use a ProcessProperties to detect it?
+    distributed = (
+        config.num_cells < global_properties.num_cells
+        if global_properties.num_cells is not None
+        else False
+    )
+    limited_area_or_distributed = config.limited_area or distributed
     connectivities = {
         offset.value: base.construct_connectivity(
             offset,
             data_alloc.import_array_ns(allocator).asarray(table),
-            skip_value=-1 if _has_skip_values(offset, config.limited_area) else None,
+            skip_value=-1 if _has_skip_values(offset, limited_area_or_distributed) else None,
             allocator=allocator,
             replace_skip_values=_should_replace_skip_values(
                 offset, config.keep_skip_values, config.limited_area

@@ -10,12 +10,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
+import numpy as np
 import pytest
+from gt4py.next.common import is_neighbor_table
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.testing import definitions as test_defs, parallel_helpers
+import icon4py.model.common.grid.icon
+from icon4py.model.common.decomposition import (
+    definitions as decomp_defs,
+    definitions as decomposition,
+)
+from icon4py.model.common.decomposition.halo import SimpleMetisDecomposer
+from icon4py.model.common.grid import base as base_grid, gridfile, horizontal as h_grid, icon
+from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
 
 from ...fixtures import (
     backend,
@@ -27,6 +36,7 @@ from ...fixtures import (
     ranked_data_path,
 )
 from .. import utils
+from . import utils as parallel_utils
 
 
 if TYPE_CHECKING:
@@ -36,7 +46,7 @@ if TYPE_CHECKING:
 
 
 try:
-    import mpi4py  # type: ignore[import-not-found] # F401:  import mpi4py to check for optional mpi dependency
+    import mpi4py
 
     from icon4py.model.common.decomposition import mpi_decomposition
 except ImportError:
@@ -45,7 +55,7 @@ except ImportError:
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_props(processor_props: decomp_defs.ProcessProperties) -> None:
+def test_props(processor_props: decomposition.ProcessProperties) -> None:
     """dummy test to check whether the MPI initialization and GHEX setup works."""
     import ghex.context as ghex  # type: ignore[import-not-found]
 
@@ -82,8 +92,8 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
     ],
 )
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_distributed_local(
-    processor_props: decomp_defs.ProcessProperties,
+def test_start_index_end_index_local_zone_on_distributed_lam_grid(
+    processor_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     icon_grid: base_grid.Grid,
     experiment: test_defs.Experiment,
@@ -153,8 +163,8 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
     ],
 )
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
-def test_distributed_halo(
-    processor_props: decomp_defs.ProcessProperties,
+def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
+    processor_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
@@ -173,3 +183,25 @@ def test_distributed_halo(
     assert start_index == expected, f"expected start index {expected}, but was {start_index}"
     expected = HALO_IDX[processor_props.comm_size][dim][rank][level]
     assert end_index == expected, f"expected start index {1}, but was {start_index}"
+
+
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.mpi
+@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
+def test_skip_values_on_distributed_grid(
+    processor_props: decomposition.ProcessProperties,
+    grid: test_defs.GridDescription,
+) -> None:
+    file = grid_utils.resolve_full_grid_file_name(grid)
+    grid_manager = parallel_utils.run_gridmananger_for_multinode(
+        file, processor_props, decomposer=SimpleMetisDecomposer()
+    )
+    mesh = grid_manager.grid
+    assert not np.any(mesh.get_connectivity(dims.C2V).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert not np.any(mesh.get_connectivity(dims.E2V).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert not np.any(mesh.get_connectivity(dims.E2V).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert not np.any(mesh.get_connectivity(dims.C2E).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert np.any(mesh.get_connectivity(dims.E2C).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert np.any(mesh.get_connectivity(dims.C2E2C).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert np.any(mesh.get_connectivity(dims.V2E).asnumpy() == gridfile.GridFile.INVALID_INDEX)
+    assert np.any(mesh.get_connectivity(dims.V2C).asnumpy() == gridfile.GridFile.INVALID_INDEX)
