@@ -160,14 +160,6 @@ class Experiment:
     partitioned_data: Mapping[int, str]
     version: int = 0
 
-    @property
-    def name_with_version(self) -> str:
-        return f"{self.name}_v{self.version:02d}"
-
-    @property
-    def archive_filename(self) -> str:
-        return f"{self.name_with_version}.tar.gz"
-
 
 class Experiments:
     EXCLAIM_APE: Final = Experiment(

@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
-"""Run serialization jobs, collect ser_data and NAMELISTS, and archive outputs."""
 
-from __future__ import annotations
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""Run serialization jobs, collect ser_data and NAMELISTS, and archive outputs."""
 
 import os
 import re
@@ -13,6 +20,10 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
+from icon4py.model.testing.data_handling import (
+    experiment_archive_filename,
+    experiment_name_with_version,
+)
 from icon4py.model.testing.definitions import Experiment, Experiments
 
 
@@ -244,7 +255,7 @@ def copy_ser_data(exp, mpi_ranks: int) -> Path:
     if not src_dir.exists():
         raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
-    dest_dir = OUTPUT_ROOT / f"mpirank{mpi_ranks}" / exp.name_with_version
+    dest_dir = OUTPUT_ROOT / f"mpirank{mpi_ranks}" / experiment_name_with_version(exp)
     dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
     if dest_dir.exists():
@@ -263,7 +274,7 @@ def copy_ser_data(exp, mpi_ranks: int) -> Path:
 
 
 def tar_folder(folder: Path, exp: Experiment) -> Path:
-    tar_path = folder.parent / exp.archive_filename
+    tar_path = folder.parent / experiment_archive_filename(exp)
     if tar_path.exists():
         tar_path.unlink()
 

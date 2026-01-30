@@ -6,10 +6,36 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 import pathlib
 import tarfile
 
 from icon4py.model.testing import config, locking
+from icon4py.model.testing.definitions import Experiment
+
+
+def experiment_name_with_version(experiment: Experiment) -> str:
+    """Generate experiment name with version suffix.
+
+    Args:
+        experiment: Experiment object
+
+    Returns:
+        Name with version in format '{name}_v{version:02d}'
+    """
+    return f"{experiment.name}_v{experiment.version:02d}"
+
+
+def experiment_archive_filename(experiment: Experiment) -> str:
+    """Generate archive filename for an experiment.
+
+    Args:
+        experiment: Experiment object
+
+    Returns:
+        Archive filename in format '{name}_v{version:02d}.tar.gz'
+    """
+    return f"{experiment_name_with_version(experiment)}.tar.gz"
 
 
 def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "downloaded.tar.gz") -> None:
