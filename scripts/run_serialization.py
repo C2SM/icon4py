@@ -30,7 +30,7 @@ EXPERIMENTS = [
 ]
 
 # Slurm settings
-SBATCH_PARTITION = "debug"
+SBATCH_PARTITION = "normal"
 SBATCH_TIME = "00:15:00"
 SBATCH_ACCOUNT = "cwd01"
 SBATCH_UENV = "icon/25.2:v3"
