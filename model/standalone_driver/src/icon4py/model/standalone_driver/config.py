@@ -10,7 +10,7 @@ import dataclasses
 import datetime
 import pathlib
 
-from gt4py.next import metrics as gtx_metrics
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.common import type_alias as ta
 
