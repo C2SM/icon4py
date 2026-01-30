@@ -9,13 +9,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
 import pytest
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition.definitions import single_node_default
-from icon4py.model.common.grid import geometry, horizontal as h_grid
+from icon4py.model.common.grid import (
+    geometry,
+    geometry_attributes as geometry_meta,
+    horizontal as h_grid,
+    states as grid_states,
+)
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,

@@ -506,6 +506,10 @@ class SolveNonhydro:
                 "iau_wgt_dyn": self._config.iau_wgt_dyn,
                 "is_iau_active": self._config.is_iau_active,
                 "limited_area": self._grid.limited_area,
+                "divdamp_order": gtx.int32(self._config.divdamp_order),
+                "mean_cell_area": self._cell_params.mean_cell_area,
+                "max_nudging_coefficient": self._config.max_nudging_coefficient,
+                "dbl_eps": constants.DBL_EPS,
             },
             variants={
                 "apply_2nd_order_divergence_damping": [False, True],
@@ -682,16 +686,6 @@ class SolveNonhydro:
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self._grid.num_levels),
-            },
-        )
-        self._calculate_divdamp_fields = setup_program(
-            backend=backend,
-            program=dycore_utils.calculate_divdamp_fields,
-            constant_args={
-                "divdamp_order": gtx.int32(self._config.divdamp_order),
-                "mean_cell_area": self._grid.global_properties.mean_cell_area,
-                "max_nudging_coefficient": self._config.max_nudging_coefficient,
-                "dbl_eps": constants.DBL_EPS,
             },
         )
         self._compute_rayleigh_damping_factor = setup_program(
@@ -948,18 +942,6 @@ class SolveNonhydro:
         )
         """
         Declared as enh_divdamp_fac in ICON.
-        """
-        self.reduced_fourth_order_divdamp_coeff_at_nest_boundary = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        )
-        """
-        Declared as bdy_divdamp in ICON.
-        """
-        self.fourth_order_divdamp_scaling_coeff = data_alloc.zero_field(
-            self._grid, dims.KDim, dtype=ta.wpfloat, allocator=allocator
-        )
-        """
-        Declared as scal_divdamp in ICON.
         """
         self.intermediate_fields = IntermediateFields.allocate(grid=self._grid, allocator=allocator)
 
@@ -1291,14 +1273,7 @@ class SolveNonhydro:
         # delta_x**2 is approximated by the mean cell area
         # Coefficient for reduced fourth-order divergence d
         second_order_divdamp_scaling_coeff = (
-            second_order_divdamp_factor * self._grid.global_properties.mean_cell_area
-        )
-
-        self._calculate_divdamp_fields(
-            interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
-            fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
-            reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            second_order_divdamp_factor=second_order_divdamp_factor,
+            second_order_divdamp_factor * self._cell_params.mean_cell_area
         )
 
         log.debug("corrector run velocity advection")
@@ -1350,8 +1325,8 @@ class SolveNonhydro:
             normal_wind_iau_increment=diagnostic_state_nh.normal_wind_iau_increment,
             theta_v_at_edges_on_model_levels=z_fields.theta_v_at_edges_on_model_levels,
             horizontal_pressure_gradient=z_fields.horizontal_pressure_gradient,
-            reduced_fourth_order_divdamp_coeff_at_nest_boundary=self.reduced_fourth_order_divdamp_coeff_at_nest_boundary,
-            fourth_order_divdamp_scaling_coeff=self.fourth_order_divdamp_scaling_coeff,
+            interpolated_fourth_order_divdamp_factor=self.interpolated_fourth_order_divdamp_factor,
+            second_order_divdamp_factor=second_order_divdamp_factor,
             second_order_divdamp_scaling_coeff=second_order_divdamp_scaling_coeff,
             dtime=dtime,
             apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
