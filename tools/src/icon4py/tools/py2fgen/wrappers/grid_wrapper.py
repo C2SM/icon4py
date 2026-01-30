@@ -195,6 +195,7 @@ def grid_init(
         cell_center_lat=cell_center_lat,
         cell_center_lon=cell_center_lon,
         area=cell_areas,
+        mean_cell_area=mean_cell_area,
     )
 
     if comm_id is None:
