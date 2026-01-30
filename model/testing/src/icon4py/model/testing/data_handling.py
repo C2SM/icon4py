@@ -9,10 +9,11 @@
 import os
 import pathlib
 import tarfile
-from pathlib import Path
+
+from icon4py.model.testing import config, locking
 
 
-def download_and_extract(uri: str, dst: Path, data_file: str = "downloaded.tar.gz") -> None:
+def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "downloaded.tar.gz") -> None:
     """
     Download data archive from remote server.
 
