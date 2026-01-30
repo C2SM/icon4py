@@ -9,12 +9,10 @@
 from __future__ import annotations
 
 import pathlib
-import re
 
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import base, icon
 from icon4py.model.testing import definitions, serialbox
 
 

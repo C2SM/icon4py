@@ -339,7 +339,7 @@ def run_experiment_series() -> None:
 
     total_tasks = len(EXPERIMENTS) * len(MPI_RANKS)
     log_status(
-        f"Starting experiment series with {total_tasks} tasks ({len(EXPERIMENTS)} experiments × {len(MPI_RANKS)} rank configs)"
+        f"Starting experiment series with {total_tasks} tasks ({len(EXPERIMENTS)} experiments x {len(MPI_RANKS)} rank configs)"
     )
 
     for rank_idx, mpi_ranks in enumerate(MPI_RANKS, 1):
