@@ -54,4 +54,6 @@ class MuphysExperiment:
 @pytest.fixture(autouse=True)
 def download_test_data(experiment: MuphysExperiment) -> None:
     """Downloads test data for an experiment (implicit fixture)."""
-    data_handling.download_test_data(_path_to_experiment_testdata(experiment), uri=experiment.uri)
+    data_handling.download_test_data(
+        _path_to_experiment_testdata(experiment), dst_subdir="", uri=experiment.uri
+    )
