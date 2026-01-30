@@ -69,6 +69,8 @@ build_image_aarch64:
     TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: false
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
+    # TODO(havogt): the unit stride option should be set in the ICON4Py backend once available
+    GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE: true
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
