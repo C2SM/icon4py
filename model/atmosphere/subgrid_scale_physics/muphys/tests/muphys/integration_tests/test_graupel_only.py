@@ -40,6 +40,7 @@ class Experiments:
     )
 
 
+@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment",

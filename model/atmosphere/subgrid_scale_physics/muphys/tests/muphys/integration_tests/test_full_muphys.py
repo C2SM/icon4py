@@ -39,6 +39,7 @@ class Experiments:
     # i.e. reference of full_muphys and graupel_only differ significantly.
 
 
+@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment",
