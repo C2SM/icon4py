@@ -358,7 +358,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         cell_halo_levels = self._xp.full(
             all_cells.size,
             defs.DecompositionFlag.UNDEFINED.value,
-            dtype=gtx.int32,
+            dtype=gtx.int32,  # type: ignore  [attr-defined]
         )
         cell_halo_levels[cell_owner_mask] = defs.DecompositionFlag.OWNED
         cell_halo_levels[self._xp.isin(all_cells, first_halo_cells)] = (
@@ -380,7 +380,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         vertex_halo_levels = self._xp.full(
             all_vertices.size,
             defs.DecompositionFlag.UNDEFINED.value,
-            dtype=gtx.int32,
+            dtype=gtx.int32,  # type: ignore  [attr-defined]
         )
         vertex_halo_levels[vertex_owner_mask] = defs.DecompositionFlag.OWNED
         vertex_halo_levels[
@@ -407,7 +407,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         edge_halo_levels = self._xp.full(
             all_edges.shape,
             defs.DecompositionFlag.UNDEFINED.value,
-            dtype=gtx.int32,
+            dtype=gtx.int32,  # type: ignore  [attr-defined]
         )
         edge_halo_levels[edge_owner_mask] = defs.DecompositionFlag.OWNED
         # LEVEL_ONE edges are on an owned cell but are not owned: these are all edges on the cutting line that are not owned (by the convention)
@@ -483,8 +483,9 @@ class SingleNodeDecomposer(Decomposer):
     ) -> data_alloc.NDArray:
         """Dummy decomposer for single node: assigns all cells to rank = 0"""
         return data_alloc.array_ns_from_array(adjacency_matrix).zeros(
-            adjacency_matrix.shape[0], dtype=gtx.int32
-        )  # type: ignore  [attr-defined]
+            adjacency_matrix.shape[0],
+            dtype=gtx.int32,  # type: ignore  [attr-defined]
+        )
 
 
 def get_halo_constructor(

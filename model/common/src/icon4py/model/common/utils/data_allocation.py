@@ -82,7 +82,7 @@ def array_ns_from_array(array: NDArray) -> ModuleType:
     if isinstance(array, np.ndarray):
         import numpy as xp
     else:
-        import cupy as xp  # type: ignore[import-not-found, no-redef]
+        import cupy as xp  # type: ignore[no-redef]
 
     return xp
 
