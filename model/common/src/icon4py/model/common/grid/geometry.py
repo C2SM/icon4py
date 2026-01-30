@@ -13,7 +13,6 @@ from typing import Any
 import gt4py.next.typing as gtx_typing
 from gt4py import next as gtx
 
-import icon4py.model.common.math.helpers as math_helpers
 from icon4py.model.common import (
     constants,
     dimension as dims,
@@ -30,6 +29,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
+from icon4py.model.common.math import helpers as math_helpers, xp_utils
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 
@@ -84,6 +84,7 @@ class GridGeometry(factory.FieldSource):
         extra_fields: gm.GeometryDict,
         metadata: dict[str, model.FieldMetaData],
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ) -> None:
         """
         Args:
@@ -106,6 +107,7 @@ class GridGeometry(factory.FieldSource):
         self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
         self._exchange = exchange
+        self._global_reductions = global_reductions
         log.info(
             f"initializing geometry for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
@@ -306,6 +308,68 @@ class GridGeometry(factory.FieldSource):
             do_exchange=True,
         )
         self.register_provider(edge_areas)
+
+        mean_edge_length_np = factory.NumpyDataProvider(
+            func=functools.partial(
+                self._global_reductions.mean,
+                array_ns=self._xp,
+            ),
+            domain=(),
+            deps={
+                "buffer": attrs.EDGE_LENGTH,
+            },
+            fields=(attrs.MEAN_EDGE_LENGTH,),
+        )
+        self.register_provider(mean_edge_length_np)
+
+        mean_dual_edge_length_np = factory.NumpyDataProvider(
+            func=functools.partial(
+                self._global_reductions.mean,
+                array_ns=self._xp,
+            ),
+            domain=(),
+            deps={
+                "buffer": attrs.DUAL_EDGE_LENGTH,
+            },
+            fields=(attrs.MEAN_DUAL_EDGE_LENGTH,),
+        )
+        self.register_provider(mean_dual_edge_length_np)
+
+        mean_cell_area_np = factory.NumpyDataProvider(
+            func=functools.partial(
+                self._global_reductions.mean,
+                array_ns=self._xp,
+            ),
+            domain=(),
+            deps={
+                "buffer": attrs.CELL_AREA,
+            },
+            fields=(attrs.MEAN_CELL_AREA,),
+        )
+        self.register_provider(mean_cell_area_np)
+
+        mean_dual_cell_area_np = factory.NumpyDataProvider(
+            func=functools.partial(
+                self._global_reductions.mean,
+                array_ns=self._xp,
+            ),
+            domain=(),
+            deps={
+                "buffer": attrs.DUAL_AREA,
+            },
+            fields=(attrs.MEAN_DUAL_AREA,),
+        )
+        self.register_provider(mean_dual_cell_area_np)
+
+        characteristic_length_np = factory.NumpyDataProvider(
+            func=xp_utils.compute_sqrt,
+            domain=(),
+            deps={
+                "input_val": attrs.MEAN_DUAL_AREA,
+            },
+            fields=(attrs.CHARACTERISTIC_LENGTH,),
+        )
+        self.register_provider(characteristic_length_np)
 
     def _register_normals_and_tangents_icosahedron(self) -> None:
         """Register normals and tangents specific to icosahedron geometry."""
