@@ -114,11 +114,10 @@ def parse_extra_mpi_ranks(script_path: Path) -> int:
 
 def update_slurm_variables(script_path: Path) -> None:
     """Update SBATCH directives in the Slurm script (partition, account, time, uenv, view)."""
-    original = script_path.read_text()
-    updated = original
+    content = script_path.read_text()
 
     # Find the position after #SBATCH --job-name= line
-    job_name_match = re.search(r"^#SBATCH\s+--job-name=.*$", updated, flags=re.MULTILINE)
+    job_name_match = re.search(r"^#SBATCH\s+--job-name=.*$", content, flags=re.MULTILINE)
     if not job_name_match:
         raise RuntimeError("Could not find #SBATCH --job-name= line in script")
 
@@ -132,22 +131,22 @@ def update_slurm_variables(script_path: Path) -> None:
     )
 
     # Remove existing partition, account, time, uenv, and view lines if they exist
-    updated = re.sub(r"^#SBATCH\s+--partition=.*$\n?", "", updated, flags=re.MULTILINE)
-    updated = re.sub(r"^#SBATCH\s+--account=.*$\n?", "", updated, flags=re.MULTILINE)
-    updated = re.sub(r"^#SBATCH\s+--time=.*$\n?", "", updated, flags=re.MULTILINE)
-    updated = re.sub(r"^#SBATCH\s+--uenv=.*$\n?", "", updated, flags=re.MULTILINE)
-    updated = re.sub(r"^#SBATCH\s+--view=.*$\n?", "", updated, flags=re.MULTILINE)
+    content = re.sub(r"^#SBATCH\s+--partition=.*$\n?", "", content, flags=re.MULTILINE)
+    content = re.sub(r"^#SBATCH\s+--account=.*$\n?", "", content, flags=re.MULTILINE)
+    content = re.sub(r"^#SBATCH\s+--time=.*$\n?", "", content, flags=re.MULTILINE)
+    content = re.sub(r"^#SBATCH\s+--uenv=.*$\n?", "", content, flags=re.MULTILINE)
+    content = re.sub(r"^#SBATCH\s+--view=.*$\n?", "", content, flags=re.MULTILINE)
 
     # Re-find job-name position in the cleaned text
-    job_name_match = re.search(r"^(#SBATCH\s+--job-name=.*$)", updated, flags=re.MULTILINE)
+    job_name_match = re.search(r"^(#SBATCH\s+--job-name=.*$)", content, flags=re.MULTILINE)
     if not job_name_match:
         raise RuntimeError("Could not find #SBATCH --job-name= line in script")
 
     # Insert new lines after the job-name line
     insertion_point = job_name_match.end()
-    updated = updated[:insertion_point] + "\n" + new_lines + updated[insertion_point:]
+    content = content[:insertion_point] + "\n" + new_lines + content[insertion_point:]
 
-    script_path.write_text(updated)
+    script_path.write_text(content)
 
 
 def update_slurm_ranks(script_path: Path, mpi_ranks: int, extra_mpi_ranks: int = 0) -> None:
@@ -159,27 +158,24 @@ def update_slurm_ranks(script_path: Path, mpi_ranks: int, extra_mpi_ranks: int =
         extra_mpi_ranks: Additional ranks reserved for special operations (e.g., pre-fetch)
     """
     total_ranks = mpi_ranks + extra_mpi_ranks
-    original = script_path.read_text()
 
-    updated = original
+    content = script_path.read_text()
 
-    # Update #SBATCH --ntasks-per-node=X
-    updated = re.sub(
+    content = re.sub(
         r"^#SBATCH\s+--ntasks-per-node\s*=\s*\d+\s*$",
         f"#SBATCH --ntasks-per-node={total_ranks}",
-        updated,
+        content,
         flags=re.MULTILINE,
     )
 
-    # Update : ${no_of_nodes:=1} ${mpi_procs_pernode:=X}
-    updated = re.sub(
+    content = re.sub(
         r"^:\s+\$\{no_of_nodes:=\d+\}\s+\$\{mpi_procs_pernode:=\d+\}\s*$",
         f": ${{no_of_nodes:=1}} ${{mpi_procs_pernode:={total_ranks}}}",
-        updated,
+        content,
         flags=re.MULTILINE,
     )
 
-    script_path.write_text(updated)
+    script_path.write_text(content)
 
 
 def submit_job(script_path: Path) -> str:
