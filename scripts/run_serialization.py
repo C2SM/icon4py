@@ -58,13 +58,16 @@ MAX_THREADS: int = 5
 # ======================================
 
 
-# Serialization helper functions
-def get_slurm_name(exp: Experiment) -> str:
+def get_f90exp_name(exp: Experiment) -> str:
     return f"{exp.name}_sb"
 
 
-def get_script_name(exp: Experiment) -> str:
-    return f"exp.{get_slurm_name(exp)}.run"
+def get_nmlfile_name(exp: Experiment) -> str:
+    return f"exp.{get_f90exp_name(exp)}"
+
+
+def get_slurmscript_name(exp: Experiment) -> str:
+    return f"{get_nmlfile_name(exp)}.run"
 
 
 def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -208,7 +211,7 @@ def wait_for_success(job_id: str) -> None:
 
 
 def copy_ser_data(exp, mpi_ranks: int) -> Path:
-    exp_dir = EXPERIMENTS_DIR / get_slurm_name(exp)
+    exp_dir = EXPERIMENTS_DIR / get_f90exp_name(exp)
     src_dir = exp_dir / "ser_data"
     if not src_dir.exists():
         raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
@@ -231,7 +234,7 @@ def copy_ser_data(exp, mpi_ranks: int) -> Path:
     return dest_dir
 
 
-def tar_folder(folder: Path, exp) -> Path:
+def tar_folder(folder: Path, exp: Experiment) -> Path:
     tar_path = folder.parent / exp.archive_filename
     if tar_path.exists():
         tar_path.unlink()
@@ -242,10 +245,24 @@ def tar_folder(folder: Path, exp) -> Path:
     return tar_path
 
 
+def generate_update_script(exp: Experiment) -> None:
+    # copy namelist file from repo to build_dir
+    shutil.copy2(
+        ICONF90_DIR / "run" / get_nmlfile_name(exp), RUNSCRIPTS_DIR / get_nmlfile_name(exp)
+    )
+
+    # run make_runscript
+    os.chdir(BUILD_DIR)
+    cmd = ["./make_runscripts", get_f90exp_name(exp)]
+    _ = run_command(cmd)
+
+
 def run_experiment(exp: Experiment, mpi_ranks: int) -> None:
     """Execute a single experiment with the given rank configuration."""
     try:
-        script_path = RUNSCRIPTS_DIR / get_script_name(exp)
+        generate_update_script(exp)
+
+        script_path = RUNSCRIPTS_DIR / get_slurmscript_name(exp)
         if not script_path.exists():
             raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
@@ -277,7 +294,6 @@ def run_experiment(exp: Experiment, mpi_ranks: int) -> None:
 
 def run_experiment_series() -> None:
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
-    os.chdir(RUNSCRIPTS_DIR)
 
     total_tasks = len(EXPERIMENTS) * len(MPI_RANKS)
     log_status(
