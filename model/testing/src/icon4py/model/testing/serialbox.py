@@ -503,7 +503,9 @@ class IconGridSavepoint(IconSavepoint):
             def potentially_revert_icon_index_transformation(ar):
                 return ar
         else:
-            potentially_revert_icon_index_transformation = grid_utils.revert_repeated_index_to_invalid
+            potentially_revert_icon_index_transformation = (
+                grid_utils.revert_repeated_index_to_invalid
+            )
 
         c2e2c = self.c2e2c()
         e2c2e = potentially_revert_icon_index_transformation(self.e2c2e())
