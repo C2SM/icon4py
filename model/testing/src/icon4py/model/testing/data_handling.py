@@ -43,7 +43,9 @@ def download_test_data(dst_root: pathlib.Path, dst_subdir: pathlib.Path, uri: st
     dst = dst_root.joinpath(dst_subdir)
     if config.ENABLE_TESTDATA_DOWNLOAD:
         dst.mkdir(parents=True, exist_ok=True)
-        with locking.lock(dst):
+        # Explicitly specify the lockfile name to make sure that os.listdir sees
+        # it.
+        with locking.lock(dst, lockfile="filelock.lock"):
             # The lock creates a file in dst, so the directory will never be
             # completely empty at this point
             if len(os.listdir(dst)) <= 1:
