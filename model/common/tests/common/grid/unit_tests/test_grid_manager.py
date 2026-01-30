@@ -642,7 +642,7 @@ def test_local_connectivity(
             if neighbor_dim == dims.E2CDim
             else decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL
         )
-        level_index = np.where(decomposition_info.halo_levels(dim) == last_halo_level)
+        level_index = np.where(data_alloc.as_numpy(decomposition_info.halo_levels(dim)) == last_halo_level.value)
         assert np.count_nonzero(
             (connectivity[level_index] == gridfile.GridFile.INVALID_INDEX) > 0
         ), f"missing invalid index in {dim} - offset {field_offset}"

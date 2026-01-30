@@ -355,8 +355,10 @@ class IconLikeHaloConstructor(HaloConstructor):
         #: construct decomposition info
         decomp_info = defs.DecompositionInfo()
         cell_owner_mask = self._xp.isin(all_cells, owned_cells)
-        cell_halo_levels = defs.DecompositionFlag.UNDEFINED * self._xp.ones(
-            all_cells.size, dtype=int
+        cell_halo_levels = self._xp.full(
+            all_cells.size,
+            defs.DecompositionFlag.UNDEFINED.value,
+            dtype=gtx.int32,
         )
         cell_halo_levels[cell_owner_mask] = defs.DecompositionFlag.OWNED
         cell_halo_levels[self._xp.isin(all_cells, first_halo_cells)] = (
@@ -375,8 +377,10 @@ class IconLikeHaloConstructor(HaloConstructor):
             self.node_face_connectivity,
         )
         vertex_second_level = self._xp.setdiff1d(vertex_on_halo_cells, vertex_on_owned_cells)
-        vertex_halo_levels = defs.DecompositionFlag.UNDEFINED * self._xp.ones(
-            all_vertices.size, dtype=int
+        vertex_halo_levels = self._xp.full(
+            all_vertices.size,
+            defs.DecompositionFlag.UNDEFINED.value,
+            dtype=gtx.int32,
         )
         vertex_halo_levels[vertex_owner_mask] = defs.DecompositionFlag.OWNED
         vertex_halo_levels[
@@ -400,8 +404,10 @@ class IconLikeHaloConstructor(HaloConstructor):
             self.edge_face_connectivity,
         )
 
-        edge_halo_levels = defs.DecompositionFlag.UNDEFINED * self._xp.ones(
-            all_edges.shape, dtype=int
+        edge_halo_levels = self._xp.full(
+            all_edges.shape,
+            defs.DecompositionFlag.UNDEFINED.value,
+            dtype=gtx.int32,
         )
         edge_halo_levels[edge_owner_mask] = defs.DecompositionFlag.OWNED
         # LEVEL_ONE edges are on an owned cell but are not owned: these are all edges on the cutting line that are not owned (by the convention)

@@ -241,12 +241,12 @@ def compute_domain_bounds(
 
         halo_region_2 = array_ns.where(halo_level_2 & not_lateral_boundary_2)[0]
         start_halo_2, end_halo_2 = (
-            (array_ns.min(halo_region_2), array_ns.max(halo_region_2) + 1)
+            (array_ns.min(halo_region_2).item(), array_ns.max(halo_region_2).item() + 1)
             if halo_region_2.size > 0
             else (refinement_ctrl.size, refinement_ctrl.size)
         )
         if my_flag == h_grid.Zone.HALO.level:
-            start_index = array_ns.min(halo_region_1) if halo_region_1.size > 0 else start_halo_2
+            start_index = array_ns.min(halo_region_1).item() if halo_region_1.size > 0 else start_halo_2
             end_index = start_halo_2
         else:
             start_index = start_halo_2
