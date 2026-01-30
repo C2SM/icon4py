@@ -191,8 +191,8 @@ def icon_grid(
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
-    # TODO: What should we do about this. (The global) num_cells is not
-    # guaranteed to be set here when used through fortran. Should we:
+    # TODO(msimberg): What should we do about this. (The global) num_cells is
+    # not guaranteed to be set here when used through fortran. Should we:
     # 1. Ignore distributed?
     # 2. Compute num_cells with a reduction?
     # 3. Use a ProcessProperties to detect it?
