@@ -161,7 +161,6 @@ class GraupelOutput:
             references = {}
 
         zeros = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
-        # TODO +1 size fields?
         return cls(
             **{
                 field.name: zeros() if field.name not in references else references[field.name]
@@ -207,13 +206,9 @@ class GraupelOutput:
         with netCDF4.Dataset(filename, mode="w") as ncfile:
             ncfile.createDimension("ncells", ncells)
             ncfile.createDimension("height", nlev)
-            ncfile.createDimension("height1", nlev + 1)  # what's the reason for the +1 fields here?
 
             write_height_field = functools.partial(
                 _field_to_nc, ncfile, ("height", "ncells"), dtype=np.float64
-            )
-            write_height1_field = functools.partial(  # TODO
-                _field_to_nc, ncfile, ("height1", "ncells"), dtype=np.float64
             )
 
             write_height_field("ta", self.t)
@@ -226,12 +221,14 @@ class GraupelOutput:
             if self.pflx is not None:
                 write_height_field("pflx", self.pflx)
             if self.pr is not None:
-                write_height_field("prr_gsp", self.pr)  # TODO height1?
+                write_height_field(
+                    "prr_gsp", self.pr
+                )  # TODO(havogt): see https://github.com/C2SM/icon4py/pull/995
             if self.ps is not None:
-                write_height_field("prs_gsp", self.ps)  # TODO
+                write_height_field("prs_gsp", self.ps)  # TODO(havogt): see above
             if self.pi is not None:
-                write_height_field("pri_gsp", self.pi)  # TODO
+                write_height_field("pri_gsp", self.pi)  # TODO(havogt): see above
             if self.pg is not None:
-                write_height_field("prg_gsp", self.pg)  # TODO
+                write_height_field("prg_gsp", self.pg)  # TODO(havogt): see above
             if self.pre is not None:
-                write_height_field("pre_gsp", self.pre)  # TODO
+                write_height_field("pre_gsp", self.pre)  # TODO(havogt): see above

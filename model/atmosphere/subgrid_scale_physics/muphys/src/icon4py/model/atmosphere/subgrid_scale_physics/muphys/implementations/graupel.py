@@ -244,25 +244,27 @@ def _precip_and_t(
     qice = s_update.x + i_update.x + g_update.x
     kmin_rsig = mask_r | mask_s | mask_i | mask_g
 
+    t_update = _temperature_update(
+        previous_level.t_state,
+        t=t,
+        t_kp1=t_kp1,
+        pr=r_update.p,
+        pflx_tot=s_update.p + i_update.p + g_update.p,
+        q=q,
+        qliq=qliq,
+        qice=qice,
+        rho=rho,
+        dz=dz,
+        dt=dt,
+        mask=kmin_rsig,
+    )
+
     return IntegrationState(
         r=r_update,
         s=s_update,
         i=i_update,
         g=g_update,
-        t_state=_temperature_update(
-            previous_level.t_state,
-            t=t,
-            t_kp1=t_kp1,
-            pr=r_update.p,
-            pflx_tot=s_update.p + i_update.p + g_update.p,
-            q=q,
-            qliq=qliq,
-            qice=qice,
-            rho=rho,
-            dz=dz,
-            dt=dt,
-            mask=kmin_rsig,
-        ),
+        t_state=t_update,
         rho=rho,
         pflx_tot=s_update.p + i_update.p + g_update.p + r_update.p,
     )
@@ -531,10 +533,10 @@ def graupel(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    kmin_r = where(q.r > g_ct.qmin, True, False)
-    kmin_i = where(q.i > g_ct.qmin, True, False)
-    kmin_s = where(q.s > g_ct.qmin, True, False)
-    kmin_g = where(q.g > g_ct.qmin, True, False)
+    kmin_r = q.r > g_ct.qmin
+    kmin_i = q.i > g_ct.qmin
+    kmin_s = q.s > g_ct.qmin
+    kmin_g = q.g > g_ct.qmin
     q, t = _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
         last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
