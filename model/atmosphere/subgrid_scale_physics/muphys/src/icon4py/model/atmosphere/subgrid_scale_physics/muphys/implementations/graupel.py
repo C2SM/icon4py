@@ -193,7 +193,13 @@ def _precip_and_t(
     vc_i = _vel_scale_factor_ice_scalar(xrho)
     vc_g = _vel_scale_factor_default_scalar(xrho)
     mask_activated = mask_r | mask_s | mask_i | mask_g
-    previous_level_activated = previous_level.r.activated | previous_level.s.activated | previous_level.i.activated | previous_level.g.activated | previous_level.t_state.activated
+    previous_level_activated = (
+        previous_level.r.activated
+        | previous_level.s.activated
+        | previous_level.i.activated
+        | previous_level.g.activated
+        | previous_level.t_state.activated
+    )
     current_level_activated = mask_activated | previous_level_activated
     # TODO(): Use of combined if-statement to reduce checks in case any of the masks or previous levels are not activated. Can be made unnecessary with future transformations.
     if current_level_activated:
