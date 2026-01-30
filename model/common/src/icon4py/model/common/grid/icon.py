@@ -191,7 +191,12 @@ def icon_grid(
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
-    distributed = config.num_cells < global_properties.num_cells
+    # TODO: What should we do about this. (The global) num_cells is not
+    # guaranteed to be set here when used through fortran. Should we:
+    # 1. Ignore distributed?
+    # 2. Compute num_cells with a reduction?
+    # 3. Use a ProcessProperties to detect it?
+    distributed = config.num_cells < global_properties.num_cells if global_properties.num_cells is not None else False
     limited_area_or_distributed = config.limited_area or distributed
     connectivities = {
         offset.value: base.construct_connectivity(
