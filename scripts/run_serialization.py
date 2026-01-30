@@ -40,7 +40,7 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 # ======================================
 # USER CONFIGURATION
 # ======================================
-MPI_RANKS: list[int] = [1, 2, 4]
+COMM_SIZES: list[int] = [1, 2, 4]
 
 EXPERIMENTS = [
     Experiments.MCH_CH_R04B09,
@@ -272,14 +272,14 @@ def wait_for_success(job_id: str) -> None:
         time.sleep(JOB_POLL_SECONDS)
 
 
-def copy_ser_data(exp, mpi_ranks: int) -> Path:
+def copy_ser_data(exp, comm_size: int) -> Path:
     exp_dir = EXPERIMENTS_DIR / get_f90exp_name(exp)
     src_dir = exp_dir / "ser_data"
     if not src_dir.exists():
         raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
     # Flattened structure: OUTPUT_ROOT/mpitaskX_expname_vYY/
-    dest_dir = OUTPUT_ROOT / f"mpitask{mpi_ranks}_{experiment_name_with_version(exp)}"
+    dest_dir = OUTPUT_ROOT / f"mpitask{comm_size}_{experiment_name_with_version(exp)}"
     dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
     if dest_dir.exists():
@@ -298,13 +298,15 @@ def copy_ser_data(exp, mpi_ranks: int) -> Path:
     return dest_dir
 
 
-def tar_folder(folder: Path, exp: Experiment) -> Path:
-    tar_path = folder.parent / experiment_archive_filename(exp)
+def tar_folder(folder: Path, exp: Experiment, comm_size: int) -> Path:
+    tar_path = folder.parent / experiment_archive_filename(exp, comm_size)
     if tar_path.exists():
         tar_path.unlink()
 
     with tarfile.open(tar_path, "w:gz") as tar:
-        tar.add(folder, arcname=folder.name)
+        # Add only the contents of the folder (NAMELIST files and ser_data), not the folder itself
+        for item in folder.iterdir():
+            tar.add(item, arcname=item.name)
 
     return tar_path
 
@@ -321,8 +323,8 @@ def generate_update_script(exp: Experiment) -> None:
     _ = run_command(cmd)
 
 
-def run_experiment(exp: Experiment, mpi_ranks: int) -> None:
-    """Execute a single experiment with the given rank configuration."""
+def run_experiment(exp: Experiment, comm_size: int) -> None:
+    """Execute a single experiment with the given communicator size."""
     try:
         generate_update_script(exp)
 
@@ -334,28 +336,28 @@ def run_experiment(exp: Experiment, mpi_ranks: int) -> None:
         extra_mpi_ranks = parse_extra_mpi_ranks(script_path)
 
         log_status(
-            f"Setting up {exp.name} with {mpi_ranks} ranks"
+            f"Setting up {exp.name} with {comm_size} ranks"
             + (f" + {extra_mpi_ranks} extra" if extra_mpi_ranks > 0 else "")
         )
         os.chdir(RUNSCRIPTS_DIR)
         update_slurm_variables(script_path)
-        update_slurm_ranks(script_path, mpi_ranks, extra_mpi_ranks)
+        update_slurm_ranks(script_path, comm_size, extra_mpi_ranks)
 
-        log_status(f"Submitting {exp.name} with {mpi_ranks} ranks")
+        log_status(f"Submitting {exp.name} with {comm_size} ranks")
         job_id = submit_job(script_path)
 
-        log_status(f"Waiting for {exp.name} (ranks={mpi_ranks}, job_id={job_id})")
+        log_status(f"Waiting for {exp.name} (ranks={comm_size}, job_id={job_id})")
         wait_for_success(job_id)
 
-        log_status(f"Copying ser_data for {exp.name} with {mpi_ranks} ranks")
-        dest_dir = copy_ser_data(exp, mpi_ranks)
+        log_status(f"Copying ser_data for {exp.name} with {comm_size} ranks")
+        dest_dir = copy_ser_data(exp, comm_size)
 
-        log_status(f"Creating tar archive for {exp.name} with {mpi_ranks} ranks")
-        tar_folder(dest_dir, exp)
+        log_status(f"Creating tar archive for {exp.name} with {comm_size} ranks")
+        tar_folder(dest_dir, exp, comm_size)
 
-        log_status(f"Completed {exp.name} with {mpi_ranks} ranks")
+        log_status(f"Completed {exp.name} with {comm_size} ranks")
     except Exception as e:
-        log_status(f"ERROR in {exp.name} with {mpi_ranks} ranks: {e}")
+        log_status(f"ERROR in {exp.name} with {comm_size} ranks: {e}")
         raise
 
 
@@ -364,33 +366,33 @@ def run_experiment_series() -> None:
     """Run the serialization experiment series."""
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
-    total_tasks = len(EXPERIMENTS) * len(MPI_RANKS)
+    total_tasks = len(EXPERIMENTS) * len(COMM_SIZES)
     log_status(
-        f"Starting experiment series with {total_tasks} tasks ({len(EXPERIMENTS)} experiments x {len(MPI_RANKS)} rank configs)"
+        f"Starting experiment series with {total_tasks} tasks ({len(EXPERIMENTS)} experiments x {len(COMM_SIZES)} communicator sizes)"
     )
 
-    for rank_idx, mpi_ranks in enumerate(MPI_RANKS, 1):
+    for rank_idx, comm_size in enumerate(COMM_SIZES, 1):
         num_exps = len(EXPERIMENTS)
         log_status(
-            f"Starting rank config {rank_idx}/{len(MPI_RANKS)}: {mpi_ranks} ranks ({num_exps} experiments parallel)"
+            f"Starting communicator size {rank_idx}/{len(COMM_SIZES)}: {comm_size} ranks ({num_exps} experiments parallel)"
         )
 
         with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
             futures = []
 
             for exp in EXPERIMENTS:
-                future = executor.submit(run_experiment, exp, mpi_ranks)
+                future = executor.submit(run_experiment, exp, comm_size)
                 futures.append(future)
 
             log_status(
-                f"All {len(futures)} experiments queued for {mpi_ranks} ranks, waiting for completion..."
+                f"All {len(futures)} experiments queued for {comm_size} ranks, waiting for completion..."
             )
 
             # Wait for all futures to complete and collect exceptions
             for future in futures:
                 future.result()  # Re-raises any exceptions from the thread
 
-        log_status(f"Completed rank config {rank_idx}/{len(MPI_RANKS)}: {mpi_ranks} ranks")
+        log_status(f"Completed communicator size {rank_idx}/{len(COMM_SIZES)}: {comm_size} ranks")
 
     log_status(f"All {total_tasks} tasks completed successfully!")
 
