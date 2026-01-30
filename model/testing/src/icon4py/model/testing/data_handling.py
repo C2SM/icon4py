@@ -6,9 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import os
 import pathlib
 import tarfile
-import os
 
 from icon4py.model.testing import config, locking
 
