@@ -8,6 +8,7 @@
 
 import pathlib
 import tarfile
+import os
 
 from icon4py.model.testing import config, locking
 
@@ -36,17 +37,22 @@ def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "download
     pathlib.Path(data_file).unlink(missing_ok=True)
 
 
+# TODO(msimberg): Remove dst_subdir once archives don't contain a subdir with
+# special name.
 def download_test_data(dst_root: pathlib.Path, dst_subdir: pathlib.Path, uri: str) -> None:
     dst = dst_root.joinpath(dst_subdir)
     if config.ENABLE_TESTDATA_DOWNLOAD:
-        # We create and lock the *parent* directory as we later check for existence of `dst`.
-        dst_root.mkdir(parents=True, exist_ok=True)
-        with locking.lock(dst_root):
-            if not dst.exists():
+        dst.mkdir(parents=True, exist_ok=True)
+        with locking.lock(dst):
+            # The lock creates a file in dst, so the directory will never be
+            # completely empty at this point
+            if len(os.listdir(dst)) <= 1:
                 download_and_extract(uri, dst_root)
     else:
         # If test data download is disabled, we check if the directory exists
-        # without locking. We assume the location is managed by the user
+        # and isn't empty without locking. We assume the location is managed by the user
         # and avoid locking shared directories (e.g. on CI).
         if not dst.exists():
             raise RuntimeError(f"Test data {dst} does not exist, and downloading is disabled.")
+        elif not any(os.scandir(dst)):
+            raise RuntimeError(f"Test data {dst} exists but is empty, and downloading is disabled.")
