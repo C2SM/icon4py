@@ -23,24 +23,24 @@ from .utils import download_test_data
 
 
 class Experiments:
-    # TODO currently on havogt's polybox
     MINI: Final = utils.MuphysExperiment(
         name="mini",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri="https://polybox.ethz.ch/index.php/s/55oHBDxS2SiqAGN/download/mini.tar.gz",
+        uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=mini.tar.gz",
     )
     TINY: Final = utils.MuphysExperiment(
         name="tiny",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri="https://polybox.ethz.ch/index.php/s/5Ceop3iaWkbc7gf/download/tiny.tar.gz",
+        uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=tiny.tar.gz",
     )
     R2B05: Final = utils.MuphysExperiment(
         name="R2B05",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri="https://polybox.ethz.ch/index.php/s/RBib8rFSEd7Eomo/download/R2B05.tar.gz",
+        uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=R2B05.tar.gz",
     )
 
 
+@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment",
