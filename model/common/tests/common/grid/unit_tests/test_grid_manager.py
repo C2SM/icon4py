@@ -18,6 +18,7 @@ import pytest
 
 import icon4py.model.common.grid.gridfile
 from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.decomposition import (
     definitions as decomp_defs,
     definitions as decomposition,
@@ -579,10 +580,10 @@ def test_decomposition_info_single_node(
     grid_file = experiment.grid
     gm = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
     result = gm.decomposition_info
-    assert np.all(result.local_index(dim) == expected.local_index(dim))
-    assert np.all(result.global_index(dim) == expected.global_index(dim))
-    assert np.all(result.owner_mask(dim) == expected.owner_mask(dim))
-    assert np.all(result.halo_levels(dim) == expected.halo_levels(dim))
+    assert np.all(data_alloc.as_numpy(result.local_index(dim)) == expected.local_index(dim))
+    assert np.all(data_alloc.as_numpy(result.global_index(dim)) == expected.global_index(dim))
+    assert np.all(data_alloc.as_numpy(result.owner_mask(dim)) == expected.owner_mask(dim))
+    assert np.all(data_alloc.as_numpy(result.halo_levels(dim)) == expected.halo_levels(dim))
 
 
 @pytest.mark.parametrize("rank", (0, 1, 2, 3))
