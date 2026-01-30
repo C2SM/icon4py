@@ -71,6 +71,19 @@ RUN set -eux; \
     rm -rf /shs-libcxi; \
     ldconfig
 
+ARG xpmem_version=0d0bad4e1d07b38d53ecc8f20786bb1328c446da
+RUN set -eux; \
+    git clone https://github.com/hpc/xpmem.git; \
+    cd xpmem; \
+    git checkout "${xpmem_version}"; \
+    ./autogen.sh; \
+    ./configure --disable-kernel-module; \
+    make -j"$(nproc)" install; \
+    cd /; \
+    rm -rf /xpmem; \
+    ldconfig
+
+# NOTE: xpmem is not found correctly without setting the prefix in --enable-xpmem
 ARG libfabric_version=v2.4.0
 RUN set -eux; \
     git clone --depth 1 --branch "${libfabric_version}" https://github.com/ofiwg/libfabric.git; \
@@ -80,7 +93,11 @@ RUN set -eux; \
       --with-cuda \
       --enable-cuda-dlopen \
       --enable-gdrcopy-dlopen \
-      --enable-cxi; \
+      --enable-xpmem=/usr \
+      --enable-tcp \
+      --enable-cxi \
+      --enable-lnx \
+      --enable-shm; \
     make -j"$(nproc)" install; \
     cd /; \
     rm -rf /libfabric; \
