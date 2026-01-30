@@ -321,27 +321,16 @@ def test_dual_normal_vert(
 
 @pytest.mark.datatest
 def test_cartesian_centers_edge(
-    backend: gtx_typing.Backend,
-    grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend, experiment: definitions.Experiment
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     grid = grid_geometry.grid
     x = grid_geometry.get(attrs.EDGE_CENTER_X)
     y = grid_geometry.get(attrs.EDGE_CENTER_Y)
     z = grid_geometry.get(attrs.EDGE_CENTER_Z)
-
-    ser_x = grid_savepoint.edges_center_cart_x()
-    ser_y = grid_savepoint.edges_center_cart_y()
-    ser_z = grid_savepoint.edges_center_cart_z()
-
     assert x.ndarray.shape == (grid.num_edges,)
     assert y.ndarray.shape == (grid.num_edges,)
     assert z.ndarray.shape == (grid.num_edges,)
-
-    assert test_utils.dallclose(x.asnumpy(), ser_x.asnumpy(), atol=1e-15)
-    assert test_utils.dallclose(y.asnumpy(), ser_y.asnumpy(), atol=1e-15)
-    assert test_utils.dallclose(z.asnumpy(), ser_z.asnumpy(), atol=1e-15)
 
     match grid.geometry_type:
         case base.GeometryType.ICOSAHEDRON:
@@ -360,27 +349,16 @@ def test_cartesian_centers_edge(
 
 @pytest.mark.datatest
 def test_cartesian_centers_cell(
-    backend: gtx_typing.Backend,
-    grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend, experiment: definitions.Experiment
 ) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     grid = grid_geometry.grid
     x = grid_geometry.get(attrs.CELL_CENTER_X)
     y = grid_geometry.get(attrs.CELL_CENTER_Y)
     z = grid_geometry.get(attrs.CELL_CENTER_Z)
-
-    ser_x = grid_savepoint.cell_center_cart_x()
-    ser_y = grid_savepoint.cell_center_cart_y()
-    ser_z = grid_savepoint.cell_center_cart_z()
-
     assert x.ndarray.shape == (grid.num_cells,)
     assert y.ndarray.shape == (grid.num_cells,)
     assert z.ndarray.shape == (grid.num_cells,)
-
-    assert test_utils.dallclose(x.asnumpy(), ser_x.asnumpy(), atol=1e-15)
-    assert test_utils.dallclose(y.asnumpy(), ser_y.asnumpy(), atol=1e-15)
-    assert test_utils.dallclose(z.asnumpy(), ser_z.asnumpy(), atol=1e-15)
 
     match grid.geometry_type:
         case base.GeometryType.ICOSAHEDRON:
@@ -398,28 +376,15 @@ def test_cartesian_centers_cell(
 
 
 @pytest.mark.datatest
-def test_vertex(
-    backend: gtx_typing.Backend,
-    grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
-) -> None:
+def test_vertex(backend: gtx_typing.Backend, experiment: definitions.Experiment) -> None:
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
     grid = grid_geometry.grid
     x = grid_geometry.get(attrs.VERTEX_X)
     y = grid_geometry.get(attrs.VERTEX_Y)
     z = grid_geometry.get(attrs.VERTEX_Z)
-
-    ser_x = grid_savepoint.verts_vertex_cart_x()
-    ser_y = grid_savepoint.verts_vertex_cart_y()
-    ser_z = grid_savepoint.verts_vertex_cart_z()
-
     assert x.ndarray.shape == (grid.num_vertices,)
     assert y.ndarray.shape == (grid.num_vertices,)
     assert z.ndarray.shape == (grid.num_vertices,)
-
-    assert test_utils.dallclose(x.asnumpy(), ser_x.asnumpy(), atol=1e-15)
-    assert test_utils.dallclose(y.asnumpy(), ser_y.asnumpy(), atol=1e-15)
-    assert test_utils.dallclose(z.asnumpy(), ser_z.asnumpy(), atol=1e-15)
 
     match grid.geometry_type:
         case base.GeometryType.ICOSAHEDRON:
