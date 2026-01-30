@@ -123,24 +123,9 @@ def _download_ser_data(
 ) -> None:
     # not a fixture to be able to use this function outside of pytest
     try:
-        destination_path = dt_utils.get_datapath_for_experiment(_ranked_data_path, _experiment)
+        subdir = dt_utils.get_datapath_subdir_for_experiment(_experiment)
         uri = _experiment.partitioned_data[comm_size]
-
-        data_file = _ranked_data_path.joinpath(f"{_experiment.name}_mpitask{comm_size}.tar.gz").name
-        _ranked_data_path.mkdir(parents=True, exist_ok=True)
-        if config.ENABLE_TESTDATA_DOWNLOAD:
-            with locking.lock(_ranked_data_path):
-                # Note: if the lock would be created for `destination_path` it would always exist...
-                if not destination_path.exists():
-                    data.download_and_extract(uri, _ranked_data_path, data_file)
-        else:
-            # If test data download is disabled, we check if the directory exists
-            # without locking. We assume the location is managed by the user
-            # and avoid locking shared directories (e.g. on CI).
-            if not destination_path.exists():
-                raise RuntimeError(
-                    f"Serialization data {data_file} does not exist, and downloading is disabled."
-                )
+        data.download_test_data(_ranked_data_path, subdir, uri)
     except KeyError as err:
         raise RuntimeError(
             f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"

@@ -6,47 +6,69 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import astype, broadcast
+from gt4py.next import astype
 
+from icon4py.model.atmosphere.dycore.dycore_utils import (
+    _calculate_fourth_order_divdamp_scaling_coeff,
+    _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @gtx.field_operator
 def _apply_weighted_2nd_and_4th_order_divergence_damping(
-    scal_divdamp: fa.KField[wpfloat],
-    bdy_divdamp: fa.KField[wpfloat],
+    interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
     z_graddiv2_vn: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
+    divdamp_order: gtx.int32,
+    mean_cell_area: float,
+    second_order_divdamp_factor: float,
+    max_nudging_coefficient: float,
+    dbl_eps: float,
 ) -> fa.EdgeKField[wpfloat]:
-    """Formelry known as _mo_solve_nonhydro_stencil_27."""
+    """Formerly known as _mo_solve_nonhydro_stencil_27."""
+    scal_divdamp = _calculate_fourth_order_divdamp_scaling_coeff(
+        interpolated_fourth_order_divdamp_factor,
+        divdamp_order,
+        mean_cell_area,
+        second_order_divdamp_factor,
+    )
+    bdy_divdamp = _calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary(
+        scal_divdamp, max_nudging_coefficient, dbl_eps
+    )
     z_graddiv2_vn_wp = astype(z_graddiv2_vn, wpfloat)
-
-    scal_divdamp = broadcast(scal_divdamp, (dims.EdgeDim, dims.KDim))
-    bdy_divdamp = broadcast(bdy_divdamp, (dims.EdgeDim, dims.KDim))
     vn_wp = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn_wp
     return vn_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_weighted_2nd_and_4th_order_divergence_damping(
-    scal_divdamp: fa.KField[wpfloat],
-    bdy_divdamp: fa.KField[wpfloat],
+    interpolated_fourth_order_divdamp_factor: fa.KField[wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
     z_graddiv2_vn: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
+    divdamp_order: gtx.int32,
+    mean_cell_area: float,
+    second_order_divdamp_factor: float,
+    max_nudging_coefficient: float,
+    dbl_eps: float,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
     _apply_weighted_2nd_and_4th_order_divergence_damping(
-        scal_divdamp,
-        bdy_divdamp,
+        interpolated_fourth_order_divdamp_factor,
         nudgecoeff_e,
         z_graddiv2_vn,
         vn,
+        divdamp_order,
+        mean_cell_area,
+        second_order_divdamp_factor,
+        max_nudging_coefficient,
+        dbl_eps,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
