@@ -96,18 +96,6 @@ def precip_qx_level_update(
 
     rhox_prev = (previous_level_q.x + q) * 0.5 * previous_level_rho
 
-    # if previous_level_q.activated:
-    #     vt = previous_level_q.vc * prefactor * power((rhox_prev + offset), exponent)
-    # else:
-    #     vt = 0.0
-
-    # if current_level_activated:
-    #     x = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
-    #     p = (x * rho * vt + flx_partial) * 0.5  # flux
-    # else:
-    #     x = q
-    #     p = 0.0
-
     if previous_level_q.activated:
         vt = previous_level_q.vc * prefactor * power((rhox_prev + offset), exponent)
         x = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
