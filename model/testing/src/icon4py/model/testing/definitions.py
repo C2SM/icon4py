@@ -22,7 +22,9 @@ if TYPE_CHECKING:
     from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 
 
-DEFAULT_TEST_DATA_FOLDER: Final = "testdata"
+TEST_DATA_DIR: Final = "testdata"
+SERIALIZED_DATA_DIR: Final = "ser_icondata"
+SERIALIZED_DATA_SUBDIR: Final = "ser_data"
 
 
 # TODO(havogt): The following are not definitions, refactor or move to a different place
@@ -33,11 +35,11 @@ def get_test_data_root_path() -> pathlib.Path:
     test_utils_path = pathlib.Path(__file__).parent
     model_path = test_utils_path.parent
     common_path = model_path.parent.parent.parent.parent
-    return common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
+    return common_path.parent.joinpath(TEST_DATA_DIR)
 
 
 def serialized_data_path() -> pathlib.Path:
-    return get_test_data_root_path().joinpath("ser_icondata")
+    return get_test_data_root_path().joinpath(SERIALIZED_DATA_DIR)
 
 
 def grids_path() -> pathlib.Path:

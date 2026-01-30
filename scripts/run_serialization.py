@@ -26,7 +26,12 @@ from icon4py.model.testing.data_handling import (
     experiment_archive_filename,
     experiment_name_with_version,
 )
-from icon4py.model.testing.definitions import Experiment, Experiments
+from icon4py.model.testing.definitions import (
+    SERIALIZED_DATA_DIR,
+    SERIALIZED_DATA_SUBDIR,
+    Experiment,
+    Experiments,
+)
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
@@ -64,7 +69,7 @@ RUNSCRIPTS_DIR = BUILD_DIR / "run"
 EXPERIMENTS_DIR = BUILD_DIR / "experiments"
 
 # Output location for copied ser_data and tarballs
-OUTPUT_ROOT = EXPERIMENTS_DIR / "serialized_runs"
+OUTPUT_ROOT = EXPERIMENTS_DIR / SERIALIZED_DATA_DIR
 
 # Maximum concurrent threads for running experiments
 MAX_THREADS: int = 5
@@ -260,14 +265,16 @@ def copy_ser_data(exp, mpi_ranks: int) -> Path:
     if not src_dir.exists():
         raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
-    dest_dir = OUTPUT_ROOT / f"mpirank{mpi_ranks}" / experiment_name_with_version(exp)
+    # Flattened structure: OUTPUT_ROOT/mpitaskX_expname_vYY/
+    dest_dir = OUTPUT_ROOT / f"mpitask{mpi_ranks}_{experiment_name_with_version(exp)}"
     dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
     if dest_dir.exists():
         shutil.rmtree(dest_dir)
 
     dest_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(src_dir, dest_dir / "ser_data")
+    # Copy ser_data folder
+    shutil.copytree(src_dir, dest_dir / SERIALIZED_DATA_SUBDIR)
 
     # Copy NAMELIST files
     namelist_files = sorted(exp_dir.glob("NAMELIST_*"))

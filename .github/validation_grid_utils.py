@@ -50,7 +50,7 @@ def cache_key() -> None:
 @app.command(name="download")
 def download_validation_grids() -> None:
     """Effectively download the validation grid files."""
-    config.TEST_DATA_PATH = pathlib.Path.cwd() / definitions.DEFAULT_TEST_DATA_FOLDER
+    config.TEST_DATA_PATH = pathlib.Path.cwd() / definitions.TEST_DATA_DIR
     for grid in VALIDATION_GRIDS:
         print(f"downloading and unpacking {grid.name}")
         fname = grid_utils._download_grid_file(grid)

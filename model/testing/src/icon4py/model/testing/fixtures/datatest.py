@@ -117,9 +117,11 @@ def _download_ser_data(
 ) -> None:
     # not a fixture to be able to use this function outside of pytest
     try:
-        subdir = dt_utils.get_datapath_subdir_for_experiment(_experiment)
         uri = _experiment.partitioned_data[comm_size]
-        data.download_test_data(_ranked_data_path, subdir, uri)
+        # With flattened structure, extract directly to the parent directory
+        # (ser_icondata), which will create mpitaskX_expname_vYY directories
+        # TODO (jcanton): use non-ranked base_path when passing comm_size to get_datapath_for_experiment
+        data.download_test_data(_ranked_data_path.parent, uri)
     except KeyError as err:
         raise RuntimeError(
             f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
