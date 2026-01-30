@@ -102,7 +102,8 @@ def log_status(message: str) -> None:
 
 
 def parse_extra_mpi_ranks(script_path: Path) -> int:
-    """Parse extra MPI ranks from the Fortran script by summing num_* variables.
+    """Parse extra MPI ranks from the Fortran script by summing num_* variables
+    found in the &parallel_nml section.
 
     Looks for lines starting with:
         num_io_procs      = 1
@@ -118,6 +119,18 @@ def parse_extra_mpi_ranks(script_path: Path) -> int:
     content = script_path.read_text()
     extra_ranks = 0
 
+    start_match = re.search(r"^\s*&parallel_nml\b.*$", content, flags=re.MULTILINE)
+    if not start_match:
+        return extra_ranks
+
+    end_match = re.search(r"^\s*/\s*$", content[start_match.end() :], flags=re.MULTILINE)
+    if not end_match:
+        return extra_ranks
+
+    section_start = start_match.start()
+    section_end = start_match.end() + end_match.start()
+    section = content[section_start:section_end]
+
     # Pattern to match num_* variables with values
     patterns = [
         r"num_io_procs\s*=\s*(\d+)",
@@ -126,7 +139,7 @@ def parse_extra_mpi_ranks(script_path: Path) -> int:
     ]
 
     for pattern in patterns:
-        match = re.search(pattern, content)
+        match = re.search(pattern, section)
         if match:
             extra_ranks += int(match.group(1))
 
