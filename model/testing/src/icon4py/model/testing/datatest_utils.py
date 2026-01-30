@@ -28,11 +28,17 @@ def get_ranked_data_path(base_path: pathlib.Path, comm_size: int) -> pathlib.Pat
     return base_path.absolute().joinpath(f"mpitask{comm_size}")
 
 
+def get_datapath_subdir_for_experiment(
+    experiment: definitions.Experiment = definitions.Experiments.MCH_CH_R04B09,
+) -> pathlib.Path:
+    return pathlib.Path(f"{experiment.name}/ser_data")
+
+
 def get_datapath_for_experiment(
     ranked_base_path: pathlib.Path,
     experiment: definitions.Experiment = definitions.Experiments.MCH_CH_R04B09,
 ) -> pathlib.Path:
-    return ranked_base_path.joinpath(f"{experiment.name}/ser_data")
+    return ranked_base_path.joinpath(get_datapath_subdir_for_experiment(experiment))
 
 
 def create_icon_serial_data_provider(

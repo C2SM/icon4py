@@ -117,9 +117,9 @@ def _download_ser_data(
 ) -> None:
     # not a fixture to be able to use this function outside of pytest
     try:
-        destination_path = dt_utils.get_datapath_for_experiment(_ranked_data_path, _experiment)
+        subdir = dt_utils.get_datapath_subdir_for_experiment(_experiment)
         uri = _experiment.partitioned_data[comm_size]
-        data.download_test_data(destination_path, uri)
+        data.download_test_data(_ranked_data_path, subdir, uri)
     except KeyError as err:
         raise RuntimeError(
             f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
