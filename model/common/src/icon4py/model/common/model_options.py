@@ -53,7 +53,6 @@ def get_dace_options(
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
     if program_name == "graupel_run":
-        backend_descriptor["auto_optimize"] = False
         backend_descriptor["use_zero_origin"] = True
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
