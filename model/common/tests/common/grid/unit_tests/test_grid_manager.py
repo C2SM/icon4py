@@ -18,7 +18,6 @@ import pytest
 
 import icon4py.model.common.grid.gridfile
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.decomposition import (
     definitions as decomp_defs,
     definitions as decomposition,
@@ -32,6 +31,7 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, definitions as test_defs, grid_utils, test_utils
 
 
@@ -642,7 +642,9 @@ def test_local_connectivity(
             if neighbor_dim == dims.E2CDim
             else decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL
         )
-        level_index = np.where(data_alloc.as_numpy(decomposition_info.halo_levels(dim)) == last_halo_level.value)
+        level_index = np.where(
+            data_alloc.as_numpy(decomposition_info.halo_levels(dim)) == last_halo_level.value
+        )
         assert np.count_nonzero(
             (connectivity[level_index] == gridfile.GridFile.INVALID_INDEX) > 0
         ), f"missing invalid index in {dim} - offset {field_offset}"

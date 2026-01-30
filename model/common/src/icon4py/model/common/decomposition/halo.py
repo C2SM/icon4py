@@ -482,7 +482,9 @@ class SingleNodeDecomposer(Decomposer):
         self, adjacency_matrix: data_alloc.NDArray, num_partitions: int = 1
     ) -> data_alloc.NDArray:
         """Dummy decomposer for single node: assigns all cells to rank = 0"""
-        return data_alloc.array_ns_from_array(adjacency_matrix).zeros(adjacency_matrix.shape[0], dtype=gtx.int32)  # type: ignore  [attr-defined]
+        return data_alloc.array_ns_from_array(adjacency_matrix).zeros(
+            adjacency_matrix.shape[0], dtype=gtx.int32
+        )  # type: ignore  [attr-defined]
 
 
 def get_halo_constructor(

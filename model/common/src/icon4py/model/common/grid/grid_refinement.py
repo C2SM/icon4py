@@ -246,7 +246,9 @@ def compute_domain_bounds(
             else (refinement_ctrl.size, refinement_ctrl.size)
         )
         if my_flag == h_grid.Zone.HALO.level:
-            start_index = array_ns.min(halo_region_1).item() if halo_region_1.size > 0 else start_halo_2
+            start_index = (
+                array_ns.min(halo_region_1).item() if halo_region_1.size > 0 else start_halo_2
+            )
             end_index = start_halo_2
         else:
             start_index = start_halo_2

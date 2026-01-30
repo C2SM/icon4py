@@ -392,7 +392,9 @@ class GridManager:
         """
         xp = data_alloc.import_array_ns(allocator)
         ## FULL GRID PROPERTIES
-        cell_refinement = xp.asarray(self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS))
+        cell_refinement = xp.asarray(
+            self._reader.variable(gridfile.GridRefinementName.CONTROL_CELLS)
+        )
         global_size = self._read_full_grid_size()
         global_params = self._construct_global_params(allocator, global_size, geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
@@ -523,9 +525,11 @@ class GridManager:
         apply_offset=True,
         array_ns: ModuleType = np,
     ):
-        return array_ns.asarray(self._reader.int_variable(
-            field, indices=indices, transpose=transpose, apply_transformation=apply_offset
-        ))
+        return array_ns.asarray(
+            self._reader.int_variable(
+                field, indices=indices, transpose=transpose, apply_transformation=apply_offset
+            )
+        )
 
 
 def _get_derived_connectivities(

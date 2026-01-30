@@ -196,7 +196,11 @@ def icon_grid(
     # 1. Ignore distributed?
     # 2. Compute num_cells with a reduction?
     # 3. Use a ProcessProperties to detect it?
-    distributed = config.num_cells < global_properties.num_cells if global_properties.num_cells is not None else False
+    distributed = (
+        config.num_cells < global_properties.num_cells
+        if global_properties.num_cells is not None
+        else False
+    )
     limited_area_or_distributed = config.limited_area or distributed
     connectivities = {
         offset.value: base.construct_connectivity(

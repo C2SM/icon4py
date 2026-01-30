@@ -79,12 +79,12 @@ def array_ns(try_cupy: bool) -> ModuleType:
 
 
 def array_ns_from_array(array: NDArray) -> ModuleType:
-        if isinstance(array, np.ndarray):
-            import numpy as xp
-        else:
-            import cupy as xp  # type: ignore[import-not-found, no-redef]
+    if isinstance(array, np.ndarray):
+        import numpy as xp
+    else:
+        import cupy as xp  # type: ignore[import-not-found, no-redef]
 
-        return xp
+    return xp
 
 
 def import_array_ns(allocator: gtx_allocators.FieldBufferAllocationUtil | None) -> ModuleType:
