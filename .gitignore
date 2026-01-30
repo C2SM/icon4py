@@ -1,6 +1,12 @@
 # nvidia
 *.ncu-rep
+*.nsys-rep
+*.sqlite
 
+### Output files ###
+*.out
+*.nc
+*.txt
 
 ### Custom ####
 _build
@@ -23,6 +29,7 @@ simple_mesh*.nc
 .dacecache
 *.sdfg
 .dace.conf
+_dacegraphs
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
