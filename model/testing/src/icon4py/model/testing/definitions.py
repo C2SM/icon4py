@@ -158,7 +158,6 @@ class Experiment:
     grid: GridDescription
     num_levels: int
     partitioned_data: Mapping[int, str]
-    reserved_ranks: int = 0
     version: int = 0
 
     @property
@@ -192,7 +191,6 @@ class Experiments:
             2: "https://polybox.ethz.ch/index.php/s/ZSwAoox8WnPSmYc/download",
             4: "https://polybox.ethz.ch/index.php/s/y7AnTai3g5eSnsC/download",
         },
-        reserved_ranks=1,
     )
     JW: Final = Experiment(
         name="exclaim_nh35_tri_jws",

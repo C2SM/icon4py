@@ -80,6 +80,38 @@ def log_status(message: str) -> None:
     print(f"[{timestamp}] {message}")
 
 
+def parse_extra_mpi_ranks(script_path: Path) -> int:
+    """Parse extra MPI ranks from the Fortran script by summing num_* variables.
+
+    Looks for lines starting with:
+        num_io_procs      = 1
+        num_prefetch_proc = 2
+        num_restart_procs = 3
+
+    Args:
+        script_path: Path to the script file to parse
+
+    Returns:
+        Sum of num_io_procs, num_prefetch_proc, and num_restart_procs values
+    """
+    content = script_path.read_text()
+    extra_ranks = 0
+
+    # Pattern to match num_* variables with values
+    patterns = [
+        r"num_io_procs\s*=\s*(\d+)",
+        r"num_prefetch_proc\s*=\s*(\d+)",
+        r"num_restart_procs\s*=\s*(\d+)",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, content)
+        if match:
+            extra_ranks += int(match.group(1))
+
+    return extra_ranks
+
+
 def update_slurm_variables(script_path: Path) -> None:
     """Update SBATCH directives in the Slurm script (partition, account, time, uenv, view)."""
     original = script_path.read_text()
@@ -118,15 +150,15 @@ def update_slurm_variables(script_path: Path) -> None:
     script_path.write_text(updated)
 
 
-def update_slurm_ranks(script_path: Path, mpi_ranks: int, reserved_ranks: int = 0) -> None:
+def update_slurm_ranks(script_path: Path, mpi_ranks: int, extra_mpi_ranks: int = 0) -> None:
     """Update ranks in the Slurm script (ntasks-per-node and mpi_procs_pernode).
 
     Args:
         script_path: Path to the Slurm script
         mpi_ranks: Base number of MPI ranks
-        reserved_ranks: Additional ranks reserved for special operations (e.g., pre-fetch)
+        extra_mpi_ranks: Additional ranks reserved for special operations (e.g., pre-fetch)
     """
-    total_ranks = mpi_ranks + reserved_ranks
+    total_ranks = mpi_ranks + extra_mpi_ranks
     original = script_path.read_text()
 
     updated = original
@@ -266,13 +298,16 @@ def run_experiment(exp: Experiment, mpi_ranks: int) -> None:
         if not script_path.exists():
             raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
+        # Parse extra MPI ranks from the script
+        extra_mpi_ranks = parse_extra_mpi_ranks(script_path)
+
         log_status(
             f"Setting up {exp.name} with {mpi_ranks} ranks"
-            + (f" + {exp.reserved_ranks} reserved" if exp.reserved_ranks > 0 else "")
+            + (f" + {extra_mpi_ranks} extra" if extra_mpi_ranks > 0 else "")
         )
         os.chdir(RUNSCRIPTS_DIR)
         update_slurm_variables(script_path)
-        update_slurm_ranks(script_path, mpi_ranks, exp.reserved_ranks)
+        update_slurm_ranks(script_path, mpi_ranks, extra_mpi_ranks)
 
         log_status(f"Submitting {exp.name} with {mpi_ranks} ranks")
         job_id = submit_job(script_path)
