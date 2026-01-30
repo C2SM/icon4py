@@ -161,7 +161,7 @@ class GraupelOutput:
             references = {}
 
         zeros = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
-        # TODO() +1 size fields?
+        # TODO(): +1 size fields?
         return cls(
             **{
                 field.name: zeros() if field.name not in references else references[field.name]
@@ -212,7 +212,7 @@ class GraupelOutput:
             write_height_field = functools.partial(
                 _field_to_nc, ncfile, ("height", "ncells"), dtype=np.float64
             )
-            write_height1_field = functools.partial(  # TODO()
+            write_height1_field = functools.partial(  # noqa: F841 # TODO(): remove?
                 _field_to_nc, ncfile, ("height1", "ncells"), dtype=np.float64
             )
 
@@ -226,12 +226,12 @@ class GraupelOutput:
             if self.pflx is not None:
                 write_height_field("pflx", self.pflx)
             if self.pr is not None:
-                write_height_field("prr_gsp", self.pr)  # TODO() height1?
+                write_height_field("prr_gsp", self.pr)  # TODO(): height1?
             if self.ps is not None:
-                write_height_field("prs_gsp", self.ps)  # TODO()
+                write_height_field("prs_gsp", self.ps)  # TODO(): height1?
             if self.pi is not None:
-                write_height_field("pri_gsp", self.pi)  # TODO()
+                write_height_field("pri_gsp", self.pi)  # TODO(): height1?
             if self.pg is not None:
-                write_height_field("prg_gsp", self.pg)  # TODO()
+                write_height_field("prg_gsp", self.pg)  # TODO(): height1?
             if self.pre is not None:
-                write_height_field("pre_gsp", self.pre)  # TODO()
+                write_height_field("pre_gsp", self.pre)  # TODO(): height1?
