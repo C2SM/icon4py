@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -9,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Run serialization jobs, collect ser_data and NAMELISTS, and archive outputs."""
+
+from __future__ import annotations
 
 import os
 import re
@@ -20,11 +20,16 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
+import typer
+
 from icon4py.model.testing.data_handling import (
     experiment_archive_filename,
     experiment_name_with_version,
 )
 from icon4py.model.testing.definitions import Experiment, Experiments
+
+
+cli = typer.Typer(no_args_is_help=True, help=__doc__)
 
 
 # ======================================
@@ -334,7 +339,9 @@ def run_experiment(exp: Experiment, mpi_ranks: int) -> None:
         raise
 
 
+@cli.command()
 def run_experiment_series() -> None:
+    """Run the serialization experiment series."""
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
     total_tasks = len(EXPERIMENTS) * len(MPI_RANKS)
@@ -369,4 +376,4 @@ def run_experiment_series() -> None:
 
 
 if __name__ == "__main__":
-    run_experiment_series()
+    cli()
