@@ -17,6 +17,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
+    base,
     grid_manager as gm,
     grid_refinement as refin,
     gridfile,
@@ -80,7 +81,7 @@ def test_grid_manager_eval_v2e(
     # indexes (while REGIONAL and GLOBAL grids can have)
     assert (
         not has_invalid_index(v2e_table)
-        if experiment.grid.kind == definitions.GridKind.TORUS
+        if experiment.grid.shape == base.GeometryType.TORUS
         else has_invalid_index(v2e_table)
     )
     _reset_invalid_index(seralized_v2e)
@@ -126,7 +127,7 @@ def test_grid_manager_eval_v2c(
     # indexes (while REGIONAL and GLOBAL grids can have)
     assert (
         not has_invalid_index(v2c_table)
-        if experiment.grid.kind == definitions.GridKind.TORUS
+        if experiment.grid.shape == base.GeometryType.TORUS
         else has_invalid_index(v2c_table)
     )
     _reset_invalid_index(serialized_v2c)

@@ -6,11 +6,43 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import os
 import pathlib
 import tarfile
 
 from icon4py.model.testing import config, locking
+from icon4py.model.testing.definitions import Experiment
+
+
+def experiment_name_with_version(exp: Experiment) -> str:
+    """Generate experiment name with version suffix.
+
+    Args:
+        experiment: Experiment object
+
+    Returns:
+        Name with version in format '{name}_v{version:02d}'
+    """
+    return f"{exp.name}_v{exp.version:02d}"
+
+
+def experiment_archive_filename(exp: Experiment, comm_size: int | None = None) -> str:
+    """Generate archive filename for an experiment.
+
+    Args:
+        experiment: Experiment object
+        comm_size: Optional communicator size to prepend to filename
+
+    Returns:
+        Archive filename in format 'mpitaskX_{name}_v{version:02d}.tar.gz' if comm_size is provided,
+        otherwise '{name}_v{version:02d}.tar.gz'
+    """
+    base_name = experiment_name_with_version(exp)
+    if comm_size is not None:
+        return f"mpitask{comm_size}_{base_name}.tar.gz"
+    return f"{base_name}.tar.gz"
 
 
 def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "downloaded.tar.gz") -> None:
@@ -37,10 +69,7 @@ def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "download
     pathlib.Path(data_file).unlink(missing_ok=True)
 
 
-# TODO(msimberg): Remove dst_subdir once archives don't contain a subdir with
-# special name.
-def download_test_data(dst_root: pathlib.Path, dst_subdir: pathlib.Path, uri: str) -> None:
-    dst = dst_root.joinpath(dst_subdir)
+def download_test_data(dst: pathlib.Path, uri: str) -> None:
     if config.ENABLE_TESTDATA_DOWNLOAD:
         dst.mkdir(parents=True, exist_ok=True)
         # Explicitly specify the lockfile name to make sure that os.listdir sees
@@ -49,7 +78,7 @@ def download_test_data(dst_root: pathlib.Path, dst_subdir: pathlib.Path, uri: st
         with locking.lock(dst, lockfile=lockfile):
             files = os.listdir(dst)
             if len(files) == 0 or (len(files) == 1 and files[0] == lockfile):
-                download_and_extract(uri, dst_root)
+                download_and_extract(uri, dst)
     else:
         # If test data download is disabled, we check if the directory exists
         # and isn't empty without locking. We assume the location is managed by the user

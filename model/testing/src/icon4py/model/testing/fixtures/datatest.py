@@ -117,9 +117,11 @@ def _download_ser_data(
 ) -> None:
     # not a fixture to be able to use this function outside of pytest
     try:
-        subdir = dt_utils.get_datapath_subdir_for_experiment(_experiment)
         uri = _experiment.partitioned_data[comm_size]
-        data.download_test_data(_ranked_data_path, subdir, uri)
+        # With flattened structure, extract directly to the parent directory
+        # (ser_icondata), which will create mpitaskX_expname_vYY directories
+        # TODO (jcanton): use non-ranked base_path when passing comm_size to get_datapath_for_experiment
+        data.download_test_data(_ranked_data_path.parent, uri)
     except KeyError as err:
         raise RuntimeError(
             f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
@@ -166,8 +168,7 @@ def data_provider(
 def grid_savepoint(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> serialbox.IconGridSavepoint:
-    grid_shape = dt_utils.guess_grid_shape(experiment)
-    return data_provider.from_savepoint_grid(experiment.name, grid_shape)
+    return data_provider.from_savepoint_grid(experiment.name, experiment.grid.shape)
 
 
 @pytest.fixture
@@ -186,9 +187,8 @@ def icon_grid(
 def decomposition_info(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
-    grid_shape = dt_utils.guess_grid_shape(experiment)
     return data_provider.from_savepoint_grid(
-        grid_id=experiment.name, grid_shape=grid_shape
+        grid_id=experiment.name, grid_shape=experiment.grid.shape
     ).construct_decomposition_info()
 
 
