@@ -25,5 +25,5 @@ def lock(
     if not directory.is_dir():
         raise ValueError(f"Expected a directory, got: {directory}")
 
-    path = directory / f"{lockfile}"
+    path = directory / lockfile
     return filelock.FileLock(str(path))
