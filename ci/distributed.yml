@@ -38,10 +38,6 @@ build_distributed_baseimage_aarch64:
     DOCKERFILE: ci/docker/checkout_mpi.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
-    USE_MPI: NO
-    SLURM_MPI_TYPE: pmix
-    PMIX_MCA_psec: native
-    PMIX_MCA_gds: "^shmem2"
 
 .build_distributed_cpu:
   extends: [.build_distributed_template]
@@ -66,6 +62,16 @@ build_distributed_cpu:
     ICON4PY_ENABLE_GRID_DOWNLOAD: false
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata_003:$TEST_DATA_PATH"]'
+    # Do not use libfabric from the host system. Libfabric with slingshot
+    # support is built into the container image.
+    USE_MPI: NO
+    # Use libfabric slingshot (cxi) provider and recommended settings from
+    # https://docs.cscs.ch/software/communication/openmpi.
+    SLURM_MPI_TYPE: pmix
+    PMIX_MCA_psec: native
+    FI_PROVIDER: cxi
+    OMPI_MCA_pml: cm
+    OMPI_MCA_mtl: ofi
 
 .test_distributed_aarch64:
   stage: test
