@@ -27,12 +27,17 @@ RUN apt-get update && \
         libyaml-dev \
         nvidia-cuda-dev \
         nvidia-cuda-toolkit \
+        nvidia-cuda-toolkit-gcc \
         pkg-config \
         python3 \
         strace \
         tar \
         wget && \
     rm -rf /var/lib/apt/lists/*
+
+ENV CC=/usr/bin/cuda-gcc
+ENV CXX=/usr/bin/cuda-g++
+ENV CUDAHOSTCXX=/usr/bin/cuda-g++
 
 # Install OpenMPI configured with libfabric, libcxi, and gdrcopy support for use on Alps.
 ARG gdrcopy_version=2.5.1
