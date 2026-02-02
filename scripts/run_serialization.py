@@ -22,13 +22,7 @@ from pathlib import Path
 
 import typer
 
-from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing.definitions import (
-    SERIALIZED_DATA_DIR,
-    SERIALIZED_DATA_SUBDIR,
-    Experiment,
-    Experiments,
-)
+from icon4py.model.testing import datatest_utils as dt_utils, definitions
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
@@ -40,11 +34,11 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 COMM_SIZES: list[int] = [1, 2, 4]
 
 EXPERIMENTS = [
-    Experiments.MCH_CH_R04B09,
-    Experiments.JW,
-    Experiments.EXCLAIM_APE,
-    Experiments.GAUSS3D,
-    Experiments.WEISMAN_KLEMP_TORUS,
+    definitions.Experiments.MCH_CH_R04B09,
+    definitions.Experiments.JW,
+    definitions.Experiments.EXCLAIM_APE,
+    definitions.Experiments.GAUSS3D,
+    definitions.Experiments.WEISMAN_KLEMP_TORUS,
 ]
 
 # Slurm settings
@@ -66,7 +60,7 @@ RUNSCRIPTS_DIR = BUILD_DIR / "run"
 EXPERIMENTS_DIR = BUILD_DIR / "experiments"
 
 # Output location for copied ser_data and tarballs
-OUTPUT_ROOT = EXPERIMENTS_DIR / SERIALIZED_DATA_DIR
+OUTPUT_ROOT = EXPERIMENTS_DIR / definitions.SERIALIZED_DATA_DIR
 
 # Maximum concurrent threads for running experiments
 MAX_THREADS: int = 5
@@ -76,15 +70,19 @@ MAX_THREADS: int = 5
 # ======================================
 
 
-def get_f90exp_name(experiment: Experiment) -> str:
+def get_f90exp_name(experiment: definitions.Experiment) -> str:
     return f"{experiment.name}_sb"
 
 
-def get_nmlfile_name(experiment: Experiment) -> str:
+def get_f90exp_dir(experiment: definitions.Experiment) -> Path:
+    return EXPERIMENTS_DIR / get_f90exp_name(experiment)
+
+
+def get_nmlfile_name(experiment: definitions.Experiment) -> str:
     return f"exp.{get_f90exp_name(experiment)}"
 
 
-def get_slurmscript_name(experiment: Experiment) -> str:
+def get_slurmscript_name(experiment: definitions.Experiment) -> str:
     return f"{get_nmlfile_name(experiment)}.run"
 
 
@@ -305,7 +303,7 @@ def wait_for_success(job_id: str) -> None:
 
 
 def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path:
-    exp_dir = EXPERIMENTS_DIR / get_f90exp_name(experiment)
+    exp_dir = get_f90exp_dir(experiment)
     src_dir = exp_dir / "ser_data"
     if not src_dir.exists():
         raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
@@ -321,7 +319,7 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path
 
     dest_dir.mkdir(parents=True, exist_ok=True)
     # Copy ser_data folder
-    shutil.copytree(src_dir, dest_dir / SERIALIZED_DATA_SUBDIR)
+    shutil.copytree(src_dir, dest_dir / definitions.SERIALIZED_DATA_SUBDIR)
 
     # Copy NAMELIST files
     namelist_files = sorted(exp_dir.glob("NAMELIST_*"))
@@ -338,7 +336,7 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path
     return dest_dir
 
 
-def tar_folder(folder: Path, experiment: Experiment, comm_size: int) -> Path:
+def tar_folder(folder: Path, experiment: definitions.Experiment, comm_size: int) -> Path:
     tar_path = folder.parent / dt_utils.get_experiment_archive_filename(experiment, comm_size)
     if tar_path.exists():
         tar_path.unlink()
@@ -351,7 +349,7 @@ def tar_folder(folder: Path, experiment: Experiment, comm_size: int) -> Path:
     return tar_path
 
 
-def generate_update_script(experiment: Experiment) -> None:
+def generate_update_script(experiment: definitions.Experiment) -> None:
     # copy namelist file from repo to build_dir
     shutil.copy2(
         ICONF90_DIR / "run" / get_nmlfile_name(experiment),
@@ -363,9 +361,14 @@ def generate_update_script(experiment: Experiment) -> None:
     _ = run_command(cmd, cwd=BUILD_DIR)
 
 
-def run_experiment(experiment: Experiment, comm_size: int) -> None:
+def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
     """Execute a single experiment with the given communicator size."""
     try:
+        # Clean up experiment directory if it exists
+        exp_dir = get_f90exp_dir(experiment)
+        if exp_dir.exists():
+            shutil.rmtree(exp_dir)
+
         generate_update_script(experiment)
 
         script_path = RUNSCRIPTS_DIR / get_slurmscript_name(experiment)
