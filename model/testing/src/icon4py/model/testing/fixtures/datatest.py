@@ -122,15 +122,13 @@ def _download_ser_data(
         # Get the root URL for this communicator size
         root_url = definitions.SERIALIZED_DATA_ROOT_URLS[comm_size]
         # Build the archive filename for this experiment and comm_size
-        filename = dt_utils.get_experiment_archive_filename(_experiment, comm_size)
-        filepath = definitions.SERIALIZED_DATA_DIR + "/" + filename
+        archive_filename = dt_utils.get_experiment_archive_filename(_experiment, comm_size)
+        archive_path = definitions.SERIALIZED_DATA_DIR + "/" + archive_filename
         # Build the complete download URL
-        uri = dt_utils.get_serialized_data_url(root_url, filepath)
+        uri = dt_utils.get_serialized_data_url(root_url, archive_path)
         destination_path = dt_utils.get_datapath_for_experiment(_experiment, processor_props)
-        # This downloads a file ser_icondata_mpitaskX_expname_vXX.tar.gz but
-        # that's ok because download_and_extract saves it as downloaded.tar.gz
-        # and deletes it right away
-        data_handling.download_test_data(destination_path.parent, uri)
+        # Download and extract the data
+        data_handling.download_test_data(destination_path.parent, uri, archive_filename)
     except KeyError as err:
         raise RuntimeError(
             f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"

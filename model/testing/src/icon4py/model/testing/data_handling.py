@@ -39,7 +39,7 @@ def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "download
     pathlib.Path(data_file).unlink(missing_ok=True)
 
 
-def download_test_data(dst: pathlib.Path, uri: str) -> None:
+def download_test_data(dst: pathlib.Path, uri: str, data_file: str = "downloaded.tar.gz") -> None:
     if config.ENABLE_TESTDATA_DOWNLOAD:
         dst.mkdir(parents=True, exist_ok=True)
         # Explicitly specify the lockfile name to make sure that os.listdir sees
@@ -48,7 +48,7 @@ def download_test_data(dst: pathlib.Path, uri: str) -> None:
         with locking.lock(dst, lockfile=lockfile):
             files = os.listdir(dst)
             if len(files) == 0 or (len(files) == 1 and files[0] == lockfile):
-                download_and_extract(uri, dst)
+                download_and_extract(uri, dst, data_file)
     else:
         # If test data download is disabled, we check if the directory exists
         # and isn't empty without locking. We assume the location is managed by the user
