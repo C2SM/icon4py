@@ -44,16 +44,7 @@ def experiment_archive_filename(experiment: Experiment, comm_size: int) -> str:
 
 
 def build_serialized_data_url(root_url: str, filepath: str) -> str:
-    """Build a download URL for serialized data file from root URL.
-
-    Args:
-        root_url: Root polybox URL (without /download?path=...)
-        filepath: Path of the file to download (e.g., ser_icondata/mpitask1_expname_v00.tar.gz)
-
-    Returns:
-        Complete download URL with filename parameter
-    """
-
+    """Build a download URL for serialized data file from root URL."""
     return f"{root_url}/download?path=%2F&files={urllib.parse.quote(filepath)}"
 
 
