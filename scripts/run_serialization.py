@@ -100,7 +100,7 @@ def log_status(message: str) -> None:
     print(f"[{timestamp}] {message}")
 
 
-def parse_extra_mpi_ranks(script_path: Path) -> int:
+def parse_extra_mpi_ranks(script_path: Path, comm_size: int) -> int:
     """Parse extra MPI ranks from the Fortran script by summing num_* variables
     found in the &parallel_nml section.
 
@@ -115,6 +115,7 @@ def parse_extra_mpi_ranks(script_path: Path) -> int:
 
     Args:
         script_path: Path to the script file to parse
+        comm_size: Communicator size used for the run
 
     Returns:
         Sum of num_io_procs, num_prefetch_proc, and num_restart_procs values
@@ -147,6 +148,9 @@ def parse_extra_mpi_ranks(script_path: Path) -> int:
     var_names = ["num_io_procs", "num_prefetch_proc", "num_restart_procs"]
 
     for var_name in var_names:
+        # num_io_procs only applies to MPI runs (no extra IO ranks for serial).
+        if var_name == "num_io_procs" and comm_size <= 1:
+            continue
         # Try to match direct integer value
         pattern_direct = rf"{var_name}\s*=\s*(\d+)"
         match = re.search(pattern_direct, section)
@@ -363,7 +367,7 @@ def run_experiment(experiment: Experiment, comm_size: int) -> None:
             raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
         # Parse extra MPI ranks from the script
-        extra_mpi_ranks = parse_extra_mpi_ranks(script_path)
+        extra_mpi_ranks = parse_extra_mpi_ranks(script_path, comm_size)
 
         log_status(
             f"Setting up {experiment.name} with {comm_size} ranks"
