@@ -105,9 +105,13 @@ def parse_extra_mpi_ranks(script_path: Path) -> int:
     found in the &parallel_nml section.
 
     Looks for lines starting with:
-        num_io_procs      = 1
-        num_prefetch_proc = 2
-        num_restart_procs = 3
+        num_io_procs      =
+        num_prefetch_proc =
+        num_restart_procs =
+
+    Supports both direct values (e.g., "num_io_procs = 1") and variable references
+    (e.g., "num_io_procs = ${num_io_procs}") where the variable is defined elsewhere
+    in the file.
 
     Args:
         script_path: Path to the script file to parse
@@ -118,6 +122,15 @@ def parse_extra_mpi_ranks(script_path: Path) -> int:
     content = script_path.read_text()
     extra_ranks = 0
 
+    # First, parse all variable definitions from the entire file
+    # Pattern: variable_name=value (outside of namelist sections)
+    var_definitions: dict[str, int] = {}
+    for match in re.finditer(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(\d+)", content, flags=re.MULTILINE):
+        var_name = match.group(1)
+        var_value = int(match.group(2))
+        var_definitions[var_name] = var_value
+
+    # Find the &parallel_nml section
     start_match = re.search(r"^\s*&parallel_nml\b.*$", content, flags=re.MULTILINE)
     if not start_match:
         return extra_ranks
@@ -130,17 +143,25 @@ def parse_extra_mpi_ranks(script_path: Path) -> int:
     section_end = start_match.end() + end_match.start()
     section = content[section_start:section_end]
 
-    # Pattern to match num_* variables with values
-    patterns = [
-        r"num_io_procs\s*=\s*(\d+)",
-        r"num_prefetch_proc\s*=\s*(\d+)",
-        r"num_restart_procs\s*=\s*(\d+)",
-    ]
+    # Pattern to match num_* variables with either direct values or variable references
+    var_names = ["num_io_procs", "num_prefetch_proc", "num_restart_procs"]
 
-    for pattern in patterns:
-        match = re.search(pattern, section)
+    for var_name in var_names:
+        # Try to match direct integer value
+        pattern_direct = rf"{var_name}\s*=\s*(\d+)"
+        match = re.search(pattern_direct, section)
         if match:
             extra_ranks += int(match.group(1))
+            continue
+
+        # Try to match variable reference ${var_name}
+        pattern_ref = rf"{var_name}\s*=\s*\$\{{([a-zA-Z_][a-zA-Z0-9_]*)\}}"
+        match = re.search(pattern_ref, section)
+        if match:
+            ref_var_name = match.group(1)
+            if ref_var_name in var_definitions:
+                extra_ranks += var_definitions[ref_var_name]
+            # If variable not found, silently ignore (value is 0)
 
     return extra_ranks
 
