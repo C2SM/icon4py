@@ -52,17 +52,7 @@ def get_datapath_for_experiment(
     experiment: definitions.Experiment,
     processor_props: decomposition.ProcessProperties,
 ) -> pathlib.Path:
-    """Get the path to serialized data for an experiment.
-
-    With the flattened structure, data for an experiment is stored as:
-        base_path/mpitaskX_experiment_name_version/ser_data
-
-    Args:
-        experiment: Experiment to get data path for
-
-    Returns:
-        Path to the ser_data directory for the experiment
-    """
+    """Get the path to serialized data for an experiment. """
 
     # Construct the ranked directory name: mpitaskX_expname_vYY
     experiment_dir = ranked_experiment_name_with_version(
