@@ -40,11 +40,11 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 COMM_SIZES: list[int] = [1, 2, 4]
 
 EXPERIMENTS = [
-    # Experiments.MCH_CH_R04B09,
-    # Experiments.JW,
+    Experiments.MCH_CH_R04B09,
+    Experiments.JW,
     Experiments.EXCLAIM_APE,
     Experiments.GAUSS3D,
-    # Experiments.WEISMAN_KLEMP_TORUS,
+    Experiments.WEISMAN_KLEMP_TORUS,
 ]
 
 # Slurm settings
