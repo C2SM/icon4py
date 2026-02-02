@@ -122,10 +122,10 @@ def _download_ser_data(
         # Get the root URL for this communicator size
         root_url = definitions.SERIALIZED_DATA_ROOT_URLS[comm_size]
         # Build the archive filename for this experiment and comm_size
-        filename = dt_utils.experiment_archive_filename(_experiment, comm_size)
+        filename = dt_utils.get_experiment_archive_filename(_experiment, comm_size)
         filepath = definitions.SERIALIZED_DATA_DIR + "/" + filename
         # Build the complete download URL
-        uri = dt_utils.build_serialized_data_url(root_url, filepath)
+        uri = dt_utils.get_serialized_data_url(root_url, filepath)
         destination_path = dt_utils.get_datapath_for_experiment(_experiment, processor_props)
         # This downloads a file ser_icondata_mpitaskX_expname_vXX.tar.gz but
         # that's ok because download_and_extract saves it as downloaded.tar.gz

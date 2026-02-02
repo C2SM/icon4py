@@ -277,7 +277,7 @@ def copy_ser_data(experiment, comm_size: int) -> Path:
 
     # Flattened structure: OUTPUT_ROOT/mpitaskX_expname_vYY/
     dest_dir = (
-        OUTPUT_ROOT / f"mpitask{comm_size}_{dt_utils.experiment_name_with_version(experiment)}"
+        OUTPUT_ROOT / f"mpitask{comm_size}_{dt_utils.get_experiment_name_with_version(experiment)}"
     )
     dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
@@ -298,7 +298,7 @@ def copy_ser_data(experiment, comm_size: int) -> Path:
 
 
 def tar_folder(folder: Path, experiment: Experiment, comm_size: int) -> Path:
-    tar_path = folder.parent / dt_utils.experiment_archive_filename(experiment, comm_size)
+    tar_path = folder.parent / dt_utils.get_experiment_archive_filename(experiment, comm_size)
     if tar_path.exists():
         tar_path.unlink()
 

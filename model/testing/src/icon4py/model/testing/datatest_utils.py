@@ -15,7 +15,6 @@ import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, serialbox
-from icon4py.model.testing.definitions import Experiment
 
 
 def get_processor_properties_for_run(
@@ -28,22 +27,24 @@ def get_ranked_data_path(base_path: pathlib.Path, comm_size: int) -> pathlib.Pat
     return base_path.absolute().joinpath(f"mpitask{comm_size}")
 
 
-def experiment_name_with_version(experiment: Experiment) -> str:
+def get_experiment_name_with_version(experiment: definitions.Experiment) -> str:
     """Generate experiment name with version suffix."""
     return f"{experiment.name}_v{experiment.version:02d}"
 
 
-def ranked_experiment_name_with_version(experiment: Experiment, comm_size: int) -> str:
+def get_ranked_experiment_name_with_version(
+    experiment: definitions.Experiment, comm_size: int
+) -> str:
     """Generate ranked experiment name with version suffix."""
-    return f"mpitask{comm_size}_{experiment_name_with_version(experiment)}"
+    return f"mpitask{comm_size}_{get_experiment_name_with_version(experiment)}"
 
 
-def experiment_archive_filename(experiment: Experiment, comm_size: int) -> str:
+def get_experiment_archive_filename(experiment: definitions.Experiment, comm_size: int) -> str:
     """Generate ranked archive filename for an experiment."""
-    return f"{ranked_experiment_name_with_version(experiment, comm_size)}.tar.gz"
+    return f"{get_ranked_experiment_name_with_version(experiment, comm_size)}.tar.gz"
 
 
-def build_serialized_data_url(root_url: str, filepath: str) -> str:
+def get_serialized_data_url(root_url: str, filepath: str) -> str:
     """Build a download URL for serialized data file from root URL."""
     return f"{root_url}/download?path=%2F&files={urllib.parse.quote(filepath)}"
 
@@ -52,10 +53,10 @@ def get_datapath_for_experiment(
     experiment: definitions.Experiment,
     processor_props: decomposition.ProcessProperties,
 ) -> pathlib.Path:
-    """Get the path to serialized data for an experiment. """
+    """Get the path to serialized data for an experiment."""
 
     # Construct the ranked directory name: mpitaskX_expname_vYY
-    experiment_dir = ranked_experiment_name_with_version(
+    experiment_dir = get_ranked_experiment_name_with_version(
         experiment,
         processor_props.comm_size,
     )
