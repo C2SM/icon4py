@@ -46,5 +46,7 @@ def _project_root() -> pathlib.Path:
 ENABLE_GRID_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_GRID_DOWNLOAD", True)
 ENABLE_TESTDATA_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_TESTDATA_DOWNLOAD", True)
 
-PROJECT_ROOT: pathlib.Path = _project_root()
-TEST_DATA_PATH: pathlib.Path = PROJECT_ROOT / "testdata"
+TEST_DATA_PATH = _env_path(
+    "ICON4PY_TEST_DATA_PATH",
+    _project_root() / "testdata"
+)
