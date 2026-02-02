@@ -31,14 +31,14 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 # ======================================
 # USER CONFIGURATION
 # ======================================
-COMM_SIZES: list[int] = [1, 2, 4]
+COMM_SIZES: list[int] = [1]  # , 2, 4]
 
 EXPERIMENTS = [
-    definitions.Experiments.MCH_CH_R04B09,
-    definitions.Experiments.JW,
+    # definitions.Experiments.MCH_CH_R04B09,
+    # definitions.Experiments.JW,
     definitions.Experiments.EXCLAIM_APE,
-    definitions.Experiments.GAUSS3D,
-    definitions.Experiments.WEISMAN_KLEMP_TORUS,
+    # definitions.Experiments.GAUSS3D,
+    # definitions.Experiments.WEISMAN_KLEMP_TORUS,
 ]
 
 # Slurm settings
@@ -84,6 +84,40 @@ def get_nmlfile_name(experiment: definitions.Experiment) -> str:
 
 def get_slurmscript_name(experiment: definitions.Experiment) -> str:
     return f"{get_nmlfile_name(experiment)}.run"
+
+
+def get_serdata_dst_dir(experiment: definitions.Experiment, comm_size: int) -> Path:
+    """Get the destination directory for serialized data."""
+    return OUTPUT_ROOT / dt_utils.get_ranked_experiment_name_with_version(experiment, comm_size)
+
+
+def get_tar_path(experiment: definitions.Experiment, comm_size: int) -> Path:
+    """Get the path to the tar archive for the experiment."""
+    return OUTPUT_ROOT / dt_utils.get_experiment_archive_filename(experiment, comm_size)
+
+
+def cleanup_exp_output(experiment: definitions.Experiment, comm_size: int) -> None:
+    """Clean up experiment output directories and archives.
+
+    Deletes:
+    - Experiment directory (exp_dir)
+    - Serialized data destination directory (dest_dir)
+    - Tar archive (tar_path)
+    """
+    # Delete experiment directory
+    exp_dir = get_f90exp_dir(experiment)
+    if exp_dir.exists():
+        shutil.rmtree(exp_dir)
+
+    # Delete serialized data destination directory
+    dest_dir = get_serdata_dst_dir(experiment, comm_size)
+    if dest_dir.exists():
+        shutil.rmtree(dest_dir)
+
+    # Delete tar archive
+    tar_path = get_tar_path(experiment, comm_size)
+    if tar_path.exists():
+        tar_path.unlink()
 
 
 def run_command(
@@ -309,9 +343,7 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path
         raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
     # Flattened structure: OUTPUT_ROOT/mpitaskX_expname_vYY/
-    dest_dir = (
-        OUTPUT_ROOT / f"mpitask{comm_size}_{dt_utils.get_experiment_name_with_version(experiment)}"
-    )
+    dest_dir = get_serdata_dst_dir(experiment, comm_size)
     dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
     if dest_dir.exists():
@@ -337,9 +369,7 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path
 
 
 def tar_folder(folder: Path, experiment: definitions.Experiment, comm_size: int) -> Path:
-    tar_path = folder.parent / dt_utils.get_experiment_archive_filename(experiment, comm_size)
-    if tar_path.exists():
-        tar_path.unlink()
+    tar_path = get_tar_path(experiment, comm_size)
 
     with tarfile.open(tar_path, "w:gz") as tar:
         # Add only the contents of the folder (NAMELIST files and ser_data), not the folder itself
@@ -364,10 +394,8 @@ def generate_update_script(experiment: definitions.Experiment) -> None:
 def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
     """Execute a single experiment with the given communicator size."""
     try:
-        # Clean up experiment directory if it exists
-        exp_dir = get_f90exp_dir(experiment)
-        if exp_dir.exists():
-            shutil.rmtree(exp_dir)
+        # Clean up previous experiment output
+        cleanup_exp_output(experiment, comm_size)
 
         generate_update_script(experiment)
 
