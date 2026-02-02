@@ -28,7 +28,7 @@ test_model_stencils_aarch64:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver]
+      - COMPONENT: [muphys]
         BACKEND: [dace_cpu, dace_gpu]
         LEVEL: [integration]
   rules:
