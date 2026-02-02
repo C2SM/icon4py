@@ -304,7 +304,7 @@ def wait_for_success(job_id: str) -> None:
         time.sleep(JOB_POLL_SECONDS)
 
 
-def copy_ser_data(experiment, comm_size: int) -> Path:
+def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path:
     exp_dir = EXPERIMENTS_DIR / get_f90exp_name(experiment)
     src_dir = exp_dir / "ser_data"
     if not src_dir.exists():
@@ -328,6 +328,12 @@ def copy_ser_data(experiment, comm_size: int) -> Path:
     for src_file in namelist_files:
         if src_file.is_file():
             shutil.copy2(src_file, dest_dir / src_file.name)
+
+    # Copy LOG file if available
+    if job_id is not None:
+        log_file = RUNSCRIPTS_DIR / f"LOG.{get_slurmscript_name(experiment)}.{job_id}.o"
+        if log_file.is_file():
+            shutil.copy2(log_file, dest_dir / log_file.name)
 
     return dest_dir
 
@@ -383,7 +389,7 @@ def run_experiment(experiment: Experiment, comm_size: int) -> None:
         wait_for_success(job_id)
 
         log_status(f"Copying ser_data for {experiment.name} with {comm_size} ranks")
-        dest_dir = copy_ser_data(experiment, comm_size)
+        dest_dir = copy_ser_data(experiment, comm_size, job_id)
 
         log_status(f"Creating tar archive for {experiment.name} with {comm_size} ranks")
         tar_folder(dest_dir, experiment, comm_size)
