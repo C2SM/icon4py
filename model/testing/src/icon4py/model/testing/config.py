@@ -39,7 +39,8 @@ def _project_root() -> pathlib.Path:
     for path in [pathlib.Path(__file__).resolve(), *pathlib.Path(__file__).resolve().parents]:
         if (path / ".git").exists():
             return path
-    raise RuntimeError("Could not determine project root")
+    # fallback to hardcoded relative path
+    return pathlib.Path(__file__).parents[6]
 
 
 ENABLE_GRID_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_GRID_DOWNLOAD", True)
