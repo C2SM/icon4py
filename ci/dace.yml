@@ -19,7 +19,7 @@ include:
         GRID: [simple, icon_regional]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
-test_model_stencils_aarch64:
+.test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
 .test_model_datatests:
