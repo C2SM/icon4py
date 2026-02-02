@@ -81,7 +81,7 @@ def test_grid_manager_eval_v2e(
     # indexes (while REGIONAL and GLOBAL grids can have)
     assert (
         not has_invalid_index(v2e_table)
-        if experiment.grid.shape == base.GeometryType.TORUS
+        if experiment.grid.shape.geometry_type == base.GeometryType.TORUS
         else has_invalid_index(v2e_table)
     )
     _reset_invalid_index(seralized_v2e)
@@ -127,7 +127,7 @@ def test_grid_manager_eval_v2c(
     # indexes (while REGIONAL and GLOBAL grids can have)
     assert (
         not has_invalid_index(v2c_table)
-        if experiment.grid.shape == base.GeometryType.TORUS
+        if experiment.grid.shape.geometry_type == base.GeometryType.TORUS
         else has_invalid_index(v2c_table)
     )
     _reset_invalid_index(serialized_v2c)

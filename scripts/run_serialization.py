@@ -88,8 +88,10 @@ def get_slurmscript_name(experiment: Experiment) -> str:
     return f"{get_nmlfile_name(experiment)}.run"
 
 
-def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, check=check, text=True, capture_output=True)
+def run_command(
+    cmd: list[str], check: bool = True, cwd: Path | None = None
+) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, check=check, text=True, capture_output=True, cwd=cwd)
 
 
 def log_status(message: str) -> None:
@@ -226,12 +228,18 @@ def normalize_state(raw_state: str) -> str:
 
 
 def get_job_state(job_id: str) -> str | None:
+    """Query the state of a Slurm job.
+
+    Returns the normalized job state string, or None if the job cannot be found
+    or Slurm commands are unavailable.
+    """
     # First try sacct for completed jobs
     try:
         result = run_command(["sacct", "-j", job_id, "--format=State", "--noheader"], check=False)
         if result.stdout.strip():
             return normalize_state(result.stdout.strip().splitlines()[0])
     except FileNotFoundError:
+        # sacct command not found - continue to fallback
         pass
 
     # Fallback to squeue for running jobs
@@ -240,8 +248,10 @@ def get_job_state(job_id: str) -> str | None:
         if result.stdout.strip():
             return normalize_state(result.stdout.strip().splitlines()[0])
     except FileNotFoundError:
+        # squeue command not found - Slurm may not be installed
         pass
 
+    # Job not found in either command, or Slurm commands unavailable
     return None
 
 
@@ -318,9 +328,8 @@ def generate_update_script(experiment: Experiment) -> None:
     )
 
     # run make_runscript
-    os.chdir(BUILD_DIR)
     cmd = ["./make_runscripts", get_f90exp_name(experiment)]
-    _ = run_command(cmd)
+    _ = run_command(cmd, cwd=BUILD_DIR)
 
 
 def run_experiment(experiment: Experiment, comm_size: int) -> None:
@@ -339,7 +348,6 @@ def run_experiment(experiment: Experiment, comm_size: int) -> None:
             f"Setting up {experiment.name} with {comm_size} ranks"
             + (f" + {extra_mpi_ranks} extra" if extra_mpi_ranks > 0 else "")
         )
-        os.chdir(RUNSCRIPTS_DIR)
         update_slurm_variables(script_path)
         update_slurm_ranks(script_path, comm_size, extra_mpi_ranks)
 
