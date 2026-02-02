@@ -48,15 +48,6 @@ class DiagnosticState:
         return gtx.as_field((dims.CellDim,), self.pressure_ifc.ndarray[:, -1])
 
 
-@dataclasses.dataclass
-class DiagnosticMetricState:
-    """Class that contains the diagnostic metric state for computing the diagnostic state."""
-
-    ddqz_z_full: fa.CellKField[ta.wpfloat]
-    rbf_vec_coeff_c1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
-    rbf_vec_coeff_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
-
-
 def initialize_diagnostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.FieldBufferAllocationUtil,
