@@ -188,40 +188,6 @@ def test_advection_run_single_step(
         even_timestep=even_timestep,
     )
 
-@pytest.mark.level("unit")
-@pytest.mark.datatest
-def test_clsq_compute_coeff_cell_sphere(
-    grid_savepoint: sb.IconGridSavepoint,
-    icon_grid: base_grid.Grid,
-    backend: gtx_typing.Backend,
-) -> None:
-    from icon4py.model.common.grid import horizontal as h_grid
-    c2e2c = icon_grid.connectivities["C2E2C"].ndarray
-    c2v  = icon_grid.connectivities["C2V"].ndarray
-    cell_owner_mask = grid_savepoint.c_owner_mask().asnumpy()
-    grid_sphere_radius = 6.371229e6
-    lsq_dim_unk = 2
-    lsq_dim_c = 3
-    lsq_wgt_exp = 2
-    cell_domain = h_grid.domain(dims.CellDim)
-
-    min_rlcell_int = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-    experiment = Experiments.MCH_CH_R04B09
-    gm = grid_utils.get_grid_manager_from_identifier(
-        experiment.grid,
-        num_levels=1,
-        keep_skip_values=True,
-        allocator=backend,
-    )
-    coordinates = gm.coordinates
-    cell_lat = coordinates[dims.CellDim]["lat"]
-    cell_lon = coordinates[dims.CellDim]["lon"]
-    vertex_lat = coordinates[dims.VertexDim]["lat"]
-    vertex_lon = coordinates[dims.VertexDim]["lon"]
-
-    lsq_pseudoinv = lsq_compute_coeff_cell_sphere(cell_lat, cell_lon, vertex_lat, vertex_lon, c2e2c, c2v, cell_owner_mask, grid_sphere_radius, lsq_dim_unk, lsq_dim_c, lsq_wgt_exp, min_rlcell_int)
-
-    assert test_helpers.dallclose(lsq_pseudoinv, lsq_pseudoinv)
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
