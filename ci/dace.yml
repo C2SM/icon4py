@@ -29,7 +29,7 @@ include:
   parallel:
     matrix:
       - COMPONENT: [muphys]
-        BACKEND: [dace_cpu]
+        BACKEND: [dace_cpu, dace_gpu]
         LEVEL: [integration]
   rules:
     - if: $COMPONENT == 'common'
