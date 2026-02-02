@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 
 
 def _env_flag_to_bool(name: str, default: bool) -> bool:
@@ -26,7 +27,16 @@ def _env_flag_to_bool(name: str, default: bool) -> bool:
                 "Invalid ICON4Py environment flag value: use '0 | false | off' or '1 | true | on'."
             )
 
+def _env_path(name: str, default: pathlib.Path) -> pathlib.Path:
+    value = os.environ.get(name)
+    return pathlib.Path(value) if value is not None else default
+
 
 ENABLE_GRID_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_GRID_DOWNLOAD", True)
 ENABLE_TESTDATA_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_TESTDATA_DOWNLOAD", True)
-TEST_DATA_PATH: str | None = os.environ.get("ICON4PY_TEST_DATA_PATH", None)
+
+_TEST_DATA_DIR: str = "testdata"
+TEST_DATA_PATH: pathlib.Path = _env_path(
+    "ICON4PY_TEST_DATA_PATH",
+    pathlib.Path(__file__).parents[6] / _TEST_DATA_DIR,
+)

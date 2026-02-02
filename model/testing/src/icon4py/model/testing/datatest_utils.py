@@ -9,11 +9,13 @@
 from __future__ import annotations
 
 import pathlib
+import urllib.parse
 
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.testing import definitions, serialbox
+from icon4py.model.testing.definitions import Experiment
 
 
 def get_processor_properties_for_run(
@@ -26,33 +28,60 @@ def get_ranked_data_path(base_path: pathlib.Path, comm_size: int) -> pathlib.Pat
     return base_path.absolute().joinpath(f"mpitask{comm_size}")
 
 
-#TODO (jcanton): pass comm_size directly instead of ranked_base_path
+def experiment_name_with_version(experiment: Experiment) -> str:
+    """Generate experiment name with version suffix."""
+    return f"{experiment.name}_v{experiment.version:02d}"
+
+
+def ranked_experiment_name_with_version(experiment: Experiment, comm_size: int) -> str:
+    """Generate ranked experiment name with version suffix."""
+    return f"mpitask{comm_size}_{experiment_name_with_version(experiment)}"
+
+
+def experiment_archive_filename(experiment: Experiment, comm_size: int) -> str:
+    """Generate ranked archive filename for an experiment."""
+    return f"{ranked_experiment_name_with_version(experiment, comm_size)}.tar.gz"
+
+
+def build_serialized_data_url(root_url: str, filepath: str) -> str:
+    """Build a download URL for serialized data file from root URL.
+
+    Args:
+        root_url: Root polybox URL (without /download?path=...)
+        filepath: Path of the file to download (e.g., ser_icondata/mpitask1_expname_v00.tar.gz)
+
+    Returns:
+        Complete download URL with filename parameter
+    """
+
+    return f"{root_url}/download?path=%2F&files={urllib.parse.quote(filepath)}"
+
+
 def get_datapath_for_experiment(
-    ranked_base_path: pathlib.Path,
-    experiment: definitions.Experiment = definitions.Experiments.MCH_CH_R04B09,
+    experiment: definitions.Experiment,
+    processor_props: decomposition.ProcessProperties,
 ) -> pathlib.Path:
     """Get the path to serialized data for an experiment.
-    
+
     With the flattened structure, data for an experiment is stored as:
         base_path/mpitaskX_experiment_name_version/ser_data
-    
+
     Args:
-        ranked_base_path: Path like ser_icondata/mpitaskX, used to extract rank info
         experiment: Experiment to get data path for
-        
+
     Returns:
         Path to the ser_data directory for the experiment
     """
-    from icon4py.model.testing.data_handling import experiment_name_with_version
-    
-    # Extract rank from the path name (e.g., mpitask2 -> 2)
-    path_str = ranked_base_path.name
-    rank = path_str.split("mpitask")[1] if "mpitask" in path_str else ""
-    
-    # Construct the directory name: mpitaskX_expname_vYY
-    exp_dir = f"mpitask{rank}_{experiment_name_with_version(experiment)}"
-    
-    return ranked_base_path.parent.joinpath(exp_dir, definitions.SERIALIZED_DATA_SUBDIR)
+
+    # Construct the ranked directory name: mpitaskX_expname_vYY
+    experiment_dir = ranked_experiment_name_with_version(
+        experiment,
+        processor_props.comm_size,
+    )
+
+    return definitions.serialized_data_path().joinpath(
+        experiment_dir, definitions.SERIALIZED_DATA_SUBDIR
+    )
 
 
 def create_icon_serial_data_provider(

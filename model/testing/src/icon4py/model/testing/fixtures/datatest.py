@@ -17,7 +17,7 @@ import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.testing import data_handling as data, datatest_utils as dt_utils, definitions
+from icon4py.model.testing import data_handling, datatest_utils as dt_utils, definitions
 
 
 if TYPE_CHECKING:
@@ -111,17 +111,24 @@ def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathli
 
 
 def _download_ser_data(
-    comm_size: int,
-    _ranked_data_path: pathlib.Path,
     _experiment: definitions.Experiment,
+    processor_props: decomposition.ProcessProperties,
 ) -> None:
     # not a fixture to be able to use this function outside of pytest
+
+    comm_size = processor_props.comm_size
+
     try:
-        uri = _experiment.partitioned_data[comm_size]
-        # With flattened structure, extract directly to the parent directory
-        # (ser_icondata), which will create mpitaskX_expname_vYY directories
-        # TODO (jcanton): use non-ranked base_path when passing comm_size to get_datapath_for_experiment
-        data.download_test_data(_ranked_data_path.parent, uri)
+        # Get the root URL for this communicator size
+        root_url = definitions.SERIALIZED_DATA_ROOT_URLS[comm_size]
+        # Build the directory substructure for serialized data
+        directory_url = root_url + "/" + definitions.SERIALIZED_DATA_DIR
+        # Build the archive filename for this experiment and comm_size
+        filename = dt_utils.experiment_archive_filename(_experiment, comm_size)
+        # Build the complete download URL
+        uri = dt_utils.build_serialized_data_url(directory_url, filename)
+        destination_path = dt_utils.get_datapath_for_experiment(_experiment, processor_props)
+        data_handling.download_test_data(destination_path.parent, uri)
     except KeyError as err:
         raise RuntimeError(
             f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
@@ -149,7 +156,7 @@ def download_ser_data(
     if with_mpi and experiment == definitions.Experiments.GAUSS3D:
         # TODO(msimberg): Fix? Need serialized data.
         pytest.skip("GAUSS3D experiment does not support MPI tests")
-    _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
+    _download_ser_data(experiment, processor_props)
 
 
 @pytest.fixture
@@ -160,7 +167,7 @@ def data_provider(
     processor_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
-    data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+    data_path = dt_utils.get_datapath_for_experiment(experiment, processor_props)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
 
 

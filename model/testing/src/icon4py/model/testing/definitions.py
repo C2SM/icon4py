@@ -22,28 +22,17 @@ if TYPE_CHECKING:
     from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 
 
-TEST_DATA_DIR: Final = "testdata"
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
-
-
-# TODO(havogt): The following are not definitions, refactor or move to a different place
-def get_test_data_root_path() -> pathlib.Path:
-    if config.TEST_DATA_PATH:
-        return pathlib.Path(config.TEST_DATA_PATH)
-
-    test_utils_path = pathlib.Path(__file__).parent
-    model_path = test_utils_path.parent
-    common_path = model_path.parent.parent.parent.parent
-    return common_path.parent.joinpath(TEST_DATA_DIR)
+GRID_DATA_DIR: Final = "grids"
 
 
 def serialized_data_path() -> pathlib.Path:
-    return get_test_data_root_path().joinpath(SERIALIZED_DATA_DIR)
+    return config.TEST_DATA_PATH.joinpath(SERIALIZED_DATA_DIR)
 
 
 def grids_path() -> pathlib.Path:
-    return get_test_data_root_path().joinpath("grids")
+    return config.TEST_DATA_PATH.joinpath(GRID_DATA_DIR)
 
 
 @dataclasses.dataclass
@@ -153,13 +142,20 @@ class Grids:
     )
 
 
+# Root URLs for downloading serialized data by communicator size
+SERIALIZED_DATA_ROOT_URLS: Final = {
+    1: "https://polybox.ethz.ch/index.php/s/KBsngNwwzRcMG5J",
+    2: "https://polybox.ethz.ch/index.php/s/xyz",
+    4: "https://polybox.ethz.ch/index.php/s/xyz",
+}
+
+
 @dataclasses.dataclass
 class Experiment:
     name: str
     description: str
     grid: GridDescription
     num_levels: int
-    partitioned_data: Mapping[int, str]
     version: int = 0
 
 
@@ -169,55 +165,30 @@ class Experiments:
         description="EXCLAIM Aquaplanet experiment",
         grid=Grids.R02B04_GLOBAL,
         num_levels=60,
-        partitioned_data={
-            1: "https://polybox.ethz.ch/index.php/s/2n2WpTgZFlTCTHu/download",
-            2: "https://polybox.ethz.ch/index.php/s/nTBgWgzfSBMn2zM/download",
-            4: "https://polybox.ethz.ch/index.php/s/9iq8pW4AHY5mnfc/download",
-        },
     )
     MCH_CH_R04B09: Final = Experiment(
         name="exclaim_ch_r04b09_dsl",
         description="Regional setup used by EXCLAIM to validate the icon-exclaim.",
         grid=Grids.MCH_CH_R04B09_DSL,
         num_levels=65,
-        partitioned_data={
-            1: "https://polybox.ethz.ch/index.php/s/f42nsmvgOoWZPzi/download",
-            2: "https://polybox.ethz.ch/index.php/s/ZSwAoox8WnPSmYc/download",
-            4: "https://polybox.ethz.ch/index.php/s/y7AnTai3g5eSnsC/download",
-        },
     )
     JW: Final = Experiment(
         name="exclaim_nh35_tri_jws",
         description="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
         num_levels=35,
-        partitioned_data={
-            1: "https://polybox.ethz.ch/index.php/s/5W3Z2K6pyo0egzo/download",
-            2: "https://polybox.ethz.ch/index.php/s/caPLb5TfNCZsRN6/download",
-            4: "https://polybox.ethz.ch/index.php/s/pbxteJRfpzDBWYf/download",
-        },
     )
     GAUSS3D: Final = Experiment(
         name="exclaim_gauss3d",
         description="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
         num_levels=35,
-        partitioned_data={
-            1: "https://polybox.ethz.ch/index.php/s/ZuqDIREPVits9r0/download",
-            2: "https://polybox.ethz.ch/index.php/s/LoHe823TX5KNNGn/download",
-            4: "https://polybox.ethz.ch/index.php/s/zmW4wZ3btbGLFC7/download",
-        },
     )
     WEISMAN_KLEMP_TORUS: Final = Experiment(
         name="exclaim_nh_weisman_klemp",
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
         num_levels=64,
-        partitioned_data={
-            1: "https://polybox.ethz.ch/index.php/s/ByLnyii7MMRHJbK/download",
-            2: "https://polybox.ethz.ch/index.php/s/dAq2BWe5scmj28D/download",
-            4: "https://polybox.ethz.ch/index.php/s/cw3g9KbTQZ4Ko74/download",
-        },
     )
 
 

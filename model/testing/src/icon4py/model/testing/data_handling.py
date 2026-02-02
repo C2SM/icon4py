@@ -13,36 +13,6 @@ import pathlib
 import tarfile
 
 from icon4py.model.testing import config, locking
-from icon4py.model.testing.definitions import Experiment
-
-
-def experiment_name_with_version(exp: Experiment) -> str:
-    """Generate experiment name with version suffix.
-
-    Args:
-        experiment: Experiment object
-
-    Returns:
-        Name with version in format '{name}_v{version:02d}'
-    """
-    return f"{exp.name}_v{exp.version:02d}"
-
-
-def experiment_archive_filename(exp: Experiment, comm_size: int | None = None) -> str:
-    """Generate archive filename for an experiment.
-
-    Args:
-        experiment: Experiment object
-        comm_size: Optional communicator size to prepend to filename
-
-    Returns:
-        Archive filename in format 'mpitaskX_{name}_v{version:02d}.tar.gz' if comm_size is provided,
-        otherwise '{name}_v{version:02d}.tar.gz'
-    """
-    base_name = experiment_name_with_version(exp)
-    if comm_size is not None:
-        return f"mpitask{comm_size}_{base_name}.tar.gz"
-    return f"{base_name}.tar.gz"
 
 
 def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "downloaded.tar.gz") -> None:

@@ -22,10 +22,7 @@ from pathlib import Path
 
 import typer
 
-from icon4py.model.testing.data_handling import (
-    experiment_archive_filename,
-    experiment_name_with_version,
-)
+from icon4py.model.testing import datatest_utils as dt_utils
 from icon4py.model.testing.definitions import (
     SERIALIZED_DATA_DIR,
     SERIALIZED_DATA_SUBDIR,
@@ -43,11 +40,11 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 COMM_SIZES: list[int] = [1, 2, 4]
 
 EXPERIMENTS = [
-    #Experiments.MCH_CH_R04B09,
-    #Experiments.JW,
+    # Experiments.MCH_CH_R04B09,
+    # Experiments.JW,
     Experiments.EXCLAIM_APE,
     Experiments.GAUSS3D,
-    #Experiments.WEISMAN_KLEMP_TORUS,
+    # Experiments.WEISMAN_KLEMP_TORUS,
 ]
 
 # Slurm settings
@@ -79,16 +76,16 @@ MAX_THREADS: int = 5
 # ======================================
 
 
-def get_f90exp_name(exp: Experiment) -> str:
-    return f"{exp.name}_sb"
+def get_f90exp_name(experiment: Experiment) -> str:
+    return f"{experiment.name}_sb"
 
 
-def get_nmlfile_name(exp: Experiment) -> str:
-    return f"exp.{get_f90exp_name(exp)}"
+def get_nmlfile_name(experiment: Experiment) -> str:
+    return f"exp.{get_f90exp_name(experiment)}"
 
 
-def get_slurmscript_name(exp: Experiment) -> str:
-    return f"{get_nmlfile_name(exp)}.run"
+def get_slurmscript_name(experiment: Experiment) -> str:
+    return f"{get_nmlfile_name(experiment)}.run"
 
 
 def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -272,14 +269,16 @@ def wait_for_success(job_id: str) -> None:
         time.sleep(JOB_POLL_SECONDS)
 
 
-def copy_ser_data(exp, comm_size: int) -> Path:
-    exp_dir = EXPERIMENTS_DIR / get_f90exp_name(exp)
+def copy_ser_data(experiment, comm_size: int) -> Path:
+    exp_dir = EXPERIMENTS_DIR / get_f90exp_name(experiment)
     src_dir = exp_dir / "ser_data"
     if not src_dir.exists():
         raise FileNotFoundError(f"Missing ser_data folder: {src_dir}")
 
     # Flattened structure: OUTPUT_ROOT/mpitaskX_expname_vYY/
-    dest_dir = OUTPUT_ROOT / f"mpitask{comm_size}_{experiment_name_with_version(exp)}"
+    dest_dir = (
+        OUTPUT_ROOT / f"mpitask{comm_size}_{dt_utils.experiment_name_with_version(experiment)}"
+    )
     dest_dir.parent.mkdir(parents=True, exist_ok=True)
 
     if dest_dir.exists():
@@ -298,8 +297,8 @@ def copy_ser_data(exp, comm_size: int) -> Path:
     return dest_dir
 
 
-def tar_folder(folder: Path, exp: Experiment, comm_size: int) -> Path:
-    tar_path = folder.parent / experiment_archive_filename(exp, comm_size)
+def tar_folder(folder: Path, experiment: Experiment, comm_size: int) -> Path:
+    tar_path = folder.parent / dt_utils.experiment_archive_filename(experiment, comm_size)
     if tar_path.exists():
         tar_path.unlink()
 
@@ -311,24 +310,25 @@ def tar_folder(folder: Path, exp: Experiment, comm_size: int) -> Path:
     return tar_path
 
 
-def generate_update_script(exp: Experiment) -> None:
+def generate_update_script(experiment: Experiment) -> None:
     # copy namelist file from repo to build_dir
     shutil.copy2(
-        ICONF90_DIR / "run" / get_nmlfile_name(exp), RUNSCRIPTS_DIR / get_nmlfile_name(exp)
+        ICONF90_DIR / "run" / get_nmlfile_name(experiment),
+        RUNSCRIPTS_DIR / get_nmlfile_name(experiment),
     )
 
     # run make_runscript
     os.chdir(BUILD_DIR)
-    cmd = ["./make_runscripts", get_f90exp_name(exp)]
+    cmd = ["./make_runscripts", get_f90exp_name(experiment)]
     _ = run_command(cmd)
 
 
-def run_experiment(exp: Experiment, comm_size: int) -> None:
+def run_experiment(experiment: Experiment, comm_size: int) -> None:
     """Execute a single experiment with the given communicator size."""
     try:
-        generate_update_script(exp)
+        generate_update_script(experiment)
 
-        script_path = RUNSCRIPTS_DIR / get_slurmscript_name(exp)
+        script_path = RUNSCRIPTS_DIR / get_slurmscript_name(experiment)
         if not script_path.exists():
             raise FileNotFoundError(f"Missing slurm script: {script_path}")
 
@@ -336,28 +336,28 @@ def run_experiment(exp: Experiment, comm_size: int) -> None:
         extra_mpi_ranks = parse_extra_mpi_ranks(script_path)
 
         log_status(
-            f"Setting up {exp.name} with {comm_size} ranks"
+            f"Setting up {experiment.name} with {comm_size} ranks"
             + (f" + {extra_mpi_ranks} extra" if extra_mpi_ranks > 0 else "")
         )
         os.chdir(RUNSCRIPTS_DIR)
         update_slurm_variables(script_path)
         update_slurm_ranks(script_path, comm_size, extra_mpi_ranks)
 
-        log_status(f"Submitting {exp.name} with {comm_size} ranks")
+        log_status(f"Submitting {experiment.name} with {comm_size} ranks")
         job_id = submit_job(script_path)
 
-        log_status(f"Waiting for {exp.name} (ranks={comm_size}, job_id={job_id})")
+        log_status(f"Waiting for {experiment.name} (ranks={comm_size}, job_id={job_id})")
         wait_for_success(job_id)
 
-        log_status(f"Copying ser_data for {exp.name} with {comm_size} ranks")
-        dest_dir = copy_ser_data(exp, comm_size)
+        log_status(f"Copying ser_data for {experiment.name} with {comm_size} ranks")
+        dest_dir = copy_ser_data(experiment, comm_size)
 
-        log_status(f"Creating tar archive for {exp.name} with {comm_size} ranks")
-        tar_folder(dest_dir, exp, comm_size)
+        log_status(f"Creating tar archive for {experiment.name} with {comm_size} ranks")
+        tar_folder(dest_dir, experiment, comm_size)
 
-        log_status(f"Completed {exp.name} with {comm_size} ranks")
+        log_status(f"Completed {experiment.name} with {comm_size} ranks")
     except Exception as e:
-        log_status(f"ERROR in {exp.name} with {comm_size} ranks: {e}")
+        log_status(f"ERROR in {experiment.name} with {comm_size} ranks: {e}")
         raise
 
 
@@ -372,16 +372,16 @@ def run_experiment_series() -> None:
     )
 
     for rank_idx, comm_size in enumerate(COMM_SIZES, 1):
-        num_exps = len(EXPERIMENTS)
+        num_experiments = len(EXPERIMENTS)
         log_status(
-            f"Starting communicator size {rank_idx}/{len(COMM_SIZES)}: {comm_size} ranks ({num_exps} experiments parallel)"
+            f"Starting communicator size {rank_idx}/{len(COMM_SIZES)}: {comm_size} ranks ({num_experiments} experiments parallel)"
         )
 
         with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
             futures = []
 
-            for exp in EXPERIMENTS:
-                future = executor.submit(run_experiment, exp, comm_size)
+            for experiment in EXPERIMENTS:
+                future = executor.submit(run_experiment, experiment, comm_size)
                 futures.append(future)
 
             log_status(
