@@ -27,6 +27,7 @@ def _env_flag_to_bool(name: str, default: bool) -> bool:
                 "Invalid ICON4Py environment flag value: use '0 | false | off' or '1 | true | on'."
             )
 
+
 def _env_path(name: str, default: pathlib.Path) -> pathlib.Path:
     value = os.environ.get(name)
     return pathlib.Path(value) if value is not None else default
