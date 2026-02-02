@@ -238,7 +238,7 @@ def update_slurm_ranks(script_path: Path, mpi_ranks: int, extra_mpi_ranks: int =
 
 def submit_job(script_path: Path) -> str:
     cmd = ["sbatch", str(script_path)]
-    result = run_command(cmd)
+    result = run_command(cmd, cwd=RUNSCRIPTS_DIR)
     match = re.search(r"Submitted batch job\s+(\d+)", result.stdout)
     if not match:
         raise RuntimeError(f"Unable to parse job id from sbatch output: {result.stdout}")
