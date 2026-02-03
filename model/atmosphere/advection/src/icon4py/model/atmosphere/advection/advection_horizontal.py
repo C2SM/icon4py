@@ -9,6 +9,7 @@
 import logging
 from abc import ABC, abstractmethod
 
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
@@ -224,6 +225,18 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             compute_horizontal_tracer_flux_from_linear_coefficients_alt.with_backend(self._backend)
         )
 
+        # lsq coefficients
+        self._lsq_pseudoinv_1 = gtx.as_field(
+            (dims.CellDim, dims.C2E2CDim),
+            self._least_squares_state[:, 0, :],
+            allocator=self._backend,
+        )
+        self._lsq_pseudoinv_2 = gtx.as_field(
+            (dims.CellDim, dims.C2E2CDim),
+            self._least_squares_state[:, 1, :],
+            allocator=self._backend,
+        )
+
     def compute_tracer_flux(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
@@ -240,8 +253,8 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         log.debug("running stencil reconstruct_linear_coefficients_svd - start")
         self._reconstruct_linear_coefficients_svd(
             p_cc=p_tracer_now,
-            lsq_pseudoinv_1=self._least_squares_state.lsq_pseudoinv_1,
-            lsq_pseudoinv_2=self._least_squares_state.lsq_pseudoinv_2,
+            lsq_pseudoinv_1=self._lsq_pseudoinv_1,
+            lsq_pseudoinv_2=self._lsq_pseudoinv_2,
             p_coeff_1_dsl=self._p_coeff_1,
             p_coeff_2_dsl=self._p_coeff_2,
             p_coeff_3_dsl=self._p_coeff_3,
@@ -427,7 +440,6 @@ class SemiLagrangian(FiniteVolume):
         tracer_flux: SemiLagrangianTracerFlux,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
-        least_squares_state: advection_states.AdvectionLeastSquaresState,
         metric_state: advection_states.AdvectionMetricState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
@@ -440,7 +452,6 @@ class SemiLagrangian(FiniteVolume):
         self._tracer_flux = tracer_flux
         self._grid = grid
         self._interpolation_state = interpolation_state
-        self._least_squares_state = least_squares_state
         self._metric_state = metric_state
         self._edge_params = edge_params
         self._cell_params = cell_params

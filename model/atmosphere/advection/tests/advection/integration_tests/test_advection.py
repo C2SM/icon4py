@@ -23,7 +23,12 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, grid_utils, serialbox as sb
+from icon4py.model.testing import (
+    definitions,
+    grid_utils,
+    grid_utils as gridtest_utils,
+    serialbox as sb,
+)
 from icon4py.model.testing.definitions import Experiments
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -45,7 +50,6 @@ from ..utils import (
     construct_diagnostic_exit_state,
     construct_diagnostic_init_state,
     construct_interpolation_state,
-    construct_least_squares_state,
     construct_metric_state,
     construct_prep_adv,
     log_serialized,
@@ -125,6 +129,7 @@ def test_advection_run_single_step(
     backend,
     advection_init_savepoint,
     advection_exit_savepoint,
+    experiment: definitions.Experiment,
 ):
     # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
     if (
@@ -141,7 +146,22 @@ def test_advection_run_single_step(
         vertical_advection_limiter=vertical_advection_limiter,
     )
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
-    least_squares_state = construct_least_squares_state(interpolation_savepoint, backend=backend)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
+    least_squares_state = lsq_compute_coeff_cell_sphere(
+        cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
+        cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
+        c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
+        cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
+        grid_sphere_radius=constants.EARTH_RADIUS,
+        lsq_dim_unk=2,
+        lsq_dim_c=3,
+        lsq_wgt_exp=2,
+        lsq_dim_stencil=3,
+        start_idx=icon_grid.start_index(
+            h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        ),
+        min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
+    )
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
@@ -199,12 +219,7 @@ def test_lsq_compute_coeff_cell_sphere(
     interpolation_savepoint,
     experiment,
 ) -> None:
-    gm = grid_utils.get_grid_manager_from_identifier(
-        experiment.grid,
-        num_levels=1,
-        keep_skip_values=True,
-        allocator=backend,
-    )
+    gm = gridtest_utils.get_grid_geometry(backend, experiment)
 
     c2e2c = gm.grid.connectivities["C2E2C"].asnumpy()
     cell_owner_mask = grid_savepoint.c_owner_mask().asnumpy()

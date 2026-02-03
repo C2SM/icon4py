@@ -413,7 +413,6 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 tracer_flux=tracer_flux,
                 grid=grid,
                 interpolation_state=interpolation_state,
-                least_squares_state=least_squares_state,
                 metric_state=metric_state,
                 edge_params=edge_params,
                 cell_params=cell_params,
