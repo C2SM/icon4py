@@ -873,12 +873,6 @@ def test_halo_neighbor_access_v2c(
         global_reference_field=reference.asnumpy(),
         local_field=output.asnumpy(),
     )
-    nn = np.where(single_node_grid.get_connectivity(dims.V2C).asnumpy() == 3855)
-    if processor_props.rank == 0:
-        print(nn)
-        print(single_node_grid.get_connectivity(dims.V2C).asnumpy()[nn[0]])
-
-    print(f"rank={processor_props.rank}/{processor_props.comm_size}: ")
 
 
 @pytest.mark.mpi
