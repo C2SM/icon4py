@@ -50,6 +50,9 @@ class CupyLikeStream(Protocol):
     This means they have an attribute `ptr` that returns the address of the
     underlying GPU stream.
     See: https://docs.cupy.dev/en/stable/reference/generated/cupy.cuda.Stream.html#cupy-cuda-stream
+
+    Todo:
+        Drop once we fully translated to CuPy 14.
     """
 
     @property
