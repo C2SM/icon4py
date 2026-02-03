@@ -23,10 +23,6 @@ def get_processor_properties_for_run(
     return decomposition.get_processor_properties(run_instance)
 
 
-def get_ranked_data_path(base_path: pathlib.Path, comm_size: int) -> pathlib.Path:
-    return base_path.absolute().joinpath(f"mpitask{comm_size}")
-
-
 def get_experiment_name_with_version(experiment: definitions.Experiment) -> str:
     """Generate experiment name with version suffix."""
     return f"{experiment.name}_v{experiment.version:02d}"
@@ -55,12 +51,10 @@ def get_datapath_for_experiment(
 ) -> pathlib.Path:
     """Get the path to serialized data for an experiment."""
 
-    # Construct the ranked directory name: mpitaskX_expname_vYY
     experiment_dir = get_ranked_experiment_name_with_version(
         experiment,
         processor_props.comm_size,
     )
-
     return definitions.serialized_data_path().joinpath(
         experiment_dir, definitions.SERIALIZED_DATA_SUBDIR
     )

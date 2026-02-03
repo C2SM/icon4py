@@ -391,7 +391,6 @@ def test_driver(
     processor_props,
     *,
     data_provider,
-    ranked_data_path,
     backend_like,
 ):
     """

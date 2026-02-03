@@ -103,13 +103,6 @@ def processor_props(request: pytest.FixtureRequest) -> decomposition.ProcessProp
     return decomposition.get_processor_properties(runtype)
 
 
-@pytest.fixture(scope="session")
-def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathlib.Path:
-    return dt_utils.get_ranked_data_path(
-        definitions.serialized_data_path(), processor_props.comm_size
-    )
-
-
 def _download_ser_data(
     _experiment: definitions.Experiment,
     processor_props: decomposition.ProcessProperties,
@@ -133,7 +126,6 @@ def _download_ser_data(
 def download_ser_data(
     request: pytest.FixtureRequest,
     processor_props: decomposition.ProcessProperties,
-    ranked_data_path: pathlib.Path,
     experiment: definitions.Experiment,
     pytestconfig: pytest.Config,
 ) -> None:
@@ -156,7 +148,6 @@ def download_ser_data(
 @pytest.fixture
 def data_provider(
     download_ser_data: None,  # downloads data as side-effect
-    ranked_data_path: pathlib.Path,
     experiment: definitions.Experiment,
     processor_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,

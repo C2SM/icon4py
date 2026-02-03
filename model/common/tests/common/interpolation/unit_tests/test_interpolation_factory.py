@@ -37,7 +37,6 @@ from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
     interpolation_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 

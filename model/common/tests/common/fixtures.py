@@ -39,7 +39,6 @@ from icon4py.model.testing.fixtures.datatest import (
     model_top_height,
     ndyn_substeps,
     processor_props,
-    ranked_data_path,
     stretch_factor,
     topography_savepoint,
 )
