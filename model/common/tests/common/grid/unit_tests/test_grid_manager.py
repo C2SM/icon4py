@@ -570,7 +570,7 @@ def test_limited_area_on_grid(grid_descriptor: definitions.GridDescription, expe
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.horizontal_dims())
-def test_decomposition_info_single_node(
+def test_decomposition_info_single_rank(
     dim: gtx.Dimension,
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
