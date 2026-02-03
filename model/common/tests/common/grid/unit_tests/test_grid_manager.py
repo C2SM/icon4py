@@ -53,6 +53,7 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
+    global_grid_descriptor,
     grid_savepoint,
     processor_props,
     ranked_data_path,
@@ -644,3 +645,19 @@ def test_local_connectivity(
         assert np.count_nonzero(
             (connectivity[level_index] == gridfile.GridFile.INVALID_INDEX) > 0
         ), f"missing invalid index in {dim} - offset {field_offset}"
+
+
+@pytest.mark.parametrize("ranks", (2, 3, 4))
+def test_decomposition_size(
+    ranks: int,
+    global_grid_descriptor: test_defs.GridDescription,
+) -> None:
+    decomposer = halo.MetisDecomposer()
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
+    with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
+        partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
+        sizes = [np.count_nonzero(partitions == r) for r in range(ranks)]
+        # Verify that sizes are close to each other. This is not a hard
+        # requirement, but simply a sanity check to make sure that partitions
+        # are relatively balanced.
+        assert max(sizes) - min(sizes) <= 2
