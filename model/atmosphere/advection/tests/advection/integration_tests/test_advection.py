@@ -219,7 +219,12 @@ def test_lsq_compute_coeff_cell_sphere(
     interpolation_savepoint,
     experiment,
 ) -> None:
-    gm = gridtest_utils.get_grid_geometry(backend, experiment)
+    gm = grid_utils.get_grid_manager_from_identifier(
+        experiment.grid,
+        num_levels=1,
+        keep_skip_values=True,
+        allocator=backend,
+    )
 
     c2e2c = gm.grid.connectivities["C2E2C"].asnumpy()
     cell_owner_mask = grid_savepoint.c_owner_mask().asnumpy()
