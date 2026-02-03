@@ -39,7 +39,9 @@ ENV CC=/usr/bin/cuda-gcc
 ENV CXX=/usr/bin/cuda-g++
 ENV CUDAHOSTCXX=/usr/bin/cuda-g++
 
-# Install OpenMPI configured with libfabric, libcxi, and gdrcopy support for use on Alps.
+# Install OpenMPI configured with libfabric, libcxi, and gdrcopy support for use
+# on Alps. This is based on examples in
+# https://github.com/eth-cscs/cray-network-stack.
 ARG gdrcopy_version=2.5.1
 RUN set -eux; \
     git clone --depth 1 --branch "v${gdrcopy_version}" https://github.com/NVIDIA/gdrcopy.git; \
@@ -88,7 +90,8 @@ RUN set -eux; \
     rm -rf /xpmem; \
     ldconfig
 
-# NOTE: xpmem is not found correctly without setting the prefix in --enable-xpmem
+# NOTE: xpmem is not found correctly without setting the prefix explicitly in
+# --enable-xpmem
 ARG libfabric_version=v2.4.0
 RUN set -eux; \
     git clone --depth 1 --branch "${libfabric_version}" https://github.com/ofiwg/libfabric.git; \
@@ -98,9 +101,7 @@ RUN set -eux; \
       --with-cuda \
       --enable-xpmem=/usr \
       --enable-tcp \
-      --enable-cxi \
-      --enable-lnx \
-      --enable-shm; \
+      --enable-cxi; \
     make -j"$(nproc)" install; \
     cd /; \
     rm -rf /libfabric; \
