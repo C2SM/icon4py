@@ -468,6 +468,8 @@ class MetisDecomposer(Decomposer):
 
         import pymetis  # type: ignore [import-untyped]
 
+        # The partitioning is done on all ranks, and this assumes that the
+        # partitioning is deterministic.
         _, partition_index = pymetis.part_graph(nparts=num_partitions, adjacency=adjacency_matrix)
         return data_alloc.array_ns_from_array(adjacency_matrix).array(partition_index)
 
