@@ -286,8 +286,8 @@ class IconLikeHaloConstructor(HaloConstructor):
              Cells (c0, c1, c2) are the 1. HALO LEVEL: these are cells that are neighbors of an owned cell
              Cells (c3, c4. c5) are the 2. HALO LEVEL: cells that "close" the hexagon of a vertex on the cutting line and do not share an edge with an owned cell (that is are not LEVEL 1 cells)
                                                        this is _not_ the same as the neighboring cells of LEVEL 1 cells, and the definition might be different from ICON.
-                                                       In the above picture if the cut was along a corner (e0 -> e1-> e8) then cy is part of the 2. LEVEL because it is part of the hexagon on v2, but it is not
-                                                       in c2e2c(c2e2c(c4))
+                                                       In the above picture if the cut was along a corner (e0 -> e1 -> e7) then cz is part of the 2. LEVEL because it is part of the hexagon on v2, but it is not
+                                                       in c2e2c2e2c(c1).
 
              Note that this definition of 1. and 2. line differs from the definition of boundary line counting used in [grid refinement](grid_refinement.py), in terms
              of "distance" to the cutting line all halo cells have a distance of 1.
@@ -308,7 +308,7 @@ class IconLikeHaloConstructor(HaloConstructor):
              For edges a similar pattern is used as for the vertices.
              - 1. HALO LEVEL: edges that are on owned cells but not owned themselves (these are edges that share 2 vertices with a owned cell).
              In terms of ownership the same convention is applied as for the vertices: (e0, e1, e2, e3) are in the HALO LEVEL 1 of rank 0, and are owned by rank 1
-             - 2. HALO LEVEL: edges that share exactly one vertex with an owned cell. The definition via vertices is important: TODO (halungge): EXAMPLE???
+             - 2. HALO LEVEL: edges that share exactly one vertex with an owned cell. The definition via vertices is important: see example above with a cut along e0 -> e1 -> e7.
              For rank 0 these are the edges (e4, e5, e6, e7, e8, e9, e10) in the example above.
              - 3. HALO LEVEL:
              In **ICON4Py ONLY**, edges that "close" the halo cells and share exactly 2 vertices with a HALO LEVEL 2 cell, but none with
