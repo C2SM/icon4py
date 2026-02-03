@@ -172,9 +172,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         self, source_indices: data_alloc.NDArray, connectivity: data_alloc.NDArray
     ) -> data_alloc.NDArray:
         """Get a flattened list of all (unique) neighbors to a given global index list"""
-        neighbors = connectivity[source_indices, :]
-        shp = neighbors.shape
-        return self._xp.unique(neighbors.reshape(shp[0] * shp[1]))
+        return self._xp.unique(connectivity[source_indices, :].flatten())
 
     def _find_cell_neighbors(self, cells: data_alloc.NDArray) -> data_alloc.NDArray:
         """Find all neighboring cells of a list of cells."""
