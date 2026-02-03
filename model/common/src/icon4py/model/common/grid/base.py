@@ -15,17 +15,13 @@ from types import ModuleType
 import gt4py.next as gtx
 from gt4py.next import allocators as gtx_allocators, common as gtx_common
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 _log = logging.getLogger(__name__)
-
-
-class MissingConnectivity(ValueError):
-    pass
 
 
 class GeometryType(enum.Enum):
@@ -159,7 +155,7 @@ class Grid:
         if isinstance(offset, gtx.FieldOffset):
             offset = offset.value
         if offset not in self.connectivities:
-            raise MissingConnectivity(
+            raise exceptions.MissingConnectivityError(
                 f"Missing connectivity for offset {offset} in grid {self.id}."
             )
         connectivity = self.connectivities[offset]

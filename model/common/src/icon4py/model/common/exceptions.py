@@ -29,5 +29,5 @@ class IconGridError(RuntimeError):
     pass
 
 
-class MissingConnectivity(ValueError):
+class MissingConnectivityError(ValueError):
     pass

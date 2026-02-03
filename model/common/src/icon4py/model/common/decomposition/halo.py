@@ -145,7 +145,7 @@ class IconLikeHaloConstructor(HaloConstructor):
             conn_table = self._connectivities.get(_value(offset))
             return conn_table
         except KeyError as err:
-            raise exceptions.MissingConnectivity(
+            raise exceptions.MissingConnectivityError(
                 f"Connectivity for offset {offset} is not available"
             ) from err
 
