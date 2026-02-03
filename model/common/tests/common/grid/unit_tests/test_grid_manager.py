@@ -65,9 +65,6 @@ from .. import utils
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 
-ZERO_BASE = icon4py.model.common.grid.gridfile.ToZeroBasedIndexTransformation()
-
-
 # TODO @magdalena add test cases for hexagon vertices v2e2v
 # v2e2v: grid,???
 
