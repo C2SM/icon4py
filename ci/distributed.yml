@@ -39,21 +39,21 @@ build_distributed_baseimage_aarch64:
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
 
-.build_distributed_cpu:
+.build_distributed:
   extends: [.build_distributed_template]
   variables:
     UV_PROJECT_ENVIRONMENT: venv_dist
 
-build_distributed_cpu:
+build_distributed:
   stage: image
-  extends: [.container-builder-cscs-gh200, .build_distributed_cpu]
+  extends: [.container-builder-cscs-gh200, .build_distributed]
   needs: [build_distributed_baseimage_aarch64]
 
 .test_template_distributed:
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
-  extends: [.container-runner-santis-gh200, .build_distributed_cpu]
-  needs: [build_distributed_cpu]
+  extends: [.container-runner-santis-gh200, .build_distributed]
+  needs: [build_distributed]
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_CPU_BIND: 'verbose'
