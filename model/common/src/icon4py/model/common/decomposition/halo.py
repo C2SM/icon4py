@@ -167,9 +167,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
         cells_so_far = self._xp.hstack((depot, cells)) if depot is not None else cells
 
-        next_halo_cells = self._xp.setdiff1d(
-            self._xp.unique(cell_neighbors), cells_so_far, assume_unique=True
-        )
+        next_halo_cells = self._xp.setdiff1d(cell_neighbors, cells_so_far, assume_unique=True)
         return next_halo_cells
 
     def _find_neighbors(
