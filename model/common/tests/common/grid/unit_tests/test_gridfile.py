@@ -21,6 +21,7 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
+    global_grid_descriptor,
     grid_savepoint,
     processor_props,
     ranked_data_path,
@@ -78,12 +79,11 @@ def test_grid_file_vertex_cell_edge_dimensions(
         parser.close()
 
 
-@pytest.mark.parametrize("grid_descriptor", (definitions.Grids.R02B04_GLOBAL,))
 @pytest.mark.parametrize("apply_transformation", (True, False))
 def test_int_variable(
-    grid_descriptor: definitions.GridDescription, apply_transformation: bool
+    global_grid_descriptor: definitions.GridDescription, apply_transformation: bool
 ) -> None:
-    file = gridtest_utils.resolve_full_grid_file_name(grid_descriptor)
+    file = gridtest_utils.resolve_full_grid_file_name(global_grid_descriptor)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         edge_dim = parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
         # use a test field that does not contain Pentagons
@@ -96,27 +96,22 @@ def test_int_variable(
         assert max_value == np.max(test_field)
 
 
-def index_selection() -> Iterable[list[int]]:
-    return (
-        x
-        for x in [
-            [0, 1, 2, 3, 4, 5],
-            [],
-            [0, 2, 4, 6, 7, 8, 24, 57],
-            [1, 2, 12, 13, 23, 24, 2306],
-        ]
-    )
+_index_selection: Iterable[list[int]] = [
+    [0, 1, 2, 3, 4, 5],
+    [],
+    [0, 2, 4, 6, 7, 8, 24, 57],
+    [1, 2, 12, 13, 23, 24, 2306],
+]
 
 
 @pytest.mark.parametrize(
     "selection",
-    index_selection(),
+    _index_selection,
 )
-@pytest.mark.parametrize("grid_descriptor", (definitions.Grids.R02B04_GLOBAL,))
 def test_index_read_for_1d_fields(
-    grid_descriptor: definitions.GridDescription, selection: list[int]
+    global_grid_descriptor: definitions.GridDescription, selection: list[int]
 ) -> None:
-    file = gridtest_utils.resolve_full_grid_file_name(grid_descriptor)
+    file = gridtest_utils.resolve_full_grid_file_name(global_grid_descriptor)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
         full_field = parser.variable(gridfile.CoordinateName.CELL_LATITUDE)
@@ -128,25 +123,31 @@ def test_index_read_for_1d_fields(
 
 @pytest.mark.parametrize(
     "selection",
-    index_selection(),
+    _index_selection,
 )
-@pytest.mark.parametrize("grid_descriptor", (definitions.Grids.R02B04_GLOBAL,))
 @pytest.mark.parametrize(
     "field",
-    (gridfile.ConnectivityName.V2E, gridfile.ConnectivityName.V2C, gridfile.ConnectivityName.E2V),
+    (
+        gridfile.ConnectivityName.V2E,
+        gridfile.ConnectivityName.V2C,
+        gridfile.ConnectivityName.E2V,
+    ),
 )
 @pytest.mark.parametrize("apply_offset", (True, False))
 def test_index_read_for_2d_connectivity(
-    grid_descriptor: definitions.GridDescription,
+    global_grid_descriptor: definitions.GridDescription,
     selection: list[int],
     field: gridfile.FieldName,
     apply_offset: bool,
 ) -> None:
-    file = gridtest_utils.resolve_full_grid_file_name(grid_descriptor)
+    file = gridtest_utils.resolve_full_grid_file_name(global_grid_descriptor)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
         full_field = parser.int_variable(field, transpose=True, apply_transformation=apply_offset)
         selective_field = parser.int_variable(
-            field, indices=indices_to_read, transpose=True, apply_transformation=apply_offset
+            field,
+            indices=indices_to_read,
+            transpose=True,
+            apply_transformation=apply_offset,
         )
         assert np.allclose(full_field[indices_to_read], selective_field)
