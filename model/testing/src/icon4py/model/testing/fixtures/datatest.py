@@ -21,8 +21,6 @@ from icon4py.model.testing import data_handling, datatest_utils as dt_utils, def
 
 
 if TYPE_CHECKING:
-    import pathlib
-
     from icon4py.model.testing import serialbox
 
 
