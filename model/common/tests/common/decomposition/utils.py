@@ -16,20 +16,24 @@ from icon4py.model.common.decomposition import definitions
 
 
 """
-TESTDATA using the [SimpleGrid](../../../src/icon4py/model/common/grid/simple.py)
-The distribution maps all of the 18 cells of the simple grid to ranks 0..3
+TESTDATA using the
+[SimpleGrid](../../../src/icon4py/model/common/grid/simple.py) The distribution
+maps all of the 18 cells of the simple grid to ranks 0..3.
 
-the dictionaries contain the mapping from rank to global (in the simple grid) index of the dimension:
-_CELL_OWN: rank -> owned cells, essentially the inversion of the SIMPLE_DISTRIBUTION
-_EDGE_OWN: rank -> owned edges
-_VERTEX_OWN: rank -> owned vertices
+The dictionaries contain the mapping from rank to global (in the simple grid)
+index of the dimension:
+- _CELL_OWN: rank -> owned cells, essentially the inversion of the
+  SIMPLE_DISTRIBUTION
+- _EDGE_OWN: rank -> owned edges
+ - _VERTEX_OWN: rank -> owned vertices
 
-the decision as to whether a "secondary" dimension (edge, vertices) is owned by a rank are made according to the
-rules and conventions described in (../../../src/icon4py/model/common/decomposition/halo.py)
+The decision as to whether a "secondary" dimension (edge, vertices) is owned by
+a rank are made according to the rules and conventions described in
+(../../../src/icon4py/model/common/decomposition/halo.py).
 
 
 _CELL_FIRST_HALO_LINE:
-_CELL_SECON_HALO_LINE:
+_CELL_SECOND_HALO_LINE:
 _EDGE_FIRST_HALO_LINE:
 _EDGE_SECOND_HALO_LINE:
 _VERTEX_FIRST_HALO_LINE:
