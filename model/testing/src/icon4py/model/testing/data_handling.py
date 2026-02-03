@@ -17,19 +17,41 @@ import tempfile
 from icon4py.model.testing import config, locking
 
 
-def download_and_extract(uri: str, dst: pathlib.Path) -> None:
+def download_and_extract(
+    uri: str,
+    dst: pathlib.Path,
+) -> None:
     """
-    Download data archive from remote server.
+    Download and extract a tar file with locking and retry logic.
 
-    Downloads a tar file at `uri` and extracts it.
     Args:
         uri: download url for archived data
         dst: the archive is extracted at this path
 
     Downloads to a temporary directory in the destination directory
-    (not /tmp to avoid space constraints)
+    (not /tmp to avoid space constraints).
     """
     dst.mkdir(parents=True, exist_ok=True)
+
+    completion_marker = dst / ".download_complete"
+    lockfile = "filelock.lock"
+
+    with locking.lock(dst, lockfile=lockfile):
+        if completion_marker.exists():
+            return
+        # Clean up any partial data from previous failed attempts
+        # (except for the lockfile)
+        for item in dst.iterdir():
+            if item.name != lockfile:
+                if item.is_file():
+                    item.unlink()
+                elif item.is_dir():
+                    shutil.rmtree(item)
+        _perform_download(uri, dst)
+        completion_marker.touch()
+
+
+def _perform_download(uri: str, dst: pathlib.Path) -> None:
     try:
         import wget  # type: ignore[import-untyped]
     except ImportError as err:
@@ -46,24 +68,7 @@ def download_and_extract(uri: str, dst: pathlib.Path) -> None:
 
 def download_test_data(dst: pathlib.Path, uri: str) -> None:
     if config.ENABLE_TESTDATA_DOWNLOAD:
-        dst.mkdir(parents=True, exist_ok=True)
-
-        lockfile = "filelock.lock"
-        completion_marker = dst / ".download_complete"
-
-        with locking.lock(dst, lockfile=lockfile):
-            if not completion_marker.exists():
-                # Clean up any partial data from previous failed attempts
-                # (except the lockfile)
-                for item in dst.iterdir():
-                    if item.name != lockfile:
-                        if item.is_file():
-                            item.unlink()
-                        elif item.is_dir():
-                            shutil.rmtree(item)
-
-                download_and_extract(uri, dst)
-                completion_marker.touch()
+        download_and_extract(uri, dst)
     else:
         # If test data download is disabled, we check if the directory exists
         # and isn't empty without locking. We assume the location is managed by the user
