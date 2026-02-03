@@ -35,12 +35,17 @@ def download_and_extract(uri: str, dst: pathlib.Path) -> None:
     except ImportError as err:
         raise RuntimeError(f"To download data file from {uri}, please install `wget`") from err
 
-    with tempfile.NamedTemporaryFile(delete=True, suffix=".tar.gz", dir=dst) as temp_file:
-        wget.download(uri, out=temp_file.name)
-        if not tarfile.is_tarfile(temp_file.name):
-            raise OSError(f"{temp_file.name} needs to be a valid tar file")
-        with tarfile.open(temp_file.name, mode="r:*") as tf:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".tar.gz", dir=dst) as temp_file:
+        temp_path = temp_file.name
+    # File (handle) is now closed, wget can write to it (otherwise it's locked)
+    try:
+        wget.download(uri, out=temp_path)
+        if not tarfile.is_tarfile(temp_path):
+            raise OSError(f"{temp_path} needs to be a valid tar file")
+        with tarfile.open(temp_path, mode="r:*") as tf:
             tf.extractall(path=dst)
+    finally:
+        pathlib.Path(temp_path).unlink(missing_ok=True)
 
 
 def download_test_data(dst: pathlib.Path, uri: str) -> None:
