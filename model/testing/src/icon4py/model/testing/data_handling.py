@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import shutil
 import tarfile
 import tempfile
 
@@ -45,13 +46,23 @@ def download_and_extract(uri: str, dst: pathlib.Path) -> None:
 def download_test_data(dst: pathlib.Path, uri: str) -> None:
     if config.ENABLE_TESTDATA_DOWNLOAD:
         dst.mkdir(parents=True, exist_ok=True)
-        # Explicitly specify the lockfile name to make sure that os.listdir sees
-        # it if it's created in dst.
+
         lockfile = "filelock.lock"
+        completion_marker = dst / ".download_complete"
+
         with locking.lock(dst, lockfile=lockfile):
-            files = os.listdir(dst)
-            if len(files) == 0 or (len(files) == 1 and files[0] == lockfile):
+            if not completion_marker.exists():
+                # Clean up any partial data from previous failed attempts
+                # (except the lockfile)
+                for item in dst.iterdir():
+                    if item.name != lockfile:
+                        if item.is_file():
+                            item.unlink()
+                        elif item.is_dir():
+                            shutil.rmtree(item)
+
                 download_and_extract(uri, dst)
+                completion_marker.touch()
     else:
         # If test data download is disabled, we check if the directory exists
         # and isn't empty without locking. We assume the location is managed by the user
