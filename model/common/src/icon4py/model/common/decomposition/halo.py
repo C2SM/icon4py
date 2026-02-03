@@ -84,33 +84,9 @@ class IconLikeHaloConstructor(HaloConstructor):
         self._connectivities = {_value(k): v for k, v in connectivities.items()}
         self._assert_all_neighbor_tables()
 
-    @property
-    def face_face_connectivity(self) -> data_alloc.NDArray:
-        return self._connectivity(dims.C2E2C)
-
-    @property
-    def edge_face_connectivity(self) -> data_alloc.NDArray:
-        return self._connectivity(dims.E2C)
-
-    @property
-    def face_edge_connectivity(self) -> data_alloc.NDArray:
-        return self._connectivity(dims.C2E)
-
-    @property
-    def node_edge_connectivity(self) -> data_alloc.NDArray:
-        return self._connectivity(dims.V2E)
-
-    @property
-    def node_face_connectivity(self) -> data_alloc.NDArray:
-        return self._connectivity(dims.V2C)
-
-    @property
-    def face_node_connectivity(self) -> data_alloc.NDArray:
-        return self._connectivity(dims.C2V)
-
     def _validate_mapping(self, face_to_rank_mapping: data_alloc.NDArray) -> None:
         # validate the distribution mapping:
-        num_cells = self.face_face_connectivity.shape[0]
+        num_cells = self._connectivity(dims.C2E2C).shape[0]
         expected_shape = (num_cells,)
         if not face_to_rank_mapping.shape == expected_shape:
             raise exceptions.ValidationError(
@@ -169,30 +145,30 @@ class IconLikeHaloConstructor(HaloConstructor):
         return self._xp.setdiff1d(cell_neighbors, cells_so_far, assume_unique=True)
 
     def _find_neighbors(
-        self, source_indices: data_alloc.NDArray, connectivity: data_alloc.NDArray
+        self, source_indices: data_alloc.NDArray, offset: gtx.FieldOffset | str
     ) -> data_alloc.NDArray:
         """Get a flattened list of all (unique) neighbors to a given global index list"""
-        return self._xp.unique(connectivity[source_indices, :].flatten())
+        return self._xp.unique(self._connectivity(offset)[source_indices, :].flatten())
 
     def _find_cell_neighbors(self, cells: data_alloc.NDArray) -> data_alloc.NDArray:
         """Find all neighboring cells of a list of cells."""
-        return self._find_neighbors(cells, connectivity=self.face_face_connectivity)
+        return self._find_neighbors(cells, dims.C2E2C2E2C)
 
     def find_edge_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
-        return self._find_neighbors(cell_line, connectivity=self.face_edge_connectivity)
+        return self._find_neighbors(cell_line, dims.C2E)
 
     def find_edge_neighbors_for_vertices(
         self, vertex_line: data_alloc.NDArray
     ) -> data_alloc.NDArray:
-        return self._find_neighbors(vertex_line, connectivity=self.node_edge_connectivity)
+        return self._find_neighbors(vertex_line, dims.V2E)
 
     def find_vertex_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
-        return self._find_neighbors(cell_line, connectivity=self.face_node_connectivity)
+        return self._find_neighbors(cell_line, dims.C2V)
 
     def find_cell_neighbors_for_vertices(
         self, vertex_line: data_alloc.NDArray
     ) -> data_alloc.NDArray:
-        return self._find_neighbors(vertex_line, connectivity=self.node_face_connectivity)
+        return self._find_neighbors(vertex_line, dims.V2C)
 
     def owned_cells(self, face_to_rank: data_alloc.NDArray) -> data_alloc.NDArray:
         """Returns the full-grid indices of the cells owned by this rank"""
@@ -393,7 +369,7 @@ class IconLikeHaloConstructor(HaloConstructor):
             vertex_owner_mask,
             all_vertices,
             vertex_on_cutting_line,
-            self.node_face_connectivity,
+            self._connectivity(dims.V2C),
         )
         vertex_second_level = self._xp.setdiff1d(vertex_on_halo_cells, vertex_on_owned_cells)
         vertex_halo_levels = self._xp.full(
@@ -420,7 +396,7 @@ class IconLikeHaloConstructor(HaloConstructor):
             edge_owner_mask,
             all_edges,
             edges_on_cutting_line,
-            self.edge_face_connectivity,
+            self._connectivity(dims.E2C),
         )
 
         edge_halo_levels = self._xp.full(
