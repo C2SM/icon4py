@@ -455,8 +455,7 @@ class IconGridSavepoint(IconSavepoint):
                 )
 
     def owner_mask(self, dim: gtx.Dimension):
-        mask = self._read_field_for_dim("owner_mask", self._read_bool, dim)
-        return np.squeeze(mask)
+        return np.squeeze(self._read_field_for_dim("owner_mask", self._read_bool, dim))
 
     def global_index(self, dim: gtx.Dimension):
         return self._read_field_for_dim("glb_index", self._read_int32_shift1, dim)
