@@ -26,8 +26,8 @@ def download_and_extract(uri: str, dst: pathlib.Path) -> None:
         uri: download url for archived data
         dst: the archive is extracted at this path
 
-    Downloads to a temporary file in the destination directory (not /tmp)
-    to avoid space constraints during parallel execution.
+    Downloads to a temporary directory in the destination directory
+    (not /tmp to avoid space constraints)
     """
     dst.mkdir(parents=True, exist_ok=True)
     try:
@@ -35,17 +35,13 @@ def download_and_extract(uri: str, dst: pathlib.Path) -> None:
     except ImportError as err:
         raise RuntimeError(f"To download data file from {uri}, please install `wget`") from err
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".tar.gz", dir=dst) as temp_file:
-        temp_path = temp_file.name
-    # File (handle) is now closed, wget can write to it (otherwise it's locked)
-    try:
-        wget.download(uri, out=temp_path)
+    with tempfile.TemporaryDirectory(dir=dst) as temp_dir:
+        temp_path = pathlib.Path(temp_dir) / "download.tar.gz"
+        wget.download(uri, out=str(temp_path))
         if not tarfile.is_tarfile(temp_path):
             raise OSError(f"{temp_path} needs to be a valid tar file")
         with tarfile.open(temp_path, mode="r:*") as tf:
             tf.extractall(path=dst)
-    finally:
-        pathlib.Path(temp_path).unlink(missing_ok=True)
 
 
 def download_test_data(dst: pathlib.Path, uri: str) -> None:
