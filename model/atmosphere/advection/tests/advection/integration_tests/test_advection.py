@@ -147,21 +147,40 @@ def test_advection_run_single_step(
     )
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
-    least_squares_state = lsq_compute_coeff_cell_sphere(
-        cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
-        cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
-        c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
-        cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
-        grid_sphere_radius=constants.EARTH_RADIUS,
-        lsq_dim_unk=2,
-        lsq_dim_c=3,
-        lsq_wgt_exp=2,
-        lsq_dim_stencil=3,
-        start_idx=icon_grid.start_index(
-            h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-        ),
-        min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
-    )
+    if experiment == Experiments.GAUSS3D:
+        least_squares_state = lsq_compute_coeff_cell_torus(
+            cell_center_x=geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy(),
+            cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy(),
+            c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
+            cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
+            domain_length=geometry.grid.global_properties.domain_length,
+            domain_height=geometry.grid.global_properties.domain_height,
+            lsq_dim_unk=2,
+            lsq_dim_c=3,
+            lsq_dim_stencil=3,
+            lsq_wgt_exp=2,
+            start_idx=icon_grid.start_index(
+                h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+            ),
+            min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
+        )
+    else:
+        least_squares_state = lsq_compute_coeff_cell_sphere(
+            cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
+            cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
+            c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
+            cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
+            grid_sphere_radius=constants.EARTH_RADIUS,
+            lsq_dim_unk=2,
+            lsq_dim_c=3,
+            lsq_wgt_exp=2,
+            lsq_dim_stencil=3,
+            start_idx=icon_grid.start_index(
+                h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+            ),
+            min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL)),
+        )
+
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
@@ -213,7 +232,7 @@ def test_advection_run_single_step(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_lsq_compute_coeff_cell_sphere(
+def test_lsq_compute_coeffs(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
     interpolation_savepoint,
