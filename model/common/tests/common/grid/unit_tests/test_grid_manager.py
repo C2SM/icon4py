@@ -583,10 +583,26 @@ def test_decomposition_info_single_rank(
     assert np.all(data_alloc.as_numpy(result.halo_levels(dim)) == expected.halo_levels(dim))
 
 
-@pytest.mark.parametrize("rank", (0, 1, 2, 3))
+@pytest.mark.parametrize("rank", (0, 1, 2, 3), ids=lambda rank: f"rank{rank}")
 @pytest.mark.parametrize(
     "field_offset",
-    [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
+    [
+        dims.C2V,
+        dims.E2V,
+        dims.V2C,
+        dims.E2C,
+        dims.C2E,
+        dims.V2E,
+        dims.C2E2C,
+        dims.V2E2V,
+        dims.C2E2CO,
+        dims.C2E2C2E,
+        dims.C2E2C2E2C,
+        dims.E2C2V,
+        dims.E2C2E,
+        dims.E2C2EO,
+    ],
+    ids=lambda offset: offset.value,
 )
 def test_local_connectivity(
     rank: int,
