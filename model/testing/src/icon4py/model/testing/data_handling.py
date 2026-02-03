@@ -11,19 +11,22 @@ from __future__ import annotations
 import os
 import pathlib
 import tarfile
+import tempfile
 
 from icon4py.model.testing import config, locking
 
 
-def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "downloaded.tar.gz") -> None:
+def download_and_extract(uri: str, dst: pathlib.Path) -> None:
     """
     Download data archive from remote server.
 
     Downloads a tar file at `uri` and extracts it.
     Args:
         uri: download url for archived data
-        destination: the archive is extracted at this path
-        data_file: filename of the downloaded archive, the archive is removed after download
+        dst: the archive is extracted at this path
+
+    Uses a temporary file for the download, which is automatically cleaned up
+    on completion or interruption, enabling safe parallel execution.
     """
     dst.mkdir(parents=True, exist_ok=True)
     try:
@@ -31,15 +34,15 @@ def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "download
     except ImportError as err:
         raise RuntimeError(f"To download data file from {uri}, please install `wget`") from err
 
-    wget.download(uri, out=data_file)
-    if not tarfile.is_tarfile(data_file):
-        raise OSError(f"{data_file} needs to be a valid tar file")
-    with tarfile.open(data_file, mode="r:*") as tf:
-        tf.extractall(path=dst)
-    pathlib.Path(data_file).unlink(missing_ok=True)
+    with tempfile.NamedTemporaryFile(delete=True, suffix=".tar.gz") as temp_file:
+        wget.download(uri, out=temp_file.name)
+        if not tarfile.is_tarfile(temp_file.name):
+            raise OSError(f"{temp_file.name} needs to be a valid tar file")
+        with tarfile.open(temp_file.name, mode="r:*") as tf:
+            tf.extractall(path=dst)
 
 
-def download_test_data(dst: pathlib.Path, uri: str, data_file: str = "downloaded.tar.gz") -> None:
+def download_test_data(dst: pathlib.Path, uri: str) -> None:
     if config.ENABLE_TESTDATA_DOWNLOAD:
         dst.mkdir(parents=True, exist_ok=True)
         # Explicitly specify the lockfile name to make sure that os.listdir sees
@@ -48,7 +51,7 @@ def download_test_data(dst: pathlib.Path, uri: str, data_file: str = "downloaded
         with locking.lock(dst, lockfile=lockfile):
             files = os.listdir(dst)
             if len(files) == 0 or (len(files) == 1 and files[0] == lockfile):
-                download_and_extract(uri, dst, data_file)
+                download_and_extract(uri, dst)
     else:
         # If test data download is disabled, we check if the directory exists
         # and isn't empty without locking. We assume the location is managed by the user
