@@ -17,8 +17,6 @@ else
     exit 1
 fi
 
-export CUDA_VISIBLE_DEVICES="${rank}"
-
 log_file="${CI_PROJECT_DIR:+${CI_PROJECT_DIR}/}pytest-log-rank-${rank}.txt"
 
 if [[ "${rank}" -eq 0 ]]; then
