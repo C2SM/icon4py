@@ -31,14 +31,14 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 # ======================================
 # USER CONFIGURATION
 # ======================================
-COMM_SIZES: list[int] = [1]  # , 2, 4]
+COMM_SIZES: list[int] = [1, 2, 4]
 
 EXPERIMENTS = [
-    # definitions.Experiments.MCH_CH_R04B09,
-    # definitions.Experiments.JW,
+    definitions.Experiments.MCH_CH_R04B09,
+    definitions.Experiments.JW,
     definitions.Experiments.EXCLAIM_APE,
-    # definitions.Experiments.GAUSS3D,
-    # definitions.Experiments.WEISMAN_KLEMP_TORUS,
+    definitions.Experiments.GAUSS3D,
+    definitions.Experiments.WEISMAN_KLEMP_TORUS,
 ]
 
 # Slurm settings

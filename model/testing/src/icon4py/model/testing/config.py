@@ -34,8 +34,6 @@ def _env_path(name: str, default: pathlib.Path) -> pathlib.Path:
 
 
 def _project_root() -> pathlib.Path:
-    if root := os.environ.get("ICON4PY_PROJECT_ROOT"):
-        return pathlib.Path(root)
     for path in [pathlib.Path(__file__).resolve(), *pathlib.Path(__file__).resolve().parents]:
         if (path / ".git").exists():
             return path
@@ -45,5 +43,4 @@ def _project_root() -> pathlib.Path:
 
 ENABLE_GRID_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_GRID_DOWNLOAD", True)
 ENABLE_TESTDATA_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_TESTDATA_DOWNLOAD", True)
-
-TEST_DATA_PATH = _env_path("ICON4PY_TEST_DATA_PATH", _project_root() / "testdata")
+TEST_DATA_PATH: pathlib.Path = _env_path("ICON4PY_TEST_DATA_PATH", _project_root() / "testdata")
