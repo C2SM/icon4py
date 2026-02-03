@@ -34,7 +34,7 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, grid_utils, test_utils
 
-from ..fixtures import backend, processor_props
+from ..fixtures import backend, global_grid_descriptor, processor_props
 from . import utils
 
 
@@ -50,8 +50,11 @@ log = logging.getLogger(__file__)
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi(min_size=2)
-def test_grid_manager_validate_decomposer(processor_props: decomp_defs.ProcessProperties) -> None:
-    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+def test_grid_manager_validate_decomposer(
+    processor_props: decomp_defs.ProcessProperties,
+    global_grid_descriptor: test_defs.GridDescription,
+) -> None:
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     manager = gm.GridManager(file, utils.NUM_LEVELS, gridfile.ToZeroBasedIndexTransformation())
     with pytest.raises(exceptions.InvalidConfigError) as e:
         manager(
@@ -75,11 +78,13 @@ def _get_neighbor_tables(grid: base.Grid) -> dict:
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_fields_distribute_and_gather(
-    processor_props: decomp_defs.ProcessProperties, caplog: Any
+    processor_props: decomp_defs.ProcessProperties,
+    global_grid_descriptor: test_defs.GridDescription,
+    caplog: Any,
 ) -> None:
     caplog.set_level(logging.INFO)
     print(f"myrank - {processor_props.rank}: running with processor_props =  {processor_props}")
-    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     global_cell_area = single_node.geometry_fields[gridfile.GeometryName.CELL_AREA]
@@ -206,13 +211,12 @@ def assert_gathered_field_against_global(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_c2e(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: test_defs.GridDescription,
+    global_grid_descriptor: test_defs.GridDescription,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(grid)
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
@@ -298,13 +302,12 @@ def test_halo_neighbor_access_c2e(
 @pytest.mark.embedded_remap_error
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_e2c2v(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: test_defs.GridDescription,
+    global_grid_descriptor: test_defs.GridDescription,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(grid)
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
@@ -391,13 +394,12 @@ def test_halo_neighbor_access_e2c2v(
 @pytest.mark.embedded_remap_error
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_e2c(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: test_defs.GridDescription,
+    global_grid_descriptor: test_defs.GridDescription,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(grid)
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
@@ -482,14 +484,13 @@ def test_halo_neighbor_access_e2c(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_e2v(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: test_defs.GridDescription,
+    global_grid_descriptor: test_defs.GridDescription,
 ) -> None:
     print(f"running on {processor_props.comm}")
-    file = grid_utils.resolve_full_grid_file_name(grid)
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
     single_node_geometry = geometry.GridGeometry(
@@ -560,13 +561,12 @@ def test_halo_neighbor_access_e2v(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_v2e(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: test_defs.GridDescription,
+    global_grid_descriptor: test_defs.GridDescription,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(grid)
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     print(f"running on {processor_props.comm}")
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
@@ -659,13 +659,12 @@ def test_halo_neighbor_access_v2e(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_halo_neighbor_access_c2e2c(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    grid: test_defs.GridDescription,
+    global_grid_descriptor: test_defs.GridDescription,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(grid)
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     center_weight = 0.3
     xp = data_alloc.import_array_ns(allocator=backend)
     start_zone = h_grid.cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -744,9 +743,11 @@ def test_halo_neighbor_access_c2e2c(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_halo_neighbor_access_v2c(
-    processor_props: decomp_defs.ProcessProperties, backend: gtx_typing.Backend
+    processor_props: decomp_defs.ProcessProperties,
+    global_grid_descriptor: test_defs.GridDescription,
+    backend: gtx_typing.Backend,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     print(f"running on {processor_props.comm}")
     single_node = utils.run_grid_manager_for_singlenode(file)
     single_node_grid = single_node.grid
@@ -882,11 +883,11 @@ def test_halo_neighbor_access_v2c(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_validate_skip_values_in_distributed_connectivities(
-    processor_props: decomp_defs.ProcessProperties, grid: test_defs.GridDescription
+    processor_props: decomp_defs.ProcessProperties,
+    global_grid_descriptor: test_defs.GridDescription,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(grid)
+    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,

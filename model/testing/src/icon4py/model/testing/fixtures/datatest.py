@@ -83,6 +83,23 @@ def cpu_allocator() -> gtx_typing.FieldBufferAllocationUtil:
 
 @pytest.fixture(
     params=[
+        definitions.Grids.R02B04_GLOBAL,
+        definitions.Grids.TORUS_50000x5000,
+    ],
+    ids=lambda r: r.name,
+)
+def global_grid_descriptor(request: pytest.FixtureRequest) -> definitions.GridDescription:
+    """
+    Return a global grid descriptor.
+
+    "Global" in this context means "not limited area", i.e. a full icosahedral
+    grid or a torus grid, both with full connectivity and no boundary layers.
+    """
+    return request.param
+
+
+@pytest.fixture(
+    params=[
         definitions.Experiments.MCH_CH_R04B09,
         definitions.Experiments.EXCLAIM_APE,
         definitions.Experiments.GAUSS3D,
