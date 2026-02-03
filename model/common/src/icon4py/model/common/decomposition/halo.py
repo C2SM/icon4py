@@ -440,7 +440,7 @@ class Decomposer(Protocol):
         ...
 
 
-class SimpleMetisDecomposer(Decomposer):
+class MetisDecomposer(Decomposer):
     """
     A simple decomposer using METIS for partitioning a grid topology.
 

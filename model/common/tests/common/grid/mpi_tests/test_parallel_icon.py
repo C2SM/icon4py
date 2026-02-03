@@ -22,7 +22,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomp_defs,
     definitions as decomposition,
 )
-from icon4py.model.common.decomposition.halo import SimpleMetisDecomposer
+from icon4py.model.common.decomposition.halo import MetisDecomposer
 from icon4py.model.common.grid import base as base_grid, gridfile, horizontal as h_grid, icon
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
 
@@ -194,7 +194,7 @@ def test_skip_values_on_distributed_grid(
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(grid)
     grid_manager = parallel_utils.run_gridmananger_for_multinode(
-        file, processor_props, decomposer=SimpleMetisDecomposer()
+        file, processor_props, decomposer=MetisDecomposer()
     )
     mesh = grid_manager.grid
     assert not np.any(mesh.get_connectivity(dims.C2V).asnumpy() == gridfile.GridFile.INVALID_INDEX)

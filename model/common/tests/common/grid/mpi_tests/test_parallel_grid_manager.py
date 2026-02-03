@@ -94,7 +94,7 @@ def test_fields_distribute_and_gather(
     multinode = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
-        decomposer=halo.SimpleMetisDecomposer(),
+        decomposer=halo.MetisDecomposer(),
     )
     decomposition_info = multinode.decomposition_info
 
@@ -252,7 +252,7 @@ def test_halo_neighbor_access_c2e(
     multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
-        decomposer=halo.SimpleMetisDecomposer(),
+        decomposer=halo.MetisDecomposer(),
     )
     distributed_grid = multinode_grid_manager.grid
     extra_geometry_fields = multinode_grid_manager.geometry_fields
@@ -326,7 +326,7 @@ def test_halo_neighbor_access_e2c2v(
     multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
-        decomposer=halo.SimpleMetisDecomposer(),
+        decomposer=halo.MetisDecomposer(),
     )
     distributed_grid = multinode_grid_manager.grid
     extra_geometry_fields = multinode_grid_manager.geometry_fields
@@ -418,7 +418,7 @@ def test_halo_neighbor_access_e2c(
     multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
-        decomposer=halo.SimpleMetisDecomposer(),
+        decomposer=halo.MetisDecomposer(),
     )
     distributed_grid = multinode_grid_manager.grid
     extra_geometry_fields = multinode_grid_manager.geometry_fields
@@ -509,7 +509,7 @@ def test_halo_neighbor_access_e2v(
     multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
-        decomposer=halo.SimpleMetisDecomposer(),
+        decomposer=halo.MetisDecomposer(),
     )
     distributed_grid = multinode_grid_manager.grid
     decomposition_info = multinode_grid_manager.decomposition_info
@@ -610,7 +610,7 @@ def test_halo_neighbor_access_v2e(
     multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
-        decomposer=halo.SimpleMetisDecomposer(),
+        decomposer=halo.MetisDecomposer(),
     )
     distributed_grid = multinode_grid_manager.grid
     decomposition_info = multinode_grid_manager.decomposition_info
@@ -694,7 +694,7 @@ def test_halo_neighbor_access_c2e2c(
     multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
-        decomposer=halo.SimpleMetisDecomposer(),
+        decomposer=halo.MetisDecomposer(),
     )
     distributed_grid = multinode_grid_manager.grid
     decomposition_info = multinode_grid_manager.decomposition_info
@@ -794,7 +794,7 @@ def test_halo_neighbor_access_v2c(
     multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
-        decomposer=halo.SimpleMetisDecomposer(),
+        decomposer=halo.MetisDecomposer(),
     )
     distributed_grid = multinode_grid_manager.grid
     decomposition_info = multinode_grid_manager.decomposition_info
@@ -891,7 +891,7 @@ def test_validate_skip_values_in_distributed_connectivities(
     multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
-        decomposer=halo.SimpleMetisDecomposer(),
+        decomposer=halo.MetisDecomposer(),
     )
     distributed_grid = multinode_grid_manager.grid
     for k, c in distributed_grid.connectivities.items():

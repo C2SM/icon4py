@@ -90,7 +90,7 @@ def test_element_ownership_is_unique(
 
 
 def decompose(grid: base_grid.Grid, processor_props):
-    partitioner = halo.SimpleMetisDecomposer()
+    partitioner = halo.MetisDecomposer()
     labels = partitioner(
         grid.connectivities[dims.C2E2C].asnumpy(), n_part=processor_props.comm_size
     )

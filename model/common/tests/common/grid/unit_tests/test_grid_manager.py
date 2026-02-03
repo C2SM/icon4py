@@ -595,7 +595,7 @@ def test_local_connectivity(
 ) -> None:
     processor_props = decomp_utils.DummyProps(rank=rank)
     caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
-    partitioner = halo.SimpleMetisDecomposer()
+    partitioner = halo.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     manager = gm.GridManager(num_levels=10, grid_file=file)
