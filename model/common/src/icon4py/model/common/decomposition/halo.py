@@ -252,11 +252,13 @@ class IconLikeHaloConstructor(HaloConstructor):
              Args:
                  face_to_rank: a mapping of cells to a rank
 
-             The DecompositionInfo object is constructed for all horizontal dimension starting from the
-             cell distribution.
-             Edges and vertices are then handled through their connectivity to the distributed cells.
+             The DecompositionInfo object is constructed for all horizontal
+             dimension starting from the cell distribution.  Edges and vertices
+             are then handled through their connectivity to the distributed
+             cells.
 
-             This constructs a halo similar to ICON which consists of **exactly** 2 cell-halo lines
+             This constructs a halo similar to ICON which consists of
+             **exactly** 2 cell-halo lines.
 
              |         /|         /|         /|
              |        / |        / |        / |
@@ -282,38 +284,62 @@ class IconLikeHaloConstructor(HaloConstructor):
 
 
              Cells:
-             The "numbered" cells and edges are relevant for the halo construction from the point of view of rank 0
-             Cells (c0, c1, c2) are the 1. HALO LEVEL: these are cells that are neighbors of an owned cell
-             Cells (c3, c4. c5) are the 2. HALO LEVEL: cells that "close" the hexagon of a vertex on the cutting line and do not share an edge with an owned cell (that is are not LEVEL 1 cells)
-                                                       this is _not_ the same as the neighboring cells of LEVEL 1 cells, and the definition might be different from ICON.
-                                                       In the above picture if the cut was along a corner (e0 -> e1 -> e7) then cz is part of the 2. LEVEL because it is part of the hexagon on v2, but it is not
-                                                       in c2e2c2e2c(c1).
 
-             Note that this definition of 1. and 2. line differs from the definition of boundary line counting used in [grid refinement](grid_refinement.py), in terms
-             of "distance" to the cutting line all halo cells have a distance of 1.
+             - The "numbered" cells and edges are relevant for the halo
+               construction from the point of view of rank 0.
+             - Cells (c0, c1, c2) are the 1. HALO LEVEL: these are cells that
+               are neighbors of an owned cell.
+             - Cells (c3, c4. c5) are the 2. HALO LEVEL: cells that "close" the
+               hexagon of a vertex on the cutting line and do not share an edge
+               with an owned cell (that is are not LEVEL 1 cells). This is
+               _not_ the same as the neighboring cells of LEVEL 1 cells, and the
+               definition might be different from ICON. In the above picture if
+               the cut was along a corner (e0 -> e1 -> e7) then cz is part of
+               the 2. LEVEL because it is part of the hexagon on v2, but it is
+               not in c2e2c2e2c(c1).
+
+             Note that this definition of 1. and 2. line differs from the
+             definition of boundary line counting used in [grid
+             refinement](grid_refinement.py), in terms of "distance" to the
+             cutting line all halo cells have a distance of 1.
 
 
              Vertices:
-             - 1. HALO LEVEL: are vertices on the cutting line that are not owned, or in a different wording: all vertices of owned cells that are not
-             owned.
-             In ICON every element in an array needs **exactly one owner** (otherwise there would be duplicates and double-counting).
-             For elements on the cutting line (vertices and edges) there is no clear indication which rank should own it,
-             ICON uses the rank with the higher rank value (see (_update_owner_mask_by_max_rank_convention))
-             In the example above (v0, v1, v2, v3) are in the 1. HALO LEVEL of rank 0 and owned by rank 1.
-             As a consequence, there are ranks that have no 1. HALO LEVEL vertices.
-             - 2. HALO LEVEL: are vertices that are on HALO LEVEL cells, but not on owned. For rank 0 these are (v4, v5, v6, v7)
+
+             - 1. HALO LEVEL: are vertices on the cutting line that are not
+               owned, or in a different wording: all vertices of owned cells
+               that are not owned.
+             - In ICON every element in an array needs **exactly one owner**
+               (otherwise there would be duplicates and double-counting). For
+               elements on the cutting line (vertices and edges) there is no
+               clear indication which rank should own it, ICON uses the rank
+               with the higher rank value (see
+               (_update_owner_mask_by_max_rank_convention)) In the example above
+               (v0, v1, v2, v3) are in the 1. HALO LEVEL of rank 0 and owned by
+               rank 1.  As a consequence, there are ranks that have no 1. HALO
+               LEVEL vertices.
+             - 2. HALO LEVEL: are vertices that are on HALO LEVEL cells, but not
+               on owned. For rank 0 these are (v4, v5, v6, v7).
 
 
              Edges:
-             For edges a similar pattern is used as for the vertices.
-             - 1. HALO LEVEL: edges that are on owned cells but not owned themselves (these are edges that share 2 vertices with a owned cell).
-             In terms of ownership the same convention is applied as for the vertices: (e0, e1, e2, e3) are in the HALO LEVEL 1 of rank 0, and are owned by rank 1
-             - 2. HALO LEVEL: edges that share exactly one vertex with an owned cell. The definition via vertices is important: see example above with a cut along e0 -> e1 -> e7.
-             For rank 0 these are the edges (e4, e5, e6, e7, e8, e9, e10) in the example above.
-             - 3. HALO LEVEL:
-             In **ICON4Py ONLY**, edges that "close" the halo cells and share exactly 2 vertices with a HALO LEVEL 2 cell, but none with
-             an owned cell. These edges are **not** included in the halo in ICON. These are (e11, e12, e13) for rank 0 in the example above.
-             This is the HALO LINE which makes the C2E connectivity complete (= without skip value) for a distributed setup.
+
+             - For edges a similar pattern is used as for the vertices.
+             - 1. HALO LEVEL: edges that are on owned cells but not owned
+               themselves (these are edges that share 2 vertices with a owned
+               cell). In terms of ownership the same convention is applied as
+               for the vertices: (e0, e1, e2, e3) are in the HALO LEVEL 1 of
+               rank 0, and are owned by rank 1.
+             - 2. HALO LEVEL: edges that share exactly one vertex with an owned
+               cell. The definition via vertices is important: see example above
+               with a cut along e0 -> e1 -> e7. For rank 0 these are the edges
+               (e4, e5, e6, e7, e8, e9, e10) in the example above.
+             - 3. HALO LEVEL: In **ICON4Py ONLY**, edges that "close" the halo
+               cells and share exactly 2 vertices with a HALO LEVEL 2 cell, but
+               none with an owned cell. These edges are **not** included in the
+               halo in ICON. These are (e11, e12, e13) for rank 0 in the example
+               above.  This is the HALO LINE which makes the C2E connectivity
+               complete (= without skip value) for a distributed setup.
         """
 
         self._validate_mapping(face_to_rank)
