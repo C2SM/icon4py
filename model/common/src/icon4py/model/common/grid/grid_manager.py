@@ -98,7 +98,9 @@ class GridManager:
         decomposer: halo.Decomposer = _single_node_decomposer,
         run_properties=_single_process_props,
     ):
-        if not run_properties.single_node() and isinstance(decomposer, halo.SingleNodeDecomposer):
+        if not run_properties.is_single_rank() and isinstance(
+            decomposer, halo.SingleNodeDecomposer
+        ):
             raise InvalidConfigError("Need a Decomposer for multi node run")
 
         if not self._reader:

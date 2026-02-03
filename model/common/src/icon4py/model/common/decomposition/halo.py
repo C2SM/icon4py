@@ -509,7 +509,7 @@ def get_halo_constructor(
     Returns: a HaloConstructor suitable for the run_properties
 
     """
-    if run_properties.single_node():
+    if run_properties.is_single_rank():
         return NoHalos(
             horizontal_size=full_grid_size,
             allocator=allocator,

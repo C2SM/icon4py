@@ -47,7 +47,7 @@ def test_decomposition_info_single_node_empty_halo(
     dim: gtx.Dimension,
     processor_props: definitions.ProcessProperties,
 ) -> None:
-    if not processor_props.single_node():
+    if not processor_props.is_single_rank():
         pytest.xfail()
 
     manager = grid_utils.run_grid_manager(

@@ -36,7 +36,7 @@ class ProcessProperties(Protocol):
     comm_name: str
     comm_size: int
 
-    def single_node(self) -> bool:
+    def is_single_rank(self) -> bool:
         return self.comm_size == 1
 
 
