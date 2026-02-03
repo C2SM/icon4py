@@ -76,7 +76,7 @@ build_distributed_cpu:
     - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
   script:
-    - scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
+    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
       - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
