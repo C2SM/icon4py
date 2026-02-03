@@ -142,8 +142,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def _connectivity(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:
         try:
-            conn_table = self._connectivities.get(_value(offset))
-            return conn_table
+            return self._connectivities.get(_value(offset))
         except KeyError as err:
             raise exceptions.MissingConnectivityError(
                 f"Connectivity for offset {offset} is not available"
@@ -167,8 +166,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
         cells_so_far = self._xp.hstack((depot, cells)) if depot is not None else cells
 
-        next_halo_cells = self._xp.setdiff1d(cell_neighbors, cells_so_far, assume_unique=True)
-        return next_halo_cells
+        return self._xp.setdiff1d(cell_neighbors, cells_so_far, assume_unique=True)
 
     def _find_neighbors(
         self, source_indices: data_alloc.NDArray, connectivity: data_alloc.NDArray
@@ -176,8 +174,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         """Get a flattened list of all (unique) neighbors to a given global index list"""
         neighbors = connectivity[source_indices, :]
         shp = neighbors.shape
-        unique_neighbors = self._xp.unique(neighbors.reshape(shp[0] * shp[1]))
-        return unique_neighbors
+        return self._xp.unique(neighbors.reshape(shp[0] * shp[1]))
 
     def _find_cell_neighbors(self, cells: data_alloc.NDArray) -> data_alloc.NDArray:
         """Find all neighboring cells of a list of cells."""
