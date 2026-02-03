@@ -6,22 +6,24 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import pytest
-
-from icon4py.model.atmosphere.advection.advection_tracers import lsq_compute_coeff_cell_sphere, \
-    lsq_compute_coeff_cell_torus
-from icon4py.model.common.grid import base
-from icon4py.model.common.grid import horizontal as h_grid
-import pytest
-from icon4py.model.testing import definitions, serialbox as sb, grid_utils
-from icon4py.model.common.grid import base as base_grid
 import gt4py.next.typing as gtx_typing
-import icon4py.model.testing.test_utils as test_helpers
+import pytest
 
+import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.atmosphere.advection import advection
-from icon4py.model.common import dimension as dims, constants
+from icon4py.model.atmosphere.advection.advection_tracers import (
+    lsq_compute_coeff_cell_sphere,
+    lsq_compute_coeff_cell_torus,
+)
+from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.grid import (
+    base,
+    base as base_grid,
+    geometry_attributes as geometry_attrs,
+    horizontal as h_grid,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, grid_utils, serialbox as sb
 from icon4py.model.testing.definitions import Experiments
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -49,7 +51,7 @@ from ..utils import (
     log_serialized,
     verify_advection_fields,
 )
-from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
+
 
 # ntracer legend for the serialization data used here in test_advection:
 # ------------------------------------
@@ -197,7 +199,6 @@ def test_lsq_compute_coeff_cell_sphere(
     interpolation_savepoint,
     experiment,
 ) -> None:
-
     gm = grid_utils.get_grid_manager_from_identifier(
         experiment.grid,
         num_levels=1,
@@ -205,8 +206,7 @@ def test_lsq_compute_coeff_cell_sphere(
         allocator=backend,
     )
 
-    c2e2c = gm.grid.connectivities["C2E2C"].ndarray
-    c2v  = gm.grid.connectivities["C2V"].ndarray
+    c2e2c = gm.grid.connectivities["C2E2C"].asnumpy()
     cell_owner_mask = grid_savepoint.c_owner_mask().asnumpy()
     grid_sphere_radius = constants.EARTH_RADIUS
     lsq_dim_unk = 2
@@ -218,60 +218,48 @@ def test_lsq_compute_coeff_cell_sphere(
     start_idx = gm.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
-    cell_center_x = grid_geometry.get(geometry_attrs.CELL_CENTER_X)
-    cell_center_y = grid_geometry.get(geometry_attrs.CELL_CENTER_Y)
+    cell_center_x = grid_geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy()
+    cell_center_y = grid_geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy()
     domain_length = gm.grid.global_properties.domain_length
     domain_height = gm.grid.global_properties.domain_height
+    lsq_dim_stencil = 3
 
     coordinates = gm.coordinates
-    cell_lat = coordinates[dims.CellDim]["lat"]
-    cell_lon = coordinates[dims.CellDim]["lon"]
-    vertex_lat = coordinates[dims.VertexDim]["lat"]
-    vertex_lon = coordinates[dims.VertexDim]["lon"]
+    cell_lat = coordinates[dims.CellDim]["lat"].asnumpy()
+    cell_lon = coordinates[dims.CellDim]["lon"].asnumpy()
     if experiment == Experiments.GAUSS3D:
-        lsq_pseudoinv = lsq_compute_coeff_cell_torus(cell_center_x, cell_center_y, c2e2c, cell_owner_mask,
-                                                     domain_length, domain_height, lsq_dim_unk, lsq_dim_c, lsq_wgt_exp,
-                                                     start_idx, min_rlcell_int)
+        lsq_pseudoinv = lsq_compute_coeff_cell_torus(
+            cell_center_x,
+            cell_center_y,
+            c2e2c,
+            cell_owner_mask,
+            domain_length,
+            domain_height,
+            lsq_dim_unk,
+            lsq_dim_c,
+            lsq_dim_stencil,
+            lsq_wgt_exp,
+            start_idx,
+            min_rlcell_int,
+        )
     else:
-        lsq_pseudoinv = lsq_compute_coeff_cell_sphere(cell_lat, cell_lon, vertex_lat, vertex_lon, c2e2c, c2v, cell_owner_mask, grid_sphere_radius, lsq_dim_unk, lsq_dim_c, lsq_wgt_exp, start_idx, min_rlcell_int)
+        lsq_pseudoinv = lsq_compute_coeff_cell_sphere(
+            cell_lat,
+            cell_lon,
+            c2e2c,
+            cell_owner_mask,
+            grid_sphere_radius,
+            lsq_dim_unk,
+            lsq_dim_c,
+            lsq_wgt_exp,
+            lsq_dim_stencil,
+            start_idx,
+            min_rlcell_int,
+        )
 
-    assert test_helpers.dallclose(interpolation_savepoint.lsq_pseudoinv_1().asnumpy(), lsq_pseudoinv[:, 0, :], atol=1e-15)
-    assert test_helpers.dallclose(interpolation_savepoint.lsq_pseudoinv_2().asnumpy(), lsq_pseudoinv[:, 1, :], atol=1e-15)
-
-@pytest.mark.level("unit")
-@pytest.mark.datatest
-def test_lsq_compute_coeff_cell_torus(
-    grid_savepoint: sb.IconGridSavepoint,
-    backend: gtx_typing.Backend,
-    interpolation_savepoint,
-    experiment,
-) -> None:
-    if experiment != Experiments.GAUSS3D:
-        pytest.skip()
-    gm = grid_utils.get_grid_manager_from_identifier(
-        experiment.grid,
-        num_levels=1,
-        keep_skip_values=True,
-        allocator=backend,
+    assert test_helpers.dallclose(
+        interpolation_savepoint.lsq_pseudoinv_1().asnumpy(), lsq_pseudoinv[:, 0, :], atol=1e-15
     )
-    c2e2c = gm.grid.connectivities["C2E2C"].ndarray
-    c2v = gm.grid.connectivities["C2V"].ndarray
-    cell_owner_mask = grid_savepoint.c_owner_mask().asnumpy()
-    lsq_dim_unk = 2
-    lsq_dim_c = 3
-    lsq_wgt_exp = 2
-    cell_domain = h_grid.domain(dims.CellDim)
-    min_rlcell_int = gm.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-    start_idx = gm.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-
-    grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
-    cell_center_x = grid_geometry.get(geometry_attrs.CELL_CENTER_X)
-    cell_center_y = grid_geometry.get(geometry_attrs.CELL_CENTER_Y)
-    domain_length = gm.grid.global_properties.domain_length
-    domain_height = gm.grid.global_properties.domain_height
-    vertex_x = grid_geometry.get(geometry_attrs.VERTEX_X).asnumpy()
-    vertex_y = grid_geometry.get(geometry_attrs.VERTEX_Y).asnumpy()
-
-    lsq_pseudoinv = lsq_compute_coeff_cell_torus(vertex_x, vertex_y, cell_center_x, cell_center_y, c2e2c, c2v, cell_owner_mask, domain_length, domain_height, lsq_dim_unk, lsq_dim_c, lsq_wgt_exp, start_idx, min_rlcell_int)
-
-    assert test_helpers.dallclose(interpolation_savepoint.lsq_pseudoinv_1().asnumpy(), lsq_pseudoinv[:, 0, :])
+    assert test_helpers.dallclose(
+        interpolation_savepoint.lsq_pseudoinv_2().asnumpy(), lsq_pseudoinv[:, 1, :], atol=1e-15
+    )
