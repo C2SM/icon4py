@@ -96,8 +96,6 @@ RUN set -eux; \
     ./autogen.sh; \
     ./configure \
       --with-cuda \
-      --enable-cuda-dlopen \
-      --enable-gdrcopy-dlopen \
       --enable-xpmem=/usr \
       --enable-tcp \
       --enable-cxi \
