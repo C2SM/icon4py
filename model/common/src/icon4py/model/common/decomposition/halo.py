@@ -152,7 +152,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def _find_cell_neighbors(self, cells: data_alloc.NDArray) -> data_alloc.NDArray:
         """Find all neighboring cells of a list of cells."""
-        return self._find_neighbors(cells, dims.C2E2C2E2C)
+        return self._find_neighbors(cells, dims.C2E2C)
 
     def find_edge_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
         return self._find_neighbors(cell_line, dims.C2E)
