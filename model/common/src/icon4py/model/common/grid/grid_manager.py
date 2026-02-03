@@ -402,7 +402,7 @@ class GridManager:
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C, array_ns=xp)
-        neighbor_tables = {
+        global_neighbor_tables = {
             dims.C2E2C: cell_to_cell_neighbors,
             dims.C2E: self._get_index_field(gridfile.ConnectivityName.C2E, array_ns=xp),
             dims.E2C: self._get_index_field(gridfile.ConnectivityName.E2C, array_ns=xp),
@@ -417,20 +417,17 @@ class GridManager:
         # HALO CONSTRUCTION
         # TODO(halungge): reduce the set of neighbor tables used in the halo construction
         # TODO(halungge): figure out where to do the host to device copies (xp.asarray...)
-        neighbor_tables_for_halo_construction = neighbor_tables
         halo_constructor = halo.get_halo_constructor(
             run_properties=run_properties,
             full_grid_size=global_size,
-            connectivities=neighbor_tables_for_halo_construction,
+            connectivities=global_neighbor_tables,
             allocator=allocator,
         )
 
         self._decomposition_info = halo_constructor(cells_to_rank_mapping)
         distributed_size = self._decomposition_info.get_horizontal_size()
 
-        neighbor_tables = self._get_local_connectivities(
-            neighbor_tables_for_halo_construction, array_ns=xp
-        )
+        neighbor_tables = self._get_local_connectivities(global_neighbor_tables, array_ns=xp)
 
         # COMPUTE remaining derived connectivities
         neighbor_tables.update(_get_derived_connectivities(neighbor_tables, array_ns=xp))
@@ -466,7 +463,7 @@ class GridManager:
 
     def _get_local_connectivities(
         self,
-        neighbor_tables_for_halo_construction: dict[gtx.FieldOffset, data_alloc.NDArray],
+        neighbor_tables_global: dict[gtx.FieldOffset, data_alloc.NDArray],
         array_ns,
     ) -> dict[gtx.FieldOffset, data_alloc.NDArray]:
         global_to_local = functools.partial(halo.global_to_local, array_ns=array_ns)
@@ -476,10 +473,10 @@ class GridManager:
                     self._decomposition_info.global_index(k.source),
                     v[self._decomposition_info.global_index(k.target[0])],
                 )
-                for k, v in neighbor_tables_for_halo_construction.items()
+                for k, v in neighbor_tables_global.items()
             }
         else:
-            return neighbor_tables_for_halo_construction
+            return neighbor_tables_global
 
     def _construct_global_params(
         self,
