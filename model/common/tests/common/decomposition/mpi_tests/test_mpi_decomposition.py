@@ -57,6 +57,7 @@ _log = logging.getLogger(__name__)
 def test_props(processor_props: definitions.ProcessProperties) -> None:
     assert processor_props.comm
     assert processor_props.comm_size > 1
+    assert 0 <= processor_props.rank < processor_props.comm_size
 
 
 @pytest.mark.mpi(min_size=2)
