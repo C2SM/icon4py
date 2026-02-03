@@ -44,6 +44,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -99,15 +100,34 @@ class PositiveDefinite(HorizontalFluxLimiter):
         )
 
         # stencils
-        self._compute_positive_definite_horizontal_multiplicative_flux_factor = (
-            compute_positive_definite_horizontal_multiplicative_flux_factor.with_backend(
-                self._backend
-            )
+        self._compute_positive_definite_horizontal_multiplicative_flux_factor = setup_program(
+            backend=backend,
+            program=compute_positive_definite_horizontal_multiplicative_flux_factor,
+            constant_args={
+                "dbl_eps": constants.DBL_EPS,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_2,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
         )
-        self._apply_positive_definite_horizontal_multiplicative_flux_factor = (
-            apply_positive_definite_horizontal_multiplicative_flux_factor.with_backend(
-                self._backend
-            )
+        self._apply_positive_definite_horizontal_multiplicative_flux_factor = setup_program(
+            backend=backend,
+            program=apply_positive_definite_horizontal_multiplicative_flux_factor,
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_lateral_boundary_level_5,
+                "horizontal_end": self._end_edge_halo,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
         )
 
     def apply_flux_limiter(
@@ -128,12 +148,6 @@ class PositiveDefinite(HorizontalFluxLimiter):
             p_mflx_tracer_h=p_mflx_tracer_h,
             r_m=self._r_m,
             p_dtime=dtime,
-            dbl_eps=constants.DBL_EPS,
-            horizontal_start=self._start_cell_lateral_boundary_level_2,  # originally i_rlstart_c = get_startrow_c(startrow_e=5) = 2
-            horizontal_end=self._end_cell_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug(
             "running stencil compute_positive_definite_horizontal_multiplicative_flux_factor - end"
@@ -150,11 +164,6 @@ class PositiveDefinite(HorizontalFluxLimiter):
         self._apply_positive_definite_horizontal_multiplicative_flux_factor(
             r_m=self._r_m,
             p_mflx_tracer_h=p_mflx_tracer_h,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug(
             "running stencil apply_positive_definite_horizontal_multiplicative_flux_factor - end"
@@ -218,11 +227,31 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         )
 
         # stencils
-        self._reconstruct_linear_coefficients_svd = (
-            reconstruct_linear_coefficients_svd.with_backend(self._backend)
+        self._reconstruct_linear_coefficients_svd = setup_program(
+            backend=backend,
+            program=reconstruct_linear_coefficients_svd,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary_level_2,
+                "horizontal_end": self._end_cell_halo,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
         )
-        self._compute_horizontal_tracer_flux_from_linear_coefficients_alt = (
-            compute_horizontal_tracer_flux_from_linear_coefficients_alt.with_backend(self._backend)
+        self._compute_horizontal_tracer_flux_from_linear_coefficients_alt = setup_program(
+            backend=backend,
+            program=compute_horizontal_tracer_flux_from_linear_coefficients_alt,
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_lateral_boundary_level_5,
+                "horizontal_end": self._end_edge_halo,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
         )
 
         # lsq coefficients
@@ -258,11 +287,6 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             p_coeff_1_dsl=self._p_coeff_1,
             p_coeff_2_dsl=self._p_coeff_2,
             p_coeff_3_dsl=self._p_coeff_3,
-            horizontal_start=self._start_cell_lateral_boundary_level_2,  # originally i_rlstart_c = get_startrow_c(startrow_e=5) = 2
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,  # originally UBOUND(p_cc,2)
-            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil reconstruct_linear_coefficients_svd - end")
 
@@ -279,11 +303,6 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             p_mass_flx_e=prep_adv.mass_flx_me,
             p_vn=prep_adv.vn_traj,
             p_out_e=p_mflx_tracer_h,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug(
             "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - end"
@@ -345,7 +364,19 @@ class NoAdvection(HorizontalAdvection):
         self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         # stencils
-        self._copy_cell_kdim_field = copy_cell_kdim_field.with_backend(self._backend)
+        self._copy_cell_kdim_field = setup_program(
+            backend=backend,
+            program=copy_cell_kdim_field,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_nudging,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
+        )
 
         log.debug("horizontal advection class init - end")
 
@@ -365,11 +396,6 @@ class NoAdvection(HorizontalAdvection):
         self._copy_cell_kdim_field(
             field_in=p_tracer_now,
             field_out=p_tracer_new,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
 
@@ -485,12 +511,60 @@ class SemiLagrangian(FiniteVolume):
         )
 
         # stencils
-        self._compute_edge_tangential = compute_edge_tangential.with_backend(self._backend)
-        self._compute_barycentric_backtrajectory_alt = (
-            compute_barycentric_backtrajectory_alt.with_backend(self._backend)
+        self._compute_edge_tangential = setup_program(
+            backend=backend,
+            program=compute_edge_tangential,
+            constant_args={
+                "ptr_coeff": self._interpolation_state.rbf_vec_coeff_e,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_lateral_boundary_level_2,
+                "horizontal_end": self._end_edge_halo,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
         )
-        self._integrate_tracer_horizontally = integrate_tracer_horizontally.with_backend(
-            self._backend
+
+        self._compute_barycentric_backtrajectory_alt = setup_program(
+            backend=backend,
+            program=compute_barycentric_backtrajectory_alt,
+            constant_args={
+                "pos_on_tplane_e_1": self._interpolation_state.pos_on_tplane_e_1,
+                "pos_on_tplane_e_2": self._interpolation_state.pos_on_tplane_e_2,
+                "primal_normal_cell_1": self._edge_params.primal_normal_cell[0],
+                "dual_normal_cell_1": self._edge_params.dual_normal_cell[0],
+                "primal_normal_cell_2": self._edge_params.primal_normal_cell[1],
+                "dual_normal_cell_2": self._edge_params.dual_normal_cell[1],
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_edge_lateral_boundary_level_5,
+                "horizontal_end": self._end_edge_halo,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self._grid.num_levels,
+            },
+            offset_provider=self._grid.connectivities,
+        )
+        self._integrate_tracer_horizontally = setup_program(
+            backend=backend,
+            program=integrate_tracer_horizontally,
+            constant_args={
+                "deepatmo_divh": self._metric_state.deepatmo_divh,
+                "geofac_div": self._interpolation_state.geofac_div,
+            },
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_nudging,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self._grid.num_levels,
+            },
+            offset_provider=self._grid.connectivities,
         )
 
         log.debug("horizontal advection class init - end")
@@ -511,13 +585,7 @@ class SemiLagrangian(FiniteVolume):
         log.debug("running stencil compute_edge_tangential - start")
         self._compute_edge_tangential(
             p_vn_in=prep_adv.vn_traj,
-            ptr_coeff=self._interpolation_state.rbf_vec_coeff_e,
             p_vt_out=self._z_real_vt,
-            horizontal_start=self._start_edge_lateral_boundary_level_2,
-            horizontal_end=self._end_edge_halo,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,  # originally UBOUND(p_vn,2)
-            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_edge_tangential - end")
 
@@ -526,20 +594,9 @@ class SemiLagrangian(FiniteVolume):
         self._compute_barycentric_backtrajectory_alt(
             p_vn=prep_adv.vn_traj,
             p_vt=self._z_real_vt,
-            pos_on_tplane_e_1=self._interpolation_state.pos_on_tplane_e_1,
-            pos_on_tplane_e_2=self._interpolation_state.pos_on_tplane_e_2,
-            primal_normal_cell_1=self._edge_params.primal_normal_cell[0],
-            dual_normal_cell_1=self._edge_params.dual_normal_cell[0],
-            primal_normal_cell_2=self._edge_params.primal_normal_cell[1],
-            dual_normal_cell_2=self._edge_params.dual_normal_cell[1],
             p_distv_bary_1=self._p_distv_bary_1,
             p_distv_bary_2=self._p_distv_bary_2,
             p_dthalf=0.5 * dtime,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil compute_barycentric_backtrajectory_alt - end")
 
@@ -572,18 +629,11 @@ class SemiLagrangian(FiniteVolume):
         log.debug("running stencil integrate_tracer_horizontally - start")
         self._integrate_tracer_horizontally(
             p_mflx_tracer_h=p_mflx_tracer_h,
-            deepatmo_divh=self._metric_state.deepatmo_divh,
             tracer_now=p_tracer_now,
             rhodz_now=rhodz_now,
             rhodz_new=rhodz_new,
-            geofac_div=self._interpolation_state.geofac_div,
             tracer_new_hor=p_tracer_new,
             p_dtime=dtime,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil integrate_tracer_horizontally - end")
 
