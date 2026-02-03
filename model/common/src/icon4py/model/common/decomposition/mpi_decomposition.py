@@ -8,11 +8,13 @@
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import logging
 import warnings
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
 import dace  # type: ignore[import-untyped]
@@ -21,8 +23,9 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import SingleNodeExchange
+from icon4py.model.common.decomposition.definitions import Reductions, SingleNodeExchange
 from icon4py.model.common.orchestration import halo_exchange
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -473,3 +476,103 @@ def create_multinode_node_exchange(
         return GHexMultiNodeExchange(props, decomp_info)
     else:
         return SingleNodeExchange()
+
+
+@dataclasses.dataclass
+class GlobalReductions(Reductions):
+    props: definitions.ProcessProperties
+
+    @staticmethod
+    def _min_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
+        if array_ns.issubdtype(dtype, array_ns.integer):
+            return array_ns.asarray([dtype.type(array_ns.iinfo(dtype).max)])
+        elif array_ns.issubdtype(dtype, array_ns.floating):
+            return array_ns.asarray([dtype.type(array_ns.inf)])
+        else:
+            raise TypeError(f"Unsupported dtype for min identity: {dtype}")
+
+    @staticmethod
+    def _max_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
+        if array_ns.issubdtype(dtype, array_ns.integer):
+            return array_ns.asarray([dtype.type(array_ns.iinfo(dtype).min)])
+        elif array_ns.issubdtype(dtype, array_ns.floating):
+            return array_ns.asarray([dtype.type(-array_ns.inf)])
+        else:
+            raise TypeError(f"Unsupported dtype for max identity: {dtype}")
+
+    @staticmethod
+    def _sum_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
+        return array_ns.asarray([dtype.type(0)])
+
+    def _reduce(
+        self,
+        buffer: data_alloc.NDArray,
+        local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
+        global_reduction: mpi4py.MPI.Op,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        local_red_val = local_reduction(buffer)
+        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
+        if hasattr(
+            array_ns, "cuda"
+        ):  # https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
+            array_ns.cuda.runtime.deviceSynchronize()
+        self.props.comm.Allreduce(local_red_val, recv_buffer, global_reduction)
+        return recv_buffer.item()
+
+    def _calc_buffer_size(
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
+
+    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        if self._calc_buffer_size(buffer, array_ns) == 0:
+            raise ValueError("global_min requires a non-empty buffer")
+        return self._reduce(
+            buffer if buffer.size != 0 else self._min_identity(buffer.dtype, array_ns),
+            array_ns.min,
+            mpi4py.MPI.MIN,
+            array_ns,
+        )
+
+    def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        if self._calc_buffer_size(buffer, array_ns) == 0:
+            raise ValueError("global_max requires a non-empty buffer")
+        return self._reduce(
+            buffer if buffer.size != 0 else self._max_identity(buffer.dtype, array_ns),
+            array_ns.max,
+            mpi4py.MPI.MAX,
+            array_ns,
+        )
+
+    def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        if self._calc_buffer_size(buffer, array_ns) == 0:
+            raise ValueError("global_sum requires a non-empty buffer")
+        return self._reduce(
+            buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
+            array_ns.sum,
+            mpi4py.MPI.SUM,
+            array_ns,
+        )
+
+    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        global_buffer_size = self._calc_buffer_size(buffer, array_ns)
+        if global_buffer_size == 0:
+            raise ValueError("global_mean requires a non-empty buffer")
+
+        return (
+            self._reduce(
+                (buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)),
+                array_ns.sum,
+                mpi4py.MPI.SUM,
+                array_ns,
+            )
+            / global_buffer_size
+        )
+
+
+@definitions.create_reduction.register(MPICommProcessProperties)
+def create_global_reduction(props: MPICommProcessProperties) -> Reductions:
+    return GlobalReductions(props)

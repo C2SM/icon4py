@@ -354,8 +354,13 @@ explicit = true
 name = "test.pypi"
 url = "https://test.pypi.org/simple/"
 
+[[tool.uv.index]]
+explicit = true
+name = 'gridtools'
+url = 'https://gridtools.github.io/pypi/'
+
 [tool.uv.sources]
-dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_12_11"}
+dace = {index = "gridtools"}
 # ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
 ghex = {git = "https://github.com/philip-paul-mueller/GHEX/", branch = "phimuell__async-mpi-2"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}

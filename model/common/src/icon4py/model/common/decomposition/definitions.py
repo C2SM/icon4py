@@ -13,6 +13,7 @@ import functools
 import logging
 from collections.abc import Sequence
 from enum import Enum
+from types import ModuleType
 from typing import Any, Literal, Protocol, TypeAlias, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
@@ -21,6 +22,7 @@ import numpy as np
 
 from icon4py.model.common import utils
 from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -470,6 +472,38 @@ class SingleNodeRun(RunType):
     pass
 
 
+class Reductions(Protocol):
+    def min(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+    def max(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+    def sum(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+    def mean(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+
+class SingleNodeReductions(Reductions):
+    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.min(buffer).item()
+
+    def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.max(buffer).item()
+
+    def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.sum(buffer).item()
+
+    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.sum(buffer).item() / buffer.size
+
+
 @overload
 def get_runtype(with_mpi: Literal[True]) -> MultiNodeRun: ...
 
@@ -512,4 +546,20 @@ def create_single_node_exchange(
     return SingleNodeExchange()
 
 
+@functools.singledispatch
+def create_reduction(props: ProcessProperties) -> Reductions:
+    """
+    Create a Global Reduction depending on the runtime size.
+
+    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+    """
+    raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
+
+
+@create_reduction.register(SingleNodeProcessProperties)
+def create_single_reduction_exchange(props: SingleNodeProcessProperties) -> Reductions:
+    return SingleNodeReductions()
+
+
 single_node_default = SingleNodeExchange()
+single_node_reductions = SingleNodeReductions()

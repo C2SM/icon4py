@@ -6,11 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import os
+import pathlib
 import tarfile
-from pathlib import Path
+
+from icon4py.model.testing import config, locking
 
 
-def download_and_extract(uri: str, dst: Path, data_file: str = "downloaded.tar.gz") -> None:
+def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "downloaded.tar.gz") -> None:
     """
     Download data archive from remote server.
 
@@ -31,4 +34,27 @@ def download_and_extract(uri: str, dst: Path, data_file: str = "downloaded.tar.g
         raise OSError(f"{data_file} needs to be a valid tar file")
     with tarfile.open(data_file, mode="r:*") as tf:
         tf.extractall(path=dst)
-    Path(data_file).unlink(missing_ok=True)
+    pathlib.Path(data_file).unlink(missing_ok=True)
+
+
+# TODO(msimberg): Remove dst_subdir once archives don't contain a subdir with
+# special name.
+def download_test_data(dst_root: pathlib.Path, dst_subdir: pathlib.Path, uri: str) -> None:
+    dst = dst_root.joinpath(dst_subdir)
+    if config.ENABLE_TESTDATA_DOWNLOAD:
+        dst.mkdir(parents=True, exist_ok=True)
+        # Explicitly specify the lockfile name to make sure that os.listdir sees
+        # it if it's created in dst.
+        lockfile = "filelock.lock"
+        with locking.lock(dst, lockfile=lockfile):
+            files = os.listdir(dst)
+            if len(files) == 0 or (len(files) == 1 and files[0] == lockfile):
+                download_and_extract(uri, dst_root)
+    else:
+        # If test data download is disabled, we check if the directory exists
+        # and isn't empty without locking. We assume the location is managed by the user
+        # and avoid locking shared directories (e.g. on CI).
+        if not dst.exists():
+            raise RuntimeError(f"Test data {dst} does not exist, and downloading is disabled.")
+        elif not any(os.scandir(dst)):
+            raise RuntimeError(f"Test data {dst} exists but is empty, and downloading is disabled.")

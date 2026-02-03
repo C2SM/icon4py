@@ -50,29 +50,68 @@ DEFAULT_RBF_KERNEL: dict[RBFDimension, int] = {
 }
 
 
-def compute_default_rbf_scale(
-    geometry_type: base_grid.GeometryType,
+def compute_default_rbf_scale_cell(
+    geometry_type: int,
     mean_characteristic_length: ta.wpfloat,
     mean_dual_edge_length: ta.wpfloat,
-    dim: RBFDimension,
 ) -> ta.wpfloat:
-    """Compute the default RBF scale factor. This assumes that the Gaussian
-    kernel is used for vertices and cells, and that the inverse multiquadratic
-    kernel is used for edges."""
+    """Compute the default RBF scale factor for cells. This assumes that the Gaussian
+    kernel is used."""
 
-    match geometry_type:
+    match base_grid.GeometryType(geometry_type):
         case base_grid.GeometryType.ICOSAHEDRON:
-            threshold = 2.5 if dim == RBFDimension.CELL else 2.0
-            c1 = 0.4 if dim == RBFDimension.EDGE else 1.8
-            if dim == RBFDimension.CELL:
-                c2 = 3.75
-                c3 = 0.9
-            elif dim == RBFDimension.VERTEX:
-                c2 = 3.0
-                c3 = 0.96
-            else:
-                c2 = 2.0
-                c3 = 0.325
+            threshold = 2.5
+            c1 = 1.8
+            c2 = 3.75
+            c3 = 0.9
+
+            resol = mean_characteristic_length / 1000.0
+            scale = (
+                0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
+            )
+            return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
+        case base_grid.GeometryType.TORUS:
+            return mean_dual_edge_length
+
+
+def compute_default_rbf_scale_edge(
+    geometry_type: int,
+    mean_characteristic_length: ta.wpfloat,
+    mean_dual_edge_length: ta.wpfloat,
+) -> ta.wpfloat:
+    """Compute the default RBF scale factor for edges. This assumes that the inverse multiquadratic
+    kernel is used."""
+
+    match base_grid.GeometryType(geometry_type):
+        case base_grid.GeometryType.ICOSAHEDRON:
+            threshold = 2.0
+            c1 = 0.4
+            c2 = 2.0
+            c3 = 0.325
+
+            resol = mean_characteristic_length / 1000.0
+            scale = (
+                0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
+            )
+            return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
+        case base_grid.GeometryType.TORUS:
+            return mean_dual_edge_length
+
+
+def compute_default_rbf_scale_vertex(
+    geometry_type: int,
+    mean_characteristic_length: ta.wpfloat,
+    mean_dual_edge_length: ta.wpfloat,
+) -> ta.wpfloat:
+    """Compute the default RBF scale factor for vertices. This assumes that the Gaussian
+    kernel is used."""
+
+    match base_grid.GeometryType(geometry_type):
+        case base_grid.GeometryType.ICOSAHEDRON:
+            threshold = 2.0
+            c1 = 1.8
+            c2 = 3.0
+            c3 = 0.96
 
             resol = mean_characteristic_length / 1000.0
             scale = (
