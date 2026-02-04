@@ -195,10 +195,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self,
         grid: icon_grid.IconGrid,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
+        backend: model_backends.BackendLike
         horizontal_limiter: HorizontalFluxLimiter | None = None,
     ):
         self._grid = grid
