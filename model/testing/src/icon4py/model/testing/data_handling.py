@@ -22,7 +22,7 @@ def download_and_extract(
     dst: pathlib.Path,
 ) -> None:
     """
-    Download and extract a tar file with locking and retry logic.
+    Download and extract a tar file with locking.
 
     Args:
         uri: download url for archived data
@@ -63,7 +63,24 @@ def _perform_download(uri: str, dst: pathlib.Path) -> None:
         if not tarfile.is_tarfile(temp_path):
             raise OSError(f"{temp_path} needs to be a valid tar file")
         with tarfile.open(temp_path, mode="r:*") as tf:
-            tf.extractall(path=dst)
+            _safe_extract_tar(tf, dst)
+
+
+def _safe_extract_tar(tar: tarfile.TarFile, dst: pathlib.Path) -> None:
+    """
+    Safely extract tar archive, validating that all members stay within dst.
+    """
+    dst_resolved = dst.resolve()
+    for member in tar.getmembers():
+        member_path = (dst_resolved / member.name).resolve()
+        try:
+            member_path.relative_to(dst_resolved)
+        except ValueError as err:
+            raise ValueError(
+                f"Attempted path traversal: member '{member.name}' "
+                f"would extract to '{member_path}' outside '{dst_resolved}'"
+            ) from err
+    tar.extractall(path=dst)
 
 
 def download_test_data(dst: pathlib.Path, uri: str) -> None:
