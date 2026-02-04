@@ -360,7 +360,8 @@ name = 'gridtools'
 url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
-dace = {index = "gridtools"}
+# dace = {index = "gridtools"}
+dace = {git = "https://github.com/edopao/dace", branch = "fix_state_fusion"}
 ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
