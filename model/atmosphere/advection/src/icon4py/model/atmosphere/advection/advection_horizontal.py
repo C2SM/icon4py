@@ -54,7 +54,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 log = logging.getLogger(__name__)
 
 
-class HorizontalFluxLimiter(ABC):
+class HorizontalFluxLimiter:
     """Class that limits the horizontal finite volume numerical flux."""
 
     @abstractmethod
