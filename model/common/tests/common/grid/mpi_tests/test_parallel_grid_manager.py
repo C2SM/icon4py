@@ -908,3 +908,20 @@ def test_validate_skip_values_in_distributed_connectivities(
                 assert (
                     c in icon.CONNECTIVITIES_ON_BOUNDARIES or icon.CONNECTIVITIES_ON_PENTAGONS
                 ), f"rank={processor_props.rank} / {processor_props.comm_size}: {k} has skip found in table"
+
+
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("grid", [test_defs.Grids.MCH_CH_R04B09_DSL])
+def test_limited_area_raises(
+    processor_props: decomp_defs.ProcessProperties,
+    grid: test_defs.GridDescription,
+) -> None:
+    with pytest.raises(
+        NotImplementedError, match="Limited-area grids are not supported in distributed runs"
+    ):
+        _ = utils.run_gridmananger_for_multinode(
+            file=grid_utils.resolve_full_grid_file_name(grid),
+            run_properties=processor_props,
+            decomposer=decomp.MetisDecomposer(),
+        )

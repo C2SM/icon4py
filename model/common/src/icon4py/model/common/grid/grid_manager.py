@@ -411,6 +411,9 @@ class GridManager:
         global_params = self._construct_global_params(allocator, global_size, geometry_type)
         limited_area = refinement.is_limited_area_grid(cell_refinement, array_ns=xp)
 
+        if limited_area and not run_properties.is_single_rank():
+            raise NotImplementedError("Limited-area grids are not supported in distributed runs")
+
         cell_to_cell_neighbors = self._get_index_field(gridfile.ConnectivityName.C2E2C, array_ns=xp)
         global_neighbor_tables = {
             dims.C2E2C: cell_to_cell_neighbors,
