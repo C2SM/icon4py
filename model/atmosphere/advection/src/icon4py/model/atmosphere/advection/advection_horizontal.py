@@ -74,10 +74,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
         self,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
+        backend: model_backends.BackendLike
         exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._grid = grid
