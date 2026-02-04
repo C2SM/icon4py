@@ -43,13 +43,7 @@ offsets = [dims.E2C, dims.E2V, dims.C2E, dims.C2E2C, dims.V2C, dims.V2E, dims.C2
 
 
 @pytest.mark.parametrize("dim", grid_utils.main_horizontal_dims())
-def test_decomposition_info_single_node_empty_halo(
-    dim: gtx.Dimension,
-    processor_props: definitions.ProcessProperties,
-) -> None:
-    if not processor_props.is_single_rank():
-        pytest.xfail()
-
+def test_decomposition_info_single_node_empty_halo(dim: gtx.Dimension) -> None:
     manager = grid_utils.run_grid_manager(
         test_defs.Grids.MCH_CH_R04B09_DSL, keep_skip_values=True, backend=None
     )
