@@ -363,7 +363,7 @@ url = 'https://gridtools.github.io/pypi/'
 # dace = {index = "gridtools"}
 dace = {git = "https://github.com/edopao/dace", branch = "fix_state_fusion"}
 ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
-# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
+gt4py = {git = "https://github.com/edopao/gt4py", branch = "v1.1.3_dace_main"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
