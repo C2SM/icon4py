@@ -56,6 +56,7 @@ def get_dace_options(
         backend_descriptor["use_zero_origin"] = True
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
+        optimization_args["fuse_tasklets"] = True
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
