@@ -359,10 +359,7 @@ class NoAdvection(HorizontalAdvection):
     def __init__(
         self,
         grid: icon_grid.IconGrid,
-        backend: gtx_typing.Backend
-        | model_backends.DeviceType
-        | model_backends.BackendDescriptor
-        | None,
+        backend: model_backends.BackendLike
     ):
         log.debug("horizontal advection class init - start")
 
