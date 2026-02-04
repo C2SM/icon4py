@@ -14,12 +14,14 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.apply_weighted_2nd_and_4th_order_divergence_damping import (
     apply_weighted_2nd_and_4th_order_divergence_damping,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
+
+from . import test_dycore_utils
 
 
 def apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
@@ -41,13 +43,28 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        scal_divdamp: np.ndarray,
-        bdy_divdamp: np.ndarray,
+        interpolated_fourth_order_divdamp_factor: np.ndarray,
         nudgecoeff_e: np.ndarray,
         z_graddiv2_vn: np.ndarray,
         vn: np.ndarray,
+        divdamp_order: gtx.int32,
+        mean_cell_area: float,
+        second_order_divdamp_factor: float,
+        max_nudging_coefficient: float,
+        dbl_eps: float,
         **kwargs: Any,
     ) -> dict:
+        scal_divdamp = test_dycore_utils.fourth_order_divdamp_scaling_coeff_numpy(
+            interpolated_fourth_order_divdamp_factor,
+            divdamp_order,
+            second_order_divdamp_factor,
+            mean_cell_area,
+        )
+        bdy_divdamp = (
+            test_dycore_utils.calculate_reduced_fourth_order_divdamp_coeff_at_nest_boundary_numpy(
+                scal_divdamp, max_nudging_coefficient
+            )
+        )
         vn = apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
             scal_divdamp,
             bdy_divdamp,
@@ -59,18 +76,27 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
-        scal_divdamp = random_field(grid, dims.KDim, dtype=wpfloat)
-        bdy_divdamp = random_field(grid, dims.KDim, dtype=wpfloat)
-        nudgecoeff_e = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        z_graddiv2_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim)
+        nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        z_graddiv2_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+
+        divdamp_order = 24
+        mean_cell_area = 1000.0
+        second_order_divdamp_factor = 3.0
+        max_nudging_coefficient = 0.3
+        dbl_eps = constants.DBL_EPS
 
         return dict(
-            scal_divdamp=scal_divdamp,
-            bdy_divdamp=bdy_divdamp,
+            interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
             nudgecoeff_e=nudgecoeff_e,
             z_graddiv2_vn=z_graddiv2_vn,
             vn=vn,
+            divdamp_order=divdamp_order,
+            mean_cell_area=mean_cell_area,
+            second_order_divdamp_factor=second_order_divdamp_factor,
+            max_nudging_coefficient=max_nudging_coefficient,
+            dbl_eps=dbl_eps,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,
