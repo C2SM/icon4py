@@ -15,6 +15,7 @@ from icon4py.model.common.grid import (
     geometry_attributes as geometry_attrs,
     grid_manager as gm,
     gridfile,
+    vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import config, data_handling, definitions, locking
@@ -64,8 +65,8 @@ def get_grid_manager(
         backend: the gt4py Backend we are running on
     """
     manager = gm.GridManager(
-        filename,
-        num_levels=num_levels,
+        grid_file=filename,
+        config=v_grid.VerticalGridConfig(num_levels=num_levels),
         transformation=gridfile.ToZeroBasedIndexTransformation(),
     )
     manager(allocator=allocator, keep_skip_values=keep_skip_values)

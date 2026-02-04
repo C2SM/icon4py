@@ -30,6 +30,7 @@ from icon4py.model.common.grid import (
     gridfile,
     horizontal as h_grid,
     icon,
+    vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
@@ -59,7 +60,11 @@ def test_grid_manager_validate_decomposer(
     global_grid_descriptor: test_defs.GridDescription,
 ) -> None:
     file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
-    manager = gm.GridManager(file, utils.NUM_LEVELS, gridfile.ToZeroBasedIndexTransformation())
+    manager = gm.GridManager(
+        grid_file=file,
+        config=v_grid.VerticalGridConfig(num_levels=utils.NUM_LEVELS),
+        transformation=gridfile.ToZeroBasedIndexTransformation(),
+    )
     with pytest.raises(exceptions.InvalidConfigError) as e:
         manager(
             keep_skip_values=True,

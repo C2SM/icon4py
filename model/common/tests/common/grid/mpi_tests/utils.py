@@ -9,7 +9,7 @@
 import pathlib
 
 from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
-from icon4py.model.common.grid import grid_manager as gm
+from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid
 
 
 def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
@@ -24,7 +24,9 @@ def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
 
 
 def _grid_manager(file: pathlib.Path, num_levels: int) -> gm.GridManager:
-    manager = gm.GridManager(str(file), num_levels=num_levels)
+    manager = gm.GridManager(
+        grid_file=str(file), config=v_grid.VerticalGridConfig(num_levels=num_levels)
+    )
     return manager
 
 
@@ -33,7 +35,7 @@ def run_gridmananger_for_multinode(
     run_properties: decomp_defs.ProcessProperties,
     decomposer: decomp.Decomposer,
 ) -> gm.GridManager:
-    manager = _grid_manager(file, num_levels=NUM_LEVELS)
+    manager = _grid_manager(file, NUM_LEVELS)
     manager(
         keep_skip_values=True, allocator=None, run_properties=run_properties, decomposer=decomposer
     )

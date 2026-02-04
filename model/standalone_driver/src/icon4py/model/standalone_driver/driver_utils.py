@@ -64,7 +64,10 @@ def create_grid_manager(
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
 ) -> gm.GridManager:
     grid_manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(), grid_file_path, vertical_grid_config, global_reductions
+        grid_file=grid_file_path,
+        config=vertical_grid_config,
+        transformation=gm.ToZeroBasedIndexTransformation(),
+        global_reductions=global_reductions,
     )
     grid_manager(allocator=allocator, keep_skip_values=True)
 

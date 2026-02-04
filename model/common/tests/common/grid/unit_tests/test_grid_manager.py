@@ -351,8 +351,8 @@ def test_gridmanager_given_file_not_found_then_abort(
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:
         manager = gm.GridManager(
-            fname,
-            num_levels=80,
+            grid_file=fname,
+            config=v_grid.VerticalGridConfig(num_levels=80),
             transformation=icon4py.model.common.grid.gridfile.NoTransformation(),
         )
         manager(allocator=cpu_allocator, keep_skip_values=True)
@@ -615,7 +615,7 @@ def test_local_connectivity(
     partitioner = halo.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
-    manager = gm.GridManager(num_levels=10, grid_file=file)
+    manager = gm.GridManager(config=v_grid.VerticalGridConfig(num_levels=10), grid_file=file)
     manager(
         decomposer=partitioner,
         allocator=allocator,

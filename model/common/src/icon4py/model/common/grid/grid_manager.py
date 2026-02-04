@@ -22,7 +22,13 @@ from icon4py.model.common.decomposition import (
     halo,
 )
 from icon4py.model.common.exceptions import InvalidConfigError
-from icon4py.model.common.grid import base, grid_refinement as refinement, gridfile, icon
+from icon4py.model.common.grid import (
+    base,
+    grid_refinement as refinement,
+    gridfile,
+    icon,
+    vertical as v_grid,
+)
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -58,13 +64,13 @@ class GridManager:
     def __init__(
         self,
         grid_file: pathlib.Path | str,
-        num_levels: int,
+        config: v_grid.VerticalGridConfig,  # TODO(msimberg): remove to separate vertical and horizontal grid
         transformation: gridfile.IndexTransformation = _fortan_to_python_transformer,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._transformation = transformation
         self._file_name = str(grid_file)
-        self._num_levels = num_levels
+        self._vertical_config = config
         # Output
         self._grid: icon.IconGrid | None = None
         self._decomposition_info: decomposition.DecompositionInfo | None = None
@@ -448,7 +454,7 @@ class GridManager:
 
         grid_config = base.GridConfig(
             horizontal_size=distributed_size,
-            vertical_size=self._num_levels,
+            vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
             keep_skip_values=with_skip_values,
         )
