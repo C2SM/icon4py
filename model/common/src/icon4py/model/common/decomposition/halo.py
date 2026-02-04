@@ -29,9 +29,9 @@ def _value(k: gtx.FieldOffset | str) -> str:
 
 @runtime_checkable
 class HaloConstructor(Protocol):
-    """Callable that takes a mapping from faces (aka cells) to ranks"""
+    """Callable that takes a mapping from cells to ranks"""
 
-    def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo: ...
+    def __call__(self, cell_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo: ...
 
 
 class NoHalos(HaloConstructor):
@@ -43,7 +43,7 @@ class NoHalos(HaloConstructor):
         self._size = horizontal_size
         self._allocator = allocator
 
-    def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
+    def __call__(self, cell_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         xp = data_alloc.import_array_ns(self._allocator)
         create_arrays = functools.partial(_create_dummy_decomposition_arrays, array_ns=xp)
         decomposition_info = defs.DecompositionInfo()
@@ -84,18 +84,18 @@ class IconLikeHaloConstructor(HaloConstructor):
         self._connectivities = {_value(k): v for k, v in connectivities.items()}
         self._assert_all_neighbor_tables()
 
-    def _validate_mapping(self, face_to_rank_mapping: data_alloc.NDArray) -> None:
+    def _validate_mapping(self, cell_to_rank_mapping: data_alloc.NDArray) -> None:
         # validate the distribution mapping:
         num_cells = self._connectivity(dims.C2E2C).shape[0]
         expected_shape = (num_cells,)
-        if not face_to_rank_mapping.shape == expected_shape:
+        if not cell_to_rank_mapping.shape == expected_shape:
             raise exceptions.ValidationError(
                 "rank_mapping",
-                f"should have shape {expected_shape} but is {face_to_rank_mapping.shape}",
+                f"should have shape {expected_shape} but is {cell_to_rank_mapping.shape}",
             )
 
         # the decomposition should match the communicator size
-        if self._xp.max(face_to_rank_mapping) > self._props.comm_size - 1:
+        if self._xp.max(cell_to_rank_mapping) > self._props.comm_size - 1:
             raise exceptions.ValidationError(
                 "rank_mapping",
                 f"The distribution assumes more nodes than the current run is scheduled on  {self._props} ",
@@ -170,14 +170,14 @@ class IconLikeHaloConstructor(HaloConstructor):
     ) -> data_alloc.NDArray:
         return self._find_neighbors(vertex_line, dims.V2C)
 
-    def owned_cells(self, face_to_rank: data_alloc.NDArray) -> data_alloc.NDArray:
+    def owned_cells(self, cell_to_rank: data_alloc.NDArray) -> data_alloc.NDArray:
         """Returns the full-grid indices of the cells owned by this rank"""
-        owned_cells = face_to_rank == self._props.rank
+        owned_cells = cell_to_rank == self._props.rank
         return self._xp.asarray(owned_cells).nonzero()[0]
 
     def _update_owner_mask_by_max_rank_convention(
         self,
-        face_to_rank: data_alloc.NDArray,
+        cell_to_rank: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
         all_indices: data_alloc.NDArray,
         indices_on_cutting_line: data_alloc.NDArray,
@@ -194,13 +194,13 @@ class IconLikeHaloConstructor(HaloConstructor):
             owner_mask: owner mask for the dimension
             all_indices: (global) indices of the dimension
             indices_on_cutting_line: global indices of the elements on the cutting line
-            target_connectivity: connectivity matrix mapping the dimension d to faces
+            target_connectivity: connectivity matrix mapping the dimension d to cell
         Returns:
             updated owner mask
         """
         for index in indices_on_cutting_line:
             local_index = self._xp.nonzero(all_indices == index)[0][0]
-            owning_ranks = face_to_rank[target_connectivity[index]]
+            owning_ranks = cell_to_rank[target_connectivity[index]]
             assert (
                 self._xp.unique(owning_ranks).size > 1
             ), f"rank {self._props.rank}: all neighboring cells are owned by the same rank"
@@ -214,12 +214,12 @@ class IconLikeHaloConstructor(HaloConstructor):
                 owner_mask[local_index] = True
         return owner_mask
 
-    def __call__(self, face_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
+    def __call__(self, cell_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         """
              Constructs the DecompositionInfo for the current rank.
 
              Args:
-                 face_to_rank: a mapping of cells to a rank
+                 cell_to_rank: a mapping of cells to a rank
 
              The DecompositionInfo object is constructed for all horizontal
              dimension starting from the cell distribution.  Edges and vertices
@@ -311,10 +311,10 @@ class IconLikeHaloConstructor(HaloConstructor):
                complete (= without skip value) for a distributed setup.
         """
 
-        self._validate_mapping(face_to_rank)
+        self._validate_mapping(cell_to_rank)
 
         #: cells
-        owned_cells = self.owned_cells(face_to_rank)  # global indices of owned cells
+        owned_cells = self.owned_cells(cell_to_rank)  # global indices of owned cells
         first_halo_cells = self.next_halo_line(owned_cells)
         #: vertices
         vertex_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
@@ -365,7 +365,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         decomp_info.set_dimension(dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels)
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
         vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
-            face_to_rank,
+            cell_to_rank,
             vertex_owner_mask,
             all_vertices,
             vertex_on_cutting_line,
@@ -392,7 +392,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
         edge_owner_mask = self._xp.isin(all_edges, edges_on_owned_cells)
         edge_owner_mask = self._update_owner_mask_by_max_rank_convention(
-            face_to_rank,
+            cell_to_rank,
             edge_owner_mask,
             all_edges,
             edges_on_cutting_line,
@@ -434,7 +434,7 @@ class Decomposer(Protocol):
         Call the decomposition.
 
         Args:
-            adjacency_matrix: face-to-face connectivity matrix on the global (undecomposed) grid. In the Icon4py context this C2E2C
+            adjacency_matrix: cell-to-cell connectivity matrix on the global (undecomposed) grid. In the Icon4py context this C2E2C
             n_part: number of nodes
         """
         ...
