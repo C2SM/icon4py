@@ -1362,7 +1362,7 @@ wheels = [
 [[package]]
 name = "ghex"
 version = "0.4.1"
-source = { git = "https://github.com/msimberg/GHEX.git?branch=async-mpi#6d896166994cedbcfc50da1873239a5edb212e3f" }
+source = { git = "https://github.com/philip-paul-mueller/GHEX.git?branch=phimuell__async-mpi-2#80c0650fdae40bdd40e0435e5687267bada4cdd2" }
 dependencies = [
     { name = "mpi4py" },
     { name = "numpy" },
@@ -1887,7 +1887,7 @@ requires-dist = [
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "dace", specifier = "==43!2026.1.21", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
-    { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
+    { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/philip-paul-mueller/GHEX.git?branch=phimuell__async-mpi-2" },
     { name = "gt4py", specifier = "==1.1.3" },
     { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
     { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
