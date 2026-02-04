@@ -235,7 +235,7 @@ def test_advection_run_single_step(
 def test_lsq_compute_coeffs(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
-    interpolation_savepoint,
+    interpolation_savepoint: sb.InterpolationSavepoint,
     experiment: definitions.Experiment,
 ) -> None:
     gm = grid_utils.get_grid_manager_from_identifier(
