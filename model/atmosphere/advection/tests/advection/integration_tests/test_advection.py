@@ -236,7 +236,7 @@ def test_lsq_compute_coeffs(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
     interpolation_savepoint,
-    experiment,
+    experiment: definitions.Experiment,
 ) -> None:
     gm = grid_utils.get_grid_manager_from_identifier(
         experiment.grid,
