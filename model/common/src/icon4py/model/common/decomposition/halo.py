@@ -152,8 +152,8 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def owned_cells(self, cell_to_rank: data_alloc.NDArray) -> data_alloc.NDArray:
         """Returns the full-grid indices of the cells owned by this rank"""
-        owned_cells = cell_to_rank == self._props.rank
-        return self._xp.asarray(owned_cells).nonzero()[0]
+        assert cell_to_rank.ndim == 1
+        return self._xp.where(cell_to_rank == self._props.rank)[0]
 
     def _update_owner_mask_by_max_rank_convention(
         self,
