@@ -60,21 +60,21 @@ def gnomonic_proj_single_val(lon_c: float, lat_c: float, lon: float, lat: float)
 
 
 def plane_torus_closest_coordinates(
-    cc_cv_x: tuple, cc_cell_x: float, cc_cell_y: float, domain_length: float, domain_height: float
+    cc_cv_x: float,
+    cc_cv_y: float,
+    cc_cell_x: float,
+    cc_cell_y: float,
+    domain_length: float,
+    domain_height: float,
 ) -> tuple:
-    x0 = cc_cv_x[0]
-    x1 = cc_cell_x
-    y0 = cc_cv_x[1]
-    y1 = cc_cell_y
-
     x1 = np.where(
-        abs(x1 - x0) <= 0.5 * domain_length,
-        x1,
-        np.where(x0 > x1, x1 + domain_length, x1 - domain_length),
+        abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length,
+        cc_cell_x,
+        np.where(cc_cv_x > cc_cell_x, cc_cell_x + domain_length, cc_cell_x - domain_length),
     )
     y1 = np.where(
-        abs(y1 - y0) <= 0.5 * domain_height,
-        y1,
-        np.where(y0 > y1, y1 + domain_height, y1 - domain_height),
+        abs(cc_cell_y - cc_cv_y) <= 0.5 * domain_height,
+        cc_cell_y,
+        np.where(cc_cv_y > cc_cell_y, cc_cell_y + domain_height, cc_cell_y - domain_height),
     )
     return x1, y1

@@ -138,7 +138,8 @@ def lsq_compute_coeff_cell_torus(
         cc_cv = (cell_center_x[jc], cell_center_y[jc])
         for js in range(lsq_dim_stencil):
             cc_cell[js, :] = plane_torus_closest_coordinates(
-                cc_cv,
+                cell_center_x[jc],
+                cell_center_y[jc],
                 cell_center_x[ilc_s][js],
                 cell_center_y[ilc_s][js],
                 domain_length,
