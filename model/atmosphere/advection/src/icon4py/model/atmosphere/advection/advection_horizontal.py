@@ -40,6 +40,7 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
+    model_backends,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -73,7 +74,10 @@ class PositiveDefinite(HorizontalFluxLimiter):
         self,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
-        backend: gtx_typing.Backend | None,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._grid = grid
@@ -102,9 +106,10 @@ class PositiveDefinite(HorizontalFluxLimiter):
 
         # stencils
         self._compute_positive_definite_horizontal_multiplicative_flux_factor = setup_program(
-            backend=backend,
+            backend=self._backend,
             program=compute_positive_definite_horizontal_multiplicative_flux_factor,
             constant_args={
+                "geofac_div": self._interpolation_state.geofac_div,
                 "dbl_eps": constants.DBL_EPS,
             },
             horizontal_sizes={
@@ -118,7 +123,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
             offset_provider=self._grid.connectivities,
         )
         self._apply_positive_definite_horizontal_multiplicative_flux_factor = setup_program(
-            backend=backend,
+            backend=self._backend,
             program=apply_positive_definite_horizontal_multiplicative_flux_factor,
             horizontal_sizes={
                 "horizontal_start": self._start_edge_lateral_boundary_level_5,
@@ -143,7 +148,6 @@ class PositiveDefinite(HorizontalFluxLimiter):
             "running stencil compute_positive_definite_horizontal_multiplicative_flux_factor - start"
         )
         self._compute_positive_definite_horizontal_multiplicative_flux_factor(
-            geofac_div=self._interpolation_state.geofac_div,
             p_cc=p_tracer_now,
             p_rhodz_now=rhodz_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
@@ -194,7 +198,10 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self,
         grid: icon_grid.IconGrid,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
-        backend: gtx_typing.Backend | None,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
         horizontal_limiter: HorizontalFluxLimiter | None = None,
     ):
         self._grid = grid
@@ -229,7 +236,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
 
         # stencils
         self._reconstruct_linear_coefficients_svd = setup_program(
-            backend=backend,
+            backend=self._backend,
             program=reconstruct_linear_coefficients_svd,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_lateral_boundary_level_2,
@@ -242,7 +249,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             offset_provider=self._grid.connectivities,
         )
         self._compute_horizontal_tracer_flux_from_linear_coefficients_alt = setup_program(
-            backend=backend,
+            backend=self._backend,
             program=compute_horizontal_tracer_flux_from_linear_coefficients_alt,
             horizontal_sizes={
                 "horizontal_start": self._start_edge_lateral_boundary_level_5,
@@ -352,7 +359,14 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
+    ):
         log.debug("horizontal advection class init - start")
 
         # input arguments
@@ -366,7 +380,7 @@ class NoAdvection(HorizontalAdvection):
 
         # stencils
         self._copy_cell_kdim_field = setup_program(
-            backend=backend,
+            backend=self._backend,
             program=copy_cell_kdim_field,
             horizontal_sizes={
                 "horizontal_start": self._start_cell_nudging,
@@ -470,7 +484,10 @@ class SemiLagrangian(FiniteVolume):
         metric_state: advection_states.AdvectionMetricState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: gtx_typing.Backend | None,
+        backend: gtx_typing.Backend
+        | model_backends.DeviceType
+        | model_backends.BackendDescriptor
+        | None,
         exchange: decomposition.ExchangeRuntime | None = None,
     ):
         log.debug("horizontal advection class init - start")
@@ -513,7 +530,7 @@ class SemiLagrangian(FiniteVolume):
 
         # stencils
         self._compute_edge_tangential = setup_program(
-            backend=backend,
+            backend=self._backend,
             program=compute_edge_tangential,
             constant_args={
                 "ptr_coeff": self._interpolation_state.rbf_vec_coeff_e,
@@ -530,7 +547,7 @@ class SemiLagrangian(FiniteVolume):
         )
 
         self._compute_barycentric_backtrajectory_alt = setup_program(
-            backend=backend,
+            backend=self._backend,
             program=compute_barycentric_backtrajectory_alt,
             constant_args={
                 "pos_on_tplane_e_1": self._interpolation_state.pos_on_tplane_e_1,
@@ -551,7 +568,7 @@ class SemiLagrangian(FiniteVolume):
             offset_provider=self._grid.connectivities,
         )
         self._integrate_tracer_horizontally = setup_program(
-            backend=backend,
+            backend=self._backend,
             program=integrate_tracer_horizontally,
             constant_args={
                 "deepatmo_divh": self._metric_state.deepatmo_divh,

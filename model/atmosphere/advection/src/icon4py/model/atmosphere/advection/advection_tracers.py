@@ -51,8 +51,14 @@ def compute_lsq_weights_c(
 
 
 def compute_z_lsq_mat_c(
-    cell_owner_mask, z_lsq_mat_c, lsq_weights_c, z_dist_g, jc, lsq_dim_unk, lsq_dim_c
-):
+    cell_owner_mask: data_alloc.NDArray,
+    z_lsq_mat_c: data_alloc.NDArray,
+    lsq_weights_c: data_alloc.NDArray,
+    z_dist_g: data_alloc.NDArray,
+    jc: int,
+    lsq_dim_unk: int,
+    lsq_dim_c: int,
+) -> data_alloc.NDArray:
     min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
     if cell_owner_mask[jc]:
         z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
