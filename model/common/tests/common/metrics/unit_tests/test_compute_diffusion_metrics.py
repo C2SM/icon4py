@@ -56,8 +56,6 @@ def test_compute_diffusion_mask_and_coeff(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    if experiment == definitions.Experiments.EXCLAIM_APE:
-        pytest.skip(f"Fields not computed for {experiment}")
 
     maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
@@ -142,8 +140,6 @@ def test_compute_diffusion_intcoef_and_vertoffset(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    if experiment == definitions.Experiments.EXCLAIM_APE:
-        pytest.skip(f"Fields not computed for {experiment}")
 
     maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
