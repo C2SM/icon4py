@@ -92,9 +92,9 @@ build_distributed:
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
         SLURM_TIMELIMIT: '00:05:00'
-    - if: $COMPONENT == 'atmosphere/dycore' && $BACKEND == 'dace_cpu'
+    - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
       variables:
-        SLURM_TIMELIMIT: '00:20:00'
+        SLURM_TIMELIMIT: '00:30:00'
     - if: $COMPONENT == 'atmosphere/dycore'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
