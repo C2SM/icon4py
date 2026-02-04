@@ -476,6 +476,7 @@ def _read_config(
     driver_config.DriverConfig,
     v_grid.VerticalGridConfig,
     diffusion.DiffusionConfig,
+    advection.AdvectionConfig,
     solve_nh.NonHydrostaticConfig,
 ]:
     vertical_grid_config = v_grid.VerticalGridConfig(
@@ -498,7 +499,13 @@ def _read_config(
         velocity_boundary_diffusion_denom=200.0,
     )
 
-    # TODO (ricoh): [c34] build advection config
+    # TODO (ricoh): [c34] check config correctness
+    advection_config = advection.AdvectionConfig(
+        horizontal_advection_limiter=advection.HorizontalAdvectionLimiter.NO_LIMITER,
+        horizontal_advection_type=advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+        vertical_advection_limiter=advection.VerticalAdvectionLimiter.NO_LIMITER,
+        vertical_advection_type=advection.VerticalAdvectionType.UPWIND_1ST_ORDER,
+    )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(
         fourth_order_divdamp_factor=0.0025,
@@ -518,11 +525,11 @@ def _read_config(
         profiling_stats=profiling_stats,
     )
 
-    # TODO (ricoh): [c34] return advection config
     return (
         icon4py_driver_config,
         vertical_grid_config,
         diffusion_config,
+        advection_config,
         nonhydro_config,
     )
 
@@ -578,10 +585,11 @@ def initialize_driver(
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
-    # TODO(ricoh): [c34] get advection_config from _read_config()
-    driver_config, vertical_grid_config, diffusion_config, solve_nh_config = _read_config(
-        output_path=output_path,
-        enable_profiling=False,
+    driver_config, vertical_grid_config, diffusion_config, advection_config, solve_nh_config = (
+        _read_config(
+            output_path=output_path,
+            enable_profiling=False,
+        )
     )
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")

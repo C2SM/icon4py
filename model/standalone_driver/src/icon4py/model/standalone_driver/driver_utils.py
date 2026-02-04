@@ -358,7 +358,13 @@ def initialize_granules(
             ),
         ),
         least_squares_state=advection_states.AdvectionLeastSquaresState(
-            # TODO(ricoh): [c34] initialize with zero
+            # TODO(ricoh): [c34] initialize with zero, check if works
+            lsq_pseudoinv_1=data_alloc.constant_field(
+                grid, 0.0, dims.CellDim, dims.C2E2CDim, allocator=backend
+            ),
+            lsq_pseudoinv_2=data_alloc.constant_field(
+                grid, 0.0, dims.CellDim, dims.C2E2CDim, allocator=backend
+            ),
         ),
         metric_state=advection_states.AdvectionMetricState(
             # TODO(ricoh): [c34] DEEPATMO_XYZ don't exist yet
