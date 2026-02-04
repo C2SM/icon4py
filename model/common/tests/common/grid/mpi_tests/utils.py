@@ -8,7 +8,7 @@
 
 import pathlib
 
-from icon4py.model.common.decomposition import definitions as decomp_defs, halo
+from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import grid_manager as gm
 
 
@@ -17,7 +17,7 @@ def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
     manager(
         keep_skip_values=True,
         run_properties=decomp_defs.SingleNodeProcessProperties(),
-        decomposer=halo.SingleNodeDecomposer(),
+        decomposer=decomp.SingleNodeDecomposer(),
         allocator=None,
     )
     return manager
@@ -31,7 +31,7 @@ def _grid_manager(file: pathlib.Path, num_levels: int) -> gm.GridManager:
 def run_gridmananger_for_multinode(
     file: pathlib.Path,
     run_properties: decomp_defs.ProcessProperties,
-    decomposer: halo.Decomposer,
+    decomposer: decomp.Decomposer,
 ) -> gm.GridManager:
     manager = _grid_manager(file, num_levels=NUM_LEVELS)
     manager(

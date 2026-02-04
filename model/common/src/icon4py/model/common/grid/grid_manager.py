@@ -16,14 +16,18 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition, halo
+from icon4py.model.common.decomposition import (
+    decomposer as decomp,
+    definitions as decomposition,
+    halo,
+)
 from icon4py.model.common.exceptions import InvalidConfigError
 from icon4py.model.common.grid import base, grid_refinement as refinement, gridfile, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 _log = logging.getLogger(__name__)
-_single_node_decomposer = halo.SingleNodeDecomposer()
+_single_node_decomposer = decomp.SingleNodeDecomposer()
 _single_process_props = decomposition.SingleNodeProcessProperties()
 _fortan_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
 
@@ -95,11 +99,11 @@ class GridManager:
         self,
         allocator: gtx_typing.FieldBufferAllocationUtil | None,
         keep_skip_values: bool,
-        decomposer: halo.Decomposer = _single_node_decomposer,
+        decomposer: decomp.Decomposer = _single_node_decomposer,
         run_properties=_single_process_props,
     ):
         if not run_properties.is_single_rank() and isinstance(
-            decomposer, halo.SingleNodeDecomposer
+            decomposer, decomp.SingleNodeDecomposer
         ):
             raise InvalidConfigError("Need a Decomposer for multi node run")
 
@@ -383,7 +387,7 @@ class GridManager:
         allocator: gtx_typing.FieldBufferAllocationUtil | None,
         with_skip_values: bool,
         geometry_type: base.GeometryType,
-        decomposer: halo.Decomposer,
+        decomposer: decomp.Decomposer,
         run_properties: decomposition.ProcessProperties,
     ) -> None:
         """Construct the grid topology from the icon grid file.

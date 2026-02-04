@@ -22,7 +22,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomp_defs,
     definitions as decomposition,
 )
-from icon4py.model.common.decomposition.halo import MetisDecomposer
+from icon4py.model.common.decomposition.decomposer import MetisDecomposer
 from icon4py.model.common.grid import base as base_grid, gridfile, horizontal as h_grid, icon
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
 
