@@ -56,6 +56,7 @@ log = logging.getLogger(__name__)
 class HorizontalFluxLimiter:
     """Class that limits the horizontal finite volume numerical flux."""
 
+    @abstractmethod
     def apply_flux_limiter(
         self,
         p_tracer_now: fa.CellKField[ta.wpfloat],
