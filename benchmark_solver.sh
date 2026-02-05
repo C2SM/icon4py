@@ -31,7 +31,7 @@ pytest -sv \
     -k "test_TestVerticallyImplicitSolverAtPredictorStep[compile_time_domain-at_first_substep[False]__is_iau_active[False]__divdamp_type[32]]"
 
 # Run the benchmark and collect its trace
-# TODO(CSCS): Figure out why reusing the cached compiled stencils doesn't work under rocprofv3 and the GT4Py programs get recompiled every time we rerun the profiler
+# TODO(AMD/CSCS): Figure out why reusing the cached compiled stencils doesn't work under rocprofv3 and the GT4Py programs get recompiled every time we rerun the profiler
 # TODO(AMD): Generating `rocpd` output fails with segfaults
 export ICON4PY_STENCIL_TEST_WARMUP_ROUNDS=0
 export ICON4PY_STENCIL_TEST_ITERATIONS=1
@@ -55,6 +55,8 @@ echo "$LAST_COMPILED_KERNEL_NAMES"
 ROCPROF_COMPUTE_KERNEL_NAME_FILTER="-k $LAST_COMPILED_KERNEL_NAMES"
 
 # Run rocprof-compute filtering the kernels of interest
+# TODO(AMD/CSCS): Figure out why reusing the cached compiled stencils doesn't work under rocprofv3 and the GT4Py programs get recompiled every time we rerun the profiler
+#                 This is problematic when gathering the data for the rocprof-compute analysis as different compilations may result in different kernel names
 export ICON4PY_STENCIL_TEST_WARMUP_ROUNDS=0
 export ICON4PY_STENCIL_TEST_ITERATIONS=1
 export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=1
@@ -68,7 +70,7 @@ rocprof-compute profile --name rcu_${GT4PY_BUILD_CACHE_DIR} ${ROCPROF_COMPUTE_KE
     model/atmosphere/dycore/tests/dycore/stencil_tests/test_vertically_implicit_dycore_solver_at_predictor_step.py \
     -k "test_TestVerticallyImplicitSolverAtPredictorStep[compile_time_domain-at_first_substep[False]__is_iau_active[False]__divdamp_type[32]]"
 
-# Roofline generation fails with
+# TODO(AMD): Roofline generation fails with
 #   File "/user-environment/linux-zen3/rocprofiler-compute-7.1.0-rjjjgkz67w66bp46jw7bvlfyduzr6vhv/libexec/rocprofiler-compute/roofline.py", line 998, in standalone_roofline
 #    self.empirical_roofline(ret_df=t_df)
 #  File "/user-environment/linux-zen3/rocprofiler-compute-7.1.0-rjjjgkz67w66bp46jw7bvlfyduzr6vhv/libexec/rocprofiler-compute/utils/logger.py", line 66, in wrap_function
