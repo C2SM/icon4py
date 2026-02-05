@@ -85,7 +85,7 @@ def lsq_compute_coeffs(
     lsq_dim_stencil: int,
     start_idx: int,
     min_rlcell_int: int,
-    geometry_type: str,
+    geometry_type: base_grid.GeometryType,
 ) -> data_alloc.NDArray:
     lsq_weights_c = np.zeros((min_rlcell_int, lsq_dim_stencil))
     lsq_pseudoinv = np.zeros((min_rlcell_int, lsq_dim_unk, lsq_dim_c))
