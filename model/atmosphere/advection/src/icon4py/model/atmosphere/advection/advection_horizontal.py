@@ -344,13 +344,12 @@ class NoAdvection(HorizontalAdvection):
         log.debug("horizontal advection class init - start")
 
         # input arguments
-        self._grid = grid
         self._backend = backend
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
-        self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        self._start_cell_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         # stencils
         self._copy_cell_kdim_field = setup_program(
@@ -362,9 +361,9 @@ class NoAdvection(HorizontalAdvection):
             },
             vertical_sizes={
                 "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
+                "vertical_end": gtx.int32(grid.num_levels),
             },
-            offset_provider=self._grid.connectivities,
+            offset_provider=grid.connectivities,
         )
 
         log.debug("horizontal advection class init - end")
