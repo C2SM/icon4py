@@ -268,7 +268,7 @@ def test_lsq_compute_coeffs(
         lsq_dim_stencil,
         start_idx,
         min_rlcell_int,
-        icon_grid.geometry_type.name,
+        icon_grid.geometry_type,
     )
 
     assert test_helpers.dallclose(
