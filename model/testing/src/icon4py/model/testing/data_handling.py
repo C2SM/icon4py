@@ -63,24 +63,8 @@ def _perform_download(uri: str, dst: pathlib.Path) -> None:
         if not tarfile.is_tarfile(temp_path):
             raise OSError(f"{temp_path} needs to be a valid tar file")
         with tarfile.open(temp_path, mode="r:*") as tf:
-            _safe_extract_tar(tf, dst)
+            tf.extractall(path=dst)
 
-
-def _safe_extract_tar(tar: tarfile.TarFile, dst: pathlib.Path) -> None:
-    """
-    Safely extract tar archive, validating that all members stay within dst.
-    """
-    dst_resolved = dst.resolve()
-    for member in tar.getmembers():
-        member_path = (dst_resolved / member.name).resolve()
-        try:
-            member_path.relative_to(dst_resolved)
-        except ValueError as err:
-            raise ValueError(
-                f"Attempted path traversal: member '{member.name}' "
-                f"would extract to '{member_path}' outside '{dst_resolved}'"
-            ) from err
-    tar.extractall(path=dst)
 
 
 def download_test_data(dst: pathlib.Path, uri: str) -> None:
