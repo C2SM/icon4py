@@ -69,6 +69,9 @@ ZD_DIFFCOEF_DSL: Final[str] = "zd_diffcoef_dsl"
 ZD_INTCOEF_DSL: Final[str] = "zd_intcoef_dsl"
 ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
 CELL_HEIGHT_ON_HALF_LEVEL: Final[str] = "vertical_coordinates_on_half_levels"
+DEEPATMO_DIVH: Final[str] = "deepatmo_divh_mc"
+DEEPATMO_DIVZL: Final[str] = "deepatmo_divzL_mc"
+DEEPATMO_DIVZU: Final[str] = "deepatmo_divzU_mc"
 
 
 attrs: dict[str, model.FieldMetaData] = {
@@ -461,6 +464,30 @@ attrs: dict[str, model.FieldMetaData] = {
         units="m",
         dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="z_ifc",
+        dtype=ta.wpfloat,
+    ),
+    DEEPATMO_DIVH: dict(
+        standard_name=DEEPATMO_DIVH,
+        long_name="",
+        units="",
+        dims=(dims.KDim),
+        icon_var_name="deepatmo_divh_mc",
+        dtype=ta.wpfloat,
+    ),
+    DEEPATMO_DIVZL: dict(
+        standard_name=DEEPATMO_DIVZL,
+        long_name="",
+        units="",
+        dims=(dims.KDim),
+        icon_var_name="deepatmo_divzL_mc",
+        dtype=ta.wpfloat,
+    ),
+    DEEPATMO_DIVZU: dict(
+        standard_name=DEEPATMO_DIVZU,
+        long_name="",
+        units="",
+        dims=(dims.KDim),
+        icon_var_name="deepatmo_divzU_mc",
         dtype=ta.wpfloat,
     ),
 }

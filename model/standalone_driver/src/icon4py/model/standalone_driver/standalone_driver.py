@@ -16,6 +16,7 @@ import gt4py.next as gtx
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
+from icon4py.model.atmosphere.advection import advection
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
@@ -46,6 +47,7 @@ class Icon4pyDriver:
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
+        tracer_advection_granule: advection.Advection,  # NOTE(ricoh): [c34] wip
     ):
         self.config = config
         self.backend = backend
@@ -54,6 +56,7 @@ class Icon4pyDriver:
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
         self.model_time_variables = driver_states.ModelTimeVariables(config=config)
+        self.tracer_advection = tracer_advection_granule  # NOTE (ricoh): [c34] wip
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
@@ -174,6 +177,9 @@ class Icon4pyDriver:
                     self.model_time_variables.dtime_in_seconds,
                 )
             timer_diffusion.capture()
+
+        # NOTE (ricoh): [c34] something like
+        # NOTE (ricoh): self.tracer_advection.run(...) # pass list of tracers (or by default step all of the initialized ones)
 
         prognostic_states.swap()
 
@@ -470,6 +476,7 @@ def _read_config(
     driver_config.DriverConfig,
     v_grid.VerticalGridConfig,
     diffusion.DiffusionConfig,
+    advection.AdvectionConfig,
     solve_nh.NonHydrostaticConfig,
 ]:
     vertical_grid_config = v_grid.VerticalGridConfig(
@@ -490,6 +497,14 @@ def _read_config(
         smagorinski_scaling_factor=0.025,
         zdiffu_t=False,
         velocity_boundary_diffusion_denom=200.0,
+    )
+
+    # TODO (ricoh): [c34] check config correctness
+    advection_config = advection.AdvectionConfig(
+        horizontal_advection_limiter=advection.HorizontalAdvectionLimiter.NO_LIMITER,
+        horizontal_advection_type=advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+        vertical_advection_limiter=advection.VerticalAdvectionLimiter.NO_LIMITER,
+        vertical_advection_type=advection.VerticalAdvectionType.UPWIND_1ST_ORDER,
     )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(
@@ -514,6 +529,7 @@ def _read_config(
         icon4py_driver_config,
         vertical_grid_config,
         diffusion_config,
+        advection_config,
         nonhydro_config,
     )
 
@@ -569,9 +585,11 @@ def initialize_driver(
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
-    driver_config, vertical_grid_config, diffusion_config, solve_nh_config = _read_config(
-        output_path=output_path,
-        enable_profiling=False,
+    driver_config, vertical_grid_config, diffusion_config, advection_config, solve_nh_config = (
+        _read_config(
+            output_path=output_path,
+            enable_profiling=False,
+        )
     )
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
@@ -616,11 +634,13 @@ def initialize_driver(
     (
         diffusion_granule,
         solve_nonhydro_granule,
+        tracer_advection_granule,  # NOTE(ricoh): [c34] wip
     ) = driver_utils.initialize_granules(
         grid=grid_manager.grid,
         vertical_grid=vertical_grid,
         diffusion_config=diffusion_config,
         solve_nh_config=solve_nh_config,
+        advection_config=advection_config,
         static_field_factories=static_field_factories,
         exchange=exchange,
         owner_mask=gtx.as_field(
@@ -637,6 +657,7 @@ def initialize_driver(
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
+        tracer_advection_granule=tracer_advection_granule,
     )
 
     return icon4py_driver
