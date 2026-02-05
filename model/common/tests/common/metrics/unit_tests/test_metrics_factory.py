@@ -35,7 +35,6 @@ from icon4py.model.testing.fixtures.datatest import (
     icon_grid,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
     topography_savepoint,
 )
 

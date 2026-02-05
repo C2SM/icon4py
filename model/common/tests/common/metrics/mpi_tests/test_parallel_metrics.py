@@ -29,7 +29,6 @@ from ...fixtures import (
     metrics_factory_from_savepoint,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
     topography_savepoint,
 )
 
