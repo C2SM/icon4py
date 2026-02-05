@@ -9,37 +9,12 @@
 from __future__ import annotations
 
 import pathlib
-import re
+import urllib.parse
 
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import base, icon
 from icon4py.model.testing import definitions, serialbox
-
-
-def guess_grid_shape(experiment: definitions.Experiment) -> icon.GridShape:
-    """Guess the grid type, root, and level from the experiment name.
-
-    Reads the level and root parameters from a string in the canonical ICON gridfile format
-        RxyBab where 'xy' and 'ab' are numbers and denote the root and level of the icosahedron grid construction.
-
-        Args: experiment: str: The experiment name.
-        Returns: tuple[int, int]: The grid root and level.
-    """
-    if "torus" in experiment.name.lower():
-        return icon.GridShape(geometry_type=base.GeometryType.TORUS)
-
-    try:
-        root, level = map(int, re.search(r"[Rr](\d+)[Bb](\d+)", experiment.name).groups())  # type:ignore[union-attr]
-        return icon.GridShape(
-            geometry_type=base.GeometryType.ICOSAHEDRON,
-            subdivision=icon.GridSubdivision(root=root, level=level),
-        )
-    except AttributeError as err:
-        raise ValueError(
-            f"Could not parse grid_root and grid_level from experiment: {experiment.name} no 'rXbY'pattern."
-        ) from err
 
 
 def get_processor_properties_for_run(
@@ -48,21 +23,41 @@ def get_processor_properties_for_run(
     return decomposition.get_processor_properties(run_instance)
 
 
-def get_ranked_data_path(base_path: pathlib.Path, comm_size: int) -> pathlib.Path:
-    return base_path.absolute().joinpath(f"mpitask{comm_size}")
+def get_experiment_name_with_version(experiment: definitions.Experiment) -> str:
+    """Generate experiment name with version suffix."""
+    return f"{experiment.name}_v{experiment.version:02d}"
 
 
-def get_datapath_subdir_for_experiment(
-    experiment: definitions.Experiment = definitions.Experiments.MCH_CH_R04B09,
-) -> pathlib.Path:
-    return pathlib.Path(f"{experiment.name}/ser_data")
+def get_ranked_experiment_name_with_version(
+    experiment: definitions.Experiment, comm_size: int
+) -> str:
+    """Generate ranked experiment name with version suffix."""
+    return f"mpitask{comm_size}_{get_experiment_name_with_version(experiment)}"
+
+
+def get_experiment_archive_filename(experiment: definitions.Experiment, comm_size: int) -> str:
+    """Generate ranked archive filename for an experiment."""
+    return f"{get_ranked_experiment_name_with_version(experiment, comm_size)}.tar.gz"
+
+
+def get_serialized_data_url(root_url: str, filepath: str) -> str:
+    """Build a download URL for serialized data file from root URL."""
+    return f"{root_url}/download?path=%2F&files={urllib.parse.quote(filepath)}"
 
 
 def get_datapath_for_experiment(
-    ranked_base_path: pathlib.Path,
-    experiment: definitions.Experiment = definitions.Experiments.MCH_CH_R04B09,
+    experiment: definitions.Experiment,
+    processor_props: decomposition.ProcessProperties,
 ) -> pathlib.Path:
-    return ranked_base_path.joinpath(get_datapath_subdir_for_experiment(experiment))
+    """Get the path to serialized data for an experiment."""
+
+    experiment_dir = get_ranked_experiment_name_with_version(
+        experiment,
+        processor_props.comm_size,
+    )
+    return definitions.serialized_data_path().joinpath(
+        experiment_dir, definitions.SERIALIZED_DATA_SUBDIR
+    )
 
 
 def create_icon_serial_data_provider(
