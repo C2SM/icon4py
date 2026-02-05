@@ -124,25 +124,17 @@ class IconLikeHaloConstructor(HaloConstructor):
                 f"Connectivity for offset {offset} is not available"
             ) from err
 
-    def next_halo_line(
-        self, cells: data_alloc.NDArray, depot: data_alloc.NDArray | None = None
-    ) -> data_alloc.NDArray:
+    def next_halo_line(self, cells: data_alloc.NDArray) -> data_alloc.NDArray:
         """Returns the full-grid indices of the next halo line.
-
-        If a depot is given the function only return indices that are not in the depot
 
         Args:
             cells: 1d array, full-grid indices of cells we want to find the neighbors of
-            depot: full-grid indices that have already been collected
         Returns:
             next_halo_cells: full-grid indices of the next halo line
         """
         assert cells.ndim == 1, "input should be 1d array"
         cell_neighbors = self._find_cell_neighbors(cells)
-
-        cells_so_far = self._xp.hstack((depot, cells)) if depot is not None else cells
-
-        return self._xp.setdiff1d(cell_neighbors, cells_so_far, assume_unique=True)
+        return self._xp.setdiff1d(cell_neighbors, cells, assume_unique=True)
 
     def _find_neighbors(
         self, source_indices: data_alloc.NDArray, offset: gtx.FieldOffset | str
@@ -316,7 +308,10 @@ class IconLikeHaloConstructor(HaloConstructor):
         vertex_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
         vertex_on_halo_cells = self.find_vertex_neighbors_for_cells(
             self._xp.hstack(
-                (first_halo_cells, (self.next_halo_line(first_halo_cells, owned_cells)))
+                (
+                    first_halo_cells,
+                    (self.next_halo_line(self._xp.union1d(first_halo_cells, owned_cells))),
+                )
             )
         )
         vertex_on_cutting_line = self._xp.intersect1d(vertex_on_owned_cells, vertex_on_halo_cells)
