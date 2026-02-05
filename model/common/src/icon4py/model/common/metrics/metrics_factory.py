@@ -33,6 +33,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.metrics import (
+    compute_advection_metrics,
     compute_coeff_gradekin,
     compute_diffusion_metrics,
     compute_zdiff_gradp_dsl,
@@ -949,6 +950,25 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
 
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
+
+        compute_advection_deepatmo_fields = factory.NumpyDataProvider(
+            func=functools.partial(
+                compute_advection_metrics.compute_advection_deepatmo_fields,
+                array_ns=self._xp,
+            ),
+            deps={
+                "vct_a": self._vertical_grid.interface_physical_height,
+            },
+            domain=(),
+            fields=(
+                attrs.DEEPATMO_DIVH,
+                attrs.DEEPATMO_DIVZL,
+                attrs.DEEPATMO_DIVZU,
+            ),
+            params={"nlev": self._grid.num_levels, "grid_sphere_radius": constants.EARTH_RADIUS},
+        )
+
+        self.register_provider(compute_advection_deepatmo_fields)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:

@@ -47,7 +47,7 @@ class Icon4pyDriver:
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
-        advection_granule: advection.Advection,  # NOTE(ricoh): [c34] wip
+        tracer_advection_granule: advection.Advection,  # NOTE(ricoh): [c34] wip
     ):
         self.config = config
         self.backend = backend
@@ -56,7 +56,7 @@ class Icon4pyDriver:
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
         self.model_time_variables = driver_states.ModelTimeVariables(config=config)
-        self.tracer_advection = advection_granule  # NOTE (ricoh): [c34] wip
+        self.tracer_advection = tracer_advection_granule  # NOTE (ricoh): [c34] wip
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
@@ -634,7 +634,7 @@ def initialize_driver(
     (
         diffusion_granule,
         solve_nonhydro_granule,
-        advection_granule,  # NOTE(ricoh): [c34] wip
+        tracer_advection_granule,  # NOTE(ricoh): [c34] wip
     ) = driver_utils.initialize_granules(
         grid=grid_manager.grid,
         vertical_grid=vertical_grid,
@@ -657,7 +657,7 @@ def initialize_driver(
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
-        advection_granule=advection_granule,
+        tracer_advection_granule=tracer_advection_granule,
     )
 
     return icon4py_driver

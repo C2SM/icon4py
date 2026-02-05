@@ -358,7 +358,7 @@ def initialize_granules(
             ),
         ),
         least_squares_state=advection_states.AdvectionLeastSquaresState(
-            # TODO(ricoh): [c34] initialize with zero, check if works
+            # TODO(ricoh): [c34] integrate #1028 after that's merged
             lsq_pseudoinv_1=data_alloc.constant_field(
                 grid, 0.0, dims.CellDim, dims.C2E2CDim, allocator=backend
             ),
@@ -367,7 +367,6 @@ def initialize_granules(
             ),
         ),
         metric_state=advection_states.AdvectionMetricState(
-            # TODO(ricoh): [c34] DEEPATMO_XYZ don't exist yet
             deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
             deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
             deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
