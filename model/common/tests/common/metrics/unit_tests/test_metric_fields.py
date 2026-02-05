@@ -157,6 +157,8 @@ def test_compute_rayleigh_w(
         _exner_expol,
         _vwind_offctr,
         rayleigh_type,
+        _thslp_zdiffu,
+        _thhgtd_zdiffu,
     ) = construct_metrics_config(experiment)
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
