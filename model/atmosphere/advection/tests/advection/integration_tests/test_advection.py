@@ -16,10 +16,7 @@ from icon4py.model.atmosphere.advection.advection_lsq_coeffs import (
     lsq_compute_coeff_cell_torus,
 )
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import (
-    geometry_attributes as geometry_attrs,
-    horizontal as h_grid,
-)
+from icon4py.model.common.grid import geometry_attributes as geometry_attrs, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
