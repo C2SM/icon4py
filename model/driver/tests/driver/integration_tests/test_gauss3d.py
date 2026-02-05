@@ -11,8 +11,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.driver.testcases import gauss3d
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import datatest_utils as dt_utils, definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
@@ -36,7 +37,7 @@ if TYPE_CHECKING:
 )
 def test_gauss3d_initial_condition(
     experiment: definitions.Experiment,
-    ranked_data_path: pathlib.Path,
+    processor_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
     rank: int,
     data_provider: sb.IconSerialDataProvider,
@@ -56,7 +57,7 @@ def test_gauss3d_initial_condition(
     ) = gauss3d.model_initialization_gauss3d(
         icon_grid,
         edge_geometry,
-        ranked_data_path.joinpath(f"{experiment.name}/ser_data"),
+        dt_utils.get_datapath_for_experiment(experiment, processor_props),
         backend,
         rank,
     )

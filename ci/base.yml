@@ -57,7 +57,7 @@ build_image_aarch64:
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   before_script:
     - cd /icon4py
-    - ls "${TEST_DATA_PATH}"
+    - ls "${ICON4PY_TEST_DATA_PATH}"
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
@@ -66,7 +66,7 @@ build_image_aarch64:
     CSCS_CUDA_MPS: 1
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
-    TEST_DATA_PATH: "/icon4py/testdata"
+    ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: false
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
     PY2F_GPU_TESTS: 1
@@ -76,7 +76,7 @@ build_image_aarch64:
 #   extends: [.container-runner-daint-gpu-f7t, .test_template]
 #   needs: [build_image_x86_64]
 #   variables:
-#     CSCS_ADDITIONAL_MOUNTS: '["/project/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
+#     CSCS_ADDITIONAL_MOUNTS: '["/project/d121/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH"]'
 #     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/22.11"
 #     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda11"
 .test_template_aarch64:
@@ -85,7 +85,7 @@ build_image_aarch64:
   variables:
     RUNNER: "ci-runner"
     SYSTEM_TAG: "${FIRECREST_SYSTEM}-gh200"
-    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$TEST_DATA_PATH"]'
+    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
