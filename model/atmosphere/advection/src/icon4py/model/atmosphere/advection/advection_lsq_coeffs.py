@@ -69,11 +69,15 @@ def compute_z_lsq_mat_c(
     return z_lsq_mat_c[jc, js, :lsq_dim_unk]
 
 
-def lsq_compute_coeff_cell_sphere(
+def lsq_compute_coeffs(
+    cell_center_x: data_alloc.NDArray,
+    cell_center_y: data_alloc.NDArray,
     cell_lat: data_alloc.NDArray,
     cell_lon: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     cell_owner_mask: data_alloc.NDArray,
+    domain_length: float,
+    domain_height: float,
     grid_sphere_radius: float,
     lsq_dim_unk: int,
     lsq_dim_c: int,
@@ -81,77 +85,39 @@ def lsq_compute_coeff_cell_sphere(
     lsq_dim_stencil: int,
     start_idx: int,
     min_rlcell_int: int,
+    geometry_type: str,
 ) -> data_alloc.NDArray:
     lsq_weights_c = np.zeros((min_rlcell_int, lsq_dim_stencil))
     lsq_pseudoinv = np.zeros((min_rlcell_int, lsq_dim_unk, lsq_dim_c))
     z_lsq_mat_c = np.zeros((min_rlcell_int, lsq_dim_c, lsq_dim_c))
 
     for jc in range(start_idx, min_rlcell_int):
-        z_dist_g = np.zeros((lsq_dim_c, 2))
-        for js in range(lsq_dim_stencil):
-            z_dist_g[js, :] = gnomonic_proj_single_val(
-                cell_lon[jc], cell_lat[jc], cell_lon[c2e2c[jc, js]], cell_lat[c2e2c[jc, js]]
-            )
-        z_dist_g *= grid_sphere_radius
+        if geometry_type == "ICOSAHEDRON":
+            z_dist_g = np.zeros((lsq_dim_c, 2))
+            for js in range(lsq_dim_stencil):
+                z_dist_g[js, :] = gnomonic_proj_single_val(
+                    cell_lon[jc], cell_lat[jc], cell_lon[c2e2c[jc, js]], cell_lat[c2e2c[jc, js]]
+                )
+            z_dist_g *= grid_sphere_radius
 
-        min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
-        if cell_owner_mask[jc]:
-            z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
+            min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
+            if cell_owner_mask[jc]:
+                z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
+        else:
+            ilc_s = c2e2c[jc, :lsq_dim_stencil]
+            cc_cell = np.zeros((lsq_dim_stencil, 2))
 
-        lsq_weights_c[jc, :] = compute_lsq_weights_c(
-            z_dist_g, lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp
-        )
-        z_lsq_mat_c[jc, js, :lsq_dim_unk] = compute_z_lsq_mat_c(
-            cell_owner_mask, z_lsq_mat_c, lsq_weights_c, z_dist_g, jc, lsq_dim_unk, lsq_dim_c
-        )
-
-    lsq_pseudoinv = compute_lsq_pseudoinv(
-        cell_owner_mask,
-        lsq_pseudoinv,
-        z_lsq_mat_c,
-        lsq_weights_c,
-        start_idx,
-        min_rlcell_int,
-        lsq_dim_unk,
-        lsq_dim_c,
-    )
-
-    return lsq_pseudoinv
-
-
-def lsq_compute_coeff_cell_torus(
-    cell_center_x: data_alloc.NDArray,
-    cell_center_y: data_alloc.NDArray,
-    c2e2c: data_alloc.NDArray,
-    cell_owner_mask: data_alloc.NDArray,
-    domain_length: float,
-    domain_height: float,
-    lsq_dim_unk: int,
-    lsq_dim_c: int,
-    lsq_dim_stencil: int,
-    lsq_wgt_exp: int,
-    start_idx: int,
-    min_rlcell_int: int,
-) -> data_alloc.NDArray:
-    lsq_weights_c = np.zeros((min_rlcell_int, lsq_dim_stencil))
-    lsq_pseudoinv = np.zeros((min_rlcell_int, lsq_dim_unk, lsq_dim_c))
-    z_lsq_mat_c = np.zeros((min_rlcell_int, lsq_dim_c, lsq_dim_c))
-
-    for jc in range(start_idx, min_rlcell_int):
-        ilc_s = c2e2c[jc, :lsq_dim_stencil]
-        cc_cell = np.zeros((lsq_dim_stencil, 2))
-
-        cc_cv = (cell_center_x[jc], cell_center_y[jc])
-        for js in range(lsq_dim_stencil):
-            cc_cell[js, :] = plane_torus_closest_coordinates(
-                cell_center_x[jc],
-                cell_center_y[jc],
-                cell_center_x[ilc_s][js],
-                cell_center_y[ilc_s][js],
-                domain_length,
-                domain_height,
-            )
-        z_dist_g = cc_cell - cc_cv
+            cc_cv = (cell_center_x[jc], cell_center_y[jc])
+            for js in range(lsq_dim_stencil):
+                cc_cell[js, :] = plane_torus_closest_coordinates(
+                    cell_center_x[jc],
+                    cell_center_y[jc],
+                    cell_center_x[ilc_s][js],
+                    cell_center_y[ilc_s][js],
+                    domain_length,
+                    domain_height,
+                )
+            z_dist_g = cc_cell - cc_cv
 
         lsq_weights_c[jc, :] = compute_lsq_weights_c(
             z_dist_g, lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp
