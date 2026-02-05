@@ -11,14 +11,12 @@ import pytest
 
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.atmosphere.advection import advection
-from icon4py.model.atmosphere.advection.advection_tracers import (
+from icon4py.model.atmosphere.advection.advection_lsq_coeffs import (
     lsq_compute_coeff_cell_sphere,
     lsq_compute_coeff_cell_torus,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import (
-    base,
-    base as base_grid,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,
 )
