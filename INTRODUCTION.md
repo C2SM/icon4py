@@ -2,29 +2,29 @@
 
 ## Intro to icon4py and GT4Py
 
-In the following text we will give an overview of [icon4py](), [GT4Py]() and [DaCe]() and how they interact to compile our Python ICON implementation.
+In the following text we will give an overview of [icon4py](https://github.com/C2SM/icon4py), [GT4Py](https://github.com/GridTools/gt4py) and [DaCe](https://github.com/spcl/dace) and how they interact to compile our Python ICON implementation.
 
 ### icon4py
 
-icon4py is a Python port of ICON implemented using the GT4Py DSL. Currently in icon4py there are only certain parts of ICON implemented. The most important being the dycore, which is the ICON component that takes most of the time to execute.
+`icon4py` is a Python port of `ICON` implemented using the `GT4Py DSL`. Currently in `icon4py` there are only certain parts of `ICON` implemented. The most important being the `dycore`, which is the `ICON` component that takes most of the time to execute.
 For this purpose we think it makes more sense to focus in this component.
-The icon4py dycore implementation consists of ~20 GT4Py programs or stencils. Each one of these programs consists of multiple GPU (CUDA or HIP) kernels and memory allocations/deallocations while in the full icon4py code there are also MPI/nccl communications. For now we will focus in the single node execution, so no communication is conducted.
+The `icon4py` dycore implementation consists of ~20 `GT4Py Programs` or stencils. Each one of these programs consists of multiple GPU (CUDA or HIP) kernels and memory allocations/deallocations while in the full `icon4py` code there are also MPI/nccl communications. For now we will focus in the single node execution, so no communication is conducted.
 
 ### GT4Py
 
-GT4Py is a compilation framework that provides a DSL which is used as frontend to write the stencil computations. This is done using a Python DSL in icon4py as stated above.
-Here is an example of a GT4Py program from icon4py.
-GT4Py supports multiple backends. These are `embedded` (with numpy/JAX execution), GTFN (GridTools C++ implementation) and DaCe. For the moment the most efficient is DaCe so we'll focus on this one only. The code from the frontend is lowered from the GT4Py DSL to CUDA/HIP code after numerous transformations in GT4Py IR (GTIR) and then DaCe Stateful Dataflow Graphs (SDFG). The lowering from GTIR to DaCe SDFG is done using the low level DaCe API.
+`GT4Py` is a compilation framework that provides a DSL which is used as frontend to write the stencil computations. This is done using a DSL embedded into Python code in `icon4py` as stated above.
+Here is an example of a `GT4Py Program` from `icon4py`: [vertically_implicit_solver_at_predictor_step](https://github.com/C2SM/icon4py/blob/e88b14d8be6eed814faf14c5e8a96aca6dfa991e/model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/vertically_implicit_dycore_solver.py#L219).
+`GT4Py` supports multiple backends. These are `embedded` (with numpy/JAX execution), `GTFN` (GridTools C++ implementation) and `DaCe`. For the moment the most efficient is `DaCe` so we'll focus on this one only. The code from the frontend is lowered from the `GT4Py DSL` to CUDA/HIP code after numerous transformations in `GT4Py IR (GTIR)` and then `DaCe Stateful Dataflow Graphs (SDFG)`. The lowering from `GTIR` to `DaCe SDFG` is done using the low level `DaCe` API.
 
 ### DaCe
 
-DaCe is a programming framework that can take Python code and transform it to an SDFG, in which representation it's easy to apply dataflow optimizations and achieve good performance in modern CPUs and GPUs. To see more information regarding how the SDFGs look like see the following [link](https://spcldace.readthedocs.io/en/latest/sdfg/ir.html).
-DaCe includes also a code generator from SDFG to C++, HIP and CUDA code. The HIP generated code is CUDA code hipified basically so there are no big differences between the generated for CUDA and HIP.
+`DaCe` is a programming framework that can take Python code and transform it to an SDFG, which is a representation that is easy to apply dataflow optimizations and achieve good performance in modern CPUs and GPUs. To see more information regarding how the SDFGs look like see the following [link](https://spcldace.readthedocs.io/en/latest/sdfg/ir.html).
+`DaCe` includes also a code generator from SDFG to C++, HIP and CUDA code. The HIP generated code is CUDA code hipified basically so there are no big differences between the generated code for CUDA and HIP.
 
 
 ## Benchmarking
 
-For the benchmarking we have focused on the `dycore` component of icon4py. We have measured the runtimes for the different GT4Py programs executed in it between MI300A and GH200 GPU below:
+For the benchmarking we have focused on the `dycore` component of `icon4py` . We have measured the runtimes for the different `GT4Py Programs` executed in it between an `MI300A` and a `GH200 GPU` below:
 
 ```
 +--------------------------------------------------------+-----------------+----------------+--------------------------------------------------------------+
@@ -45,11 +45,11 @@ For the benchmarking we have focused on the `dycore` component of icon4py. We ha
 +--------------------------------------------------------+-----------------+----------------+--------------------------------------------------------------+
 ```
 
-Some of them show a dramatic slowdown in MI300A meanwhile in all of them the standard deviation in MI300A is much higher than GH200. The above are the median runtimes that are reported over 100 iterations (excluding the first slow one) using a C++ timer as close as possible to the kernel launches.
+Some of them show a dramatic slowdown in `MI300A` meanwhile in all of them the standard deviation in `MI300A` is much higher than `GH200`. The above are the median runtimes that are reported over 100 iterations (excluding the first slow one) using a C++ timer as close as possible to the kernel launches.
 
-While looking at all of them and especially the ones that are much slower than the others on the MI300A is useful, we think that starting from a specific GT4Py program and looking at the performance of each kernel launched from it is more interesting as a first step.
-To that end, we selected one of the GT4Py programs that takes most of the time in a production simulation and has kernels with different representative patterns like: neighbor reductions, 2D maps and scans.
-This is the vertically_implicit_solver_at_predictor_step GT4Py program and here is the comparison of its kernels:
+While looking at all of them and especially the ones that are much slower than the others on the `MI300A` is useful, we think that starting from a specific `GT4Py Program` and looking at the performance of each kernel launched from it is more interesting as a first step.
+To that end, we selected one of the `GT4Py Programs` that takes most of the time in a production simulation and has kernels with different representative patterns like: neighbor reductions, 2D maps and scans.
+This is the `vertically_implicit_solver_at_predictor_step` `GT4Py program` and here is the comparison of its kernels:
 
 ```
 +-----------------------------+-----------------------+------------------------+-----------------------------------------------------------+
@@ -98,9 +98,11 @@ sbatch benchmark_solver.sh
 
 ## Notes
 
-To understand the code apart from the analysis the profilers there are the following sources:
-1. Look at the generated HIP code for the `GT4Py program` `vertically_implicit_solver_at_predictor_step` in `amd_profiling_solver/.gt4py_cache/vertically_implicit_solver_at_predictor_step_<HASH>/src/cuda/vertically_implicit_solver_at_predictor_step.cpp`. The code is generated from DaCe automatically and it's a bit too verbose. It would be good to have some feedback on whether the generated code is in a good form for the HIP compiler to optimize.
-2. Look at the `icon4py` frontend code for the `vertically_implicit_solver_at_predictor_step` [here](https://github.com/C2SM/icon4py/blob/e88b14d8be6eed814faf14c5e8a96aca6dfa991e/model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/vertically_implicit_dycore_solver.py#L219)
-3. Look at the generated SDFG by DaCe. This can give a nice overview of the computations and kernels generated. Using [the DaCe documentation](https://spcldace.readthedocs.io/en/latest/sdfg/ir.html) can help you understand what is expressed in the SDFG. The generated SDFG is saved in `amd_profiling_solver/.gt4py_cache/vertically_implicit_solver_at_predictor_step_<HASH>/program.sdfg`. To view the SDFG there is a VSCode plugin (`DaCe IOE`) or you can download it locally and open it in https://spcl.github.io/dace-webclient/.
+- To understand the code apart from the analysis the profilers there are the following sources:
+  1. Look at the generated HIP code for the `GT4Py program` `vertically_implicit_solver_at_predictor_step` in `amd_profiling_solver/.gt4py_cache/vertically_implicit_solver_at_predictor_step_<HASH>/src/cuda/vertically_implicit_solver_at_predictor_step.cpp`. The code is generated from DaCe automatically and it's a bit too verbose. It would be good to have some feedback on whether the generated code is in a good form for the HIP compiler to optimize.
+  2. Look at the `icon4py` frontend code for the `vertically_implicit_solver_at_predictor_step` [here](https://github.com/C2SM/icon4py/blob/e88b14d8be6eed814faf14c5e8a96aca6dfa991e/model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/vertically_implicit_dycore_solver.py#L219)
+  3. Look at the generated SDFG by DaCe. This can give a nice overview of the computations and kernels generated. Using [the DaCe documentation](https://spcldace.readthedocs.io/en/latest/sdfg/ir.html) can help you understand what is expressed in the SDFG. The generated SDFG is saved in `amd_profiling_solver/.gt4py_cache/vertically_implicit_solver_at_predictor_step_<HASH>/program.sdfg`. To view the SDFG there is a VSCode plugin (`DaCe IOE`) or you can download it locally and open it in https://spcl.github.io/dace-webclient/.
 
-In the `amd_profiling_solver/.gt4py_cache` directory you may see various `vertically_implicit_solver_at_predictor_step_<HASH>`. Even if they have a different hash they should be the same SDFGs so you can look in anyone.
+- In the `amd_profiling_solver/.gt4py_cache` directory you may see various `vertically_implicit_solver_at_predictor_step_<HASH>`. Currently there are issues with the caching the compiled programs so running the profilers might take more than necessary and generate issues. We should look together into that to figure out a solution
+
+- Installing the AMD HIP/ROCm packages for our UENV with Spack required various changes and which are done [here](https://github.com/eth-cscs/alps-uenv/pull/273)
