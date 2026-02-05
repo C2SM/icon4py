@@ -912,7 +912,7 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "43!2026.1.21"
+version = "43!2026.2.3"
 source = { registry = "https://gridtools.github.io/pypi/" }
 dependencies = [
     { name = "aenum" },
@@ -928,7 +928,7 @@ dependencies = [
     { name = "sympy" },
 ]
 wheels = [
-    { url = "https://gridtools.github.io/pypi/dace/dace-43!2026.1.21-py3-none-any.whl", hash = "sha256:c72988e173bc07d59410fb32e7add2dbca498833e9e369fdff94e1971c5a6df5" },
+    { url = "https://gridtools.github.io/pypi/dace/dace-43!2026.2.3-py3-none-any.whl", hash = "sha256:0fc94ef1dfb8078ffdc0943b5a06dbb5ae63a335235ba5e9ce6571f935e96f66" },
 ]
 
 [[package]]
@@ -1881,7 +1881,7 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", specifier = "==43!2026.1.21", index = "https://gridtools.github.io/pypi/" },
+    { name = "dace", specifier = "==43!2026.2.3", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
     { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
