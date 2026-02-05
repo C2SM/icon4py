@@ -66,6 +66,8 @@ def _get_metrics_factory(
             exner_expol,
             vwind_offctr,
             rayleigh_type,
+            thslp_zdiffu,
+            thhgtd_zdiffu,
         ) = construct_metrics_config(experiment)
 
         vertical_config = v_grid.VerticalGridConfig(
@@ -99,6 +101,8 @@ def _get_metrics_factory(
             rayleigh_coeff=rayleigh_coeff,
             exner_expol=exner_expol,
             vwind_offctr=vwind_offctr,
+            thslp_zdiffu=thslp_zdiffu,
+            thhgtd_zdiffu=thhgtd_zdiffu,
             exchange=exchange,
         )
         metrics_factories[registry_name] = factory

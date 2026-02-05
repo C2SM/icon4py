@@ -286,6 +286,8 @@ def construct_metrics_config(experiment: Experiment) -> tuple:
             exner_expol = 0.333
             vwind_offctr = 0.2
             rayleigh_type = 2
+            thslp_zdiffu = 0.02
+            thhgtd_zdiffu = 125.0
         case Experiments.EXCLAIM_APE:
             lowest_layer_thickness = 50.0
             model_top_height = 75000.0
@@ -295,6 +297,8 @@ def construct_metrics_config(experiment: Experiment) -> tuple:
             exner_expol = 0.3333333333333
             vwind_offctr = 0.15
             rayleigh_type = 2
+            thslp_zdiffu = 0.02
+            thhgtd_zdiffu = 125.0
         case Experiments.GAUSS3D:
             lowest_layer_thickness = 50.0
             model_top_height = 23500.0
@@ -304,6 +308,8 @@ def construct_metrics_config(experiment: Experiment) -> tuple:
             exner_expol = 1.0 / 3.0
             vwind_offctr = 0.15
             rayleigh_type = 2
+            thslp_zdiffu = 0.025
+            thhgtd_zdiffu = 200.0
         case Experiments.WEISMAN_KLEMP_TORUS:
             lowest_layer_thickness = 50.0
             model_top_height = 23500.0
@@ -313,6 +319,8 @@ def construct_metrics_config(experiment: Experiment) -> tuple:
             exner_expol = 0.333
             vwind_offctr = 0.15
             rayleigh_type = 2
+            thslp_zdiffu = 0.025
+            thhgtd_zdiffu = 125.0
         case _:
             raise NotImplementedError(
                 f"Metrics config for experiment {experiment.name} not implemented."
@@ -327,4 +335,6 @@ def construct_metrics_config(experiment: Experiment) -> tuple:
         exner_expol,
         vwind_offctr,
         rayleigh_type,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
     )

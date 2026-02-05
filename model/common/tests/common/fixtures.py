@@ -149,6 +149,8 @@ def metrics_factory_from_savepoint(
         exner_expol,
         vwind_offctr,
         rayleigh_type,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
     ) = construct_metrics_config(experiment)
     vertical_config = vertical.VerticalGridConfig(
         geometry_source.grid.num_levels,
@@ -173,6 +175,8 @@ def metrics_factory_from_savepoint(
         rayleigh_coeff=rayleigh_coeff,
         exner_expol=exner_expol,
         vwind_offctr=vwind_offctr,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=exchange,
         global_reductions=global_reductions,
     )
