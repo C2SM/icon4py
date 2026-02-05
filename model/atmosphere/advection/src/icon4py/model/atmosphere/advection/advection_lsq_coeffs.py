@@ -92,7 +92,8 @@ def lsq_compute_coeffs(
     z_lsq_mat_c = np.zeros((min_rlcell_int, lsq_dim_c, lsq_dim_c))
 
     for jc in range(start_idx, min_rlcell_int):
-        if geometry_type == "ICOSAHEDRON":
+        match geometry_type:
+            case base_grid.GeometryType.ICOSAHEDRON:
             z_dist_g = np.zeros((lsq_dim_c, 2))
             for js in range(lsq_dim_stencil):
                 z_dist_g[js, :] = gnomonic_proj_single_val(
