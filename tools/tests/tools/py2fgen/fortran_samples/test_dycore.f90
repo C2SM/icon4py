@@ -173,7 +173,7 @@ program solve_nh_simulation
    integer(c_int), parameter :: igradp_method = 3
    integer(c_int), parameter :: rayleigh_type = 1
    real(c_double), parameter :: rayleigh_coeff = 0.1
-   integer(c_int), parameter :: divdamp_order = 24  ! divdamp order can only be 24
+   integer(c_int), parameter :: divdamp_order = 24
    logical(c_int), parameter :: is_iau_active = .false.
    real(c_double), parameter :: iau_wgt_dyn = 0.5
    real(c_double), parameter :: divdamp_fac_o2 = 0.5
