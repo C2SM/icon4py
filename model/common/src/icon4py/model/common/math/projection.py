@@ -67,14 +67,17 @@ def plane_torus_closest_coordinates(
     domain_length: float,
     domain_height: float,
 ) -> tuple:
-    x1 = np.where(
-        abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length,
-        cc_cell_x,
-        np.where(cc_cv_x > cc_cell_x, cc_cell_x + domain_length, cc_cell_x - domain_length),
-    )
-    y1 = np.where(
-        abs(cc_cell_y - cc_cv_y) <= 0.5 * domain_height,
-        cc_cell_y,
-        np.where(cc_cv_y > cc_cell_y, cc_cell_y + domain_height, cc_cell_y - domain_height),
-    )
+    if abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length:
+        x1 = cc_cell_x
+    elif cc_cv_x > cc_cell_x:
+        x1 = cc_cell_x + domain_length
+    else:
+        x1 = cc_cell_x - domain_length
+
+    if abs(cc_cell_y - cc_cv_y) <= 0.5 * domain_height:
+        y1 = cc_cell_y
+    elif cc_cv_y > cc_cell_y:
+        y1 = cc_cell_y + domain_height
+    else:
+        y1 = cc_cell_y - domain_height
     return x1, y1
