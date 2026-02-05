@@ -31,7 +31,6 @@ from ...fixtures import (
     interpolation_factory_from_savepoint,
     interpolation_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 

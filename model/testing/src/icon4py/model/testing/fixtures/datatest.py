@@ -17,12 +17,10 @@ import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.testing import data_handling as data, datatest_utils as dt_utils, definitions
+from icon4py.model.testing import data_handling, datatest_utils as dt_utils, definitions
 
 
 if TYPE_CHECKING:
-    import pathlib
-
     from icon4py.model.testing import serialbox
 
 
@@ -103,23 +101,19 @@ def processor_props(request: pytest.FixtureRequest) -> decomposition.ProcessProp
     return decomposition.get_processor_properties(runtype)
 
 
-@pytest.fixture(scope="session")
-def ranked_data_path(processor_props: decomposition.ProcessProperties) -> pathlib.Path:
-    return dt_utils.get_ranked_data_path(
-        definitions.serialized_data_path(), processor_props.comm_size
-    )
-
-
 def _download_ser_data(
-    comm_size: int,
-    _ranked_data_path: pathlib.Path,
     _experiment: definitions.Experiment,
+    processor_props: decomposition.ProcessProperties,
 ) -> None:
     # not a fixture to be able to use this function outside of pytest
+    comm_size = processor_props.comm_size
     try:
-        subdir = dt_utils.get_datapath_subdir_for_experiment(_experiment)
-        uri = _experiment.partitioned_data[comm_size]
-        data.download_test_data(_ranked_data_path, subdir, uri)
+        root_url = definitions.SERIALIZED_DATA_ROOT_URLS[comm_size]
+        archive_filename = dt_utils.get_experiment_archive_filename(_experiment, comm_size)
+        archive_path = definitions.SERIALIZED_DATA_DIR + "/" + archive_filename
+        uri = dt_utils.get_serialized_data_url(root_url, archive_path)
+        destination_path = dt_utils.get_datapath_for_experiment(_experiment, processor_props)
+        data_handling.download_test_data(destination_path.parent, uri)
     except KeyError as err:
         raise RuntimeError(
             f"No data for communicator of size {comm_size} exists, use 1, 2 or 4"
@@ -130,7 +124,6 @@ def _download_ser_data(
 def download_ser_data(
     request: pytest.FixtureRequest,
     processor_props: decomposition.ProcessProperties,
-    ranked_data_path: pathlib.Path,
     experiment: definitions.Experiment,
     pytestconfig: pytest.Config,
 ) -> None:
@@ -147,18 +140,17 @@ def download_ser_data(
     if with_mpi and experiment == definitions.Experiments.GAUSS3D:
         # TODO(msimberg): Fix? Need serialized data.
         pytest.skip("GAUSS3D experiment does not support MPI tests")
-    _download_ser_data(processor_props.comm_size, ranked_data_path, experiment)
+    _download_ser_data(experiment, processor_props)
 
 
 @pytest.fixture
 def data_provider(
     download_ser_data: None,  # downloads data as side-effect
-    ranked_data_path: pathlib.Path,
     experiment: definitions.Experiment,
     processor_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
-    data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+    data_path = dt_utils.get_datapath_for_experiment(experiment, processor_props)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
 
 
@@ -166,8 +158,7 @@ def data_provider(
 def grid_savepoint(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> serialbox.IconGridSavepoint:
-    grid_shape = dt_utils.guess_grid_shape(experiment)
-    return data_provider.from_savepoint_grid(experiment.name, grid_shape)
+    return data_provider.from_savepoint_grid(experiment.name, experiment.grid.shape)
 
 
 @pytest.fixture
@@ -186,9 +177,8 @@ def icon_grid(
 def decomposition_info(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
-    grid_shape = dt_utils.guess_grid_shape(experiment)
     return data_provider.from_savepoint_grid(
-        grid_id=experiment.name, grid_shape=grid_shape
+        grid_id=experiment.name, grid_shape=experiment.grid.shape
     ).construct_decomposition_info()
 
 
