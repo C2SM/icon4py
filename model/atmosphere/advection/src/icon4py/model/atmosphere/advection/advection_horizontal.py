@@ -255,18 +255,6 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             offset_provider=self._grid.connectivities,
         )
 
-        # lsq coefficients
-        self._lsq_pseudoinv_1 = gtx.as_field(
-            (dims.CellDim, dims.C2E2CDim),
-            self._least_squares_state[:, 0, :],
-            allocator=self._backend,
-        )
-        self._lsq_pseudoinv_2 = gtx.as_field(
-            (dims.CellDim, dims.C2E2CDim),
-            self._least_squares_state[:, 1, :],
-            allocator=self._backend,
-        )
-
     def compute_tracer_flux(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
@@ -283,8 +271,8 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         log.debug("running stencil reconstruct_linear_coefficients_svd - start")
         self._reconstruct_linear_coefficients_svd(
             p_cc=p_tracer_now,
-            lsq_pseudoinv_1=self._lsq_pseudoinv_1,
-            lsq_pseudoinv_2=self._lsq_pseudoinv_2,
+            lsq_pseudoinv_1=self._least_squares_state.lsq_pseudoinv_1,
+            lsq_pseudoinv_2=self._least_squares_state.lsq_pseudoinv_2,
             p_coeff_1_dsl=self._p_coeff_1,
             p_coeff_2_dsl=self._p_coeff_2,
             p_coeff_3_dsl=self._p_coeff_3,
