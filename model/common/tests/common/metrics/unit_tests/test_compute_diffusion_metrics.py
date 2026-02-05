@@ -127,7 +127,7 @@ def test_compute_diffusion_mask_and_coeff(
         cell_nudging=cell_nudging,
         nlev=nlev,
     )
-    assert test_utils.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
+    assert (mask_hdiff == metrics_savepoint.mask_hdiff().asnumpy()).all()
     assert test_utils.dallclose(
         zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
     )
