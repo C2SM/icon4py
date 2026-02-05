@@ -103,7 +103,7 @@ def lsq_compute_coeffs(
             min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
             if cell_owner_mask[jc]:
                 z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
-        else:
+        case base_grid.GeometryType.TORUS:
             ilc_s = c2e2c[jc, :lsq_dim_stencil]
             cc_cell = np.zeros((lsq_dim_stencil, 2))
 
