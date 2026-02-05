@@ -33,7 +33,7 @@ def download_and_extract(
     """
     dst.mkdir(parents=True, exist_ok=True)
 
-    completion_marker = dst / ".download_complete"
+    completion_marker = dst / ".extraction_complete"
     lockfile = "filelock.lock"
 
     with locking.lock(dst, lockfile=lockfile):
