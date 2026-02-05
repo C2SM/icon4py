@@ -926,6 +926,7 @@ dependencies = [
     { name = "pyreadline", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
     { name = "pyyaml" },
     { name = "sympy" },
+    { name = "typing-extensions" },
 ]
 wheels = [
     { url = "https://gridtools.github.io/pypi/dace/dace-43!2026.2.3-py3-none-any.whl", hash = "sha256:0fc94ef1dfb8078ffdc0943b5a06dbb5ae63a335235ba5e9ce6571f935e96f66" },
@@ -1402,8 +1403,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.3.post10+404dfdb3"
-source = { git = "https://github.com/gridtools/gt4py.git?branch=main#404dfdb381f6de90babdeba42d850e2fa14511b7" }
+version = "1.1.3.post11+0faba39b"
+source = { git = "https://github.com/GridTools/gt4py?branch=main#0faba39b5311386a662e08650cd59642e48606b1" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
