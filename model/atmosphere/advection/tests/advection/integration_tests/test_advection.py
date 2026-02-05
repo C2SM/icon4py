@@ -23,7 +23,6 @@ from icon4py.model.testing.fixtures.datatest import (
     interpolation_savepoint,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 from ..fixtures import advection_exit_savepoint, advection_init_savepoint
