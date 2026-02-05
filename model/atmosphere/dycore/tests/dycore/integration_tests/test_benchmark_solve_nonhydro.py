@@ -13,7 +13,7 @@ import os
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
-from gt4py.next import metrics as gtx_metrics
+from gt4py.next.instrumentation import metrics as gtx_metrics
 import pytest
 
 
