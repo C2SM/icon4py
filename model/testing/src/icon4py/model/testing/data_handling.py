@@ -66,7 +66,6 @@ def _perform_download(uri: str, dst: pathlib.Path) -> None:
             tf.extractall(path=dst)
 
 
-
 def download_test_data(dst: pathlib.Path, uri: str) -> None:
     if config.ENABLE_TESTDATA_DOWNLOAD:
         download_and_extract(uri, dst)
