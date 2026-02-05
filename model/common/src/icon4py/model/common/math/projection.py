@@ -48,7 +48,7 @@ def gnomonic_proj(
     return x, y
 
 
-def gnomonic_proj_single_val(lon_c: float, lat_c: float, lon: float, lat: float) -> tuple:
+def gnomonic_proj_single_val(lon_c: float, lat_c: float, lon: float, lat: float) -> tuple[float,float]:
     cosc = math.sin(lat_c) * math.sin(lat) + math.cos(lat_c) * math.cos(lat) * math.cos(lon - lon_c)
     zk = 1.0 / cosc
 
