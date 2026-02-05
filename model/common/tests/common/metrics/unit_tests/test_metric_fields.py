@@ -148,16 +148,16 @@ def test_compute_rayleigh_w(
         icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     (
-        _lowest_layer_thickness,
-        _model_top_height,
-        _stretch_factor,
+        _,
+        _,
+        _,
         damping_height,
         rayleigh_coeff,
-        _exner_expol,
-        _vwind_offctr,
+        _,
+        _,
         rayleigh_type,
-        _thslp_zdiffu,
-        _thhgtd_zdiffu,
+        _,
+        _,
     ) = construct_metrics_config(experiment)
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
