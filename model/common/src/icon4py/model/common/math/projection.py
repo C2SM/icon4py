@@ -66,7 +66,7 @@ def plane_torus_closest_coordinates(
     cc_cell_y: float,
     domain_length: float,
     domain_height: float,
-) -> tuple:
+) -> tuple[float, float]:
     x1 = np.where(
         abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length,
         cc_cell_x,
