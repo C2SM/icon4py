@@ -736,7 +736,7 @@ class Diffusion:
             prognostic_state.w,
             prognostic_state.theta_v,
             prognostic_state.exner,
-            stream=decomposition.DefaultStream,
+            stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
@@ -780,7 +780,7 @@ class Diffusion:
             self.v_vert,
             dim=dims.VertexDim,
             wait=True,
-            stream=decomposition.DefaultStream,
+            stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication rbf extrapolation of vn - end")
 
@@ -825,7 +825,7 @@ class Diffusion:
                 self.z_nabla2_e,
                 dim=dims.EdgeDim,
                 wait=True,
-                stream=decomposition.DefaultStream,
+                stream=decomposition.DEFAULT_STREAM,
             )
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
@@ -843,7 +843,7 @@ class Diffusion:
             self.v_vert,
             dim=dims.VertexDim,
             wait=True,
-            stream=decomposition.DefaultStream,
+            stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
@@ -863,7 +863,7 @@ class Diffusion:
             prognostic_state.vn,
             dim=dims.EdgeDim,
             wait=False,
-            stream=decomposition.DefaultStream,
+            stream=decomposition.DEFAULT_STREAM,
         )
 
         log.debug(
@@ -911,7 +911,7 @@ class Diffusion:
 
         self.halo_exchange_wait(
             handle_edge_comm,
-            stream=decomposition.DefaultStream,
+            stream=decomposition.DEFAULT_STREAM,
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
 

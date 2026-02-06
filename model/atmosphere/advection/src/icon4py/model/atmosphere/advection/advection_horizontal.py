@@ -156,7 +156,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
 
         log.debug("communication of advection cell field: r_m - start")
         self._exchange.exchange_and_wait(
-            dims.CellDim, self._r_m, stream=decomposition.DefaultStream
+            dims.CellDim, self._r_m, stream=decomposition.DEFAULT_STREAM
         )
         log.debug("communication of advection cell field: r_m - end")
 
