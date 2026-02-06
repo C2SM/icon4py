@@ -461,7 +461,7 @@ def _compute_rbf_interpolation_coeffs(
         rbf_vec_coeff[j][horizontal_start:] /= array_ns.sum(
             nxnx[j] * rbf_vec_coeff[j][horizontal_start:], axis=1
         )[:, array_ns.newaxis]
-    exchange(*rbf_vec_coeff, stream=decomposition.NoStreaming)
+    exchange(*rbf_vec_coeff, stream=decomposition.BLOCK)
     return rbf_vec_coeff
 
 

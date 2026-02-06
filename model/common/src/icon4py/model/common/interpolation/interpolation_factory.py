@@ -146,7 +146,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_geofac_n2s,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.NoStreaming
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.BLOCK
                 ),
                 array_ns=self._xp,
             ),
@@ -169,7 +169,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_geofac_grdiv,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.BLOCK
                 ),
                 array_ns=self._xp,
             ),
@@ -240,7 +240,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         exchange=functools.partial(
                             self._exchange.exchange_and_wait,
                             dims.CellDim,
-                            stream=decomposition.NoStreaming,
+                            stream=decomposition.BLOCK,
                         ),
                         array_ns=self._xp,
                     ),
@@ -291,7 +291,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         exchange=functools.partial(
                             self._exchange.exchange_and_wait,
                             dims.EdgeDim,
-                            stream=decomposition.NoStreaming,
+                            stream=decomposition.BLOCK,
                         ),
                         array_ns=self._xp,
                     ),
@@ -325,7 +325,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         exchange=functools.partial(
                             self._exchange.exchange_and_wait,
                             dims.CellDim,
-                            stream=decomposition.NoStreaming,
+                            stream=decomposition.BLOCK,
                         ),
                         array_ns=self._xp,
                     ),
@@ -369,7 +369,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                         exchange=functools.partial(
                             self._exchange.exchange_and_wait,
                             dims.EdgeDim,
-                            stream=decomposition.NoStreaming,
+                            stream=decomposition.BLOCK,
                         ),
                         array_ns=self._xp,
                     ),
@@ -387,7 +387,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_c_lin_e,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.BLOCK
                 ),
                 array_ns=self._xp,
             ),
@@ -410,7 +410,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_geofac_grg,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.NoStreaming
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.BLOCK
                 ),
                 array_ns=self._xp,
             ),
@@ -436,7 +436,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 interpolation_fields.compute_e_flx_avg,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.BLOCK
                 ),
                 array_ns=self._xp,
             ),
@@ -473,7 +473,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange_and_wait,
                     dims.VertexDim,
-                    stream=decomposition.NoStreaming,
+                    stream=decomposition.BLOCK,
                 ),
                 array_ns=self._xp,
             ),
@@ -502,7 +502,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 rbf.compute_rbf_interpolation_coeffs_cell,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.NoStreaming
+                    self._exchange.exchange_and_wait, dims.CellDim, stream=decomposition.BLOCK
                 ),
                 array_ns=self._xp,
             ),
@@ -543,7 +543,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 rbf.compute_rbf_interpolation_coeffs_edge,
                 exchange=functools.partial(
-                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.NoStreaming
+                    self._exchange.exchange_and_wait, dims.EdgeDim, stream=decomposition.BLOCK
                 ),
                 array_ns=self._xp,
             ),
@@ -585,7 +585,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 exchange=functools.partial(
                     self._exchange.exchange_and_wait,
                     dims.VertexDim,
-                    stream=decomposition.NoStreaming,
+                    stream=decomposition.BLOCK,
                 ),
                 array_ns=self._xp,
             ),

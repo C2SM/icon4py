@@ -114,7 +114,7 @@ class NeedsExchange(Protocol):
                 ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
                 with as_exchangeable_field(field) as buffer:
                     # Synchronous exchange.
-                    exchange.exchange_and_wait(first_dim, buffer, stream=decomposition.NoStreaming)
+                    exchange.exchange_and_wait(first_dim, buffer, stream=decomposition.BLOCK)
                 log.debug(f"exchanged buffer for {name}")
 
 
