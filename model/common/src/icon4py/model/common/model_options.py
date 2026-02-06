@@ -143,12 +143,12 @@ def setup_program(
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend)
     if backend is not None:
+        static_args_program = static_args_program.with_compilation_option(enable_jit=False)
         static_args_program.compile(
             **dict_values_to_list(horizontal_sizes),
             **dict_values_to_list(vertical_sizes),
             **variants,
             **dict_values_to_list(bound_static_args),
-            enable_jit=False,
             offset_provider=offset_provider,
         )
 
