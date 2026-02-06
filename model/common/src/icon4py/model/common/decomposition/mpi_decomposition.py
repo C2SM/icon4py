@@ -250,15 +250,12 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         *fields: gtx.Field | data_alloc.NDArray,
         stream: definitions.StreamLike = definitions.DEFAULT_STREAM,
     ) -> MultiNodeResult:
-        """
-        Exchange method that slices the fields based on the dimension and then performs halo exchange.
-        """
+        """Synchronize with `stream` and start the halo exchange of `*fields`."""
         assert (
             dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
         ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
-
         if not ghex.__config__["gpu"]:
             # No GPU support fall back to the regular exchange function.
             handle = self._comm.exchange(applied_patterns)
@@ -277,6 +274,7 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         *fields: gtx.Field | data_alloc.NDArray,
         stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
     ) -> None:
+        # Fall back to the default implementation provided by the protocol.
         super().exchange(dim, *fields, stream=stream)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
@@ -395,12 +393,12 @@ class MultiNodeResult(definitions.ExchangeResult):
         self,
         stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
     ) -> None:
+        """Finish the initiated halo exchange any synchronize with `stream` or block if `stream` is `BLOCK`."""
         if (not ghex.__config__["gpu"]) or stream is definitions.BLOCK:
             # No GPU support or blocking wait requested -> use normal `wait()`.
             self.handle.wait()
         else:
             # Stream given, perform a scheduled wait.
-            # TODO(phimuell): Fixing named arguments in GHEX.
             self.handle.schedule_wait(stream)
 
         # TODO(msimberg, phimuell, havogt): Is it safe to delete that here, even in the scheduled mode?

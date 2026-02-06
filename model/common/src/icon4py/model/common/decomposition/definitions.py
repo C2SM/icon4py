@@ -32,10 +32,6 @@ log = logging.getLogger(__name__)
 #   appropriate location once the need arises.
 
 
-class Block:
-    """Used to indicate that `wait()` should wait until the packing is concluded."""
-
-
 class CupyLikeStream(Protocol):
     """The type follows the CuPy convention of a stream.
 
@@ -63,6 +59,9 @@ class CudaStreamProtocolLike(Protocol):
     def __cuda_stream__(self) -> tuple[int, int]: ...
 
 
+StreamLike: TypeAlias = CupyLikeStream | CudaStreamProtocolLike
+
+
 @dataclasses.dataclass(frozen=True)
 class Stream:
     """Stream object used in ICON4Py
@@ -78,10 +77,24 @@ class Stream:
 
 
 DEFAULT_STREAM = Stream(0)
-BLOCK = Block()
+"""Default stream of the device.
 
-#: Types that are supported as streams.
-StreamLike: TypeAlias = CupyLikeStream | CudaStreamProtocolLike
+Its availability is not tied to a particular device, it is thus also present in a
+purely CPU setting, where it is save to use and usually represents fully blocking
+semantic.
+"""
+
+
+class Block:
+    pass
+
+
+BLOCK = Block()
+"""
+Constant used by `ExchangeResult.finish()` to indicate that blocking semantic should
+be used, i.e. wait until the exchange has fully finished not until it has merely been
+scheduled on the device, should be used.
+"""
 
 
 class ProcessProperties(Protocol):
@@ -212,28 +225,25 @@ class ExchangeResult(Protocol):
     ) -> None:
         """Wait on the halo exchange.
 
-        Finalizes the communication started by a previous `start()` call.
-        In case `stream` is `BLOCK` the function will only return once communication
-        has ended and the data is ready, i.e. has been fully written to the destination
-        memory.
-        In case `stream` is a `StreamLike` then the data is not necessarily ready once
-        the function returns. However, all work that is submitted to `stream` will
-        wait until the data has become fully ready. The default is `DEFAULT_STREAM`
-        which will use the default stream of the device.
+        Finishes the halo exchange represented by this `ExchangeResult`, see
+        `ExchangeRuntime.start()` for more.
+        When the function returns the exchange has not necessarily completed yet,
+        but has been scheduled on the device using stream `stream`. This means
+        that all further work submitted to `stream` will wait until the exchange
+        has completed. By default `DEFAULT_STREAM` is used.
 
-        On CPU the only supported behaviour is `stream=BLOCK`, however, it is legal
-        to pass `DEFAULT_STREAM` as well. In case both device and host memory is
-        exchanged the host parts will behave as if `stream=BLOCK` was supplied while
-        the device parts will follow behave according to the passed `stream`.
+        In case `stream` is `BLOCK` the function will only return after the exchange
+        has been completed.
+
+        For fields located on the host the only supported behaviour is `stream=BLOCK`.
         """
         ...
 
     def is_ready(self) -> bool:
         """Check if communication has been finished.
 
-        Note:
-            If `exchange()` was used with a `StreamLike` object this function has
-            the same effect as calling `self.finish(stream=BLOCK)`.
+        For an exchange involving device memory, calling this function is equivalent
+        to the call `self.finish(stream=BLOCK)`.
         """
         ...
 
@@ -257,19 +267,18 @@ class ExchangeRuntime(Protocol):
     ) -> ExchangeResult:
         """Initiate a halo exchanges.
 
-        The exchange will synchronize with `stream`, i.e. will not start before all
-        work that has previously been submitted to this stream has finished. The
-        default value is `DEFAULT_STREAM` which synchronizes with the default stream.
+        The exchange will synchronize with `stream`, i.e. not start before all work
+        previously submitted to `stream` has finished. `stream` defaults to
+        `DEFAULT_STREAM`. To complete the exchange `finish()` must be called on the
+        returned `ExchangeResult`. There is also the `exchange()` function which
+        combines these two steps into one.
 
         Once the function returns it is safe to reuse the memory of `fields` (is this
         still true for NCCL).
 
-        To complete the exchange `finish()` must be called on the returned
-        object.
-
         Note:
-            For fields on the host the exchange will begin immediately. Furthermore,
-            it is safe to pass `DEFAULT_STREAM` as `stream`.
+            For fields on the host the exchange will begin immediately, regardless
+            which stream has been passed.
         """
         ...
 
@@ -298,15 +307,15 @@ class ExchangeRuntime(Protocol):
         """Perform a full hallo exchange.
 
         The exchange will synchronize with `stream`, i.e. not start before tasks
-        previously submitted to it are done. The function might return before the
-        exchange has fully completed, but it will synchronize with `stream`, i.e.
-        work submitted to `stream` will not start before the exchange has finished.
+        previously submitted to it are done. The function returns before the exchange
+        has been completed, but it will synchronize with `stream`, i.e. work submitted
+        to `stream` will not start before the exchange has finished.
 
         It is possible to split the exchange into a send part, for which
-        `exchange_request = self.start()` is provided and a receive part
-        for which `exchange_request.finish()` can be used.
+        `exchange_request = self.start()` can be used and a receive part for which
+        `exchange_request.finish()` can be used.
 
-        In case `stream` is `BLOCK` then the function will not return until the exchange
+        In case `stream` is `BLOCK` then the function will only return once the exchange
         has been completed entirely. In this case the send part of will be performed
         as `DEFAULT_STREAM` was passed.
 
@@ -347,9 +356,9 @@ class ExchangeRuntime(Protocol):
     ) -> None | ExchangeResult:
         """Performs either a full exchange or a partial exchange.
 
-        If `full_exchange` is `True` then this function is equivalent to call
-        `self.exchange()` otherwise it behaves as `self.start()` and
-        the exchange result object is returned.
+        If `full_exchange` is `True` then this function is equivalent to
+        `self.exchange()` otherwise it behaves as `self.start()` and the exchange
+        result object is returned.
 
         Note:
             - This function is deprecated and should no longer be used.
@@ -425,7 +434,7 @@ class HaloExchangeWaitRuntime(Protocol):
             stream: The stream forwarded to the `wait()` call, defaults to `DEFAULT_STREAM`.
 
         Note:
-            The protocol provides a default implementation.
+            - The protocol provides a default implementation.
         """
         communication_handle.finish(stream=stream)
 
