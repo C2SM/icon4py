@@ -4,7 +4,7 @@ import csv
 import sys
 
 if len(sys.argv) < 2:
-    print("Usage: python read_gt4py_timers.py <input_file> [--csv]")
+    print("Usage: python print_gt4py_timers.py <input_file> [--csv]")
     sys.exit(1)
 
 input_file = sys.argv[1]
@@ -17,9 +17,15 @@ if len(sys.argv) > 2 and sys.argv[2] == '--csv':
         for k, v in data.items():
             if v.get('metrics').get('compute'):
                 arr = numpy.array(v.get('metrics').get('compute')[1:])
-                writer.writerow([k.split('<')[0], arr.mean(), arr.std()])
+                if len(arr) > 0:
+                    mean = arr.mean()
+                    if not numpy.isnan(mean):
+                        writer.writerow([k.split('<')[0], mean, arr.std()])
 else:
     for k, v in data.items():
         if v.get('metrics').get('compute'):
             arr = numpy.array(v.get('metrics').get('compute')[1:])
-            print(f"{k.split('<')[0]}: Mean = {arr.mean()}, Std = {arr.std()}")
+            if len(arr) > 0:
+                mean = arr.mean()
+                if not numpy.isnan(mean):
+                    print(f"{k.split('<')[0]}: Mean = {mean}, Std = {arr.std()}")

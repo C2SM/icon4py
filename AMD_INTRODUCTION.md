@@ -56,7 +56,7 @@ pytest -sv \
     model/atmosphere/dycore/tests/dycore/integration_tests/test_benchmark_solve_nonhydro.py::test_benchmark_solve_nonhydro[True-False]
 
 # Print GT4Py timers
-python read_gt4py_timers.py dycore_gt4py_program_metrics.json
+python print_gt4py_timers.py dycore_gt4py_program_metrics.json
 ```
 
 For more information regarding benchmarking read the [Benchmarking](#benchmarking) chapter
@@ -150,7 +150,7 @@ uenv start --view default prgenv-gnu/25.12:2288359995
 sbatch benchmark_dycore.sh
 # The script above will generate a json file with the names of the `GT4Py Programs` and their runtimes. The first one is always slow so we skip accounting it in our analysis
 # With the following python script you can parse the json file and print the runtimes in a nice form
-# python read_gt4py_timers.py dycore_gt4py_program_metrics.json # passing --csv will save them in a csv file
+# python print_gt4py_timers.py dycore_gt4py_program_metrics.json # passing --csv will save them in a csv file
 
 # Run the `vertically_implicit_solver_at_predictor_step` GT4Py program standalone. Notice the `GT4Py Timer Report` table printed from the first `pytest` invocation. The reported timers on this table are as close as possible to the kernel launches of the GT4Py program.
 # The following script will benchmark the solver, run `rocprofv3` and collect a trace of it as well as run the `rocprof-compute` tool for all its kernels

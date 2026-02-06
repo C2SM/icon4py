@@ -33,4 +33,4 @@ pytest -sv \
     --benchmark-min-rounds 100 \
     model/atmosphere/dycore/tests/dycore/integration_tests/test_benchmark_solve_nonhydro.py::test_benchmark_solve_nonhydro[True-False]
 
-python amd_scripts/read_gt4py_timers.py dycore_gt4py_program_metrics.json
+python amd_scripts/print_gt4py_timers.py dycore_gt4py_program_metrics.json
