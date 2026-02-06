@@ -83,19 +83,28 @@ def main():
     allocator = model_backends.get_allocator(backend)
 
     inp = common.GraupelInput.load(filename=pathlib.Path(args.input_file), allocator=allocator)
-    # We are passing the same buffers for `Q` as input and output. This is not best GT4Py practice,
-    # but save in this case as we are not reading the input with an offset.
-    out = common.GraupelOutput.allocate(
-        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
-        allocator=allocator,
-        references={
+
+    use_inout_buffers = False  # Set to True to reuse input buffers for output, see TODO below.
+    if use_inout_buffers:
+        # We are passing the same buffers for `Q` as input and output. This is not best GT4Py practice,
+        # but should be save in this case as we are not reading the input with an offset.
+        # TODO(havogt): However, in some versions of the DaCe pipeline we sometimes (non-deterministically)
+        # generated code that broke with inout buffers.
+        references = {
             "qv": inp.qv,
             "qc": inp.qc,
             "qi": inp.qi,
             "qr": inp.qr,
             "qs": inp.qs,
             "qg": inp.qg,
-        },
+        }
+    else:
+        references = None
+
+    out = common.GraupelOutput.allocate(
+        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+        allocator=allocator,
+        references=references,
     )
 
     graupel_run_program = setup_graupel(

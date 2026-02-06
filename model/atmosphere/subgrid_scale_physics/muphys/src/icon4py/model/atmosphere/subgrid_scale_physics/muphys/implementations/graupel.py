@@ -533,11 +533,10 @@ def graupel(
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
-    # TODO(havogt): investigate why removing the where(...) breaks dace
-    kmin_r = where(q.r > g_ct.qmin, True, False)
-    kmin_i = where(q.i > g_ct.qmin, True, False)
-    kmin_s = where(q.s > g_ct.qmin, True, False)
-    kmin_g = where(q.g > g_ct.qmin, True, False)
+    kmin_r = q.r > g_ct.qmin
+    kmin_i = q.i > g_ct.qmin
+    kmin_s = q.s > g_ct.qmin
+    kmin_g = q.g > g_ct.qmin
     q, t = _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking)
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
         last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
