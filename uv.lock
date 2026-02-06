@@ -1403,7 +1403,7 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.3.post11+bf0d4675"
+version = "1.1.3.post13+bf0d4675"
 source = { git = "https://github.com/GridTools/gt4py?branch=main#bf0d467567f24df508aec62b3c66cff061a19899" }
 dependencies = [
     { name = "attrs" },
@@ -1747,14 +1747,18 @@ source = { editable = "model/atmosphere/advection" }
 dependencies = [
     { name = "gt4py" },
     { name = "icon4py-common" },
+    { name = "numpy" },
     { name = "packaging" },
+    { name = "scipy" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
     { name = "icon4py-common", editable = "model/common" },
+    { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "scipy", specifier = ">=1.14.1" },
 ]
 
 [[package]]
