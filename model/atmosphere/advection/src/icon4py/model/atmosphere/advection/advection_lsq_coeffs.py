@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Callable
+from types import ModuleType
 
 import numpy as np
 import scipy
@@ -86,16 +88,18 @@ def lsq_compute_coeffs(
     lsq_dim_stencil: int,
     start_idx: int,
     min_rlcell_int: int,
-    geometry_type: base_grid.GeometryType,
+    geometry_type: int,
+    exchange: Callable[[data_alloc.NDArray], None],
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
-    lsq_weights_c = np.zeros((min_rlcell_int, lsq_dim_stencil))
-    lsq_pseudoinv = np.zeros((min_rlcell_int, lsq_dim_unk, lsq_dim_c))
-    z_lsq_mat_c = np.zeros((min_rlcell_int, lsq_dim_c, lsq_dim_c))
+    lsq_weights_c = array_ns.zeros((min_rlcell_int, lsq_dim_stencil))
+    lsq_pseudoinv = array_ns.zeros((min_rlcell_int, lsq_dim_unk, lsq_dim_c))
+    z_lsq_mat_c = array_ns.zeros((min_rlcell_int, lsq_dim_c, lsq_dim_c))
 
     for jc in range(start_idx, min_rlcell_int):
-        match geometry_type:
+        match base_grid.GeometryType(geometry_type):
             case base_grid.GeometryType.ICOSAHEDRON:
-                z_dist_g = np.zeros((lsq_dim_c, 2))
+                z_dist_g = array_ns.zeros((lsq_dim_c, 2))
                 for js in range(lsq_dim_stencil):
                     z_dist_g[js, :] = gnomonic_proj_single_val(
                         cell_lon[jc], cell_lat[jc], cell_lon[c2e2c[jc, js]], cell_lat[c2e2c[jc, js]]
@@ -107,7 +111,7 @@ def lsq_compute_coeffs(
                     z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
             case base_grid.GeometryType.TORUS:
                 ilc_s = c2e2c[jc, :lsq_dim_stencil]
-                cc_cell = np.zeros((lsq_dim_stencil, 2))
+                cc_cell = array_ns.zeros((lsq_dim_stencil, 2))
 
                 cc_cv = (cell_center_x[jc], cell_center_y[jc])
                 for js in range(lsq_dim_stencil):
@@ -127,7 +131,7 @@ def lsq_compute_coeffs(
         z_lsq_mat_c[jc, js, :lsq_dim_unk] = compute_z_lsq_mat_c(
             cell_owner_mask, z_lsq_mat_c, lsq_weights_c, z_dist_g, jc, lsq_dim_unk, lsq_dim_c
         )
-
+    exchange(lsq_weights_c)
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask,
         lsq_pseudoinv,
@@ -138,5 +142,7 @@ def lsq_compute_coeffs(
         lsq_dim_unk,
         lsq_dim_c,
     )
+    exchange(lsq_pseudoinv[:, 0, :])
+    exchange(lsq_pseudoinv[:, 1, :])
 
     return lsq_pseudoinv

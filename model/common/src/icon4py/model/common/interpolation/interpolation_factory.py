@@ -12,6 +12,7 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
+from icon4py.model.atmosphere.advection import advection_lsq_coeffs
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
@@ -67,6 +68,10 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
             "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
             "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
+            "lsq_dim_unk": 2,
+            "lsq_dim_c": 3,
+            "lsq_wgt_exp": 2,
+            "lsq_dim_stencil": 3,
         }
         log.info(
             f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -227,6 +232,43 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields=(attrs.RBF_SCALE_VERTEX,),
         )
         self.register_provider(rbf_scale_vertex_np)
+
+        lsq_pseudoinv = factory.NumpyDataProvider(
+            func=functools.partial(
+                advection_lsq_coeffs.lsq_compute_coeffs,
+                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
+                array_ns=self._xp,
+            ),
+            fields=(attrs.LSQ_PSEUDOINV,),
+            domain=(),
+            deps={
+                "cell_center_x": geometry_attrs.CELL_CENTER_X,
+                "cell_center_y": geometry_attrs.CELL_CENTER_Y,
+                "cell_lat": geometry_attrs.CELL_LAT,
+                "cell_lon": geometry_attrs.CELL_LON,
+                "cell_owner_mask": "cell_owner_mask",
+            },
+            connectivities={"c2e2c": dims.C2E2CDim},
+            params={
+                "domain_length": self.grid.global_properties.domain_length
+                if self.grid.global_properties.domain_length is not None
+                else 0.0,
+                "domain_height": self.grid.global_properties.domain_height
+                if self.grid.global_properties.domain_height is not None
+                else 0.0,
+                "grid_sphere_radius": constants.EARTH_RADIUS,
+                "lsq_dim_unk": self._config["lsq_dim_unk"],
+                "lsq_dim_c": self._config["lsq_dim_c"],
+                "lsq_wgt_exp": self._config["lsq_wgt_exp"],
+                "lsq_dim_stencil": self._config["lsq_dim_stencil"],
+                "start_idx": self.grid.start_index(
+                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                ),
+                "min_rlcell_int": self.grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2)),
+                "geometry_type": self.grid.global_properties.geometry_type.value,
+            },
+        )
+        self.register_provider(lsq_pseudoinv)
 
         match self.grid.global_properties.geometry_type:
             case base.GeometryType.ICOSAHEDRON:
