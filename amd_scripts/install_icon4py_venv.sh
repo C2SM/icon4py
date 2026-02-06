@@ -2,12 +2,14 @@
 
 set -e
 
-# Set necessasry flags for compilation
-source setup_env.sh
-
 date
 
-unset PYTHONPATH
+# Go to the root of the icon4py repository to run the installation from there
+ICON4PY_GIT_ROOT=$(git rev-parse --show-toplevel)
+cd $ICON4PY_GIT_ROOT
+
+# Set necessasry flags for compilation
+source $ICON4PY_GIT_ROOT/amd_scripts/setup_env.sh
 
 # Install uv locally
 export PATH="$PWD/bin:$PATH"

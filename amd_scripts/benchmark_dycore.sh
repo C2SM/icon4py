@@ -5,7 +5,12 @@
 #SBATCH --gres=gpu:1
 #SBATCH --partition=mi300
 
-source setup_env.sh
+# Go to the root of the icon4py repository to run the script from there
+ICON4PY_GIT_ROOT=$(git rev-parse --show-toplevel)
+cd $ICON4PY_GIT_ROOT
+
+# Set necessasry flags for compilation
+source amd_scripts/setup_env.sh
 
 source .venv/bin/activate
 
