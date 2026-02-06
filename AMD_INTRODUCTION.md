@@ -108,7 +108,8 @@ For the benchmarking we have focused on the `dycore` component of `icon4py` . We
 
 Some of them show a dramatic slowdown in `MI300A` meanwhile in all of them the standard deviation in `MI300A` is much higher than `GH200`. The above are the median runtimes that are reported over 100 iterations (excluding the first slow one) using a C++ timer as close as possible to the kernel launches.
 
-While looking at all of them and especially the ones that are much slower than the others on the `MI300A` is useful, we think that starting from a specific `GT4Py Program` and looking at the performance of each kernel launched from it is more interesting as a first step.
+Since we only recently started looking at the results from the MI300A there are some issues to iron out, like the very slow executions compared to GH200 which most likely include some non-GPU kernel overhead.
+What would be more interesting to look at is starting from a specific `GT4Py Program` and looking at the performance of each kernel launched from it.
 To that end, we selected one of the `GT4Py Programs` that takes most of the time in a production simulation and has kernels with different representative patterns like: neighbor reductions, 2D maps and scans.
 This is the `vertically_implicit_solver_at_predictor_step` `GT4Py program` and here is the comparison of its kernels:
 
@@ -159,8 +160,8 @@ sbatch benchmark_solver.sh
 
 ## Hackathon goals
 
-- Understand what is the bottleneck in our currently generated code
-- Discuss what changes we can do either in the code generation, kernel configuration or memory layout to address these bottlenecks
+- Understand what is the bottleneck in our currently generated kernel code
+- Discuss what changes we can do either in the code generation, kernel configuration or memory layout to address these bottlenecks and make sure we have reached performance better comparable with GH200
 - What further code changes do we have to do to take advantage of the full MI300A performance (shared memory, warp shuffling, etc)
 - Fix any issues with ROCm profilers and learn how to effectively use them
 
