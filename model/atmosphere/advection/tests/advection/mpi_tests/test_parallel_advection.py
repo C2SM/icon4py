@@ -65,6 +65,13 @@ from icon4py.model.testing import definitions as test_defs, parallel_helpers, se
 from .. import utils
 from ..fixtures import *  # noqa: F403
 
+try:
+    import mpi4py
+
+    mpi_decomposition.init_mpi()
+except ImportError:
+    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [test_defs.Experiments.MCH_CH_R04B09])
