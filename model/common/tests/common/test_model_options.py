@@ -121,9 +121,9 @@ def test_setup_program_specify_inputs(
         )
     else:
         expected_program = functools.partial(
-            program_return_field
-            .with_backend(expected_backend)
-            .with_compilation_option(enable_jit=False).compile(
+            program_return_field.with_backend(expected_backend)
+            .with_compilation_options(enable_jit=False)
+            .compile(
                 offset_provider={},
             ),
             offset_provider={},
