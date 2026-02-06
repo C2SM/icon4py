@@ -24,6 +24,7 @@ try:
 
     from icon4py.model.common.decomposition import mpi_decomposition
 
+    # TODO(msimberg): Does every test/module need to do this?
     mpi_decomposition.init_mpi()
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
@@ -69,12 +70,12 @@ def test_element_ownership_is_unique(
     my_size = owned.shape[0]
     local_sizes = np.array(comm.gather(my_size, root=0))
     buffer_size = 27
-    send_buf = -1 * np.ones(buffer_size, dtype=int)
+    send_buf = np.full(buffer_size, -1, dtype=int)
     send_buf[:my_size] = owned
     print(f"rank {processor_props.rank} send_buf: {send_buf}")
     if processor_props.rank == 0:
         print(f"local_sizes: {local_sizes}")
-        recv_buffer = -1 * np.ones((4, buffer_size), dtype=int)
+        recv_buffer = np.full((4, buffer_size), -1, dtype=int)
         print(f"{recv_buffer.shape}")
     else:
         recv_buffer = None
@@ -87,11 +88,3 @@ def test_element_ownership_is_unique(
         assert values.size == len(np.unique(values))
         # check the buffer has all global indices
         assert np.all(np.sort(values) == global_indices(dim))
-
-
-def decompose(grid: base_grid.Grid, processor_props):
-    partitioner = halo.MetisDecomposer()
-    labels = partitioner(
-        grid.connectivities[dims.C2E2C].asnumpy(), n_part=processor_props.comm_size
-    )
-    return labels
