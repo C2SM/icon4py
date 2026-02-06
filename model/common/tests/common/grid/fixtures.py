@@ -13,7 +13,6 @@ from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
     experiment,
     flat_height,
-    global_grid_descriptor,
     grid_savepoint,
     htop_moist_proc,
     icon_grid,

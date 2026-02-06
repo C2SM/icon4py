@@ -15,7 +15,7 @@ import pytest
 from gt4py import next as gtx
 from gt4py.next import common as gtx_common, typing as gtx_typing
 
-from icon4py.model.common import dimension as dims, exceptions
+from icon4py.model.common import dimension as dims, exceptions, model_backends
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomp_defs,
@@ -44,7 +44,7 @@ from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, grid_utils, test_utils
 
-from ..fixtures import backend, global_grid_descriptor, processor_props
+from ..fixtures import backend, experiment, processor_props, topography_savepoint
 from . import utils
 
 
@@ -62,9 +62,12 @@ log = logging.getLogger(__file__)
 @pytest.mark.mpi(min_size=2)
 def test_grid_manager_validate_decomposer(
     processor_props: decomp_defs.ProcessProperties,
-    global_grid_descriptor: test_defs.GridDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
+    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+        pytest.xfail("Limited-area grids not yet supported")
+
+    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     manager = gm.GridManager(
         grid_file=file,
         config=v_grid.VerticalGridConfig(num_levels=utils.NUM_LEVELS),
@@ -206,14 +209,17 @@ def test_geometry_fields_compare_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     # TODO(msimberg): Maybe use regular grid fixture and skip local area grids?
-    global_grid_descriptor: test_defs.GridDescription,
+    experiment: test_defs.Experiment,
     attrs_name: str,
     dim: gtx.Dimension,
 ) -> None:
-    # TODO(msimberg): Add fixtures for single/mult-rank
+    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+        pytest.xfail("Limited-area grids not yet supported")
+
+    # TODO(msimberg): Add fixtures for single/multi-rank
     # grid/geometry/interpolation/metrics factoriesAdd fixtures for
     # single/mult-rank grid/geometry/interpolation/metrics factories.
-    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
+    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
     single_node_grid_manager = utils.run_grid_manager_for_singlenode(file)
     single_node_geometry = geometry.GridGeometry(
@@ -274,11 +280,14 @@ def test_geometry_fields_compare_single_multi_rank(
 def test_interpolation_fields_compare_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    global_grid_descriptor: test_defs.GridDescription,
+    experiment: test_defs.Experiment,
     attrs_name: str,
     dim: gtx.Dimension,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
+    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+        pytest.xfail("Limited-area grids not yet supported")
+
+    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
     single_node_grid_manager = utils.run_grid_manager_for_singlenode(file)
     single_node_geometry = geometry.GridGeometry(
@@ -347,100 +356,189 @@ def test_interpolation_fields_compare_single_multi_rank(
     print(f"rank = {processor_props.rank} - DONE")
 
 
-# @pytest.mark.mpi
-# @pytest.mark.parametrize("processor_props", [True], indirect=True)
-# @pytest.mark.parametrize("attrs_name, dim", [(metrics_attributes.DDXT_Z_HALF_E, dims.EdgeDim)])
-# def test_metrics_fields_compare_single_multi_rank(
-#     processor_props: decomp_defs.ProcessProperties,
-#     backend: gtx_typing.Backend | None,
-#     # TODO(msimberg): Maybe use regular grid fixture and skip local area grids?
-#     global_grid_descriptor: test_defs.GridDescription,
-#     attrs_name: str,
-#     dim: gtx.Dimension,
-# ) -> None:
-#     # TODO(msimberg): Add fixture for "always single rank" grid manager
-#     file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
-#     print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-#     single_node_grid_manager = utils.run_grid_manager_for_singlenode(file)
-#     # TODO(msimberg): Add fixture for "always single rank" geometry
-#     single_node_geometry = geometry.GridGeometry(
-#         backend=backend,
-#         grid=single_node_grid_manager.grid,
-#         coordinates=single_node_grid_manager.coordinates,
-#         decomposition_info=single_node_grid_manager.decomposition_info,
-#         extra_fields=single_node_grid_manager.geometry_fields,
-#         metadata=geometry_attributes.attrs,
-#     )
-#     # TODO(msimberg): Add fixture for "always single rank" interpolation factory
-#     single_node_interpolation = interpolation_factory.InterpolationFieldsFactory(
-#         grid=single_node_grid_manager.grid,
-#         decomposition_info=single_node_grid_manager.decomposition_info,
-#         geometry_source=single_node_geometry,
-#         backend=backend,
-#         metadata=interpolation_attributes.attrs,
-#         exchange=decomp_defs.SingleNodeExchange(),
-#     )
-#     # TODO metrics factory
-#     print(
-#         f"rank = {processor_props.rank} : single node grid has size {single_node_grid_manager.decomposition_info.get_horizontal_size()!r}"
-#     )
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("attrs_name, dim", [(metrics_attributes.DDXT_Z_HALF_E, dims.EdgeDim)])
+def test_metrics_fields_compare_single_multi_rank(
+    processor_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
+    experiment: test_defs.Experiment,
+    attrs_name: str,
+    dim: gtx.Dimension,
+) -> None:
+    # TODO(msimberg): Currently segfaults. Are topography and vertical fields
+    # set up correctly?
+    pytest.xfail("Segfault")
 
-#     # TODO(msimberg): Use regular grid manager fixture (should anyway be multi rank by default)
-#     multi_node_grid_manager = utils.run_gridmananger_for_multinode(
-#         file=file,
-#         run_properties=processor_props,
-#         decomposer=decomp.MetisDecomposer(),
-#     )
-#     print(
-#         f"rank = {processor_props.rank} : {multi_node_grid_manager.decomposition_info.get_horizontal_size()!r}"
-#     )
-#     print(
-#         f"rank = {processor_props.rank}: halo size for 'CellDim' "
-#         f"(1: {multi_node_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
-#         f"(2: {multi_node_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
-#     )
-#     # TODO(msimberg): Use regular geometry fixture
-#     multi_node_geometry = geometry.GridGeometry(
-#         backend=backend,
-#         grid=multi_node_grid_manager.grid,
-#         coordinates=multi_node_grid_manager.coordinates,
-#         decomposition_info=multi_node_grid_manager.decomposition_info,
-#         extra_fields=multi_node_grid_manager.geometry_fields,
-#         metadata=geometry_attributes.attrs,
-#     )
-#     # TODO(msimberg): Use regular interpolation factory fixture
-#     multi_node_interpolation = interpolation_factory.InterpolationFieldsFactory(
-#         grid=multi_node_grid_manager.grid,
-#         decomposition_info=multi_node_grid_manager.decomposition_info,
-#         geometry_source=multi_node_geometry,
-#         backend=backend,
-#         metadata=interpolation_attributes.attrs,
-#         exchange=mpi_decomposition.GHexMultiNodeExchange(
-#             processor_props, multi_node_grid_manager.decomposition_info
-#         ),
-#     )
+    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+        pytest.xfail("Limited-area grids not yet supported")
 
-#     field_ref = single_node_interpolation.get(attrs_name).asnumpy()
-#     field = multi_node_interpolation.get(attrs_name).asnumpy()
+    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
 
-#     check_local_global_field(
-#         decomposition_info=multi_node_grid_manager.decomposition_info,
-#         processor_props=processor_props,
-#         dim=dim,
-#         global_reference_field=field_ref,
-#         local_field=field,
-#     )
+    (
+        lowest_layer_thickness,
+        model_top_height,
+        stretch_factor,
+        damping_height,
+        rayleigh_coeff,
+        exner_expol,
+        vwind_offctr,
+        rayleigh_type,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
+    ) = test_defs.construct_metrics_config(experiment)
+    vertical_config = v_grid.VerticalGridConfig(
+        experiment.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    # TODO(msimberg): Dummy vct_a? Taken from test_io.py.
+    xp = data_alloc.import_array_ns(backend)
+    allocator = model_backends.get_allocator(backend)
+    vertical_grid = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=gtx.as_field(
+            (dims.KDim,),
+            xp.linspace(12000.0, 0.0, experiment.num_levels + 1),
+            allocator=allocator,
+        ),
+        vct_b=gtx.as_field(
+            (dims.KDim,),
+            xp.linspace(12000.0, 0.0, experiment.num_levels + 1),
+            allocator=allocator,
+        ),
+    )
 
-#     print(f"rank = {processor_props.rank} - DONE")
+    print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    single_node_grid_manager = utils.run_grid_manager_for_singlenode(file)
+    single_node_geometry = geometry.GridGeometry(
+        backend=backend,
+        grid=single_node_grid_manager.grid,
+        coordinates=single_node_grid_manager.coordinates,
+        decomposition_info=single_node_grid_manager.decomposition_info,
+        extra_fields=single_node_grid_manager.geometry_fields,
+        metadata=geometry_attributes.attrs,
+    )
+    single_node_interpolation = interpolation_factory.InterpolationFieldsFactory(
+        grid=single_node_grid_manager.grid,
+        decomposition_info=single_node_grid_manager.decomposition_info,
+        geometry_source=single_node_geometry,
+        backend=backend,
+        metadata=interpolation_attributes.attrs,
+        exchange=decomp_defs.SingleNodeExchange(),
+    )
+    single_node_metrics = metrics_factory.MetricsFieldsFactory(
+        grid=single_node_geometry.grid,
+        vertical_grid=vertical_grid,
+        decomposition_info=single_node_grid_manager.decomposition_info,
+        geometry_source=single_node_geometry,
+        # TODO(msimberg): Valid dummy topography?
+        topography=(
+            gtx.as_field(
+                (dims.CellDim,),
+                xp.zeros(single_node_geometry.grid.num_cells),
+                allocator=allocator,
+            )
+        ),
+        interpolation_source=single_node_interpolation,
+        backend=backend,
+        metadata=metrics_attributes.attrs,
+        rayleigh_type=rayleigh_type,
+        rayleigh_coeff=rayleigh_coeff,
+        exner_expol=exner_expol,
+        vwind_offctr=vwind_offctr,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        exchange=decomp_defs.SingleNodeExchange(),
+    )
+    print(
+        f"rank = {processor_props.rank} : single node grid has size {single_node_grid_manager.decomposition_info.get_horizontal_size()!r}"
+    )
+
+    multi_node_grid_manager = utils.run_gridmananger_for_multinode(
+        file=file,
+        run_properties=processor_props,
+        decomposer=decomp.MetisDecomposer(),
+    )
+    print(
+        f"rank = {processor_props.rank} : {multi_node_grid_manager.decomposition_info.get_horizontal_size()!r}"
+    )
+    print(
+        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"(1: {multi_node_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {multi_node_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
+    )
+    multi_node_geometry = geometry.GridGeometry(
+        backend=backend,
+        grid=multi_node_grid_manager.grid,
+        coordinates=multi_node_grid_manager.coordinates,
+        decomposition_info=multi_node_grid_manager.decomposition_info,
+        extra_fields=multi_node_grid_manager.geometry_fields,
+        metadata=geometry_attributes.attrs,
+    )
+    multi_node_interpolation = interpolation_factory.InterpolationFieldsFactory(
+        grid=multi_node_grid_manager.grid,
+        decomposition_info=multi_node_grid_manager.decomposition_info,
+        geometry_source=multi_node_geometry,
+        backend=backend,
+        metadata=interpolation_attributes.attrs,
+        exchange=mpi_decomposition.GHexMultiNodeExchange(
+            processor_props, multi_node_grid_manager.decomposition_info
+        ),
+    )
+    multi_node_metrics = metrics_factory.MetricsFieldsFactory(
+        grid=multi_node_geometry.grid,
+        vertical_grid=vertical_grid,
+        decomposition_info=multi_node_grid_manager.decomposition_info,
+        geometry_source=multi_node_geometry,
+        # TODO(msimberg): Valid dummy topography?
+        topography=(
+            gtx.as_field(
+                (dims.CellDim,),
+                xp.zeros(multi_node_geometry.grid.num_cells),
+                allocator=allocator,
+            )
+        ),
+        interpolation_source=multi_node_interpolation,
+        backend=backend,
+        metadata=metrics_attributes.attrs,
+        rayleigh_type=rayleigh_type,
+        rayleigh_coeff=rayleigh_coeff,
+        exner_expol=exner_expol,
+        vwind_offctr=vwind_offctr,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        exchange=mpi_decomposition.GHexMultiNodeExchange(
+            processor_props, multi_node_grid_manager.decomposition_info
+        ),
+    )
+
+    field_ref = single_node_metrics.get(attrs_name).asnumpy()
+    field = multi_node_metrics.get(attrs_name).asnumpy()
+
+    check_local_global_field(
+        decomposition_info=multi_node_grid_manager.decomposition_info,
+        processor_props=processor_props,
+        dim=dim,
+        global_reference_field=field_ref,
+        local_field=field,
+    )
+
+    print(f"rank = {processor_props.rank} - DONE")
 
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_validate_skip_values_in_distributed_connectivities(
     processor_props: decomp_defs.ProcessProperties,
-    global_grid_descriptor: test_defs.GridDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
+    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+        pytest.xfail("Limited-area grids not yet supported")
+
+    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     multinode_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,

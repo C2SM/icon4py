@@ -54,7 +54,6 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
-    global_grid_descriptor,
     grid_savepoint,
     processor_props,
 )
@@ -666,10 +665,10 @@ def test_local_connectivity(
 @pytest.mark.parametrize("ranks", (2, 3, 4))
 def test_decomposition_size(
     ranks: int,
-    global_grid_descriptor: test_defs.GridDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
     decomposer = halo.MetisDecomposer()
-    file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
+    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
         sizes = [np.count_nonzero(partitions == r) for r in range(ranks)]

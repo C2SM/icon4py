@@ -21,7 +21,6 @@ from icon4py.model.testing.fixtures import (
     data_provider,
     download_ser_data,
     experiment,
-    global_grid_descriptor,
     grid_savepoint,
     processor_props,
 )
@@ -79,10 +78,8 @@ def test_grid_file_vertex_cell_edge_dimensions(
 
 
 @pytest.mark.parametrize("apply_transformation", (True, False))
-def test_int_variable(
-    global_grid_descriptor: definitions.GridDescription, apply_transformation: bool
-) -> None:
-    file = gridtest_utils.resolve_full_grid_file_name(global_grid_descriptor)
+def test_int_variable(experiment: definitions.Experiment, apply_transformation: bool) -> None:
+    file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         edge_dim = parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
         # use a test field that does not contain Pentagons
@@ -107,10 +104,8 @@ _index_selection: Iterable[list[int]] = [
     "selection",
     _index_selection,
 )
-def test_index_read_for_1d_fields(
-    global_grid_descriptor: definitions.GridDescription, selection: list[int]
-) -> None:
-    file = gridtest_utils.resolve_full_grid_file_name(global_grid_descriptor)
+def test_index_read_for_1d_fields(experiment: definitions.Experiment, selection: list[int]) -> None:
+    file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
         full_field = parser.variable(gridfile.CoordinateName.CELL_LATITUDE)
@@ -134,12 +129,12 @@ def test_index_read_for_1d_fields(
 )
 @pytest.mark.parametrize("apply_offset", (True, False))
 def test_index_read_for_2d_connectivity(
-    global_grid_descriptor: definitions.GridDescription,
+    experiment: definitions.Experiment,
     selection: list[int],
     field: gridfile.FieldName,
     apply_offset: bool,
 ) -> None:
-    file = gridtest_utils.resolve_full_grid_file_name(global_grid_descriptor)
+    file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
         full_field = parser.int_variable(field, transpose=True, apply_transformation=apply_offset)
