@@ -11,7 +11,6 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
-import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from types import ModuleType
@@ -125,7 +124,7 @@ class MPICommProcessProperties(definitions.ProcessProperties):
         return self.comm.Get_size()
 
 
-class GHexMultiNodeExchange:
+class GHexMultiNodeExchange(definitions.ExchangeRuntime):
     max_num_of_fields_to_communicate_dace: Final[int] = (
         10  # maximum number of fields to perform halo exchange on (DaCe-related)
     )
@@ -249,7 +248,7 @@ class GHexMultiNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: definitions.StreamLike | type[definitions.NoStreaming],
+        stream: definitions.StreamLike = definitions.DEFAULT_STREAM,
     ) -> MultiNodeResult:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
@@ -260,28 +259,14 @@ class GHexMultiNodeExchange:
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
 
-        if stream is definitions.NoStreaming or (not ghex.__config__["gpu"]):
-            if stream is not definitions.NoStreaming:
-                warnings.warn(
-                    "Requested 'scheduled exchange' mode in GHEX, which is only available"
-                    " if GHEX was compiled with GPU support, but it was not."
-                    " Falling back to normal exchange.",
-                    stacklevel=0,
-                )
+        if not ghex.__config__["gpu"]:
+            # No GPU support fall back to the regular exchange function.
             handle = self._comm.exchange(applied_patterns)
         else:
-            if stream is None:
-                warnings.warn(
-                    "Passed `None` as `stream` argument. This is discouraged but allowed"
-                    " `stream` is interpreted as `DefaultStream`.",
-                    stacklevel=0,
-                )
-            # Stream given, perform a scheduled exchange..
-            # NOTE: GHEX interprets `None` as default stream. Furthermore, if no
-            #   GPU is present, passing `None` is mandatory.
+            assert stream is not None
             handle = self._comm.schedule_exchange(
                 patterns=applied_patterns,
-                stream=(None if stream is definitions.DefaultStream else stream),
+                stream=stream,
             )
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
@@ -290,27 +275,10 @@ class GHexMultiNodeExchange:
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: definitions.StreamLike | type[definitions.NoStreaming],
+        stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
     ) -> None:
-        res = self.exchange(dim, *fields, stream=stream)
-        res.wait(stream=stream)
+        super().exchange_and_wait(dim, *fields, stream=stream)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
-
-    def __call__(  # type: ignore[return] # return statment in else condition
-        self,
-        *args: Any,
-        dim: gtx.Dimension,
-        wait: bool = True,
-        stream: definitions.StreamLike | type[definitions.NoStreaming],
-    ) -> MultiNodeResult | None:
-        if dim is None:
-            raise ValueError("Need to define a dimension.")
-
-        res = self.exchange(dim, *args, stream=stream)
-        if wait:
-            res.wait(stream=stream)
-        else:
-            return res
 
     # Implementation of DaCe SDFGConvertible interface
     def dace__sdfg__(
@@ -357,20 +325,12 @@ class GHexMultiNodeExchange:
 
 
 @dataclass
-class HaloExchangeWait:
+class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
+    buffer_name: ClassVar[str] = "communication_handle"  # DaCe-related
     exchange_object: GHexMultiNodeExchange
 
-    buffer_name: ClassVar[str] = "communication_handle"  # DaCe-related
-
-    def __call__(
-        self,
-        communication_handle: MultiNodeResult,
-        stream: definitions.StreamLike | type[definitions.NoStreaming],
-    ) -> None:
-        """Wait on the communication handle."""
-        communication_handle.wait(stream=stream)
-
     # Implementation of DaCe SDFGConvertible interface
+    # NOTE: Streams are not supported here.
     def dace__sdfg__(
         self, *args: Any, dim: gtx.Dimension, wait: bool = True
     ) -> dace.sdfg.sdfg.SDFG:
@@ -398,33 +358,16 @@ class HaloExchangeWait:
         state.add_edge(
             buffer, None, tasklet, "IN_" + buffer_name, dace.Memlet(buffer_name, subset="0")
         )
-
-        """
-        # noqa: ERA001
-
-        # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
-        sdfg.add_scalar(name="__return", dtype=dace.int32)
-        ret = state.add_write("__return")
-        state.add_edge(tasklet, "__out", ret, None, dace.Memlet(data="__return", subset="0"))
-        tasklet.out_connectors["__out"] = dace.int32
-        """
-
         sdfg.arg_names.extend(self.__sdfg_signature__()[0])
-
         return sdfg
 
     def dace__sdfg_closure__(self, reevaluate: dict[str, str] | None = None) -> dict[str, Any]:
         return {}
 
     def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-        return (
-            [
-                HaloExchangeWait.buffer_name,
-            ],
-            [],
-        )
+        return ([HaloExchangeWait.buffer_name], [])
 
-    __sdfg__ = dace__sdfg__
+    __sdfg__ = dace__sdfg__  # type: ignore[assignment]
     __sdfg_closure__ = dace__sdfg_closure__
     __sdfg_signature__ = dace__sdfg_signature__
 
@@ -435,33 +378,23 @@ def create_multinode_halo_exchange_wait(runtime: GHexMultiNodeExchange) -> HaloE
 
 
 @dataclass
-class MultiNodeResult:
+class MultiNodeResult(definitions.ExchangeResult):
     handle: Any
     pattern_refs: Any
 
     def wait(
         self,
-        stream: definitions.StreamLike | type[definitions.NoStreaming],
+        stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
     ) -> None:
-        if stream is None or (not ghex.__config__["gpu"]):
-            # No stream given, perform full blocking wait.
-            if stream is not None:
-                warnings.warn(
-                    "Requested 'scheduled wait' mode in GHEX, which is only available"
-                    " if GHEX was compiled with GPU support, but it was not."
-                    " Falling back to normal exchange.",
-                    stacklevel=0,
-                )
+        if (not ghex.__config__["gpu"]) or stream is definitions.BLOCK:
+            # No GPU support or blocking wait requested -> use normal `wait()`.
             self.handle.wait()
         else:
             # Stream given, perform a scheduled wait.
-            # NOTE: GHEX interprets `None` as default stream. Furthermore, if no
-            #   GPU is present, passing `None` is mandatory.
             # TODO(phimuell): Fixing named arguments in GHEX.
-            self.handle.schedule_wait(
-                None if stream is definitions.DefaultStream else stream,
-            )
-        # TODO(reviewer, phimuell): Is it safe to delete that here, even in the scheduled mode?
+            self.handle.schedule_wait(stream)
+
+        # TODO(msimberg, phimuell, havogt): Is it safe to delete that here, even in the scheduled mode?
         del self.pattern_refs
 
     def is_ready(self) -> bool:
