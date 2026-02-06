@@ -210,11 +210,12 @@ def test_geometry_fields_compare_single_multi_rank(
     attrs_name: str,
     dim: gtx.Dimension,
 ) -> None:
-    # TODO(msimberg): Add fixture for "always single rank" grid manager
+    # TODO(msimberg): Add fixtures for single/mult-rank
+    # grid/geometry/interpolation/metrics factoriesAdd fixtures for
+    # single/mult-rank grid/geometry/interpolation/metrics factories.
     file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
     single_node_grid_manager = utils.run_grid_manager_for_singlenode(file)
-    # TODO(msimberg): Add fixture for "always single rank" geometry
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
         grid=single_node_grid_manager.grid,
@@ -227,7 +228,6 @@ def test_geometry_fields_compare_single_multi_rank(
         f"rank = {processor_props.rank} : single node grid has size {single_node_grid_manager.decomposition_info.get_horizontal_size()!r}"
     )
 
-    # TODO(msimberg): Use regular grid manager fixture (should anyway be multi rank by default)
     multi_node_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
@@ -241,7 +241,6 @@ def test_geometry_fields_compare_single_multi_rank(
         f"(1: {multi_node_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
         f"(2: {multi_node_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
-    # TODO(msimberg): Use regular geometry fixture
     multi_node_geometry = geometry.GridGeometry(
         backend=backend,
         grid=multi_node_grid_manager.grid,
@@ -275,16 +274,13 @@ def test_geometry_fields_compare_single_multi_rank(
 def test_interpolation_fields_compare_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    # TODO(msimberg): Maybe use regular grid fixture and skip local area grids?
     global_grid_descriptor: test_defs.GridDescription,
     attrs_name: str,
     dim: gtx.Dimension,
 ) -> None:
-    # TODO(msimberg): Add fixture for "always single rank" grid manager
     file = grid_utils.resolve_full_grid_file_name(global_grid_descriptor)
     print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
     single_node_grid_manager = utils.run_grid_manager_for_singlenode(file)
-    # TODO(msimberg): Add fixture for "always single rank" geometry
     single_node_geometry = geometry.GridGeometry(
         backend=backend,
         grid=single_node_grid_manager.grid,
@@ -293,7 +289,6 @@ def test_interpolation_fields_compare_single_multi_rank(
         extra_fields=single_node_grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
     )
-    # TODO(msimberg): Add fixture for "always single rank" interpolation factory
     single_node_interpolation = interpolation_factory.InterpolationFieldsFactory(
         grid=single_node_grid_manager.grid,
         decomposition_info=single_node_grid_manager.decomposition_info,
@@ -306,7 +301,6 @@ def test_interpolation_fields_compare_single_multi_rank(
         f"rank = {processor_props.rank} : single node grid has size {single_node_grid_manager.decomposition_info.get_horizontal_size()!r}"
     )
 
-    # TODO(msimberg): Use regular grid manager fixture (should anyway be multi rank by default)
     multi_node_grid_manager = utils.run_gridmananger_for_multinode(
         file=file,
         run_properties=processor_props,
@@ -320,7 +314,6 @@ def test_interpolation_fields_compare_single_multi_rank(
         f"(1: {multi_node_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
         f"(2: {multi_node_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
     )
-    # TODO(msimberg): Use regular geometry fixture
     multi_node_geometry = geometry.GridGeometry(
         backend=backend,
         grid=multi_node_grid_manager.grid,
@@ -329,7 +322,6 @@ def test_interpolation_fields_compare_single_multi_rank(
         extra_fields=multi_node_grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
     )
-    # TODO(msimberg): Use regular interpolation factory fixture
     multi_node_interpolation = interpolation_factory.InterpolationFieldsFactory(
         grid=multi_node_grid_manager.grid,
         decomposition_info=multi_node_grid_manager.decomposition_info,
