@@ -244,7 +244,7 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
             assert f.ndim in (1, 2), "Buffers must be 1d or 2d"
             return self._patterns[dim](self._make_field_descriptor(dim, f))
 
-    def exchange(
+    def schedule_exchange(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
@@ -261,7 +261,7 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
 
         if not ghex.__config__["gpu"]:
             # No GPU support fall back to the regular exchange function.
-            handle = self._comm.exchange(applied_patterns)
+            handle = self._comm.schedule_exchange(applied_patterns)
         else:
             assert stream is not None
             handle = self._comm.schedule_exchange(
@@ -271,19 +271,20 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(
+    def exchange(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
         stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
     ) -> None:
-        super().exchange_and_wait(dim, *fields, stream=stream)
+        super().exchange(dim, *fields, stream=stream)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
     # Implementation of DaCe SDFGConvertible interface
     def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
     ) -> dace.sdfg.sdfg.SDFG:
+        # NOTE: Streams are not supported here.
         if len(args) > GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace:
             raise ValueError(
                 f"Maximum number of fields to communicate is {GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace}. Adapt the max number accordingly."
@@ -300,7 +301,14 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         }  # Field name : Data Descriptor
 
         halo_exchange.add_halo_tasklet(
-            sdfg, state, global_buffers, self, dim, id(self), wait, self.num_of_halo_tasklets
+            sdfg,
+            state,
+            global_buffers,
+            self,
+            dim,
+            id(self),
+            full_exchange,
+            self.num_of_halo_tasklets,
         )
 
         sdfg.arg_names.extend(self.__sdfg_signature__()[0])
@@ -330,21 +338,28 @@ class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
     exchange_object: GHexMultiNodeExchange
 
     # Implementation of DaCe SDFGConvertible interface
-    # NOTE: Streams are not supported here.
     def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
     ) -> dace.sdfg.sdfg.SDFG:
+        # NOTE: Streams are indirectly supported here, since these functions do not
+        #   accept the `stream` argument. Instead we will switch between the regular
+        #   and scheduled exchange function and use the default stream.
         sdfg = dace.SDFG("_halo_exchange_wait_")
         state = sdfg.add_state()
 
         # The communication handle used in the halo_exchange tasklet is a global variable
         # ghex::communication_handle<communication_handle_type> h_{id(self.exchange_object)};
         # Therefore, this tasklet calls the wait() method on the communication handle -disregards any input-
+        if ghex.__config__["gpu"]:
+            exchange_code = (f"h_{id(self.exchange_object)}.schedule_wait(nullptr);",)
+        else:
+            exchange_code = (f"h_{id(self.exchange_object)}.wait();",)
+
         tasklet = dace.sdfg.nodes.Tasklet(
             "_halo_exchange_wait_",
             inputs=None,
             outputs=None,
-            code=f"h_{id(self.exchange_object)}.wait();\n//__out = 1234;",
+            code=exchange_code,
             language=dace.dtypes.Language.CPP,
             side_effects=False,
         )
@@ -382,7 +397,7 @@ class MultiNodeResult(definitions.ExchangeResult):
     handle: Any
     pattern_refs: Any
 
-    def wait(
+    def schedule_finish(
         self,
         stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
     ) -> None:

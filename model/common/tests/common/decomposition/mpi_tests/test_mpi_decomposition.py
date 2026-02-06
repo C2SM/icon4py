@@ -263,7 +263,7 @@ def test_exchange_on_dummy_data(
         dimension, definitions.DecompositionInfo.EntryType.OWNED
     )
     assert np.all(input_field.asnumpy() == number)
-    exchange.exchange_and_wait(dimension, input_field, stream=definitions.NoStreaming)
+    exchange.exchange(dimension, input_field, stream=definitions.BLOCK)
     result = input_field.asnumpy()
     print(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
     print(
@@ -311,7 +311,7 @@ def test_halo_exchange_for_sparse_field(
     print(
         f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {result.asnumpy().shape}"
     )
-    exchange.exchange_and_wait(dims.CellDim, result, stream=definitions.NoStreaming)
+    exchange.exchange(dims.CellDim, result, stream=definitions.BLOCK)
 
     assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())
 

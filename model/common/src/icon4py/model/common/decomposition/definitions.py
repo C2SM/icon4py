@@ -206,24 +206,25 @@ class DecompositionInfo:
 
 
 class ExchangeResult(Protocol):
-    def wait(
+    def schedule_finish(
         self,
         stream: StreamLike | Block = DEFAULT_STREAM,
     ) -> None:
         """Wait on the halo exchange.
 
-        Finalizes the communication started by a previous `exchange()` call.
-        In case `stream` is set to the constant `BLOCK`, the function will only
-        return once communication has ended and the data is ready, i.e. has been
-        fully written to the destination memory.
-        In case `stream` is a `StreamLike` then the data is not necessarily ready.
-        However, all work that is submitted to `stream` will wait until the data
-        has become fully ready. The default is `DEFAULT_STREAM` which will use the
-        default stream of the device.
+        Finalizes the communication started by a previous `schedule_exchange()` call.
+        In case `stream` is `BLOCK` the function will only return once communication
+        has ended and the data is ready, i.e. has been fully written to the destination
+        memory.
+        In case `stream` is a `StreamLike` then the data is not necessarily ready once
+        the function returns. However, all work that is submitted to `stream` will
+        wait until the data has become fully ready. The default is `DEFAULT_STREAM`
+        which will use the default stream of the device.
 
-        On CPU or if CPU memory is exchanged, the only supported behaviour is to
-        pass `BLOCK` to `stream`, although it is safe and allowed to pass
-        `DEFAULT_STREAM`.
+        On CPU the only supported behaviour is `stream=BLOCK`, however, it is legal
+        to pass `DEFAULT_STREAM` as well. In case both device and host memory is
+        exchanged the host parts will behave as if `stream=BLOCK` was supplied while
+        the device parts will follow behave according to the passed `stream`.
         """
         ...
 
@@ -232,7 +233,7 @@ class ExchangeResult(Protocol):
 
         Note:
             If `exchange()` was used with a `StreamLike` object this function has
-            the same effect as calling `self.wait(stream=BLOCK)`.
+            the same effect as calling `self.schedule_finish(stream=BLOCK)`.
         """
         ...
 
@@ -240,7 +241,7 @@ class ExchangeResult(Protocol):
 @runtime_checkable
 class ExchangeRuntime(Protocol):
     @overload
-    def exchange(
+    def schedule_exchange(
         self,
         dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
@@ -248,29 +249,32 @@ class ExchangeRuntime(Protocol):
     ) -> ExchangeResult: ...
 
     @overload
-    def exchange(
+    def schedule_exchange(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field,
         stream: StreamLike = DEFAULT_STREAM,
     ) -> ExchangeResult:
-        """Perform halo exchanges.
+        """Initiate a halo exchanges.
 
-        The data exchange will synchronize with `stream`, i.e. will not start before
-        all work that has previously been submitted to this stream has finished. The
+        The exchange will synchronize with `stream`, i.e. will not start before all
+        work that has previously been submitted to this stream has finished. The
         default value is `DEFAULT_STREAM` which synchronizes with the default stream.
 
         Once the function returns it is safe to reuse the memory of `fields` (is this
         still true for NCCL).
 
+        To complete the exchange `schedule_finish()` must be called on the returned
+        object.
+
         Note:
-            For fields on the host the exchange will happen immediately. Furthermore,
+            For fields on the host the exchange will begin immediately. Furthermore,
             it is safe to pass `DEFAULT_STREAM` as `stream`.
         """
         ...
 
     @overload
-    def exchange_and_wait(
+    def exchange(
         self,
         dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
@@ -278,38 +282,50 @@ class ExchangeRuntime(Protocol):
     ) -> None: ...
 
     @overload
-    def exchange_and_wait(
+    def exchange(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field,
         stream: StreamLike | Block = DEFAULT_STREAM,
     ) -> None: ...
 
-    def exchange_and_wait(
+    def exchange(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
         stream: StreamLike | Block = DEFAULT_STREAM,
     ) -> None:
-        """Perform an exchange and a wait in one step.
+        """Perform a full hallo exchange.
 
-        The function calls `self.exchange()` forwarding `*args`, `dim` and `stream`
-        to it. However, in case `stream` is `BLOCK` the function will use
-        `DEFAULT_STREAM` instead. It will then call `wait()` on the returned handle
-        using the supplied `stream` argument.
+        The exchange will synchronize with `stream`, i.e. not start before tasks
+        previously submitted to it are done. The function might return before the
+        exchange has fully completed, but it will synchronize with `stream`, i.e.
+        work submitted to `stream` will not start before the exchange has finished.
+
+        It is possible to split the exchange into a send part, for which
+        `exchange_request = self.schedule_exchange()` is provided and a receive part
+        for which `exchange_request.schedule_finish()` can be used.
+
+        In case `stream` is `BLOCK` then the function will not return until the exchange
+        has been completed entirely. In this case the send part of will be performed
+        as `DEFAULT_STREAM` was passed.
 
         Note:
             The protocol supplies a default implementation.
         """
-        ex_req = self.exchange(dim, *fields, stream=(DEFAULT_STREAM if stream is BLOCK else stream))  # type: ignore[arg-type]
-        ex_req.wait(stream)
+        ex_req = self.schedule_exchange(
+            dim,
+            *fields,
+            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
+        )
+        ex_req.schedule_finish(stream)
 
     @overload
     def __call__(
         self,
         *fields: gtx.Field | data_alloc.NDArray,
         dim: gtx.Dimension,
-        wait: Literal[True],
+        full_exchange: Literal[True],
         stream: StreamLike | Block = DEFAULT_STREAM,
     ) -> None: ...
 
@@ -318,34 +334,36 @@ class ExchangeRuntime(Protocol):
         self,
         *fields: gtx.Field | data_alloc.NDArray,
         dim: gtx.Dimension,
-        wait: Literal[False],
-        stream: StreamLike | Block = DEFAULT_STREAM,
+        full_exchange: Literal[False],
+        stream: StreamLike = DEFAULT_STREAM,
     ) -> ExchangeResult: ...
 
     def __call__(
         self,
         *fields: gtx.Field | data_alloc.NDArray,
         dim: gtx.Dimension,
-        wait: bool = True,
+        full_exchange: bool = True,
         stream: StreamLike | Block = DEFAULT_STREAM,
     ) -> None | ExchangeResult:
-        """Perform a halo exchange operation and an optional `wait()`.
+        """Performs either a full exchange or a partial exchange.
 
-        The function calls `self.exchange()` forwarding `*fields`, `dim` and `stream`
-        to it.  In case `stream` is `BLOCK` the call will be done using `DEFAULT_STREAM`
-        instead.
-        If `wait` is `True` then the function will also call `wait()` on the
-        returned handle otherwise the handle will be returned.
+        If `full_exchange` is `True` then this function is equivalent to call
+        `self.exchange()` otherwise it behaves as `self.schedule_exchange()` and
+        the exchange result object is returned.
 
         Note:
             - This function is deprecated and should no longer be used.
-            - The order of `*fields` and `dim` is different compared to `exchange()`.
+            - The order of `*fields` and `dim` is reversed compared to `exchange()`.
             - The protocol supplies a default implementation.
         """
-        ex_req = self.exchange(dim, *fields, stream=(DEFAULT_STREAM if stream is BLOCK else stream))  # type: ignore[arg-type]
-        if not wait:
+        ex_req = self.schedule_exchange(
+            dim,
+            *fields,
+            stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
+        )
+        if not full_exchange:
             return ex_req
-        ex_req.wait(stream=stream)
+        ex_req.schedule_finish(stream=stream)
         return None
 
     def get_size(self) -> int: ...
@@ -358,7 +376,7 @@ class ExchangeRuntime(Protocol):
 
 @dataclasses.dataclass
 class SingleNodeExchange(ExchangeRuntime):
-    def exchange(
+    def schedule_exchange(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
@@ -376,7 +394,7 @@ class SingleNodeExchange(ExchangeRuntime):
     # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
     # NOTE: Stream are not supported here.
     def dace__sdfg__(
-        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+        self, *args: Any, dim: gtx.Dimension, full_exchange: bool = True
     ) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
         sdfg.name = "_halo_exchange_"
@@ -409,7 +427,7 @@ class HaloExchangeWaitRuntime(Protocol):
         Note:
             The protocol provides a default implementation.
         """
-        communication_handle.wait(stream=stream)
+        communication_handle.schedule_finish(stream=stream)
 
     def __sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
         """DaCe related: SDFGConvertible interface."""
@@ -433,7 +451,7 @@ class HaloExchangeWait(HaloExchangeWaitRuntime):
         self,
         *args: Any,
         dim: gtx.Dimension,
-        wait: bool = True,
+        full_exchange: bool = True,
         stream: StreamLike | Block = DEFAULT_STREAM,
     ) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
@@ -462,7 +480,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 
 class SingleNodeResult(ExchangeResult):
-    def wait(self, stream: StreamLike | Block = DEFAULT_STREAM) -> None:
+    def schedule_finish(self, stream: StreamLike | Block = DEFAULT_STREAM) -> None:
         pass
 
     def is_ready(self) -> bool:

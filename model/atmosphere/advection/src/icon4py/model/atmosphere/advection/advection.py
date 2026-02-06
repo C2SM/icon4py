@@ -188,7 +188,7 @@ class NoAdvection(Advection):
         log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
-        self._exchange.exchange_and_wait(
+        self._exchange.exchange(
             dims.CellDim, prep_adv.mass_flx_ic, stream=decomposition.DEFAULT_STREAM
         )
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
@@ -274,7 +274,7 @@ class GodunovSplittingAdvection(Advection):
         log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
-        self._exchange.exchange_and_wait(
+        self._exchange.exchange(
             dims.CellDim,
             prep_adv.mass_flx_ic,
             stream=decomposition.DEFAULT_STREAM,
@@ -371,7 +371,7 @@ class GodunovSplittingAdvection(Advection):
 
         # exchange updated tracer values, originally happens only if iforcing /= inwp
         log.debug("communication of advection cell field: p_tracer_new - start")
-        self._exchange.exchange_and_wait(
+        self._exchange.exchange(
             dims.CellDim,
             p_tracer_new,
             stream=decomposition.DEFAULT_STREAM,

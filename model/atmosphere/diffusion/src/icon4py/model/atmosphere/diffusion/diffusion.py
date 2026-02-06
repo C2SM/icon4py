@@ -731,7 +731,7 @@ class Diffusion:
         IF ( linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         """
         log.debug("communication of prognostic cell fields: theta, w, exner - start")
-        self._exchange.exchange_and_wait(
+        self._exchange.exchange(
             dims.CellDim,
             prognostic_state.w,
             prognostic_state.theta_v,
@@ -774,13 +774,16 @@ class Diffusion:
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         # TODO(phimuell, muellch): Is asynchronous mode okay here.
+        # NOTE: We do not specify a stream here but rely on the default argument.
+        #   We do this to ensure that the orchestrator works, but it is not aware
+        #   of the streams.
         log.debug("communication rbf extrapolation of vn - start")
         self._exchange(
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
-            wait=True,
-            stream=decomposition.DEFAULT_STREAM,
+            full_exchange=True,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )
         log.debug("communication rbf extrapolation of vn - end")
 
@@ -820,12 +823,12 @@ class Diffusion:
         # TODO(halungge): move this up and do asynchronous exchange
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
-            # TODO(phimuell, muellch): Is asynchronous mode okay here.
+            # TODO(phimuell, muellch): Is asynchronous mode okay here?
             self._exchange(
                 self.z_nabla2_e,
                 dim=dims.EdgeDim,
-                wait=True,
-                stream=decomposition.DEFAULT_STREAM,
+                full_exchange=True,
+                # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
             )
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
@@ -842,8 +845,8 @@ class Diffusion:
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
-            wait=True,
-            stream=decomposition.DEFAULT_STREAM,
+            full_exchange=True,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
@@ -862,8 +865,8 @@ class Diffusion:
         handle_edge_comm = self._exchange(
             prognostic_state.vn,
             dim=dims.EdgeDim,
-            wait=False,
-            stream=decomposition.DEFAULT_STREAM,
+            full_exchange=False,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )
 
         log.debug(
@@ -911,7 +914,7 @@ class Diffusion:
 
         self.halo_exchange_wait(
             handle_edge_comm,
-            stream=decomposition.DEFAULT_STREAM,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
 
