@@ -37,7 +37,7 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     processor_props,
 )
-from model.common.tests.common.utils import dummy_exchange
+from icon4py.model.common.tests.common.utils import dummy_exchange
 
 from ..fixtures import advection_exit_savepoint, advection_init_savepoint
 from ..utils import (
