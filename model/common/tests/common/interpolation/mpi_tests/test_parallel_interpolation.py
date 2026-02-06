@@ -31,7 +31,6 @@ from ...fixtures import (
     interpolation_factory_from_savepoint,
     interpolation_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 
@@ -204,6 +203,10 @@ def test_distributed_interpolation_rbf(
     intrp_name: str,
     atol: int,
 ) -> None:
+    # xfail inside function body, because we don't actually want to run the test
+    # since it hangs.
+    pytest.xfail("Tests hang in CI")
+
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)

@@ -39,7 +39,6 @@ from icon4py.model.testing.fixtures.datatest import (
     model_top_height,
     ndyn_substeps,
     processor_props,
-    ranked_data_path,
     stretch_factor,
     topography_savepoint,
 )
@@ -89,7 +88,7 @@ def geometry_from_savepoint(
     }
 
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
-
+    global_reductions = decomposition.create_reduction(processor_props)
     grid_geometry = geometry.GridGeometry(
         grid=grid,
         decomposition_info=decomposition_info,
@@ -98,6 +97,7 @@ def geometry_from_savepoint(
         coordinates=coordinates,
         extra_fields=extra_fields,
         exchange=exchange,
+        global_reductions=global_reductions,
     )
     yield grid_geometry
 
@@ -148,6 +148,8 @@ def metrics_factory_from_savepoint(
         exner_expol,
         vwind_offctr,
         rayleigh_type,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
     ) = construct_metrics_config(experiment)
     vertical_config = vertical.VerticalGridConfig(
         geometry_source.grid.num_levels,
@@ -172,6 +174,8 @@ def metrics_factory_from_savepoint(
         rayleigh_coeff=rayleigh_coeff,
         exner_expol=exner_expol,
         vwind_offctr=vwind_offctr,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=exchange,
         global_reductions=global_reductions,
     )
