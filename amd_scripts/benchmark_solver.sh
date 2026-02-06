@@ -25,7 +25,7 @@ export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=100
 export HIPFLAGS="-std=c++17 -fPIC -O3 -march=native -Wno-unused-parameter -save-temps -Rpass-analysis=kernel-resource-usage"
 
 # Run the benchmark and collect the runtime of the whole GT4Py program (see `GT4Py Timer Report` in the output)
-# The compiled GT4Py programs will be cached in the directory specified by `GT4PY_BUILD_CACHE_DIR` to be reused for running the `rocprof-compute` later
+# The compiled GT4Py programs will be cached in the directory specified by `GT4PY_BUILD_CACHE_DIR` to be reused for running the profilers afterwards
 pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
