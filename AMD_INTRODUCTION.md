@@ -173,4 +173,6 @@ sbatch benchmark_solver.sh
   3. Look at the `icon4py` frontend code for the `vertically_implicit_solver_at_predictor_step` [here](https://github.com/C2SM/icon4py/blob/e88b14d8be6eed814faf14c5e8a96aca6dfa991e/model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/stencils/vertically_implicit_dycore_solver.py#L219)
   4. Look at the generated SDFG by DaCe. This can give a nice overview of the computations and kernels generated. Using [the DaCe documentation](https://spcldace.readthedocs.io/en/latest/sdfg/ir.html) can help you understand what is expressed in the SDFG. The generated SDFG is saved in `<icon4py_root_dir>/amd_profiling_solver/.gt4py_cache/vertically_implicit_solver_at_predictor_step_<HASH>/program.sdfg`. To view the SDFG there is a VSCode plugin (`DaCe IOE`) or you can download it locally and open it in https://spcl.github.io/dace-webclient/.
 
-- Installing the AMD HIP/ROCm packages for our UENV with Spack required various changes which are done [here](https://github.com/eth-cscs/alps-uenv/pull/273)
+- Installing the AMD HIP/ROCm packages for our UENV with Spack required various changes which are done [here](https://github.com/eth-cscs/alps-uenv/pull/273). Maybe it would be worth to discuss with the packaging team how to streamline the spack package installation of some of the packages
+
+- There are some TODOs in the scripts that mention some issues with the profilers. It would be great if you could help us fix them
