@@ -49,7 +49,7 @@ rocprofv3 --kernel-trace on --hip-trace on --marker-trace on --memory-copy-trace
     -k "test_TestVerticallyImplicitSolverAtPredictorStep[compile_time_domain-at_first_substep[False]__is_iau_active[False]__divdamp_type[32]]"
 
 # Get the kernel names of the GT4Py program so that we can filter them with rocprof-compute
-LAST_COMPILED_DIRECTORY=$(realpath $(ls -td ${ORIGINAL_GT4PY_BUILD_CACHE_DIR}/.gt4py_cache/*/ | head -1))
+LAST_COMPILED_DIRECTORY=$(realpath $(ls -td ${GT4PY_BUILD_CACHE_DIR}/.gt4py_cache/*/ | head -1))
 echo "# Last compiled GT4Py directory: $LAST_COMPILED_DIRECTORY"
 LAST_COMPILED_KERNEL_NAMES=$(grep -r -e "__global__ void.*map.*(" ${LAST_COMPILED_DIRECTORY}/src/cuda -o | sed 's/.*\s\([a-zA-Z_][a-zA-Z0-9_]*\)(.*/\1/')
 echo "# Last compiled GT4Py kernel names:"
@@ -60,7 +60,6 @@ ROCPROF_COMPUTE_KERNEL_NAME_FILTER="-k $LAST_COMPILED_KERNEL_NAMES"
 export ICON4PY_STENCIL_TEST_WARMUP_ROUNDS=0
 export ICON4PY_STENCIL_TEST_ITERATIONS=1
 export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=1
-export GT4PY_BUILD_CACHE_DIR=${ORIGINAL_GT4PY_BUILD_CACHE_DIR} # Reuse the compiled stencils of the first run
 rocprof-compute profile --name rcu_${GT4PY_BUILD_CACHE_DIR} ${ROCPROF_COMPUTE_KERNEL_NAME_FILTER} --format-rocprof-output rocpd --kernel-names -R FP64 -- \
     $(which python3.12) -m pytest -sv \
     -m continuous_benchmarking \
