@@ -19,6 +19,7 @@ import pytest
 import icon4py.model.common.grid.gridfile
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import (
+    decomposer as decomp,
     definitions as decomp_defs,
     definitions as decomposition,
     halo,
@@ -611,7 +612,7 @@ def test_local_connectivity(
 ) -> None:
     processor_props = decomp_utils.DummyProps(rank=rank)
     caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
-    partitioner = halo.MetisDecomposer()
+    partitioner = decomp.MetisDecomposer()
     allocator = model_backends.get_allocator(backend_like)
     file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
     manager = gm.GridManager(config=v_grid.VerticalGridConfig(num_levels=10), grid_file=file)
@@ -667,7 +668,7 @@ def test_decomposition_size(
     ranks: int,
     experiment: test_defs.Experiment,
 ) -> None:
-    decomposer = halo.MetisDecomposer()
+    decomposer = decomp.MetisDecomposer()
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
