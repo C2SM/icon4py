@@ -78,9 +78,8 @@ def test_distributed_geometry_attrs(
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
-    field = grid_geometry.get(attrs_name).asnumpy()
+    field = geometry_from_savepoint.get(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, atol=1e-12)
 
 

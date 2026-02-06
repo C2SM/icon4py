@@ -12,6 +12,12 @@ from icon4py.model.common.decomposition import decomposer as decomp, definitions
 from icon4py.model.common.grid import grid_manager as gm, vertical as v_grid
 
 
+def _grid_manager(file: pathlib.Path, num_levels: int) -> gm.GridManager:
+    return gm.GridManager(
+        grid_file=str(file), config=v_grid.VerticalGridConfig(num_levels=num_levels)
+    )
+
+
 def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
     manager = _grid_manager(file, NUM_LEVELS)
     manager(
@@ -19,13 +25,6 @@ def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
         run_properties=decomp_defs.SingleNodeProcessProperties(),
         decomposer=decomp.SingleNodeDecomposer(),
         allocator=None,
-    )
-    return manager
-
-
-def _grid_manager(file: pathlib.Path, num_levels: int) -> gm.GridManager:
-    manager = gm.GridManager(
-        grid_file=str(file), config=v_grid.VerticalGridConfig(num_levels=num_levels)
     )
     return manager
 

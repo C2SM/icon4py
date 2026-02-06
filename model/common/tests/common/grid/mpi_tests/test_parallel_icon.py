@@ -184,6 +184,7 @@ def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
     assert end_index == expected, f"expected start index {1}, but was {start_index}"
 
 
+# TODO(msimberg): Torus? Above as well.
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi
 @pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
