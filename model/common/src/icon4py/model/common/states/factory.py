@@ -375,7 +375,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         if any([f is None for f in self.fields.values()]):
             log.debug(f"computing fields  {self.fields.keys()}")
             self._compute(field_src, grid)
-            self.schedule_exchange(self.fields, exchange)
+            self.schedule(self.fields, exchange)
         return self.fields[field_name]
 
     def _compute(self, factory: FieldSource, grid_provider: GridProvider) -> None:
@@ -595,7 +595,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
     ):
         if any([f is None for f in self.fields.values()]):
             self._compute(factory, backend, grid_provider)
-            self.schedule_exchange(self.fields, exchange=exchange)
+            self.schedule(self.fields, exchange=exchange)
         return self.fields[field_name]
 
     def _compute(

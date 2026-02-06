@@ -297,7 +297,7 @@ def wait(comm_handle: int | decomposition.ExchangeResult):
     if isinstance(comm_handle, int):
         pass
     else:
-        comm_handle.schedule_finish()
+        comm_handle.finish()
 
 
 def to_dace_annotations(fuse_func: Callable) -> dict[str, Any]:

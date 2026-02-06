@@ -821,7 +821,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider, factory.NeedsExchange):
                 input_fields.append(t)
             sparse_fields = self.func(input_fields, backend=backend)
             self._fields = {k: sparse_fields[i] for i, k in enumerate(self.fields)}
-            self.schedule_exchange(self.fields, exchange)
+            self.schedule(self.fields, exchange)
         return self._fields[field_name]
 
     @property

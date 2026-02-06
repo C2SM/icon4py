@@ -206,13 +206,13 @@ class DecompositionInfo:
 
 
 class ExchangeResult(Protocol):
-    def schedule_finish(
+    def finish(
         self,
         stream: StreamLike | Block = DEFAULT_STREAM,
     ) -> None:
         """Wait on the halo exchange.
 
-        Finalizes the communication started by a previous `schedule_exchange()` call.
+        Finalizes the communication started by a previous `schedule()` call.
         In case `stream` is `BLOCK` the function will only return once communication
         has ended and the data is ready, i.e. has been fully written to the destination
         memory.
@@ -233,7 +233,7 @@ class ExchangeResult(Protocol):
 
         Note:
             If `exchange()` was used with a `StreamLike` object this function has
-            the same effect as calling `self.schedule_finish(stream=BLOCK)`.
+            the same effect as calling `self.finish(stream=BLOCK)`.
         """
         ...
 
@@ -241,7 +241,7 @@ class ExchangeResult(Protocol):
 @runtime_checkable
 class ExchangeRuntime(Protocol):
     @overload
-    def schedule_exchange(
+    def schedule(
         self,
         dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
@@ -249,7 +249,7 @@ class ExchangeRuntime(Protocol):
     ) -> ExchangeResult: ...
 
     @overload
-    def schedule_exchange(
+    def schedule(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field,
@@ -264,7 +264,7 @@ class ExchangeRuntime(Protocol):
         Once the function returns it is safe to reuse the memory of `fields` (is this
         still true for NCCL).
 
-        To complete the exchange `schedule_finish()` must be called on the returned
+        To complete the exchange `finish()` must be called on the returned
         object.
 
         Note:
@@ -303,8 +303,8 @@ class ExchangeRuntime(Protocol):
         work submitted to `stream` will not start before the exchange has finished.
 
         It is possible to split the exchange into a send part, for which
-        `exchange_request = self.schedule_exchange()` is provided and a receive part
-        for which `exchange_request.schedule_finish()` can be used.
+        `exchange_request = self.schedule()` is provided and a receive part
+        for which `exchange_request.finish()` can be used.
 
         In case `stream` is `BLOCK` then the function will not return until the exchange
         has been completed entirely. In this case the send part of will be performed
@@ -313,12 +313,12 @@ class ExchangeRuntime(Protocol):
         Note:
             The protocol supplies a default implementation.
         """
-        ex_req = self.schedule_exchange(
+        ex_req = self.schedule(
             dim,
             *fields,
             stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
         )
-        ex_req.schedule_finish(stream)
+        ex_req.finish(stream)
 
     @overload
     def __call__(
@@ -348,7 +348,7 @@ class ExchangeRuntime(Protocol):
         """Performs either a full exchange or a partial exchange.
 
         If `full_exchange` is `True` then this function is equivalent to call
-        `self.exchange()` otherwise it behaves as `self.schedule_exchange()` and
+        `self.exchange()` otherwise it behaves as `self.schedule()` and
         the exchange result object is returned.
 
         Note:
@@ -356,14 +356,14 @@ class ExchangeRuntime(Protocol):
             - The order of `*fields` and `dim` is reversed compared to `exchange()`.
             - The protocol supplies a default implementation.
         """
-        ex_req = self.schedule_exchange(
+        ex_req = self.schedule(
             dim,
             *fields,
             stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
         )
         if not full_exchange:
             return ex_req
-        ex_req.schedule_finish(stream=stream)
+        ex_req.finish(stream=stream)
         return None
 
     def get_size(self) -> int: ...
@@ -376,7 +376,7 @@ class ExchangeRuntime(Protocol):
 
 @dataclasses.dataclass
 class SingleNodeExchange(ExchangeRuntime):
-    def schedule_exchange(
+    def schedule(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
@@ -427,7 +427,7 @@ class HaloExchangeWaitRuntime(Protocol):
         Note:
             The protocol provides a default implementation.
         """
-        communication_handle.schedule_finish(stream=stream)
+        communication_handle.finish(stream=stream)
 
     def __sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
         """DaCe related: SDFGConvertible interface."""
@@ -480,7 +480,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 
 class SingleNodeResult(ExchangeResult):
-    def schedule_finish(self, stream: StreamLike | Block = DEFAULT_STREAM) -> None:
+    def finish(self, stream: StreamLike | Block = DEFAULT_STREAM) -> None:
         pass
 
     def is_ready(self) -> bool:
