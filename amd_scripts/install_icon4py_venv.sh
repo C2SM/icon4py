@@ -20,13 +20,10 @@ else
 fi
 
 # Install icon4py, gt4py, DaCe and other basic dependencies using uv
-uv sync --python $(which python3.12)
+uv sync --extra rocm7_0 --python $(which python3.12)
 
 # Activate virtual environment
 source .venv/bin/activate
-
-# Install amd-cupy
-uv pip install amd-cupy --extra-index-url https://pypi.amd.com/rocm-7.0.2/simple
 
 # Install the requirements for rocprofiler-compute so we can run the profiler from the same environment
 uv pip install -r /user-environment/linux-zen3/rocprofiler-compute-7.1.0-rjjjgkz67w66bp46jw7bvlfyduzr6vhv/libexec/rocprofiler-compute/requirements.txt
