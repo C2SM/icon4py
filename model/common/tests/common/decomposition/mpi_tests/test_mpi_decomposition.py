@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+import logging
 from typing import Any
 
 import gt4py.next.typing as gtx_typing
@@ -19,6 +20,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 try:
     import mpi4py  # import mpi4py to check for optional mpi dependency
+    from mpi4py import MPI
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
@@ -27,8 +29,8 @@ import gt4py.next as gtx
 import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
-from icon4py.model.testing import definitions as test_defs, serialbox
-from icon4py.model.testing.parallel_helpers import check_comm_size
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox
 
 from ...fixtures import (
     backend,
@@ -43,12 +45,18 @@ from ...fixtures import (
     metrics_savepoint,
     processor_props,
 )
+from ..utils import dummy_four_ranks
 
 
+_log = logging.getLogger(__name__)
+
+
+@pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props: definitions.ProcessProperties) -> None:
     assert processor_props.comm
     assert processor_props.comm_size > 1
+    assert 0 <= processor_props.rank < processor_props.comm_size
 
 
 @pytest.mark.mpi(min_size=2)
@@ -78,7 +86,7 @@ def test_decomposition_info_masked(
     processor_props: definitions.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
-    check_comm_size(processor_props, sizes=(2,))
+    parallel_helpers.check_comm_size(processor_props, sizes=(2,))
     my_rank = processor_props.rank
     all_indices = decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
@@ -133,7 +141,8 @@ def test_decomposition_info_local_index(
     processor_props: definitions.ProcessProperties,
     experiment: test_defs.Experiment,
 ):
-    check_comm_size(processor_props, sizes=(2,))
+    caplog.set_level(logging.INFO)
+    parallel_helpers.check_comm_size(processor_props, sizes=(2,))
     my_rank = processor_props.rank
     all_indices = decomposition_info.local_index(dim, definitions.DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
@@ -153,6 +162,45 @@ def test_decomposition_info_local_index(
     assert owned_indices.shape[0] <= all_indices.shape[0]
     assert np.all(owned_indices <= np.max(all_indices))
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
+def test_decomposition_info_halo_level_mask(
+    dim: gtx.Dimension,
+    experiment: test_defs.Experiment,
+    decomposition_info: definitions.DecompositionInfo,
+) -> None:
+    first_halo_level = decomposition_info.halo_level_mask(
+        dim, definitions.DecompositionFlag.FIRST_HALO_LEVEL
+    )
+    assert first_halo_level.ndim == 1
+    assert np.count_nonzero(first_halo_level) == decomposition_info.get_halo_size(
+        dim, definitions.DecompositionFlag.FIRST_HALO_LEVEL
+    )
+    second_halo_level = decomposition_info.halo_level_mask(
+        dim, definitions.DecompositionFlag.SECOND_HALO_LEVEL
+    )
+    assert second_halo_level.ndim == 1
+    assert np.count_nonzero(second_halo_level) == decomposition_info.get_halo_size(
+        dim, definitions.DecompositionFlag.SECOND_HALO_LEVEL
+    )
+    assert np.count_nonzero(first_halo_level) + np.count_nonzero(
+        second_halo_level
+    ) == np.count_nonzero(~decomposition_info.owner_mask(dim))
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
+def test_decomposition_info_third_level_is_empty(
+    dim: gtx.Dimension,
+    experiment: test_defs.Experiment,
+    decomposition_info: definitions.DecompositionInfo,
+) -> None:
+    level = decomposition_info.halo_level_mask(dim, definitions.DecompositionFlag.THIRD_HALO_LEVEL)
+    assert np.count_nonzero(level) == 0
 
 
 @pytest.mark.mpi
@@ -190,7 +238,7 @@ def test_decomposition_info_matches_gridsize(
     icon_grid: icon.IconGrid,
     processor_props: definitions.ProcessProperties,
 ) -> None:
-    check_comm_size(processor_props)
+    parallel_helpers.check_comm_size(processor_props)
     assert (
         decomposition_info.global_index(
             dim=dims.CellDim, entry_type=definitions.DecompositionInfo.EntryType.ALL
@@ -265,8 +313,8 @@ def test_exchange_on_dummy_data(
     assert np.all(input_field.asnumpy() == number)
     exchange.exchange_and_wait(dimension, input_field)
     result = input_field.asnumpy()
-    print(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
-    print(
+    _log.info(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
+    _log.info(
         f" rank={processor_props.rank} - exchanged points: {np.sum(result != number)/grid.num_levels}"
     )
     print(f"rank={processor_props.rank} - halo points: {halo_points}")

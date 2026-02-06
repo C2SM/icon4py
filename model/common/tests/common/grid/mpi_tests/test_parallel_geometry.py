@@ -36,6 +36,11 @@ from ...fixtures import (
 from .. import utils
 
 
+try:
+    from icon4py.model.common.decomposition import mpi_decomposition
+except ImportError:
+    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
 
@@ -73,13 +78,11 @@ def test_distributed_geometry_attrs(
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
-    field = grid_geometry.get(attrs_name).asnumpy()
+    field = geometry_from_savepoint.get(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, atol=1e-12)
 
 
-@pytest.mark.xfail(reason="Wrong results")
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
