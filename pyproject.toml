@@ -368,7 +368,7 @@ url = 'https://pypi.amd.com/rocm-7.0.2/simple'
 [tool.uv.sources]
 dace = {index = "gridtools"}
 ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
-gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
+gt4py = {git = "https://github.com/GridTools/gt4py", branch = "amd_profiling_staging"}
 # gt4py = {index = "test.pypi"}
 amd-cupy = {index = "amd" }
 icon4py-atmosphere-advection = {workspace = true}
