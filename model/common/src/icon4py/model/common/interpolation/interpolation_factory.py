@@ -58,6 +58,8 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         self._exchange = exchange
+        domain_length = self.grid.global_properties.domain_length
+        domain_height = self.grid.global_properties.domain_height
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
             "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON
@@ -72,6 +74,8 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             "lsq_dim_c": 3,
             "lsq_wgt_exp": 2,
             "lsq_dim_stencil": 3,
+            "domain_length": 0.0 if domain_length is None else domain_length,
+            "domain_height": 0.0 if domain_height is None else domain_height,
         }
         log.info(
             f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -250,12 +254,8 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"c2e2c": dims.C2E2CDim},
             params={
-                "domain_length": self.grid.global_properties.domain_length
-                if self.grid.global_properties.domain_length is not None
-                else 0.0,
-                "domain_height": self.grid.global_properties.domain_height
-                if self.grid.global_properties.domain_height is not None
-                else 0.0,
+                "domain_length": self._config["domain_length"],
+                "domain_height": self._config["domain_height"],
                 "grid_sphere_radius": constants.EARTH_RADIUS,
                 "lsq_dim_unk": self._config["lsq_dim_unk"],
                 "lsq_dim_c": self._config["lsq_dim_c"],

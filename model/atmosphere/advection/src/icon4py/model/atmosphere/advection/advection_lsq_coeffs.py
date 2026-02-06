@@ -11,6 +11,7 @@ from types import ModuleType
 import numpy as np
 import scipy
 
+from icon4py.model.common.dimension import CellDim
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.math.projection import (
     gnomonic_proj_single_val,
@@ -131,7 +132,8 @@ def lsq_compute_coeffs(
         z_lsq_mat_c[jc, js, :lsq_dim_unk] = compute_z_lsq_mat_c(
             cell_owner_mask, z_lsq_mat_c, lsq_weights_c, z_dist_g, jc, lsq_dim_unk, lsq_dim_c
         )
-    exchange(lsq_weights_c)
+
+    exchange(lsq_weights_c, dim=CellDim)
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask,
         lsq_pseudoinv,
@@ -142,7 +144,7 @@ def lsq_compute_coeffs(
         lsq_dim_unk,
         lsq_dim_c,
     )
-    exchange(lsq_pseudoinv[:, 0, :])
-    exchange(lsq_pseudoinv[:, 1, :])
+    exchange(lsq_pseudoinv[:, 0, :], dim=CellDim)
+    exchange(lsq_pseudoinv[:, 1, :], dim=CellDim)
 
     return lsq_pseudoinv

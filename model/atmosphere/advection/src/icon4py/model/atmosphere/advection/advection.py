@@ -281,10 +281,12 @@ class GodunovSplittingAdvection(Advection):
             if self._even_timestep
             else (diagnostic_state.airmass_new, self._start_cell_lateral_boundary_level_3)
         )
+
         log.debug("running stencil apply_density_increment - start")
+        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         self._apply_density_increment(
             rhodz_in=rhodz_in,
-            p_mflx_contra_v=prep_adv.mass_flx_ic,
+            p_mflx_contra_v=prep_adv.mass_flx_ic, # exchange
             deepatmo_divzl=self._metric_state.deepatmo_divzl,
             deepatmo_divzu=self._metric_state.deepatmo_divzu,
             rhodz_out=self._rhodz_ast2,
