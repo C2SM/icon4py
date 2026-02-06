@@ -153,6 +153,13 @@ sbatch benchmark_dycore.sh
 sbatch benchmark_solver.sh
 ```
 
+## Hackathon goals
+
+- Understand what is the bottleneck in our currently generated code
+- Discuss what changes we can do either in the code generation, kernel configuration or memory layout to address these bottlenecks
+- What further code changes do we have to do to take advantage of the full MI300A performance (shared memory, warp shuffling, etc)
+- Fix any issues with ROCm profilers and learn how to effectively use them
+
 ## Notes
 
 - To understand the code apart from the analysis the profilers there are the following sources:
@@ -162,4 +169,4 @@ sbatch benchmark_solver.sh
 
 - In the `amd_profiling_solver/.gt4py_cache` directory you may see various `vertically_implicit_solver_at_predictor_step_<HASH>`. Currently there are issues with the caching the compiled programs so running the profilers might take more than necessary and generate issues. We should look together into that to figure out a solution
 
-- Installing the AMD HIP/ROCm packages for our UENV with Spack required various changes and which are done [here](https://github.com/eth-cscs/alps-uenv/pull/273)
+- Installing the AMD HIP/ROCm packages for our UENV with Spack required various changes which are done [here](https://github.com/eth-cscs/alps-uenv/pull/273)
