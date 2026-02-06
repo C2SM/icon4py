@@ -356,6 +356,51 @@ def _snow_number(
     return where(qs > g_ct.qmin, minimum(n0smx, maximum(n0smn, n0s)), N0S0)
 
 
+@gtx.field_operator
+def _snow_number_scalar(
+    t: ta.wpfloat,
+    rho: ta.wpfloat,
+    qs: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Compute the snow number
+
+    Args:
+        t:            Temperature
+        rho:          Ambient air density
+        qs:           Snow specific mass
+
+    Result:           Snow number
+    """
+    TMIN = t_d.tmelt - 40.0
+    TMAX = t_d.tmelt
+    QSMIN = 2.0e-6
+    XA1 = -1.65e0
+    XA2 = 5.45e-2
+    XA3 = 3.27e-4
+    XB1 = 1.42e0
+    XB2 = 1.19e-2
+    XB3 = 9.60e-5
+    N0S0 = 8.00e5
+    N0S1 = 13.5 * 5.65e05
+    N0S2 = -0.107
+    N0S3 = 13.5
+    N0S4 = 0.5 * N0S1
+    N0S5 = 1.0e6
+    N0S6 = 1.0e2 * N0S1
+    N0S7 = 1.0e9
+
+    # TODO(): see if these can be incorporated into WHERE statement
+    tc = maximum(minimum(t, TMAX), TMIN) - t_d.tmelt
+    alf = power(10.0, (XA1 + tc * (XA2 + tc * XA3)))
+    bet = XB1 + tc * (XB2 + tc * XB3)
+    n0s = N0S3 * power(((qs + QSMIN) * rho / g_ct.ams), (4.0 - 3.0 * bet)) / (alf * alf * alf)
+    y = exp(N0S2 * tc)
+    n0smn = maximum(N0S4 * y, N0S5)
+    n0smx = minimum(N0S6 * y, N0S7)
+    return minimum(n0smx, maximum(n0smn, n0s)) if qs > g_ct.qmin else N0S0
+
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def snow_number(
     t: fa.CellKField[ta.wpfloat],  # Temperature
@@ -370,6 +415,22 @@ def snow_number(
 def _vel_scale_factor_ice(
     xrho: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the velocity scaling factor of ice
+
+    Args:
+        xrho:              sqrt(rho_00/rho)
+
+    Result:                velocity scaling factor of ice
+    """
+    B_I = 0.66666666666666667
+    return power(xrho, B_I)
+
+
+@gtx.field_operator
+def _vel_scale_factor_ice_scalar(
+    xrho: ta.wpfloat,
+) -> ta.wpfloat:
     """
     Compute the velocity scaling factor of ice
 
@@ -405,9 +466,46 @@ def _vel_scale_factor_snow(
 
 
 @gtx.field_operator
+def _vel_scale_factor_snow_scalar(
+    xrho: ta.wpfloat,
+    rho: ta.wpfloat,
+    t: ta.wpfloat,
+    qs: ta.wpfloat,
+) -> ta.wpfloat:
+    """
+    Compute the velocity scaling factor of snow
+
+    Args:
+        xrho:              sqrt(rho_00/rho)
+        rho:               Density of condensate
+        t:                 Temperature
+        qs:                Specific mass
+
+    Result:                Velocity scaling factor of snow
+    """
+    B_S = -0.16666666666666667
+    return xrho * power(_snow_number_scalar(t, rho, qs), B_S)
+
+
+@gtx.field_operator
 def _vel_scale_factor_default(
     xrho: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the default velocity scaling factor
+
+    Args:
+        xrho:              sqrt(rho_00/rho)
+
+    Result:                default velocity scaling factor
+    """
+    return xrho
+
+
+@gtx.field_operator
+def _vel_scale_factor_default_scalar(
+    xrho: ta.wpfloat,
+) -> ta.wpfloat:
     """
     Compute the default velocity scaling factor
 
