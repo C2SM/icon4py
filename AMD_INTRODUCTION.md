@@ -7,7 +7,11 @@
 ssh beverin.cscs.ch
 ```
 
+In Beverin:
 ```
+# Enter scratch directory
+cd $SCRATCH
+
 # Clone icon4py and checkout the correct branch
 git clone git@github.com:C2SM/icon4py.git
 cd icon4py
