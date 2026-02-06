@@ -34,6 +34,7 @@ RBF_VEC_COEFF_V2: Final[str] = "rbf_interpolation_coefficient_vertex_2"
 RBF_SCALE_CELL: Final[str] = "rbf_scale_cell"
 RBF_SCALE_EDGE: Final[str] = "rbf_scale_edge"
 RBF_SCALE_VERTEX: Final[str] = "rbf_scale_vertex"
+LSQ_PSEUDOINV: Final[str] = "lsq_interpolation_coefficient"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
@@ -210,6 +211,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(),
         icon_var_name="rbf_vec_scale_v",
+        dtype=ta.wpfloat,
+    ),
+    LSQ_PSEUDOINV: dict(
+        standard_name=LSQ_PSEUDOINV,
+        long_name="lsq_pseudoinv",
+        units="",
+        dims=(dims.CellDim, dims.C2E2CDim),
+        icon_var_name="ptr_int_lsq%lsq_pseudoinv",
         dtype=ta.wpfloat,
     ),
 }

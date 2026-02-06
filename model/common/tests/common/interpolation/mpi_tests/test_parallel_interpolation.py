@@ -214,3 +214,27 @@ def test_distributed_interpolation_rbf(
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()
     test_utils.dallclose(field, field_ref, atol=atol)
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_distributed_interpolation_lsq_pseudoinv(
+    backend: gtx_typing.Backend,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    grid_savepoint: sb.IconGridSavepoint,
+    experiment: test_defs.Experiment,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    factory = interpolation_factory_from_savepoint
+    field_ref_1 = interpolation_savepoint.__getattribute__("lsq_pseudoinv_1")().asnumpy()
+    field_ref_2 = interpolation_savepoint.__getattribute__("lsq_pseudoinv_2")().asnumpy()
+    field_1 = factory.get(attrs.LSQ_PSEUDOINV)[:, 0, :]
+    field_2 = factory.get(attrs.LSQ_PSEUDOINV)[:, 1, :]
+    test_utils.dallclose(field_1, field_ref_1, atol=1e-15)  # type: ignore[arg-type] # mypy does not recognize sliced array as still an array
+    test_utils.dallclose(field_2, field_ref_2, atol=1e-15)  # type: ignore[arg-type] # mypy does not recognize sliced array as still an array

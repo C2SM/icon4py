@@ -44,3 +44,5 @@ def advection_exit_savepoint(data_provider, date):
     fixture, passing 'date=<iso_string>'.
     """
     return data_provider.from_advection_exit_savepoint(size=data_provider.grid_size, date=date)
+
+from icon4py.model.testing.fixtures.datatest import decomposition_info
