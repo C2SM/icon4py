@@ -212,7 +212,7 @@ class ExchangeResult(Protocol):
     ) -> None:
         """Wait on the halo exchange.
 
-        Finalizes the communication started by a previous `schedule()` call.
+        Finalizes the communication started by a previous `start()` call.
         In case `stream` is `BLOCK` the function will only return once communication
         has ended and the data is ready, i.e. has been fully written to the destination
         memory.
@@ -241,7 +241,7 @@ class ExchangeResult(Protocol):
 @runtime_checkable
 class ExchangeRuntime(Protocol):
     @overload
-    def schedule(
+    def start(
         self,
         dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
@@ -249,7 +249,7 @@ class ExchangeRuntime(Protocol):
     ) -> ExchangeResult: ...
 
     @overload
-    def schedule(
+    def start(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field,
@@ -303,7 +303,7 @@ class ExchangeRuntime(Protocol):
         work submitted to `stream` will not start before the exchange has finished.
 
         It is possible to split the exchange into a send part, for which
-        `exchange_request = self.schedule()` is provided and a receive part
+        `exchange_request = self.start()` is provided and a receive part
         for which `exchange_request.finish()` can be used.
 
         In case `stream` is `BLOCK` then the function will not return until the exchange
@@ -313,7 +313,7 @@ class ExchangeRuntime(Protocol):
         Note:
             The protocol supplies a default implementation.
         """
-        ex_req = self.schedule(
+        ex_req = self.start(
             dim,
             *fields,
             stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
@@ -348,7 +348,7 @@ class ExchangeRuntime(Protocol):
         """Performs either a full exchange or a partial exchange.
 
         If `full_exchange` is `True` then this function is equivalent to call
-        `self.exchange()` otherwise it behaves as `self.schedule()` and
+        `self.exchange()` otherwise it behaves as `self.start()` and
         the exchange result object is returned.
 
         Note:
@@ -356,7 +356,7 @@ class ExchangeRuntime(Protocol):
             - The order of `*fields` and `dim` is reversed compared to `exchange()`.
             - The protocol supplies a default implementation.
         """
-        ex_req = self.schedule(
+        ex_req = self.start(
             dim,
             *fields,
             stream=(DEFAULT_STREAM if stream is BLOCK else stream),  # type: ignore[arg-type]
@@ -376,7 +376,7 @@ class ExchangeRuntime(Protocol):
 
 @dataclasses.dataclass
 class SingleNodeExchange(ExchangeRuntime):
-    def schedule(
+    def start(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,

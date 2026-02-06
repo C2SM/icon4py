@@ -244,7 +244,7 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
             assert f.ndim in (1, 2), "Buffers must be 1d or 2d"
             return self._patterns[dim](self._make_field_descriptor(dim, f))
 
-    def schedule(
+    def start(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
