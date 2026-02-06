@@ -39,7 +39,6 @@ from icon4py.model.testing.fixtures.datatest import (
     model_top_height,
     ndyn_substeps,
     processor_props,
-    ranked_data_path,
     stretch_factor,
     topography_savepoint,
 )
@@ -149,6 +148,8 @@ def metrics_factory_from_savepoint(
         exner_expol,
         vwind_offctr,
         rayleigh_type,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
     ) = construct_metrics_config(experiment)
     vertical_config = vertical.VerticalGridConfig(
         geometry_source.grid.num_levels,
@@ -173,6 +174,8 @@ def metrics_factory_from_savepoint(
         rayleigh_coeff=rayleigh_coeff,
         exner_expol=exner_expol,
         vwind_offctr=vwind_offctr,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=exchange,
         global_reductions=global_reductions,
     )

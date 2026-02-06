@@ -6,50 +6,69 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import os
 import pathlib
+import shutil
 import tarfile
+import tempfile
 
 from icon4py.model.testing import config, locking
 
 
-def download_and_extract(uri: str, dst: pathlib.Path, data_file: str = "downloaded.tar.gz") -> None:
+def download_and_extract(
+    uri: str,
+    dst: pathlib.Path,
+) -> None:
     """
-    Download data archive from remote server.
+    Download and extract a tar file with locking.
 
-    Downloads a tar file at `uri` and extracts it.
     Args:
         uri: download url for archived data
-        destination: the archive is extracted at this path
-        data_file: filename of the downloaded archive, the archive is removed after download
+        dst: the archive is extracted at this path
+
+    Downloads to a temporary directory in the destination directory
+    (not /tmp to avoid space constraints).
     """
     dst.mkdir(parents=True, exist_ok=True)
+
+    completion_marker = dst / ".extraction_complete"
+    lockfile = "filelock.lock"
+
+    with locking.lock(dst, lockfile=lockfile):
+        if completion_marker.exists():
+            return
+        # Clean up any partial data from previous failed attempts
+        # (except for the lockfile)
+        for item in dst.iterdir():
+            if item.name != lockfile:
+                if item.is_file():
+                    item.unlink()
+                elif item.is_dir():
+                    shutil.rmtree(item)
+        _perform_download(uri, dst)
+        completion_marker.touch()
+
+
+def _perform_download(uri: str, dst: pathlib.Path) -> None:
     try:
         import wget  # type: ignore[import-untyped]
     except ImportError as err:
         raise RuntimeError(f"To download data file from {uri}, please install `wget`") from err
 
-    wget.download(uri, out=data_file)
-    if not tarfile.is_tarfile(data_file):
-        raise OSError(f"{data_file} needs to be a valid tar file")
-    with tarfile.open(data_file, mode="r:*") as tf:
-        tf.extractall(path=dst)
-    pathlib.Path(data_file).unlink(missing_ok=True)
+    with tempfile.TemporaryDirectory(dir=dst) as temp_dir:
+        temp_path = pathlib.Path(temp_dir) / "download.tar.gz"
+        wget.download(uri, out=str(temp_path))
+        if not tarfile.is_tarfile(temp_path):
+            raise OSError(f"{temp_path} needs to be a valid tar file")
+        with tarfile.open(temp_path, mode="r:*") as tf:
+            tf.extractall(path=dst)
 
 
-# TODO(msimberg): Remove dst_subdir once archives don't contain a subdir with
-# special name.
-def download_test_data(dst_root: pathlib.Path, dst_subdir: pathlib.Path, uri: str) -> None:
-    dst = dst_root.joinpath(dst_subdir)
+def download_test_data(dst: pathlib.Path, uri: str) -> None:
     if config.ENABLE_TESTDATA_DOWNLOAD:
-        dst.mkdir(parents=True, exist_ok=True)
-        # Explicitly specify the lockfile name to make sure that os.listdir sees
-        # it if it's created in dst.
-        lockfile = "filelock.lock"
-        with locking.lock(dst, lockfile=lockfile):
-            files = os.listdir(dst)
-            if len(files) == 0 or (len(files) == 1 and files[0] == lockfile):
-                download_and_extract(uri, dst_root)
+        download_and_extract(uri, dst)
     else:
         # If test data download is disabled, we check if the directory exists
         # and isn't empty without locking. We assume the location is managed by the user
