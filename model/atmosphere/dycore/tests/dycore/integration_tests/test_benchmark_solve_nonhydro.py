@@ -344,14 +344,11 @@ def test_benchmark_solve_nonhydro(
         lprep_adv=lprep_adv,
     )
 
-    if os.getenv("GT4PY_DYCORE_ENABLE_METRICS", "0") == "1":
-        gtx.config.COLLECT_METRICS_LEVEL = 10
-
     benchmark(
         solve_nonhydro_timestep_variants,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
     )
 
-    if os.getenv("GT4PY_DYCORE_ENABLE_METRICS", "0") == "1":
+    if gtx_metrics.sources:
         gtx_metrics.dump_json("dycore_gt4py_program_metrics.json")
