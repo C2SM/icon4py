@@ -133,7 +133,7 @@ def lsq_compute_coeffs(
             cell_owner_mask, z_lsq_mat_c, lsq_weights_c, z_dist_g, jc, lsq_dim_unk, lsq_dim_c
         )
 
-    exchange(lsq_weights_c, dim=CellDim)
+    exchange(lsq_weights_c)
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask,
         lsq_pseudoinv,
@@ -144,7 +144,7 @@ def lsq_compute_coeffs(
         lsq_dim_unk,
         lsq_dim_c,
     )
-    exchange(lsq_pseudoinv[:, 0, :], dim=CellDim)
-    exchange(lsq_pseudoinv[:, 1, :], dim=CellDim)
+    exchange(lsq_pseudoinv[:, 0, :])
+    exchange(lsq_pseudoinv[:, 1, :])
 
     return lsq_pseudoinv
