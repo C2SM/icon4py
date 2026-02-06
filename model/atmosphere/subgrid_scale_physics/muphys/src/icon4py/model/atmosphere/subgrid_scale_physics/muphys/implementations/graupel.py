@@ -98,16 +98,15 @@ def precip_qx_level_update(
 
     if previous_level_q.activated:
         vt = previous_level_q.vc * prefactor * power((rhox_prev + offset), exponent)
+    else:
+        vt = 0.0
+
+    if current_level_activated:
         x = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
         p = (x * rho * vt + flx_partial) * 0.5  # flux
     else:
-        vt = 0.0
-        if mask:
-            x = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
-            p = (x * rho * vt + flx_partial) * 0.5  # flux
-        else:
-            x = q
-            p = 0.0
+        x = q
+        p = 0.0
 
     return PrecipStateQx(
         x=x,
@@ -192,7 +191,7 @@ def _precip_and_t(
     vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q.s)
     vc_i = _vel_scale_factor_ice_scalar(xrho)
     vc_g = _vel_scale_factor_default_scalar(xrho)
-    mask_activated = mask_r | mask_s | mask_i | mask_g
+    any_mask = mask_r | mask_s | mask_i | mask_g
     previous_level_activated = (
         previous_level.r.activated
         | previous_level.s.activated
@@ -200,7 +199,7 @@ def _precip_and_t(
         | previous_level.g.activated
         | previous_level.t_state.activated
     )
-    current_level_activated = mask_activated | previous_level_activated
+    current_level_activated = any_mask | previous_level_activated
     # TODO(): Use of combined if-statement to reduce checks in case any of the masks or previous levels are not activated. Can be made unnecessary with future transformations.
     if current_level_activated:
         r_update = precip_qx_level_update(
@@ -266,7 +265,7 @@ def _precip_and_t(
             rho=rho,
             dz=dz,
             dt=dt,
-            mask=mask_activated,
+            mask=any_mask,
         )
     else:
         r_update = PrecipStateQx(x=q.r, p=0.0, vc=vc_r, activated=False)
@@ -479,7 +478,6 @@ def _precipitation_effects(
     kmin_i: fa.CellKField[bool],  # ice minimum level
     kmin_s: fa.CellKField[bool],  # snow minimum level
     kmin_g: fa.CellKField[bool],  # graupel minimum level
-    # original_q: Q,
     q_in: Q,
     t: fa.CellKField[ta.wpfloat],  # temperature,
     rho: fa.CellKField[ta.wpfloat],  # density
@@ -504,7 +502,6 @@ def _precipitation_effects(
         t,
         t_kp1,
         rho,
-        # original_q,
         q_in,
         kmin_r,
         kmin_s,
