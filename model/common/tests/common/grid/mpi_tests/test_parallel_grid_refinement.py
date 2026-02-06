@@ -31,7 +31,6 @@ from ..fixtures import (
     experiment,
     grid_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 

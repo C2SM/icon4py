@@ -124,5 +124,7 @@ def metrics_field_source(
         rayleigh_coeff=5.0,
         exner_expol=0.333,
         vwind_offctr=0.2,
+        thslp_zdiffu=0.02,
+        thhgtd_zdiffu=125.0,
     )
     yield metrics_field_source

@@ -44,7 +44,6 @@ from ...fixtures import (
     interpolation_savepoint,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
 )
 from ..utils import dummy_four_ranks
 

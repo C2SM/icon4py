@@ -19,14 +19,7 @@ from icon4py.model.testing import definitions as test_defs, grid_utils, serialbo
 from icon4py.model.testing.fixtures import backend, cpu_allocator
 
 from .. import utils
-from ..fixtures import (
-    data_provider,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    processor_props,
-    ranked_data_path,
-)
+from ..fixtures import data_provider, download_ser_data, experiment, grid_savepoint, processor_props
 from ..utils import main_horizontal_dims
 
 

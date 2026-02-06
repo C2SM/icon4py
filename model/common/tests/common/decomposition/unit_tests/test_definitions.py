@@ -14,9 +14,22 @@ from gt4py.next import common as gtx_common
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition.definitions import (
+    DecompositionInfo,
+    SingleNodeExchange,
+    create_exchange,
+)
 from icon4py.model.common.grid import simple
 from icon4py.model.testing import definitions as test_defs
-from icon4py.model.testing.fixtures import processor_props
+from icon4py.model.testing.fixtures.datatest import (  # import fixtures form test_utils
+    backend,
+    data_provider,
+    download_ser_data,
+    experiment,
+    grid_savepoint,
+    icon_grid,
+    processor_props,
+)
 
 from ...grid import utils as grid_utils
 

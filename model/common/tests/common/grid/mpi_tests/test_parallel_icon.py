@@ -33,7 +33,6 @@ from ...fixtures import (
     grid_savepoint,
     icon_grid,
     processor_props,
-    ranked_data_path,
 )
 from .. import utils
 from . import utils as parallel_utils

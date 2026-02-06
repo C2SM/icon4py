@@ -24,7 +24,6 @@ from icon4py.model.testing.fixtures import (
     global_grid_descriptor,
     grid_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 

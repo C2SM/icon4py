@@ -68,6 +68,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         rayleigh_coeff: float,
         exner_expol: float,
         vwind_offctr: float,
+        thslp_zdiffu: float,
+        thhgtd_zdiffu: float,
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
@@ -99,8 +101,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "vwind_offctr": vwind_offctr,
             "igradp_method": 3,
             "igradp_constant": 3,
-            "thslp_zdiffu": 0.02,
-            "thhgtd_zdiffu": 125.0,
+            "thslp_zdiffu": thslp_zdiffu,
+            "thhgtd_zdiffu": thhgtd_zdiffu,
             "vct_a_1": vct_a_1,
         }
 

@@ -24,6 +24,7 @@ from icon4py.model.common.decomposition import (
     halo,
 )
 from icon4py.model.common.grid import (
+    base as base_grid,
     grid_manager as gm,
     grid_refinement as refin,
     gridfile,
@@ -56,7 +57,6 @@ from icon4py.model.testing.fixtures import (
     global_grid_descriptor,
     grid_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 from ...decomposition import utils as decomp_utils
@@ -89,7 +89,7 @@ def test_grid_manager_eval_v2e(
     # indexes (while REGIONAL and GLOBAL grids can have)
     assert (
         not has_invalid_index(v2e_table)
-        if experiment.grid.kind == definitions.GridKind.TORUS
+        if experiment.grid.shape.geometry_type == base_grid.GeometryType.TORUS
         else has_invalid_index(v2e_table)
     )
     _reset_invalid_index(seralized_v2e)
@@ -135,7 +135,7 @@ def test_grid_manager_eval_v2c(
     # indexes (while REGIONAL and GLOBAL grids can have)
     assert (
         not has_invalid_index(v2c_table)
-        if experiment.grid.kind == definitions.GridKind.TORUS
+        if experiment.grid.shape.geometry_type == base_grid.GeometryType.TORUS
         else has_invalid_index(v2c_table)
     )
     _reset_invalid_index(serialized_v2c)
