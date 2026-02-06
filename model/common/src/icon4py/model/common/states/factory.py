@@ -113,8 +113,7 @@ class NeedsExchange(Protocol):
                     first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
                 ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
                 with as_exchangeable_field(field) as buffer:
-                    # Synchronous exchange.
-                    exchange.exchange(first_dim, buffer, stream=decomposition.BLOCK)
+                    exchange.exchange_and_wait(first_dim, buffer)
                 log.debug(f"exchanged buffer for {name}")
 
 
@@ -375,7 +374,7 @@ class EmbeddedFieldOperatorProvider(FieldProvider, NeedsExchange):
         if any([f is None for f in self.fields.values()]):
             log.debug(f"computing fields  {self.fields.keys()}")
             self._compute(field_src, grid)
-            self.schedule(self.fields, exchange)
+            self.exchange(self.fields, exchange)
         return self.fields[field_name]
 
     def _compute(self, factory: FieldSource, grid_provider: GridProvider) -> None:
@@ -595,7 +594,7 @@ class ProgramFieldProvider(FieldProvider, NeedsExchange):
     ):
         if any([f is None for f in self.fields.values()]):
             self._compute(factory, backend, grid_provider)
-            self.schedule(self.fields, exchange=exchange)
+            self.exchange(self.fields, exchange=exchange)
         return self.fields[field_name]
 
     def _compute(
