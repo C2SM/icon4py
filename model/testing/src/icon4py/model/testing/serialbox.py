@@ -304,11 +304,24 @@ class IconGridSavepoint(IconSavepoint):
                 raise ValueError
 
     def coordinates(self):
-        return {
+        coords = {
             dims.CellDim: {"lat": self.cell_center_lat(), "lon": self.cell_center_lon()},
             dims.EdgeDim: {"lat": self.edges_center_lat(), "lon": self.edges_center_lon()},
             dims.VertexDim: {"lat": self.verts_vertex_lat(), "lon": self.verts_vertex_lon()},
         }
+
+        if self.global_grid_params.geometry_type == base.GeometryType.TORUS:
+            coords[dims.CellDim]["x"] = self.cell_center_cart_x()
+            coords[dims.CellDim]["y"] = self.cell_center_cart_y()
+            coords[dims.CellDim]["z"] = self.cell_center_cart_z()
+            coords[dims.EdgeDim]["x"] = self.edges_center_cart_x()
+            coords[dims.EdgeDim]["y"] = self.edges_center_cart_y()
+            coords[dims.EdgeDim]["z"] = self.edges_center_cart_z()
+            coords[dims.VertexDim]["x"] = self.verts_vertex_cart_x()
+            coords[dims.VertexDim]["y"] = self.verts_vertex_cart_y()
+            coords[dims.VertexDim]["z"] = self.verts_vertex_cart_z()
+
+        return coords
 
     def cell_center_lat(self):
         return self._get_field("cell_center_lat", dims.CellDim)
