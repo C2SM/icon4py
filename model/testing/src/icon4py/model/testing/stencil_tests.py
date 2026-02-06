@@ -20,13 +20,13 @@ from gt4py import eve
 from gt4py.next import (
     config as gtx_config,
     constructors,
-    metrics as gtx_metrics,
     named_collections as gtx_named_collections,
     typing as gtx_typing,
 )
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base
@@ -198,7 +198,6 @@ class StencilTest:
             else:
                 program.compile(
                     offset_provider=grid.connectivities,
-                    enable_jit=False,
                     **static_args,  # type: ignore[arg-type]
                 )
 
