@@ -46,6 +46,20 @@ wheels = [
 ]
 
 [[package]]
+name = "amd-cupy"
+version = "13.5.1"
+source = { registry = "https://pypi.amd.com/rocm-7.0.2/simple" }
+dependencies = [
+    { name = "fastrlock" },
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://pypi.amd.com/rocm-7.0.2/packages/amd-cupy/amd_cupy-13.5.1-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:eca984c7b8176eecaff0dd84504b322828bedd40c177d736753295e8a4b672de" },
+    { url = "https://pypi.amd.com/rocm-7.0.2/packages/amd-cupy/amd_cupy-13.5.1-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:468ca95416f57d5bbf6663ad8ca69a6ac46b4a34166833f01e5535068fa1b4e8" },
+    { url = "https://pypi.amd.com/rocm-7.0.2/packages/amd-cupy/amd_cupy-13.5.1-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:de3138281e2711e06efaf49a31310d0d4824998e18d43e13e288a0e52ca75ec0" },
+]
+
+[[package]]
 name = "annotated-types"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1559,6 +1573,9 @@ io = [
 profiling = [
     { name = "viztracer" },
 ]
+rocm7-0 = [
+    { name = "icon4py-common", extra = ["rocm7-0"] },
+]
 testing = [
     { name = "icon4py-testing" },
 ]
@@ -1654,13 +1671,14 @@ requires-dist = [
     { name = "icon4py-common", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "model/common" },
     { name = "icon4py-common", extras = ["distributed"], marker = "extra == 'distributed'", editable = "model/common" },
     { name = "icon4py-common", extras = ["io"], marker = "extra == 'io'", editable = "model/common" },
+    { name = "icon4py-common", extras = ["rocm7-0"], marker = "extra == 'rocm7-0'", editable = "model/common" },
     { name = "icon4py-driver", editable = "model/driver" },
     { name = "icon4py-standalone-driver", editable = "model/standalone_driver" },
     { name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing" },
     { name = "icon4py-tools", marker = "extra == 'fortran'", editable = "tools" },
     { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },
 ]
-provides-extras = ["all", "cuda11", "cuda12", "distributed", "fortran", "io", "profiling", "testing"]
+provides-extras = ["all", "cuda11", "cuda12", "rocm7-0", "distributed", "fortran", "io", "profiling", "testing"]
 
 [package.metadata.requires-dev]
 build = [
@@ -1879,9 +1897,13 @@ io = [
     { name = "uxarray" },
     { name = "xarray", extra = ["complete"] },
 ]
+rocm7-0 = [
+    { name = "amd-cupy" },
+]
 
 [package.metadata]
 requires-dist = [
+    { name = "amd-cupy", marker = "extra == 'rocm7-0'", specifier = ">=13.0", index = "https://pypi.amd.com/rocm-7.0.2/simple" },
     { name = "cartopy", marker = "extra == 'io'", specifier = ">=0.22.0" },
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
@@ -1905,7 +1927,7 @@ requires-dist = [
     { name = "uxarray", marker = "extra == 'io'", specifier = "==2024.3.0" },
     { name = "xarray", extras = ["complete"], marker = "extra == 'io'", specifier = ">=2024.3.0" },
 ]
-provides-extras = ["all", "cuda11", "cuda12", "distributed", "io"]
+provides-extras = ["all", "cuda11", "cuda12", "rocm7-0", "distributed", "io"]
 
 [[package]]
 name = "icon4py-driver"
