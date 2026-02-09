@@ -18,14 +18,14 @@ if len(sys.argv) > 2 and sys.argv[2] == '--csv':
             if v.get('metrics').get('compute'):
                 arr = numpy.array(v.get('metrics').get('compute')[1:])
                 if len(arr) > 0:
-                    mean = arr.mean()
-                    if not numpy.isnan(mean):
-                        writer.writerow([k.split('<')[0], mean, arr.std()])
+                    median = numpy.median(arr)
+                    if not numpy.isnan(median):
+                        writer.writerow([k.split('<')[0], median, arr.std()])
 else:
     for k, v in data.items():
         if v.get('metrics').get('compute'):
             arr = numpy.array(v.get('metrics').get('compute')[1:])
             if len(arr) > 0:
-                mean = arr.mean()
-                if not numpy.isnan(mean):
-                    print(f"{k.split('<')[0]}: Mean = {mean}, Std = {arr.std()}")
+                median = numpy.median(arr)
+                if not numpy.isnan(median):
+                    print(f"{k.split('<')[0]}: Median = {median}, Std = {arr.std()}")

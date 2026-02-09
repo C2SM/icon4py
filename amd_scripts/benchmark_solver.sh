@@ -16,7 +16,7 @@ source .venv/bin/activate
 
 export GT4PY_UNSTRUCTURED_HORIZONTAL_HAS_UNIT_STRIDE="1"
 export GT4PY_BUILD_CACHE_LIFETIME=persistent
-export GT4PY_BUILD_CACHE_DIR=amd_profiling_solver
+export GT4PY_BUILD_CACHE_DIR=amd_profiling_solver_regional
 export GT4PY_COLLECT_METRICS_LEVEL=10
 export GT4PY_ADD_GPU_TRACE_MARKERS="1"
 export ICON4PY_STENCIL_TEST_WARMUP_ROUNDS=3
@@ -24,29 +24,32 @@ export ICON4PY_STENCIL_TEST_ITERATIONS=10
 export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=100
 export HIPFLAGS="-std=c++17 -fPIC -O3 -march=native -Wno-unused-parameter -save-temps -Rpass-analysis=kernel-resource-usage"
 
+export ICON_GRID="icon_benchmark_regional" # TODO(CSCS): Check also `icon_benchmark_global` when the dycore GPU memory issue is fixed
+
 # Run the benchmark and collect the runtime of the whole GT4Py program (see `GT4Py Timer Report` in the output)
 # The compiled GT4Py programs will be cached in the directory specified by `GT4PY_BUILD_CACHE_DIR` to be reused for running the profilers afterwards
 pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \
-    --grid=icon_benchmark_regional \
+    --grid=${ICON_GRID} \
     model/atmosphere/dycore/tests/dycore/stencil_tests/test_vertically_implicit_dycore_solver_at_predictor_step.py \
     -k "test_TestVerticallyImplicitSolverAtPredictorStep[compile_time_domain-at_first_substep[False]__is_iau_active[False]__divdamp_type[32]]"
 
 # Run the benchmark and collect its trace
 # TODO(AMD): Generating `rocpd` output fails with segfaults
-export ICON4PY_STENCIL_TEST_WARMUP_ROUNDS=0
-export ICON4PY_STENCIL_TEST_ITERATIONS=1
-export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=10
+export ICON4PY_STENCIL_TEST_WARMUP_ROUNDS=30
+export ICON4PY_STENCIL_TEST_ITERATIONS=10
+export ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS=100
 rocprofv3 --kernel-trace on --hip-trace on --marker-trace on --memory-copy-trace on --memory-allocation-trace on --output-format pftrace -o rocprofv3_${GT4PY_BUILD_CACHE_DIR} -- \
     $(which python3.12) -m pytest -sv \
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \
-    --grid=icon_benchmark_regional \
+    --grid=${ICON_GRID} \
     model/atmosphere/dycore/tests/dycore/stencil_tests/test_vertically_implicit_dycore_solver_at_predictor_step.py \
     -k "test_TestVerticallyImplicitSolverAtPredictorStep[compile_time_domain-at_first_substep[False]__is_iau_active[False]__divdamp_type[32]]"
+# Alternatively, export the data to `csv` and print kernel runtimes with `python amd_scripts/median_rocprof_csv.py rocprofv3_${GT4PY_BUILD_CACHE_DIR}_kernel_trace.csv`
 
 # Get the kernel names of the GT4Py program so that we can filter them with rocprof-compute
 LAST_COMPILED_DIRECTORY=$(realpath $(ls -td ${GT4PY_BUILD_CACHE_DIR}/.gt4py_cache/*/ | head -1))
@@ -65,7 +68,7 @@ rocprof-compute profile --name rcu_${GT4PY_BUILD_CACHE_DIR} ${ROCPROF_COMPUTE_KE
     -m continuous_benchmarking \
     -p no:tach \
     --backend=dace_gpu \
-    --grid=icon_benchmark_regional \
+    --grid=${ICON_GRID} \
     model/atmosphere/dycore/tests/dycore/stencil_tests/test_vertically_implicit_dycore_solver_at_predictor_step.py \
     -k "test_TestVerticallyImplicitSolverAtPredictorStep[compile_time_domain-at_first_substep[False]__is_iau_active[False]__divdamp_type[32]]"
 
