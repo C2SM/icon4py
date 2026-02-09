@@ -185,6 +185,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         Returns:
             updated owner mask
         """
+        updated_owner_mask = owner_mask.copy()
         for index in indices_on_cutting_line:
             local_index = self._xp.nonzero(all_indices == index)[0][0]
             owning_ranks = cell_to_rank[target_connectivity[index]]
@@ -196,10 +197,10 @@ class IconLikeHaloConstructor(HaloConstructor):
             ), f"rank {self._props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
             # assign the index to the rank with the higher rank
             if max(owning_ranks) > self._props.rank:
-                owner_mask[local_index] = False
+                updated_owner_mask[local_index] = False
             else:
-                owner_mask[local_index] = True
-        return owner_mask
+                updated_owner_mask[local_index] = True
+        return updated_owner_mask
 
     def __call__(self, cell_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         """
