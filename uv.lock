@@ -1747,14 +1747,18 @@ source = { editable = "model/atmosphere/advection" }
 dependencies = [
     { name = "gt4py" },
     { name = "icon4py-common" },
+    { name = "numpy" },
     { name = "packaging" },
+    { name = "scipy" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_staging" },
     { name = "icon4py-common", editable = "model/common" },
+    { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "scipy", specifier = ">=1.14.1" },
 ]
 
 [[package]]
@@ -1815,6 +1819,7 @@ source = { editable = "model/atmosphere/subgrid_scale_physics/muphys" }
 dependencies = [
     { name = "gt4py" },
     { name = "icon4py-common", extra = ["io"] },
+    { name = "numpy" },
     { name = "packaging" },
 ]
 
@@ -1822,6 +1827,7 @@ dependencies = [
 requires-dist = [
     { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_staging" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
+    { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
 ]
 
