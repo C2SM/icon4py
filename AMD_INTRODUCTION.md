@@ -87,28 +87,37 @@ Here is an example of a `GT4Py Program` from `icon4py`: [vertically_implicit_sol
 For the benchmarking we have focused on the `dycore` component of `icon4py` . We have measured the runtimes for the different `GT4Py Programs` executed in it between an `MI300A` and a `GH200 GPU` below:
 
 ```
-+--------------------------------------------------------+-----------------+----------------+--------------------------------------------------------------+
-| GT4Py Programs                                         | MI300A Time (s) | GH200 Time (s) | Acceleration of GH200 over MI300A (MI300A time / GH200 time) |
-+--------------------------------------------------------+-----------------+----------------+--------------------------------------------------------------+
-| compute_diagnostics_from_normal_wind                   | 0.000268        | 0.000150       | 1.79                                                         |
-| compute_advection_in_predictor_vertical_momentum       | 0.000195        | 0.000129       | 1.51                                                         |
-| compute_advection_in_horizontal_momentum               | 0.004871        | 0.000174       | 27.98                                                        |
-| compute_perturbed_quantities_and_interpolation         | 0.000433        | 0.000255       | 1.70                                                         |
-| compute_hydrostatic_correction_term                    | 0.000034        | 0.000026       | 1.30                                                         |
-| compute_rho_theta_pgrad_and_update_vn                  | 0.105237        | 0.000404       | 260.40                                                       |
-| compute_horizontal_velocity_quantities_and_fluxes      | 0.000562        | 0.000324       | 1.73                                                         |
-| vertically_implicit_solver_at_predictor_step           | 0.011691        | 0.000601       | 19.46                                                        |
-| compute_advection_in_corrector_vertical_momentum       | 0.010325        | 0.000209       | 49.51                                                        |
-| compute_interpolation_and_nonhydro_buoy                | 0.000253        | 0.000135       | 1.87                                                         |
-| apply_divergence_damping_and_update_vn                 | 0.000208        | 0.000114       | 1.83                                                         |
-| vertically_implicit_solver_at_corrector_step           | 0.002938        | 0.000592       | 4.96                                                         |
-+--------------------------------------------------------+-----------------+----------------+--------------------------------------------------------------+
++-------------------------------------------------------+---------------------+-------------+-----------------+
+| GT4Py Program                                         | MI300A [persistent] | GH200 (ns)  | Acceleration    |
+|                                                       |       (ns)          |             |                 |
++=======================================================+=====================+=============+=================+
+| compute_advection_in_horizontal_momentum              | 0.00440             | 0.000176    | 25.01           |
++-------------------------------------------------------+---------------------+-------------+-----------------+
+| vertically_implicit_solver_at_corrector_step          | 0.00088             | 0.000578    | 1.53            |
++-------------------------------------------------------+---------------------+-------------+-----------------+
+| vertically_implicit_solver_at_predictor_step          | 0.00080             | 0.000555    | 1.44            |
++-------------------------------------------------------+---------------------+-------------+-----------------+
+| compute_rho_theta_pgrad_and_update_vn                 | 0.00074             | 0.000410    | 1.81            |
++-------------------------------------------------------+---------------------+-------------+-----------------+
+| compute_horizontal_velocity_quantities_and_fluxes     | 0.00049             | 0.000329    | 1.51            |
++-------------------------------------------------------+---------------------+-------------+-----------------+
+| compute_perturbed_quantities_and_interpolation        | 0.00039             | 0.000265    | 1.47            |
++-------------------------------------------------------+---------------------+-------------+-----------------+
+| compute_advection_in_corrector_vertical_momentum      | 0.00030             | 0.000212    | 1.43            |
++-------------------------------------------------------+---------------------+-------------+-----------------+
+| compute_interpolation_and_nonhydro_buoy               | 0.00023             | 0.000137    | 1.71            |
++-------------------------------------------------------+---------------------+-------------+-----------------+
+| compute_hydrostatic_correction_term                   | 0.00003             | 0.000029    | 1.03            |
++-------------------------------------------------------+---------------------+-------------+-----------------+
 ```
 
-Some of them show a dramatic slowdown in `MI300A` meanwhile in all of them the standard deviation in `MI300A` is much higher than `GH200`. The above are the median runtimes that are reported over 100 iterations (excluding the first slow one) using a C++ timer as close as possible to the kernel launches.
+**Warning** By default some of `GT4Py Programs` executed on the `MI300A` show a dramatic slowdown meanwhile in all of them the standard deviation in `MI300A` is much higher than `GH200`. We figured out that the souruce of the issue is a call to `hipMallocAsync` which allocates temporaries necessary for each program. The call to this HIP API has a very high variability and some times it takes much longer (100x times) to execute. For the `MI300A` results above we have disabled these allocations/deallocations taking place for each `GT4Py Programs` to see more clear the runtimes however this is not feasible for real simulations, where the memory footprint of the temporary data of all `GT4Py Programs` cannot be preallocated. Since in `GH200` the memory allocations and deallocations are taken into account in the timings, the above results should be taken with a grain of salt.
 
-Since we only recently started looking at the results from the MI300A there are some kernels that are in total very slow compared to GH200. The tracing profile suggests that some times the calls to `hipMallocAsync` take much longer that expected.
-While this issue is something that should be addressed, what would be more interesting to look at is starting from a specific `GT4Py Program` and looking at the performance of each kernel launched from it.
+We didn't have time yet to look into the `compute_advection_in_horizontal_momentum` regression.
+
+In both cases in the table above we present the median runtimes that are reported over 100 iterations (excluding the first slow one) using a C++ timer as close as possible to the kernel launches.
+
+What is interesting for us to look into is analyzing the performance of the kernels of a specific `GT4Py Program`.
 To that end, we selected one of the `GT4Py Programs` that takes most of the time in a production simulation and has kernels with different representative patterns like: neighbor reductions, 2D maps and scans.
 This is the `vertically_implicit_solver_at_predictor_step` `GT4Py program` and here is the comparison of its kernels:
 
@@ -155,6 +164,20 @@ sbatch benchmark_dycore.sh
 # Run the `vertically_implicit_solver_at_predictor_step` GT4Py program standalone. Notice the `GT4Py Timer Report` table printed from the first `pytest` invocation. The reported timers on this table are as close as possible to the kernel launches of the GT4Py program.
 # The following script will benchmark the solver, run `rocprofv3` and collect a trace of it as well as run the `rocprof-compute` tool for all its kernels
 sbatch benchmark_solver.sh
+```
+
+The generated code for the results above can be found in `Beverin` in:
+
+`dycore`
+```
+/capstor/scratch/cscs/ioannmag/HPCAIAdvisory/icon4py/amd_profiling_solver_persistent_mem # GT4Py cache folder
+/capstor/scratch/cscs/ioannmag/HPCAIAdvisory/icon4py/slurm-247696.out # Slurm output
+```
+
+`solver`
+```
+/capstor/scratch/cscs/ioannmag/HPCAIAdvisory/icon4py/amd_profiling_solver_regional # GT4Py cache folder
+/capstor/scratch/cscs/ioannmag/HPCAIAdvisory/icon4py/slurm-247518.out # Slurm output
 ```
 
 ## Hackathon goals
