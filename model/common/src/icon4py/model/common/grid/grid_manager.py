@@ -123,7 +123,7 @@ class GridManager:
 
         self._construct_decomposed_grid(
             allocator=allocator,
-            with_skip_values=keep_skip_values,
+            keep_skip_values=keep_skip_values,
             geometry_type=geometry_type,
             decomposer=decomposer,
             run_properties=run_properties,
@@ -391,7 +391,7 @@ class GridManager:
     def _construct_decomposed_grid(
         self,
         allocator: gtx_typing.FieldBufferAllocationUtil | None,
-        with_skip_values: bool,
+        keep_skip_values: bool,
         geometry_type: base.GeometryType,
         decomposer: decomp.Decomposer,
         run_properties: decomposition.ProcessProperties,
@@ -459,7 +459,7 @@ class GridManager:
             horizontal_size=distributed_size,
             vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
-            keep_skip_values=with_skip_values,
+            keep_skip_values=keep_skip_values,
         )
 
         grid = icon.icon_grid(
