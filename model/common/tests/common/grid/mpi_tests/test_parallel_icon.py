@@ -30,6 +30,7 @@ from ...fixtures import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     processor_props,
@@ -187,12 +188,14 @@ def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
 # TODO(msimberg): Torus? Above as well.
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi
-@pytest.mark.parametrize("grid", (test_defs.Grids.R02B04_GLOBAL,))
 def test_skip_values_on_distributed_grid(
     processor_props: decomposition.ProcessProperties,
-    grid: test_defs.GridDescription,
+    experiment: test_defs.Experiment,
 ) -> None:
-    file = grid_utils.resolve_full_grid_file_name(grid)
+    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+        pytest.xfail("Limited-area grids not yet supported")
+
+    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     grid_manager = parallel_utils.run_gridmananger_for_multinode(
         file, processor_props, decomposer=MetisDecomposer()
     )
