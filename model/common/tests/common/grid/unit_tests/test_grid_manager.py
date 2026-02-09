@@ -648,7 +648,7 @@ def test_local_connectivity(
     dim = field_offset.target[0]
     last_halo_level = (
         decomp_defs.DecompositionFlag.THIRD_HALO_LEVEL
-        if neighbor_dim == dims.E2CDim
+        if dim == dims.EdgeDim
         else decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL
     )
     level_index = np.where(
