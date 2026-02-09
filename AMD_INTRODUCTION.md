@@ -48,7 +48,6 @@ pytest -sv \
     --benchmark-only \
     --benchmark-warmup=on \
     --benchmark-warmup-iterations=30 \
-    --benchmark-json=pytest_benchmark_results.json \
     --backend=dace_gpu \
     --grid=icon_benchmark_regional \
     --benchmark-time-unit=ms \
@@ -108,8 +107,8 @@ For the benchmarking we have focused on the `dycore` component of `icon4py` . We
 
 Some of them show a dramatic slowdown in `MI300A` meanwhile in all of them the standard deviation in `MI300A` is much higher than `GH200`. The above are the median runtimes that are reported over 100 iterations (excluding the first slow one) using a C++ timer as close as possible to the kernel launches.
 
-Since we only recently started looking at the results from the MI300A there are some issues to iron out, like the very slow executions compared to GH200 which most likely include some non-GPU kernel overhead.
-What would be more interesting to look at is starting from a specific `GT4Py Program` and looking at the performance of each kernel launched from it.
+Since we only recently started looking at the results from the MI300A there are some kernels that are in total very slow compared to GH200. The tracing profile suggests that some times the calls to `hipMallocAsync` take much longer that expected.
+While this issue is something that should be addressed, what would be more interesting to look at is starting from a specific `GT4Py Program` and looking at the performance of each kernel launched from it.
 To that end, we selected one of the `GT4Py Programs` that takes most of the time in a production simulation and has kernels with different representative patterns like: neighbor reductions, 2D maps and scans.
 This is the `vertically_implicit_solver_at_predictor_step` `GT4Py program` and here is the comparison of its kernels:
 
@@ -176,3 +175,7 @@ sbatch benchmark_solver.sh
 - Installing the AMD HIP/ROCm packages for our UENV with Spack required various changes which are done [here](https://github.com/eth-cscs/alps-uenv/pull/273). Maybe it would be worth to discuss with the packaging team how to streamline the spack package installation of some of the packages
 
 - There are some TODOs in the scripts that mention some issues with the profilers. It would be great if you could help us fix them
+
+- The kernel names may vary from execution to execution so in some cases differences in the kernel names can be expected
+
+- The provided scripts are for guidance and should be handled with care
