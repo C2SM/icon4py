@@ -179,7 +179,7 @@ def test_advection_run_single_step(
         cell_params=cell_geometry,
         even_timestep=even_timestep,
         backend=backend,
-        exchange=dummy_exchange
+        exchange=None,
     )
 
     diagnostic_state = construct_diagnostic_init_state(

@@ -7,23 +7,33 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next.typing as gtx_typing
+import numpy as np
 import pytest
+from gt4py.next import typing as gtx_typing
 
-from icon4py.model.testing import test_utils
+import icon4py.model.testing.test_utils as test_helpers
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.advection.advection_lsq_coeffs import lsq_compute_coeffs
-from icon4py.model.common import constants, dimension as dims, utils
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
+from icon4py.model.common import constants, dimension as dims, type_alias as ta, utils
+from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,
+    icon,
+    states as grid_states,
+    vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions as test_defs,
     grid_utils,
     grid_utils as gridtest_utils,
+    parallel_helpers,
+    serialbox,
     serialbox as sb,
+    test_utils,
 )
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -37,7 +47,9 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     processor_props,
 )
-from icon4py.model.common.decomposition import definitions
+
+from .. import utils
+from ..fixtures import *  # noqa: F403
 from ..fixtures import advection_exit_savepoint, advection_init_savepoint
 from ..utils import (
     construct_config,
@@ -51,19 +63,6 @@ from ..utils import (
     verify_advection_fields,
 )
 
-import numpy as np
-import pytest
-from gt4py.next import typing as gtx_typing
-
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
-from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.decomposition import definitions, mpi_decomposition
-from icon4py.model.common.grid import icon, states as grid_states, vertical as v_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox, test_utils
-
-from .. import utils
-from ..fixtures import *  # noqa: F403
 
 try:
     import mpi4py
@@ -71,6 +70,7 @@ try:
     mpi_decomposition.init_mpi()
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.datatest
@@ -197,7 +197,7 @@ def test_advection_run_single_step(
         cell_params=cell_geometry,
         even_timestep=even_timestep,
         backend=backend,
-        exchange=exchange
+        exchange=exchange,
     )
 
     diagnostic_state = construct_diagnostic_init_state(
@@ -233,66 +233,70 @@ def test_advection_run_single_step(
     )
 
 
-# @pytest.mark.level("unit")
-# @pytest.mark.datatest
-# def test_lsq_compute_coeffs(
-#     icon_grid: base_grid.Grid,
-#     grid_savepoint: sb.IconGridSavepoint,
-#     backend: gtx_typing.Backend,
-#     interpolation_savepoint: sb.InterpolationSavepoint,
-#     experiment: test_defs.Experiment,
-# ) -> None:
-#     gm = grid_utils.get_grid_manager_from_identifier(
-#         experiment.grid,
-#         num_levels=1,
-#         keep_skip_values=True,
-#         allocator=backend,
-#     )
-#
-#     c2e2c = gm.grid.connectivities["C2E2C"].asnumpy()
-#     cell_owner_mask = grid_savepoint.c_owner_mask().asnumpy()
-#     grid_sphere_radius = constants.EARTH_RADIUS
-#     lsq_dim_unk = 2
-#     lsq_dim_c = 3
-#     lsq_wgt_exp = 2
-#     cell_domain = h_grid.domain(dims.CellDim)
-#
-#     min_rlcell_int = gm.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-#     start_idx = gm.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-#
-#     grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
-#     cell_center_x = grid_geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy()
-#     cell_center_y = grid_geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy()
-#     domain_length = gm.grid.global_properties.domain_length
-#     domain_height = gm.grid.global_properties.domain_height
-#     lsq_dim_stencil = 3
-#
-#     coordinates = gm.coordinates
-#     cell_lat = coordinates[dims.CellDim]["lat"].asnumpy()
-#     cell_lon = coordinates[dims.CellDim]["lon"].asnumpy()
-#     lsq_pseudoinv = lsq_compute_coeffs(
-#         cell_center_x,
-#         cell_center_y,
-#         cell_lat,
-#         cell_lon,
-#         c2e2c,
-#         cell_owner_mask,
-#         domain_length,
-#         domain_height,
-#         grid_sphere_radius,
-#         lsq_dim_unk,
-#         lsq_dim_c,
-#         lsq_wgt_exp,
-#         lsq_dim_stencil,
-#         start_idx,
-#         min_rlcell_int,
-#         exchange,
-#         icon_grid.geometry_type,
-#     )
-#
-#     assert test_helpers.dallclose(
-#         interpolation_savepoint.lsq_pseudoinv_1().asnumpy(), lsq_pseudoinv[:, 0, :], atol=1e-15
-#     )
-#     assert test_helpers.dallclose(
-#         interpolation_savepoint.lsq_pseudoinv_2().asnumpy(), lsq_pseudoinv[:, 1, :], atol=1e-15
-#     )
+@pytest.mark.level("unit")
+@pytest.mark.datatest
+@pytest.mark.mpi
+def test_lsq_compute_coeffs(
+    icon_grid: base_grid.Grid,
+    grid_savepoint: sb.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    experiment: test_defs.Experiment,
+    processor_props: definitions.ProcessProperties,
+    decomposition_info: definitions.DecompositionInfo,  # : F811 fixture
+) -> None:
+    gm = grid_utils.get_grid_manager_from_identifier(
+        experiment.grid,
+        num_levels=1,
+        keep_skip_values=True,
+        allocator=backend,
+    )
+
+    c2e2c = gm.grid.connectivities["C2E2C"].asnumpy()
+    cell_owner_mask = grid_savepoint.c_owner_mask().asnumpy()
+    grid_sphere_radius = constants.EARTH_RADIUS
+    lsq_dim_unk = 2
+    lsq_dim_c = 3
+    lsq_wgt_exp = 2
+    cell_domain = h_grid.domain(dims.CellDim)
+
+    min_rlcell_int = gm.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+    start_idx = gm.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
+    cell_center_x = grid_geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy()
+    cell_center_y = grid_geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy()
+    domain_length = gm.grid.global_properties.domain_length
+    domain_height = gm.grid.global_properties.domain_height
+    lsq_dim_stencil = 3
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+
+    coordinates = gm.coordinates
+    cell_lat = coordinates[dims.CellDim]["lat"].asnumpy()
+    cell_lon = coordinates[dims.CellDim]["lon"].asnumpy()
+    lsq_pseudoinv = lsq_compute_coeffs(
+        cell_center_x,
+        cell_center_y,
+        cell_lat,
+        cell_lon,
+        c2e2c,
+        cell_owner_mask,
+        domain_length,
+        domain_height,
+        grid_sphere_radius,
+        lsq_dim_unk,
+        lsq_dim_c,
+        lsq_wgt_exp,
+        lsq_dim_stencil,
+        start_idx,
+        min_rlcell_int,
+        icon_grid.geometry_type.value,
+        exchange,
+    )
+
+    assert test_helpers.dallclose(
+        interpolation_savepoint.lsq_pseudoinv_1().asnumpy(), lsq_pseudoinv[:, 0, :], atol=1e-15
+    )
+    assert test_helpers.dallclose(
+        interpolation_savepoint.lsq_pseudoinv_2().asnumpy(), lsq_pseudoinv[:, 1, :], atol=1e-15
+    )
