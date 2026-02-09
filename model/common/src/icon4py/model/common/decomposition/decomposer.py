@@ -64,9 +64,14 @@ class MetisDecomposer(Decomposer):
 
 class SingleNodeDecomposer(Decomposer):
     def __call__(
-        self, adjacency_matrix: data_alloc.NDArray, num_partitions: int = 1
+        self, adjacency_matrix: data_alloc.NDArray, num_partitions: int
     ) -> data_alloc.NDArray:
         """Dummy decomposer for single node: assigns all cells to rank = 0"""
+        if num_partitions != 1:
+            raise ValueError(
+                f"SingleNodeDecomposer can only be used for num_partitions=1, but got {num_partitions}"
+            )
+
         return data_alloc.array_ns_from_array(adjacency_matrix).zeros(
             adjacency_matrix.shape[0],
             dtype=gtx.int32,  # type: ignore  [attr-defined]
