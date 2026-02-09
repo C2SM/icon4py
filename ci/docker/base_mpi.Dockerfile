@@ -10,7 +10,6 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     tar \
     wget \
     curl \
-    libboost-dev \
     libnuma-dev \
     libopenmpi-dev \
     ca-certificates \
