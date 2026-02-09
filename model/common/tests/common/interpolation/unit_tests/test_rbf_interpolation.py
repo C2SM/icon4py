@@ -42,6 +42,24 @@ if TYPE_CHECKING:
 
     from icon4py.model.testing import serialbox
 
+RBF_TOLERANCES = {
+    dims.CellDim: {
+        definitions.Experiments.EXCLAIM_APE.name: 3.1e-9,
+        definitions.Experiments.MCH_CH_R04B09.name: 4e-2,
+        definitions.Experiments.GAUSS3D.name: 1e-14,
+    },
+    dims.EdgeDim: {
+        definitions.Experiments.EXCLAIM_APE.name: 8e-14,
+        definitions.Experiments.MCH_CH_R04B09.name: 2e-9,
+        definitions.Experiments.GAUSS3D.name: 0,
+    },
+    dims.VertexDim: {
+        definitions.Experiments.EXCLAIM_APE.name: 3e-10,
+        definitions.Experiments.MCH_CH_R04B09.name: 3e-3,
+        definitions.Experiments.GAUSS3D.name: 1e-15,
+    },
+}
+
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
@@ -141,20 +159,11 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, atol",
-    [
-        (definitions.Experiments.EXCLAIM_APE, 3e-9),
-        (definitions.Experiments.MCH_CH_R04B09, 3e-2),
-        (definitions.Experiments.GAUSS3D, 1e-14),
-    ],
-)
 def test_rbf_interpolation_coeffs_cell(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
-    atol: float,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
@@ -214,31 +223,22 @@ def test_rbf_interpolation_coeffs_cell(
     assert test_helpers.dallclose(
         rbf_vec_coeff_c1[horizontal_start:],
         rbf_vec_coeff_c1_ref[horizontal_start:],
-        atol=atol,
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_c2[horizontal_start:],
         rbf_vec_coeff_c2_ref[horizontal_start:],
-        atol=atol,
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
     )
 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, atol",
-    [
-        (definitions.Experiments.EXCLAIM_APE, 3e-10),
-        (definitions.Experiments.MCH_CH_R04B09, 3e-3),
-        (definitions.Experiments.GAUSS3D, 1e-15),
-    ],
-)
 def test_rbf_interpolation_coeffs_vertex(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
-    atol: float,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
@@ -298,31 +298,22 @@ def test_rbf_interpolation_coeffs_vertex(
     assert test_helpers.dallclose(
         rbf_vec_coeff_v1[horizontal_start:],
         rbf_vec_coeff_v1_ref.asnumpy()[horizontal_start:],
-        atol=atol,
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_v2[horizontal_start:],
         rbf_vec_coeff_v2_ref.asnumpy()[horizontal_start:],
-        atol=atol,
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
     )
 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, atol",
-    [
-        (definitions.Experiments.EXCLAIM_APE, 8e-14),
-        (definitions.Experiments.MCH_CH_R04B09, 2e-9),
-        (definitions.Experiments.GAUSS3D, 0),
-    ],
-)
 def test_rbf_interpolation_coeffs_edge(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
-    atol: float,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
@@ -378,5 +369,5 @@ def test_rbf_interpolation_coeffs_edge(
     assert test_helpers.dallclose(
         rbf_vec_coeff_e[horizontal_start:],
         rbf_vec_coeff_e_ref.asnumpy()[horizontal_start:],
-        atol=atol,
+        atol=RBF_TOLERANCES[dims.EdgeDim][experiment.name],
     )
