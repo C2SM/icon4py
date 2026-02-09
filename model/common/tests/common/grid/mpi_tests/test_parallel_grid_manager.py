@@ -217,8 +217,7 @@ def test_geometry_fields_compare_single_multi_rank(
         pytest.xfail("Limited-area grids not yet supported")
 
     # TODO(msimberg): Add fixtures for single/multi-rank
-    # grid/geometry/interpolation/metrics factoriesAdd fixtures for
-    # single/mult-rank grid/geometry/interpolation/metrics factories.
+    # grid/geometry/interpolation/metrics factories.
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
     single_node_grid_manager = utils.run_grid_manager_for_singlenode(file)
