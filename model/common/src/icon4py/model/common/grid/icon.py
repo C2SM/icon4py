@@ -208,10 +208,8 @@ def icon_grid(
             data_alloc.import_array_ns(allocator).asarray(table),
             skip_value=-1 if _has_skip_values(offset, limited_area_or_distributed) else None,
             allocator=allocator,
-            replace_skip_values=(
-                _should_replace_skip_values(
-                    offset, config.keep_skip_values, limited_area_or_distributed
-                ),
+            replace_skip_values=_should_replace_skip_values(
+                offset, config.keep_skip_values, config.limited_area
             ),
         )
         for offset, table in neighbor_tables.items()
