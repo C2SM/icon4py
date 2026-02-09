@@ -56,6 +56,10 @@ class MetisDecomposer(Decomposer):
 
         import pymetis  # type: ignore [import-untyped]
 
+        # Invalid indices are not allowed here. Metis will segfault or fail
+        # there are any invalid indices in the adjacency matrix.
+        assert (adjacency_matrix >= 0).all()
+
         # The partitioning is done on all ranks, and this assumes that the
         # partitioning is deterministic.
         _, partition_index = pymetis.part_graph(nparts=num_partitions, adjacency=adjacency_matrix)
