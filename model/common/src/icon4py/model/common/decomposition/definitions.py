@@ -425,7 +425,6 @@ def create_single_reduction_exchange(props: SingleNodeProcessProperties) -> Redu
 
 
 class DecompositionFlag(int, Enum):
-    UNDEFINED = -1
     OWNED = 0
     """used for locally owned cells, vertices, edges"""
 
