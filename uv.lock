@@ -1826,6 +1826,7 @@ source = { editable = "model/atmosphere/subgrid_scale_physics/muphys" }
 dependencies = [
     { name = "gt4py" },
     { name = "icon4py-common", extra = ["io"] },
+    { name = "numpy" },
     { name = "packaging" },
 ]
 
@@ -1833,6 +1834,7 @@ dependencies = [
 requires-dist = [
     { name = "gt4py", specifier = "==1.1.3" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
+    { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
 ]
 
