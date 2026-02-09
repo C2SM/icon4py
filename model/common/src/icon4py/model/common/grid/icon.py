@@ -209,7 +209,7 @@ def icon_grid(
             skip_value=-1 if _has_skip_values(offset, limited_area_or_distributed) else None,
             allocator=allocator,
             replace_skip_values=_should_replace_skip_values(
-                offset, config.keep_skip_values, config.limited_area
+                offset, config.keep_skip_values, limited_area_or_distributed
             ),
         )
         for offset, table in neighbor_tables.items()
