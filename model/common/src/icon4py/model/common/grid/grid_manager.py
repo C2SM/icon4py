@@ -398,8 +398,10 @@ class GridManager:
     ) -> None:
         """Construct the grid topology from the icon grid file.
 
-        Reads connectivity fields from the grid file and constructs derived connectivities needed in
-        Icon4py from them. Adds constructed start/end index information to the grid.
+        Reads connectivity fields from the grid file and constructs derived
+        connectivities needed in Icon4py from them. Adds constructed start/end
+        index information to the grid. The grid will be distributed or not based
+        on run_properties.
 
         """
         xp = data_alloc.import_array_ns(allocator)
