@@ -216,6 +216,9 @@ def test_geometry_fields_compare_single_multi_rank(
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
 
+    # TODO(msimberg): Some of these fail with keep_skip_values=True, pass with
+    # keep_skip_values=False. What should it be?
+
     # TODO(msimberg): Add fixtures for single/multi-rank
     # grid/geometry/interpolation/metrics factories.
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
