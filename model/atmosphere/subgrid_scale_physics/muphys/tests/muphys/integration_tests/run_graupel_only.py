@@ -477,3 +477,12 @@ write_fields(
     pflx=np.transpose(pflx_out.asnumpy()),
     pre_gsp=data.pre_gsp,
 )
+
+from cdo import Cdo
+
+cdo = Cdo()
+
+for varname in ['ta','hus','clw','cli','qr','qs','qg']:
+    cdo.diffn('abslim=3e-13',
+              input=f' -selname,{varname} junk.nc -selname,{varname}',
+              output='../../MUPHYS/muphys/build_apple/new_fields.nc')
