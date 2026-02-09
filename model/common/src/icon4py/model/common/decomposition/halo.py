@@ -140,6 +140,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         self, source_indices: data_alloc.NDArray, offset: gtx.FieldOffset | str
     ) -> data_alloc.NDArray:
         """Get a flattened list of all (unique) neighbors to a given global index list"""
+        assert source_indices.ndim == 1
         return self._xp.unique(self._connectivity(offset)[source_indices, :].flatten())
 
     def _find_cell_neighbors(self, cells: data_alloc.NDArray) -> data_alloc.NDArray:
