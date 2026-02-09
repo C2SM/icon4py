@@ -13,7 +13,7 @@ data = json.load(open(input_file))
 if len(sys.argv) > 2 and sys.argv[2] == '--csv':
     with open('output.csv', 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Function', 'Mean', 'Std'])
+        writer.writerow(['Function', 'Median', 'Std'])
         for k, v in data.items():
             if v.get('metrics').get('compute'):
                 arr = numpy.array(v.get('metrics').get('compute')[1:])
