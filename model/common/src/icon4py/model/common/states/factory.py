@@ -100,7 +100,10 @@ class NeedsExchange(Protocol):
     def needs_exchange(self) -> bool: ...
 
     def exchange(
-        self, fields: Mapping[str, state_utils.FieldType], exchange: decomposition.ExchangeRuntime
+        self,
+        fields: Mapping[str, state_utils.FieldType],
+        exchange: decomposition.ExchangeRuntime,
+        stream: decomposition.StreamLike | decomposition.Block = decomposition.DEFAULT_STREAM,
     ) -> None:
         log.debug(f"provider for fields {fields.keys()} needs exchange {self.needs_exchange()}")
         if self.needs_exchange():
@@ -113,7 +116,7 @@ class NeedsExchange(Protocol):
                     first_dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
                 ), f"1st dimension {first_dim} needs to be one of (CellDim, EdgeDim, VertexDim) for exchange"
                 with as_exchangeable_field(field) as buffer:
-                    exchange.exchange_and_wait(first_dim, buffer)
+                    exchange.exchange(first_dim, buffer, stream=stream)
                 log.debug(f"exchanged buffer for {name}")
 
 
