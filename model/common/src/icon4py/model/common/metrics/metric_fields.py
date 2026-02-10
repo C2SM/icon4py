@@ -635,7 +635,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     k_lev: fa.KField[gtx.int32],
     horizontal_start_distance: int32,
     horizontal_end_distance: int32,
-) -> tuple[fa.EdgeKField[bool], fa.EdgeKField[wpfloat]]:
+) -> fa.EdgeKField[wpfloat]:
     """
     Compute an edge mask and extrapolation distance for grid points requiring downward extrapolation of the pressure gradient.
 
@@ -653,7 +653,6 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
         horizontal_end_distance: end index in edge fields until where extrapolation distance is computed
 
     Returns:
-        pg_edge_mask: edge index mask for points requiring downward extrapolation
         pg_exdist_dsl: extrapolation distance
 
     """
