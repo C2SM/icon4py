@@ -89,7 +89,6 @@ def _compute_horizontal_pressure_gradient(
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
-    ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     nflatlev: gtx.int32,
@@ -121,7 +120,6 @@ def _compute_horizontal_pressure_gradient(
     )
 
     return _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
-        ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         z_hydro_corr=hydrostatic_correction_on_lowest_level,
         z_gradh_exner=horizontal_pressure_gradient,
@@ -157,7 +155,6 @@ def _compute_rho_theta_pgrad_and_update_vn(
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
-    ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
@@ -218,7 +215,6 @@ def _compute_rho_theta_pgrad_and_update_vn(
         c_lin_e=c_lin_e,
         ikoffset=ikoffset,
         zdiff_gradp=zdiff_gradp,
-        ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
         nflatlev=nflatlev,
@@ -401,7 +397,6 @@ def compute_rho_theta_pgrad_and_update_vn(
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
-    ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
@@ -508,7 +503,6 @@ def compute_rho_theta_pgrad_and_update_vn(
         c_lin_e=c_lin_e,
         ikoffset=ikoffset,
         zdiff_gradp=zdiff_gradp,
-        ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
         dtime=dtime,

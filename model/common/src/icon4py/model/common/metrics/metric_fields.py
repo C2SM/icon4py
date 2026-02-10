@@ -667,9 +667,6 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
         downward_distance,
         0.0,
     )
-    flatness_condition = (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask
-    pg_edgeidx, pg_vertidx = where(flatness_condition, (e_lev, k_lev), (0, 0))
-    pg_edge_mask = (pg_edgeidx > 0) & (pg_vertidx > 0)
 
     pg_exdist_dsl = where(
         (k_lev >= (flat_idx_max + 1)) & (z_me < extrapolation_distance) & e_owner_mask,
@@ -677,7 +674,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
         0.0,
     )
 
-    return pg_edge_mask, pg_exdist_dsl
+    return pg_exdist_dsl
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -689,7 +686,6 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(
     flat_idx_max: fa.EdgeField[gtx.int32],
     e_lev: fa.EdgeField[gtx.int32],
     k_lev: fa.KField[gtx.int32],
-    pg_edgeidx_dsl: fa.EdgeKField[bool],
     pg_exdist_dsl: fa.EdgeKField[wpfloat],
     horizontal_start_distance: int32,
     horizontal_end_distance: int32,
@@ -708,7 +704,7 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(
         k_lev=k_lev,
         horizontal_start_distance=horizontal_start_distance,
         horizontal_end_distance=horizontal_end_distance,
-        out=(pg_edgeidx_dsl, pg_exdist_dsl),
+        out=pg_exdist_dsl,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

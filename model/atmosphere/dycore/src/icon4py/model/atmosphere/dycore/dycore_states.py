@@ -280,7 +280,7 @@ class MetricStateNonHydro:
     """The minimum height index at which the height of the center of an edge lies within two neighboring cells so that
     horizontal pressure gradient can be computed by first order discretization scheme.
     """
-    pg_edgeidx_dsl: fa.EdgeKField[bool]
+    # TODO: fix comment above
     pg_exdist: fa.EdgeKField[ta.vpfloat]
 
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat]

@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat
@@ -14,13 +13,15 @@ from icon4py.model.common.type_alias import vpfloat
 
 @gtx.field_operator
 def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
-    ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[vpfloat],
     z_hydro_corr: fa.EdgeField[vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_22."""
-    z_gradh_exner_vp = where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
+
+    # Note: In the original Fortran code `pg_exdist` is implemented as a list,
+    # in ICON4Py it's a full field intialized with zeros for points that are not in the list.
+    z_gradh_exner_vp = z_gradh_exner + z_hydro_corr * pg_exdist
     return z_gradh_exner_vp
 
 
