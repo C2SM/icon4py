@@ -46,6 +46,26 @@ class SolveNonhydroGranule:
 
 granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
+Int32Array1D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.INT32,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=False,
+    ),
+]
+
+Float64Array1D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=False,
+    ),
+]
+
 
 @icon4py_export.export
 def solve_nh_init(
@@ -86,9 +106,9 @@ def solve_nh_init(
     ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.float64],
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
-    edgeidx: gtx.Field[gtx.Dims[dims.EdgeDim], bool],
-    vertidx: gtx.Field[gtx.Dims[dims.EdgeDim], bool],
-    pg_exdist: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
+    edgeidx: Int32Array1D,
+    vertidx: Int32Array1D,
+    pg_exdist: Float64Array1D,
     ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddxt_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     wgtfac_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
@@ -168,16 +188,16 @@ def solve_nh_init(
     edge_size = rho_ref_me.ndarray.shape[0]
     k_size = rho_ref_me.ndarray.shape[1]
     edgeidx_dsl = ek_list2mask_bool(
-        edge_idxs=edgeidx.ndarray,
-        k_idxs=vertidx.ndarray,
+        edge_idxs=edgeidx,
+        k_idxs=vertidx,
         edge_size=edge_size,
         k_size=k_size,
         backend=actual_backend,
     )
     pg_exdist_dsl = ek_list2mask_float(
-        edge_idxs=edgeidx.ndarray,
-        k_idxs=vertidx.ndarray,
-        list_values=pg_exdist.ndarray,
+        edge_idxs=edgeidx,
+        k_idxs=vertidx,
+        list_values=pg_exdist,
         edge_size=edge_size,
         k_size=k_size,
         backend=actual_backend,
