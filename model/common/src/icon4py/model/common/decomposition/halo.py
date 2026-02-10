@@ -163,6 +163,11 @@ class IconLikeHaloConstructor(HaloConstructor):
     ) -> data_alloc.NDArray:
         return self._find_neighbors(vertex_line, dims.V2C)
 
+    def owned_cells(self, cell_to_rank: data_alloc.NDArray) -> data_alloc.NDArray:
+        """Returns the full-grid indices of the cells owned by this rank"""
+        assert cell_to_rank.ndim == 1
+        return self._xp.where(cell_to_rank == self._props.rank)[0]
+
     def _update_owner_mask_by_max_rank_convention(
         self,
         cell_to_rank: data_alloc.NDArray,
@@ -303,8 +308,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         self._validate_mapping(cell_to_rank)
 
         #: cells
-        # global indices of owned cells
-        owned_cells = self._xp.where(cell_to_rank == self._props.rank)[0]
+        owned_cells = self.owned_cells(cell_to_rank)
         first_halo_cells = self.next_halo_line(owned_cells)
         #: vertices
         vertex_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
