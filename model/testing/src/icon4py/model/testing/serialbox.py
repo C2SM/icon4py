@@ -702,11 +702,43 @@ class MetricSavepoint(IconSavepoint):
     def mask_prog_halo_c(self):
         return self._get_field("mask_prog_halo_c", dims.CellDim, dtype=bool)
 
+    def edgeidx(self):
+        #TODO (jcanton,havogt): fix the dimensions
+        return self._get_field("edgeidx", dims.EdgeDim, dims.KDim)
+
+    def vertidx(self):
+        #TODO (jcanton,havogt): fix the dimensions
+        return self._get_field("vertidx", dims.EdgeDim, dims.KDim)
+
+    def pg_exdist(self):
+        #TODO (jcanton,havogt): fix the dimensions
+        return self._get_field("pg_exdist", dims.EdgeDim, dims.KDim)
+
     def pg_exdist_dsl(self):
-        return self._get_field("pg_exdist_dsl", dims.EdgeDim, dims.KDim)
+        #TODO (jcanton,havogt): fix the dimensions
+        edgeidx = self.edgeidx()
+        vertidx = self.vertidx()
+        pg_exdist = self._get_field("pg_exdist", dims.EdgeDim, dims.KDim)
+        pg_exdist_dsl = helpers.ek_list2mask_bool(
+            edge_idxs=edgeidx,
+            k_idxs=vertidx,
+            list_values=pg_exdist,
+            mask_shape=rho_ref_me.ndarray.shape,
+            backend=actual_backend,
+        )
+        return pg_exdist_dsl
 
     def pg_edgeidx_dsl(self):
-        return self._get_field("pg_edgeidx_dsl", dims.EdgeDim, dims.KDim, dtype=bool)
+        #TODO (jcanton,havogt): fix the dimensions
+        edgeidx = self.edgeidx()
+        vertidx = self.vertidx()
+        edgeidx_dsl = helpers.ek_list2mask_bool(
+            edge_idxs=edgeidx,
+            k_idxs=vertidx,
+            mask_shape=rho_ref_me.ndarray.shape,
+            backend=actual_backend,
+        )
+        return edgeidx_dsl
 
     def rayleigh_w(self):
         return self._get_field("rayleigh_w", dims.KDim)
