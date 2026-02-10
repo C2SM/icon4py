@@ -1514,7 +1514,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(
         ikoffset=metrics_savepoint.vertoffset_gradp(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         ipeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-        pg_exdist=metrics_savepoint.pg_exdist(),
+        pg_exdist=metrics_savepoint.pg_exdist_dsl(),
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         iau_wgt_dyn=iau_wgt_dyn,

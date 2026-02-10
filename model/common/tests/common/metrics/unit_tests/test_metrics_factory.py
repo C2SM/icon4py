@@ -426,7 +426,7 @@ def test_factory_pressure_gradient_fields(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    field_1_ref = metrics_savepoint.pg_exdist()
+    field_1_ref = metrics_savepoint.pg_exdist_dsl()
     field_2_ref = metrics_savepoint.pg_edgeidx_dsl()
     factory = _get_metrics_factory(
         backend=backend,

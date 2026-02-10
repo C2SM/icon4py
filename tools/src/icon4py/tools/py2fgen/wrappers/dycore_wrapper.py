@@ -21,6 +21,7 @@ from collections.abc import Callable
 from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
+import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
@@ -85,8 +86,9 @@ def solve_nh_init(
     ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.float64],
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
-    ipeidx_dsl: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool],
-    pg_exdist: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    edgeidx: gtx.Field[gtx.Dims[dims.EdgeDim], bool],
+    vertidx: gtx.Field[gtx.Dims[dims.EdgeDim], bool],
+    pg_exdist: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
     ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddxt_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     wgtfac_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
@@ -133,6 +135,53 @@ def solve_nh_init(
     )
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
+
+    def ek_list2mask_bool(
+        edge_idxs: data_alloc.NDArray,
+        k_idxs: data_alloc.NDArray,
+        edge_size: int,
+        k_size: int,
+        backend: gtx_typing.Backend,
+    ) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool]:
+        # edge_idxs and k_idxs must have the same size by construction
+        xp = data_alloc.import_array_ns(backend)
+        allocator = model_backends.get_allocator(backend)
+        mask_field = xp.full((edge_size, k_size), fill_value=False, dtype=bool)
+        mask_field[edge_idxs, k_idxs] = True
+        return gtx.as_field((dims.EdgeDim, dims.KDim), mask_field, allocator=allocator)
+
+    def ek_list2mask_float(
+        edge_idxs: data_alloc.NDArray,
+        k_idxs: data_alloc.NDArray,
+        list_values: data_alloc.NDArray,
+        edge_size: int,
+        k_size: int,
+        backend: gtx_typing.Backend,
+    ) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool]:
+        # edge_idxs, k_idxs and list_values must have the same size by construction
+        xp = data_alloc.import_array_ns(backend)
+        allocator = model_backends.get_allocator(backend)
+        mask_field = xp.full((edge_size, k_size), fill_value=0.0, dtype=gtx.float64)
+        mask_field[edge_idxs, k_idxs] = list_values
+        return gtx.as_field((dims.EdgeDim, dims.KDim), mask_field, allocator=allocator)
+
+    edge_size = rho_ref_me.ndarray.shape[0]
+    k_size = rho_ref_me.ndarray.shape[1]
+    edgeidx_dsl = ek_list2mask_bool(
+        edge_idxs=edgeidx.ndarray,
+        k_idxs=vertidx.ndarray,
+        edge_size=edge_size,
+        k_size=k_size,
+        backend=actual_backend,
+    )
+    pg_exdist_dsl = ek_list2mask_float(
+        edge_idxs=edgeidx.ndarray,
+        k_idxs=vertidx.ndarray,
+        list_values=pg_exdist.ndarray,
+        edge_size=edge_size,
+        k_size=k_size,
+        backend=actual_backend,
+    )
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
@@ -203,8 +252,8 @@ def solve_nh_init(
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
         nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
-        pg_edgeidx_dsl=ipeidx_dsl,
-        pg_exdist=pg_exdist,
+        pg_edgeidx_dsl=edgeidx_dsl,
+        pg_exdist=pg_exdist_dsl,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
         wgtfac_e=wgtfac_e,

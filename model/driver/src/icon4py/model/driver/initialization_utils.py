@@ -510,7 +510,7 @@ def read_static_fields(
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
             nflat_gradp=grid_savepoint.nflat_gradp(),
             pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-            pg_exdist=metrics_savepoint.pg_exdist(),
+            pg_exdist=metrics_savepoint.pg_exdist_dsl(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
             wgtfac_e=metrics_savepoint.wgtfac_e(),

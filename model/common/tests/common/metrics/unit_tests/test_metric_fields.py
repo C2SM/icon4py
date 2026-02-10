@@ -404,7 +404,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    pg_exdist_ref = metrics_savepoint.pg_exdist()
+    pg_exdist_ref = metrics_savepoint.pg_exdist_dsl()
     pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
 
     nlev = icon_grid.num_levels

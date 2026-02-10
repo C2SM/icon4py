@@ -702,7 +702,7 @@ class MetricSavepoint(IconSavepoint):
     def mask_prog_halo_c(self):
         return self._get_field("mask_prog_halo_c", dims.CellDim, dtype=bool)
 
-    def pg_exdist(self):
+    def pg_exdist_dsl(self):
         return self._get_field("pg_exdist_dsl", dims.EdgeDim, dims.KDim)
 
     def pg_edgeidx_dsl(self):
