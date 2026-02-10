@@ -11,7 +11,7 @@ import pytest
 from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims, exceptions, model_backends
-from icon4py.model.common.decomposition import definitions, halo
+from icon4py.model.common.decomposition import decomposer as decomp, definitions, halo
 from icon4py.model.common.grid import base as base_grid, simple
 
 from ...fixtures import backend_like, processor_props
@@ -126,7 +126,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
 def test_no_halo():
     grid_size = base_grid.HorizontalGridSize(num_cells=9, num_edges=14, num_vertices=6)
     halo_generator = halo.NoHalos(horizontal_size=grid_size, allocator=None)
-    decomposition = halo.SingleNodeDecomposer()
+    decomposition = decomp.SingleNodeDecomposer()
     decomposition_info = halo_generator(decomposition(np.arange(grid_size.num_cells), 1))
     # cells
     np.testing.assert_allclose(
