@@ -13,10 +13,7 @@ import scipy
 
 from icon4py.model.common.dimension import CellDim
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.common.math.projection import (
-    gnomonic_proj_single_val,
-    plane_torus_closest_coordinates,
-)
+from icon4py.model.common.math.projection import diff_on_edges_torus_numpy, gnomonic_proj
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -96,27 +93,30 @@ def lsq_compute_coeffs(
     lsq_weights_c = array_ns.zeros((min_rlcell_int, lsq_dim_stencil))
     lsq_pseudoinv = array_ns.zeros((min_rlcell_int, lsq_dim_unk, lsq_dim_c))
     z_lsq_mat_c = array_ns.zeros((min_rlcell_int, lsq_dim_c, lsq_dim_c))
-
-    for jc in range(start_idx, min_rlcell_int):
-        match base_grid.GeometryType(geometry_type):
-            case base_grid.GeometryType.ICOSAHEDRON:
-                z_dist_g = array_ns.zeros((lsq_dim_c, 2))
-                for js in range(lsq_dim_stencil):
-                    z_dist_g[js, :] = gnomonic_proj_single_val(
-                        cell_lon[jc], cell_lat[jc], cell_lon[c2e2c[jc, js]], cell_lat[c2e2c[jc, js]]
+    z_dist_g = array_ns.zeros((min_rlcell_int, lsq_dim_c, 2))
+    match base_grid.GeometryType(geometry_type):
+        case base_grid.GeometryType.ICOSAHEDRON:
+            for js in range(lsq_dim_stencil):
+                z_dist_g[:, js, :] = np.asarray(
+                    gnomonic_proj(
+                        cell_lon[:], cell_lat[:], cell_lon[c2e2c[:, js]], cell_lat[c2e2c[:, js]]
                     )
-                z_dist_g *= grid_sphere_radius
+                ).T
 
-                min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
+            z_dist_g *= grid_sphere_radius
+            min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
+
+            for jc in range(start_idx, min_rlcell_int):
                 if cell_owner_mask[jc]:
                     z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
-            case base_grid.GeometryType.TORUS:
+        case base_grid.GeometryType.TORUS:
+            for jc in range(start_idx, min_rlcell_int):
                 ilc_s = c2e2c[jc, :lsq_dim_stencil]
                 cc_cell = array_ns.zeros((lsq_dim_stencil, 2))
 
                 cc_cv = (cell_center_x[jc], cell_center_y[jc])
                 for js in range(lsq_dim_stencil):
-                    cc_cell[js, :] = plane_torus_closest_coordinates(
+                    cc_cell[js, :] = diff_on_edges_torus_numpy(
                         cell_center_x[jc],
                         cell_center_y[jc],
                         cell_center_x[ilc_s][js],
@@ -124,13 +124,20 @@ def lsq_compute_coeffs(
                         domain_length,
                         domain_height,
                     )
-                z_dist_g = cc_cell - cc_cv
+                z_dist_g[jc, :, :] = cc_cell - cc_cv
 
+    for jc in range(start_idx, min_rlcell_int):
         lsq_weights_c[jc, :] = compute_lsq_weights_c(
-            z_dist_g, lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp
+            z_dist_g[jc, :, :], lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp
         )
         z_lsq_mat_c[jc, js, :lsq_dim_unk] = compute_z_lsq_mat_c(
-            cell_owner_mask, z_lsq_mat_c, lsq_weights_c, z_dist_g, jc, lsq_dim_unk, lsq_dim_c
+            cell_owner_mask,
+            z_lsq_mat_c,
+            lsq_weights_c,
+            z_dist_g[jc, :, :],
+            jc,
+            lsq_dim_unk,
+            lsq_dim_c,
         )
 
     if exchange is not None:
