@@ -159,14 +159,13 @@ def solve_nh_init(
     def ek_list2mask_bool(
         edge_idxs: data_alloc.NDArray,
         k_idxs: data_alloc.NDArray,
-        edge_size: int,
-        k_size: int,
+        mask_shape: tuple[int, ...],
         backend: gtx_typing.Backend,
     ) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool]:
         # edge_idxs and k_idxs must have the same size by construction
         xp = data_alloc.import_array_ns(backend)
         allocator = model_backends.get_allocator(backend)
-        mask_field = xp.full((edge_size, k_size), fill_value=False, dtype=bool)
+        mask_field = xp.full(mask_shape, fill_value=False, dtype=bool)
         mask_field[edge_idxs, k_idxs] = True
         return gtx.as_field((dims.EdgeDim, dims.KDim), mask_field, allocator=allocator)
 
@@ -174,32 +173,27 @@ def solve_nh_init(
         edge_idxs: data_alloc.NDArray,
         k_idxs: data_alloc.NDArray,
         list_values: data_alloc.NDArray,
-        edge_size: int,
-        k_size: int,
+        mask_shape: tuple[int, ...],
         backend: gtx_typing.Backend,
     ) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool]:
         # edge_idxs, k_idxs and list_values must have the same size by construction
         xp = data_alloc.import_array_ns(backend)
         allocator = model_backends.get_allocator(backend)
-        mask_field = xp.full((edge_size, k_size), fill_value=0.0, dtype=gtx.float64)
+        mask_field = xp.full(mask_shape, fill_value=0.0, dtype=gtx.float64)
         mask_field[edge_idxs, k_idxs] = list_values
         return gtx.as_field((dims.EdgeDim, dims.KDim), mask_field, allocator=allocator)
 
-    edge_size = rho_ref_me.ndarray.shape[0]
-    k_size = rho_ref_me.ndarray.shape[1]
     edgeidx_dsl = ek_list2mask_bool(
         edge_idxs=edgeidx,
         k_idxs=vertidx,
-        edge_size=edge_size,
-        k_size=k_size,
+        mask_shape=rho_ref_me.ndarray.shape,
         backend=actual_backend,
     )
     pg_exdist_dsl = ek_list2mask_float(
         edge_idxs=edgeidx,
         k_idxs=vertidx,
         list_values=pg_exdist,
-        edge_size=edge_size,
-        k_size=k_size,
+        mask_shape=rho_ref_me.ndarray.shape,
         backend=actual_backend,
     )
 
