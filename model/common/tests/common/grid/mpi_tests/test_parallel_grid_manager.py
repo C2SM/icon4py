@@ -209,7 +209,6 @@ def check_local_global_field(
 def test_geometry_fields_compare_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    # TODO(msimberg): Maybe use regular grid fixture and skip local area grids?
     experiment: test_defs.Experiment,
     attrs_name: str,
     dim: gtx.Dimension,
