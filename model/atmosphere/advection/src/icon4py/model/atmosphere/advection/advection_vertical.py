@@ -63,6 +63,7 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     type_alias as ta,
 )
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -538,6 +539,7 @@ class FirstOrderUpwind(FiniteVolume):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         log.debug("vertical advection class init - start")
 
@@ -546,6 +548,7 @@ class FirstOrderUpwind(FiniteVolume):
         self._grid = grid
         self._metric_state = metric_state
         self._backend = backend
+        self._exchange = exchange
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -625,7 +628,7 @@ class FirstOrderUpwind(FiniteVolume):
         horizontal_start, horizontal_end = self._get_horizontal_start_end(
             even_timestep=even_timestep
         )
-
+        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         log.debug("running stencil compute_vertical_tracer_flux_upwind - start")
         self._compute_vertical_tracer_flux_upwind(
             p_cc=p_tracer_now,
@@ -674,7 +677,7 @@ class FirstOrderUpwind(FiniteVolume):
             horizontal_end=horizontal_end,
         )
         log.debug("running stencil integrate_tracer_vertically - end")
-
+        self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("vertical unknowns update - end")
 
 
@@ -688,6 +691,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         log.debug("vertical advection class init - start")
 
@@ -697,6 +701,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._grid = grid
         self._metric_state = metric_state
         self._backend = backend
+        self._exchange = exchange
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -913,6 +918,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         log.debug("running stencil init_constant_cell_kdim_field - end")
 
         log.debug("running stencil compute_ppm4gpu_courant_number - start")
+        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         self._compute_ppm4gpu_courant_number(
             p_mflx_contra_v=prep_adv.mass_flx_ic,
             p_cellmass_now=rhodz_now,
@@ -1095,6 +1101,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
+        self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("running stencil integrate_tracer_vertically - end")
 
         log.debug("vertical unknowns update - end")

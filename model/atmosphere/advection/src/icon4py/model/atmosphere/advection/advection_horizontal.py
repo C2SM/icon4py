@@ -196,11 +196,13 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         least_squares_state: advection_states.AdvectionLeastSquaresState,
         backend: model_backends.BackendLike,
         horizontal_limiter: HorizontalFluxLimiter | None = None,
+        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._grid = grid
         self._least_squares_state = least_squares_state
         self._backend = backend
         self._horizontal_limiter = horizontal_limiter or HorizontalFluxLimiter()
+        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)

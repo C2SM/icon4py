@@ -223,14 +223,10 @@ def test_advection_run_single_step(
     )
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
-    verify_advection_fields(
-        grid=icon_grid,
-        diagnostic_state=diagnostic_state,
-        diagnostic_state_ref=diagnostic_state_ref,
-        p_tracer_new=p_tracer_new,
-        p_tracer_new_ref=p_tracer_new_ref,
-        even_timestep=even_timestep,
+    assert test_helpers.dallclose(
+        diagnostic_state.hfl_tracer.asnumpy(), diagnostic_state_ref.hfl_tracer.asnumpy(), atol=1e-8
     )
+    assert test_helpers.dallclose(p_tracer_new_ref.asnumpy(), p_tracer_new.asnumpy(), atol=1e-10)
 
 
 @pytest.mark.level("unit")

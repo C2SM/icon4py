@@ -202,7 +202,6 @@ class NoAdvection(Advection):
         log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
-        #self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         log.debug("running stencil copy_cell_kdim_field - start")
@@ -305,7 +304,6 @@ class GodunovSplittingAdvection(Advection):
         log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
-        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         # reintegrate density for conservation of mass
@@ -316,10 +314,9 @@ class GodunovSplittingAdvection(Advection):
         )
 
         log.debug("running stencil apply_density_increment - start")
-        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         self._apply_density_increment(
             rhodz_in=rhodz_in,
-            p_mflx_contra_v=prep_adv.mass_flx_ic, # exchange
+            p_mflx_contra_v=prep_adv.mass_flx_ic,
             rhodz_out=self._rhodz_ast2,
             p_dtime=dtime,
             even_timestep=self._even_timestep,
@@ -351,7 +348,6 @@ class GodunovSplittingAdvection(Advection):
                 p_mflx_tracer_h=diagnostic_state.hfl_tracer,
                 dtime=dtime,
             )
-            #self._exchange.exchange_and_wait(dims.EdgeDim, diagnostic_state.hfl_tracer)
 
         else:
             # horizontal transport
@@ -364,7 +360,6 @@ class GodunovSplittingAdvection(Advection):
                 p_mflx_tracer_h=diagnostic_state.hfl_tracer,
                 dtime=dtime,
             )
-            #self._exchange.exchange_and_wait(dims.EdgeDim, diagnostic_state.hfl_tracer)
 
             # vertical transport
             self._vertical_advection.run(
@@ -391,7 +386,6 @@ class GodunovSplittingAdvection(Advection):
 
         # exchange updated tracer values, originally happens only if iforcing /= inwp
         log.debug("communication of advection cell field: p_tracer_new - start")
-        self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("communication of advection cell field: p_tracer_new - end")
 
         # finalize step
