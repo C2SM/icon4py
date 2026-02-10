@@ -82,6 +82,7 @@ def test_decomposition_info_single_node_empty_halo(dim: gtx.Dimension) -> None:
         (definitions.DecompositionFlag.SECOND_HALO_LEVEL, True),
         (definitions.DecompositionFlag.THIRD_HALO_LEVEL, True),
         (definitions.DecompositionFlag.FIRST_HALO_LEVEL, True),
+        (definitions.DecompositionFlag.UNDEFINED, False),
     ],
 )
 def test_decomposition_info_is_distributed(flag, expected) -> None:
