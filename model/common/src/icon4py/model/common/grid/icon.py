@@ -146,11 +146,9 @@ def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool)
     """
     dimension = offset.target[1]
     assert dimension.kind == gtx.DimensionKind.LOCAL, "only local dimensions can have skip values"
-    value = dimension in CONNECTIVITIES_ON_PENTAGONS or (
+    return dimension in CONNECTIVITIES_ON_PENTAGONS or (
         limited_area_or_distributed and dimension in CONNECTIVITIES_ON_BOUNDARIES
     )
-
-    return value
 
 
 def _should_replace_skip_values(
