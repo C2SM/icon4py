@@ -177,7 +177,10 @@ def solve_nh_init(
     pg_exdist_dsl = list2field(
         domain=rho_ref_me.domain,
         values=pg_exdist,
-        indices=(edgeidx, vertidx),
+        indices=(
+            wrapper_common.adjust_fortran_indices(edgeidx),
+            wrapper_common.adjust_fortran_indices(vertidx),
+        ),
         default_value=gtx.float64(0.0),
         allocator=model_backends.get_allocator(actual_backend),
     )
