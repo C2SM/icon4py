@@ -1403,8 +1403,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.3.post101+9a25a946"
-source = { git = "https://github.com/GridTools/gt4py?branch=muphys_staging#9a25a946994f8dd295652b036357e465e70ac9f2" }
+version = "1.1.3.post103+c864a578"
+source = { git = "https://github.com/GridTools/gt4py?branch=muphys_staging#c864a578564542a2cf4aad00297720fc6eae5621" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
