@@ -141,7 +141,10 @@ def lsq_compute_coeffs(
         )
 
     if exchange is not None:
-        exchange(lsq_weights_c, dim=CellDim)
+        try:
+            exchange(lsq_weights_c, dim=CellDim)
+        except TypeError:
+            exchange(lsq_weights_c)
 
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask,
@@ -154,7 +157,11 @@ def lsq_compute_coeffs(
         lsq_dim_c,
     )
     if exchange is not None:
-        exchange(lsq_pseudoinv[:, 0, :], dim=CellDim)
-        exchange(lsq_pseudoinv[:, 1, :], dim=CellDim)
+        try:
+            exchange(lsq_pseudoinv[:, 0, :], dim=CellDim)
+            exchange(lsq_pseudoinv[:, 1, :], dim=CellDim)
+        except TypeError:
+            exchange(lsq_pseudoinv[:, 0, :])
+            exchange(lsq_pseudoinv[:, 1, :])
 
     return lsq_pseudoinv
