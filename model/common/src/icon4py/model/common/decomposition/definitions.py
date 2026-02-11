@@ -149,7 +149,6 @@ class DecompositionInfo:
 
     def get_halo_size(self, dim: gtx.Dimension, flag: DecompositionFlag) -> int:
         level_mask = self.halo_level_mask(dim, flag)
-        # TODO(msimberg): Just do array_ns?
         return data_alloc.array_ns_from_array(level_mask).count_nonzero(level_mask)
 
     def halo_levels(self, dim: gtx.Dimension) -> data_alloc.NDArray:
