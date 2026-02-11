@@ -118,7 +118,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def _connectivity(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:
         try:
-            return self._connectivities.get(_value(offset))
+            return self._connectivities[_value(offset)]
         except KeyError as err:
             raise exceptions.MissingConnectivityError(
                 f"Connectivity for offset {offset} is not available"
