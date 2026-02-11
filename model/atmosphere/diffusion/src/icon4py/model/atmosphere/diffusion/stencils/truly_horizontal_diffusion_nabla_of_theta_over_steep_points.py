@@ -46,7 +46,7 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
 
     # Note: In the original Fortran code `zd_diffcoef` is implemented as a list,
     # in ICON4Py it's a full field intialized with zeros for points that are not in the list.
-    z_temp_wp += zd_diffcoef * sum_tmp
+    z_temp_wp = z_temp_wp + zd_diffcoef * sum_tmp
 
     return astype(z_temp_wp, vpfloat)
 
