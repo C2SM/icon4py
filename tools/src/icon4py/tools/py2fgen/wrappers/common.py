@@ -23,6 +23,7 @@ from gt4py.next import allocators as gtx_allocators
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, horizontal as h_grid, icon
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -103,6 +104,24 @@ def get_nproma(tables: Iterable[NDArray]) -> int:
     if not all(table.shape[0] == nproma for table in tables):
         raise ValueError("All connectivity tables must have the same number of rows (nproma).")
     return nproma
+
+def get_array_namespace(array: data_alloc.NDArray):
+    return array.array_ns
+
+def list2field(
+    domain: gtx.Domain,
+    values: data_alloc.NDArray,
+    indices: tuple[data_alloc.NDArray, ...],
+    default_value: state_utils.ScalarType,
+    allocator: gtx_allocators.FieldBufferAllocatorProtocol,
+) -> gtx.Field:
+    if len(domain) != len(indices):
+        raise RuntimeError("The number of indices must match the shape of the domain.")
+    assert all(index.shape == indices[0].shape for index in indices)
+    xp = get_array_namespace(values)
+    arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
+    arr[indices] = values
+    return gtx.as_field(domain, arr, allocator=allocator)
 
 
 def construct_icon_grid(
