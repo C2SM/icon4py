@@ -574,9 +574,11 @@ def test_validate_skip_values_in_distributed_connectivities(
                 found_skips == (c.skip_value is not None)
             ), f"rank={processor_props.rank} / {processor_props.comm_size}: {k} - # of skip values found in table = {skip_values_in_table},  skip value is {c.skip_value}"
             if skip_values_in_table > 0:
+                dim = gtx.Dimension(k, gtx.DimensionKind.LOCAL)
                 assert (
-                    c in icon.CONNECTIVITIES_ON_BOUNDARIES or icon.CONNECTIVITIES_ON_PENTAGONS
-                ), f"rank={processor_props.rank} / {processor_props.comm_size}: {k} has skip found in table"
+                    dim in icon.CONNECTIVITIES_ON_BOUNDARIES
+                    or dim in icon.CONNECTIVITIES_ON_PENTAGONS
+                ), f"rank={processor_props.rank} / {processor_props.comm_size}: {k} has skip found in table, expected none"
 
 
 @pytest.mark.mpi

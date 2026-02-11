@@ -183,28 +183,3 @@ def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
     assert start_index == expected, f"expected start index {expected}, but was {start_index}"
     expected = HALO_IDX[processor_props.comm_size][dim][rank][level]
     assert end_index == expected, f"expected start index {1}, but was {start_index}"
-
-
-# TODO(msimberg): Torus? Above as well.
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.mpi
-def test_skip_values_on_distributed_grid(
-    processor_props: decomposition.ProcessProperties,
-    experiment: test_defs.Experiment,
-) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
-        pytest.xfail("Limited-area grids not yet supported")
-
-    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
-    grid_manager = parallel_utils.run_gridmananger_for_multinode(
-        file, processor_props, decomposer=MetisDecomposer()
-    )
-    mesh = grid_manager.grid
-    assert not np.any(mesh.get_connectivity(dims.C2V).asnumpy() == gridfile.GridFile.INVALID_INDEX)
-    assert not np.any(mesh.get_connectivity(dims.E2V).asnumpy() == gridfile.GridFile.INVALID_INDEX)
-    assert not np.any(mesh.get_connectivity(dims.E2V).asnumpy() == gridfile.GridFile.INVALID_INDEX)
-    assert not np.any(mesh.get_connectivity(dims.C2E).asnumpy() == gridfile.GridFile.INVALID_INDEX)
-    assert np.any(mesh.get_connectivity(dims.E2C).asnumpy() == gridfile.GridFile.INVALID_INDEX)
-    assert np.any(mesh.get_connectivity(dims.C2E2C).asnumpy() == gridfile.GridFile.INVALID_INDEX)
-    assert np.any(mesh.get_connectivity(dims.V2E).asnumpy() == gridfile.GridFile.INVALID_INDEX)
-    assert np.any(mesh.get_connectivity(dims.V2C).asnumpy() == gridfile.GridFile.INVALID_INDEX)
