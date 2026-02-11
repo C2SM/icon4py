@@ -703,25 +703,25 @@ class MetricSavepoint(IconSavepoint):
     def mask_prog_halo_c(self):
         return self._get_field("mask_prog_halo_c", dims.CellDim, dtype=bool)
 
-    def edgeidx(self):
-        return np.squeeze(self.serializer.read("edgeidx", self.savepoint))
+    def pg_edgeidx(self):
+        return np.squeeze(self.serializer.read("pg_edgeidx", self.savepoint))
 
-    def vertidx(self):
-        return np.squeeze(self.serializer.read("vertidx", self.savepoint))
+    def pg_vertidx(self):
+        return np.squeeze(self.serializer.read("pg_vertidx", self.savepoint))
 
     def pg_exdist(self):
         return np.squeeze(self.serializer.read("pg_exdist", self.savepoint))
 
     def pg_exdist_dsl(self):
-        edgeidx = self.edgeidx()
-        vertidx = self.vertidx()
+        pg_edgeidx = self.pg_edgeidx()
+        pg_vertidx = self.pg_vertidx()
         pg_exdist = self.pg_exdist()
         return wrapper_common.list2field(
             domain=self.rho_ref_me().domain,
             values=pg_exdist,
             indices=(
-                wrapper_common.adjust_fortran_indices(edgeidx),
-                wrapper_common.adjust_fortran_indices(vertidx),
+                wrapper_common.adjust_fortran_indices(pg_edgeidx),
+                wrapper_common.adjust_fortran_indices(pg_vertidx),
             ),
             default_value=gtx.float64(0.0),
             allocator=model_backends.get_allocator(self.backend),

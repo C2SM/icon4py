@@ -101,8 +101,8 @@ def solve_nh_init(
     )
     vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
 
-    edgeidx = test_utils.array_to_array_info(metrics_savepoint.edgeidx())
-    vertidx = test_utils.array_to_array_info(metrics_savepoint.vertidx())
+    pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
+    pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
     pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist())
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
@@ -192,8 +192,8 @@ def solve_nh_init(
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
-        edgeidx=edgeidx,
-        vertidx=vertidx,
+        pg_edgeidx=pg_edgeidx,
+        pg_vertidx=pg_vertidx,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
@@ -344,8 +344,8 @@ def test_dycore_wrapper_granule_inputs(
     )
     vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
 
-    edgeidx = test_utils.array_to_array_info(metrics_savepoint.edgeidx())
-    vertidx = test_utils.array_to_array_info(metrics_savepoint.vertidx())
+    pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
+    pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
     pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist())
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
@@ -617,8 +617,8 @@ def test_dycore_wrapper_granule_inputs(
             ddxn_z_full=ddxn_z_full,
             zdiff_gradp=zdiff_gradp,
             vertoffset_gradp=vertoffset_gradp,
-            edgeidx=edgeidx,
-            vertidx=vertidx,
+            pg_edgeidx=pg_edgeidx,
+            pg_vertidx=pg_vertidx,
             pg_exdist=pg_exdist,
             ddqz_z_full_e=ddqz_z_full_e,
             ddxt_z_full=ddxt_z_full,
