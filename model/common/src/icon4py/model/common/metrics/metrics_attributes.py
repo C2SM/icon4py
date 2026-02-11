@@ -64,7 +64,6 @@ MAXHGTD: Final[str] = "maxhgtd"
 MAXSLP_AVG: Final[str] = "maxslp_avg"
 MAXHGTD_AVG: Final[str] = "maxhgtd_avg"
 MAX_NBHGT: Final[str] = "max_nbhgt"
-MASK_HDIFF: Final[str] = "mask_hdiff"
 ZD_DIFFCOEF_DSL: Final[str] = "zd_diffcoef_dsl"
 ZD_INTCOEF_DSL: Final[str] = "zd_intcoef_dsl"
 ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
@@ -422,14 +421,6 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.CellDim,),
         icon_var_name="max_nbhgt",
         dtype=ta.wpfloat,
-    ),
-    MASK_HDIFF: dict(
-        standard_name=MASK_HDIFF,
-        long_name="mask_hdiff",
-        units="",
-        dims=(dims.CellDim, dims.KDim),
-        icon_var_name="mask_hdiff",
-        dtype=bool,
     ),
     ZD_DIFFCOEF_DSL: dict(
         standard_name=ZD_DIFFCOEF_DSL,
