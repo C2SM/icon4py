@@ -29,7 +29,6 @@ from icon4py.model.testing.fixtures.datatest import (
     interpolation_savepoint,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 from ... import utils
@@ -149,14 +148,16 @@ def test_compute_rayleigh_w(
         icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     (
-        _lowest_layer_thickness,
-        _model_top_height,
-        _stretch_factor,
+        _,
+        _,
+        _,
         damping_height,
         rayleigh_coeff,
-        _exner_expol,
-        _vwind_offctr,
+        _,
+        _,
         rayleigh_type,
+        _,
+        _,
     ) = construct_metrics_config(experiment)
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
