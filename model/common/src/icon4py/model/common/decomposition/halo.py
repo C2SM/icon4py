@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
-import logging
 from types import ModuleType
 from typing import Protocol, runtime_checkable
 
@@ -18,9 +17,6 @@ from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import definitions as defs
 from icon4py.model.common.grid import base, gridfile
 from icon4py.model.common.utils import data_allocation as data_alloc
-
-
-log = logging.getLogger(__name__)
 
 
 def _value(k: gtx.FieldOffset | str) -> str:
