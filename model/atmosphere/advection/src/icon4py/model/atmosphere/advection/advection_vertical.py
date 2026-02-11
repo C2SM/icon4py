@@ -919,7 +919,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         log.debug("running stencil init_constant_cell_kdim_field - end")
 
         log.debug("running stencil compute_ppm4gpu_courant_number - start")
-        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
+        #self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         self._compute_ppm4gpu_courant_number(
             p_mflx_contra_v=prep_adv.mass_flx_ic,
             p_cellmass_now=rhodz_now,

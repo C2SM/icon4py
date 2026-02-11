@@ -171,9 +171,9 @@ def test_advection_run_single_step(
 
     advection_granule = advection.convert_config_to_advection(
         config=config,
-        grid=icon_grid,  # gm.grid,
+        grid=icon_grid,
         interpolation_state=interpolation_state,
-        least_squares_state=advection_lsq_state,  # [field_1, field_2],#least_squares_state,
+        least_squares_state=advection_lsq_state,
         metric_state=metric_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
@@ -214,6 +214,7 @@ def test_advection_run_single_step(
         diagnostic_state_ref.vfl_tracer.asnumpy(),
         rtol=1e-10,
     )
+    #breakpoint()
     assert test_helpers.dallclose(p_tracer_new_ref.asnumpy(), p_tracer_new.asnumpy(), atol=1e-10)
 
 

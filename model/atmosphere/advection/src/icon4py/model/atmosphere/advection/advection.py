@@ -202,6 +202,7 @@ class NoAdvection(Advection):
         log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
+        #self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         log.debug("running stencil copy_cell_kdim_field - start")
@@ -386,6 +387,7 @@ class GodunovSplittingAdvection(Advection):
 
         # exchange updated tracer values, originally happens only if iforcing /= inwp
         log.debug("communication of advection cell field: p_tracer_new - start")
+        #self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("communication of advection cell field: p_tracer_new - end")
 
         # finalize step
@@ -422,10 +424,12 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
 
     match config.horizontal_advection_type:
         case HorizontalAdvectionType.NO_ADVECTION:
+            #breakpoint()
             horizontal_advection = advection_horizontal.NoAdvection(
                 grid=grid, backend=backend, exchange=exchange
             )
         case HorizontalAdvectionType.LINEAR_2ND_ORDER:
+            #breakpoint()
             tracer_flux = advection_horizontal.SecondOrderMiura(
                 grid=grid,
                 least_squares_state=least_squares_state,
