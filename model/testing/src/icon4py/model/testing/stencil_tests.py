@@ -198,7 +198,6 @@ class StencilTest:
             else:
                 program.compile(
                     offset_provider=grid.connectivities,
-                    enable_jit=False,
                     **static_args,  # type: ignore[arg-type]
                 )
 

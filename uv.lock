@@ -912,7 +912,7 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "43!2026.1.21"
+version = "43!2026.2.3"
 source = { registry = "https://gridtools.github.io/pypi/" }
 dependencies = [
     { name = "aenum" },
@@ -926,9 +926,10 @@ dependencies = [
     { name = "pyreadline", marker = "sys_platform == 'win32' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
     { name = "pyyaml" },
     { name = "sympy" },
+    { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://gridtools.github.io/pypi/dace/dace-43!2026.1.21-py3-none-any.whl", hash = "sha256:c72988e173bc07d59410fb32e7add2dbca498833e9e369fdff94e1971c5a6df5" },
+    { url = "https://gridtools.github.io/pypi/dace/dace-43!2026.2.3-py3-none-any.whl", hash = "sha256:0fc94ef1dfb8078ffdc0943b5a06dbb5ae63a335235ba5e9ce6571f935e96f66" },
 ]
 
 [[package]]
@@ -1402,8 +1403,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.3.post33+428882e7"
-source = { git = "https://github.com/GridTools/gt4py?branch=muphys_staging#428882e7dfd5e44fbdc4d19699ffa6f91f9111e6" }
+version = "1.1.3.post103+c864a578"
+source = { git = "https://github.com/GridTools/gt4py?branch=muphys_staging#c864a578564542a2cf4aad00297720fc6eae5621" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1746,14 +1747,18 @@ source = { editable = "model/atmosphere/advection" }
 dependencies = [
     { name = "gt4py" },
     { name = "icon4py-common" },
+    { name = "numpy" },
     { name = "packaging" },
+    { name = "scipy" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_staging" },
     { name = "icon4py-common", editable = "model/common" },
+    { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "scipy", specifier = ">=1.14.1" },
 ]
 
 [[package]]
@@ -1814,6 +1819,7 @@ source = { editable = "model/atmosphere/subgrid_scale_physics/muphys" }
 dependencies = [
     { name = "gt4py" },
     { name = "icon4py-common", extra = ["io"] },
+    { name = "numpy" },
     { name = "packaging" },
 ]
 
@@ -1821,6 +1827,7 @@ dependencies = [
 requires-dist = [
     { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_staging" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
+    { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
 ]
 
@@ -1881,7 +1888,7 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", specifier = "==43!2026.1.21", index = "https://gridtools.github.io/pypi/" },
+    { name = "dace", specifier = "==43!2026.2.3", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
     { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_staging" },
