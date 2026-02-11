@@ -19,6 +19,7 @@ import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
 from gt4py.next import allocators as gtx_allocators
+from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
@@ -57,10 +58,30 @@ Int32Array1D: TypeAlias = Annotated[
     ),
 ]
 
+Int32Array3D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=3,
+        dtype=ts.ScalarKind.INT32,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=False,
+    ),
+]
+
 Float64Array1D: TypeAlias = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=False,
+    ),
+]
+
+Float64Array3D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=3,
         dtype=ts.ScalarKind.FLOAT64,
         memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
         is_optional=False,

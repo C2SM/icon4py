@@ -804,36 +804,40 @@ class MetricSavepoint(IconSavepoint):
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return self._get_field_from_ndarray(ar, dims.EdgeDim, dims.KDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
-    def zd_diffcoef(self):
-        return self._get_field("zd_diffcoef", dims.CellDim, dims.KDim)
+    def geopot(self):
+        return self._get_field("geopot", dims.CellDim, dims.KDim)
 
     @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim)
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef")
 
-    def geopot(self):
-        return self._get_field("geopot", dims.CellDim, dims.KDim)
-
-    def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
-        ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
-        ser_input = self._reduce_to_dim_size(ser_input, (dims.CellDim, dims.C2E2CDim, dims.KDim))
-        if ser_input.shape[1] != sparse_size:
-            ser_input = np.moveaxis(ser_input, 1, -1)
-
-        return gtx.as_field(
-            (dims.CellDim, dims.C2E2CDim, dims.KDim), ser_input, allocator=self.backend
-        )
-
     @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
     def zd_vertoffset(self):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 
+    @IconSavepoint.optionally_registered()
+    def zd_cellidx(self):
+        return np.squeeze(self.serializer.read("zd_cellidx", self.savepoint))
+
+    @IconSavepoint.optionally_registered()
     def zd_vertidx(self):
         return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
 
-    def zd_indlist(self):
-        return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def zd_diffcoef(self):
+        zd_cellidx = self.zd_cellidx()
+        zd_vertidx = self.zd_vertidx()
+        zd_diffcoeff = np.squeeze(self.serializer.read("zd_diffcoef", self.savepoint))
+        return wrapper_common.list2field(
+            domain=self.geopot().domain,
+            values=zd_diffcoeff,
+            indices=(
+                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                wrapper_common.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
 
 class AdvectionInitSavepoint(IconSavepoint):
