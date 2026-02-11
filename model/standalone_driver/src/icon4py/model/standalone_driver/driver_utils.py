@@ -67,7 +67,7 @@ def create_grid_manager(
     grid_manager = gm.GridManager(
         grid_file=grid_file_path,
         config=vertical_grid_config,
-        transformation=gridfile.ToZeroBasedIndexTransformation(),
+        offset_transformation=gridfile.ToZeroBasedIndexTransformation(),
         global_reductions=global_reductions,
     )
     grid_manager(allocator=allocator, keep_skip_values=True)

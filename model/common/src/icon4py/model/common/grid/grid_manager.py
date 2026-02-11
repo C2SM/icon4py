@@ -65,10 +65,10 @@ class GridManager:
         self,
         grid_file: pathlib.Path | str,
         config: v_grid.VerticalGridConfig,  # TODO(msimberg): remove to separate vertical and horizontal grid
-        transformation: gridfile.IndexTransformation = _fortran_to_python_transformer,
+        offset_transformation: gridfile.IndexTransformation = _fortran_to_python_transformer,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
-        self._transformation = transformation
+        self._offset_transformation = offset_transformation
         self._file_name = str(grid_file)
         self._vertical_config = config
         # Output
@@ -81,7 +81,7 @@ class GridManager:
 
     def open(self):
         """Open the gridfile resource for reading."""
-        self._reader = gridfile.GridFile(self._file_name, self._transformation)
+        self._reader = gridfile.GridFile(self._file_name, self._offset_transformation)
         self._reader.open()
 
     def close(self):
@@ -329,7 +329,7 @@ class GridManager:
                 self._reader.int_variable(
                     gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX,
                     transpose=True,
-                    apply_transformation=False,
+                    apply_offset=False,
                     indices=my_vertex_indices,
                 ),
                 allocator=allocator,
@@ -364,7 +364,7 @@ class GridManager:
                     name,
                     indices=self._decomposition_info.global_index(dim),
                     transpose=False,
-                    apply_transformation=False,
+                    apply_offset=False,
                 ),
                 allocator=allocator,
             )
@@ -541,7 +541,7 @@ class GridManager:
     ):
         return array_ns.asarray(
             self._reader.int_variable(
-                field, indices=indices, transpose=transpose, apply_transformation=apply_offset
+                field, indices=indices, transpose=transpose, apply_offset=apply_offset
             )
         )
 

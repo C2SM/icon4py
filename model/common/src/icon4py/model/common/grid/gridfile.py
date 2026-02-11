@@ -32,7 +32,7 @@ except ImportError:
 
 
 class IndexTransformation(Protocol):
-    """Return a transformation field to be applied to index fields"""
+    """Return an offset field to be applied to index fields"""
 
     def __call__(
         self,
@@ -309,9 +309,9 @@ class GridFile:
 
     INVALID_INDEX = -1
 
-    def __init__(self, file_name: str, transformation: IndexTransformation):
+    def __init__(self, file_name: str, offset_transformation: IndexTransformation):
         self._filename = file_name
-        self._offset = transformation
+        self._offset_transformation = offset_transformation
         self._dataset = None
 
     def dimension(self, name: DimensionName) -> int:
@@ -335,7 +335,7 @@ class GridFile:
         name: FieldName,
         indices: data_alloc.NDArray | None = None,
         transpose: bool = True,
-        apply_transformation: bool = True,
+        apply_offset: bool = True,
     ) -> np.ndarray:
         """Read a integer field from the grid file.
 
@@ -345,18 +345,16 @@ class GridFile:
             name: name of the field to read
             indices: list of indices to read
             transpose: flag to indicate whether the file should be transposed (for 2d fields)
-            apply_transformation: flag to indicate whether the transformation should be applied
+            apply_offset: flag to indicate whether the offset should be applied
                 to the indices, defaults to True
         Returns:
             NDArray: field data
 
         """
-        _log.debug(
-            f"reading {name}: transposing = {transpose} apply_transformation={apply_transformation}"
-        )
+        _log.debug(f"reading {name}: transposing = {transpose} apply_offset={apply_offset}")
         variable = self.variable(name, indices, transpose=transpose, dtype=gtx.int32)
-        if apply_transformation:
-            return variable + self._offset(variable)
+        if apply_offset:
+            return variable + self._offset_transformation(variable)
         return variable
 
     def variable(

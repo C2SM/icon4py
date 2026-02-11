@@ -348,7 +348,7 @@ def test_gridmanager_given_file_not_found_then_abort(
         manager = gm.GridManager(
             grid_file=fname,
             config=v_grid.VerticalGridConfig(num_levels=80),
-            transformation=icon4py.model.common.grid.gridfile.NoTransformation(),
+            offset_transformation=icon4py.model.common.grid.gridfile.NoTransformation(),
         )
         manager(allocator=cpu_allocator, keep_skip_values=True)
         assert error.value == 1

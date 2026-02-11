@@ -61,7 +61,7 @@ def test_grid_manager_validate_decomposer(
     manager = gm.GridManager(
         grid_file=file,
         config=v_grid.VerticalGridConfig(num_levels=utils.NUM_LEVELS),
-        transformation=gridfile.ToZeroBasedIndexTransformation(),
+        offset_transformation=gridfile.ToZeroBasedIndexTransformation(),
     )
     with pytest.raises(exceptions.InvalidConfigError) as e:
         manager(

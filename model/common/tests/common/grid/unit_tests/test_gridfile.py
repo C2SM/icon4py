@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 def test_grid_file_dimension() -> None:
     grid_descriptor = definitions.Grids.R02B04_GLOBAL
     global_grid_file = str(gridtest_utils.resolve_full_grid_file_name(grid_descriptor))
-    parser = gridfile.GridFile(global_grid_file, transformation=gridfile.NoTransformation())
+    parser = gridfile.GridFile(global_grid_file, offset_transformation=gridfile.NoTransformation())
     try:
         parser.open()
         assert (
