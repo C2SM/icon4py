@@ -45,7 +45,6 @@ test_tools_datatests_aarch64:
         SLURM_TIMELIMIT: '00:45:00'
     - if: $BACKEND == 'dace_gpu'
       variables:
-        NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '01:00:00'
     - if: $BACKEND == 'embedded'
       variables:
