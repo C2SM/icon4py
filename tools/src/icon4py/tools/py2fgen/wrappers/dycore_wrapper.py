@@ -156,6 +156,8 @@ def solve_nh_init(
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
+    xp = rho_ref_me.array_ns
+
     def ek_list2mask_bool(
         edge_idxs: data_alloc.NDArray,
         k_idxs: data_alloc.NDArray,
@@ -163,7 +165,6 @@ def solve_nh_init(
         backend: gtx_typing.Backend,
     ) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool]:
         # edge_idxs and k_idxs must have the same size by construction
-        xp = data_alloc.import_array_ns(backend)
         allocator = model_backends.get_allocator(backend)
         mask_field = xp.full(mask_shape, fill_value=False, dtype=bool)
         mask_field[edge_idxs, k_idxs] = True
@@ -177,7 +178,6 @@ def solve_nh_init(
         backend: gtx_typing.Backend,
     ) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool]:
         # edge_idxs, k_idxs and list_values must have the same size by construction
-        xp = data_alloc.import_array_ns(backend)
         allocator = model_backends.get_allocator(backend)
         mask_field = xp.full(mask_shape, fill_value=0.0, dtype=gtx.float64)
         mask_field[edge_idxs, k_idxs] = list_values
