@@ -32,6 +32,10 @@ test_model_stencils_aarch64:
         BACKEND: [dace_cpu, dace_gpu]
         LEVEL: [integration]
   rules:
+    - if: $COMPONENT == 'common' && $LEVEL == 'integration'
+      variables:
+        NUM_PROCESSES: 1
+        SLURM_TIMELIMIT: '00:45:00'
     - if: $BACKEND == 'dace_gpu'
       variables:
         SLURM_TIMELIMIT: '01:00:00'
