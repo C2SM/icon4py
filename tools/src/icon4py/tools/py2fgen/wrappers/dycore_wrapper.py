@@ -21,13 +21,13 @@ from collections.abc import Callable
 from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
-import gt4py.next.typing as gtx_typing
 import numpy as np
-from gt4py.next import config as gtx_config, metrics as gtx_metrics
+from gt4py.next import allocators as gtx_allocators, config as gtx_config, metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools import py2fgen
@@ -156,39 +156,36 @@ def solve_nh_init(
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
-    xp = rho_ref_me.array_ns
+    def get_array_namespace(array: data_alloc.NDArray):
+        return array.array_ns
 
-    def ek_list2mask_bool(
-        edge_idxs: data_alloc.NDArray,
-        k_idxs: data_alloc.NDArray,
-        mask_shape: tuple[int, ...],
-        backend: gtx_typing.Backend,
-    ) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool]:
-        # edge_idxs and k_idxs must have the same size by construction
-        allocator = model_backends.get_allocator(backend)
-        mask_field = xp.full(mask_shape, fill_value=False, dtype=bool)
-        mask_field[edge_idxs, k_idxs] = True
-        return gtx.as_field((dims.EdgeDim, dims.KDim), mask_field, allocator=allocator)
+    def list2field(
+        domain: gtx.Domain,
+        values: data_alloc.NDArray,
+        indices: tuple[data_alloc.NDArray, ...],
+        default_value: state_utils.ScalarType,
+        allocator: gtx_allocators.FieldBufferAllocatorProtocol,
+    ) -> gtx.Field:
+        if len(domain) != len(indices):
+            raise RuntimeError("The number of indices must match the shape of the domain.")
+        assert all(index.shape == indices[0].shape for index in indices)
+        xp = get_array_namespace(values)
+        arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
+        arr[indices] = values
+        return gtx.as_field(domain, arr, allocator=allocator)
 
-    def ek_list2mask_float(
-        edge_idxs: data_alloc.NDArray,
-        k_idxs: data_alloc.NDArray,
-        list_values: data_alloc.NDArray,
-        mask_shape: tuple[int, ...],
-        backend: gtx_typing.Backend,
-    ) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool]:
-        # edge_idxs, k_idxs and list_values must have the same size by construction
-        allocator = model_backends.get_allocator(backend)
-        mask_field = xp.full(mask_shape, fill_value=0.0, dtype=gtx.float64)
-        mask_field[edge_idxs, k_idxs] = list_values
-        return gtx.as_field((dims.EdgeDim, dims.KDim), mask_field, allocator=allocator)
-
-    pg_exdist_dsl = ek_list2mask_float(
-        edge_idxs=edgeidx,
-        k_idxs=vertidx,
-        list_values=pg_exdist,
-        mask_shape=rho_ref_me.ndarray.shape,
-        backend=actual_backend,
+    pg_exdist_dsl = list2field(
+        domain=gtx.domain(
+            {
+                # TODO (jcanton,havogt): is num_edges correct here or nproma? What about when this is used in serialbox?
+                dims.EdgeDim: grid_wrapper.grid_state.grid.num_edges,
+                dims.KDim: grid_wrapper.grid_state.grid.num_levels,
+            }
+        ),
+        values=pg_exdist,
+        indices=(edgeidx, vertidx),
+        default_value=0.0,
+        allocator=model_backends.get_allocator(actual_backend),
     )
 
     config = solve_nonhydro.NonHydrostaticConfig(
