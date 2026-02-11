@@ -1278,9 +1278,6 @@ def solve_nh_init_wrapper(
     vertoffset_gradp_size_0,
     vertoffset_gradp_size_1,
     vertoffset_gradp_size_2,
-    ipeidx_dsl,
-    ipeidx_dsl_size_0,
-    ipeidx_dsl_size_1,
     pg_exdist,
     pg_exdist_size_0,
     pg_exdist_size_1,
@@ -1683,16 +1680,6 @@ def solve_nh_init_wrapper(
                 False,
             )
 
-            ipeidx_dsl = (
-                ipeidx_dsl,
-                (
-                    ipeidx_dsl_size_0,
-                    ipeidx_dsl_size_1,
-                ),
-                on_gpu,
-                False,
-            )
-
             pg_exdist = (
                 pg_exdist,
                 (
@@ -1835,7 +1822,6 @@ def solve_nh_init_wrapper(
                 ddxn_z_full=ddxn_z_full,
                 zdiff_gradp=zdiff_gradp,
                 vertoffset_gradp=vertoffset_gradp,
-                ipeidx_dsl=ipeidx_dsl,
                 pg_exdist=pg_exdist,
                 ddqz_z_full_e=ddqz_z_full_e,
                 ddxt_z_full=ddxt_z_full,
@@ -2479,22 +2465,6 @@ def solve_nh_init_wrapper(
                     msg = (
                         "vertoffset_gradp after computation: %s" % str(vertoffset_gradp_arr)
                         if vertoffset_gradp is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    ipeidx_dsl_arr = (
-                        _conversion.as_array(ffi, ipeidx_dsl, _definitions.BOOL)
-                        if ipeidx_dsl is not None
-                        else None
-                    )
-                    msg = "shape of ipeidx_dsl after computation = %s" % str(
-                        ipeidx_dsl_arr.shape if ipeidx_dsl is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "ipeidx_dsl after computation: %s" % str(ipeidx_dsl_arr)
-                        if ipeidx_dsl is not None
                         else "None"
                     )
                     logger.debug(msg)

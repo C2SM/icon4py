@@ -176,7 +176,6 @@ Inputs:
  - $\exnerprimegradh{\ntilde}{\e}{\k}$ : z_gradh_exner
  - $\exnhydrocorr{\e}$ : hydro_corr_horizontal
  - $(h_k - h_{k^*})$ : pg_exdist
- - $\IDXpg$ : ipeidx_dsl
 
 scidoc:
 Outputs:

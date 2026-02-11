@@ -462,7 +462,6 @@ def compute_rho_theta_pgrad_and_update_vn(
         - c_lin_e: interpolation coefficient for computation of interpolating a cell-based variables to an edge-based variable
         - ikoffset: k offset index (offset from the lowest k index where the neighboring cell centers lie within the thickness of the layer) for hyrostatic correction
         - zdiff_gradp: vertical distance between current cell height and neighboring cell height for pressure gradient over multiple levels [m]
-        - ipeidx_dsl: A mask for hydrostatic correction
         - pg_exdist: vertical distance between current cell height and neighboring cell height for hydrostatic correction [m]
         - inv_dual_edge_length: inverse dual edge length [m]
         - dtime: time step [s]
