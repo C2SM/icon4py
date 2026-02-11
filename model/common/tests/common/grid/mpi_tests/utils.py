@@ -19,7 +19,7 @@ def _grid_manager(file: pathlib.Path, num_levels: int) -> gm.GridManager:
 
 
 # TODO(msimberg): Single rank, not node.
-def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
+def run_grid_manager_for_single_rank(file: pathlib.Path) -> gm.GridManager:
     manager = _grid_manager(file, NUM_LEVELS)
     manager(
         keep_skip_values=True,
@@ -31,7 +31,7 @@ def run_grid_manager_for_singlenode(file: pathlib.Path) -> gm.GridManager:
 
 
 # TODO(msimberg): Fix typos. Consistent naming with above function.
-def run_gridmananger_for_multinode(
+def run_grid_manager_for_multi_rank(
     file: pathlib.Path,
     run_properties: decomp_defs.ProcessProperties,
     decomposer: decomp.Decomposer,

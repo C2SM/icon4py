@@ -260,7 +260,7 @@ def test_decomposition_info_matches_gridsize(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_create_multi_node_runtime_with_mpi(
+def test_create_multi_rank_runtime_with_mpi(
     decomposition_info: definitions.DecompositionInfo,
     processor_props: definitions.ProcessProperties,
 ) -> None:
