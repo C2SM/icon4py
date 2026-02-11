@@ -106,10 +106,6 @@ def get_nproma(tables: Iterable[NDArray]) -> int:
     return nproma
 
 
-def get_array_namespace(array: NDArray) -> ModuleType:
-    return array.array_ns
-
-
 def list2field(
     domain: gtx.Domain,
     values: NDArray,
@@ -120,7 +116,7 @@ def list2field(
     if len(domain) != len(indices):
         raise RuntimeError("The number of indices must match the shape of the domain.")
     assert all(index.shape == indices[0].shape for index in indices)
-    xp = get_array_namespace(values)
+    xp = data_alloc.get_array_namespace(values)
     arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
     arr[indices] = values
     return gtx.as_field(domain, arr, allocator=allocator)
