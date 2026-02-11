@@ -25,6 +25,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
+from icon4py.model.common.interpolation import interpolation_attributes as intp_attrs
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions as test_defs,
@@ -50,7 +51,7 @@ from icon4py.model.testing.fixtures.datatest import (
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
-from ..fixtures import advection_exit_savepoint, advection_init_savepoint
+from ..fixtures import advection_exit_savepoint, advection_init_savepoint, advection_lsq_state
 from ..utils import (
     construct_config,
     construct_diagnostic_exit_state,
@@ -137,6 +138,7 @@ def test_advection_run_single_step(
     experiment: test_defs.Experiment,
     processor_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,  # : F811 fixture
+    advection_lsq_state,
 ):
     if test_utils.is_embedded(backend):
         # https://github.com/GridTools/gt4py/issues/1583
@@ -149,38 +151,18 @@ def test_advection_run_single_step(
         pytest.xfail(
             "This test is skipped until the cause of nonzero horizontal advection if revealed."
         )
+
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
     config = construct_config(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,
         vertical_advection_type=vertical_advection_type,
         vertical_advection_limiter=vertical_advection_limiter,
     )
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
-    interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
-    geometry = gridtest_utils.get_grid_geometry(backend, experiment)
-    least_squares_coeffs = lsq_compute_coeffs(
-        cell_center_x=geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy(),
-        cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy(),
-        cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
-        cell_lon=geometry.get(geometry_attrs.CELL_LON).asnumpy(),
-        c2e2c=icon_grid.connectivities["C2E2C"].asnumpy(),
-        cell_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
-        domain_length=geometry.grid.global_properties.domain_length,
-        domain_height=geometry.grid.global_properties.domain_height,
-        grid_sphere_radius=constants.EARTH_RADIUS,
-        lsq_dim_unk=2,
-        lsq_dim_c=3,
-        lsq_wgt_exp=2,
-        lsq_dim_stencil=3,
-        start_idx=icon_grid.start_index(
-            h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-        ),
-        min_rlcell_int=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.HALO_LEVEL_2)),
-        geometry_type=icon_grid.geometry_type,
-        exchange=exchange,
-    )
 
-    least_squares_state = construct_least_squares_state(least_squares_coeffs, backend=backend)
+    interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
 
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
     edge_geometry = grid_savepoint.construct_edge_geometry()
@@ -189,9 +171,9 @@ def test_advection_run_single_step(
 
     advection_granule = advection.convert_config_to_advection(
         config=config,
-        grid=icon_grid,
+        grid=icon_grid,  # gm.grid,
         interpolation_state=interpolation_state,
-        least_squares_state=least_squares_state,
+        least_squares_state=advection_lsq_state,  # [field_1, field_2],#least_squares_state,
         metric_state=metric_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
@@ -205,6 +187,7 @@ def test_advection_run_single_step(
     )
     prep_adv = construct_prep_adv(advection_init_savepoint)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
+
     p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
     dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
 
@@ -225,6 +208,11 @@ def test_advection_run_single_step(
 
     assert test_helpers.dallclose(
         diagnostic_state.hfl_tracer.asnumpy(), diagnostic_state_ref.hfl_tracer.asnumpy(), atol=1e-8
+    )
+    assert test_utils.dallclose(
+        diagnostic_state.vfl_tracer.asnumpy(),
+        diagnostic_state_ref.vfl_tracer.asnumpy(),
+        rtol=1e-10,
     )
     assert test_helpers.dallclose(p_tracer_new_ref.asnumpy(), p_tracer_new.asnumpy(), atol=1e-10)
 

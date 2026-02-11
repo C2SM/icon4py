@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pytest
 
+from icon4py.model.atmosphere.advection import advection_states
+from icon4py.model.testing import serialbox
 from icon4py.model.testing.fixtures.datatest import data_provider, decomposition_info
 
 
@@ -44,3 +46,13 @@ def advection_exit_savepoint(data_provider, date):
     fixture, passing 'date=<iso_string>'.
     """
     return data_provider.from_advection_exit_savepoint(size=data_provider.grid_size, date=date)
+
+
+@pytest.fixture
+def advection_lsq_state(
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+) -> advection_states.AdvectionLeastSquaresState:
+    return advection_states.AdvectionLeastSquaresState(
+        lsq_pseudoinv_1=interpolation_savepoint.lsq_pseudoinv_1(),
+        lsq_pseudoinv_2=interpolation_savepoint.lsq_pseudoinv_2(),
+    )

@@ -166,6 +166,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
             r_m=self._r_m,
             p_mflx_tracer_h=p_mflx_tracer_h,
         )
+        # self._exchange.exchange_and_wait(dims.EdgeDim, p_mflx_tracer_h)
         log.debug(
             "running stencil apply_positive_definite_horizontal_multiplicative_flux_factor - end"
         )
@@ -298,6 +299,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         log.debug(
             "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - end"
         )
+        # self._exchange.exchange_and_wait(dims.EdgeDim, p_mflx_tracer_h)
 
         self._horizontal_limiter.apply_flux_limiter(
             p_tracer_now=p_tracer_now,
@@ -342,7 +344,7 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: model_backends.BackendLike):
+    def __init__(self, grid: icon_grid.IconGrid, backend: model_backends.BackendLike, exchange):
         log.debug("horizontal advection class init - start")
 
         # input arguments
@@ -352,6 +354,7 @@ class NoAdvection(HorizontalAdvection):
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        self._exchange = exchange
 
         # stencils
         self._copy_cell_kdim_field = setup_program(
@@ -388,7 +391,7 @@ class NoAdvection(HorizontalAdvection):
             field_out=p_tracer_new,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
-
+        self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("horizontal advection run - end")
 
 
@@ -423,6 +426,7 @@ class FiniteVolume(HorizontalAdvection):
             p_mflx_tracer_h=p_mflx_tracer_h,
             dtime=dtime,
         )
+        # self._exchange.exchange_and_wait(dims.EdgeDim, p_mflx_tracer_h)
 
         log.debug("horizontal advection run - end")
 

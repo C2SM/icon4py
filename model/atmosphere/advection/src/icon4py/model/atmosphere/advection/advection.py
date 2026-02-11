@@ -422,7 +422,9 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
 
     match config.horizontal_advection_type:
         case HorizontalAdvectionType.NO_ADVECTION:
-            horizontal_advection = advection_horizontal.NoAdvection(grid=grid, backend=backend)
+            horizontal_advection = advection_horizontal.NoAdvection(
+                grid=grid, backend=backend, exchange=exchange
+            )
         case HorizontalAdvectionType.LINEAR_2ND_ORDER:
             tracer_flux = advection_horizontal.SecondOrderMiura(
                 grid=grid,
@@ -454,7 +456,9 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
 
     match config.vertical_advection_type:
         case VerticalAdvectionType.NO_ADVECTION:
-            vertical_advection = advection_vertical.NoAdvection(grid=grid, backend=backend)
+            vertical_advection = advection_vertical.NoAdvection(
+                grid=grid, backend=backend, exchange=exchange
+            )
         case VerticalAdvectionType.UPWIND_1ST_ORDER:
             boundary_conditions = advection_vertical.NoFluxCondition(grid=grid, backend=backend)
             vertical_advection = advection_vertical.FirstOrderUpwind(
