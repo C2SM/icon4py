@@ -175,16 +175,10 @@ def solve_nh_init(
         return gtx.as_field(domain, arr, allocator=allocator)
 
     pg_exdist_dsl = list2field(
-        domain=gtx.domain(
-            {
-                # TODO (jcanton,havogt): is num_edges correct here or nproma? What about when this is used in serialbox?
-                dims.EdgeDim: grid_wrapper.grid_state.grid.num_edges,
-                dims.KDim: grid_wrapper.grid_state.grid.num_levels,
-            }
-        ),
+        domain=rho_ref_me.domain,
         values=pg_exdist,
         indices=(edgeidx, vertidx),
-        default_value=0.0,
+        default_value=gtx.float64(0.0),
         allocator=model_backends.get_allocator(actual_backend),
     )
 
