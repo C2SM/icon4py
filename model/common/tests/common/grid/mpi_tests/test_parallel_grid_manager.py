@@ -216,6 +216,20 @@ def test_geometry_fields_compare_single_multi_rank(
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
 
+    # backend is embedded and in list of edge_normal* attributes, xfail
+    if (
+        test_utils.is_embedded(backend)
+        and attrs_name
+        in (
+            geometry_attributes.EDGE_NORMAL_VERTEX_U,
+            geometry_attributes.EDGE_NORMAL_VERTEX_V,
+            geometry_attributes.EDGE_NORMAL_CELL_U,
+            geometry_attributes.EDGE_NORMAL_CELL_V,
+        )
+        and experiment == test_defs.Experiments.EXCLAIM_APE
+    ):
+        pytest.xfail("IndexOutOfBounds with embedded backend")
+
     # TODO(msimberg): Some of these fail with keep_skip_values=True, pass with
     # keep_skip_values=False. What should it be?
 
