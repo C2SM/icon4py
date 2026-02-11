@@ -8,7 +8,6 @@
 import functools
 import logging
 import operator
-from typing import Any
 
 import numpy as np
 import pytest
@@ -25,21 +24,12 @@ from icon4py.model.common.grid import (
     base,
     geometry,
     geometry_attributes,
-    geometry_stencils,
     grid_manager as gm,
     gridfile,
-    horizontal as h_grid,
     icon,
     vertical as v_grid,
 )
-from icon4py.model.common.interpolation import (
-    interpolation_attributes,
-    interpolation_factory,
-    interpolation_fields,
-)
-from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
-    _compute_cell_2_vertex_interpolation,
-)
+from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, grid_utils, test_utils

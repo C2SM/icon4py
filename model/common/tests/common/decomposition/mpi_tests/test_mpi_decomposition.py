@@ -45,7 +45,6 @@ from ...fixtures import (
     metrics_savepoint,
     processor_props,
 )
-from ..utils import dummy_four_ranks
 
 
 _log = logging.getLogger(__name__)

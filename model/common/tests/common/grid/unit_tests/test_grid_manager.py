@@ -18,12 +18,7 @@ import pytest
 
 import icon4py.model.common.grid.gridfile
 from icon4py.model.common import dimension as dims, model_backends
-from icon4py.model.common.decomposition import (
-    decomposer as decomp,
-    definitions as decomp_defs,
-    definitions as decomposition,
-    halo,
-)
+from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import (
     base as base_grid,
     grid_manager as gm,

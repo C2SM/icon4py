@@ -15,12 +15,11 @@ import pytest
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox
+from icon4py.model.testing import definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures import backend, cpu_allocator
 
 from .. import utils
 from ..fixtures import data_provider, download_ser_data, experiment, grid_savepoint, processor_props
-from ..utils import main_horizontal_dims
 
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())

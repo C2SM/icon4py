@@ -30,7 +30,7 @@ except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
 from icon4py.model.common.decomposition import halo
-from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.common.grid import simple
 
 from .. import utils
 

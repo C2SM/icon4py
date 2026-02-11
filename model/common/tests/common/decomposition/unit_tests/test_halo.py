@@ -15,7 +15,6 @@ from icon4py.model.common.decomposition import decomposer as decomp, definitions
 from icon4py.model.common.grid import base as base_grid, simple
 
 from ...fixtures import backend_like, processor_props
-from ...grid import utils as grid_utils
 from .. import utils
 from ..fixtures import simple_neighbor_tables
 from ..utils import dummy_four_ranks
