@@ -132,9 +132,6 @@ module diffusion
                                       rbf_coeff_2, &
                                       rbf_coeff_2_size_0, &
                                       rbf_coeff_2_size_1, &
-                                      mask_hdiff, &
-                                      mask_hdiff_size_0, &
-                                      mask_hdiff_size_1, &
                                       zd_diffcoef, &
                                       zd_diffcoef_size_0, &
                                       zd_diffcoef_size_1, &
@@ -224,12 +221,6 @@ module diffusion
          integer(c_int), value :: rbf_coeff_2_size_0
 
          integer(c_int), value :: rbf_coeff_2_size_1
-
-         type(c_ptr), value, target :: mask_hdiff
-
-         integer(c_int), value :: mask_hdiff_size_0
-
-         integer(c_int), value :: mask_hdiff_size_1
 
          type(c_ptr), value, target :: zd_diffcoef
 
@@ -494,7 +485,6 @@ contains
                              nudgecoeff_e, &
                              rbf_coeff_1, &
                              rbf_coeff_2, &
-                             mask_hdiff, &
                              zd_diffcoef, &
                              zd_vertoffset, &
                              zd_intcoef, &
@@ -537,8 +527,6 @@ contains
       real(c_double), dimension(:, :), target :: rbf_coeff_1
 
       real(c_double), dimension(:, :), target :: rbf_coeff_2
-
-      logical(c_int), dimension(:, :), pointer :: mask_hdiff
 
       real(c_double), dimension(:, :), pointer :: zd_diffcoef
 
@@ -620,10 +608,6 @@ contains
 
       integer(c_int) :: rbf_coeff_2_size_1
 
-      integer(c_int) :: mask_hdiff_size_0
-
-      integer(c_int) :: mask_hdiff_size_1
-
       integer(c_int) :: zd_diffcoef_size_0
 
       integer(c_int) :: zd_diffcoef_size_1
@@ -643,15 +627,11 @@ contains
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
-      type(c_ptr) :: mask_hdiff_ptr
-
       type(c_ptr) :: zd_diffcoef_ptr
 
       type(c_ptr) :: zd_vertoffset_ptr
 
       type(c_ptr) :: zd_intcoef_ptr
-
-      mask_hdiff_ptr = c_null_ptr
 
       zd_diffcoef_ptr = c_null_ptr
 
@@ -669,7 +649,6 @@ contains
       !$acc host_data use_device(nudgecoeff_e)
       !$acc host_data use_device(rbf_coeff_1)
       !$acc host_data use_device(rbf_coeff_2)
-      !$acc host_data use_device(mask_hdiff) if(associated(mask_hdiff))
       !$acc host_data use_device(zd_diffcoef) if(associated(zd_diffcoef))
       !$acc host_data use_device(zd_vertoffset) if(associated(zd_vertoffset))
       !$acc host_data use_device(zd_intcoef) if(associated(zd_intcoef))
@@ -708,12 +687,6 @@ contains
 
       rbf_coeff_2_size_0 = SIZE(rbf_coeff_2, 1)
       rbf_coeff_2_size_1 = SIZE(rbf_coeff_2, 2)
-
-      if (associated(mask_hdiff)) then
-         mask_hdiff_ptr = c_loc(mask_hdiff)
-         mask_hdiff_size_0 = SIZE(mask_hdiff, 1)
-         mask_hdiff_size_1 = SIZE(mask_hdiff, 2)
-      end if
 
       if (associated(zd_diffcoef)) then
          zd_diffcoef_ptr = c_loc(zd_diffcoef)
@@ -764,9 +737,6 @@ contains
                                   rbf_coeff_2=c_loc(rbf_coeff_2), &
                                   rbf_coeff_2_size_0=rbf_coeff_2_size_0, &
                                   rbf_coeff_2_size_1=rbf_coeff_2_size_1, &
-                                  mask_hdiff=mask_hdiff_ptr, &
-                                  mask_hdiff_size_0=mask_hdiff_size_0, &
-                                  mask_hdiff_size_1=mask_hdiff_size_1, &
                                   zd_diffcoef=zd_diffcoef_ptr, &
                                   zd_diffcoef_size_0=zd_diffcoef_size_0, &
                                   zd_diffcoef_size_1=zd_diffcoef_size_1, &

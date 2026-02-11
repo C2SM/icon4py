@@ -530,7 +530,6 @@ class Diffusion:
             program=apply_diffusion_to_theta_and_exner,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
-                "mask": self._metric_state.mask_hdiff,
                 "zd_vertoffset": self._metric_state.zd_vertoffset,
                 "zd_diffcoef": self._metric_state.zd_diffcoef,
                 "vcoef": self._metric_state.zd_intcoef,
