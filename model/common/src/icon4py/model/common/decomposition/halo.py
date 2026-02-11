@@ -19,10 +19,6 @@ from icon4py.model.common.grid import base, gridfile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def _value(k: gtx.FieldOffset | str) -> str:
-    return str(k.value) if isinstance(k, gtx.FieldOffset) else k
-
-
 @runtime_checkable
 class HaloConstructor(Protocol):
     """Callable that takes a mapping from cells to ranks"""
@@ -41,7 +37,7 @@ class NoHalos(HaloConstructor):
 
     def __call__(self, cell_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         xp = data_alloc.import_array_ns(self._allocator)
-        create_arrays = functools.partial(_create_dummy_decomposition_arrays, array_ns=xp)
+        create_arrays = functools.partial(self._create_dummy_decomposition_arrays, array_ns=xp)
         decomposition_info = defs.DecompositionInfo()
 
         decomposition_info.set_dimension(dims.EdgeDim, *create_arrays(self._size.num_edges))
@@ -49,14 +45,14 @@ class NoHalos(HaloConstructor):
         decomposition_info.set_dimension(dims.VertexDim, *create_arrays(self._size.num_vertices))
         return decomposition_info
 
-
-def _create_dummy_decomposition_arrays(
-    size: int, array_ns: ModuleType = np
-) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
-    indices = array_ns.arange(size, dtype=gtx.int32)  # type: ignore  [attr-defined]
-    owner_mask = array_ns.full((size,), True, dtype=bool)
-    halo_levels = array_ns.full((size,), defs.DecompositionFlag.OWNED.value, dtype=gtx.int32)  # type: ignore  [attr-defined]
-    return indices, owner_mask, halo_levels
+    @staticmethod
+    def _create_dummy_decomposition_arrays(
+        size: int, array_ns: ModuleType = np
+    ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+        indices = array_ns.arange(size, dtype=gtx.int32)  # type: ignore  [attr-defined]
+        owner_mask = array_ns.full((size,), True, dtype=bool)
+        halo_levels = array_ns.full((size,), defs.DecompositionFlag.OWNED.value, dtype=gtx.int32)  # type: ignore  [attr-defined]
+        return indices, owner_mask, halo_levels
 
 
 class IconLikeHaloConstructor(HaloConstructor):
@@ -77,8 +73,12 @@ class IconLikeHaloConstructor(HaloConstructor):
         """
         self._xp = data_alloc.import_array_ns(allocator)
         self._props = run_properties
-        self._connectivities = {_value(k): v for k, v in connectivities.items()}
+        self._connectivities = {self._value(k): v for k, v in connectivities.items()}
         self._assert_all_neighbor_tables()
+
+    @staticmethod
+    def _value(k: gtx.FieldOffset | str) -> str:
+        return str(k.value) if isinstance(k, gtx.FieldOffset) else k
 
     def _validate_mapping(self, cell_to_rank_mapping: data_alloc.NDArray) -> None:
         # validate the distribution mapping:
@@ -114,7 +114,7 @@ class IconLikeHaloConstructor(HaloConstructor):
 
     def _connectivity(self, offset: gtx.FieldOffset | str) -> data_alloc.NDArray:
         try:
-            return self._connectivities[_value(offset)]
+            return self._connectivities[self._value(offset)]
         except KeyError as err:
             raise exceptions.MissingConnectivityError(
                 f"Connectivity for offset {offset} is not available"
@@ -178,7 +178,6 @@ class IconLikeHaloConstructor(HaloConstructor):
         according to a remark in `mo_decomposition_tools.f90` ICON puts them to the node
         with the higher rank.
 
-        # TODO(halungge): can we add an assert for the target dimension of the connectivity being cells?
         Args:
             owner_mask: owner mask for the dimension
             all_indices: (global) indices of the dimension
