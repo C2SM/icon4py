@@ -35,7 +35,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 _log = logging.getLogger(__name__)
 _single_node_decomposer = decomp.SingleNodeDecomposer()
 _single_process_props = decomposition.SingleNodeProcessProperties()
-_fortan_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
+_fortran_to_python_transformer = gridfile.ToZeroBasedIndexTransformation()
 
 
 class IconGridError(RuntimeError):
@@ -65,7 +65,7 @@ class GridManager:
         self,
         grid_file: pathlib.Path | str,
         config: v_grid.VerticalGridConfig,  # TODO(msimberg): remove to separate vertical and horizontal grid
-        transformation: gridfile.IndexTransformation = _fortan_to_python_transformer,
+        transformation: gridfile.IndexTransformation = _fortran_to_python_transformer,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._transformation = transformation
