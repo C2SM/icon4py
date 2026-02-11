@@ -35,6 +35,7 @@ from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
     grid_manager as gm,
+    gridfile,
     icon as icon_grid,
     states as grid_states,
     vertical as v_grid,
@@ -66,7 +67,7 @@ def create_grid_manager(
     grid_manager = gm.GridManager(
         grid_file=grid_file_path,
         config=vertical_grid_config,
-        transformation=gm.ToZeroBasedIndexTransformation(),
+        transformation=gridfile.ToZeroBasedIndexTransformation(),
         global_reductions=global_reductions,
     )
     grid_manager(allocator=allocator, keep_skip_values=True)
