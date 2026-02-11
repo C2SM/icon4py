@@ -708,7 +708,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"pg_edgeidx_dsl": attrs.PG_EDGEIDX_DSL, "pg_exdist_dsl": attrs.PG_EDGEDIST_DSL},
+            fields={"pg_exdist_dsl": attrs.PG_EDGEDIST_DSL},
             do_exchange=False,
         )
         self.register_provider(pressure_gradient_fields)

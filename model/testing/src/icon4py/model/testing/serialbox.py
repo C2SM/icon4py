@@ -714,18 +714,6 @@ class MetricSavepoint(IconSavepoint):
         #TODO (jcanton,havogt): fix the dimensions
         return self._get_field("pg_exdist", dims.EdgeDim, dims.KDim)
 
-    def pg_edgeidx_dsl(self):
-        #TODO (jcanton,havogt): fix the dimensions
-        edgeidx = self.edgeidx()
-        vertidx = self.vertidx()
-        edgeidx_dsl = helpers.ek_list2mask_bool(
-            edge_idxs=edgeidx,
-            k_idxs=vertidx,
-            mask_shape=rho_ref_me.ndarray.shape,
-            backend=actual_backend,
-        )
-        return edgeidx_dsl
-
     def pg_exdist_dsl(self):
         #TODO (jcanton,havogt): fix the dimensions
         edgeidx = self.edgeidx()

@@ -266,7 +266,6 @@ def solve_nh_init(
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
         nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
-        pg_edgeidx_dsl=edgeidx_dsl,
         pg_exdist=pg_exdist_dsl,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
