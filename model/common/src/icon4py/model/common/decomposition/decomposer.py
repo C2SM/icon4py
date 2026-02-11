@@ -56,7 +56,7 @@ class MetisDecomposer(Decomposer):
 
         import pymetis  # type: ignore [import-untyped]
 
-        # Invalid indices are not allowed here. Metis will segfault or fail
+        # Invalid indices are not allowed here. Metis will segfault or fail if
         # there are any invalid indices in the adjacency matrix.
         assert (adjacency_matrix >= 0).all()
 
