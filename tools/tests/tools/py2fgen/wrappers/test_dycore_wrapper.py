@@ -101,9 +101,9 @@ def solve_nh_init(
     )
     vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
 
-    edgeidx = test_utils.array_to_array_info(metrics_savepoint.edgeidx().ndarray)
-    vertidx = test_utils.array_to_array_info(metrics_savepoint.vertidx().ndarray)
-    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist().ndarray)
+    edgeidx = test_utils.array_to_array_info(metrics_savepoint.edgeidx())
+    vertidx = test_utils.array_to_array_info(metrics_savepoint.vertidx())
+    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist())
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
@@ -344,7 +344,9 @@ def test_dycore_wrapper_granule_inputs(
     )
     vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
 
-    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist_dsl().ndarray)
+    edgeidx = test_utils.array_to_array_info(metrics_savepoint.edgeidx())
+    vertidx = test_utils.array_to_array_info(metrics_savepoint.vertidx())
+    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist())
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)

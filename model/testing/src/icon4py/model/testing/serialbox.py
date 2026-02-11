@@ -703,22 +703,18 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("mask_prog_halo_c", dims.CellDim, dtype=bool)
 
     def edgeidx(self):
-        #TODO (jcanton,havogt): fix the dimensions
-        return self._get_field("edgeidx", dims.EdgeDim, dims.KDim)
+        return np.squeeze(self.serializer.read("edgeidx", self.savepoint))
 
     def vertidx(self):
-        #TODO (jcanton,havogt): fix the dimensions
-        return self._get_field("vertidx", dims.EdgeDim, dims.KDim)
+        return np.squeeze(self.serializer.read("vertidx", self.savepoint))
 
     def pg_exdist(self):
-        #TODO (jcanton,havogt): fix the dimensions
-        return self._get_field("pg_exdist", dims.EdgeDim, dims.KDim)
+        return np.squeeze(self.serializer.read("pg_exdist", self.savepoint))
 
     def pg_exdist_dsl(self):
-        #TODO (jcanton,havogt): fix the dimensions
         edgeidx = self.edgeidx()
         vertidx = self.vertidx()
-        pg_exdist = self._get_field("pg_exdist", dims.EdgeDim, dims.KDim)
+        pg_exdist = self.pg_exdist()
         pg_exdist_dsl = helpers.ek_list2mask_bool(
             edge_idxs=edgeidx,
             k_idxs=vertidx,

@@ -183,12 +183,6 @@ def solve_nh_init(
         mask_field[edge_idxs, k_idxs] = list_values
         return gtx.as_field((dims.EdgeDim, dims.KDim), mask_field, allocator=allocator)
 
-    edgeidx_dsl = ek_list2mask_bool(
-        edge_idxs=edgeidx,
-        k_idxs=vertidx,
-        mask_shape=rho_ref_me.ndarray.shape,
-        backend=actual_backend,
-    )
     pg_exdist_dsl = ek_list2mask_float(
         edge_idxs=edgeidx,
         k_idxs=vertidx,
