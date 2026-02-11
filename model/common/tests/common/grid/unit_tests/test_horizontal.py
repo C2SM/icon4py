@@ -17,7 +17,6 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 
 from .. import utils
-from ..fixtures import *  # noqa: F403
 
 
 if TYPE_CHECKING:
