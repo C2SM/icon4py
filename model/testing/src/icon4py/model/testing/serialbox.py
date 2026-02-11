@@ -17,10 +17,11 @@ import serialbox
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common import dimension as dims, type_alias
+from icon4py.model.common import dimension as dims, model_backends, type_alias
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common
 
 
 log = logging.getLogger(__name__)
@@ -715,14 +716,16 @@ class MetricSavepoint(IconSavepoint):
         edgeidx = self.edgeidx()
         vertidx = self.vertidx()
         pg_exdist = self.pg_exdist()
-        pg_exdist_dsl = helpers.ek_list2mask_bool(
-            edge_idxs=edgeidx,
-            k_idxs=vertidx,
-            list_values=pg_exdist,
-            mask_shape=rho_ref_me.ndarray.shape,
-            backend=actual_backend,
+        return wrapper_common.list2field(
+            domain=self.rho_ref_me().domain,
+            values=pg_exdist,
+            indices=(
+                wrapper_common.adjust_fortran_indices(edgeidx),
+                wrapper_common.adjust_fortran_indices(vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(self.backend),
         )
-        return pg_exdist_dsl
 
     def rayleigh_w(self):
         return self._get_field("rayleigh_w", dims.KDim)

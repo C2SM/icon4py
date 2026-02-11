@@ -105,13 +105,15 @@ def get_nproma(tables: Iterable[NDArray]) -> int:
         raise ValueError("All connectivity tables must have the same number of rows (nproma).")
     return nproma
 
-def get_array_namespace(array: data_alloc.NDArray):
+
+def get_array_namespace(array: NDArray) -> ModuleType:
     return array.array_ns
+
 
 def list2field(
     domain: gtx.Domain,
-    values: data_alloc.NDArray,
-    indices: tuple[data_alloc.NDArray, ...],
+    values: NDArray,
+    indices: tuple[NDArray, ...],
     default_value: state_utils.ScalarType,
     allocator: gtx_allocators.FieldBufferAllocatorProtocol,
 ) -> gtx.Field:
