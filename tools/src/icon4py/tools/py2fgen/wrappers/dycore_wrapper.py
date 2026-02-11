@@ -45,26 +45,6 @@ class SolveNonhydroGranule:
 
 granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
-Int32Array1D: TypeAlias = Annotated[
-    data_alloc.NDArray,
-    py2fgen.ArrayParamDescriptor(
-        rank=1,
-        dtype=ts.ScalarKind.INT32,
-        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
-        is_optional=False,
-    ),
-]
-
-Float64Array1D: TypeAlias = Annotated[
-    data_alloc.NDArray,
-    py2fgen.ArrayParamDescriptor(
-        rank=1,
-        dtype=ts.ScalarKind.FLOAT64,
-        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
-        is_optional=False,
-    ),
-]
-
 
 @icon4py_export.export
 def solve_nh_init(
@@ -105,9 +85,9 @@ def solve_nh_init(
     ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.float64],
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
-    pg_edgeidx: Int32Array1D,
-    pg_vertidx: Int32Array1D,
-    pg_exdist: Float64Array1D,
+    pg_edgeidx: wrapper_common.Int32Array1D,
+    pg_vertidx: wrapper_common.Int32Array1D,
+    pg_exdist: wrapper_common.Float64Array1D,
     ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddxt_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     wgtfac_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
