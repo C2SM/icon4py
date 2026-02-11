@@ -46,7 +46,7 @@ class HorizontalGridSize:
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class GridConfig:
-    horizontal_size: HorizontalGridSize
+    horizontal_config: HorizontalGridSize
     # TODO(halungge): Decouple the vertical from horizontal grid.
     vertical_size: int
     limited_area: bool = True
@@ -61,15 +61,15 @@ class GridConfig:
 
     @property
     def num_vertices(self):
-        return self.horizontal_size.num_vertices
+        return self.horizontal_config.num_vertices
 
     @property
     def num_edges(self):
-        return self.horizontal_size.num_edges
+        return self.horizontal_config.num_edges
 
     @property
     def num_cells(self):
-        return self.horizontal_size.num_cells
+        return self.horizontal_config.num_cells
 
 
 @dataclasses.dataclass(frozen=True)

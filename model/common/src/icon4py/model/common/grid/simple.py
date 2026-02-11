@@ -438,7 +438,7 @@ def simple_grid(
     )
     vertical_grid_config = VerticalGridConfig(num_levels=num_levels)
     config = base.GridConfig(
-        horizontal_size=horizontal_grid_size,
+        horizontal_config=horizontal_grid_size,
         vertical_size=vertical_grid_config.num_levels,
         limited_area=False,
     )

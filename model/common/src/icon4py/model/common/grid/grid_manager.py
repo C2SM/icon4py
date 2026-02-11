@@ -458,7 +458,7 @@ class GridManager:
         start_index, end_index = icon.get_start_and_end_index(domain_bounds_constructor)
 
         grid_config = base.GridConfig(
-            horizontal_size=distributed_size,
+            horizontal_config=distributed_size,
             vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
             keep_skip_values=keep_skip_values,

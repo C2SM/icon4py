@@ -484,7 +484,7 @@ class IconGridSavepoint(IconSavepoint):
         with_repeated_index: bool = True,
     ) -> icon.IconGrid:
         config = base.GridConfig(
-            horizontal_size=base.HorizontalGridSize(
+            horizontal_config=base.HorizontalGridSize(
                 num_vertices=self.num(dims.VertexDim),
                 num_cells=self.num(dims.CellDim),
                 num_edges=self.num(dims.EdgeDim),
