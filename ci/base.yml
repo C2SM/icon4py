@@ -64,6 +64,11 @@ build_image_aarch64:
     SLURM_GPUS_PER_NODE: 4
     SLURM_TIMELIMIT: '01:30:00'
     CSCS_CUDA_MPS: 1
+    # The default without MPS is 8 for both max connection variables. With MPS
+    # they are lowered to 2 by default, so we set them back to their non-MPS
+    # defaults for potentially increased concurrency on the GPU.
+    CUDA_DEVICE_MAX_CONNECTIONS: 8
+    CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
