@@ -1,1 +1,4 @@
-../pyrightconfig.json
+{
+    "venvPath": ".",
+    "venv": ".venv",
+}
