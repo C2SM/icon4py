@@ -74,6 +74,9 @@ def test_distributed_interpolation_with_custom_tolerance(
     rtol: float,
     atol: float,
 ) -> None:
+    if experiment == test_defs.Experiments.GAUSS3D and intrp_name == "e_flx_avg":
+        pytest.xfail("domain_length and domain_height are not serialized or available for GAUSS3D")
+
     parallel_helpers.check_comm_size(processor_props)
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
@@ -132,6 +135,9 @@ def test_distributed_interpolation_grg(
     decomposition_info: decomposition.DecompositionInfo,
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
 ) -> None:
+    if experiment == test_defs.Experiments.GAUSS3D:
+        pytest.xfail("domain_length and domain_height are not serialized or available for GAUSS3D")
+
     parallel_helpers.check_comm_size(processor_props)
     intp_factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.geofac_grg()

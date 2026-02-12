@@ -17,7 +17,12 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.grid import geometry, geometry_attributes as attrs, horizontal as h_grid
+from icon4py.model.common.grid import (
+    base,
+    geometry,
+    geometry_attributes as attrs,
+    horizontal as h_grid,
+)
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
@@ -69,7 +74,11 @@ def test_distributed_geometry_attrs(
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
+    experiment: test_defs.Experiment,
 ) -> None:
+    if experiment == test_defs.Experiments.GAUSS3D:
+        pytest.xfail("domain_length and domain_height are not serialized or available for GAUSS3D")
+
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
@@ -79,7 +88,6 @@ def test_distributed_geometry_attrs(
     assert test_utils.dallclose(field, field_ref, atol=1e-12)
 
 
-@pytest.mark.xfail(reason="Wrong results")
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -99,7 +107,11 @@ def test_distributed_geometry_attrs_for_inverse(
     attrs_name: str,
     grid_name: str,
     lb_domain: h_grid.Domain,
+    experiment: test_defs.Experiment,
 ) -> None:
+    if experiment == test_defs.Experiments.GAUSS3D and grid_name == "inv_vert_vert_length":
+        pytest.xfail("domain_length and domain_height are not serialized or available for GAUSS3D")
+
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
@@ -132,7 +144,11 @@ def test_geometry_attr_no_halos(
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
+    experiment: test_defs.Experiment,
 ) -> None:
+    if experiment == test_defs.Experiments.GAUSS3D:
+        pytest.xfail("domain_length and domain_height are not serialized or available for GAUSS3D")
+
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
@@ -171,11 +187,19 @@ def test_cartesian_geometry_attr_no_halos(
     x_field = grid_geometry.get(x)
     y_field = grid_geometry.get(y)
     z_field = grid_geometry.get(z)
-    norm = data_alloc.zero_field(
-        grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend
-    )
-    math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+    match grid_geometry.grid.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            norm = data_alloc.zero_field(
+                grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend
+            )
+            math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
+            assert test_utils.dallclose(norm.asnumpy(), 1.0)
+        case base.GeometryType.TORUS:
+            assert all(x_field.asnumpy() >= 0.0)
+            assert all(y_field.asnumpy() >= 0.0)
+            assert all(z_field.asnumpy() == 0.0)
+            # TODO(msimberg): This should check that points are less than the
+            # domain_length/height, when that information is available.
 
 
 @pytest.mark.datatest
