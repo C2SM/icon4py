@@ -906,7 +906,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"c2e2c": dims.C2E2CDim},
             domain=(dims.CellDim, dims.KDim),
-            fields=(attrs.ZD_DIFFCOEF_DSL,),
+            fields=(attrs.ZD_DIFFCOEF,),
             params={
                 "thslp_zdiffu": self._config["thslp_zdiffu"],
                 "thhgtd_zdiffu": self._config["thhgtd_zdiffu"],

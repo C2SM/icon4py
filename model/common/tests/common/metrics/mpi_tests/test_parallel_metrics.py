@@ -137,7 +137,7 @@ def test_distributed_metrics_attrs_no_halo(
 @pytest.mark.parametrize(
     "attrs_name, metrics_name",
     [
-        (attrs.ZD_DIFFCOEF_DSL, "zd_diffcoef"),
+        (attrs.ZD_DIFFCOEF, "zd_diffcoef"),
         (attrs.ZD_INTCOEF_DSL, "zd_intcoef"),
         (attrs.ZD_VERTOFFSET_DSL, "zd_vertoffset"),
     ],

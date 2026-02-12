@@ -610,7 +610,7 @@ def test_factory_compute_diffusion_mask_and_coef(
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field = factory.get(attrs.ZD_DIFFCOEF_DSL)
+    field = factory.get(attrs.ZD_DIFFCOEF)
 
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-10)
 

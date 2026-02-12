@@ -222,7 +222,7 @@ def initialize_granules(
         wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
         zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF_DSL),
         zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
-        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
+        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF),
     )
 
     log.info("creating solve nonhydro interpolation state")

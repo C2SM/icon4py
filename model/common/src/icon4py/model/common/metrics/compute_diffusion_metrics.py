@@ -120,7 +120,7 @@ def compute_diffusion_mask_and_coef(
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     n_cells = c2e2c.shape[0]
-    zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
+    zd_diffcoef = array_ns.zeros(shape=(n_cells, nlev))
     k_start, k_end, _ = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
@@ -140,7 +140,7 @@ def compute_diffusion_mask_and_coef(
         if kend > kstart:
             k_range = range(kstart, kend)
 
-            zd_diffcoef_dsl_var = array_ns.maximum(
+            zd_diffcoef_var = array_ns.maximum(
                 0.0,
                 array_ns.maximum(
                     array_ns.sqrt(array_ns.maximum(0.0, maxslp_avg[jc, k_range] - thslp_zdiffu))
@@ -151,9 +151,9 @@ def compute_diffusion_mask_and_coef(
                     ),
                 ),
             )
-            zd_diffcoef_dsl[jc, k_range] = array_ns.minimum(0.002, zd_diffcoef_dsl_var)
+            zd_diffcoef[jc, k_range] = array_ns.minimum(0.002, zd_diffcoef_var)
 
-    return zd_diffcoef_dsl
+    return zd_diffcoef
 
 
 def compute_diffusion_intcoef_and_vertoffset(
