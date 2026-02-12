@@ -821,7 +821,7 @@ class MetricSavepoint(IconSavepoint):
             values=zd_vertoffset,
             indices=(
                 wrapper_common.adjust_fortran_indices(zd_cellidx),
-                self.xp.asarray([0,1,2]),
+                self.xp.asarray([0, 1, 2]),
                 wrapper_common.adjust_fortran_indices(zd_vertidx),
             ),
             default_value=gtx.int32(0),
@@ -838,7 +838,7 @@ class MetricSavepoint(IconSavepoint):
             values=zd_intcoef,
             indices=(
                 wrapper_common.adjust_fortran_indices(zd_cellidx),
-                self.xp.asarray([0,1,2]),
+                self.xp.asarray([0, 1, 2]),
                 wrapper_common.adjust_fortran_indices(zd_vertidx),
             ),
             default_value=gtx.float64(0.0),
