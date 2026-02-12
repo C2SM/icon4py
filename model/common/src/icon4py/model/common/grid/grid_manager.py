@@ -464,7 +464,7 @@ class GridManager:
             keep_skip_values=keep_skip_values,
         )
 
-        grid = icon.icon_grid(
+        self._grid = icon.icon_grid(
             self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID),
             allocator=allocator,
             config=grid_config,
@@ -474,7 +474,6 @@ class GridManager:
             global_properties=global_params,
             refinement_control=refinement_fields,
         )
-        self._grid = grid
 
     def _get_local_connectivities(
         self,
