@@ -197,10 +197,7 @@ class IconLikeHaloConstructor(HaloConstructor):
                 self._props.rank in owning_ranks
             ), f"rank {self._props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
             # assign the index to the rank with the higher rank
-            if max(owning_ranks) > self._props.rank:
-                updated_owner_mask[local_index] = False
-            else:
-                updated_owner_mask[local_index] = True
+            updated_owner_mask[local_index] = max(owning_ranks) <= self._props.rank
         return updated_owner_mask
 
     def __call__(self, cell_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
