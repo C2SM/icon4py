@@ -70,7 +70,7 @@ def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbo
 
 
 @pytest.mark.parametrize("dim", [dims.EdgeDim])
-@pytest.mark.parametrize("rank", [0, 1, 2, 3])
+@pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neighbor_tables):
     processor_props = utils.DummyProps(rank=rank)
     halo_generator = halo.IconLikeHaloConstructor(
