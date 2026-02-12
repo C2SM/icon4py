@@ -154,7 +154,7 @@ SECOND_HALO_LINE = {
     dims.VertexDim: _VERTEX_SECOND_HALO_LINE,
     dims.EdgeDim: _EDGE_SECOND_HALO_LINE,
 }
-THIRD_HALO_INE = {
+THIRD_HALO_LINE = {
     dims.CellDim: {0: [], 1: [], 2: [], 3: []},
     dims.VertexDim: {0: [], 1: [], 2: [], 3: []},
     dims.EdgeDim: _EDGE_THIRD_HALO_LINE,
