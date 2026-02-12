@@ -934,8 +934,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"c2e2c": dims.C2E2CDim},
             domain=(dims.CellDim, dims.C2E2CDim, dims.KDim),
             fields=(
-                attrs.ZD_INTCOEF_DSL,
-                attrs.ZD_VERTOFFSET_DSL,
+                attrs.ZD_INTCOEF,
+                attrs.ZD_VERTOFFSET,
             ),
             params={
                 "thslp_zdiffu": self._config["thslp_zdiffu"],

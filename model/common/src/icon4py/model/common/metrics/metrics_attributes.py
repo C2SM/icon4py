@@ -64,8 +64,8 @@ MAXSLP_AVG: Final[str] = "maxslp_avg"
 MAXHGTD_AVG: Final[str] = "maxhgtd_avg"
 MAX_NBHGT: Final[str] = "max_nbhgt"
 ZD_DIFFCOEF: Final[str] = "zd_diffcoef"
-ZD_INTCOEF_DSL: Final[str] = "zd_intcoef_dsl"
-ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
+ZD_INTCOEF: Final[str] = "zd_intcoef"
+ZD_VERTOFFSET: Final[str] = "zd_vertoffset"
 CELL_HEIGHT_ON_HALF_LEVEL: Final[str] = "vertical_coordinates_on_half_levels"
 
 
@@ -421,20 +421,20 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="zd_diffcoef",
         dtype=ta.wpfloat,
     ),
-    ZD_INTCOEF_DSL: dict(
-        standard_name=ZD_INTCOEF_DSL,
-        long_name="zd_intcoef_dsl",
+    ZD_INTCOEF: dict(
+        standard_name=ZD_INTCOEF,
+        long_name="zd_intcoef",
         units="",
         dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
         icon_var_name="zd_intcoef",
         dtype=ta.wpfloat,
     ),
-    ZD_VERTOFFSET_DSL: dict(
-        standard_name=ZD_VERTOFFSET_DSL,
-        long_name="zd_vertoffset_dsl",
+    ZD_VERTOFFSET: dict(
+        standard_name=ZD_VERTOFFSET,
+        long_name="zd_vertoffset",
         units="",
         dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
-        icon_var_name="zd_vertoffset_dsl",
+        icon_var_name="zd_vertoffset",
         dtype=gtx.int32,
     ),
     CELL_HEIGHT_ON_HALF_LEVEL: dict(

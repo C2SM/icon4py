@@ -633,7 +633,7 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field_1 = factory.get(attrs.ZD_INTCOEF_DSL)
-    field_2 = factory.get(attrs.ZD_VERTOFFSET_DSL)
+    field_1 = factory.get(attrs.ZD_INTCOEF)
+    field_2 = factory.get(attrs.ZD_VERTOFFSET)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())

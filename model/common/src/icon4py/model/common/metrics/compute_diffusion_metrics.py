@@ -175,8 +175,8 @@ def compute_diffusion_intcoef_and_vertoffset(
     nbidx = array_ns.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
 
     z_vintcoeff = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
-    zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev), dtype=gtx.int32)
-    zd_intcoef_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_vertoffset = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev), dtype=gtx.int32)
+    zd_intcoef = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
 
     k_start, k_end, _ = _compute_k_start_end(
         z_mc=z_mc,
@@ -201,10 +201,10 @@ def compute_diffusion_intcoef_and_vertoffset(
                 k_range, z_mc, z_mc_off, z_vintcoeff, jc, nlev
             )
 
-            zd_intcoef_dsl[jc, :, k_range] = z_vintcoeff[jc, :, k_range]
+            zd_intcoef[jc, :, k_range] = z_vintcoeff[jc, :, k_range]
 
-            zd_vertoffset_dsl[jc, :, k_range] = (
+            zd_vertoffset[jc, :, k_range] = (
                 nbidx[jc, :, k_range] - array_ns.tile(array_ns.array(k_range), (3, 1)).T
             )
 
-    return zd_intcoef_dsl, zd_vertoffset_dsl
+    return zd_intcoef, zd_vertoffset

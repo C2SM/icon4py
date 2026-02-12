@@ -194,7 +194,7 @@ def test_compute_diffusion_intcoef_and_vertoffset(
         offset_provider={"C2E2C": icon_grid.get_connectivity("C2E2C")},
     )
 
-    zd_intcoef_dsl, zd_vertoffset_dsl = compute_diffusion_intcoef_and_vertoffset(
+    zd_intcoef, zd_vertoffset = compute_diffusion_intcoef_and_vertoffset(
         c2e2c=c2e2c,
         z_mc=z_mc.asnumpy(),
         max_nbhgt=max_nbhgt.asnumpy(),
@@ -206,5 +206,5 @@ def test_compute_diffusion_intcoef_and_vertoffset(
         cell_nudging=cell_nudging,
         nlev=nlev,
     )
-    assert test_utils.dallclose(zd_vertoffset_dsl, metrics_savepoint.zd_vertoffset().asnumpy())
-    assert test_utils.dallclose(zd_intcoef_dsl, metrics_savepoint.zd_intcoef().asnumpy())
+    assert test_utils.dallclose(zd_vertoffset, metrics_savepoint.zd_vertoffset().asnumpy())
+    assert test_utils.dallclose(zd_intcoef, metrics_savepoint.zd_intcoef().asnumpy())
