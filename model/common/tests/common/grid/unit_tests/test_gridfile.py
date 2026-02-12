@@ -77,17 +77,15 @@ def test_grid_file_vertex_cell_edge_dimensions(
         parser.close()
 
 
-@pytest.mark.parametrize("apply_transformation", (True, False))
-def test_int_variable(experiment: definitions.Experiment, apply_transformation: bool) -> None:
+@pytest.mark.parametrize("apply_offset", (True, False))
+def test_int_variable(experiment: definitions.Experiment, apply_offset: bool) -> None:
     file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         edge_dim = parser.dimension(gridfile.DynamicDimension.EDGE_NAME)
         # use a test field that does not contain Pentagons
-        test_field = parser.int_variable(
-            gridfile.ConnectivityName.C2E, apply_transformation=apply_transformation
-        )
-        min_value = 0 if apply_transformation else 1
-        max_value = edge_dim - 1 if apply_transformation else edge_dim
+        test_field = parser.int_variable(gridfile.ConnectivityName.C2E, apply_offset=apply_offset)
+        min_value = 0 if apply_offset else 1
+        max_value = edge_dim - 1 if apply_offset else edge_dim
         assert min_value == np.min(test_field)
         assert max_value == np.max(test_field)
 
@@ -137,11 +135,11 @@ def test_index_read_for_2d_connectivity(
     file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
     with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
         indices_to_read = np.asarray(selection) if len(selection) > 0 else None
-        full_field = parser.int_variable(field, transpose=True, apply_transformation=apply_offset)
+        full_field = parser.int_variable(field, transpose=True, apply_offset=apply_offset)
         selective_field = parser.int_variable(
             field,
             indices=indices_to_read,
             transpose=True,
-            apply_transformation=apply_offset,
+            apply_offset=apply_offset,
         )
         assert np.allclose(full_field[indices_to_read], selective_field)

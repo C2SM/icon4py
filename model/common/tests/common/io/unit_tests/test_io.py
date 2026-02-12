@@ -104,7 +104,7 @@ def test_io_monitor_create_output_path(test_path):
     monitor = IOMonitor(
         config,
         vertical_params,
-        test_io_utils.simple_grid.config.horizontal_size,
+        test_io_utils.simple_grid.config.horizontal_config,
         test_io_utils.grid_file,
         test_io_utils.simple_grid.id,
     )
