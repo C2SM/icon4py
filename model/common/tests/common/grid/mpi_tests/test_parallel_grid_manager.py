@@ -219,9 +219,6 @@ def test_geometry_fields_compare_single_multi_rank(
     ):
         pytest.xfail("IndexOutOfBounds with embedded backend")
 
-    # TODO(msimberg): Some of these fail with keep_skip_values=True, pass with
-    # keep_skip_values=False. What should it be?
-
     # TODO(msimberg): Add fixtures for single/multi-rank
     # grid/geometry/interpolation/metrics factories.
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
