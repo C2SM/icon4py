@@ -79,8 +79,6 @@ def diffusion_init(
     hdiff_w_efdt_ratio: gtx.float64,
     smagorinski_scaling_factor: gtx.float64,
     hdiff_temp: bool,
-    thslp_zdiffu: float,
-    thhgtd_zdiffu: float,
     denom_diffu_v: float,
     nudge_max_coeff: float,  # note: this is the scaled ICON value, i.e. not the namelist value
     itype_sher: gtx.int32,
