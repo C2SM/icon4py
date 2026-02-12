@@ -165,8 +165,7 @@ def _refinement_level_placed_with_halo(domain: h_grid.Domain) -> int:
     Disadvantage clearly is that in the LAM case the halos are **not contigous**.
     """
     assert domain.zone.is_halo(), "Domain must be a halo Zone."
-    dim = domain.dim
-    match dim:
+    match domain.dim:
         case dims.EdgeDim:
             return 6 if domain.zone == h_grid.Zone.HALO else 4
         case dims.CellDim | dims.VertexDim:
@@ -281,9 +280,8 @@ def compute_domain_bounds(
     end_indices[interior_domain] = start_indices[halo_1]
 
     local_domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
-    halo_1 = h_grid.domain(dim)(h_grid.Zone.HALO)
-    end_indices[local_domain] = start_indices[halo_1]
     start_indices[local_domain] = gtx.int32(0)
+    end_indices[local_domain] = start_indices[halo_1]
 
     return start_indices, end_indices
 
