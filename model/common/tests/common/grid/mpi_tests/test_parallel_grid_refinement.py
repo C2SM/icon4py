@@ -24,9 +24,7 @@ import gt4py.next as gtx
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
 from icon4py.model.testing import definitions, serialbox
-
-from .. import utils
-from ..fixtures import (
+from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
     download_ser_data,
@@ -34,6 +32,8 @@ from ..fixtures import (
     grid_savepoint,
     processor_props,
 )
+
+from .. import utils
 
 
 _log = logging.getLogger(__name__)

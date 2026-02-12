@@ -19,7 +19,6 @@ from icon4py.model.testing import definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures import backend, cpu_allocator
 
 from .. import utils
-from ..fixtures import data_provider, download_ser_data, experiment, grid_savepoint, processor_props
 
 
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
