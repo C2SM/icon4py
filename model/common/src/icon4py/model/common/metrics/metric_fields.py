@@ -724,7 +724,6 @@ def _compute_mask_prog_halo_c(
     return mask_prog_halo_c
 
 
-# TODO(halungge): not registered in factory
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_mask_prog_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],
@@ -747,75 +746,6 @@ def compute_mask_prog_halo_c(
         c_refin_ctrl,
         mask_prog_halo_c,
         out=mask_prog_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-
-@gtx.field_operator
-def _compute_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[int32],
-) -> fa.CellField[bool]:
-    bdy_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), True, False)
-    return bdy_halo_c
-
-
-# TODO(halungge): not registered in factory
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[gtx.int32],
-    bdy_halo_c: fa.CellField[bool],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-):
-    """
-    Compute bdy_halo_c.
-
-    See mo_vertical_grid.f90. bdy_halo_c_dsl_low_refin in ICON
-
-    Args:
-        c_refin_ctrl: Cell field of refin_ctrl
-        bdy_halo_c: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-    """
-    _compute_bdy_halo_c(
-        c_refin_ctrl,
-        out=bdy_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_mask_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[int32],
-    mask_prog_halo_c: fa.CellField[bool],
-    bdy_halo_c: fa.CellField[bool],
-    horizontal_start: int32,
-    horizontal_end: int32,
-):
-    """
-    Compute bdy_halo_c.
-    Compute mask_prog_halo_c.
-
-
-    See mo_vertical_grid.f90. bdy_halo_c_dsl_low_refin in ICON
-
-    Args:
-        c_refin_ctrl: Cell field of refin_ctrl
-        bdy_halo_c: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-    """
-    _compute_mask_prog_halo_c(
-        c_refin_ctrl,
-        mask_prog_halo_c,
-        out=mask_prog_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-    _compute_bdy_halo_c(
-        c_refin_ctrl,
-        out=bdy_halo_c,
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 

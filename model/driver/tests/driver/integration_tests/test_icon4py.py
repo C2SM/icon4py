@@ -205,7 +205,6 @@ def test_run_timeloop_single_step(
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
     nonhydro_metric_state = dycore_states.MetricStateNonHydro(
-        bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
         time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),

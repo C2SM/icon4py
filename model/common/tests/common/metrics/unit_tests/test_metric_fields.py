@@ -490,30 +490,6 @@ def test_compute_mask_prog_halo_c(
     )
 
 
-@pytest.mark.datatest
-def test_compute_bdy_halo_c(
-    metrics_savepoint: sb.MetricSavepoint,
-    icon_grid: base_grid.Grid,
-    grid_savepoint: sb.IconGridSavepoint,
-    backend: gtx_typing.Backend,
-) -> None:
-    bdy_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, allocator=backend)
-    c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
-    bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
-    horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
-    horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
-
-    mf.compute_bdy_halo_c.with_backend(backend)(
-        c_refin_ctrl=c_refin_ctrl,
-        bdy_halo_c=bdy_halo_c_full,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        offset_provider={},
-    )
-
-    assert testing_helpers.dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
-
-
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_compute_horizontal_mask_for_3d_divdamp(

@@ -54,7 +54,7 @@ extern int solve_nh_init_wrapper(
     int geofac_n2s_size_0, int geofac_n2s_size_1, double *geofac_grg_x,
     int geofac_grg_x_size_0, int geofac_grg_x_size_1, double *geofac_grg_y,
     int geofac_grg_y_size_0, int geofac_grg_y_size_1, double *nudgecoeff_e,
-    int nudgecoeff_e_size_0, int *bdy_halo_c, int bdy_halo_c_size_0,
+    int nudgecoeff_e_size_0,
     int *mask_prog_halo_c, int mask_prog_halo_c_size_0, double *rayleigh_w,
     int rayleigh_w_size_0, double *exner_exfac, int exner_exfac_size_0,
     int exner_exfac_size_1, double *exner_ref_mc, int exner_ref_mc_size_0,
