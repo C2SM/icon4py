@@ -84,7 +84,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         # validate the distribution mapping:
         num_cells = self._connectivity(dims.C2E2C).shape[0]
         expected_shape = (num_cells,)
-        if not cell_to_rank_mapping.shape == expected_shape:
+        if cell_to_rank_mapping.shape != expected_shape:
             raise exceptions.ValidationError(
                 "rank_mapping",
                 f"should have shape {expected_shape} but is {cell_to_rank_mapping.shape}",
