@@ -112,7 +112,6 @@ class DiffusionConfig:
     # TODO(halungge): to be read from config
     # TODO(halungge):  handle dependencies on other namelists (see below...)
 
-    # TODO check magdalena's config PR
     def __init__(
         self,
         diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
