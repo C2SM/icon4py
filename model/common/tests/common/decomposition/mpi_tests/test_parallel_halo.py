@@ -13,7 +13,11 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition_defs, halo
+from icon4py.model.common.decomposition import (
+    definitions as decomposition_defs,
+    halo,
+    mpi_decomposition,
+)
 from icon4py.model.common.grid import simple
 from icon4py.model.testing import parallel_helpers
 from icon4py.model.testing.fixtures import processor_props
@@ -22,16 +26,8 @@ from .. import utils
 from ..fixtures import simple_neighbor_tables
 
 
-try:
-    import mpi4py  # import mpi4py to check for optional mpi dependency
-    import mpi4py.MPI
-
-    from icon4py.model.common.decomposition import mpi_decomposition
-
-    # TODO(msimberg): Does every test/module need to do this?
-    mpi_decomposition.init_mpi()
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+if mpi_decomposition.mpi4py is None:
+    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
 _log = logging.getLogger(__name__)

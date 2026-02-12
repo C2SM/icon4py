@@ -17,7 +17,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.decomposition.decomposer import MetisDecomposer
 from icon4py.model.common.grid import base as base_grid, gridfile, horizontal as h_grid
 from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
@@ -40,13 +40,10 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import base as base_grid
 
+if mpi_decomposition.mpi4py is None:
+    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
-try:
-    import mpi4py
-
-    from icon4py.model.common.decomposition import mpi_decomposition
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+from mpi4py import MPI
 
 
 _log = logging.getLogger(__name__)
@@ -60,9 +57,7 @@ def test_props(processor_props: decomposition.ProcessProperties) -> None:
 
     assert processor_props.comm
 
-    assert isinstance(
-        processor_props.comm, mpi4py.MPI.Comm
-    ), "comm needs to be an instance of MPI.Comm"
+    assert isinstance(processor_props.comm, MPI.Comm), "comm needs to be an instance of MPI.Comm"
     ghex.make_context(processor_props.comm)
 
 

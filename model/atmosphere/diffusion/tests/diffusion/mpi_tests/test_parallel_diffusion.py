@@ -22,6 +22,9 @@ from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
+if mpi_decomposition.mpi4py is None:
+    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
+
 _log = logging.getLogger(__file__)
 
 

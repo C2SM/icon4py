@@ -8,20 +8,10 @@
 
 import logging
 
+import gt4py.next as gtx
 import pytest
 
-
-try:
-    import mpi4py
-    import mpi4py.MPI
-
-    from icon4py.model.common.decomposition import mpi_decomposition
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
-
-import gt4py.next as gtx
-
-from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
 from icon4py.model.testing import definitions, serialbox
 from icon4py.model.testing.fixtures.datatest import (
@@ -35,6 +25,9 @@ from icon4py.model.testing.fixtures.datatest import (
 
 from .. import utils
 
+
+if mpi_decomposition.mpi4py is None:
+    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 _log = logging.getLogger(__name__)
 

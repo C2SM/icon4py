@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import geometry, geometry_attributes as attrs, horizontal as h_grid
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -36,13 +36,12 @@ from ...fixtures import (
 from .. import utils
 
 
-try:
-    from icon4py.model.common.decomposition import mpi_decomposition
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
-
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
+
+if mpi_decomposition.mpi4py is None:
+    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
+
 
 edge_domain = h_grid.domain(dims.EdgeDim)
 lb_local = edge_domain(h_grid.Zone.LOCAL)
