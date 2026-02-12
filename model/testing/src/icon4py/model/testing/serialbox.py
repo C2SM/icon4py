@@ -615,10 +615,6 @@ class InterpolationSavepoint(IconSavepoint):
             (dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 1], allocator=self.backend
         )
 
-    @IconSavepoint.optionally_registered()
-    def zd_intcoef(self):
-        return self._get_field("vcoef", dims.CellDim, dims.C2E2CDim, dims.KDim)
-
     def geofac_n2s(self):
         return self._get_field("geofac_n2s", dims.CellDim, dims.C2E2CODim)
 
@@ -807,14 +803,6 @@ class MetricSavepoint(IconSavepoint):
     def geopot(self):
         return self._get_field("geopot", dims.CellDim, dims.KDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim)
-    def zd_intcoef(self):
-        return self._read_and_reorder_sparse_field("vcoef")
-
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
-    def zd_vertoffset(self):
-        return self._read_and_reorder_sparse_field("zd_vertoffset")
-
     @IconSavepoint.optionally_registered()
     def zd_cellidx(self):
         return np.squeeze(self.serializer.read("zd_cellidx", self.savepoint))
@@ -822,6 +810,40 @@ class MetricSavepoint(IconSavepoint):
     @IconSavepoint.optionally_registered()
     def zd_vertidx(self):
         return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
+    def zd_vertoffset(self):
+        zd_cellidx = self.zd_cellidx()
+        zd_vertidx = self.zd_vertidx()
+        zd_vertoffset = np.squeeze(self.serializer.read("zd_vertoffset", self.savepoint))
+        return wrapper_common.list2field(
+            domain=(dims.CellDim, dims.C2E2CDim, dims.KDim),
+            values=zd_vertoffset,
+            indices=(
+                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                self.xp.asarray([0,1,2]),
+                wrapper_common.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.int32(0),
+            allocator=model_backends.get_allocator(self.backend),
+        )
+
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim)
+    def zd_intcoef(self):
+        zd_cellidx = self.zd_cellidx()
+        zd_vertidx = self.zd_vertidx()
+        zd_intcoef = np.squeeze(self.serializer.read("zd_intcoef", self.savepoint))
+        return wrapper_common.list2field(
+            domain=(dims.CellDim, dims.C2E2CDim, dims.KDim),
+            values=zd_intcoef,
+            indices=(
+                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                self.xp.asarray([0,1,2]),
+                wrapper_common.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
     @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
     def zd_diffcoef(self):
