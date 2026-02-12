@@ -206,7 +206,6 @@ def test_geometry_fields_compare_single_multi_rank(
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
 
-    # backend is embedded and in list of edge_normal* attributes, xfail
     if (
         test_utils.is_embedded(backend)
         and attrs_name
