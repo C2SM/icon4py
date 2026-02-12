@@ -68,6 +68,16 @@ Int32Array3D: TypeAlias = Annotated[
     ),
 ]
 
+Int32Array4D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=4,
+        dtype=ts.ScalarKind.INT32,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=False,
+    ),
+]
+
 Float64Array1D: TypeAlias = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(

@@ -65,10 +65,9 @@ def diffusion_init(
     rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
     rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
     zd_cellidx: wrapper_common.Int32Array1D | None,
-    zd_vertidx: wrapper_common.Int32Array1D | None,
-    zd_vertoffset: wrapper_common.Int32Array3D | None,
-    zd_diffcoef: wrapper_common.Float64Array1D | None,
+    zd_vertidx: wrapper_common.Int32Array4D | None,
     zd_intcoef: wrapper_common.Float64Array3D | None,
+    zd_diffcoef: wrapper_common.Float64Array1D | None,
     ndyn_substeps: gtx.int32,
     diffusion_type: gtx.int32,
     hdiff_w: bool,
@@ -130,12 +129,52 @@ def diffusion_init(
         dims.KDim: nlev,
     }
     xp = wgtfac_c.array_ns
-    if zd_diffcoef is None:
+
+    if zd_cellidx is None:
+        # then l_zdiffu_t = .false. and these are all not initialized
         zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype)
-    if zd_intcoef is None:
         zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
-    if zd_vertoffset is None:
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
+    else:
+        # transform lists to fields
+        #
+        # these are the three k offsets for the C2E2C neighbors
+        zd_vertoffset = zd_vertidx[1:,:] - zd_vertidx[0,:]
+        # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
+        zd_vertidx = zd_vertidx[0,:]
+        zd_diffcoef = wrapper_common.list2field(
+            domain=cell_k_domain,
+            values=zd_diffcoef,
+            indices=(
+                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                wrapper_common.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+        zd_intcoef = wrapper_common.list2field(
+            domain=cell_c2e2c_k_domain,
+            values=zd_intcoef,
+            indices=(
+                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                xp.asarray([0, 1, 2]),
+                wrapper_common.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+        zd_vertoffset = wrapper_common.list2field(
+            domain=cell_c2e2c_k_domain,
+            values=zd_vertoffset,
+            indices=(
+                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                xp.asarray([0, 1, 2]),
+                wrapper_common.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.int32(0),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+
     # Metric state
     metric_state = DiffusionMetricState(
         theta_ref_mc=theta_ref_mc,

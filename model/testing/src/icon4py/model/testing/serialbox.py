@@ -809,15 +809,22 @@ class MetricSavepoint(IconSavepoint):
 
     @IconSavepoint.optionally_registered()
     def zd_vertidx(self):
-        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
+        # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
+        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[0,:]
 
     @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
     def zd_vertoffset(self):
         zd_cellidx = self.zd_cellidx()
         zd_vertidx = self.zd_vertidx()
-        zd_vertoffset = np.squeeze(self.serializer.read("zd_vertoffset", self.savepoint))
+        # these are the three k offsets for the C2E2C neighbors
+        zd_vertoffset = np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[1:,:] - zd_vertidx
+        cell_c2e2c_k_domain = gtx.domain({
+            dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
+            dims.C2E2CDim: 3,
+            dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
+        })
         return wrapper_common.list2field(
-            domain=(dims.CellDim, dims.C2E2CDim, dims.KDim),
+            domain=cell_c2e2c_k_domain,
             values=zd_vertoffset,
             indices=(
                 wrapper_common.adjust_fortran_indices(zd_cellidx),
@@ -833,8 +840,13 @@ class MetricSavepoint(IconSavepoint):
         zd_cellidx = self.zd_cellidx()
         zd_vertidx = self.zd_vertidx()
         zd_intcoef = np.squeeze(self.serializer.read("zd_intcoef", self.savepoint))
+        cell_c2e2c_k_domain = gtx.domain({
+            dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
+            dims.C2E2CDim: 3,
+            dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
+        })
         return wrapper_common.list2field(
-            domain=(dims.CellDim, dims.C2E2CDim, dims.KDim),
+            domain=cell_c2e2c_k_domain,
             values=zd_intcoef,
             indices=(
                 wrapper_common.adjust_fortran_indices(zd_cellidx),
@@ -849,10 +861,10 @@ class MetricSavepoint(IconSavepoint):
     def zd_diffcoef(self):
         zd_cellidx = self.zd_cellidx()
         zd_vertidx = self.zd_vertidx()
-        zd_diffcoeff = np.squeeze(self.serializer.read("zd_diffcoef", self.savepoint))
+        zd_diffcoef = np.squeeze(self.serializer.read("zd_diffcoef", self.savepoint))
         return wrapper_common.list2field(
             domain=self.geopot().domain,
-            values=zd_diffcoeff,
+            values=zd_diffcoef,
             indices=(
                 wrapper_common.adjust_fortran_indices(zd_cellidx),
                 wrapper_common.adjust_fortran_indices(zd_vertidx),
