@@ -10,6 +10,7 @@ import logging
 import math
 
 import icon4py.model.common.utils as common_utils
+from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import (
@@ -117,8 +118,11 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )  # latitude of the perturb centre in baroclinic wave test (jw_baroclinic_amplitude !=0)
 
     # Initialize prognostic state, diagnostic state and other local fields
+    # NOTE(ricoh): [c34] ntracer=0, according to exp.exclaim_nh35_tri_jws_sb
     prognostic_state_now = prognostics.initialize_prognostic_state(
-        grid=grid, allocator=concrete_backend.allocator
+        grid=grid,
+        allocator=concrete_backend.allocator,
+        ntracer=0,
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(
         grid=grid, allocator=concrete_backend.allocator
@@ -320,11 +324,16 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     prep_adv = dycore_states.initialize_prep_advection(
         grid=grid, allocator=concrete_backend.allocator
     )
+    # NOTE(ricoh): [c34] zero-initialized
+    tracer_advection_diagnostic_state = advection_states.initialize_advection_diagnostic_state(
+        grid=grid, allocator=concrete_backend.allocator
+    )
     log.info("Initialization completed.")
 
     ds = driver_states.DriverStates(
         prep_advection_prognostic=prep_adv,
         solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
+        tracer_advection_diagnostic=tracer_advection_diagnostic_state,
         diffusion_diagnostic=diffusion_diagnostic_state,
         prognostics=prognostic_states,
         diagnostic=diagnostic_state,

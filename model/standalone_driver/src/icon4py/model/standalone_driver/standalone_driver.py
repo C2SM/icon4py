@@ -16,7 +16,7 @@ import gt4py.next as gtx
 from gt4py.next import config as gtx_config, metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.atmosphere.advection import advection
+from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
@@ -96,6 +96,7 @@ class Icon4pyDriver:
     ) -> None:
         diffusion_diagnostic_state = ds.diffusion_diagnostic
         solve_nonhydro_diagnostic_state = ds.solve_nonhydro_diagnostic
+        tracer_advection_diagnostic_state = ds.tracer_advection_diagnostic
         prognostic_states = ds.prognostics
         prep_adv = ds.prep_advection_prognostic
 
@@ -125,6 +126,7 @@ class Icon4pyDriver:
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
+                tracer_advection_diagnostic_state,
                 prognostic_states,
                 prep_adv,
                 do_prep_adv,
@@ -151,6 +153,7 @@ class Icon4pyDriver:
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
@@ -178,8 +181,16 @@ class Icon4pyDriver:
                 )
             timer_diffusion.capture()
 
-        # NOTE (ricoh): [c34] something like
-        # NOTE (ricoh): self.tracer_advection.run(...) # pass list of tracers (or by default step all of the initialized ones)
+        # NOTE (ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
+        # NOTE (ricoh): self.tracer_advection.run(..., p_tracers_now=prognostic_states.now.tracer, p_tracers_new=prognostic_states.new.tracer, ...)
+        for tracer_idx in range(self.config.ntracer):
+            self.tracer_advection.run(
+                diagnostic_state=tracer_advection_diagnostic_state,
+                prep_adv=prep_adv,
+                p_tracer_now=prognostic_states.now.tracer[tracer_idx],
+                p_tracer_new=prognostic_states.next.tracer[tracer_idx],
+                dtime=self.model_time_variables.dtime_in_seconds,
+            )
 
         prognostic_states.swap()
 
@@ -499,12 +510,12 @@ def _read_config(
         velocity_boundary_diffusion_denom=200.0,
     )
 
-    # TODO (ricoh): [c34] check config correctness
+    # NOTE(ricoh): [c34] ICON defaults
     advection_config = advection.AdvectionConfig(
-        horizontal_advection_limiter=advection.HorizontalAdvectionLimiter.NO_LIMITER,
+        horizontal_advection_limiter=advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
         horizontal_advection_type=advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-        vertical_advection_limiter=advection.VerticalAdvectionLimiter.NO_LIMITER,
-        vertical_advection_type=advection.VerticalAdvectionType.UPWIND_1ST_ORDER,
+        vertical_advection_limiter=advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+        vertical_advection_type=advection.VerticalAdvectionType.PPM_3RD_ORDER,
     )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(

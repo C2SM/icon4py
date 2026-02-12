@@ -34,3 +34,4 @@ class DriverConfig:
     vertical_cfl_threshold: ta.wpfloat = 0.85
     ndyn_substeps: int = 5
     enable_statistics_output: bool = False
+    ntracer: int = 0  # this is the default in ICON

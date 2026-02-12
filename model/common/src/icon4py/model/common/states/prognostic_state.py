@@ -35,6 +35,9 @@ class PrognosticState:
     ]  # horizontal wind normal to edges, vn(nproma, nlev, nblks_e)  [m/s]
     exner: fa.CellKField[ta.wpfloat]  # exner function, exner(nrpoma, nlev, nblks_c)
     theta_v: fa.CellKField[ta.wpfloat]  # virtual temperature, (nproma, nlev, nlbks_c) [K]
+    tracer: list[
+        fa.CellKField[ta.wpfloat]
+    ]  # tracer concentration (nproma,nlev,nblks_c,ntracer) [kg/kg]
 
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:
@@ -44,6 +47,7 @@ class PrognosticState:
 def initialize_prognostic_state(
     grid: icon_grid.IconGrid,
     allocator: gtx_typing.FieldBufferAllocationUtil,
+    ntracer: int = 0,
 ) -> PrognosticState:
     """Initialize the prognostic state with zero fields."""
     rho = data_alloc.zero_field(
@@ -82,4 +86,14 @@ def initialize_prognostic_state(
         allocator=allocator,
         dtype=ta.wpfloat,
     )
-    return PrognosticState(rho=rho, w=w, vn=vn, exner=exner, theta_v=theta_v)
+    tracer = [
+        data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            allocator=allocator,
+            dtype=ta.wpfloat,
+        )
+        for _ in range(ntracer)
+    ]
+    return PrognosticState(rho=rho, w=w, vn=vn, exner=exner, theta_v=theta_v, tracer=tracer)

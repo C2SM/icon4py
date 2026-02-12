@@ -17,6 +17,7 @@ from typing import NamedTuple
 import devtools
 
 import icon4py.model.common.utils as common_utils
+from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import type_alias as ta
@@ -62,6 +63,7 @@ class DriverStates(NamedTuple):
 
     prep_advection_prognostic: dycore_states.PrepAdvection
     solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro
+    tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState

@@ -317,6 +317,7 @@ def test_benchmark_solve_nonhydro(
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        tracer=[],
     )
     prognostic_state_nnew = prognostics.PrognosticState(
         w=data_alloc.random_field(
@@ -326,6 +327,7 @@ def test_benchmark_solve_nonhydro(
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        tracer=[],
     )
 
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
