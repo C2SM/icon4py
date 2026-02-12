@@ -14,7 +14,7 @@ import logging
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
+from typing import Any, ClassVar, Final, Union
 
 import dace  # type: ignore[import-untyped]
 import numpy as np
@@ -48,9 +48,6 @@ except ImportError:
     mpi4py = None  # type: ignore   [assignment]
     ghex = None
     unstructured = None
-
-if TYPE_CHECKING:
-    import mpi4py.MPI
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
