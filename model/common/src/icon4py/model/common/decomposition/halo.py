@@ -120,7 +120,7 @@ class IconLikeHaloConstructor(HaloConstructor):
                 f"Connectivity for offset {offset} is not available"
             ) from err
 
-    def next_halo_line(self, cells: data_alloc.NDArray) -> data_alloc.NDArray:
+    def _next_halo_line(self, cells: data_alloc.NDArray) -> data_alloc.NDArray:
         """Returns the full-grid indices of the next halo line.
 
         Args:
@@ -143,18 +143,18 @@ class IconLikeHaloConstructor(HaloConstructor):
         """Find all neighboring cells of a list of cells."""
         return self._find_neighbors(cells, dims.C2E2C)
 
-    def find_edge_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
+    def _find_edge_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
         return self._find_neighbors(cell_line, dims.C2E)
 
-    def find_edge_neighbors_for_vertices(
+    def _find_edge_neighbors_for_vertices(
         self, vertex_line: data_alloc.NDArray
     ) -> data_alloc.NDArray:
         return self._find_neighbors(vertex_line, dims.V2E)
 
-    def find_vertex_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
+    def _find_vertex_neighbors_for_cells(self, cell_line: data_alloc.NDArray) -> data_alloc.NDArray:
         return self._find_neighbors(cell_line, dims.C2V)
 
-    def find_cell_neighbors_for_vertices(
+    def _find_cell_neighbors_for_vertices(
         self, vertex_line: data_alloc.NDArray
     ) -> data_alloc.NDArray:
         return self._find_neighbors(vertex_line, dims.V2C)
@@ -301,14 +301,14 @@ class IconLikeHaloConstructor(HaloConstructor):
 
         #: cells
         owned_cells = self.owned_cells(cell_to_rank)
-        first_halo_cells = self.next_halo_line(owned_cells)
+        first_halo_cells = self._next_halo_line(owned_cells)
         #: vertices
-        vertex_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
-        vertex_on_halo_cells = self.find_vertex_neighbors_for_cells(
+        vertex_on_owned_cells = self._find_vertex_neighbors_for_cells(owned_cells)
+        vertex_on_halo_cells = self._find_vertex_neighbors_for_cells(
             self._xp.hstack(
                 (
                     first_halo_cells,
-                    (self.next_halo_line(self._xp.union1d(first_halo_cells, owned_cells))),
+                    (self._next_halo_line(self._xp.union1d(first_halo_cells, owned_cells))),
                 )
             )
         )
@@ -317,20 +317,20 @@ class IconLikeHaloConstructor(HaloConstructor):
         all_vertices = self._xp.hstack((vertex_on_owned_cells, vertex_second_halo))
 
         #: update cells to include all cells of the "dual cell" (hexagon) for nodes on the cutting line
-        dual_cells = self.find_cell_neighbors_for_vertices(vertex_on_cutting_line)
+        dual_cells = self._find_cell_neighbors_for_vertices(vertex_on_cutting_line)
         total_halo_cells = self._xp.setdiff1d(dual_cells, owned_cells)
         second_halo_cells = self._xp.setdiff1d(total_halo_cells, first_halo_cells)
         all_cells = self._xp.hstack((owned_cells, first_halo_cells, second_halo_cells))
 
         #: edges
-        edge_on_owned_cells = self.find_edge_neighbors_for_cells(owned_cells)
-        edge_on_any_halo_line = self.find_edge_neighbors_for_cells(total_halo_cells)
+        edge_on_owned_cells = self._find_edge_neighbors_for_cells(owned_cells)
+        edge_on_any_halo_line = self._find_edge_neighbors_for_cells(total_halo_cells)
 
         edge_on_cutting_line = self._xp.intersect1d(edge_on_owned_cells, edge_on_any_halo_line)
 
         # needs to be defined as vertex neighbor due to "corners" in the cut.
         edge_second_level = self._xp.setdiff1d(
-            self.find_edge_neighbors_for_vertices(vertex_on_cutting_line), edge_on_owned_cells
+            self._find_edge_neighbors_for_vertices(vertex_on_cutting_line), edge_on_owned_cells
         )
         edge_third_level = self._xp.setdiff1d(edge_on_any_halo_line, edge_second_level)
         edge_third_level = self._xp.setdiff1d(edge_third_level, edge_on_cutting_line)
