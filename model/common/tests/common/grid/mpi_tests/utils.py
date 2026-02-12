@@ -18,8 +18,13 @@ def _grid_manager(file: pathlib.Path, num_levels: int) -> gm.GridManager:
     )
 
 
-def run_grid_manager_for_single_rank(file: pathlib.Path) -> gm.GridManager:
-    manager = _grid_manager(file, NUM_LEVELS)
+NUM_LEVELS = 10
+
+
+def run_grid_manager_for_single_rank(
+    file: pathlib.Path, num_levels: int = NUM_LEVELS
+) -> gm.GridManager:
+    manager = _grid_manager(file, num_levels)
     manager(
         keep_skip_values=True,
         run_properties=decomp_defs.SingleNodeProcessProperties(),
@@ -33,12 +38,10 @@ def run_grid_manager_for_multi_rank(
     file: pathlib.Path,
     run_properties: decomp_defs.ProcessProperties,
     decomposer: decomp.Decomposer,
+    num_levels: int = NUM_LEVELS,
 ) -> gm.GridManager:
-    manager = _grid_manager(file, NUM_LEVELS)
+    manager = _grid_manager(file, num_levels)
     manager(
         keep_skip_values=True, allocator=None, run_properties=run_properties, decomposer=decomposer
     )
     return manager
-
-
-NUM_LEVELS = 10

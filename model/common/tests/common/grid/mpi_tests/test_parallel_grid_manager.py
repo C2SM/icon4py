@@ -378,10 +378,6 @@ def test_metrics_fields_compare_single_multi_rank(
     attrs_name: str,
     dim: gtx.Dimension,
 ) -> None:
-    # TODO(msimberg): Currently segfaults. Are topography and vertical fields
-    # set up correctly?
-    pytest.xfail("Segfault")
-
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
 
@@ -424,7 +420,7 @@ def test_metrics_fields_compare_single_multi_rank(
     )
 
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file)
+    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file, experiment.num_levels)
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
         grid=single_rank_grid_manager.grid,
@@ -473,6 +469,7 @@ def test_metrics_fields_compare_single_multi_rank(
         file=file,
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
+        num_levels=experiment.num_levels,
     )
     _log.info(
         f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
