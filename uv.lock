@@ -28,15 +28,6 @@ members = [
 ]
 
 [[package]]
-name = "aenum"
-version = "3.1.16"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/09/7a/61ed58e8be9e30c3fe518899cc78c284896d246d51381bab59b5db11e1f3/aenum-3.1.16.tar.gz", hash = "sha256:bfaf9589bdb418ee3a986d85750c7318d9d2839c1b1a1d6fe8fc53ec201cf140", size = 137693, upload-time = "2026-01-12T22:34:38.819Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/52/6ad8f63ec8da1bf40f96996d25d5b650fdd38f5975f8c813732c47388f18/aenum-3.1.16-py3-none-any.whl", hash = "sha256:9035092855a98e41b66e3d0998bd7b96280e85ceb3a04cc035636138a1943eaf", size = 165627, upload-time = "2025-04-25T03:17:58.89Z" },
-]
-
-[[package]]
 name = "alabaster"
 version = "0.7.16"
 source = { registry = "https://pypi.org/simple" }
@@ -912,10 +903,9 @@ wheels = [
 
 [[package]]
 name = "dace"
-version = "43!2026.2.3"
+version = "43!2026.2.12"
 source = { registry = "https://gridtools.github.io/pypi/" }
 dependencies = [
-    { name = "aenum" },
     { name = "astunparse" },
     { name = "dill" },
     { name = "fparser" },
@@ -929,7 +919,7 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://gridtools.github.io/pypi/dace/dace-43!2026.2.3-py3-none-any.whl", hash = "sha256:0fc94ef1dfb8078ffdc0943b5a06dbb5ae63a335235ba5e9ce6571f935e96f66" },
+    { url = "https://gridtools.github.io/pypi/dace/dace-43!2026.2.12-py3-none-any.whl", hash = "sha256:67c27b0cc46eaaa407fd3bb70508fa100d3b58ae6f311470db075a4335f71341" },
 ]
 
 [[package]]
@@ -1888,7 +1878,7 @@ requires-dist = [
     { name = "cftime", marker = "extra == 'io'", specifier = ">=1.6.3" },
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
-    { name = "dace", specifier = "==43!2026.2.3", index = "https://gridtools.github.io/pypi/" },
+    { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
     { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=main" },
