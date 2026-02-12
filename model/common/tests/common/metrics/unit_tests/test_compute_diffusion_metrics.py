@@ -65,8 +65,9 @@ def test_compute_diffusion_mask_and_coeff(
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     z_mc = metrics_savepoint.z_mc()
-    thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125.0
+    (_, _, _, _, _, _, _, _, thslp_zdiffu, thhgtd_zdiffu) = definitions.construct_metrics_config(
+        experiment
+    )
     cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
 
     cell_lateral = icon_grid.start_index(
@@ -122,7 +123,7 @@ def test_compute_diffusion_mask_and_coeff(
         cell_nudging=cell_nudging,
         nlev=nlev,
     )
-    assert test_utils.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
+    assert (mask_hdiff == metrics_savepoint.mask_hdiff().asnumpy()).all()
     assert test_utils.dallclose(
         zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
     )
@@ -148,8 +149,9 @@ def test_compute_diffusion_intcoef_and_vertoffset(
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     z_mc = metrics_savepoint.z_mc()
-    thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125.0
+    (_, _, _, _, _, _, _, _, thslp_zdiffu, thhgtd_zdiffu) = definitions.construct_metrics_config(
+        experiment
+    )
     cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
 
     cell_lateral = icon_grid.start_index(
