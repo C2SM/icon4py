@@ -11,7 +11,7 @@ from dace import nodes as dace_nodes, sdfg as dace_sdfg
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 
-def _graupel_run_self_copy_removal_in_scan(scan_sdfg):
+def _graupel_run_self_copy_removal_in_scan(scan_sdfg) -> None:
     assert len(scan_sdfg.nodes()) == 2
     assert isinstance(scan_sdfg.nodes()[1], dace_sdfg.state.LoopRegion)
     scan_loop = scan_sdfg.nodes()[1]
@@ -53,7 +53,6 @@ def _graupel_run_self_copy_removal_in_scan(scan_sdfg):
             if else_st.out_degree(dst_node) != 0:
                 continue
             assert not dst_node.desc(nsdfg).transient
-            nodes_to_remove.extend([src_node, dst_node])
             # reroute the outer write, by using inout data
             assert (
                 len(list(scan_compute_st.out_edges_by_connector(if_stmt_node, dst_node.data))) == 1
@@ -63,6 +62,8 @@ def _graupel_run_self_copy_removal_in_scan(scan_sdfg):
             )
             outer_src_node = outer_read_edge.src
             assert isinstance(outer_src_node, dace_nodes.AccessNode)
+            if not outer_src_node.desc(scan_sdfg).transient:
+                continue
             outer_write_edge = next(
                 scan_compute_st.out_edges_by_connector(if_stmt_node, dst_node.data)
             )
@@ -128,6 +129,7 @@ def _graupel_run_self_copy_removal_in_scan(scan_sdfg):
             scan_update_st.remove_node(update_src_node)
             # now it is safe to remove the data descriptor
             scan_sdfg.remove_data(outer_dst_node.data)
+            nodes_to_remove.extend([src_node, dst_node])
             print(f"Remove write {self_copy_edge} in {nsdfg.label}.")
         else_st.remove_nodes_from(nodes_to_remove)
         if else_st.is_empty():
@@ -148,19 +150,19 @@ def graupel_run_top_level_dataflow_pre(sdfg: dace.SDFG) -> None:
         )
         == 1
     )
-    scan_sdfg = next(
+    scan_nsdfg_node = next(
         node
         for node in st.nodes()
         if isinstance(node, dace_nodes.NestedSDFG) and node.label.startswith("scan_")
-    ).sdfg
-    _graupel_run_self_copy_removal_in_scan(scan_sdfg)
+    )
+    _graupel_run_self_copy_removal_in_scan(scan_nsdfg_node.sdfg)
     sdfg.validate()
+
+    sdfg.save("graupel_run_top_level_dataflow_pre_at_exit.sdfg")
 
     gtx_transformations.gt_simplify(
         sdfg=sdfg,
-        validate=False,
+        validate=True,
         skip=gtx_transformations.constants._GT_AUTO_OPT_INITIAL_STEP_SIMPLIFY_SKIP_LIST,
         validate_all=False,
     )
-
-    sdfg.save("graupel_run_top_level_dataflow_pre_at_exit.sdfg")
