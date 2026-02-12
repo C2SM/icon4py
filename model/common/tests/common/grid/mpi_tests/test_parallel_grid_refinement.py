@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import logging
+
 import pytest
 
 
@@ -34,6 +36,9 @@ from ..fixtures import (
 )
 
 
+_log = logging.getLogger(__name__)
+
+
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_compute_domain_bounds(
@@ -58,7 +63,7 @@ def test_compute_domain_bounds(
         ref_end_index = ref_grid.end_index(domain)
         computed_start = start_indices[domain]
         computed_end = end_indices[domain]
-        print(
+        _log.info(
             f"rank = {processor_props.rank}/{processor_props.comm_size}: domain={domain} : start = {computed_start} end = {computed_end} "
         )
         assert (

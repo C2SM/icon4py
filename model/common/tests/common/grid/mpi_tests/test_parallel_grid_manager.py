@@ -45,7 +45,7 @@ try:
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
-log = logging.getLogger(__file__)
+_log = logging.getLogger(__file__)
 
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -84,12 +84,12 @@ def _get_neighbor_tables(grid: base.Grid) -> dict:
 
 def gather_field(field: np.ndarray, props: decomp_defs.ProcessProperties) -> tuple:
     constant_dims = tuple(field.shape[1:])
-    print(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
+    _log.info(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
     constant_length = functools.reduce(operator.mul, constant_dims, 1)
     local_sizes = np.array(props.comm.gather(field.size, root=0))
     if props.rank == 0:
         recv_buffer = np.empty(np.sum(local_sizes), dtype=field.dtype)
-        print(
+        _log.info(
             f"gather_field on rank = {props.rank} - setup receive buffer with size {sum(local_sizes)} on rank 0"
         )
     else:
@@ -98,7 +98,7 @@ def gather_field(field: np.ndarray, props: decomp_defs.ProcessProperties) -> tup
     props.comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
     if props.rank == 0:
         local_first_dim = tuple(sz // constant_length for sz in local_sizes)
-        print(
+        _log.info(
             f" gather_field on rank = 0: computed local dims {local_first_dim} - constant dims {constant_dims}"
         )
         gathered_field = recv_buffer.reshape((-1, *constant_dims))  # type: ignore [union-attr]
@@ -115,7 +115,7 @@ def check_local_global_field(
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
 ) -> None:
-    print(
+    _log.info(
         f" rank= {processor_props.rank}/{processor_props.comm_size}----exchanging field of main dim {dim}"
     )
     assert (
@@ -155,20 +155,20 @@ def check_local_global_field(
     )
 
     if processor_props.rank == 0:
-        print(f"rank = {processor_props.rank}: asserting gathered fields: ")
+        _log.info(f"rank = {processor_props.rank}: asserting gathered fields: ")
 
         assert np.all(
             gathered_sizes == global_index_sizes
         ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
-        print(
+        _log.info(
             f"rank = {processor_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
-        print(
+        _log.info(
             f"rank = {processor_props.rank}:                      --- gathered field has size {gathered_sizes}"
         )
         sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)  # type: ignore [attr-defined]
         sorted_[gathered_global_indices] = gathered_field
-        print(
+        _log.info(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
@@ -226,7 +226,7 @@ def test_geometry_fields_compare_single_multi_rank(
     # TODO(msimberg): Add fixtures for single/multi-rank
     # grid/geometry/interpolation/metrics factories.
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
-    print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
     single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file)
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
@@ -236,7 +236,7 @@ def test_geometry_fields_compare_single_multi_rank(
         extra_fields=single_rank_grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
     )
-    print(
+    _log.info(
         f"rank = {processor_props.rank} : single node grid has size {single_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
     )
 
@@ -245,10 +245,10 @@ def test_geometry_fields_compare_single_multi_rank(
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
     )
-    print(
+    _log.info(
         f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
     )
-    print(
+    _log.info(
         f"rank = {processor_props.rank}: halo size for 'CellDim' "
         f"(1: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
         f"(2: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
@@ -270,7 +270,7 @@ def test_geometry_fields_compare_single_multi_rank(
         local_field=multi_rank_geometry.get(attrs_name).asnumpy(),
     )
 
-    print(f"rank = {processor_props.rank} - DONE")
+    _log.info(f"rank = {processor_props.rank} - DONE")
 
 
 @pytest.mark.mpi
@@ -299,7 +299,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
-    print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
     single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file)
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
@@ -317,7 +317,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         metadata=interpolation_attributes.attrs,
         exchange=decomp_defs.SingleNodeExchange(),
     )
-    print(
+    _log.info(
         f"rank = {processor_props.rank} : single node grid has size {single_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
     )
 
@@ -326,10 +326,10 @@ def test_interpolation_fields_compare_single_multi_rank(
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
     )
-    print(
+    _log.info(
         f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
     )
-    print(
+    _log.info(
         f"rank = {processor_props.rank}: halo size for 'CellDim' "
         f"(1: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
         f"(2: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
@@ -364,7 +364,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         local_field=field,
     )
 
-    print(f"rank = {processor_props.rank} - DONE")
+    _log.info(f"rank = {processor_props.rank} - DONE")
 
 
 @pytest.mark.mpi
@@ -422,7 +422,7 @@ def test_metrics_fields_compare_single_multi_rank(
         ),
     )
 
-    print(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
     single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file)
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
@@ -464,7 +464,7 @@ def test_metrics_fields_compare_single_multi_rank(
         thhgtd_zdiffu=thhgtd_zdiffu,
         exchange=decomp_defs.SingleNodeExchange(),
     )
-    print(
+    _log.info(
         f"rank = {processor_props.rank} : single node grid has size {single_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
     )
 
@@ -473,10 +473,10 @@ def test_metrics_fields_compare_single_multi_rank(
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
     )
-    print(
+    _log.info(
         f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
     )
-    print(
+    _log.info(
         f"rank = {processor_props.rank}: halo size for 'CellDim' "
         f"(1: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
         f"(2: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
@@ -537,7 +537,7 @@ def test_metrics_fields_compare_single_multi_rank(
         local_field=field,
     )
 
-    print(f"rank = {processor_props.rank} - DONE")
+    _log.info(f"rank = {processor_props.rank} - DONE")
 
 
 @pytest.mark.mpi

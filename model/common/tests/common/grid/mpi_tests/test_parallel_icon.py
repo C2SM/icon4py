@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
@@ -46,6 +47,9 @@ try:
     from icon4py.model.common.decomposition import mpi_decomposition
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+
+
+_log = logging.getLogger(__name__)
 
 
 @pytest.mark.mpi
@@ -95,12 +99,12 @@ def test_start_index_end_index_local_zone_on_distributed_lam_grid(
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
-    print(
+    _log.info(
         f"rank {processor_props.rank}/{processor_props.comm_size} dim = {dim} : {icon_grid.size[dim]}"
     )
     # local still runs entire field:
     assert icon_grid.start_index(domain) == 0
-    print(
+    _log.info(
         f"rank {processor_props.rank}/{processor_props.comm_size} dim = {dim}  LOCAL : ({icon_grid.start_index(domain)}, {icon_grid.end_index(domain)})"
     )
     assert (
@@ -171,7 +175,7 @@ def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
     start_index = icon_grid.start_index(domain)
     end_index = icon_grid.end_index(domain)
     rank = processor_props.rank
-    print(
+    _log.info(
         f"rank {rank}/{processor_props.comm_size} dim = {dim}  {zone} : ({start_index}, {end_index})"
     )
     expected = HALO_IDX[processor_props.comm_size][dim][rank][level - 1]

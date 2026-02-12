@@ -6,15 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import logging
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.decomposition import definitions as decomposition_defs, halo
+from icon4py.model.common.grid import simple
 from icon4py.model.testing import parallel_helpers
 from icon4py.model.testing.fixtures import processor_props
 
+from .. import utils
 from ..fixtures import simple_neighbor_tables
 
 
@@ -29,11 +33,8 @@ try:
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
-from icon4py.model.common.decomposition import halo
-from icon4py.model.common.grid import simple
 
-from .. import utils
-
+_log = logging.getLogger(__name__)
 
 backend = None
 
@@ -63,7 +64,7 @@ def test_element_ownership_is_unique(
     owned = decomposition_info.global_index(
         dim, decomposition_defs.DecompositionInfo.EntryType.OWNED
     )
-    print(f"\nrank {processor_props.rank} owns {dim} : {owned} ")
+    _log.info(f"\nrank {processor_props.rank} owns {dim} : {owned} ")
     # assert that each cell is only owned by one rank
     comm = processor_props.comm
 
@@ -72,17 +73,17 @@ def test_element_ownership_is_unique(
     buffer_size = 27
     send_buf = np.full(buffer_size, -1, dtype=int)
     send_buf[:my_size] = owned
-    print(f"rank {processor_props.rank} send_buf: {send_buf}")
+    _log.info(f"rank {processor_props.rank} send_buf: {send_buf}")
     if processor_props.rank == 0:
-        print(f"local_sizes: {local_sizes}")
+        _log.info(f"local_sizes: {local_sizes}")
         recv_buffer = np.full((4, buffer_size), -1, dtype=int)
-        print(f"{recv_buffer.shape}")
+        _log.info(f"{recv_buffer.shape}")
     else:
         recv_buffer = None
     # Gatherv does not work if one of the buffers has size-0 (VertexDim)
     comm.Gather(sendbuf=send_buf, recvbuf=recv_buffer, root=0)
     if processor_props.rank == 0:
-        print(f"global indices: {recv_buffer}")
+        _log.info(f"global indices: {recv_buffer}")
         # check there are no duplicates
         values = recv_buffer[recv_buffer != -1]
         assert values.size == len(np.unique(values))

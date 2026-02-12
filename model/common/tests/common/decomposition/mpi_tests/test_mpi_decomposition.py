@@ -316,9 +316,9 @@ def test_exchange_on_dummy_data(
     _log.info(
         f" rank={processor_props.rank} - exchanged points: {np.sum(result != number)/grid.num_levels}"
     )
-    print(f"rank={processor_props.rank} - halo points: {halo_points}")
+    _log.info(f"rank={processor_props.rank} - halo points: {halo_points}")
     changed_points = np.argwhere(result[:, 2] != number)
-    print(f"rank={processor_props.rank} - num changed points {changed_points.shape} ")
+    _log.info(f"rank={processor_props.rank} - num changed points {changed_points.shape} ")
 
     assert np.all(result[local_points, :] == number)
     assert np.all(result[halo_points, :] != number)
@@ -339,7 +339,7 @@ def test_halo_exchange_for_sparse_field(
     edge_orientation = grid_savepoint.edge_orientation()
     area = grid_savepoint.cell_areas()
     field_ref = interpolation_savepoint.geofac_div()
-    print(
+    _log.info(
         f"{processor_props.rank}/{processor_props.comm_size}: size of reference field {field_ref.asnumpy().shape}"
     )
     result = data_alloc.zero_field(
@@ -355,7 +355,7 @@ def test_halo_exchange_for_sparse_field(
         out=result,
         offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
     )
-    print(
+    _log.info(
         f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {result.asnumpy().shape}"
     )
     exchange.exchange_and_wait(dims.CellDim, result)
