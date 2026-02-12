@@ -118,7 +118,7 @@ def test_halo_constructor_decomposition_info_halo_levels(rank, dim, simple_neigh
         dim, definitions.DecompositionInfo.EntryType.ALL
     )[third_halo_level_index]
     utils.assert_same_entries(
-        dim, third_halo_level_global_index, utils.THIRD_HALO_INE, processor_props.rank
+        dim, third_halo_level_global_index, utils.THIRD_HALO_LINE, processor_props.rank
     )
 
 
