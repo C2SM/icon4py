@@ -226,24 +226,24 @@ def compute_domain_bounds(
     end_indices[end_domain] = gtx.int32(refinement_ctrl.shape[0])
 
     halo_domains = h_grid.get_halo_domains(dim)
+    upper_boundary_level_1 = _refinement_level_placed_with_halo(
+        h_grid.domain(dim)(h_grid.Zone.HALO)
+    )
+    not_lateral_boundary_1 = (refinement_ctrl < 1) | (refinement_ctrl > upper_boundary_level_1)
+    halo_region_1 = array_ns.where(halo_level_1 & not_lateral_boundary_1)[0]
+    not_lateral_boundary_2 = (refinement_ctrl < 1) | (
+        refinement_ctrl
+        > _refinement_level_placed_with_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
+    )
+
+    halo_region_2 = array_ns.where(halo_level_2 & not_lateral_boundary_2)[0]
+    start_halo_2, end_halo_2 = (
+        (array_ns.min(halo_region_2).item(), array_ns.max(halo_region_2).item() + 1)
+        if halo_region_2.size > 0
+        else (refinement_ctrl.size, refinement_ctrl.size)
+    )
     for domain in halo_domains:
         my_flag = decomposition.DecompositionFlag(domain.zone.level)
-        upper_boundary_level_1 = _refinement_level_placed_with_halo(
-            h_grid.domain(dim)(h_grid.Zone.HALO)
-        )
-        not_lateral_boundary_1 = (refinement_ctrl < 1) | (refinement_ctrl > upper_boundary_level_1)
-        halo_region_1 = array_ns.where(halo_level_1 & not_lateral_boundary_1)[0]
-        not_lateral_boundary_2 = (refinement_ctrl < 1) | (
-            refinement_ctrl
-            > _refinement_level_placed_with_halo(h_grid.domain(dim)(h_grid.Zone.HALO_LEVEL_2))
-        )
-
-        halo_region_2 = array_ns.where(halo_level_2 & not_lateral_boundary_2)[0]
-        start_halo_2, end_halo_2 = (
-            (array_ns.min(halo_region_2).item(), array_ns.max(halo_region_2).item() + 1)
-            if halo_region_2.size > 0
-            else (refinement_ctrl.size, refinement_ctrl.size)
-        )
         if my_flag == h_grid.Zone.HALO.level:
             start_index = (
                 array_ns.min(halo_region_1).item() if halo_region_1.size > 0 else start_halo_2
