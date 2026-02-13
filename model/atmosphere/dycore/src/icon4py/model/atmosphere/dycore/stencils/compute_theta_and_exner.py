@@ -7,8 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next import exp, log, where
-
 from gt4py.next.experimental import concat_where
+
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
@@ -25,14 +25,18 @@ def _compute_theta_and_exner(
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_66."""
     theta_v_wp = concat_where(
-            dims.CellDim < start_cell_halo,
-            where( mask_prog_halo_c, exner, theta_v),
-            where(~mask_prog_halo_c, exner, theta_v)  # mask_prog_halo_c is the inverse of bdy_halo_c **only in the halo region**
+        dims.CellDim < start_cell_halo,
+        where(mask_prog_halo_c, exner, theta_v),
+        where(
+            ~mask_prog_halo_c, exner, theta_v
+        ),  # mask_prog_halo_c is the inverse of bdy_halo_c **only in the halo region**
     )
     exner_wp = concat_where(
-            dims.CellDim < start_cell_halo,
-            where( mask_prog_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner),
-            where(~mask_prog_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)  # mask_prog_halo_c is the inverse of bdy_halo_c **only in the halo region**
+        dims.CellDim < start_cell_halo,
+        where(mask_prog_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner),
+        where(
+            ~mask_prog_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner
+        ),  # mask_prog_halo_c is the inverse of bdy_halo_c **only in the halo region**
     )
     return theta_v_wp, exner_wp
 
