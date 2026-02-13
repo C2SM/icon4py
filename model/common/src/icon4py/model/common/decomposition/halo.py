@@ -439,12 +439,12 @@ def get_halo_constructor(
             horizontal_size=full_grid_size,
             allocator=allocator,
         )
-    else:
-        return IconLikeHaloConstructor(
-            run_properties=run_properties,
-            connectivities=connectivities,
-            allocator=allocator,
-        )
+
+    return IconLikeHaloConstructor(
+        run_properties=run_properties,
+        connectivities=connectivities,
+        allocator=allocator,
+    )
 
 
 def global_to_local(
