@@ -230,6 +230,21 @@ class GodunovSplittingAdvection(Advection):
         self._exchange = exchange or decomposition.SingleNodeExchange()
         self._even_timestep = even_timestep  # originally jstep_adv(:)%marchuk_order = 1
 
+        # density fields
+        #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
+        self._rhodz_ast2 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+        )
+        self._determine_local_domains()
+        # stencils
+        self._apply_density_increment = apply_density_increment.with_backend(self._backend)
+        self._apply_interpolated_tracer_time_tendency = (
+            apply_interpolated_tracer_time_tendency.with_backend(self._backend)
+        )
+
+        log.debug("advection class init - end")
+
+    def _determine_local_domains(self):
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_lateral_boundary = self._grid.start_index(
@@ -245,20 +260,6 @@ class GodunovSplittingAdvection(Advection):
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
-
-        # density fields
-        #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
-        self._rhodz_ast2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
-        )
-
-        # stencils
-        self._apply_density_increment = apply_density_increment.with_backend(self._backend)
-        self._apply_interpolated_tracer_time_tendency = (
-            apply_interpolated_tracer_time_tendency.with_backend(self._backend)
-        )
-
-        log.debug("advection class init - end")
 
     def run(
         self,
@@ -413,7 +414,6 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 tracer_flux=tracer_flux,
                 grid=grid,
                 interpolation_state=interpolation_state,
-                least_squares_state=least_squares_state,
                 metric_state=metric_state,
                 edge_params=edge_params,
                 cell_params=cell_params,

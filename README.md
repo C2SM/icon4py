@@ -112,10 +112,10 @@ To run distributed tests, make sure an MPI implementation is installed and run `
 mpirun -np 4 pytest -v -s --with-mpi -k mpi_tests
 ```
 
-To avoid all ranks writing their test output to stdout, use the helper script `scripts/ci-mpi-wrapper.sh` around the `pytest` command:
+To avoid all ranks writing their test output to stdout, use the helper script `ci/scripts/ci-mpi-wrapper.sh` around the `pytest` command:
 
 ```bash
-mpirun -np 4 scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi -k mpi_tests
+mpirun -np 4 ci/scripts/ci-mpi-wrapper.sh pytest -v -s --with-mpi -k mpi_tests
 ```
 
 ### Benchmarking
