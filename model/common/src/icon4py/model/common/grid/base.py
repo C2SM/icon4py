@@ -50,6 +50,7 @@ class GridConfig:
     # TODO(halungge): Decouple the vertical from horizontal grid.
     vertical_size: int
     limited_area: bool = True
+    distributed: bool = False
     n_shift_total: int = 0
     length_rescale_factor: float = 1.0
     lvertnest: bool = False

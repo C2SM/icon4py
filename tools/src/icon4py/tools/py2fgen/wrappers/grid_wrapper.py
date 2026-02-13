@@ -123,6 +123,30 @@ def grid_init(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
     allocator = model_backends.get_allocator(actual_backend)
+
+    if comm_id is None:
+        processor_props = decomposition_defs.SingleNodeProcessProperties()
+        exchange_runtime = decomposition_defs.SingleNodeExchange()
+    else:
+        # Set MultiNodeExchange as exchange runtime
+        (
+            processor_props,
+            decomposition_info,
+            exchange_runtime,
+        ) = wrapper_common.construct_decomposition(
+            c_glb_index,
+            e_glb_index,
+            v_glb_index,
+            c_owner_mask,
+            e_owner_mask,
+            v_owner_mask,
+            num_cells,
+            num_edges,
+            num_vertices,
+            vertical_size,
+            comm_id,
+        )
+
     grid = wrapper_common.construct_icon_grid(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
@@ -145,9 +169,20 @@ def grid_init(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        distributed=not processor_props.is_single_rank(),
         mean_cell_area=mean_cell_area,
         allocator=allocator,
     )
+
+    if comm_id is not None:
+        wrapper_debug_utils.print_grid_decomp_info(
+            grid,
+            processor_props,
+            decomposition_info,
+            num_cells,
+            num_edges,
+            num_vertices,
+        )
 
     # Vertical grid config
     vertical_config = vertical.VerticalGridConfig(
@@ -197,36 +232,6 @@ def grid_init(
         area=cell_areas,
         mean_cell_area=mean_cell_area,
     )
-
-    if comm_id is None:
-        exchange_runtime = decomposition_defs.SingleNodeExchange()
-    else:
-        # Set MultiNodeExchange as exchange runtime
-        (
-            processor_props,
-            decomposition_info,
-            exchange_runtime,
-        ) = wrapper_common.construct_decomposition(
-            c_glb_index,
-            e_glb_index,
-            v_glb_index,
-            c_owner_mask,
-            e_owner_mask,
-            v_owner_mask,
-            num_cells,
-            num_edges,
-            num_vertices,
-            vertical_size,
-            comm_id,
-        )
-        wrapper_debug_utils.print_grid_decomp_info(
-            grid,
-            processor_props,
-            decomposition_info,
-            num_cells,
-            num_edges,
-            num_vertices,
-        )
 
     global grid_state  # noqa: PLW0603 [global-statement]
     grid_state = GridState(

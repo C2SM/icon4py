@@ -491,6 +491,7 @@ class IconGridSavepoint(IconSavepoint):
             ),
             vertical_size=self.num(dims.KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
+            distributed=self.construct_decomposition_info().is_distributed(),
             keep_skip_values=keep_skip_values,
         )
 

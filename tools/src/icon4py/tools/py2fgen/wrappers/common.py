@@ -127,6 +127,7 @@ def construct_icon_grid(
     num_edges: int,
     vertical_size: int,
     limited_area: bool,
+    distributed: bool,
     mean_cell_area: gtx.float64,  # type:ignore[name-defined]  # TODO(): fix type hint
     allocator: gtx_allocators.FieldBufferAllocationUtil | None,
 ) -> icon.IconGrid:
@@ -172,6 +173,7 @@ def construct_icon_grid(
         ),
         vertical_size=vertical_size,
         limited_area=limited_area,
+        distributed=distributed,
         keep_skip_values=False,
     )
 

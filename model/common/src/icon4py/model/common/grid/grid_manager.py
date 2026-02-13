@@ -461,6 +461,7 @@ class GridManager:
             horizontal_config=distributed_size,
             vertical_size=self._vertical_config.num_levels,
             limited_area=limited_area,
+            distributed=not run_properties.is_single_rank(),
             keep_skip_values=keep_skip_values,
         )
 
