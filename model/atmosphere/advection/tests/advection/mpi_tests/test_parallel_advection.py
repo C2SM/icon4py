@@ -6,33 +6,24 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import gt4py.next.typing as gtx_typing
-import numpy as np
 import pytest
 from gt4py.next import typing as gtx_typing
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.atmosphere.advection import advection, advection_states
-from icon4py.model.atmosphere.advection.advection_lsq_coeffs import lsq_compute_coeffs
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
-from icon4py.model.common import constants, dimension as dims, type_alias as ta, utils
+from icon4py.model.atmosphere.advection import advection
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,
-    icon,
-    states as grid_states,
-    vertical as v_grid,
 )
-from icon4py.model.common.interpolation import interpolation_attributes as intp_attrs
+from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions as test_defs,
     grid_utils,
-    grid_utils as gridtest_utils,
     parallel_helpers,
-    serialbox,
     serialbox as sb,
     test_utils,
 )
@@ -49,9 +40,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
 )
 
-from .. import utils
 from ..fixtures import *  # noqa: F403
-from ..fixtures import advection_exit_savepoint, advection_init_savepoint, advection_lsq_state
 from ..utils import (
     construct_config,
     construct_diagnostic_exit_state,
@@ -220,7 +209,7 @@ def test_advection_run_single_step(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 @pytest.mark.mpi
-def test_lsq_compute_coeffs(
+def test_compute_lsq_coeffs(
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
@@ -258,7 +247,7 @@ def test_lsq_compute_coeffs(
     coordinates = gm.coordinates
     cell_lat = coordinates[dims.CellDim]["lat"].asnumpy()
     cell_lon = coordinates[dims.CellDim]["lon"].asnumpy()
-    lsq_pseudoinv = lsq_compute_coeffs(
+    lsq_pseudoinv = compute_lsq_coeffs(
         cell_center_x,
         cell_center_y,
         cell_lat,

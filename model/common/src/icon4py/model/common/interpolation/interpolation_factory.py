@@ -12,7 +12,6 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.interpolation.stencils.compute_nudgecoeffs as nudgecoeffs
-from icon4py.model.atmosphere.advection import advection_lsq_coeffs
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
@@ -239,7 +238,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         lsq_pseudoinv = factory.NumpyDataProvider(
             func=functools.partial(
-                advection_lsq_coeffs.lsq_compute_coeffs,
+                interpolation_fields.compute_lsq_coeffs,
                 exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
                 array_ns=self._xp,
             ),
