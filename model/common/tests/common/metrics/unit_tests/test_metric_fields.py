@@ -471,23 +471,19 @@ def test_compute_mask_prog_halo_c(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    mask_prog_halo_c_full = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dtype=bool, allocator=backend
-    )
+    mask_prog_halo_c = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, allocator=backend)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
     horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
     mf.compute_mask_prog_halo_c.with_backend(backend)(
         c_refin_ctrl=c_refin_ctrl,
-        mask_prog_halo_c=mask_prog_halo_c_full,
+        mask_prog_halo_c=mask_prog_halo_c,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         offset_provider={},
     )
-    assert testing_helpers.dallclose(
-        mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy()
-    )
+    assert testing_helpers.dallclose(mask_prog_halo_c.asnumpy(), mask_prog_halo_c_ref.asnumpy())
 
 
 @pytest.mark.level("unit")
