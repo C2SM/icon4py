@@ -166,7 +166,6 @@ class PositiveDefinite(HorizontalFluxLimiter):
             r_m=self._r_m,
             p_mflx_tracer_h=p_mflx_tracer_h,
         )
-        #self._exchange.exchange_and_wait(dims.EdgeDim, p_mflx_tracer_h)
         log.debug(
             "running stencil apply_positive_definite_horizontal_multiplicative_flux_factor - end"
         )
@@ -299,7 +298,6 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         log.debug(
             "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - end"
         )
-        # self._exchange.exchange_and_wait(dims.EdgeDim, p_mflx_tracer_h)
 
         self._horizontal_limiter.apply_flux_limiter(
             p_tracer_now=p_tracer_now,
@@ -426,7 +424,6 @@ class FiniteVolume(HorizontalAdvection):
             p_mflx_tracer_h=p_mflx_tracer_h,
             dtime=dtime,
         )
-        # self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("horizontal advection run - end")
 
     @abstractmethod

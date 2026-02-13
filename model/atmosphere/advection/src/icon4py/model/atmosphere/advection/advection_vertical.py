@@ -466,7 +466,6 @@ class NoAdvection(VerticalAdvection):
             horizontal_end=horizontal_end,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
-        # self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("vertical advection run - end")
 
 
@@ -629,7 +628,6 @@ class FirstOrderUpwind(FiniteVolume):
         horizontal_start, horizontal_end = self._get_horizontal_start_end(
             even_timestep=even_timestep
         )
-        #self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         log.debug("running stencil compute_vertical_tracer_flux_upwind - start")
         self._compute_vertical_tracer_flux_upwind(
             p_cc=p_tracer_now,
@@ -919,7 +917,6 @@ class PiecewiseParabolicMethod(FiniteVolume):
         log.debug("running stencil init_constant_cell_kdim_field - end")
 
         log.debug("running stencil compute_ppm4gpu_courant_number - start")
-        #self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         self._compute_ppm4gpu_courant_number(
             p_mflx_contra_v=prep_adv.mass_flx_ic,
             p_cellmass_now=rhodz_now,
@@ -1102,5 +1099,4 @@ class PiecewiseParabolicMethod(FiniteVolume):
         )
         self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("running stencil integrate_tracer_vertically - end")
-        # self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("vertical unknowns update - end")

@@ -31,11 +31,11 @@ def compute_lsq_pseudoinv(
         for jjk in range(lsq_dim_unk):
             for jc in range(start_idx, min_rlcell_int):
                 u, s, v_t, _ = scipy.linalg.lapack.dgesdd(z_lsq_mat_c[jc, :, :])
-                # if cell_owner_mask[jc]:
-                lsq_pseudoinv[jc, :lsq_dim_unk, jjb] = (
-                    lsq_pseudoinv[jc, :lsq_dim_unk, jjb]
-                    + v_t[jjk, :lsq_dim_unk] / s[jjk] * u[jjb, jjk] * lsq_weights_c[jc, jjb]
-                )
+                if cell_owner_mask[jc]:
+                    lsq_pseudoinv[jc, :lsq_dim_unk, jjb] = (
+                        lsq_pseudoinv[jc, :lsq_dim_unk, jjb]
+                        + v_t[jjk, :lsq_dim_unk] / s[jjk] * u[jjb, jjk] * lsq_weights_c[jc, jjb]
+                    )
     return lsq_pseudoinv
 
 
@@ -61,8 +61,8 @@ def compute_z_lsq_mat_c(
     lsq_dim_c: int,
 ) -> data_alloc.NDArray:
     min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
-    # if cell_owner_mask[jc]:
-    z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
+    if cell_owner_mask[jc]:
+        z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
 
     for js in range(lsq_dim_c):
         z_lsq_mat_c[jc, js, :lsq_dim_unk] = lsq_weights_c[jc, js] * z_dist_g[js, :]
@@ -107,8 +107,8 @@ def lsq_compute_coeffs(
             min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
 
             for jc in range(start_idx, min_rlcell_int):
-                # if cell_owner_mask[jc]:
-                z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
+                if cell_owner_mask[jc]:
+                    z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
         case base_grid.GeometryType.TORUS:
             for jc in range(start_idx, min_rlcell_int):
                 ilc_s = c2e2c[jc, :lsq_dim_stencil]
