@@ -13,7 +13,7 @@ import numpy as np
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 
-def compute_acvection_deepatmo_fields(
+def compute_advection_deepatmo_fields(
     vct_a: fa.KField[ta.wpfloat],
     nlev: int,
     grid_sphere_radius: float,

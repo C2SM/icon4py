@@ -959,7 +959,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 array_ns=self._xp,
             ),
             deps={
-                "vct_a": self._vertical_grid.interface_physical_height,
+                "vct_a": "vct_a",
             },
             domain=(),
             fields=(
