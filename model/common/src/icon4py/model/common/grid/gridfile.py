@@ -384,7 +384,7 @@ class GridFile:
             target_shape = (*n, -1)
 
             slicer = [slice(None) for _ in range(variable_size)]
-            if indices is not None and indices.size > 0:
+            if indices and indices.size > 0:
                 # apply the slicing to the correct dimension
                 slicer[(1 if transpose else 0)] = data_alloc.as_numpy(indices)
             _log.debug(f"reading {name}: transposing = {transpose}")
