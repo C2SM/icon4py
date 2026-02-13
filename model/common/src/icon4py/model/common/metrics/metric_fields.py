@@ -720,7 +720,7 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(
 def _compute_mask_prog_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32], mask_prog_halo_c: fa.CellField[bool]
 ) -> fa.CellField[bool]:
-    mask_prog_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), mask_prog_halo_c, True)
+    mask_prog_halo_c = ~((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4))
     return mask_prog_halo_c
 
 
