@@ -2289,7 +2289,6 @@ contains
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
-      !$acc end host_data
    end subroutine solve_nh_init
 
 end module
