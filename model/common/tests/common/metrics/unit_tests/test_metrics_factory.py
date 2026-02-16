@@ -546,7 +546,7 @@ def test_factory_wgtfacq_e(
     )
     field = factory.get(attrs.WGTFACQ_E)
     field_ref = metrics_savepoint.wgtfacq_e_dsl()
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
 @pytest.mark.level("integration")
