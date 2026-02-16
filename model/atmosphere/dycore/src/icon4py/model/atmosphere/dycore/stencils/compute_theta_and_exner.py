@@ -22,7 +22,7 @@ def _compute_theta_and_exner(
     rd_o_p0ref: wpfloat,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_66."""
-    # mask_prog_halo_c is the inverse of bdy_halo_c **only in the halo region**
+    # mask_prog_halo_c is the inverse of bdy_halo_c
     theta_v_wp = where(~mask_prog_halo_c, exner, theta_v)
     exner_wp = where(~mask_prog_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
     return theta_v_wp, exner_wp
