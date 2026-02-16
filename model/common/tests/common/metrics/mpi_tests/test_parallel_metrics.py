@@ -104,7 +104,6 @@ def test_distributed_metrics_attrs(
         (attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER, "vwind_expl_wgt"),
         (attrs.PG_EDGEDIST_DSL, "pg_exdist"),
         (attrs.MASK_PROG_HALO_C, "mask_prog_halo_c"),
-        (attrs.BDY_HALO_C, "bdy_halo_c"),
         (attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP, "hmask_dd3d"),
         (attrs.WGTFAC_C, "wgtfac_c"),
         (attrs.EXNER_EXFAC, "exner_exfac"),

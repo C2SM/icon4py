@@ -14,7 +14,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @gtx.field_operator
 def _compute_theta_and_exner(
-    bdy_halo_c: fa.CellField[bool],
+    mask_prog_halo_c: fa.CellField[bool],
     rho: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
@@ -22,14 +22,15 @@ def _compute_theta_and_exner(
     rd_o_p0ref: wpfloat,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_66."""
-    theta_v_wp = where(bdy_halo_c, exner, theta_v)
-    exner_wp = where(bdy_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
+    # mask_prog_halo_c is the inverse of bdy_halo_c **only in the halo region**
+    theta_v_wp = where(~mask_prog_halo_c, exner, theta_v)
+    exner_wp = where(~mask_prog_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
     return theta_v_wp, exner_wp
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_theta_and_exner(
-    bdy_halo_c: fa.CellField[bool],
+    mask_prog_halo_c: fa.CellField[bool],
     rho: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
@@ -41,7 +42,7 @@ def compute_theta_and_exner(
     vertical_end: gtx.int32,
 ):
     _compute_theta_and_exner(
-        bdy_halo_c,
+        mask_prog_halo_c,
         rho,
         theta_v,
         exner,

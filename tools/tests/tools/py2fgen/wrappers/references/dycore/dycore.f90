@@ -402,8 +402,6 @@ module dycore
                                      geofac_grg_y_size_1, &
                                      nudgecoeff_e, &
                                      nudgecoeff_e_size_0, &
-                                     bdy_halo_c, &
-                                     bdy_halo_c_size_0, &
                                      mask_prog_halo_c, &
                                      mask_prog_halo_c_size_0, &
                                      rayleigh_w, &
@@ -463,9 +461,12 @@ module dycore
                                      vertoffset_gradp_size_0, &
                                      vertoffset_gradp_size_1, &
                                      vertoffset_gradp_size_2, &
+                                     pg_edgeidx, &
+                                     pg_edgeidx_size_0, &
+                                     pg_vertidx, &
+                                     pg_vertidx_size_0, &
                                      pg_exdist, &
                                      pg_exdist_size_0, &
-                                     pg_exdist_size_1, &
                                      ddqz_z_full_e, &
                                      ddqz_z_full_e_size_0, &
                                      ddqz_z_full_e_size_1, &
@@ -618,10 +619,6 @@ module dycore
 
          integer(c_int), value :: nudgecoeff_e_size_0
 
-         type(c_ptr), value, target :: bdy_halo_c
-
-         integer(c_int), value :: bdy_halo_c_size_0
-
          type(c_ptr), value, target :: mask_prog_halo_c
 
          integer(c_int), value :: mask_prog_halo_c_size_0
@@ -740,11 +737,17 @@ module dycore
 
          integer(c_int), value :: vertoffset_gradp_size_2
 
+         type(c_ptr), value, target :: pg_edgeidx
+
+         integer(c_int), value :: pg_edgeidx_size_0
+
+         type(c_ptr), value, target :: pg_vertidx
+
+         integer(c_int), value :: pg_vertidx_size_0
+
          type(c_ptr), value, target :: pg_exdist
 
          integer(c_int), value :: pg_exdist_size_0
-
-         integer(c_int), value :: pg_exdist_size_1
 
          type(c_ptr), value, target :: ddqz_z_full_e
 
@@ -1475,7 +1478,6 @@ contains
                             geofac_grg_x, &
                             geofac_grg_y, &
                             nudgecoeff_e, &
-                            bdy_halo_c, &
                             mask_prog_halo_c, &
                             rayleigh_w, &
                             exner_exfac, &
@@ -1496,6 +1498,8 @@ contains
                             ddxn_z_full, &
                             zdiff_gradp, &
                             vertoffset_gradp, &
+                            pg_edgeidx, &
+                            pg_vertidx, &
                             pg_exdist, &
                             ddqz_z_full_e, &
                             ddxt_z_full, &
@@ -1568,8 +1572,6 @@ contains
 
       real(c_double), dimension(:), target :: nudgecoeff_e
 
-      logical(c_int), dimension(:), target :: bdy_halo_c
-
       logical(c_int), dimension(:), target :: mask_prog_halo_c
 
       real(c_double), dimension(:), target :: rayleigh_w
@@ -1610,7 +1612,11 @@ contains
 
       integer(c_int), dimension(:, :, :), target :: vertoffset_gradp
 
-      real(c_double), dimension(:, :), target :: pg_exdist
+      integer(c_int), dimension(:), target :: pg_edgeidx
+
+      integer(c_int), dimension(:), target :: pg_vertidx
+
+      real(c_double), dimension(:), target :: pg_exdist
 
       real(c_double), dimension(:, :), target :: ddqz_z_full_e
 
@@ -1748,8 +1754,6 @@ contains
 
       integer(c_int) :: nudgecoeff_e_size_0
 
-      integer(c_int) :: bdy_halo_c_size_0
-
       integer(c_int) :: mask_prog_halo_c_size_0
 
       integer(c_int) :: rayleigh_w_size_0
@@ -1828,9 +1832,11 @@ contains
 
       integer(c_int) :: vertoffset_gradp_size_2
 
-      integer(c_int) :: pg_exdist_size_0
+      integer(c_int) :: pg_edgeidx_size_0
 
-      integer(c_int) :: pg_exdist_size_1
+      integer(c_int) :: pg_vertidx_size_0
+
+      integer(c_int) :: pg_exdist_size_0
 
       integer(c_int) :: ddqz_z_full_e_size_0
 
@@ -1887,7 +1893,6 @@ contains
       !$acc host_data use_device(geofac_grg_x)
       !$acc host_data use_device(geofac_grg_y)
       !$acc host_data use_device(nudgecoeff_e)
-      !$acc host_data use_device(bdy_halo_c)
       !$acc host_data use_device(mask_prog_halo_c)
       !$acc host_data use_device(rayleigh_w)
       !$acc host_data use_device(exner_exfac)
@@ -1908,6 +1913,8 @@ contains
       !$acc host_data use_device(ddxn_z_full)
       !$acc host_data use_device(zdiff_gradp)
       !$acc host_data use_device(vertoffset_gradp)
+      !$acc host_data use_device(pg_edgeidx)
+      !$acc host_data use_device(pg_vertidx)
       !$acc host_data use_device(pg_exdist)
       !$acc host_data use_device(ddqz_z_full_e)
       !$acc host_data use_device(ddxt_z_full)
@@ -1974,8 +1981,6 @@ contains
 
       nudgecoeff_e_size_0 = SIZE(nudgecoeff_e, 1)
 
-      bdy_halo_c_size_0 = SIZE(bdy_halo_c, 1)
-
       mask_prog_halo_c_size_0 = SIZE(mask_prog_halo_c, 1)
 
       rayleigh_w_size_0 = SIZE(rayleigh_w, 1)
@@ -2035,8 +2040,11 @@ contains
       vertoffset_gradp_size_1 = SIZE(vertoffset_gradp, 2)
       vertoffset_gradp_size_2 = SIZE(vertoffset_gradp, 3)
 
+      pg_edgeidx_size_0 = SIZE(pg_edgeidx, 1)
+
+      pg_vertidx_size_0 = SIZE(pg_vertidx, 1)
+
       pg_exdist_size_0 = SIZE(pg_exdist, 1)
-      pg_exdist_size_1 = SIZE(pg_exdist, 2)
 
       ddqz_z_full_e_size_0 = SIZE(ddqz_z_full_e, 1)
       ddqz_z_full_e_size_1 = SIZE(ddqz_z_full_e, 2)
@@ -2114,8 +2122,6 @@ contains
                                  geofac_grg_y_size_1=geofac_grg_y_size_1, &
                                  nudgecoeff_e=c_loc(nudgecoeff_e), &
                                  nudgecoeff_e_size_0=nudgecoeff_e_size_0, &
-                                 bdy_halo_c=c_loc(bdy_halo_c), &
-                                 bdy_halo_c_size_0=bdy_halo_c_size_0, &
                                  mask_prog_halo_c=c_loc(mask_prog_halo_c), &
                                  mask_prog_halo_c_size_0=mask_prog_halo_c_size_0, &
                                  rayleigh_w=c_loc(rayleigh_w), &
@@ -2175,9 +2181,12 @@ contains
                                  vertoffset_gradp_size_0=vertoffset_gradp_size_0, &
                                  vertoffset_gradp_size_1=vertoffset_gradp_size_1, &
                                  vertoffset_gradp_size_2=vertoffset_gradp_size_2, &
+                                 pg_edgeidx=c_loc(pg_edgeidx), &
+                                 pg_edgeidx_size_0=pg_edgeidx_size_0, &
+                                 pg_vertidx=c_loc(pg_vertidx), &
+                                 pg_vertidx_size_0=pg_vertidx_size_0, &
                                  pg_exdist=c_loc(pg_exdist), &
                                  pg_exdist_size_0=pg_exdist_size_0, &
-                                 pg_exdist_size_1=pg_exdist_size_1, &
                                  ddqz_z_full_e=c_loc(ddqz_z_full_e), &
                                  ddqz_z_full_e_size_0=ddqz_z_full_e_size_0, &
                                  ddqz_z_full_e_size_1=ddqz_z_full_e_size_1, &
@@ -2233,6 +2242,7 @@ contains
                                  nflat_gradp=nflat_gradp, &
                                  backend=backend, &
                                  on_gpu=on_gpu)
+      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data

@@ -486,7 +486,6 @@ def read_static_fields(
         metrics_savepoint = data_provider.from_metrics_savepoint()
         grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
-            bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
             rayleigh_w=metrics_savepoint.rayleigh_w(),
             time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
