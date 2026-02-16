@@ -79,7 +79,7 @@ def test_compute_wgtfacq_e_dsl(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    wgtfacq_e_dsl_ref = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels + 1)
+    wgtfacq_e_dsl_ref = metrics_savepoint.wgtfacq_e_dsl()
     wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
 
     xp = data_alloc.import_array_ns(backend)

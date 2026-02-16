@@ -191,6 +191,28 @@ def solve_nh_init(
         nudgecoeff_e=nudgecoeff_e,
     )
 
+    nlevp1 = wgtfac_c.domain[dims.KDim].unit_range.stop  # wgtfac_c/e have nlevp1 levels
+    k = wgtfacq_c.ndarray.shape[1]
+    cell_kflip_domain = gtx.domain({
+        dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
+        dims.KDim: (nlevp1 - k, nlevp1),
+    })
+    k = wgtfacq_e.ndarray.shape[1]
+    edge_kflip_domain = gtx.domain({
+        dims.EdgeDim: wgtfac_e.domain[dims.EdgeDim].unit_range,
+        dims.KDim: (nlevp1 - k, nlevp1),
+    })
+    wgtfacq_c = wrapper_common.kflip_wgtfacq(
+        arr=wgtfacq_c.ndarray,
+        domain=cell_kflip_domain,
+        allocator=model_backends.get_allocator(actual_backend),
+    )
+    wgtfacq_e = wrapper_common.kflip_wgtfacq(
+        arr=wgtfacq_e.ndarray,
+        domain=edge_kflip_domain,
+        allocator=model_backends.get_allocator(actual_backend),
+    )
+
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
         mask_prog_halo_c=mask_prog_halo_c,
         rayleigh_w=rayleigh_w,

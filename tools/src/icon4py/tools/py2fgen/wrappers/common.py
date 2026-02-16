@@ -88,6 +88,16 @@ Float64Array1D: TypeAlias = Annotated[
     ),
 ]
 
+Float64Array2D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=2,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=False,
+    ),
+]
+
 OptionalFloat64Array1D: TypeAlias = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
@@ -182,6 +192,14 @@ def list2field(
     arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
     arr[indices] = values
     return gtx.as_field(domain, arr, allocator=allocator)
+
+
+def kflip_wgtfacq(
+    arr: NDArray,
+    domain: gtx.Domain,
+    allocator: gtx_allocators.FieldBufferAllocatorProtocol,
+):
+    return gtx.as_field(domain, arr[:, ::-1], allocator=allocator)
 
 
 def construct_icon_grid(

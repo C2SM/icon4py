@@ -751,7 +751,21 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("vwind_impl_wgt", dims.CellDim)
 
     def wgtfacq_c_dsl(self):
-        return self._get_field("wgtfacq_c_dsl", dims.CellDim, dims.KDim)
+        ar = np.squeeze(self.serializer.read("wgtfacq_c", self.savepoint))
+        k = ar.shape[1]
+        wgtfac_c = self.wgtfac_c()
+        cell_range = wgtfac_c.domain[dims.CellDim].unit_range
+        nlevp1 = wgtfac_c.domain[dims.KDim].unit_range.stop
+        k_range = (nlevp1 - k, nlevp1)
+        cell_kflip_domain = gtx.domain({
+            dims.CellDim: cell_range,
+            dims.KDim: k_range,
+        })
+        return wrapper_common.kflip_wgtfacq(
+            arr = ar,
+            domain = cell_kflip_domain,
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
     def zdiff_gradp(self):
         return self._get_field("zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim)
@@ -791,11 +805,22 @@ class MetricSavepoint(IconSavepoint):
     def wgtfac_e(self):
         return self._get_field("wgtfac_e", dims.EdgeDim, dims.KDim)
 
-    def wgtfacq_e_dsl(self, k_level):
+    def wgtfacq_e_dsl(self):
         ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
-        k = k_level - 3
-        ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
-        return self._get_field_from_ndarray(ar, dims.EdgeDim, dims.KDim)
+        k = ar.shape[1]
+        wgtfac_e = self.wgtfac_e()
+        edge_range = wgtfac_e.domain[dims.EdgeDim].unit_range
+        nlevp1 = wgtfac_e.domain[dims.KDim].unit_range.stop
+        k_range = (nlevp1 - k, nlevp1)
+        edge_kflip_domain = gtx.domain({
+            dims.EdgeDim: edge_range,
+            dims.KDim: k_range,
+        })
+        return wrapper_common.kflip_wgtfacq(
+            arr = ar,
+            domain = edge_kflip_domain,
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
     def geopot(self):
         return self._get_field("geopot", dims.CellDim, dims.KDim)
