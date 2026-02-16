@@ -185,7 +185,7 @@ def test_distributed_metrics_wgtfacq_e(
     factory = metrics_factory_from_savepoint
 
     field = factory.get(attrs.WGTFACQ_E).asnumpy()
-    field_ref = metrics_savepoint.wgtfacq_e_dsl(field.shape[1]).asnumpy()
+    field_ref = metrics_savepoint.wgtfacq_e_dsl().asnumpy()
     assert test_utils.dallclose(field, field_ref)
 
 

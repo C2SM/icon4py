@@ -494,7 +494,7 @@ def test_compute_diagnostics_from_normal_wind(
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
     contravariant_correction_at_edges_on_model_levels = savepoint_velocity_init.z_w_concorr_me()
-    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
+    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl()
     nflatlev = grid_savepoint.nflatlev()
     c_intp = interpolation_savepoint.c_intp()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()

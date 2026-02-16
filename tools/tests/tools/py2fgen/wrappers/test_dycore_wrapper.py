@@ -63,7 +63,6 @@ def solve_nh_init(
     divdamp_z4 = 80000.0
 
     # vertical grid params
-    vertical_size = grid_savepoint.num(dims.KDim)
     nflat_gradp = gtx.int32(
         grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
@@ -107,7 +106,7 @@ def solve_nh_init(
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
     wgtfacq_e = test_utils.array_to_array_info(
-        metrics_savepoint.wgtfacq_e_dsl(vertical_size).ndarray
+        metrics_savepoint.wgtfacq_e_dsl().ndarray
     )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
@@ -300,7 +299,6 @@ def test_dycore_wrapper_granule_inputs(
     divdamp_z4 = 80000.0
 
     # vertical grid params
-    vertical_size = grid_savepoint.num(dims.KDim)
     nflat_gradp = gtx.int32(
         grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
@@ -348,7 +346,7 @@ def test_dycore_wrapper_granule_inputs(
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
     wgtfacq_e = test_utils.array_to_array_info(
-        metrics_savepoint.wgtfacq_e_dsl(vertical_size).ndarray
+        metrics_savepoint.wgtfacq_e_dsl().ndarray
     )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
@@ -496,7 +494,7 @@ def test_dycore_wrapper_granule_inputs(
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(vertical_size),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(),
         exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),

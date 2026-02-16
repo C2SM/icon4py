@@ -545,7 +545,7 @@ def test_factory_wgtfacq_e(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.WGTFACQ_E)
-    field_ref = metrics_savepoint.wgtfacq_e_dsl(field.shape[1])
+    field_ref = metrics_savepoint.wgtfacq_e_dsl()
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
