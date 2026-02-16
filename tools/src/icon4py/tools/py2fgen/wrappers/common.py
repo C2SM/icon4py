@@ -58,23 +58,23 @@ Int32Array1D: TypeAlias = Annotated[
     ),
 ]
 
-Int32Array3D: TypeAlias = Annotated[
+OptionalInt32Array1D: TypeAlias = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
-        rank=3,
+        rank=1,
         dtype=ts.ScalarKind.INT32,
         memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
-        is_optional=False,
+        is_optional=True,
     ),
 ]
 
-Int32Array4D: TypeAlias = Annotated[
+OptionalInt32Array4D: TypeAlias = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=4,
         dtype=ts.ScalarKind.INT32,
         memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
-        is_optional=False,
+        is_optional=True,
     ),
 ]
 
@@ -88,13 +88,23 @@ Float64Array1D: TypeAlias = Annotated[
     ),
 ]
 
-Float64Array3D: TypeAlias = Annotated[
+OptionalFloat64Array1D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=True,
+    ),
+]
+
+OptionalFloat64Array3D: TypeAlias = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=3,
         dtype=ts.ScalarKind.FLOAT64,
         memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
-        is_optional=False,
+        is_optional=True,
     ),
 ]
 
