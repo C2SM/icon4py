@@ -115,7 +115,7 @@ def compute_wgtfacq_c_dsl(
     wgtfacq_c_dsl[:, nlev - 2] = wgtfacq_c[:, 1]
     wgtfacq_c_dsl[:, nlev - 3] = wgtfacq_c[:, 2]
 
-    return wgtfacq_c_dsl
+    return wgtfacq_c_dsl[:, -3:]
 
 
 def compute_wgtfacq_e_dsl(
@@ -127,7 +127,7 @@ def compute_wgtfacq_e_dsl(
     nlev: int,
     exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
-):
+) -> data_alloc.NDArray:
     """
     Compute weighting factor for quadratic interpolation to surface.
 
@@ -161,4 +161,4 @@ def compute_wgtfacq_e_dsl(
     wgtfacq_e_dsl[:, nlev - 1] = z_aux_e[:, 1]
     wgtfacq_e_dsl[:, nlev - 2] = z_aux_e[:, 2]
 
-    return wgtfacq_e_dsl
+    return wgtfacq_e_dsl[:, -3:]
