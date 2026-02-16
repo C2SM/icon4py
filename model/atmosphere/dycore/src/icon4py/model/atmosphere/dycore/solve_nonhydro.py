@@ -386,8 +386,7 @@ class SolveNonhydro:
                 "rd_o_p0ref": constants.RD_O_P0REF,
             },
             horizontal_sizes={
-                "start_cell_halo": self._start_cell_halo,
-                "horizontal_start": self._start_cell_local,
+                "horizontal_start": self._start_cell_halo,
                 "horizontal_end": self._end_cell_end,
             },
             vertical_sizes={

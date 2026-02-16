@@ -21,23 +21,11 @@ def _compute_theta_and_exner(
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
-    start_cell_halo: gtx.int32,
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_66."""
-    theta_v_wp = concat_where(
-        dims.CellDim < start_cell_halo,
-        where(mask_prog_halo_c, exner, theta_v),
-        where(
-            ~mask_prog_halo_c, exner, theta_v
-        ),  # mask_prog_halo_c is the inverse of bdy_halo_c **only in the halo region**
-    )
-    exner_wp = concat_where(
-        dims.CellDim < start_cell_halo,
-        where(mask_prog_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner),
-        where(
-            ~mask_prog_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner
-        ),  # mask_prog_halo_c is the inverse of bdy_halo_c **only in the halo region**
-    )
+    # mask_prog_halo_c is the inverse of bdy_halo_c **only in the halo region**
+    theta_v_wp = where(~mask_prog_halo_c, exner, theta_v)
+    exner_wp = where(~mask_prog_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
     return theta_v_wp, exner_wp
 
 
@@ -49,7 +37,6 @@ def compute_theta_and_exner(
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
-    start_cell_halo: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -62,7 +49,6 @@ def compute_theta_and_exner(
         exner,
         rd_o_cvd,
         rd_o_p0ref,
-        start_cell_halo,
         out=(theta_v, exner),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
