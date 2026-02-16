@@ -162,7 +162,7 @@ class NoAdvection(Advection):
         self,
         grid: icon_grid.IconGrid,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = None,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
     ):
         log.debug("advection class init - start")
 
@@ -221,7 +221,7 @@ class GodunovSplittingAdvection(Advection):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = None,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
         even_timestep: bool = False,
     ):
         log.debug("advection class init - start")
@@ -486,7 +486,7 @@ def convert_config_to_advection(
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
-    exchange: decomposition.ExchangeRuntime | None = None,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     even_timestep: bool = False,
 ) -> Advection:
     exchange = exchange or decomposition.SingleNodeExchange()

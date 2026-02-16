@@ -21,6 +21,7 @@ import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.math.projection as proj
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import base as base_grid, gridfile
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
@@ -38,7 +39,7 @@ def compute_c_lin_e(
     inv_dual_edge_length: data_alloc.NDArray,
     edge_owner_mask: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -112,7 +113,7 @@ def compute_geofac_n2s(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -173,7 +174,7 @@ def compute_geofac_grg(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
@@ -220,7 +221,7 @@ def compute_geofac_grdiv(
     e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -441,7 +442,7 @@ def _force_mass_conservation_to_c_bln_avg(
     cell_owner_mask: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
@@ -619,7 +620,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(
@@ -652,7 +653,7 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_uniform_c_bln_avg(
@@ -723,7 +724,7 @@ def compute_e_flx_avg(
     e2c2e: data_alloc.NDArray,
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -888,7 +889,7 @@ def compute_cells_aw_verts(
     v2c: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -1021,7 +1022,7 @@ def compute_pos_on_tplane_e_x_y(
     owner_mask: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
@@ -1108,7 +1109,7 @@ def compute_pos_on_tplane_e_x_y(
 def compute_pos_on_tplane_e_x_y_torus(
     dual_edge_length: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -1223,7 +1224,7 @@ def compute_lsq_coeffs(
     start_idx: int,
     min_rlcell_int: int,
     geometry_type: int,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     lsq_weights_c = array_ns.zeros((min_rlcell_int, lsq_dim_stencil))
@@ -1276,10 +1277,7 @@ def compute_lsq_coeffs(
             lsq_dim_c,
         )
 
-    try:
-        exchange(lsq_weights_c, dim=dims.CellDim)
-    except TypeError:
-        exchange(lsq_weights_c)
+    exchange(lsq_weights_c, dim=dims.CellDim)
 
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask,
@@ -1292,11 +1290,7 @@ def compute_lsq_coeffs(
         lsq_dim_c,
     )
 
-    try:
-        exchange(lsq_pseudoinv[:, 0, :], dim=dims.CellDim)
-        exchange(lsq_pseudoinv[:, 1, :], dim=dims.CellDim)
-    except TypeError:
-        exchange(lsq_pseudoinv[:, 0, :])
-        exchange(lsq_pseudoinv[:, 1, :])
+    exchange(lsq_pseudoinv[:, 0, :], dim=dims.CellDim)
+    exchange(lsq_pseudoinv[:, 1, :], dim=dims.CellDim)
 
     return lsq_pseudoinv
