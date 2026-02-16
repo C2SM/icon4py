@@ -10,7 +10,7 @@ import datetime
 import functools
 import logging
 
-from gt4py.next import metrics as gtx_metrics
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
