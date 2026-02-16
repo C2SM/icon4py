@@ -277,11 +277,15 @@ class MetricStateNonHydro:
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32]
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat]
     nflat_gradp: gtx.int32
-    """The minimum height index at which the height of the center of an edge lies within two neighboring cells so that
+    """
+    The minimum height index at which the height of the center of an edge lies within two neighboring cells so that
     horizontal pressure gradient can be computed by first order discretization scheme.
     """
-    pg_edgeidx_dsl: fa.EdgeKField[bool]
+
     pg_exdist: fa.EdgeKField[ta.vpfloat]
+    """
+    Extrapolation distance needed for HorizontalPressureDiscretizationType.TAYLOR_HYDRO.
+    """
 
     exner_w_explicit_weight_parameter: fa.CellField[ta.wpfloat]
     """
