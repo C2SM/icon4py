@@ -133,9 +133,8 @@ def test_and_benchmark(
             # Get the pool key necessary to find the right metrics key. There should be only one compiled program in _configured_program
             pool_key = next(iter(compiled_programs.keys()))
             # Get the metrics key from the pool key to read the corresponding metrics
-            metrics_key = _configured_program._compiled_programs._metrics_key_from_pool_key(
-                pool_key
-            )
+            compiled_programs_root = _configured_program._compiled_programs.root
+            metrics_key = f"{compiled_programs_root[0]}<{compiled_programs_root[1]}>[{hash(pool_key)}]"
             metrics_data = gtx_metrics.sources
             compute_samples = metrics_data[metrics_key].metrics["compute"].samples
             # exclude warmup iterations, one extra iteration for calibrating pytest-benchmark and one for validation (if executed)
