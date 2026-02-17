@@ -5,16 +5,17 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
 from types import ModuleType
 
 import numpy as np
 
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_advection_deepatmo_fields(
-    vct_a: fa.KField[ta.wpfloat],
+    vct_a: data_alloc.NDArray,
     nlev: int,
     grid_sphere_radius: float,
     array_ns: ModuleType = np,

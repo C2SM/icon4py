@@ -26,7 +26,12 @@ from icon4py.model.atmosphere.advection.stencils.apply_interpolated_tracer_time_
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.atmosphere.advection.stencils.copy_cell_kdim_field import copy_cell_kdim_field
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    field_type_aliases as fa,
+    model_options,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -166,7 +171,7 @@ class NoAdvection(Advection):
 
         # input arguments
         self._grid = grid
-        self._backend = backend
+        self._backend = model_options.customize_backend(program=None, backend=backend)
         self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
@@ -226,7 +231,7 @@ class GodunovSplittingAdvection(Advection):
         self._vertical_advection = vertical_advection
         self._grid = grid
         self._metric_state = metric_state
-        self._backend = backend
+        self._backend = model_options.customize_backend(program=None, backend=backend)
         self._exchange = exchange or decomposition.SingleNodeExchange()
         self._even_timestep = even_timestep  # originally jstep_adv(:)%marchuk_order = 1
 

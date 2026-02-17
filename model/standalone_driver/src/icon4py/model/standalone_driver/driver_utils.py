@@ -343,6 +343,7 @@ def initialize_granules(
         owner_mask=owner_mask,
     )
 
+    concrete_backend = model_options.customize_backend(program=None, backend=backend)
     advection_granule = advection.convert_config_to_advection(
         grid=grid,
         backend=backend,
@@ -362,10 +363,18 @@ def initialize_granules(
         least_squares_state=advection_states.AdvectionLeastSquaresState(
             # TODO(ricoh): [c34] integrate #1028 after that's merged
             lsq_pseudoinv_1=data_alloc.constant_field(
-                grid, 0.0, dims.CellDim, dims.C2E2CDim, allocator=backend
+                grid,
+                0.0,
+                dims.CellDim,
+                dims.C2E2CDim,
+                allocator=concrete_backend,
             ),
             lsq_pseudoinv_2=data_alloc.constant_field(
-                grid, 0.0, dims.CellDim, dims.C2E2CDim, allocator=backend
+                grid,
+                0.0,
+                dims.CellDim,
+                dims.C2E2CDim,
+                allocator=concrete_backend,
             ),
         ),
         metric_state=advection_states.AdvectionMetricState(
