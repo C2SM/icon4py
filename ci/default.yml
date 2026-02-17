@@ -39,6 +39,8 @@ test_tools_datatests_aarch64:
   rules:
     - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'common'
       when: never  # run only in daily CI, to save compute resources
+    - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'driver'
+      when: never  # run only in daily CI, to save compute resources
     - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'dycore'
       variables:
         SLURM_TIMELIMIT: '01:00:00'
