@@ -386,6 +386,7 @@ class NoAdvection(HorizontalAdvection):
             field_out=p_tracer_new,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
+
         log.debug("horizontal advection run - end")
 
 
@@ -420,6 +421,7 @@ class FiniteVolume(HorizontalAdvection):
             p_mflx_tracer_h=p_mflx_tracer_h,
             dtime=dtime,
         )
+
         log.debug("horizontal advection run - end")
 
     @abstractmethod

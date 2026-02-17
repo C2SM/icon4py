@@ -201,6 +201,10 @@ class NoAdvection(Advection):
     ):
         log.debug("advection run - start")
 
+        log.debug("communication of prep_adv cell field: mass_flx_ic - start")
+        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
+        log.debug("communication of prep_adv cell field: mass_flx_ic - end")
+
         log.debug("running stencil copy_cell_kdim_field - start")
         self._copy_cell_kdim_field(
             field_in=p_tracer_now,
@@ -381,6 +385,11 @@ class GodunovSplittingAdvection(Advection):
                 p_dtime=dtime,
             )
             log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
+
+        # exchange updated tracer values, originally happens only if iforcing /= inwp
+        log.debug("communication of advection cell field: p_tracer_new - start")
+        self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
+        log.debug("communication of advection cell field: p_tracer_new - end")
 
         # finalize step
         self._even_timestep = not self._even_timestep
