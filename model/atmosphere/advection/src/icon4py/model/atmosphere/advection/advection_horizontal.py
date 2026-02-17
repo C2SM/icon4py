@@ -63,7 +63,7 @@ class HorizontalFluxLimiter:
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ): ...
+    ) -> None: ...
 
 
 class NoLimiter(HorizontalFluxLimiter):
@@ -154,7 +154,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         # compute multiplicative flux factor to guarantee no undershoot
         log.debug(
             "running stencil compute_positive_definite_horizontal_multiplicative_flux_factor - start"
@@ -196,11 +196,11 @@ class SemiLagrangianTracerFlux(ABC):
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-        p_distv_bary_1: fa.EdgeKField[ta.vpfloat],
-        p_distv_bary_2: fa.EdgeKField[ta.vpfloat],
+        p_distv_bary_1: fa.EdgeKField[ta.vpfloat_t],
+        p_distv_bary_2: fa.EdgeKField[ta.vpfloat_t],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ): ...
+    ) -> None: ...
 
 
 class SecondOrderMiura(SemiLagrangianTracerFlux):
@@ -278,11 +278,11 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-        p_distv_bary_1: fa.EdgeKField[ta.vpfloat],
-        p_distv_bary_2: fa.EdgeKField[ta.vpfloat],
+        p_distv_bary_1: fa.EdgeKField[ta.vpfloat_t],
+        p_distv_bary_2: fa.EdgeKField[ta.vpfloat_t],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("horizontal tracer flux computation - start")
 
         # linear reconstruction using singular value decomposition
@@ -338,7 +338,7 @@ class HorizontalAdvection(ABC):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         """
         Run a horizontal advection step.
 
@@ -395,7 +395,7 @@ class NoAdvection(HorizontalAdvection):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("horizontal advection run - start")
 
         log.debug("running stencil copy_cell_kdim_field - start")
@@ -420,7 +420,7 @@ class FiniteVolume(HorizontalAdvection):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("horizontal advection run - start")
 
         self._compute_numerical_flux(
@@ -450,7 +450,7 @@ class FiniteVolume(HorizontalAdvection):
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ): ...
+    ) -> None: ...
 
     @abstractmethod
     def _update_unknowns(
@@ -461,7 +461,7 @@ class FiniteVolume(HorizontalAdvection):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ): ...
+    ) -> None: ...
 
 
 class SemiLagrangian(FiniteVolume):
@@ -582,7 +582,7 @@ class SemiLagrangian(FiniteVolume):
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("horizontal numerical flux computation - start")
 
         ## tracer-independent part
@@ -628,7 +628,7 @@ class SemiLagrangian(FiniteVolume):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("horizontal unknowns update - start")
 
         # update tracer mass fraction

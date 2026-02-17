@@ -137,6 +137,7 @@ files = [
   # TODO(egparedes): activate for all sources and tests
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_horizontal.py',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
@@ -210,6 +211,10 @@ module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 [[tool.mypy.overrides]]
 disable_error_code = ["index"]
 module = ["icon4py.model.standalone_driver.testcases.initial_condition"]  # complains about assigning to indices of NDArrayObject
+
+[[tool.mypy.overrides]]
+disable_error_code = ["attr-defined"]
+module = ["icon4py.model.atmosphere.advection.advection_horizontal"]  # complains about gt4py.next not containing int32
 
 # -- pytest --
 [tool.pytest]
