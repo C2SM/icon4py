@@ -13,7 +13,8 @@ import pathlib
 from collections.abc import Callable
 
 import gt4py.next as gtx
-from gt4py.next import config as gtx_config, metrics as gtx_metrics
+from gt4py.next import config as gtx_config
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.advection import advection, advection_states
