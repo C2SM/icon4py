@@ -224,8 +224,6 @@ class InterpolationState:
 class MetricStateNonHydro:
     """Dataclass containing metric fields needed in dynamical core (SolveNonhydro)."""
 
-    bdy_halo_c: fa.CellField[bool]
-    # Finally, a mask field that excludes boundary halo points
     mask_prog_halo_c: fa.CellKField[bool]
     rayleigh_w: fa.KField[ta.wpfloat]
 

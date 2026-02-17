@@ -229,7 +229,6 @@ program solve_nh_simulation
     real(c_double), dimension(:), allocatable :: scalfac_dd3d
     real(c_double), dimension(:), allocatable :: nudgecoeff_e
     real(c_double), dimension(:), allocatable :: hmask_dd3d
-    logical(c_int), dimension(:), allocatable :: bdy_halo_c
     logical(c_int), dimension(:), allocatable :: mask_prog_halo_c
     logical(c_int), dimension(:), allocatable :: c_owner_mask
 
@@ -324,7 +323,7 @@ program solve_nh_simulation
    !$acc enter data create (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
    !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
-   !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+   !$acc hmask_dd3d, mask_prog_halo_c, c_owner_mask, & ! L 191
 
    !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
    !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
@@ -433,7 +432,6 @@ program solve_nh_simulation
    allocate(ipeidx_dsl(num_edges, num_levels))
    allocate(mask_prog_halo_c(num_cells))
    allocate(c_owner_mask(num_cells))
-   allocate(bdy_halo_c(num_cells))
    allocate(coeff_gradekin(num_edges, num_e2c))
    allocate(geofac_grdiv(num_edges, num_e2c2eo))
    allocate(e_flx_avg(num_edges, num_e2c2eo))
@@ -535,7 +533,6 @@ program solve_nh_simulation
    call fill_random_1d(scalfac_dd3d, 0.0_c_double, 1.0_c_double)
    call fill_random_1d_bool(mask_prog_halo_c)
    call fill_random_1d_bool(c_owner_mask)
-   call fill_random_1d_bool(bdy_halo_c)
 
 
    call fill_random_2d(theta_ref_mc, 0.0_c_double, 1.0_c_double)
@@ -636,7 +633,7 @@ program solve_nh_simulation
    !$acc data copyin (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
    !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
-   !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+   !$acc hmask_dd3d, mask_prog_halo_c, c_owner_mask, & ! L 191
 
    !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
    !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
@@ -707,7 +704,6 @@ program solve_nh_simulation
         geofac_grg_x=geofac_grg_x, &
         geofac_grg_y=geofac_grg_y, &
         nudgecoeff_e=nudgecoeff_e, &
-        bdy_halo_c=bdy_halo_c, &
         mask_prog_halo_c=mask_prog_halo_c, &
         rayleigh_w=rayleigh_w, &
         exner_exfac=exner_exfac, &
@@ -805,7 +801,7 @@ program solve_nh_simulation
    !$acc update host (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
    !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
-   !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+   !$acc hmask_dd3d, mask_prog_halo_c, c_owner_mask, & ! L 191
 
    !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
    !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
@@ -832,7 +828,7 @@ program solve_nh_simulation
   !$acc exit data delete (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
   !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
   !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
-  !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+  !$acc hmask_dd3d, mask_prog_halo_c, c_owner_mask, & ! L 191
 
   !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
   !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
