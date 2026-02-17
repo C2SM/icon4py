@@ -406,7 +406,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
-    exchange: decomposition.ExchangeRuntime | None = None,
+    exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
     exchange = exchange or decomposition.SingleNodeExchange()
     assert exchange is not None, "Exchange runtime must not be None."

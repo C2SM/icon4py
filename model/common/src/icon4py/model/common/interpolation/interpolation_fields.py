@@ -1277,7 +1277,8 @@ def compute_lsq_coeffs(
             lsq_dim_c,
         )
 
-    exchange(lsq_weights_c)
+    if exchange != decomposition.single_node_default:
+        exchange(lsq_weights_c)
 
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask,
@@ -1289,8 +1290,8 @@ def compute_lsq_coeffs(
         lsq_dim_unk,
         lsq_dim_c,
     )
-
-    exchange(lsq_pseudoinv[:, 0, :])
-    exchange(lsq_pseudoinv[:, 1, :])
+    if exchange != decomposition.single_node_default:
+        exchange(lsq_pseudoinv[:, 0, :])
+        exchange(lsq_pseudoinv[:, 1, :])
 
     return lsq_pseudoinv
