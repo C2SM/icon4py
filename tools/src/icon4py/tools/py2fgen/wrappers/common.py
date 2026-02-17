@@ -59,7 +59,7 @@ Int32Array1D: TypeAlias = Annotated[
 ]
 
 OptionalInt32Array1D: TypeAlias = Annotated[
-    data_alloc.NDArray,
+    data_alloc.NDArray | None,
     py2fgen.ArrayParamDescriptor(
         rank=1,
         dtype=ts.ScalarKind.INT32,
@@ -69,7 +69,7 @@ OptionalInt32Array1D: TypeAlias = Annotated[
 ]
 
 OptionalInt32Array2D: TypeAlias = Annotated[
-    data_alloc.NDArray,
+    data_alloc.NDArray | None,
     py2fgen.ArrayParamDescriptor(
         rank=2,
         dtype=ts.ScalarKind.INT32,
@@ -99,7 +99,7 @@ Float64Array2D: TypeAlias = Annotated[
 ]
 
 OptionalFloat64Array1D: TypeAlias = Annotated[
-    data_alloc.NDArray,
+    data_alloc.NDArray | None,
     py2fgen.ArrayParamDescriptor(
         rank=1,
         dtype=ts.ScalarKind.FLOAT64,
