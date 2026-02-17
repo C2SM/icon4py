@@ -860,10 +860,10 @@ class MetricSavepoint(IconSavepoint):
         })
         return wrapper_common.list2field(
             domain=cell_c2e2c_k_domain,
-            values=zd_vertoffset,
+            values=zd_vertoffset.T,
             indices=(
                 wrapper_common.adjust_fortran_indices(zd_cellidx),
-                self.xp.asarray([0, 1, 2]),
+                slice(None),
                 wrapper_common.adjust_fortran_indices(zd_vertidx),
             ),
             default_value=gtx.int32(0),
@@ -882,10 +882,10 @@ class MetricSavepoint(IconSavepoint):
         })
         return wrapper_common.list2field(
             domain=cell_c2e2c_k_domain,
-            values=zd_intcoef,
+            values=zd_intcoef.T,
             indices=(
                 wrapper_common.adjust_fortran_indices(zd_cellidx),
-                self.xp.asarray([0, 1, 2]),
+                slice(None),
                 wrapper_common.adjust_fortran_indices(zd_vertidx),
             ),
             default_value=gtx.float64(0.0),
