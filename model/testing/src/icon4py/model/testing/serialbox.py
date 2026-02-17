@@ -696,12 +696,15 @@ class MetricSavepoint(IconSavepoint):
     def mask_prog_halo_c(self):
         return self._get_field("mask_prog_halo_c", dims.CellDim, dtype=bool)
 
+    @IconSavepoint.optionally_registered()
     def pg_edgeidx(self):
         return np.squeeze(self.serializer.read("pg_edgeidx", self.savepoint))
 
+    @IconSavepoint.optionally_registered()
     def pg_vertidx(self):
         return np.squeeze(self.serializer.read("pg_vertidx", self.savepoint))
 
+    @IconSavepoint.optionally_registered()
     def pg_exdist(self):
         return np.squeeze(self.serializer.read("pg_exdist", self.savepoint))
 
@@ -709,16 +712,26 @@ class MetricSavepoint(IconSavepoint):
         pg_edgeidx = self.pg_edgeidx()
         pg_vertidx = self.pg_vertidx()
         pg_exdist = self.pg_exdist()
-        return wrapper_common.list2field(
-            domain=self.rho_ref_me().domain,
-            values=pg_exdist,
-            indices=(
-                wrapper_common.adjust_fortran_indices(pg_edgeidx),
-                wrapper_common.adjust_fortran_indices(pg_vertidx),
-            ),
-            default_value=gtx.float64(0.0),
-            allocator=model_backends.get_allocator(self.backend),
-        )
+        domain = self.rho_ref_me().domain
+        default_value = gtx.float64(0.0)
+        if (pg_edgeidx is None) or (pg_vertidx is None) or (pg_exdist is None):
+            # if any of the fields is missing, return a zero field with the correct shape
+            return gtx.as_field(
+                domain,
+                self.xp.full(domain.shape, fill_value=default_value, dtype=gtx.float64),
+                allocator=model_backends.get_allocator(self.backend),
+            )
+        else:
+            return wrapper_common.list2field(
+                domain=domain,
+                values=pg_exdist,
+                indices=(
+                    wrapper_common.adjust_fortran_indices(pg_edgeidx),
+                    wrapper_common.adjust_fortran_indices(pg_vertidx),
+                ),
+                default_value=default_value,
+                allocator=model_backends.get_allocator(self.backend),
+            )
 
     def rayleigh_w(self):
         return self._get_field("rayleigh_w", dims.KDim)
