@@ -196,13 +196,11 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         least_squares_state: advection_states.AdvectionLeastSquaresState,
         backend: model_backends.BackendLike,
         horizontal_limiter: HorizontalFluxLimiter | None = None,
-        exchange: decomposition.ExchangeRuntime | None = None,
     ):
         self._grid = grid
         self._least_squares_state = least_squares_state
         self._backend = backend
         self._horizontal_limiter = horizontal_limiter or HorizontalFluxLimiter()
-        self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -342,7 +340,7 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: model_backends.BackendLike, exchange):
+    def __init__(self, grid: icon_grid.IconGrid, backend: model_backends.BackendLike):
         log.debug("horizontal advection class init - start")
 
         # input arguments
@@ -352,7 +350,6 @@ class NoAdvection(HorizontalAdvection):
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-        self._exchange = exchange
 
         # stencils
         self._copy_cell_kdim_field = setup_program(
@@ -389,7 +386,6 @@ class NoAdvection(HorizontalAdvection):
             field_out=p_tracer_new,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
-        self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("horizontal advection run - end")
 
 

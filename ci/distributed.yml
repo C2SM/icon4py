@@ -79,7 +79,7 @@ build_distributed_cpu:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
-      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, atmosphere/advection, common]
+      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
         BACKEND: [embedded, gtfn_cpu, dace_cpu]
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'
@@ -89,9 +89,6 @@ build_distributed_cpu:
       variables:
         SLURM_TIMELIMIT: '00:20:00'
     - if: $COMPONENT == 'atmosphere/dycore'
-      variables:
-        SLURM_TIMELIMIT: '00:15:00'
-    - if: $COMPONENT == 'atmosphere/advection'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success

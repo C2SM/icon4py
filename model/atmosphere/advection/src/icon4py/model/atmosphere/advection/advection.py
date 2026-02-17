@@ -301,6 +301,7 @@ class GodunovSplittingAdvection(Advection):
         log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
+        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         # reintegrate density for conservation of mass
@@ -415,16 +416,13 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
 
     match config.horizontal_advection_type:
         case HorizontalAdvectionType.NO_ADVECTION:
-            horizontal_advection = advection_horizontal.NoAdvection(
-                grid=grid, backend=backend, exchange=exchange
-            )
+            horizontal_advection = advection_horizontal.NoAdvection(grid=grid, backend=backend)
         case HorizontalAdvectionType.LINEAR_2ND_ORDER:
             tracer_flux = advection_horizontal.SecondOrderMiura(
                 grid=grid,
                 least_squares_state=least_squares_state,
                 horizontal_limiter=horizontal_limiter,
                 backend=backend,
-                exchange=exchange,
             )
             horizontal_advection = advection_horizontal.SemiLagrangian(
                 tracer_flux=tracer_flux,
@@ -449,9 +447,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
 
     match config.vertical_advection_type:
         case VerticalAdvectionType.NO_ADVECTION:
-            vertical_advection = advection_vertical.NoAdvection(
-                grid=grid, backend=backend, exchange=exchange
-            )
+            vertical_advection = advection_vertical.NoAdvection(grid=grid, backend=backend)
         case VerticalAdvectionType.UPWIND_1ST_ORDER:
             boundary_conditions = advection_vertical.NoFluxCondition(grid=grid, backend=backend)
             vertical_advection = advection_vertical.FirstOrderUpwind(
@@ -459,7 +455,6 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 grid=grid,
                 metric_state=metric_state,
                 backend=backend,
-                exchange=exchange,
             )
         case VerticalAdvectionType.PPM_3RD_ORDER:
             boundary_conditions = advection_vertical.NoFluxCondition(grid=grid, backend=backend)
@@ -469,7 +464,6 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 grid=grid,
                 metric_state=metric_state,
                 backend=backend,
-                exchange=exchange,
             )
         case _:
             raise NotImplementedError("Unknown vertical advection type.")
