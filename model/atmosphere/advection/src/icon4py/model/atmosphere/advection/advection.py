@@ -11,6 +11,7 @@ import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.grid.states as grid_states
@@ -29,6 +30,7 @@ from icon4py.model.atmosphere.advection.stencils.copy_cell_kdim_field import cop
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -160,7 +162,7 @@ class NoAdvection(Advection):
         self,
         grid: icon_grid.IconGrid,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = None,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
     ):
         log.debug("advection class init - start")
 
@@ -175,7 +177,19 @@ class NoAdvection(Advection):
         self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         # stencils
-        self._copy_cell_kdim_field = copy_cell_kdim_field.with_backend(self._backend)
+        self._copy_cell_kdim_field = setup_program(
+            backend=self._backend,
+            program=copy_cell_kdim_field,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_nudging,
+                "horizontal_end": self._end_cell_local,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": self._grid.num_levels,
+            },
+            offset_provider=self._grid.connectivities,
+        )
 
     def run(
         self,
@@ -187,19 +201,10 @@ class NoAdvection(Advection):
     ):
         log.debug("advection run - start")
 
-        log.debug("communication of prep_adv cell field: mass_flx_ic - start")
-        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
-        log.debug("communication of prep_adv cell field: mass_flx_ic - end")
-
         log.debug("running stencil copy_cell_kdim_field - start")
         self._copy_cell_kdim_field(
             field_in=p_tracer_now,
             field_out=p_tracer_new,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil copy_cell_kdim_field - end")
 
@@ -216,7 +221,7 @@ class GodunovSplittingAdvection(Advection):
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
         backend: gtx_typing.Backend | None,
-        exchange: decomposition.ExchangeRuntime | None = None,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
         even_timestep: bool = False,
     ):
         log.debug("advection class init - start")
@@ -237,9 +242,33 @@ class GodunovSplittingAdvection(Advection):
         )
         self._determine_local_domains()
         # stencils
-        self._apply_density_increment = apply_density_increment.with_backend(self._backend)
-        self._apply_interpolated_tracer_time_tendency = (
-            apply_interpolated_tracer_time_tendency.with_backend(self._backend)
+        self._apply_density_increment = setup_program(
+            backend=self._backend,
+            program=apply_density_increment,
+            constant_args={
+                "deepatmo_divzl": self._metric_state.deepatmo_divzl,
+                "deepatmo_divzu": self._metric_state.deepatmo_divzu,
+            },
+            horizontal_sizes={
+                "horizontal_end": self._end_cell_end,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
+            offset_provider=self._grid.connectivities,
+        )
+        self._apply_interpolated_tracer_time_tendency = setup_program(
+            backend=self._backend,
+            program=apply_interpolated_tracer_time_tendency,
+            horizontal_sizes={
+                "horizontal_start": self._start_cell_lateral_boundary,
+                "horizontal_end": self._end_cell_lateral_boundary_level_4,
+            },
+            vertical_sizes={
+                "vertical_start": gtx.int32(0),
+                "vertical_end": gtx.int32(self._grid.num_levels),
+            },
         )
 
         log.debug("advection class init - end")
@@ -272,7 +301,6 @@ class GodunovSplittingAdvection(Advection):
         log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
-        self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         # reintegrate density for conservation of mass
@@ -281,20 +309,15 @@ class GodunovSplittingAdvection(Advection):
             if self._even_timestep
             else (diagnostic_state.airmass_new, self._start_cell_lateral_boundary_level_3)
         )
+
         log.debug("running stencil apply_density_increment - start")
         self._apply_density_increment(
             rhodz_in=rhodz_in,
             p_mflx_contra_v=prep_adv.mass_flx_ic,
-            deepatmo_divzl=self._metric_state.deepatmo_divzl,
-            deepatmo_divzu=self._metric_state.deepatmo_divzu,
             rhodz_out=self._rhodz_ast2,
             p_dtime=dtime,
             even_timestep=self._even_timestep,
             horizontal_start=horizontal_start,
-            horizontal_end=self._end_cell_end,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
         )
         log.debug("running stencil apply_density_increment - end")
 
@@ -355,18 +378,8 @@ class GodunovSplittingAdvection(Advection):
                 p_grf_tend_tracer=diagnostic_state.grf_tend_tracer,
                 p_tracer_new=p_tracer_new,
                 p_dtime=dtime,
-                horizontal_start=self._start_cell_lateral_boundary,
-                horizontal_end=self._end_cell_lateral_boundary_level_4,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.connectivities,
             )
             log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
-
-        # exchange updated tracer values, originally happens only if iforcing /= inwp
-        log.debug("communication of advection cell field: p_tracer_new - start")
-        self._exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
-        log.debug("communication of advection cell field: p_tracer_new - end")
 
         # finalize step
         self._even_timestep = not self._even_timestep
@@ -402,13 +415,16 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
 
     match config.horizontal_advection_type:
         case HorizontalAdvectionType.NO_ADVECTION:
-            horizontal_advection = advection_horizontal.NoAdvection(grid=grid, backend=backend)
+            horizontal_advection = advection_horizontal.NoAdvection(
+                grid=grid, backend=backend, exchange=exchange
+            )
         case HorizontalAdvectionType.LINEAR_2ND_ORDER:
             tracer_flux = advection_horizontal.SecondOrderMiura(
                 grid=grid,
                 least_squares_state=least_squares_state,
                 horizontal_limiter=horizontal_limiter,
                 backend=backend,
+                exchange=exchange,
             )
             horizontal_advection = advection_horizontal.SemiLagrangian(
                 tracer_flux=tracer_flux,
@@ -433,7 +449,9 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
 
     match config.vertical_advection_type:
         case VerticalAdvectionType.NO_ADVECTION:
-            vertical_advection = advection_vertical.NoAdvection(grid=grid, backend=backend)
+            vertical_advection = advection_vertical.NoAdvection(
+                grid=grid, backend=backend, exchange=exchange
+            )
         case VerticalAdvectionType.UPWIND_1ST_ORDER:
             boundary_conditions = advection_vertical.NoFluxCondition(grid=grid, backend=backend)
             vertical_advection = advection_vertical.FirstOrderUpwind(
@@ -441,6 +459,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 grid=grid,
                 metric_state=metric_state,
                 backend=backend,
+                exchange=exchange,
             )
         case VerticalAdvectionType.PPM_3RD_ORDER:
             boundary_conditions = advection_vertical.NoFluxCondition(grid=grid, backend=backend)
@@ -450,6 +469,7 @@ def convert_config_to_horizontal_vertical_advection(  # noqa: PLR0912 [too-many-
                 grid=grid,
                 metric_state=metric_state,
                 backend=backend,
+                exchange=exchange,
             )
         case _:
             raise NotImplementedError("Unknown vertical advection type.")
@@ -466,7 +486,7 @@ def convert_config_to_advection(
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
     backend: gtx_typing.Backend | None,
-    exchange: decomposition.ExchangeRuntime | None = None,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     even_timestep: bool = False,
 ) -> Advection:
     exchange = exchange or decomposition.SingleNodeExchange()
