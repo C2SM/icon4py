@@ -34,7 +34,6 @@ test_model_stencils_aarch64:
   rules:
     - if: $COMPONENT == 'common' && $LEVEL == 'integration'
       variables:
-        NUM_PROCESSES: 1
         SLURM_TIMELIMIT: '00:45:00'
     - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'dycore'
       variables:
