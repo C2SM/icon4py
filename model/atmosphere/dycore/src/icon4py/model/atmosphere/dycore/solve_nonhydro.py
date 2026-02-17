@@ -381,12 +381,12 @@ class SolveNonhydro:
             backend=backend,
             program=compute_theta_and_exner,
             constant_args={
-                "bdy_halo_c": self._metric_state_nonhydro.bdy_halo_c,
+                "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
                 "rd_o_cvd": constants.RD_O_CVD,
                 "rd_o_p0ref": constants.RD_O_P0REF,
             },
             horizontal_sizes={
-                "horizontal_start": self._start_cell_local,
+                "horizontal_start": self._start_cell_halo,
                 "horizontal_end": self._end_cell_end,
             },
             vertical_sizes={
