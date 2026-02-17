@@ -66,6 +66,18 @@ class HorizontalFluxLimiter:
     ): ...
 
 
+class NoLimiter(HorizontalFluxLimiter):
+    """Do not apply any limiting."""
+
+    def apply_flux_limiter(
+        self,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None: ...
+
+
 class PositiveDefinite(HorizontalFluxLimiter):
     """Class that implements a positive definite horizontal flux limiter."""
 
@@ -204,7 +216,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self._grid = grid
         self._least_squares_state = least_squares_state
         self._backend = model_options.customize_backend(program=None, backend=backend)
-        self._horizontal_limiter = horizontal_limiter or HorizontalFluxLimiter()
+        self._horizontal_limiter = horizontal_limiter or NoLimiter()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
