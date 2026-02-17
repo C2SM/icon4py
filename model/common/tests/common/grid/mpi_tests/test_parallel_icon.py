@@ -14,6 +14,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.testing import definitions as test_defs, parallel_helpers
 
 from ...fixtures import (
@@ -23,7 +24,6 @@ from ...fixtures import (
     grid_savepoint,
     icon_grid,
     processor_props,
-    ranked_data_path,
 )
 from .. import utils
 
@@ -31,12 +31,13 @@ from .. import utils
 if TYPE_CHECKING:
     import gt4py.next as gtx
 
-    from icon4py.model.common.decomposition import definitions as decomp_defs
     from icon4py.model.common.grid import base as base_grid
 
 
 try:
     import mpi4py  # type: ignore[import-not-found] # F401:  import mpi4py to check for optional mpi dependency
+
+    from icon4py.model.common.decomposition import mpi_decomposition
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 

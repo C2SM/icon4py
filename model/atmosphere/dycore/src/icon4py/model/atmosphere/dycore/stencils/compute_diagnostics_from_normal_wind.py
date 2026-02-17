@@ -47,7 +47,7 @@ def _compute_horizontal_kinetic_energy(
 
 
 @gtx.field_operator
-def _compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
+def _compute_diagnostics_from_normal_wind(
     tangential_wind_on_half_levels: fa.EdgeKField[ta.vpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[ta.vpfloat],
@@ -115,7 +115,7 @@ def _compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
+def compute_diagnostics_from_normal_wind(
     tangential_wind: fa.EdgeKField[ta.vpfloat],
     tangential_wind_on_half_levels: fa.EdgeKField[ta.wpfloat],
     vn_on_half_levels: fa.EdgeKField[ta.vpfloat],
@@ -182,7 +182,7 @@ def compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
         - horizontal_advection_of_w_at_edges_on_half_levels
     """
 
-    _compute_derived_horizontal_winds_and_ke_and_contravariant_correction(
+    _compute_diagnostics_from_normal_wind(
         tangential_wind_on_half_levels,
         contravariant_correction_at_edges_on_model_levels,
         horizontal_advection_of_w_at_edges_on_half_levels,

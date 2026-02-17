@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
+from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wind import (
     _compute_horizontal_kinetic_energy,
     _interpolate_to_half_levels,
 )
@@ -217,7 +217,7 @@ def compute_horizontal_velocity_quantities_and_fluxes(
 
 
 @gtx.field_operator
-def _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+def _compute_averaged_vn_and_fluxes(
     substep_and_spatially_averaged_vn: fa.EdgeKField[ta.wpfloat],
     substep_averaged_mass_flux: fa.EdgeKField[ta.wpfloat],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], ta.wpfloat],
@@ -270,7 +270,7 @@ def _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+def compute_averaged_vn_and_fluxes(
     spatially_averaged_vn: fa.EdgeKField[ta.wpfloat],
     mass_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
     theta_v_flux_at_edges_on_model_levels: fa.EdgeKField[ta.wpfloat],
@@ -321,7 +321,7 @@ def compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
         - substep_averaged_mass_flux
     """
 
-    _compute_averaged_vn_and_fluxes_and_prepare_tracer_advection(
+    _compute_averaged_vn_and_fluxes(
         substep_and_spatially_averaged_vn,
         substep_averaged_mass_flux,
         e_flx_avg,

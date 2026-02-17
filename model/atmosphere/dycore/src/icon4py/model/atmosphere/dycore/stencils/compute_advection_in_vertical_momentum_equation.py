@@ -244,7 +244,7 @@ def _compute_advective_vertical_wind_tendency(
 
 
 @gtx.field_operator
-def _compute_advection_in_vertical_momentum_equation(
+def _compute_advection_in_corrector_vertical_momentum(
     vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
     tangential_wind_on_half_levels: fa.EdgeKField[wpfloat],
@@ -324,7 +324,7 @@ def _compute_advection_in_vertical_momentum_equation(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_advection_in_vertical_momentum_equation(
+def compute_advection_in_corrector_vertical_momentum(
     vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[vpfloat],
     vertical_cfl: fa.CellKField[vpfloat],
@@ -390,7 +390,7 @@ def compute_advection_in_vertical_momentum_equation(
         - vertical_cfl
     """
 
-    _compute_advection_in_vertical_momentum_equation(
+    _compute_advection_in_corrector_vertical_momentum(
         vertical_wind_advective_tendency,
         w,
         tangential_wind_on_half_levels,
@@ -450,10 +450,10 @@ def _interpolate_contravariant_correction_to_cells_on_half_levels(
 
 
 @gtx.field_operator
-def _compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
+def _compute_advection_in_predictor_vertical_momentum(
     vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[wpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
@@ -533,13 +533,13 @@ def _compute_contravariant_correction_and_advection_in_vertical_momentum_equatio
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
+def compute_advection_in_predictor_vertical_momentum(
     contravariant_correction_at_cells_on_half_levels: fa.CellKField[vpfloat],
     vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     contravariant_corrected_w_at_cells_on_model_levels: fa.CellKField[vpfloat],
     vertical_cfl: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
-    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[vpfloat],
+    horizontal_advection_of_w_at_edges_on_half_levels: fa.EdgeKField[wpfloat],
     contravariant_correction_at_edges_on_model_levels: fa.EdgeKField[vpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
@@ -597,7 +597,7 @@ def compute_contravariant_correction_and_advection_in_vertical_momentum_equation
         - vertical_cfl
     """
 
-    _compute_contravariant_correction_and_advection_in_vertical_momentum_equation(
+    _compute_advection_in_predictor_vertical_momentum(
         vertical_wind_advective_tendency,
         w,
         horizontal_advection_of_w_at_edges_on_half_levels,

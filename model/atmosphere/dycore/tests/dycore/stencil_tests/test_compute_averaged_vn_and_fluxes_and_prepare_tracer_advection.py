@@ -13,7 +13,7 @@ import pytest
 
 import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quantities import (
-    compute_averaged_vn_and_fluxes_and_prepare_tracer_advection,
+    compute_averaged_vn_and_fluxes,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -28,7 +28,7 @@ from .test_spatially_average_flux_or_velocity import spatially_average_flux_or_v
 @pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
 class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.StencilTest):
-    PROGRAM = compute_averaged_vn_and_fluxes_and_prepare_tracer_advection
+    PROGRAM = compute_averaged_vn_and_fluxes
     OUTPUTS = (
         "spatially_averaged_vn",
         "mass_flux_at_edges_on_model_levels",

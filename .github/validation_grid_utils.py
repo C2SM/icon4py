@@ -8,8 +8,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ruff: noqa: ERA001
-
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
@@ -22,12 +20,11 @@
 
 
 import hashlib
-import pathlib
 import sys
 
 import typer
 
-from icon4py.model.testing import config, definitions, grid_utils
+from icon4py.model.testing import definitions, grid_utils
 
 
 VALIDATION_GRIDS = (
@@ -50,7 +47,6 @@ def cache_key() -> None:
 @app.command(name="download")
 def download_validation_grids() -> None:
     """Effectively download the validation grid files."""
-    config.TEST_DATA_PATH = pathlib.Path.cwd() / definitions.DEFAULT_TEST_DATA_FOLDER
     for grid in VALIDATION_GRIDS:
         print(f"downloading and unpacking {grid.name}")
         fname = grid_utils._download_grid_file(grid)

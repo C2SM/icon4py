@@ -61,11 +61,10 @@ def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.FieldBufferAllocationUtil,
+    global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
 ) -> gm.GridManager:
     grid_manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(),
-        grid_file_path,
-        vertical_grid_config,
+        gm.ToZeroBasedIndexTransformation(), grid_file_path, vertical_grid_config, global_reductions
     )
     grid_manager(allocator=allocator, keep_skip_values=True)
 
@@ -174,6 +173,7 @@ def initialize_granules(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
+        mean_cell_area=geometry_field_source.get(geometry_meta.MEAN_CELL_AREA),
     )
 
     log.info("creating edge geometry")

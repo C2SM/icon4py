@@ -25,7 +25,7 @@ from icon4py.model.testing import (
     serialbox,
     test_utils as test_helpers,
 )
-from icon4py.model.testing.definitions import metrics_config
+from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -35,7 +35,6 @@ from icon4py.model.testing.fixtures.datatest import (
     icon_grid,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
     topography_savepoint,
 )
 
@@ -66,7 +65,9 @@ def _get_metrics_factory(
             exner_expol,
             vwind_offctr,
             rayleigh_type,
-        ) = metrics_config(experiment)
+            thslp_zdiffu,
+            thhgtd_zdiffu,
+        ) = construct_metrics_config(experiment)
 
         vertical_config = v_grid.VerticalGridConfig(
             geometry.grid.num_levels,
@@ -99,6 +100,8 @@ def _get_metrics_factory(
             rayleigh_coeff=rayleigh_coeff,
             exner_expol=exner_expol,
             vwind_offctr=vwind_offctr,
+            thslp_zdiffu=thslp_zdiffu,
+            thhgtd_zdiffu=thhgtd_zdiffu,
             exchange=exchange,
         )
         metrics_factories[registry_name] = factory

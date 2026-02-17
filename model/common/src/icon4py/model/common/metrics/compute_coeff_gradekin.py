@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from collections.abc import Callable
 from types import ModuleType
 
 import gt4py.next as gtx
@@ -17,6 +18,7 @@ def compute_coeff_gradekin(
     edge_cell_length: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     horizontal_start: gtx.int32,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -41,4 +43,5 @@ def compute_coeff_gradekin(
         * inv_dual_edge_length[horizontal_start:]
     )
     coeff_gradekin_full = array_ns.column_stack((coeff_gradekin_0, coeff_gradekin_1))
+    exchange(coeff_gradekin_full)
     return coeff_gradekin_full

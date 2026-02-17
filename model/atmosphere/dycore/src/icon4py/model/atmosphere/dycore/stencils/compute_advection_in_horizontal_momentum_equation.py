@@ -173,7 +173,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_without_levelm
 
 
 @gtx.field_operator
-def _compute_advection_in_horizontal_momentum_equation(
+def _compute_advection_in_horizontal_momentum(
     vn: fa.EdgeKField[ta.wpfloat],
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
     tangential_wind: fa.EdgeKField[ta.vpfloat],
@@ -239,7 +239,7 @@ def _compute_advection_in_horizontal_momentum_equation(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_advection_in_horizontal_momentum_equation(
+def compute_advection_in_horizontal_momentum(
     normal_wind_advective_tendency: fa.EdgeKField[ta.vpfloat],
     vn: fa.EdgeKField[ta.wpfloat],
     horizontal_kinetic_energy_at_edges_on_model_levels: fa.EdgeKField[ta.vpfloat],
@@ -304,7 +304,7 @@ def compute_advection_in_horizontal_momentum_equation(
 
     """
 
-    _compute_advection_in_horizontal_momentum_equation(
+    _compute_advection_in_horizontal_momentum(
         vn,
         horizontal_kinetic_energy_at_edges_on_model_levels,
         tangential_wind,
