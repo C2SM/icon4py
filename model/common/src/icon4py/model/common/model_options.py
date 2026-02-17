@@ -54,9 +54,10 @@ def get_dace_options(
         backend_descriptor["use_zero_origin"] = True
     if program_name == "graupel_run":
         backend_descriptor["use_zero_origin"] = True
+        optimization_args["fuse_tasklets"] = True
+        optimization_args["gpu_maxnreg"] = 128
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
-        optimization_args["fuse_tasklets"] = True
         optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre] = (
             dace_hooks.graupel_run_top_level_dataflow_pre
         )
