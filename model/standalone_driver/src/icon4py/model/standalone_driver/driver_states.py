@@ -64,6 +64,7 @@ class DriverStates(NamedTuple):
     prep_advection_prognostic: dycore_states.PrepAdvection
     solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro
     tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState
+    prep_tracer_advection_prognostic: advection_states.AdvectionPrepAdvState
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
     prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState

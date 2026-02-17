@@ -161,7 +161,8 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
-  '$MYPY_CONFIG_FILE_DIR/tools/src/'
+  '$MYPY_CONFIG_FILE_DIR/tools/src/',
+  '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src/icon4py/model/standalone_driver'
 ]
 ignore_missing_imports = false
 implicit_reexport = true
@@ -173,6 +174,7 @@ $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
 $MYPY_CONFIG_FILE_DIR/model/driver/src:
+$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src:
 $MYPY_CONFIG_FILE_DIR/model/testing/src:
 $MYPY_CONFIG_FILE_DIR/tools/src:
 '''
@@ -203,6 +205,10 @@ module = [
 [[tool.mypy.overrides]]
 disallow_untyped_defs = false
 module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
+
+[[tool.mypy.overrides]]
+disable_error_code = ["index"]
+module = ["icon4py.model.standalone_driver.testcases.initial_condition"]  # complains about assigning to indices of NDArrayObject
 
 # -- pytest --
 [tool.pytest]

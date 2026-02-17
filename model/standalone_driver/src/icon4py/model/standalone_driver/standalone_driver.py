@@ -10,6 +10,7 @@ import datetime
 import functools
 import logging
 import pathlib
+import types
 from collections.abc import Callable
 
 import gt4py.next as gtx
@@ -43,7 +44,7 @@ class Icon4pyDriver:
     def __init__(
         self,
         config: driver_config.DriverConfig,
-        backend: model_backends.BackendLike,
+        backend: gtx.typing.Backend | None,
         grid: IconGrid,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
@@ -69,16 +70,12 @@ class Icon4pyDriver:
         )
 
     @functools.cached_property
-    def _allocator(self):
+    def _allocator(self) -> gtx.typing.Backend:
         return model_backends.get_allocator(self.backend)
 
     @functools.cached_property
-    def _xp(self):
+    def _xp(self) -> types.ModuleType:
         return data_alloc.import_array_ns(self._allocator)
-
-    @functools.cached_property
-    def _concrete_backend(self):
-        return model_options.customize_backend(program=None, backend=self.backend)
 
     def _is_last_substep(self, step_nr: int) -> bool:
         return step_nr == (self.model_time_variables.ndyn_substeps_var - 1)
@@ -100,6 +97,7 @@ class Icon4pyDriver:
         tracer_advection_diagnostic_state = ds.tracer_advection_diagnostic
         prognostic_states = ds.prognostics
         prep_adv = ds.prep_advection_prognostic
+        tracer_prep_adv = ds.prep_tracer_advection_prognostic
 
         log.debug(
             f"starting time loop for dtime = {self.model_time_variables.dtime_in_seconds} s, substep_timestep = {self.model_time_variables.substep_timestep} s, n_timesteps = {self.model_time_variables.n_time_steps}"
@@ -131,8 +129,9 @@ class Icon4pyDriver:
                 prognostic_states,
                 prep_adv,
                 do_prep_adv,
+                tracer_prep_adv,
             )
-            device_utils.sync(self._concrete_backend)
+            device_utils.sync(self.backend)
 
             self.model_time_variables.is_first_step_in_simulation = False
 
@@ -158,7 +157,8 @@ class Icon4pyDriver:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
-    ):
+        tracer_prep_adv: advection_states.AdvectionPrepAdvState,
+    ) -> None:
         log.debug(f"Running {self.solve_nonhydro.__class__}")
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
@@ -187,8 +187,8 @@ class Icon4pyDriver:
         for tracer_idx in range(self.config.ntracer):
             self.tracer_advection.run(
                 diagnostic_state=tracer_advection_diagnostic_state,
-                prep_adv=prep_adv,
-                p_tracer_now=prognostic_states.now.tracer[tracer_idx],
+                prep_adv=tracer_prep_adv,
+                p_tracer_now=prognostic_states.current.tracer[tracer_idx],
                 p_tracer_new=prognostic_states.next.tracer[tracer_idx],
                 dtime=self.model_time_variables.dtime_in_seconds,
             )
@@ -200,7 +200,7 @@ class Icon4pyDriver:
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         at_first_substep: bool,
         at_initial_timestep: bool,
-    ):
+    ) -> None:
         """
         Set time levels of advective tendency fields for call to velocity_tendencies.
 
@@ -240,7 +240,7 @@ class Icon4pyDriver:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
-    ):
+    ) -> None:
         # TODO(OngChia): compute airmass for prognostic_state here
 
         timer_solve_nh = (
@@ -474,7 +474,7 @@ class Icon4pyDriver:
                 log.info(
                     f"{interface_physical_height_ndarray[k]:12.3f}: {self._xp.mean(rho_ndarray[:, k]):.5e} "
                     f"{self._xp.mean(vn_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(w_ndarray[:, k+1]):.5e} "
+                    f"{self._xp.mean(w_ndarray[:, k + 1]):.5e} "
                     f"{self._xp.mean(theta_v_ndarray[:, k]):.5e} "
                     f"{self._xp.mean(exner_ndarray[:, k]):.5e} "
                 )
@@ -579,21 +579,21 @@ def initialize_driver(
         processor_procs=parallel_props,
     )
 
-    configuration_file_path = pathlib.Path(configuration_file_path)
     global_reductions = decomposition_defs.create_reduction(parallel_props)
-    grid_file_path = pathlib.Path(grid_file_path)
-    if pathlib.Path(output_path).exists():
+    if output_path.exists():
         current_time = datetime.datetime.now()
         log.warning(f"output path {output_path} already exists, a time stamp will be added")
-        output_path = pathlib.Path(
-            output_path
-            + f"_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
+        output_path = (
+            output_path.parent
+            / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
         )
-    else:
-        output_path = pathlib.Path(output_path)
-    output_path.mkdir(parents=True, exist_ok=False)
 
-    backend = driver_utils.get_backend_from_name(backend_name)
+    else:
+        output_path.mkdir(parents=True, exist_ok=False)
+
+    backend = model_options.customize_backend(
+        program=None, backend=driver_utils.get_backend_from_name(backend_name)
+    )  # TODO(ricoh): [c34] customize the backend
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
@@ -638,7 +638,7 @@ def initialize_driver(
         grid_manager=grid_manager,
         decomposition_info=decomposition_info,
         vertical_grid=vertical_grid,
-        cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),
+        cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
     )
 
@@ -657,8 +657,8 @@ def initialize_driver(
         exchange=exchange,
         owner_mask=gtx.as_field(
             (dims.CellDim,),
-            decomposition_info.owner_mask(dims.CellDim),
-            allocator=allocator,  # type: ignore[arg-type]
+            decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # due to array_ns opacity
+            allocator=allocator,
         ),
         backend=backend,
     )

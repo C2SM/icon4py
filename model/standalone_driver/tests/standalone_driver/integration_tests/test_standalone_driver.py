@@ -25,7 +25,7 @@ def test_standalone_driver(
     TODO(anyone): Modify this test for scientific validation after IO is ready.
     """
 
-    backend_name = None
+    backend_name = "embedded"
     for k, v in model_backends.BACKENDS.items():
         if backend_like == v:
             backend_name = k
@@ -34,8 +34,8 @@ def test_standalone_driver(
 
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
     main.main(
-        configuration_file_path="./",
+        configuration_file_path=pathlib.Path("./"),
         grid_file_path=grid_file_path,
         icon4py_backend=backend_name,
-        output_path=str(output_path),
+        output_path=output_path,
     )

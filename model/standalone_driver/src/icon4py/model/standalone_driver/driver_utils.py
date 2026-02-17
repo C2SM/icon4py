@@ -13,7 +13,7 @@ import pathlib
 import sys
 import time
 from types import ModuleType
-from typing import Any
+from typing import Any, Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -26,7 +26,7 @@ from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
-    model_options,
+    type_alias as ta,
 )
 from icon4py.model.common.decomposition import (
     definitions as decomposition_defs,
@@ -42,6 +42,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.common.states import factory as states_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
 
@@ -111,14 +112,13 @@ def create_static_field_factories(
     grid_manager: gm.GridManager,
     decomposition_info: decomposition_defs.DecompositionInfo,
     vertical_grid: v_grid.VerticalGrid,
-    cell_topography: data_alloc.NDArray,
-    backend: model_backends.BackendLike,
+    cell_topography: fa.CellField[ta.wpfloat],
+    backend: gtx_typing.Backend | None,
 ) -> driver_states.StaticFieldFactories:
-    concrete_backend = model_options.customize_backend(program=None, backend=backend)
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
-        backend=concrete_backend,
+        backend=backend,
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
@@ -128,7 +128,7 @@ def create_static_field_factories(
         grid=grid_manager.grid,
         decomposition_info=decomposition_info,
         geometry_source=geometry_field_source,
-        backend=concrete_backend,
+        backend=backend,
         metadata=interpolation_attributes.attrs,
     )
 
@@ -139,7 +139,7 @@ def create_static_field_factories(
         geometry_source=geometry_field_source,
         topography=cell_topography,
         interpolation_source=interpolation_field_source,
-        backend=concrete_backend,
+        backend=backend,
         metadata=metrics_attributes.attrs,
         rayleigh_type=constants.RayleighType.KLEMP,
         rayleigh_coeff=0.1,
@@ -163,7 +163,7 @@ def initialize_granules(
     static_field_factories: driver_states.StaticFieldFactories,
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
-    backend: model_backends.BackendLike,
+    backend: gtx_typing.Backend | None,
 ) -> tuple[diffusion.Diffusion, solve_nh.SolveNonhydro, advection.Advection]:
     geometry_field_source = static_field_factories.geometry_field_source
     interpolation_field_source = static_field_factories.interpolation_field_source
@@ -174,7 +174,9 @@ def initialize_granules(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
-        mean_cell_area=geometry_field_source.get(geometry_meta.MEAN_CELL_AREA),
+        mean_cell_area=geometry_field_source.get(
+            geometry_meta.MEAN_CELL_AREA, states_factory.RetrievalType.SCALAR
+        ),
     )
 
     log.info("creating edge geometry")
@@ -343,7 +345,6 @@ def initialize_granules(
         owner_mask=owner_mask,
     )
 
-    concrete_backend = model_options.customize_backend(program=None, backend=backend)
     advection_granule = advection.convert_config_to_advection(
         grid=grid,
         backend=backend,
@@ -367,14 +368,14 @@ def initialize_granules(
                 0.0,
                 dims.CellDim,
                 dims.C2E2CDim,
-                allocator=concrete_backend,
+                allocator=backend,
             ),
             lsq_pseudoinv_2=data_alloc.constant_field(
                 grid,
                 0.0,
                 dims.CellDim,
                 dims.C2E2CDim,
-                allocator=concrete_backend,
+                allocator=backend,
             ),
         ),
         metric_state=advection_states.AdvectionMetricState(
@@ -398,7 +399,7 @@ def find_maximum_from_field(
         array_ns.abs(input_field.ndarray).argmax(),
         input_field.ndarray.shape,
     )
-    return max_indices, input_field.ndarray[max_indices]
+    return max_indices, input_field.ndarray[max_indices]  # type: ignore[return-value] ## this is congruent with observed numpy behavior
 
 
 def display_icon4py_logo_in_log_file() -> None:
@@ -457,13 +458,13 @@ def display_icon4py_logo_in_log_file() -> None:
     for _ in range(3):
         icon4py_signature += empty_line
     icon4py_signature += boundary_line
-    icon4py_signature = "\n".join(icon4py_signature)
-    log.info(f"{icon4py_signature}")
+    icon4py_signature_str = "\n".join(icon4py_signature)
+    log.info(icon4py_signature_str)
 
 
 def display_driver_setup_in_log_file(
     n_time_steps: int,
-    vertical_params,
+    vertical_params: v_grid.VerticalGrid,
     config: driver_config.DriverConfig,
 ) -> None:
     log.info("===== ICON4Py Driver Configuration =====")
@@ -491,14 +492,14 @@ def display_driver_setup_in_log_file(
 
 @dataclasses.dataclass
 class _InfoFormatter(logging.Formatter):
-    style: str
+    style: Literal["%", "{", "$"]
     default_fmt: str
     info_fmt: str
     defaults: dict[str, Any] | None
 
     _info_formatter: logging.Formatter = dataclasses.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         super().__init__(fmt=self.default_fmt, style=self.style, defaults=self.defaults)
         self._info_formatter = logging.Formatter(
             fmt=self.info_fmt,
@@ -535,7 +536,7 @@ def make_handler(
 
 def configure_logging(
     logging_level: str,
-    processor_procs: decomposition_defs.ProcessProperties = None,
+    processor_procs: decomposition_defs.ProcessProperties | None = None,
 ) -> None:
     """
     Configure logging.
