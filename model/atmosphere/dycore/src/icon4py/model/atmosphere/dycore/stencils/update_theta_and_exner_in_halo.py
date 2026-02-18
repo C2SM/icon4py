@@ -29,15 +29,15 @@ def _update_theta_and_exner_in_halo(
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     # Formerly known as _mo_solve_nonhydro_stencil_66.
     # bdy_halo_c is the inverse of mask_prog_halo_c
-    theta_v_new_wp = where(~mask_prog_halo_c, exner_new, theta_v_new)
-    exner_new_wp = where(
+    theta_v_new = where(~mask_prog_halo_c, exner_new, theta_v_new)
+    exner_new = where(
         ~mask_prog_halo_c,
         exp(dycore_consts.rd_o_cvd * log(dycore_consts.rd_o_p0ref * rho_new * exner_new)),
         exner_new,
     )
 
     # Formerly known as _mo_solve_nonhydro_stencil_68.
-    theta_v_new_wp = where(
+    theta_v_new = where(
         mask_prog_halo_c,
         rho_now
         * theta_v_now
@@ -46,7 +46,7 @@ def _update_theta_and_exner_in_halo(
         theta_v_new,
     )
 
-    return theta_v_new_wp, exner_new_wp
+    return theta_v_new, exner_new
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
