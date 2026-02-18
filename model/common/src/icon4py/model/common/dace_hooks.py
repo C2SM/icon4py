@@ -197,9 +197,6 @@ def _cleanup_global_self_update(
     assert isinstance(top_level_dst_node, dace_nodes.AccessNode)
     top_level_dst_node_subset = map_exit_out_edge.data.get_dst_subset(map_exit_out_edge, state)
 
-    if_stmt_sdfg = if_stmt_node.sdfg
-    if_stmt_sdfg.arrays[if_stmt_output] = output_node.desc(scan_sdfg).clone()
-
     # reroute the write edge in the compute state
     scan_compute_st.add_edge(
         if_stmt_node,
@@ -208,29 +205,6 @@ def _cleanup_global_self_update(
         None,
         scan_sdfg.make_array_memlet(output_data),
     )
-
-    # update the writes inside the if-stmt node to write to the global field
-    for if_stmt_state in if_stmt_sdfg.states():
-        branch_sink_nodes = [
-            node for node in if_stmt_state.sink_nodes() if node.data == if_stmt_output
-        ]
-        assert len(branch_sink_nodes) <= 1
-        if branch_sink_nodes:
-            sink_node = branch_sink_nodes[0]
-            assert if_stmt_state.out_degree(sink_node) == 0
-            for edge in if_stmt_state.in_edges(sink_node):
-                src_subset = edge.data.get_src_subset(edge, if_stmt_state)
-                edge.data = dace.Memlet(
-                    data=if_stmt_output, subset=output_subset, other_subset=src_subset
-                )
-
-    # map free symbol in output subset
-    for sym in output_subset.free_symbols:
-        if sym in if_stmt_sdfg.symbols:
-            assert if_stmt_node.symbol_mapping[sym] == sym
-        else:
-            if_stmt_sdfg.add_symbol(sym, dace.int32)
-            if_stmt_node.symbol_mapping[sym] = sym
 
     scan_compute_st.remove_node(compute_dst_node)
     scan_sdfg.remove_data(compute_dst_node.data, validate=gtx_config.DEBUG)
