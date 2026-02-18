@@ -6,29 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Sequence
+
 import dace
 from dace import nodes as dace_nodes, sdfg as dace_sdfg
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 
-def _graupel_run_self_copy_removal_in_scan(scan_sdfg) -> None:
-    assert len(scan_sdfg.nodes()) == 2
-    assert isinstance(scan_sdfg.nodes()[1], dace_sdfg.state.LoopRegion)
-    scan_loop = scan_sdfg.nodes()[1]
-    assert len(scan_loop.nodes()) == 2 and all(
-        isinstance(node, dace.SDFGState) for node in scan_loop.nodes()
-    )
-    if scan_loop.nodes()[0].label.startswith("scan_compute_"):
-        assert scan_loop.nodes()[1].label.startswith("scan_update_")
-        scan_compute_st, scan_update_st = scan_loop.nodes()
-    else:
-        assert scan_loop.nodes()[0].label.startswith("scan_update_")
-        scan_update_st, scan_compute_st = scan_loop.nodes()
-    if_stmt_nodes = [
-        node
-        for node in scan_compute_st.nodes()
-        if isinstance(node, dace_nodes.NestedSDFG) and node.label.startswith("if_stmt_")
-    ]
+def _graupel_run_self_copy_removal_inside_if_stmt_generic(
+    scan_sdfg: dace.SDFG,
+    scan_compute_st: dace.SDFGState,
+    scan_update_st: dace.SDFGState,
+    if_stmt_nodes: Sequence[dace_nodes.NestedSDFG],
+) -> list[str]:
     for if_stmt_node in if_stmt_nodes:
         nsdfg = if_stmt_node.sdfg
         assert len(nsdfg.nodes()) == 1 and isinstance(
@@ -53,9 +43,9 @@ def _graupel_run_self_copy_removal_in_scan(scan_sdfg) -> None:
             if else_st.out_degree(dst_node) != 0:
                 continue
             assert not dst_node.desc(nsdfg).transient
-            # reroute the outer write, by using inout data
+            # retrieve the source data in the compute state
             assert (
-                len(list(scan_compute_st.out_edges_by_connector(if_stmt_node, dst_node.data))) == 1
+                len(list(scan_compute_st.in_edges_by_connector(if_stmt_node, src_node.data))) == 1
             )
             outer_read_edge = next(
                 scan_compute_st.in_edges_by_connector(if_stmt_node, src_node.data)
@@ -64,6 +54,10 @@ def _graupel_run_self_copy_removal_in_scan(scan_sdfg) -> None:
             assert isinstance(outer_src_node, dace_nodes.AccessNode)
             if not outer_src_node.desc(scan_sdfg).transient:
                 continue
+            # retrive the destination node in the compute state
+            assert (
+                len(list(scan_compute_st.out_edges_by_connector(if_stmt_node, dst_node.data))) == 1
+            )
             outer_write_edge = next(
                 scan_compute_st.out_edges_by_connector(if_stmt_node, dst_node.data)
             )
@@ -74,42 +68,12 @@ def _graupel_run_self_copy_removal_in_scan(scan_sdfg) -> None:
             )
             if not outer_dst_node.desc(scan_sdfg).transient:
                 continue
-            new_outer_dst_node = scan_compute_st.add_access(outer_src_node.data)
-            dst_subset = outer_write_edge.data.get_dst_subset(outer_write_edge, else_st)
-            scan_compute_st.add_edge(
-                if_stmt_node,
-                dst_node.data,
-                new_outer_dst_node,
-                None,
-                dace.Memlet(data=new_outer_dst_node.data, subset=dst_subset),
-            )
-            for edge in scan_compute_st.out_edges(outer_dst_node):
-                scan_compute_st.add_edge(
-                    new_outer_dst_node,
-                    None,
-                    edge.dst,
-                    edge.dst_conn,
-                    dace.Memlet(
-                        data=new_outer_dst_node.data,
-                        subset=edge.data.get_src_subset(edge, scan_compute_st),
-                        other_subset=edge.data.get_dst_subset(edge, scan_compute_st),
-                    ),
-                )
-            scan_compute_st.remove_node(outer_dst_node)
-            # check in the scan update state if this data was used
+            # check if the destination data is used in the scan update state
             assert all(
                 isinstance(node, dace_nodes.AccessNode) for node in scan_update_st.source_nodes()
             )
-            assert (
-                len(
-                    list(
-                        node
-                        for node in scan_update_st.source_nodes()
-                        if node.data == outer_dst_node.data
-                    )
-                )
-                == 1
-            )
+            if all(node.data != outer_dst_node.data for node in scan_update_st.source_nodes()):
+                continue
             update_src_node = next(
                 node for node in scan_update_st.source_nodes() if node.data == outer_dst_node.data
             )
@@ -127,17 +91,157 @@ def _graupel_run_self_copy_removal_in_scan(scan_sdfg) -> None:
                     ),
                 )
             scan_update_st.remove_node(update_src_node)
+            # reroute the write edges in the update state
+            new_compute_dst_node = scan_compute_st.add_access(outer_src_node.data)
+            scan_compute_st.add_edge(
+                if_stmt_node,
+                dst_node.data,
+                new_compute_dst_node,
+                None,
+                dace.Memlet(
+                    data=new_compute_dst_node.data,
+                    subset=outer_write_edge.data.get_dst_subset(outer_write_edge, else_st),
+                ),
+            )
+            for edge in scan_compute_st.out_edges(outer_dst_node):
+                scan_compute_st.add_edge(
+                    new_compute_dst_node,
+                    None,
+                    edge.dst,
+                    edge.dst_conn,
+                    dace.Memlet(
+                        data=new_compute_dst_node.data,
+                        subset=edge.data.get_src_subset(edge, scan_compute_st),
+                        other_subset=edge.data.get_dst_subset(edge, scan_compute_st),
+                    ),
+                )
+            scan_compute_st.remove_node(outer_dst_node)
             # now it is safe to remove the data descriptor
             scan_sdfg.remove_data(outer_dst_node.data)
             nodes_to_remove.extend([src_node, dst_node])
-            print(f"Remove write {self_copy_edge} in {nsdfg.label}.")
+            print(f"Updated {outer_write_edge} on {nsdfg.label}.")
         else_st.remove_nodes_from(nodes_to_remove)
         if else_st.is_empty():
             if_region.remove_branch(else_br)
 
 
-def graupel_run_top_level_dataflow_pre(sdfg: dace.SDFG) -> None:
-    sdfg.save("graupel_run_top_level_dataflow_pre_at_entry.sdfg")
+def _graupel_run_self_copy_removal_inside_if_stmt(
+    scan_sdfg: dace.SDFG,
+    scan_compute_st: dace.SDFGState,
+    scan_update_st: dace.SDFGState,
+    if_stmt_nodes: Sequence[dace_nodes.NestedSDFG],
+) -> list[str]:
+    graupel_scan_inout_copies = {
+        "if_stmt_92": ["__ct_el_24", "__ct_el_25", "__ct_el_26", "__ct_el_27"]
+    }
+    for if_stmt_node in if_stmt_nodes:
+        if if_stmt_node.label not in graupel_scan_inout_copies:
+            continue
+        nsdfg = if_stmt_node.sdfg
+        assert len(nsdfg.nodes()) == 1 and isinstance(
+            nsdfg.nodes()[0], dace_sdfg.state.ConditionalBlock
+        )
+        if_region = nsdfg.nodes()[0]
+        assert len(list(br[1] for br in if_region.branches if br[0] is None)) == 1
+        else_br = next(br[1] for br in if_region.branches if br[0] is None)
+        assert isinstance(else_br.start_block, dace.SDFGState)
+        assert len(if_region.out_degree(else_br.start_block)) == 0
+        else_st = else_br.start_block
+        src_nodes = [
+            node for node in else_st.source_nodes() if isinstance(node, dace_nodes.AccessNode)
+        ]
+        nodes_to_remove = []
+        for source_data in graupel_scan_inout_copies[if_stmt_node.label]:
+            assert len(list(node for node in src_nodes if node.data == source_data)) == 1
+            src_node = next(node for node in src_nodes if node.data == source_data)
+            assert not src_node.desc(nsdfg).transient
+            assert else_st.out_degree(src_node) == 1
+            self_copy_edge = else_st.out_edges(src_node)[0]
+            dst_node = self_copy_edge.dst
+            assert else_st.out_degree(dst_node) == 0
+            assert else_st.in_degree(dst_node) == 1
+            assert not dst_node.desc(nsdfg).transient
+            # retrieve the outer write to destination buffer
+            assert (
+                len(list(scan_compute_st.out_edges_by_connector(if_stmt_node, dst_node.data))) == 1
+            )
+            outer_write_edge = next(
+                scan_compute_st.out_edges_by_connector(if_stmt_node, dst_node.data)
+            )
+            outer_dst_node = outer_write_edge.dst
+            assert (
+                isinstance(outer_dst_node, dace_nodes.AccessNode)
+                and scan_compute_st.in_degree(outer_dst_node) == 1
+            )
+            assert outer_dst_node.desc(scan_sdfg).transient
+            assert scan_compute_st.out_degree(outer_dst_node) == 1
+            output_write_edge = scan_compute_st.out_edges(outer_dst_node)[0]
+            assert isinstance(output_write_edge.dst, dace_nodes.AccessNode)
+            output_node = output_write_edge.dst
+            output_data = output_node.data
+            assert output_data.startswith("__gtir_scan_output")
+            assert not output_write_edge.dst.desc(scan_sdfg).transient
+            output_subset = output_write_edge.data.get_dst_subset(
+                output_write_edge, scan_compute_st
+            )
+            # bypass the temporary, write directly to output
+            scan_compute_st.add_edge(
+                if_stmt_node,
+                dst_node.data,
+                output_node,
+                None,
+                dace.Memlet(data=output_data, subset=output_subset),
+            )
+            scan_compute_st.remove_node(outer_dst_node)
+            # replace the data access in scan update
+            assert all(
+                isinstance(node, dace_nodes.AccessNode) for node in scan_update_st.source_nodes()
+            )
+            assert (
+                len(
+                    list(
+                        node
+                        for node in scan_update_st.source_nodes()
+                        if node.data == outer_dst_node.data
+                    )
+                )
+                == 1
+            )
+            update_src_node = next(
+                node for node in scan_update_st.source_nodes() if node.data == outer_dst_node.data
+            )
+            assert scan_update_st.out_degree(update_src_node) == 1
+            update_write_edge = scan_update_st.out_edges(update_src_node)[0]
+            update_dst_node = update_write_edge.dst
+            assert (
+                scan_update_st.in_degree(update_dst_node) == 1
+                and scan_update_st.out_degree(update_dst_node) == 0
+            )
+            scan_update_st.add_nedge(
+                scan_update_st.add_access(output_data),
+                update_dst_node,
+                dace.Memlet(
+                    data=output_data,
+                    subset=output_subset,
+                    other_subset=update_write_edge.data.get_dst_subset(
+                        update_write_edge, scan_update_st
+                    ),
+                ),
+            )
+            scan_update_st.remove_node(update_src_node)
+            # now it is safe to remove the data descriptor
+            scan_sdfg.remove_data(outer_dst_node.data)
+            nodes_to_remove.extend([src_node, dst_node])
+            print(
+                f"Updated {outer_write_edge}, {output_write_edge} and {update_write_edge} on {nsdfg.label}."
+            )
+        else_st.remove_nodes_from(nodes_to_remove)
+        if else_st.is_empty():
+            if_region.remove_branch(else_br)
+
+
+def graupel_run_self_copy_removal_inside_scan(sdfg: dace.SDFG) -> None:
+    sdfg.save("graupel_run_self_copy_removal_inside_scan_at_entry.sdfg")
     assert len(sdfg.states()) == 1
     st = sdfg.states()[0]
     assert (
@@ -155,10 +259,33 @@ def graupel_run_top_level_dataflow_pre(sdfg: dace.SDFG) -> None:
         for node in st.nodes()
         if isinstance(node, dace_nodes.NestedSDFG) and node.label.startswith("scan_")
     )
-    _graupel_run_self_copy_removal_in_scan(scan_nsdfg_node.sdfg)
+    scan_sdfg = scan_nsdfg_node.sdfg
+    assert len(scan_sdfg.nodes()) == 2
+    assert isinstance(scan_sdfg.nodes()[1], dace_sdfg.state.LoopRegion)
+    scan_loop = scan_sdfg.nodes()[1]
+    assert len(scan_loop.nodes()) == 2 and all(
+        isinstance(node, dace.SDFGState) for node in scan_loop.nodes()
+    )
+    if scan_loop.nodes()[0].label.startswith("scan_compute"):
+        assert scan_loop.nodes()[1].label.startswith("scan_update")
+        scan_compute_st, scan_update_st = scan_loop.nodes()
+    else:
+        assert scan_loop.nodes()[0].label.startswith("scan_update")
+        scan_update_st, scan_compute_st = scan_loop.nodes()
+    if_stmt_nodes = [
+        node
+        for node in scan_compute_st.nodes()
+        if isinstance(node, dace_nodes.NestedSDFG) and node.label.startswith("if_stmt_")
+    ]
+    _graupel_run_self_copy_removal_inside_if_stmt_generic(
+        scan_sdfg, scan_compute_st, scan_update_st, if_stmt_nodes
+    )
+    # _graupel_run_self_copy_removal_inside_if_stmt(
+    #     scan_sdfg, scan_compute_st, scan_update_st, if_stmt_nodes
+    # )
     sdfg.validate()
 
-    sdfg.save("graupel_run_top_level_dataflow_pre_at_exit.sdfg")
+    sdfg.save("graupel_run_self_copy_removal_inside_scan_at_exit.sdfg")
 
     gtx_transformations.gt_simplify(
         sdfg=sdfg,

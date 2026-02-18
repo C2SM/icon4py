@@ -59,7 +59,7 @@ def get_dace_options(
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
         optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre] = (
-            dace_hooks.graupel_run_top_level_dataflow_pre
+            dace_hooks.graupel_run_self_copy_removal_inside_scan
         )
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
