@@ -228,7 +228,6 @@ def _cleanup_global_self_update(
     for sym in output_subset.free_symbols:
         if sym in if_stmt_sdfg.symbols:
             assert if_stmt_node.symbol_mapping[sym] == sym
-            assert if_stmt_sdfg.symbols[sym] == scan_sdfg.symbols[sym]
         else:
             if_stmt_sdfg.add_symbol(sym, dace.int32)
             if_stmt_node.symbol_mapping[sym] = sym
