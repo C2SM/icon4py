@@ -121,13 +121,13 @@ def diffusion_init(
     diffusion_params = DiffusionParams(config)
 
     nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
-    cell_k_domain = {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
+    cell_k_domain = gtx.domain({dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev})
     c2e2c_size = geofac_grg_x.domain[dims.C2E2CODim].unit_range.stop - 1
-    cell_c2e2c_k_domain = {
+    cell_c2e2c_k_domain = gtx.domain({
         dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
         dims.C2E2CDim: c2e2c_size,
         dims.KDim: nlev,
-    }
+    })
     xp = wgtfac_c.array_ns
 
     if zd_cellidx is None:
