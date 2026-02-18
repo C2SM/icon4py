@@ -154,10 +154,9 @@ module diffusion
                                       type_t_diffu, &
                                       type_vn_diffu, &
                                       hdiff_efdt_ratio, &
+                                      hdiff_w_efdt_ratio, &
                                       smagorinski_scaling_factor, &
                                       hdiff_temp, &
-                                      thslp_zdiffu, &
-                                      thhgtd_zdiffu, &
                                       denom_diffu_v, &
                                       nudge_max_coeff, &
                                       itype_sher, &
@@ -269,13 +268,11 @@ module diffusion
 
          real(c_double), value, target :: hdiff_efdt_ratio
 
+         real(c_double), value, target :: hdiff_w_efdt_ratio
+
          real(c_double), value, target :: smagorinski_scaling_factor
 
          logical(c_int), value, target :: hdiff_temp
-
-         real(c_double), value, target :: thslp_zdiffu
-
-         real(c_double), value, target :: thhgtd_zdiffu
 
          real(c_double), value, target :: denom_diffu_v
 
@@ -506,10 +503,9 @@ contains
                              type_t_diffu, &
                              type_vn_diffu, &
                              hdiff_efdt_ratio, &
+                             hdiff_w_efdt_ratio, &
                              smagorinski_scaling_factor, &
                              hdiff_temp, &
-                             thslp_zdiffu, &
-                             thhgtd_zdiffu, &
                              denom_diffu_v, &
                              nudge_max_coeff, &
                              itype_sher, &
@@ -562,13 +558,11 @@ contains
 
       real(c_double), value, target :: hdiff_efdt_ratio
 
+      real(c_double), value, target :: hdiff_w_efdt_ratio
+
       real(c_double), value, target :: smagorinski_scaling_factor
 
       logical(c_int), value, target :: hdiff_temp
-
-      real(c_double), value, target :: thslp_zdiffu
-
-      real(c_double), value, target :: thhgtd_zdiffu
 
       real(c_double), value, target :: denom_diffu_v
 
@@ -786,10 +780,9 @@ contains
                                   type_t_diffu=type_t_diffu, &
                                   type_vn_diffu=type_vn_diffu, &
                                   hdiff_efdt_ratio=hdiff_efdt_ratio, &
+                                  hdiff_w_efdt_ratio=hdiff_w_efdt_ratio, &
                                   smagorinski_scaling_factor=smagorinski_scaling_factor, &
                                   hdiff_temp=hdiff_temp, &
-                                  thslp_zdiffu=thslp_zdiffu, &
-                                  thhgtd_zdiffu=thhgtd_zdiffu, &
                                   denom_diffu_v=denom_diffu_v, &
                                   nudge_max_coeff=nudge_max_coeff, &
                                   itype_sher=itype_sher, &
