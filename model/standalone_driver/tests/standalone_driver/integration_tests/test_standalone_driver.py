@@ -17,9 +17,9 @@ from icon4py.model.testing.fixtures.datatest import backend_like
 
 @pytest.mark.embedded_remap_error
 def test_standalone_driver(
-    backend_like,
+    backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
-):
+) -> None:
     """
     Currently, this is a only test to check if the driver runs from a grid file without verifying the end result.
     TODO(anyone): Modify this test for scientific validation after IO is ready.

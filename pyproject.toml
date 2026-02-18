@@ -163,7 +163,8 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
   '$MYPY_CONFIG_FILE_DIR/tools/src/',
-  '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src/icon4py/model/standalone_driver'
+  '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src',
+  '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests'
 ]
 ignore_missing_imports = false
 implicit_reexport = true
@@ -176,6 +177,7 @@ $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
 $MYPY_CONFIG_FILE_DIR/model/driver/src:
 $MYPY_CONFIG_FILE_DIR/model/standalone_driver/src:
+$MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests:
 $MYPY_CONFIG_FILE_DIR/model/testing/src:
 $MYPY_CONFIG_FILE_DIR/tools/src:
 '''
