@@ -138,6 +138,7 @@ files = [
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_horizontal.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_vertical.py',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
@@ -192,7 +193,11 @@ warn_unused_ignores = true
 # TODO(): fix gtx.int32 export in gt4py
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
-module = ['*.stencil_tests.*', '*.unit_tests.*']
+module = [
+  '*.stencil_tests.*',
+  '*.unit_tests.*',
+  "icon4py.model.atmosphere.advection.advection_vertical"  # complains about gt4py.next not containing int32
+]
 
 [[tool.mypy.overrides]]
 ignore_errors = true
@@ -208,13 +213,15 @@ module = [
 disallow_untyped_defs = false
 module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 
-[[tool.mypy.overrides]]
+[[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
 disable_error_code = ["index"]
-module = ["icon4py.model.standalone_driver.testcases.initial_condition"]  # complains about assigning to indices of NDArrayObject
+module = ["icon4py.model.standalone_driver.testcases.initial_condition"]
 
-[[tool.mypy.overrides]]
+[[tool.mypy.overrides]]  # complains about gt4py.next not containing int32
 disable_error_code = ["attr-defined"]
-module = ["icon4py.model.atmosphere.advection.advection_horizontal"]  # complains about gt4py.next not containing int32
+module = [
+  "icon4py.model.atmosphere.advection.advection_horizontal"
+]
 
 # -- pytest --
 [tool.pytest]

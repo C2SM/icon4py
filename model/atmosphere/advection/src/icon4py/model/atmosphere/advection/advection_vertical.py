@@ -84,7 +84,7 @@ class BoundaryConditions(abc.ABC):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
+    ) -> None:
         """
         Set the vertical boundary conditions.
 
@@ -115,7 +115,7 @@ class NoFluxCondition(BoundaryConditions):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
+    ) -> None:
         log.debug("vertical boundary conditions computation - start")
 
         # set upper boundary conditions
@@ -157,7 +157,7 @@ class VerticalLimiter(abc.ABC):
         z_slope: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ): ...
+    ) -> None: ...
 
     @abc.abstractmethod
     def limit_parabola(
@@ -168,14 +168,14 @@ class VerticalLimiter(abc.ABC):
         p_face_low: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ): ...
+    ) -> None: ...
 
     @abc.abstractmethod
     def limit_fluxes(
         self,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ): ...
+    ) -> None: ...
 
 
 class NoLimiter(VerticalLimiter):
@@ -217,7 +217,7 @@ class NoLimiter(VerticalLimiter):
         z_slope: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ): ...
+    ) -> None: ...
 
     def limit_parabola(
         self,
@@ -227,7 +227,7 @@ class NoLimiter(VerticalLimiter):
         p_face_low: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
+    ) -> None:
         # simply copy to up/low face values
         log.debug("running stencil copy_cell_kdim_field - start")
         self._copy_cell_kdim_field(
@@ -251,7 +251,7 @@ class NoLimiter(VerticalLimiter):
         self,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ): ...
+    ) -> None: ...
 
 
 class SemiMonotonicLimiter(VerticalLimiter):
@@ -309,7 +309,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
         z_slope: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
+    ) -> None:
         log.debug("running stencil limit_vertical_slope_semi_monotonically - start")
         self._limit_vertical_slope_semi_monotonically(
             p_cc=p_tracer_now,
@@ -327,7 +327,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
         p_face_low: fa.CellKField[ta.wpfloat],
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ):
+    ) -> None:
         # compute semi-monotonic limiter condition
         log.debug("running stencil compute_vertical_parabola_limiter_condition - start")
         self._compute_vertical_parabola_limiter_condition(
@@ -356,7 +356,7 @@ class SemiMonotonicLimiter(VerticalLimiter):
         self,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
-    ): ...
+    ) -> None: ...
 
 
 class VerticalAdvection(abc.ABC):
@@ -373,7 +373,7 @@ class VerticalAdvection(abc.ABC):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool = False,
-    ):
+    ) -> None:
         """
         Run a vertical advection step.
 
@@ -429,7 +429,7 @@ class NoAdvection(VerticalAdvection):
 
         log.debug("vertical advection class init - end")
 
-    def _get_horizontal_start_end(self, even_timestep: bool):
+    def _get_horizontal_start_end(self, even_timestep: bool) -> tuple[gtx.int32, gtx.int32]:
         if even_timestep:
             horizontal_start = self._start_cell_lateral_boundary_level_2
             horizontal_end = self._end_cell_end
@@ -449,7 +449,7 @@ class NoAdvection(VerticalAdvection):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool = False,
-    ):
+    ) -> None:
         log.debug("vertical advection run - start")
 
         horizontal_start, horizontal_end = self._get_horizontal_start_end(
@@ -481,7 +481,7 @@ class FiniteVolume(VerticalAdvection):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool = False,
-    ):
+    ) -> None:
         log.debug("vertical advection run - start")
 
         self._compute_numerical_flux(
@@ -514,7 +514,7 @@ class FiniteVolume(VerticalAdvection):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool,
-    ): ...
+    ) -> None: ...
 
     @abc.abstractmethod
     def _update_unknowns(
@@ -526,7 +526,7 @@ class FiniteVolume(VerticalAdvection):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool,
-    ): ...
+    ) -> None: ...
 
 
 class FirstOrderUpwind(FiniteVolume):
@@ -563,7 +563,6 @@ class FirstOrderUpwind(FiniteVolume):
         self._k_field = data_alloc.index_field(
             self._grid,
             dims.KDim,
-            grid=self._grid,
             extend={dims.KDim: 1},
             dtype=gtx.int32,
             allocator=self._backend,
@@ -601,7 +600,7 @@ class FirstOrderUpwind(FiniteVolume):
 
         log.debug("vertical advection class init - end")
 
-    def _get_horizontal_start_end(self, even_timestep: bool):
+    def _get_horizontal_start_end(self, even_timestep: bool) -> tuple[gtx.int32, gtx.int32]:
         if even_timestep:
             horizontal_start = self._start_cell_lateral_boundary_level_2
             horizontal_end = self._end_cell_end
@@ -619,7 +618,7 @@ class FirstOrderUpwind(FiniteVolume):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool,
-    ):
+    ) -> None:
         log.debug("vertical numerical flux computation - start")
 
         horizontal_start, horizontal_end = self._get_horizontal_start_end(
@@ -654,7 +653,7 @@ class FirstOrderUpwind(FiniteVolume):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool,
-    ):
+    ) -> None:
         log.debug("vertical unknowns update - start")
 
         horizontal_start, horizontal_end = self._get_horizontal_start_end(
@@ -877,7 +876,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
 
         log.debug("vertical advection class init - end")
 
-    def _get_horizontal_start_end(self, even_timestep: bool):
+    def _get_horizontal_start_end(self, even_timestep: bool) -> tuple[gtx.int32, gtx.int32]:
         if even_timestep:
             horizontal_start = self._start_cell_lateral_boundary_level_2
             horizontal_end = self._end_cell_end
@@ -895,7 +894,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool,
-    ):
+    ) -> None:
         log.debug("vertical numerical flux computation - start")
 
         horizontal_start, horizontal_end = self._get_horizontal_start_end(
@@ -1076,7 +1075,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO(dastrm): should be KHalfDim
         dtime: ta.wpfloat,
         even_timestep: bool,
-    ):
+    ) -> None:
         log.debug("vertical unknowns update - start")
 
         horizontal_start, horizontal_end = self._get_horizontal_start_end(
