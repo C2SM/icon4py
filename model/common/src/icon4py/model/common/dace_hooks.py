@@ -136,7 +136,7 @@ def _graupel_run_self_copy_removal_inside_if_stmt(
 ) -> list[str]:
     data_to_remove = []
     graupel_scan_inout_copies = {
-        "if_stmt_92": ["__ct_el_24", "__ct_el_25", "__ct_el_26", "__ct_el_27"]
+        "if_stmt_92": ["__ct_el_24" , "__ct_el_25", "__ct_el_27"]  #, "__ct_el_26"
     }
     for if_stmt_node in if_stmt_nodes:
         if if_stmt_node.label not in graupel_scan_inout_copies:
@@ -289,14 +289,14 @@ def graupel_run_self_copy_removal_inside_scan(sdfg: dace.SDFG) -> None:
     )
     for data in data_to_remove:
         scan_sdfg.remove_data(data)
-    print(f"Removed {','.join(sorted(data_to_remove))}")
+    print(f"Removed {', '.join(sorted(data_to_remove))}")
     sdfg.validate()
 
     sdfg.save("graupel_run_self_copy_removal_inside_scan_at_exit.sdfg")
 
     gtx_transformations.gt_simplify(
         sdfg=scan_sdfg,
-        skip=gtx_transformations.constants.GT_SIMPLIFY_DEFAULT_SKIP_SET | {"FuseStates"},
+        skip=gtx_transformations.constants.GT_SIMPLIFY_DEFAULT_SKIP_SET,
         validate=True,
         validate_all=False,
     )
