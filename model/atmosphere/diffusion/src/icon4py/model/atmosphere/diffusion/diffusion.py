@@ -840,16 +840,7 @@ class Diffusion:
 
         log.debug("2nd rbf interpolation: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
-            p_e_in=self.z_nabla2_e,
-            ptr_coeff_1=self._interpolation_state.rbf_coeff_1,
-            ptr_coeff_2=self._interpolation_state.rbf_coeff_2,
-            p_u_out=self.u_vert,
-            p_v_out=self.v_vert,
-            horizontal_start=self._vertex_start_lateral_boundary_level_2,
-            horizontal_end=self._vertex_end_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.connectivities,
+            p_e_in=self.z_nabla2_e, p_u_out=self.u_vert, p_v_out=self.v_vert
         )
         log.debug("2nd rbf interpolation: end")
 

@@ -92,3 +92,25 @@ def run_grid_manager(
         )
         managers[key] = manager
         return manager
+
+
+GRID_REFERENCE_VALUES = {
+    definitions.Experiments.EXCLAIM_APE.name: {
+        "mean_edge_length": 240221.1036647776,
+        "mean_dual_edge_length": 138710.63736114913,
+        "mean_cell_area": 24906292887.251026,
+        "mean_dual_area": 49802858653.68937,
+    },
+    definitions.Experiments.MCH_CH_R04B09.name: {
+        "mean_edge_length": 3803.019140934253,
+        "mean_dual_edge_length": 2180.911493355989,
+        "mean_cell_area": 6256048.940145881,
+        "mean_dual_area": 12259814.063180268,
+    },
+    definitions.Experiments.GAUSS3D.name: {
+        "mean_edge_length": 757.5757575757576,
+        "mean_dual_edge_length": 437.3865675678984,
+        "mean_cell_area": 248515.09520903317,
+        "mean_dual_area": 497030.1904180664,
+    },
+}

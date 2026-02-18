@@ -103,7 +103,7 @@
   "pos_on_tplane_e_y": "[wpfloat, (dims.EdgeDim, dims.E2CDim,), None]",
   "predictor_normal_wind_advective_tendency": "[wpfloat, (dims.EdgeDim, dims.KDim,), None]",
   "predictor_vertical_wind_advective_tendency": "[wpfloat, (dims.CellDim, dims.KDim,), {dims.KDim: 1}]",
-  "pressure_buoyancy_acceleration_at_cells_on_half_levels": "[wpfloat, (dims.CellDim, dims.KDim,), None]",
+  "nonhydro_buoy_at_cells_on_half_levels": "[wpfloat, (dims.CellDim, dims.KDim,), None]",
   "primal_normal_cell_1": "[wpfloat, (dims.EdgeDim, dims.E2CDim,), None]",
   "primal_normal_cell_2": "[wpfloat, (dims.EdgeDim, dims.E2CDim,), None]",
   "primal_normal_cell_x": "[wpfloat, (dims.EdgeDim, dims.E2CDim,), None]",

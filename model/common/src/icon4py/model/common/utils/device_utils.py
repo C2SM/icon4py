@@ -37,6 +37,9 @@ def sync(allocator: gtx_typing.FieldBufferAllocationUtil | None = None) -> None:
 
     Note: this is and ad-hoc interface, maybe the function should get the device to sync for.
     """
+    # Type annotation already describes that only these types are allowed, but mypy coverage is not great.
+    # The explicit assert avoids critical mistakes in using this function.
+    assert allocator is None or gtx_allocators.is_field_allocation_tool(allocator)
     if allocator is not None and is_cupy_device(allocator):
         cp.cuda.runtime.deviceSynchronize()
 

@@ -14,7 +14,13 @@ import gt4py.next.typing as gtx_typing
 
 import icon4py.model.common.math.helpers as math_helpers
 import icon4py.model.common.metrics.compute_weight_factors as weight_factors
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    field_type_aliases as fa,
+    model_backends,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     geometry,
@@ -54,7 +60,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vertical_grid: v_grid.VerticalGrid,
         decomposition_info: decomposition.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        topography: gtx.Field,
+        topography: fa.CellField[ta.wpfloat],
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
@@ -62,11 +68,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         rayleigh_coeff: float,
         exner_expol: float,
         vwind_offctr: float,
+        thslp_zdiffu: float,
+        thhgtd_zdiffu: float,
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
+        self._allocator = model_backends.get_allocator(backend)
         self._grid = grid
         self._vertical_grid = vertical_grid
         self._decomposition_info = decomposition_info
@@ -75,6 +84,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._geometry = geometry_source
         self._exchange = exchange
         self._interpolation_source = interpolation_source
+        self._global_reductions = global_reductions
         log.info(
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
@@ -91,20 +101,24 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "vwind_offctr": vwind_offctr,
             "igradp_method": 3,
             "igradp_constant": 3,
-            "thslp_zdiffu": 0.02,
-            "thhgtd_zdiffu": 125.0,
+            "thslp_zdiffu": thslp_zdiffu,
+            "thhgtd_zdiffu": thhgtd_zdiffu,
             "vct_a_1": vct_a_1,
         }
 
         k_index = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=self._backend
+            self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=self._allocator
         )
-        e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._backend)
+        e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, allocator=self._allocator)
         e_owner_mask = gtx.as_field(
-            (dims.EdgeDim,), self._decomposition_info.owner_mask(dims.EdgeDim)
+            (dims.EdgeDim,),
+            self._decomposition_info.owner_mask(dims.EdgeDim),
+            allocator=self._allocator,
         )
         c_owner_mask = gtx.as_field(
-            (dims.CellDim,), self._decomposition_info.owner_mask(dims.CellDim)
+            (dims.CellDim,),
+            self._decomposition_info.owner_mask(dims.CellDim),
+            allocator=self._allocator,
         )
         c_refin_ctrl = self._grid.refinement_control[dims.CellDim]
 
@@ -647,7 +661,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(max_flat_index_provider)
 
         nflat_gradp_provider = factory.NumpyDataProvider(
-            func=functools.partial(mf.compute_nflat_gradp, array_ns=self._xp),
+            func=functools.partial(
+                mf.compute_nflat_gradp,
+                array_ns=self._xp,
+                min_reduction=self._global_reductions.min,
+            ),
             domain=(),
             deps={
                 "flat_idx_max": attrs.FLAT_IDX_MAX,
@@ -769,6 +787,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_coeff_gradekin.compute_coeff_gradekin,
                 array_ns=self._xp,
+                exchange=functools.partial(self._exchange.exchange_and_wait, dims.EdgeDim),
             ),
             domain=(dims.EdgeDim, dims.E2CDim),
             fields=(attrs.COEFF_GRADEKIN,),

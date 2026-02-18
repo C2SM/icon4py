@@ -9,13 +9,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
 import pytest
-from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition.definitions import single_node_default
-from icon4py.model.common.grid import geometry, horizontal as h_grid
+from icon4py.model.common.grid import (
+    geometry,
+    geometry_attributes as geometry_meta,
+    horizontal as h_grid,
+    states as grid_states,
+)
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
@@ -34,8 +37,9 @@ from icon4py.model.testing.fixtures.datatest import (
     download_ser_data,
     interpolation_savepoint,
     processor_props,
-    ranked_data_path,
 )
+
+from .test_rbf_interpolation import RBF_TOLERANCES
 
 
 if TYPE_CHECKING:
@@ -187,7 +191,8 @@ def test_get_geofac_grg(
     assert field_x.shape == (grid.num_cells, 4)
     field_y = factory.get(attrs.GEOFAC_GRG_Y).asnumpy()
     assert field_y.shape == (grid.num_cells, 4)
-    assert test_helpers.dallclose(field_ref[0].asnumpy(), field_x, rtol=1e-11, atol=1e-16)
+    # less than 1.1e-16 does not pass on mac for mch_ch_r04b09_dsl (but still passes on CI)
+    assert test_helpers.dallclose(field_ref[0].asnumpy(), field_x, rtol=1e-11, atol=1.1e-16)
     assert test_helpers.dallclose(field_ref[1].asnumpy(), field_y, rtol=1e-11, atol=1e-16)
 
 
@@ -228,6 +233,7 @@ def test_e_flx_avg(
     [
         (definitions.Experiments.MCH_CH_R04B09, 1e-10),
         (definitions.Experiments.EXCLAIM_APE, 1e-11),
+        (definitions.Experiments.GAUSS3D, 0),
     ],
 )
 @pytest.mark.datatest
@@ -292,19 +298,11 @@ def test_nudgecoeffs(
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, atol",
-    [
-        (definitions.Experiments.EXCLAIM_APE, 3.1e-9),
-        (definitions.Experiments.MCH_CH_R04B09, 4e-2),
-    ],
-)
 @pytest.mark.datatest
 def test_rbf_interpolation_coeffs_cell(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    atol: float,
 ) -> None:
     field_ref_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
     field_ref_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
@@ -317,27 +315,23 @@ def test_rbf_interpolation_coeffs_cell(
     assert field_c1.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
     assert field_c2.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
     assert test_helpers.dallclose(
-        field_ref_c1.asnumpy()[horizontal_start:], field_c1[horizontal_start:], atol=atol
+        field_ref_c1.asnumpy()[horizontal_start:],
+        field_c1[horizontal_start:],
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
     )
     assert test_helpers.dallclose(
-        field_ref_c2.asnumpy()[horizontal_start:], field_c2[horizontal_start:], atol=atol
+        field_ref_c2.asnumpy()[horizontal_start:],
+        field_c2[horizontal_start:],
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
     )
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, atol",
-    [
-        (definitions.Experiments.EXCLAIM_APE, 8e-14),
-        (definitions.Experiments.MCH_CH_R04B09, 2e-9),
-    ],
-)
 @pytest.mark.datatest
 def test_rbf_interpolation_coeffs_edge(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    atol: float,
 ) -> None:
     field_ref_e = interpolation_savepoint.rbf_vec_coeff_e()
     factory = _get_interpolation_factory(backend, experiment)
@@ -347,24 +341,18 @@ def test_rbf_interpolation_coeffs_edge(
 
     assert field_e.shape == (grid.num_edges, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.EDGE])
     assert test_helpers.dallclose(
-        field_ref_e.asnumpy()[horizontal_start:], field_e[horizontal_start:], atol=atol
+        field_ref_e.asnumpy()[horizontal_start:],
+        field_e[horizontal_start:],
+        atol=RBF_TOLERANCES[dims.EdgeDim][experiment.name],
     )
 
 
 @pytest.mark.level("integration")
-@pytest.mark.parametrize(
-    "experiment, atol",
-    [
-        (definitions.Experiments.EXCLAIM_APE, 3e-10),
-        (definitions.Experiments.MCH_CH_R04B09, 3e-3),
-    ],
-)
 @pytest.mark.datatest
 def test_rbf_interpolation_coeffs_vertex(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
-    atol: float,
 ) -> None:
     field_ref_v1 = interpolation_savepoint.rbf_vec_coeff_v1()
     field_ref_v2 = interpolation_savepoint.rbf_vec_coeff_v2()
@@ -377,8 +365,12 @@ def test_rbf_interpolation_coeffs_vertex(
     assert field_v1.shape == (grid.num_vertices, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX])
     assert field_v2.shape == (grid.num_vertices, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.VERTEX])
     assert test_helpers.dallclose(
-        field_ref_v1.asnumpy()[horizontal_start:], field_v1[horizontal_start:], atol=atol
+        field_ref_v1.asnumpy()[horizontal_start:],
+        field_v1[horizontal_start:],
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
     )
     assert test_helpers.dallclose(
-        field_ref_v2.asnumpy()[horizontal_start:], field_v2[horizontal_start:], atol=atol
+        field_ref_v2.asnumpy()[horizontal_start:],
+        field_v2[horizontal_start:],
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
     )

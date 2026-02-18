@@ -20,7 +20,6 @@ from icon4py.model.testing.fixtures.datatest import (  # import fixtures form te
     grid_savepoint,
     icon_grid,
     processor_props,
-    ranked_data_path,
 )
 
 

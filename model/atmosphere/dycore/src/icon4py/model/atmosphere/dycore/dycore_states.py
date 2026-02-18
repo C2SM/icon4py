@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import dataclasses
 import enum
+import logging
+from typing import TYPE_CHECKING
 
 import gt4py.next as gtx
 from gt4py.eve.utils import FrozenNamespace
@@ -21,6 +23,14 @@ from icon4py.model.common import (
     utils as common_utils,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import icon as icon_grid
+
+log = logging.getLogger(__name__)
 
 
 class TimeSteppingScheme(enum.IntEnum):
@@ -148,7 +158,7 @@ class DiagnosticStateNonHydro:
     """
 
     # Analysis increments
-    rho_iau_increment: fa.CellKField[ta.vpfloat]  # moist density increment [kg/m^3]
+    rho_iau_increment: fa.CellKField[ta.vpfloat]  # moist density increment [kg/m^3].0
     """
     Declared as rho_incr in ICON.
     """
@@ -316,3 +326,162 @@ class PrepAdvection:
     """
     Declared as vol_flx_ic in ICON.
     """
+
+
+def initialize_solve_nonhydro_diagnostic_state(
+    perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
+    grid: icon_grid.IconGrid,
+    allocator: gtx_typing.FieldBufferAllocationUtil,
+) -> DiagnosticStateNonHydro:
+    normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
+        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat),
+        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat),
+    )
+    vertical_wind_advective_tendency = common_utils.PredictorCorrectorPair(
+        data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=allocator,
+            dtype=ta.vpfloat,
+        ),
+        data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
+            allocator=allocator,
+            dtype=ta.vpfloat,
+        ),
+    )
+    max_vertical_cfl = data_alloc.scalar_like_array(0.0, allocator)
+    theta_v_at_cells_on_half_levels = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    rho_at_cells_on_half_levels = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=allocator,
+        dtype=ta.vpfloat,
+    )
+    exner_tendency_due_to_slow_physics = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+    )
+    grf_tend_rho = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+    )
+    grf_tend_thv = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+    )
+    grf_tend_w = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    mass_flux_at_edges_on_model_levels = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+    )
+    normal_wind_tendency_due_to_slow_physics_process = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+    )
+    grf_tend_vn = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+    )
+    tangential_wind = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+    )
+    vn_on_half_levels = data_alloc.zero_field(
+        grid,
+        dims.EdgeDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=allocator,
+        dtype=ta.vpfloat,
+    )
+    contravariant_correction_at_cells_on_half_levels = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=allocator,
+        dtype=ta.vpfloat,
+    )
+    rho_iau_increment = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+    )
+    normal_wind_iau_increment = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+    )
+    exner_iau_increment = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+    )
+    exner_dynamical_increment = data_alloc.zero_field(
+        grid, dims.CellDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
+    )
+
+    return DiagnosticStateNonHydro(
+        max_vertical_cfl=max_vertical_cfl,
+        theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
+        perturbed_exner_at_cells_on_model_levels=perturbed_exner_at_cells_on_model_levels,
+        rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
+        exner_tendency_due_to_slow_physics=exner_tendency_due_to_slow_physics,
+        grf_tend_rho=grf_tend_rho,
+        grf_tend_thv=grf_tend_thv,
+        grf_tend_w=grf_tend_w,
+        mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
+        normal_wind_tendency_due_to_slow_physics_process=normal_wind_tendency_due_to_slow_physics_process,
+        grf_tend_vn=grf_tend_vn,
+        normal_wind_advective_tendency=normal_wind_advective_tendency,
+        vertical_wind_advective_tendency=vertical_wind_advective_tendency,
+        tangential_wind=tangential_wind,
+        vn_on_half_levels=vn_on_half_levels,
+        contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
+        rho_iau_increment=rho_iau_increment,
+        normal_wind_iau_increment=normal_wind_iau_increment,
+        exner_iau_increment=exner_iau_increment,
+        exner_dynamical_increment=exner_dynamical_increment,
+    )
+
+
+def initialize_prep_advection(
+    grid: icon_grid.IconGrid, allocator: gtx_typing.FieldBufferAllocationUtil
+) -> PrepAdvection:
+    vn_traj = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+    )
+    mass_flx_me = data_alloc.zero_field(
+        grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat
+    )
+    dynamical_vertical_mass_flux_at_cells_on_half_levels = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    dynamical_vertical_volumetric_flux_at_cells_on_half_levels = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        extend={dims.KDim: 1},
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    return PrepAdvection(
+        vn_traj=vn_traj,
+        mass_flx_me=mass_flx_me,
+        dynamical_vertical_mass_flux_at_cells_on_half_levels=dynamical_vertical_mass_flux_at_cells_on_half_levels,
+        dynamical_vertical_volumetric_flux_at_cells_on_half_levels=dynamical_vertical_volumetric_flux_at_cells_on_half_levels,
+    )

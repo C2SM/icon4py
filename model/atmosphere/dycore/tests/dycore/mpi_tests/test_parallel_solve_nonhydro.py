@@ -62,6 +62,10 @@ def test_run_solve_nonhydro_single_step(
     decomposition_info: definitions.DecompositionInfo,  # : F811 fixture
     backend: gtx_typing.Backend | None,
 ) -> None:
+    if test_utils.is_embedded(backend):
+        # https://github.com/GridTools/gt4py/issues/1583
+        pytest.xfail("ValueError: axes don't match array")
+
     parallel_helpers.check_comm_size(processor_props)
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"

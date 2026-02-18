@@ -14,6 +14,7 @@ from types import ModuleType
 import gt4py.next as gtx
 import numpy as np
 import scipy.linalg as sla
+from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
@@ -48,26 +49,76 @@ DEFAULT_RBF_KERNEL: dict[RBFDimension, int] = {
 }
 
 
-def compute_default_rbf_scale(mean_characteristic_length: ta.wpfloat, dim: RBFDimension):
-    """Compute the default RBF scale factor. This assumes that the Gaussian
-    kernel is used for vertices and cells, and that the inverse multiquadratic
-    kernel is used for edges."""
+def compute_default_rbf_scale_cell(
+    geometry_type: int,
+    mean_characteristic_length: ta.wpfloat,
+    mean_dual_edge_length: ta.wpfloat,
+) -> ta.wpfloat:
+    """Compute the default RBF scale factor for cells. This assumes that the Gaussian
+    kernel is used."""
 
-    threshold = 2.5 if dim == RBFDimension.CELL else 2.0
-    c1 = 0.4 if dim == RBFDimension.EDGE else 1.8
-    if dim == RBFDimension.CELL:
-        c2 = 3.75
-        c3 = 0.9
-    elif dim == RBFDimension.VERTEX:
-        c2 = 3.0
-        c3 = 0.96
-    else:
-        c2 = 2.0
-        c3 = 0.325
+    match base_grid.GeometryType(geometry_type):
+        case base_grid.GeometryType.ICOSAHEDRON:
+            threshold = 2.5
+            c1 = 1.8
+            c2 = 3.75
+            c3 = 0.9
 
-    resol = mean_characteristic_length / 1000.0
-    scale = 0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
-    return scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale
+            resol = mean_characteristic_length / 1000.0
+            scale = (
+                0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
+            )
+            return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
+        case base_grid.GeometryType.TORUS:
+            return mean_dual_edge_length
+
+
+def compute_default_rbf_scale_edge(
+    geometry_type: int,
+    mean_characteristic_length: ta.wpfloat,
+    mean_dual_edge_length: ta.wpfloat,
+) -> ta.wpfloat:
+    """Compute the default RBF scale factor for edges. This assumes that the inverse multiquadratic
+    kernel is used."""
+
+    match base_grid.GeometryType(geometry_type):
+        case base_grid.GeometryType.ICOSAHEDRON:
+            threshold = 2.0
+            c1 = 0.4
+            c2 = 2.0
+            c3 = 0.325
+
+            resol = mean_characteristic_length / 1000.0
+            scale = (
+                0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
+            )
+            return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
+        case base_grid.GeometryType.TORUS:
+            return mean_dual_edge_length
+
+
+def compute_default_rbf_scale_vertex(
+    geometry_type: int,
+    mean_characteristic_length: ta.wpfloat,
+    mean_dual_edge_length: ta.wpfloat,
+) -> ta.wpfloat:
+    """Compute the default RBF scale factor for vertices. This assumes that the Gaussian
+    kernel is used."""
+
+    match base_grid.GeometryType(geometry_type):
+        case base_grid.GeometryType.ICOSAHEDRON:
+            threshold = 2.0
+            c1 = 1.8
+            c2 = 3.0
+            c3 = 0.96
+
+            resol = mean_characteristic_length / 1000.0
+            scale = (
+                0.5 / (1.0 + c1 * math.log(threshold / resol) ** c2) if resol < threshold else 0.5
+            )
+            return astype(scale * (resol / 0.125) ** c3 if resol <= 0.125 else scale, ta.wpfloat)
+        case base_grid.GeometryType.TORUS:
+            return mean_dual_edge_length
 
 
 def construct_rbf_matrix_offsets_tables_for_cells(
@@ -106,9 +157,17 @@ def _dot_product(
     return array_ns.matmul(v1, v2_tilde)
 
 
-def _arc_length_pairwise(v: data_alloc.NDArray, array_ns: ModuleType = np) -> data_alloc.NDArray:
+def _compute_distance_pairwise(
+    geometry_type: base_grid.GeometryType,
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+    v: data_alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
     """
-    Compute the pairwise arc lengths between points in each row of v.
+    Compute the distance between points in each row of v.
+    For the icosahedron geometry this is the arc lengths (in radians), for the
+    torus it is the Euclidean distance taking into account periodic boundaries.
 
     Args:
         v: 3D array of shape (n, m, 3) where n is the number of elements,
@@ -116,26 +175,45 @@ def _arc_length_pairwise(v: data_alloc.NDArray, array_ns: ModuleType = np) -> da
            dimension of the points.
         array_ns: numpy or cupy module to use for computations.
     """
-    # For pairs of points p1 and p2 compute:
-    # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
-    # Compute all pairs of dot products
-    arc_lengths = _dot_product(v, v, array_ns=array_ns)
-    # Use the dot product of the diagonals to get the norm of each point
-    norms = array_ns.sqrt(array_ns.diagonal(arc_lengths, axis1=1, axis2=2))
-    # Divide the dot products by the broadcasted norms
-    array_ns.divide(arc_lengths, norms[:, :, array_ns.newaxis], out=arc_lengths)
-    array_ns.divide(arc_lengths, norms[:, array_ns.newaxis, :], out=arc_lengths)
-    # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
-    # inaccuracies)
-    array_ns.clip(arc_lengths, -1.0, 1.0, out=arc_lengths)
-    return array_ns.arccos(arc_lengths)
+    match geometry_type:
+        case base_grid.GeometryType.ICOSAHEDRON:
+            # For pairs of points p1 and p2 compute:
+            # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
+            # Compute all pairs of dot products
+            arc_lengths = _dot_product(v, v, array_ns=array_ns)
+            # Use the dot product of the diagonals to get the norm of each point
+            norms = array_ns.sqrt(array_ns.diagonal(arc_lengths, axis1=1, axis2=2))
+            # Divide the dot products by the broadcasted norms
+            array_ns.divide(arc_lengths, norms[:, :, array_ns.newaxis], out=arc_lengths)
+            array_ns.divide(arc_lengths, norms[:, array_ns.newaxis, :], out=arc_lengths)
+            # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
+            # inaccuracies)
+            array_ns.clip(arc_lengths, -1.0, 1.0, out=arc_lengths)
+            return array_ns.arccos(arc_lengths)
+        case base_grid.GeometryType.TORUS:
+            # For pairs of points p1 and p2 compute:
+            # norm(p1 - p2), taking into account the periodic boundaries noqa: ERA001
+            diff = array_ns.abs(v[:, :, array_ns.newaxis, :] - v[:, array_ns.newaxis, :, :])
+            domain_size = array_ns.asarray([domain_length, domain_height, ta.wpfloat(0.0)])
+            domain_size_expanded = domain_size[array_ns.newaxis, array_ns.newaxis, :]
+            inverted_diff = array_ns.subtract(domain_size_expanded, diff)
+            array_ns.minimum(diff, inverted_diff, out=diff)
+            return array_ns.linalg.norm(diff, axis=-1)
 
 
-def _arc_length_vector_matrix(
-    v1: data_alloc.NDArray, v2: data_alloc.NDArray, array_ns: ModuleType = np
+def _compute_distance_vector_matrix(
+    geometry_type: base_grid.GeometryType,
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
+    v1: data_alloc.NDArray,
+    v2: data_alloc.NDArray,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
-    Compute the arc lengths between each point in v1 and the points in v2 at the same row.
+    Compute the distance between each point in v1 and the points in v2 at the
+    same row.
+    For the icosahedron geometry this is the arc lengths (in radians), for the
+    torus it is the Euclidean distance taking into account periodic boundaries.
 
     Args:
         v1: 2D array of shape (n, 3) where n is the number of elements and 3 is
@@ -145,19 +223,30 @@ def _arc_length_vector_matrix(
             of the points.
         array_ns: numpy or cupy module to use for computations.
     """
-    # For pairs of points p1 and p2 compute:
-    # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
-    # Compute all pairs of dot products
-    arc_lengths = _dot_product(v1, v2, array_ns=array_ns)
-    v1_norm = array_ns.linalg.norm(v1, axis=-1)
-    v2_norm = array_ns.linalg.norm(v2, axis=-1)
-    # Divide the dot products by the broadcasted norms
-    array_ns.divide(arc_lengths, v1_norm[:, :, array_ns.newaxis], out=arc_lengths)
-    array_ns.divide(arc_lengths, v2_norm[:, array_ns.newaxis, :], out=arc_lengths)
-    # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
-    # inaccuracies)
-    array_ns.clip(arc_lengths, -1.0, 1.0, out=arc_lengths)
-    return array_ns.squeeze(array_ns.arccos(arc_lengths), axis=1)
+    match geometry_type:
+        case base_grid.GeometryType.ICOSAHEDRON:
+            # For pairs of points p1 and p2 compute:
+            # arccos(dot(p1, p2) / (norm(p1) * norm(p2))) noqa: ERA001
+            # Compute all pairs of dot products
+            arc_lengths = _dot_product(v1, v2, array_ns=array_ns)
+            v1_norm = array_ns.linalg.norm(v1, axis=-1)
+            v2_norm = array_ns.linalg.norm(v2, axis=-1)
+            # Divide the dot products by the broadcasted norms
+            array_ns.divide(arc_lengths, v1_norm[:, :, array_ns.newaxis], out=arc_lengths)
+            array_ns.divide(arc_lengths, v2_norm[:, array_ns.newaxis, :], out=arc_lengths)
+            # Ensure all points are within [-1.0, 1.0] (may be outside due to numerical
+            # inaccuracies)
+            array_ns.clip(arc_lengths, -1.0, 1.0, out=arc_lengths)
+            return array_ns.squeeze(array_ns.arccos(arc_lengths), axis=1)
+        case base_grid.GeometryType.TORUS:
+            # For pairs of points p1 and p2 compute:
+            # norm(p1 - p2) noqa: ERA001
+            diff = np.abs(v1 - v2)
+            domain_size = array_ns.asarray([domain_length, domain_height, ta.wpfloat(0.0)])
+            domain_size_expanded = domain_size[array_ns.newaxis, array_ns.newaxis, :]
+            inverted_diff = array_ns.subtract(domain_size_expanded, diff)
+            diff = array_ns.minimum(diff, inverted_diff, out=diff)
+            return array_ns.linalg.norm(diff, axis=-1)
 
 
 def _gaussian(
@@ -192,22 +281,27 @@ def _kernel(
 
 
 def _cartesian_coordinates_from_zonal_and_meridional_components(
+    geometry_type: base_grid.GeometryType,
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     u: data_alloc.NDArray,
     v: data_alloc.NDArray,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
-    cos_lat = array_ns.cos(lat)
-    sin_lat = array_ns.sin(lat)
-    cos_lon = array_ns.cos(lon)
-    sin_lon = array_ns.sin(lon)
+    match geometry_type:
+        case base_grid.GeometryType.ICOSAHEDRON:
+            cos_lat = array_ns.cos(lat)
+            sin_lat = array_ns.sin(lat)
+            cos_lon = array_ns.cos(lon)
+            sin_lon = array_ns.sin(lon)
 
-    x = -u * sin_lon - v * sin_lat * cos_lon
-    y = u * cos_lon - v * sin_lat * sin_lon
-    z = cos_lat * v
+            x = -u * sin_lon - v * sin_lat * cos_lon
+            y = u * cos_lon - v * sin_lat * sin_lon
+            z = cos_lat * v
 
-    return x, y, z
+            return x, y, z
+        case base_grid.GeometryType.TORUS:
+            return u, v, array_ns.zeros_like(u)
 
 
 def _compute_rbf_interpolation_coeffs(
@@ -225,8 +319,11 @@ def _compute_rbf_interpolation_coeffs(
     uv: tuple[tuple[data_alloc.NDArray, data_alloc.NDArray], ...],
     rbf_offset: data_alloc.NDArray,
     rbf_kernel: InterpolationKernel,
+    geometry_type: base_grid.GeometryType,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, ...]:
@@ -273,8 +370,13 @@ def _compute_rbf_interpolation_coeffs(
         axis=-1,
     )
     assert element_center.shape == (rbf_offset.shape[0], 3)
-    vector_dist = _arc_length_vector_matrix(
-        element_center[:, array_ns.newaxis, :], edge_center, array_ns=array_ns
+    vector_dist = _compute_distance_vector_matrix(
+        geometry_type,
+        domain_length,
+        domain_height,
+        element_center[:, array_ns.newaxis, :],
+        edge_center,
+        array_ns=array_ns,
     )
     assert vector_dist.shape == rbf_offset.shape
     rbf_val = _kernel(rbf_kernel, vector_dist, scale_factor, array_ns=array_ns)
@@ -289,6 +391,7 @@ def _compute_rbf_interpolation_coeffs(
     assert 1 <= num_zonal_meridional_components <= 2
     for i in range(num_zonal_meridional_components):
         z_nx_x, z_nx_y, z_nx_z = _cartesian_coordinates_from_zonal_and_meridional_components(
+            geometry_type,
             element_center_lat[horizontal_start:],
             element_center_lon[horizontal_start:],
             uv[i][0][horizontal_start:],
@@ -313,7 +416,9 @@ def _compute_rbf_interpolation_coeffs(
     )
 
     # Distance between edge midpoints for RBF interpolation matrix
-    z_dist = _arc_length_pairwise(edge_center, array_ns=array_ns)
+    z_dist = _compute_distance_pairwise(
+        geometry_type, domain_length, domain_height, edge_center, array_ns=array_ns
+    )
     assert z_dist.shape == (
         rbf_offset.shape[0],
         rbf_offset.shape[1],
@@ -335,7 +440,7 @@ def _compute_rbf_interpolation_coeffs(
     # https://github.com/cupy/cupy/pull/9116.
     rbf_vec_coeff_np = [
         np.zeros(rbf_offset_shape_full, dtype=ta.wpfloat)
-        for j in range(num_zonal_meridional_components)
+        for _ in range(num_zonal_meridional_components)
     ]
     rbf_offset_np = data_alloc.as_numpy(rbf_offset)
     z_rbfmat_np = data_alloc.as_numpy(z_rbfmat)
@@ -374,8 +479,11 @@ def compute_rbf_interpolation_coeffs_cell(
     rbf_offset: data_alloc.NDArray,
     # TODO(): Can't pass enum as "params" in NumpyFieldsProvider?
     rbf_kernel: int,
+    geometry_type: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray]:
@@ -397,8 +505,11 @@ def compute_rbf_interpolation_coeffs_cell(
         ((ones, zeros), (zeros, ones)),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
+        base_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
+        domain_length,
+        domain_height,
         exchange=exchange,
         array_ns=array_ns,
     )
@@ -417,8 +528,11 @@ def compute_rbf_interpolation_coeffs_edge(
     edge_dual_normal_v: data_alloc.NDArray,
     rbf_offset: data_alloc.NDArray,
     rbf_kernel: int,
+    geometry_type: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
@@ -437,8 +551,11 @@ def compute_rbf_interpolation_coeffs_edge(
         ((edge_dual_normal_u, edge_dual_normal_v),),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
+        base_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
+        domain_length,
+        domain_height,
         exchange=exchange,
         array_ns=array_ns,
     )[0]
@@ -458,8 +575,11 @@ def compute_rbf_interpolation_coeffs_vertex(
     edge_normal_z: data_alloc.NDArray,
     rbf_offset: data_alloc.NDArray,
     rbf_kernel: int,
+    geometry_type: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
+    domain_length: ta.wpfloat,
+    domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
@@ -481,8 +601,11 @@ def compute_rbf_interpolation_coeffs_vertex(
         ((ones, zeros), (zeros, ones)),
         rbf_offset,
         InterpolationKernel(rbf_kernel),
+        base_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
+        domain_length,
+        domain_height,
         exchange=exchange,
         array_ns=array_ns,
     )

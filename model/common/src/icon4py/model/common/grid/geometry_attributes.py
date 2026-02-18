@@ -50,9 +50,6 @@ INVERSE_VERTEX_VERTEX_LENGTH: Final[str] = "inverse_of_vertex_vertex_length"
 EDGE_LENGTH: Final[str] = "edge_length"
 DUAL_EDGE_LENGTH: Final[str] = "length_of_dual_edge"
 
-EDGE_TANGENT_X: Final[str] = "x_component_of_edge_tangential_unit_vector"
-EDGE_TANGENT_Y: Final[str] = "y_component_of_edge_tangential_unit_vector"
-EDGE_TANGENT_Z: Final[str] = "z_component_of_edge_tangential_unit_vector"
 EDGE_TANGENT_VERTEX_U: Final[str] = "eastward_component_of_edge_tangent_on_vertex"
 EDGE_TANGENT_VERTEX_V: Final[str] = "northward_component_of_edge_tangent_on_vertex"
 EDGE_TANGENT_CELL_U: Final[str] = "eastward_component_of_edge_tangent_on_cell"
@@ -63,6 +60,9 @@ EDGE_NORMAL_Y: Final[str] = "y_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_Z: Final[str] = "z_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_U: Final[str] = "eastward_component_of_edge_normal"
 EDGE_NORMAL_V: Final[str] = "northward_component_of_edge_normal"
+EDGE_TANGENT_X: Final[str] = "x_component_of_edge_tangential_unit_vector"
+EDGE_TANGENT_Y: Final[str] = "y_component_of_edge_tangential_unit_vector"
+EDGE_TANGENT_Z: Final[str] = "z_component_of_edge_tangential_unit_vector"
 EDGE_DUAL_U: Final[str] = "eastward_component_of_edge_tangent"
 EDGE_DUAL_V: Final[str] = "northward_component_of_edge_tangent"
 EDGE_NORMAL_VERTEX_U: Final[str] = "eastward_component_of_edge_normal_on_vertex"
@@ -73,6 +73,11 @@ EDGE_CENTER_X: Final[str] = "x_coordinate_of_edge_center"
 EDGE_CENTER_Y: Final[str] = "y_coordinate_of_edge_center"
 EDGE_CENTER_Z: Final[str] = "z_coordinate_of_edge_center"
 
+MEAN_EDGE_LENGTH: Final[str] = "mean_edge_length"
+MEAN_DUAL_EDGE_LENGTH: Final[str] = "mean_dual_edge_length"
+MEAN_CELL_AREA: Final[str] = "mean_cell_area"
+MEAN_DUAL_AREA: Final[str] = "mean_dual_area"
+CHARACTERISTIC_LENGTH: Final[str] = "characteristic_length"
 
 attrs: dict[str, model.FieldMetaData] = {
     CELL_LAT: dict(
@@ -426,6 +431,41 @@ attrs: dict[str, model.FieldMetaData] = {
         units="1",
         dims=(dims.EdgeDim,),
         icon_var_name="t_grid_edges%cartesian_center%x(3)",
+        dtype=ta.wpfloat,
+    ),
+    MEAN_EDGE_LENGTH: dict(
+        standard_name=MEAN_EDGE_LENGTH,
+        long_name="mean_edge_length",
+        units="",
+        icon_var_name="",
+        dtype=ta.wpfloat,
+    ),
+    MEAN_DUAL_EDGE_LENGTH: dict(
+        standard_name=MEAN_DUAL_EDGE_LENGTH,
+        long_name="mean_dual_edge_length",
+        units="",
+        icon_var_name="",
+        dtype=ta.wpfloat,
+    ),
+    MEAN_CELL_AREA: dict(
+        standard_name=MEAN_CELL_AREA,
+        long_name="mean_cell_area",
+        units="",
+        icon_var_name="",
+        dtype=ta.wpfloat,
+    ),
+    MEAN_DUAL_AREA: dict(
+        standard_name=MEAN_DUAL_AREA,
+        long_name="mean_dual_area",
+        units="",
+        icon_var_name="",
+        dtype=ta.wpfloat,
+    ),
+    CHARACTERISTIC_LENGTH: dict(
+        standard_name=CHARACTERISTIC_LENGTH,
+        long_name="characteristic_length",
+        units="",
+        icon_var_name="",
         dtype=ta.wpfloat,
     ),
 }

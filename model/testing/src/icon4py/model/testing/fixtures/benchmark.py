@@ -21,7 +21,7 @@ from icon4py.model.common.grid import (
     grid_manager as gm,
     vertical as v_grid,
 )
-from icon4py.model.common.initialization import jablonowski_williamson_topography as topology
+from icon4py.model.common.initialization import topography
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -108,7 +108,7 @@ def metrics_field_source(
         vct_b=vct_b,
     )
 
-    topo_c = topology.jablonowski_williamson_topography(
+    topo_c = topography.jablonowski_williamson(
         cell_lat=geometry_field_source.get(geometry_meta.CELL_LAT).ndarray,
         u0=35.0,
         array_ns=data_alloc.import_array_ns(allocator),
@@ -127,5 +127,7 @@ def metrics_field_source(
         rayleigh_coeff=5.0,
         exner_expol=0.333,
         vwind_offctr=0.2,
+        thslp_zdiffu=0.02,
+        thhgtd_zdiffu=125.0,
     )
     yield metrics_field_source

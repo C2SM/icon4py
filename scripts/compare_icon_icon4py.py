@@ -53,44 +53,56 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
     "calculate_diagnostic_quantities_for_turbulence": None,
     "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools": None,
     "calculate_nabla2_and_smag_coefficients_for_vn": None,
-    "compute_advection_in_horizontal_momentum_equation": None,
-    "compute_advection_in_vertical_momentum_equation": None,
+    "compute_advection_in_horizontal_momentum_equation": (
+        "compute_advection_in_horizontal_momentum",
+        {},
+    ),
+    "compute_advection_in_vertical_momentum_equation": (
+        "compute_advection_in_corrector_vertical_momentum",
+        {},
+    ),
     "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection": (
-        "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection",
+        "compute_averaged_vn_and_fluxes",
         {
             "at_first_substep": False,
         },
     ),
     "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first": (
-        "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection",
+        "compute_averaged_vn_and_fluxes",
         {
             "at_first_substep": True,
         },
     ),
     "compute_contravariant_correction_and_advection_in_vertical_momentum_equation": (
-        "compute_contravariant_correction_and_advection_in_vertical_momentum_equation",
+        "compute_advection_in_predictor_vertical_momentum",
         {
             "skip_compute_predictor_vertical_advection": False,
         },
     ),
     "compute_contravariant_correction_and_advection_in_vertical_momentum_equation_skip": (
-        "compute_contravariant_correction_and_advection_in_vertical_momentum_equation",
+        "compute_advection_in_predictor_vertical_momentum",
         {
             "skip_compute_predictor_vertical_advection": True,
         },
     ),
     "compute_derived_horizontal_winds_and_ke_and_contravariant_correction": (
-        "compute_derived_horizontal_winds_and_ke_and_contravariant_correction",
+        "compute_diagnostics_from_normal_wind",
         {"skip_compute_predictor_vertical_advection": False},
     ),
     "compute_derived_horizontal_winds_and_ke_and_contravariant_correction_skip": (
-        "compute_derived_horizontal_winds_and_ke_and_contravariant_correction",
+        "compute_diagnostics_from_normal_wind",
         {"skip_compute_predictor_vertical_advection": True},
     ),
     "compute_horizontal_velocity_quantities_and_fluxes": None,
     "compute_perturbed_quantities_and_interpolation": None,
-    "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn": None,
-    "interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration": None,
+    "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn": (
+        "compute_rho_theta_pgrad_and_update_vn",
+        {},
+    ),
+    "interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration": (
+        "compute_interpolation_and_nonhydro_buoy",
+        {},
+    ),
     "update_mass_flux_weighted": None,
     "update_mass_flux_weighted_first": None,
     "vertically_implicit_solver_at_corrector_step": (

@@ -78,7 +78,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         "rho_at_cells_on_half_levels",
         "perturbed_theta_v_at_cells_on_half_levels",
         "theta_v_at_cells_on_half_levels",
-        "pressure_buoyancy_acceleration_at_cells_on_half_levels",
+        "nonhydro_buoy_at_cells_on_half_levels",
         "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
     )
     STATIC_PARAMS = {
@@ -121,7 +121,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         perturbed_exner_at_cells_on_model_levels: np.ndarray,
         ddz_of_reference_exner_at_cells_on_half_levels: np.ndarray,
         ddqz_z_half: np.ndarray,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels: np.ndarray,
+        nonhydro_buoy_at_cells_on_half_levels: np.ndarray,
         rho_at_cells_on_half_levels: np.ndarray,
         exner_at_cells_on_half_levels: np.ndarray,
         time_extrapolation_parameter_for_exner: np.ndarray,
@@ -267,7 +267,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
         (
             perturbed_theta_v_at_cells_on_half_levels[:, : surface_level - 1],
             theta_v_at_cells_on_half_levels[:, : surface_level - 1],
-            pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels,
         ) = np.where(
             (start_cell_lateral_boundary_level_3 <= horz_idx)
             & (horz_idx < end_cell_halo)
@@ -285,7 +285,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             (
                 perturbed_theta_v_at_cells_on_half_levels[:, : surface_level - 1],
                 theta_v_at_cells_on_half_levels[:, : surface_level - 1],
-                pressure_buoyancy_acceleration_at_cells_on_half_levels,
+                nonhydro_buoy_at_cells_on_half_levels,
             ),
         )
 
@@ -343,7 +343,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels=d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels,
         )
 
@@ -379,9 +379,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             grid, dims.CellDim, dims.KDim
         )
         ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim
-        )
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         rho_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         exner_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
@@ -444,7 +442,7 @@ class TestComputePerturbedQuantitiesAndInterpolation(stencil_tests.StencilTest):
             exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,
             ddz_of_reference_exner_at_cells_on_half_levels=ddz_of_reference_exner_at_cells_on_half_levels,
             ddqz_z_half=ddqz_z_half,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             time_extrapolation_parameter_for_exner=time_extrapolation_parameter_for_exner,
             current_exner=current_exner,
             reference_exner_at_cells_on_model_levels=reference_exner_at_cells_on_model_levels,

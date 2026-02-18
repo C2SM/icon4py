@@ -82,7 +82,8 @@ dependencies = [
   "icon4py-atmosphere-microphysics>=0.0.6",
   "icon4py-atmosphere-muphys>=0.0.6",
   "icon4py-common>=0.0.6",
-  "icon4py-driver>=0.0.6"
+  "icon4py-driver>=0.0.6",
+  "icon4py-standalone_driver>=0.0.6"
 ]
 description = 'ICON model in Python.'
 license = {text = "BSD-3 License"}
@@ -230,6 +231,7 @@ pythonpath = [
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
   "model/driver",
+  "model/standalone_driver",
   "model/testing",
   "tools"
 ]
@@ -352,8 +354,13 @@ explicit = true
 name = "test.pypi"
 url = "https://test.pypi.org/simple/"
 
+[[tool.uv.index]]
+explicit = true
+name = 'gridtools'
+url = 'https://gridtools.github.io/pypi/'
+
 [tool.uv.sources]
-dace = {git = "https://github.com/GridTools/dace", tag = "__gt4py-next-integration_2025_11_26"}
+dace = {index = "gridtools"}
 ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
@@ -364,6 +371,7 @@ icon4py-atmosphere-microphysics = {workspace = true}
 icon4py-atmosphere-muphys = {workspace = true}
 icon4py-common = {workspace = true}
 icon4py-driver = {workspace = true}
+icon4py-standalone_driver = {workspace = true}
 icon4py-testing = {workspace = true}
 icon4py-tools = {workspace = true}
 serialbox4py = {index = "test.pypi"}
@@ -377,6 +385,7 @@ members = [
   "model/atmosphere/subgrid_scale_physics/muphys",
   "model/common",
   "model/driver",
+  "model/standalone_driver",
   "model/testing",
   "tools"
 ]

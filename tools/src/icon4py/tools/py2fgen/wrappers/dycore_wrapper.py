@@ -22,7 +22,8 @@ from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import config as gtx_config, metrics as gtx_metrics
+from gt4py.next import config as gtx_config
+from gt4py.next.instrumentation import metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro

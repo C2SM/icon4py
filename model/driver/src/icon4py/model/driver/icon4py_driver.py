@@ -15,7 +15,8 @@ from typing import NamedTuple
 import click
 import numpy as np
 from devtools import Timer
-from gt4py.next import config as gtx_config, metrics as gtx_metrics, typing as gtx_typing
+from gt4py.next import config as gtx_config, typing as gtx_typing
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
@@ -535,10 +536,9 @@ def initialize(
 )
 @click.option(
     "--enable_profiling",
-    is_flag=False,
-    flag_value="gt4py_metrics.json",
-    default="",
-    help="Enable detailed profiling with GT4Py metrics. Can be a flag (--enable_profiling) or provide a filename (--enable_profiling='gt4py_metrics.json').",
+    is_flag=True,
+    default=False,
+    help="Enable detailed profiling with GT4Py metrics.",
 )
 @click.option(
     "--save_timings_file",

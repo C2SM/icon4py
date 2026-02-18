@@ -20,7 +20,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import config, data_handling, definitions, locking
+from icon4py.model.testing import config, data_handling, definitions
 
 
 grid_geometries: dict[str, geometry.GridGeometry] = {}
@@ -84,12 +84,10 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
     if config.ENABLE_GRID_DOWNLOAD:
-        with locking.lock(grid_directory):
-            if not full_name.exists():
-                data_handling.download_and_extract(
-                    grid.uri,
-                    grid_directory,
-                )
+        data_handling.download_and_extract(
+            grid.uri,
+            grid_directory,
+        )
     else:
         # If grid download is disabled, we check if the file exists
         # without locking. We assume the location is managed by the user
@@ -135,7 +133,7 @@ def get_grid_geometry(
         )
         grid = gm.grid
         decomposition_info = construct_decomposition_info(grid, backend)
-        geometry_source = geometry.GridGeometry(
+        return geometry.GridGeometry(
             grid,
             decomposition_info,
             backend,
@@ -143,7 +141,6 @@ def get_grid_geometry(
             gm.geometry_fields,
             geometry_attrs.attrs,
         )
-        return geometry_source
 
     if not grid_geometries.get(register_name):
         grid_geometries[register_name] = _construct_grid_geometry()

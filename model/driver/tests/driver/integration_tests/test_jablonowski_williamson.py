@@ -12,9 +12,10 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.testcases import jablonowski_williamson as jabw
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import datatest_utils as dt_utils, definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import backend
 
 from ..fixtures import *  # noqa: F403
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("experiment, rank", [(definitions.Experiments.JW, 0)])
 def test_jabw_initial_condition(
     experiment: definitions.Experiment,
-    ranked_data_path: pathlib.Path,
+    processor_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
     rank: int,
     data_provider: sb.IconSerialDataProvider,
@@ -56,7 +57,7 @@ def test_jabw_initial_condition(
         icon_grid,
         cell_geometry,
         edge_geometry,
-        ranked_data_path.joinpath(f"{experiment.name}/ser_data"),
+        dt_utils.get_datapath_for_experiment(experiment, processor_props),
         backend,
         rank,
     )
