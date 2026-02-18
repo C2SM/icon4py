@@ -220,7 +220,8 @@ module = ["icon4py.model.standalone_driver.testcases.initial_condition"]
 [[tool.mypy.overrides]]  # complains about gt4py.next not containing int32
 disable_error_code = ["attr-defined"]
 module = [
-  "icon4py.model.atmosphere.advection.advection_horizontal"
+  "icon4py.model.atmosphere.advection.advection_horizontal",
+  "icon4py.model.atmosphere.advection.advection"
 ]
 
 [[tool.mypy.overrides]]  # complains about dims not being valid types
