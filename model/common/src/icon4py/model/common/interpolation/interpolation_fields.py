@@ -13,6 +13,7 @@ from types import ModuleType
 from typing import Final
 
 import numpy as np
+import scipy
 from gt4py import next as gtx
 from gt4py.next import where
 
@@ -20,9 +21,11 @@ import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.math.projection as proj
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, V2E
-from icon4py.model.common.grid import gridfile
+from icon4py.model.common.grid import base as base_grid, gridfile
 from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
+from icon4py.model.common.math.projection import diff_on_edges_torus_numpy, gnomonic_proj
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -36,7 +39,7 @@ def compute_c_lin_e(
     inv_dual_edge_length: data_alloc.NDArray,
     edge_owner_mask: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -110,7 +113,7 @@ def compute_geofac_n2s(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -171,7 +174,7 @@ def compute_geofac_grg(
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
@@ -218,7 +221,7 @@ def compute_geofac_grdiv(
     e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -439,7 +442,7 @@ def _force_mass_conservation_to_c_bln_avg(
     cell_owner_mask: data_alloc.NDArray,
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
     niter: int = 1000,
 ) -> data_alloc.NDArray:
@@ -617,7 +620,7 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(
@@ -650,7 +653,7 @@ def compute_mass_conserving_bilinear_cell_average_weight_torus(
     divergence_averaging_central_cell_weight: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c_bln_avg = _compute_uniform_c_bln_avg(
@@ -721,7 +724,7 @@ def compute_e_flx_avg(
     e2c2e: data_alloc.NDArray,
     horizontal_start_p3: gtx.int32,
     horizontal_start_p4: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -886,7 +889,7 @@ def compute_cells_aw_verts(
     v2c: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -1019,7 +1022,7 @@ def compute_pos_on_tplane_e_x_y(
     owner_mask: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
@@ -1106,7 +1109,7 @@ def compute_pos_on_tplane_e_x_y(
 def compute_pos_on_tplane_e_x_y_torus(
     dual_edge_length: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -1149,3 +1152,146 @@ def compute_pos_on_tplane_e_x_y_torus(
 
     exchange(pos_on_tplane_e_x, pos_on_tplane_e_y)
     return pos_on_tplane_e_x, pos_on_tplane_e_y
+
+
+def compute_lsq_pseudoinv(
+    cell_owner_mask: data_alloc.NDArray,
+    lsq_pseudoinv: data_alloc.NDArray,
+    z_lsq_mat_c: data_alloc.NDArray,
+    lsq_weights_c: data_alloc.NDArray,
+    start_idx: int,
+    min_rlcell_int: int,
+    lsq_dim_unk: int,
+    lsq_dim_c: int,
+) -> data_alloc.NDArray:
+    for jjb in range(lsq_dim_c):
+        for jjk in range(lsq_dim_unk):
+            for jc in range(start_idx, min_rlcell_int):
+                u, s, v_t, _ = scipy.linalg.lapack.dgesdd(z_lsq_mat_c[jc, :, :])
+                if cell_owner_mask[jc]:
+                    lsq_pseudoinv[jc, :lsq_dim_unk, jjb] = (
+                        lsq_pseudoinv[jc, :lsq_dim_unk, jjb]
+                        + v_t[jjk, :lsq_dim_unk] / s[jjk] * u[jjb, jjk] * lsq_weights_c[jc, jjb]
+                    )
+    return lsq_pseudoinv
+
+
+def compute_lsq_weights_c(
+    z_dist_g: data_alloc.NDArray,
+    lsq_weights_c_jc: data_alloc.NDArray,
+    lsq_dim_stencil: int,
+    lsq_wgt_exp: int,
+) -> data_alloc.NDArray:
+    for js in range(lsq_dim_stencil):
+        z_norm = np.sqrt(np.dot(z_dist_g[js, :], z_dist_g[js, :]))
+        lsq_weights_c_jc[js] = 1.0 / (z_norm**lsq_wgt_exp)
+    return lsq_weights_c_jc / np.max(lsq_weights_c_jc)
+
+
+def compute_z_lsq_mat_c(
+    cell_owner_mask: data_alloc.NDArray,
+    z_lsq_mat_c: data_alloc.NDArray,
+    lsq_weights_c: data_alloc.NDArray,
+    z_dist_g: data_alloc.NDArray,
+    jc: int,
+    lsq_dim_unk: int,
+    lsq_dim_c: int,
+) -> data_alloc.NDArray:
+    min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
+    if cell_owner_mask[jc]:
+        z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
+
+    for js in range(lsq_dim_c):
+        z_lsq_mat_c[jc, js, :lsq_dim_unk] = lsq_weights_c[jc, js] * z_dist_g[js, :]
+
+    return z_lsq_mat_c[jc, js, :lsq_dim_unk]
+
+
+def compute_lsq_coeffs(
+    cell_center_x: data_alloc.NDArray,
+    cell_center_y: data_alloc.NDArray,
+    cell_lat: data_alloc.NDArray,
+    cell_lon: data_alloc.NDArray,
+    c2e2c: data_alloc.NDArray,
+    cell_owner_mask: data_alloc.NDArray,
+    domain_length: float,
+    domain_height: float,
+    grid_sphere_radius: float,
+    lsq_dim_unk: int,
+    lsq_dim_c: int,
+    lsq_wgt_exp: int,
+    lsq_dim_stencil: int,
+    start_idx: int,
+    min_rlcell_int: int,
+    geometry_type: int,
+    exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    lsq_weights_c = array_ns.zeros((min_rlcell_int, lsq_dim_stencil))
+    lsq_pseudoinv = array_ns.zeros((min_rlcell_int, lsq_dim_unk, lsq_dim_c))
+    z_lsq_mat_c = array_ns.zeros((min_rlcell_int, lsq_dim_c, lsq_dim_c))
+    z_dist_g = array_ns.zeros((min_rlcell_int, lsq_dim_c, 2))
+    match base_grid.GeometryType(geometry_type):
+        case base_grid.GeometryType.ICOSAHEDRON:
+            for js in range(lsq_dim_stencil):
+                z_dist_g[:, js, :] = np.asarray(
+                    gnomonic_proj(
+                        cell_lon[:], cell_lat[:], cell_lon[c2e2c[:, js]], cell_lat[c2e2c[:, js]]
+                    )
+                ).T
+
+            z_dist_g *= grid_sphere_radius
+            min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
+
+            for jc in range(start_idx, min_rlcell_int):
+                if cell_owner_mask[jc]:
+                    z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
+        case base_grid.GeometryType.TORUS:
+            for jc in range(start_idx, min_rlcell_int):
+                ilc_s = c2e2c[jc, :lsq_dim_stencil]
+                cc_cell = array_ns.zeros((lsq_dim_stencil, 2))
+
+                cc_cv = (cell_center_x[jc], cell_center_y[jc])
+                for js in range(lsq_dim_stencil):
+                    cc_cell[js, :] = diff_on_edges_torus_numpy(
+                        cell_center_x[jc],
+                        cell_center_y[jc],
+                        cell_center_x[ilc_s][js],
+                        cell_center_y[ilc_s][js],
+                        domain_length,
+                        domain_height,
+                    )
+                z_dist_g[jc, :, :] = cc_cell - cc_cv
+
+    for jc in range(start_idx, min_rlcell_int):
+        lsq_weights_c[jc, :] = compute_lsq_weights_c(
+            z_dist_g[jc, :, :], lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp
+        )
+        z_lsq_mat_c[jc, js, :lsq_dim_unk] = compute_z_lsq_mat_c(
+            cell_owner_mask,
+            z_lsq_mat_c,
+            lsq_weights_c,
+            z_dist_g[jc, :, :],
+            jc,
+            lsq_dim_unk,
+            lsq_dim_c,
+        )
+
+    if exchange != decomposition.single_node_default:
+        exchange(lsq_weights_c)
+
+    lsq_pseudoinv = compute_lsq_pseudoinv(
+        cell_owner_mask,
+        lsq_pseudoinv,
+        z_lsq_mat_c,
+        lsq_weights_c,
+        start_idx,
+        min_rlcell_int,
+        lsq_dim_unk,
+        lsq_dim_c,
+    )
+    if exchange != decomposition.single_node_default:
+        exchange(lsq_pseudoinv[:, 0, :])
+        exchange(lsq_pseudoinv[:, 1, :])
+
+    return lsq_pseudoinv
