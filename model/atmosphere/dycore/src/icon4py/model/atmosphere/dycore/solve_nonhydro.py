@@ -400,8 +400,6 @@ class SolveNonhydro:
             program=update_theta_and_exner_in_halo,
             constant_args={
                 "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
-                "rd_o_cvd": constants.RD_O_CVD,
-                "rd_o_p0ref": constants.RD_O_P0REF,
             },
             horizontal_sizes={
                 "horizontal_start": self._start_cell_halo,
