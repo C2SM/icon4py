@@ -43,8 +43,8 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp 
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
 )
-from icon4py.model.atmosphere.dycore.stencils.update_theta_and_exner_in_lateral_boundary_halo import (
-    update_theta_and_exner_in_lateral_boundary_halo,
+from icon4py.model.atmosphere.dycore.stencils.update_theta_and_exner_in_halo import (
+    update_theta_and_exner_in_halo,
 )
 from icon4py.model.atmosphere.dycore.velocity_advection import VelocityAdvection
 from icon4py.model.common import (
@@ -395,9 +395,9 @@ class SolveNonhydro:
             },
         )
 
-        self._update_theta_and_exner_in_lateral_boundary_halo = setup_program(
+        self._update_theta_and_exner_in_halo = setup_program(
             backend=backend,
-            program=update_theta_and_exner_in_lateral_boundary_halo,
+            program=update_theta_and_exner_in_halo,
             constant_args={
                 "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
                 "rd_o_cvd": constants.RD_O_CVD,
@@ -1059,7 +1059,7 @@ class SolveNonhydro:
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-        self._update_theta_and_exner_in_lateral_boundary_halo(
+        self._update_theta_and_exner_in_halo(
             rho_now=prognostic_states.current.rho,
             rho_new=prognostic_states.next.rho,
             theta_v_now=prognostic_states.current.theta_v,
