@@ -188,9 +188,6 @@ class IconGridSavepoint(IconSavepoint):
     def vct_a(self):
         return self._get_field("vct_a", dims.KDim)
 
-    def vct_b(self):
-        return self._get_field("vct_b", dims.KDim)
-
     def tangent_orientation(self):
         return self._get_field("tangent_orientation", dims.EdgeDim)
 

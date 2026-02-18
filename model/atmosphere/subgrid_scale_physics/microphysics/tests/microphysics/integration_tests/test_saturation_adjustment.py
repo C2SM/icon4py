@@ -64,11 +64,7 @@ def test_saturation_adjustement(
         icon_grid.num_levels,
         model_top_height=model_top_height,
     )
-    vertical_params = v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-    )
+    vertical_params = v_grid.VerticalGrid(config=vertical_config, vct_a=grid_savepoint.vct_a())
     temperature_tendency = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )

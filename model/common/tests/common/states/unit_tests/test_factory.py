@@ -138,12 +138,11 @@ def height_coordinate_source(
     grid = grid_savepoint.construct_icon_grid(backend=backend)
     z_ifc = metrics_savepoint.z_ifc()
     vct_a = grid_savepoint.vct_a()
-    vct_b = grid_savepoint.vct_b()
     data: dict[str, tuple[state_utils.GTXFieldType, model.FieldMetaData]] = {
         "height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})
     }
     vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=experiment.num_levels), vct_a, vct_b
+        v_grid.VerticalGridConfig(num_levels=experiment.num_levels), vct_a
     )
     field_source = SimpleFieldSource(
         data_=data, backend=backend, grid=grid, vertical_grid=vertical_grid

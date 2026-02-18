@@ -98,7 +98,6 @@ def test_io_monitor_create_output_path(test_path):
         vct_a=gtx.as_field(
             (dims.KDim,), np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1)
         ),
-        vct_b=None,
     )
     config = IOConfig(field_groups=[], output_path=path_name)
     monitor = IOMonitor(
@@ -120,7 +119,6 @@ def test_io_monitor_write_ugrid_file(test_path):
         vct_a=gtx.as_field(
             (dims.KDim,), np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1)
         ),
-        vct_b=None,
     )
 
     config = IOConfig(field_groups=[], output_path=path_name)
@@ -152,7 +150,6 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
-        vct_b=None,
     )
 
     state = test_io_utils.model_state(grid)
@@ -204,7 +201,6 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
-        vct_b=None,
     )
 
     state = test_io_utils.model_state(grid)
@@ -332,7 +328,6 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
         vct_a=gtx.as_field(
             (dims.KDim,), np.linspace(12000.0, 0.0, test_io_utils.simple_grid.num_levels + 1)
         ),
-        vct_b=None,
     )
 
     group_monitor = FieldGroupMonitor(

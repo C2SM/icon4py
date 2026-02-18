@@ -76,9 +76,7 @@ def _get_metrics_factory(
             stretch_factor=stretch_factor,
             rayleigh_damping_height=damping_height,
         )
-        vertical_grid = v_grid.VerticalGrid(
-            vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
-        )
+        vertical_grid = v_grid.VerticalGrid(vertical_config, grid_savepoint.vct_a())
         interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
             grid=geometry.grid,
             decomposition_info=geometry._decomposition_info,

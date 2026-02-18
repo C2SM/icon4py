@@ -64,11 +64,7 @@ def test_graupel(
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
     )
-    vertical_params = v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-    )
+    vertical_params = v_grid.VerticalGrid(config=vertical_config, vct_a=grid_savepoint.vct_a())
 
     metric_state = graupel.MetricStateIconGraupel(
         ddqz_z_full=metrics_savepoint.ddqz_z_full(),

@@ -215,7 +215,7 @@ program solve_nh_simulation
    integer(c_int), dimension(:), allocatable :: edge_starts, edge_ends
 
    ! Declaring arrays
-    real(c_double), dimension(:), allocatable :: vct_a, vct_b
+    real(c_double), dimension(:), allocatable :: vct_a
     real(c_double), dimension(:), allocatable :: rayleigh_w
     real(c_double), dimension(:), allocatable :: tangent_orientation
     real(c_double), dimension(:), allocatable :: inverse_primal_edge_lengths
@@ -320,7 +320,7 @@ program solve_nh_simulation
     real(c_double), dimension(:), allocatable :: primal_normal_x
     real(c_double), dimension(:), allocatable :: primal_normal_y
 
-   !$acc enter data create (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   !$acc enter data create (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
    !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
    !$acc hmask_dd3d, mask_prog_halo_c, c_owner_mask, & ! L 191
@@ -346,7 +346,6 @@ program solve_nh_simulation
 
    ! Allocate arrays
    allocate(vct_a(num_levels))
-   allocate(vct_b(num_levels))
    allocate(rayleigh_w(num_levels))
    allocate(tangent_orientation(num_edges))
    allocate(nudgecoeff_e(num_edges))
@@ -515,8 +514,6 @@ program solve_nh_simulation
           216.98400030452174, 155.43579225710877, 101.30847966961008, 55.56948426298202, &
           20.00000000000001, 0.0 /)
 
-   vct_b = vct_a
-
    ! Fill arrays with random numbers
    call fill_random_1d(rayleigh_w, 0.0_c_double, 1.0_c_double)
    call fill_random_1d(tangent_orientation, 0.0_c_double, 1.0_c_double)
@@ -630,7 +627,7 @@ program solve_nh_simulation
    call fill_random_2d_int(c2e2c, 0, num_cells)
    call fill_random_2d_int(e2c2e, 0, num_edges)
 
-   !$acc data copyin (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   !$acc data copyin (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
    !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
    !$acc hmask_dd3d, mask_prog_halo_c, c_owner_mask, & ! L 191
@@ -672,7 +669,7 @@ program solve_nh_simulation
    ! Call solve_nh_init
    call solve_nh_init( &
         vct_a=vct_a, &
-        vct_b=vct_b, &
+         &
         cell_areas=cell_areas, &
         primal_normal_cell_x=primal_normal_cell_x, &
         primal_normal_cell_y=primal_normal_cell_y, &
@@ -798,7 +795,7 @@ program solve_nh_simulation
   end if
 
 
-   !$acc update host (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   !$acc update host (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
    !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
    !$acc hmask_dd3d, mask_prog_halo_c, c_owner_mask, & ! L 191
@@ -825,7 +822,7 @@ program solve_nh_simulation
    print *, "passed"
 
   !$acc end data
-  !$acc exit data delete (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+  !$acc exit data delete (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
   !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
   !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
   !$acc hmask_dd3d, mask_prog_halo_c, c_owner_mask, & ! L 191

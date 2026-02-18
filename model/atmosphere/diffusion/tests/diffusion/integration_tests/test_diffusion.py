@@ -194,11 +194,10 @@ def test_diffusion_init(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+    vct_a = v_grid.get_vct_a(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
-        vct_b=vct_b,
     )
 
     meta = savepoint_diffusion_init.get_metadata("linit", "date")
@@ -327,11 +326,10 @@ def test_verify_diffusion_init_against_savepoint(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+    vct_a = v_grid.get_vct_a(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
-        vct_b=vct_b,
     )
 
     diffusion_granule = diffusion.Diffusion(
@@ -411,11 +409,10 @@ def test_run_diffusion_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+    vct_a = v_grid.get_vct_a(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
-        vct_b=vct_b,
     )
 
     config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
@@ -490,9 +487,7 @@ def test_run_diffusion_multiple_steps(
         rayleigh_damping_height=damping_height,
     )
 
-    vertical_params = v_grid.VerticalGrid(
-        config=vertical_config, vct_a=grid_savepoint.vct_a(), vct_b=grid_savepoint.vct_b()
-    )
+    vertical_params = v_grid.VerticalGrid(config=vertical_config, vct_a=grid_savepoint.vct_a())
 
     config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
@@ -606,12 +601,8 @@ def test_run_diffusion_initial_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
-    vertical_grid = v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=vct_a,
-        vct_b=vct_b,
-    )
+    vct_a = v_grid.get_vct_a(vertical_config, backend)
+    vertical_grid = v_grid.VerticalGrid(config=vertical_config, vct_a=vct_a)
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
         div_ic=savepoint_diffusion_init.div_ic(),

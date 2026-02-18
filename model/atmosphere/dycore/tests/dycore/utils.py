@@ -86,11 +86,7 @@ def create_vertical_params(
     vertical_config: v_grid.VerticalGridConfig,
     sp: sb.IconGridSavepoint,
 ) -> v_grid.VerticalGrid:
-    return v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=sp.vct_a(),
-        vct_b=sp.vct_b(),
-    )
+    return v_grid.VerticalGrid(config=vertical_config, vct_a=sp.vct_a())
 
 
 def construct_diagnostics(

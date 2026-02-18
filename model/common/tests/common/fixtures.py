@@ -158,9 +158,7 @@ def metrics_factory_from_savepoint(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_grid = vertical.VerticalGrid(
-        vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
-    )
+    vertical_grid = vertical.VerticalGrid(vertical_config, grid_savepoint.vct_a())
     factory = metrics_factory.MetricsFieldsFactory(
         grid=geometry_source.grid,
         vertical_grid=vertical_grid,
