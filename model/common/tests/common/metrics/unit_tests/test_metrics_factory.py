@@ -437,7 +437,7 @@ def test_factory_pressure_gradient_fields(
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field_1 = factory.get(attrs.PG_EDGEDIST_DSL)
+    field_1 = factory.get(attrs.PG_EXDIST_DSL)
     assert test_helpers.dallclose(field_1_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
 
 
