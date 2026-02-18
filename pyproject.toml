@@ -136,12 +136,7 @@ disallow_untyped_defs = true
 explicit_package_bases = true
 files = [
   # TODO(egparedes): activate for all sources and tests
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection.py',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_horizontal.py',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_vertical.py',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_lsq_coeffs.py',
-  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_states.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
@@ -230,6 +225,19 @@ module = [
 disable_error_code = ["valid-type"]
 module = [
   "icon4py.model.atmosphere.advection.advection_states"
+]
+
+[[tool.mypy.overrides]]  # complains about dims not being valid types
+disable_error_code = [
+  "no-untyped-def",  # programs are not annotated with -> None in icon4py
+  "call-overload",  # my doesn't catch the @program overload with grid_type kwarg
+  "operator",  # mypy thinks float < Field[..., float] is not allowed
+  "attr-defined",  # mypy can not see gtx dtypes
+  "name-defined",  # mypy can not see gtx dtypes
+  "valid-type"  # dims are not valid types according to mypy
+]
+module = [
+  "icon4py.model.atmosphere.advection.stencils.*"
 ]
 
 # -- pytest --
