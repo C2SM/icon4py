@@ -141,6 +141,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_horizontal.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_vertical.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_lsq_coeffs.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_states.py',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
@@ -223,6 +224,12 @@ module = ["icon4py.model.standalone_driver.testcases.initial_condition"]
 disable_error_code = ["attr-defined"]
 module = [
   "icon4py.model.atmosphere.advection.advection_horizontal"
+]
+
+[[tool.mypy.overrides]]  # complains about dims not being valid types
+disable_error_code = ["valid-type"]
+module = [
+  "icon4py.model.atmosphere.advection.advection_states"
 ]
 
 # -- pytest --
