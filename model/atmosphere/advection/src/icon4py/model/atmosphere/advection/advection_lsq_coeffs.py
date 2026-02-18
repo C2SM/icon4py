@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
-import scipy
+from scipy.linalg.lapack import lapack  # type: ignore[attr-defined]
 
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.math.projection import (
@@ -30,7 +30,7 @@ def compute_lsq_pseudoinv(
     for jjb in range(lsq_dim_c):
         for jjk in range(lsq_dim_unk):
             for jc in range(start_idx, min_rlcell_int):
-                u, s, v_t, _ = scipy.linalg.lapack.dgesdd(z_lsq_mat_c[jc, :, :])
+                u, s, v_t, _ = lapack.dgesdd(z_lsq_mat_c[jc, :, :])
                 if cell_owner_mask[jc]:
                     lsq_pseudoinv[jc, :lsq_dim_unk, jjb] = (
                         lsq_pseudoinv[jc, :lsq_dim_unk, jjb]

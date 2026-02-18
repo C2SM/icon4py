@@ -54,7 +54,8 @@ test = [
 typing = [
   "mypy[faster-cache]>=1.13.0",
   "typing-extensions>=4.11.0",
-  "types-cffi>=1.16.0"
+  "types-cffi>=1.16.0",
+  "scipy-stubs>=1.15.3.0"
 ]
 
 # -- Standard project description options (PEP 621) --
@@ -139,6 +140,7 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_horizontal.py',
   '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_vertical.py',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src/icon4py/model/atmosphere/advection/advection_lsq_coeffs.py',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
