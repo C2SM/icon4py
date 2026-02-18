@@ -14,7 +14,8 @@ import pathlib
 import time
 
 from gt4py import next as gtx
-from gt4py.next import config as gtx_config, metrics as gtx_metrics
+from gt4py.next import config as gtx_config
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
@@ -84,12 +85,10 @@ def main():
 
     inp = common.GraupelInput.load(filename=pathlib.Path(args.input_file), allocator=allocator)
 
-    use_inout_buffers = False  # Set to True to reuse input buffers for output, see TODO below.
+    use_inout_buffers = True  # Set to True to reuse input buffers for output.
     if use_inout_buffers:
         # We are passing the same buffers for `Q` as input and output. This is not best GT4Py practice,
         # but should be save in this case as we are not reading the input with an offset.
-        # TODO(havogt): However, in some versions of the DaCe pipeline we sometimes (non-deterministically)
-        # generated code that broke with inout buffers.
         references = {
             "qv": inp.qv,
             "qc": inp.qc,

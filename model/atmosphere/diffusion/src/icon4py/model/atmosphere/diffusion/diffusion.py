@@ -366,7 +366,7 @@ class Diffusion:
         | model_backends.BackendDescriptor
         | None,
         orchestration: bool = False,
-        exchange: decomposition.ExchangeRuntime | None = None,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
     ):
         self._allocator = model_backends.get_allocator(backend)
         self._orchestration = orchestration
