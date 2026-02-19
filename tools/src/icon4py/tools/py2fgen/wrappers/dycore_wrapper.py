@@ -135,16 +135,27 @@ def solve_nh_init(
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
-    pg_exdist_dsl = wrapper_common.list2field(
-        domain=rho_ref_me.domain,
-        values=pg_exdist,
-        indices=(
-            wrapper_common.adjust_fortran_indices(pg_edgeidx),
-            wrapper_common.adjust_fortran_indices(pg_vertidx),
-        ),
-        default_value=gtx.float64(0.0),
-        allocator=model_backends.get_allocator(actual_backend),
-    )
+    xp = rho_ref_me.array_ns
+    domain = rho_ref_me.domain
+    default_value = gtx.float64(0.0)
+    if (pg_edgeidx is None) or (pg_vertidx is None) or (pg_exdist is None):
+        # if any of the fields is missing, return a zero field with the correct shape
+        pg_exdist_dsl = gtx.as_field(
+            domain,
+            xp.full(domain.shape, fill_value=default_value, dtype=gtx.float64),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+    else:
+        pg_exdist_dsl = wrapper_common.list2field(
+            domain=domain,
+            values=pg_exdist,
+            indices=(
+                wrapper_common.adjust_fortran_indices(pg_edgeidx),
+                wrapper_common.adjust_fortran_indices(pg_vertidx),
+            ),
+            default_value=default_value,
+            allocator=model_backends.get_allocator(actual_backend),
+        )
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
