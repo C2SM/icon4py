@@ -23,27 +23,33 @@ def _update_theta_and_exner_in_halo(
     rho_now: fa.CellKField[wpfloat],
     rho_new: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],
-    theta_v_new: fa.CellKField[wpfloat],
     exner_now: fa.CellKField[wpfloat],
     exner_new: fa.CellKField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    # Formerly known as _mo_solve_nonhydro_stencil_66.
-    # bdy_halo_c is the inverse of mask_prog_halo_c
-    theta_v_new = where(~mask_prog_halo_c, exner_new, theta_v_new)
-    exner_new = where(
-        ~mask_prog_halo_c,
-        exp(dycore_consts.rd_o_cvd * log(dycore_consts.rd_o_p0ref * rho_new * exner_new)),
-        exner_new,
-    )
+    #
+    # ICON (fortran) uses one list (bdy_halo_c) and one mask (mask_prog_halo_c)
+    # for these operations. In the halo one is the inverse of the other:
+    # `mask_prog_halo_c = ~bdy_halo_c` so these operations (formerly
+    # _mo_solve_nonhydro_stencil_66 and 68) can be merged.
+    # `mask_prog_halo_c` is true for prognostic (_prog) cells (_c) in the halo
+    # region (_halo)
+    # `bdy_halo_c` lists the indices of cells (_c) which are located in the
+    # lateral boundary (bdy) and halo region (_halo)
+    # A visual representation can be found at
+    # https://github.com/C2SM/icon4py/pull/1066
 
-    # Formerly known as _mo_solve_nonhydro_stencil_68.
     theta_v_new = where(
         mask_prog_halo_c,
         rho_now
         * theta_v_now
         * ((exner_new / exner_now - wpfloat("1.0")) * dycore_consts.cvd_o_rd + wpfloat("1.0"))
         / rho_new,
-        theta_v_new,
+        exner_new,
+    )
+    exner_new = where(
+        mask_prog_halo_c,
+        exner_new,
+        exp(dycore_consts.rd_o_cvd * log(dycore_consts.rd_o_p0ref * rho_new * exner_new)),
     )
 
     return theta_v_new, exner_new
@@ -55,7 +61,6 @@ def update_theta_and_exner_in_halo(
     rho_now: fa.CellKField[wpfloat],
     rho_new: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],
-    theta_v_new: fa.CellKField[wpfloat],
     exner_new: fa.CellKField[wpfloat],
     exner_now: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
@@ -68,7 +73,6 @@ def update_theta_and_exner_in_halo(
         rho_now,
         rho_new,
         theta_v_now,
-        theta_v_new,
         exner_now,
         exner_new,
         out=(theta_v_new, exner_new),

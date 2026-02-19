@@ -378,7 +378,7 @@ class SolveNonhydro:
         self._cell_params = cell_geometry
         self._determine_local_domains()
 
-        self._compute_exner_from_rhotheta = setup_program(
+        self._compute_exner_from_rhotheta_in_lateral_boundary = setup_program(
             backend=backend,
             program=compute_exner_from_rhotheta,
             constant_args={
@@ -1052,7 +1052,7 @@ class SolveNonhydro:
             at_last_substep=at_last_substep,
         )
         if self._grid.limited_area:
-            self._compute_exner_from_rhotheta(
+            self._compute_exner_from_rhotheta_in_lateral_boundary(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
@@ -1061,7 +1061,6 @@ class SolveNonhydro:
             rho_now=prognostic_states.current.rho,
             rho_new=prognostic_states.next.rho,
             theta_v_now=prognostic_states.current.theta_v,
-            theta_v_new=prognostic_states.next.theta_v,
             exner_new=prognostic_states.next.exner,
             exner_now=prognostic_states.current.exner,
         )
