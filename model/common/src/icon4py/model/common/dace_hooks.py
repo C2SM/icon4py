@@ -14,11 +14,6 @@ from gt4py.next import config as gtx_config
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 
-_graupel_scan_inout_copies = {
-    "if_stmt_92": ["__ct_el_24", "__ct_el_25", "__ct_el_26", "__ct_el_27"]
-}
-
-
 def _cleanup_local_self_update(
     scan_sdfg: dace.SDFG,
     if_stmt_node: dace.sdfg.state.ConditionalBlock,
@@ -30,9 +25,10 @@ def _cleanup_local_self_update(
     scan_compute_st: dace.SDFGState,
     scan_update_st: dace.SDFGState,
 ) -> None:
-    assert isinstance(compute_dst_node.desc(scan_sdfg), dace.data.Scalar)
-    assert compute_dst_node.desc(scan_sdfg) == compute_src_node.desc(scan_sdfg)
-    assert compute_dst_node.desc(scan_sdfg) == update_dst_node.desc(scan_sdfg)
+    temp_data_name = compute_dst_node.data
+    assert isinstance(scan_sdfg.arrays[temp_data_name], dace.data.Scalar)
+    assert scan_sdfg.arrays[temp_data_name] == compute_src_node.desc(scan_sdfg)
+    assert scan_sdfg.arrays[temp_data_name] == update_dst_node.desc(scan_sdfg)
 
     # reroute the write edge in the compute state
     new_compute_dst_node = scan_compute_st.add_access(compute_src_node.data)
@@ -68,6 +64,9 @@ def _cleanup_local_self_update(
         ),
     )
     scan_update_st.remove_node(update_src_node)
+
+    # now it is safe to remove the data descriptor
+    scan_sdfg.remove_data(temp_data_name, validate=gtx_config.DEBUG)
     print(
         f"Removed self-copy in {if_stmt_node.label}: {compute_src_node.data} -> {compute_dst_node.data}"
     )
@@ -143,19 +142,16 @@ def _replace_scan_input(
 def _cleanup_global_self_update(
     sdfg: dace.SDFG,
     state: dace.SDFGState,
-    scan_node: dace_nodes.NestedSDFG,
     if_stmt_node: dace_nodes.NestedSDFG,
+    if_stmt_else_state: dace.SDFGState,
     if_stmt_output: str,
+    scan_node: dace_nodes.NestedSDFG,
+    scan_compute_st: dace.SDFGState,
     compute_src_node: dace_nodes.AccessNode,
     compute_dst_node: dace_nodes.AccessNode,
-    update_src_node: dace_nodes.AccessNode,
-    update_dst_node: dace_nodes.AccessNode,
-    scan_compute_st: dace.SDFGState,
-    scan_update_st: dace.SDFGState,
 ):
     scan_sdfg = scan_node.sdfg
     assert isinstance(compute_dst_node.desc(scan_sdfg), dace.data.Scalar)
-    assert compute_dst_node.desc(scan_sdfg) == update_dst_node.desc(scan_sdfg)
 
     # retrieve the source data outside the scan map scope
     assert len(list(state.in_edges_by_connector(scan_node, compute_src_node.data))) == 1
@@ -174,13 +170,55 @@ def _cleanup_global_self_update(
 
     # retrieve the outer write to destination buffer in the compute state
     assert scan_compute_st.out_degree(compute_dst_node) == 1
-    output_write_edge = scan_compute_st.out_edges(compute_dst_node)[0]
-    assert isinstance(output_write_edge.dst, dace_nodes.AccessNode)
-    output_node = output_write_edge.dst
+    scan_output_edge = scan_compute_st.out_edges(compute_dst_node)[0]
+    assert isinstance(scan_output_edge.dst, dace_nodes.AccessNode)
+    output_node = scan_output_edge.dst
+    output_desc = output_node.desc(scan_sdfg)
+    assert not output_desc.transient
     output_data = output_node.data
     assert output_data.startswith("__gtir_scan_output")
-    assert not output_write_edge.dst.desc(scan_sdfg).transient
-    output_subset = output_write_edge.data.get_dst_subset(output_write_edge, scan_compute_st)
+    output_subset = scan_output_edge.data.get_dst_subset(scan_output_edge, scan_compute_st)
+    assert output_subset.num_elements() == 1
+
+    if_stmt_sdfg = if_stmt_node.sdfg
+    if_stmt_global_output, _ = if_stmt_sdfg.add_scalar(
+        output_data, output_desc.dtype, find_new_name=True
+    )
+    if_stmt_node.add_out_connector(if_stmt_global_output)
+
+    for if_stmt_state in if_stmt_sdfg.states():
+        if if_stmt_state != if_stmt_else_state:
+            sink_nodes = [
+                node for node in if_stmt_state.sink_nodes() if node.data == if_stmt_output
+            ]
+            assert len(sink_nodes) <= 1
+            if sink_nodes:
+                local_output_node = sink_nodes[0]
+                assert if_stmt_state.in_degree(local_output_node) == 1
+                if_stmt_output_edge = if_stmt_state.in_edges(local_output_node)[0]
+                src_subset = if_stmt_output_edge.data.get_src_subset(
+                    if_stmt_output_edge, if_stmt_state
+                )
+                if_stmt_state.add_edge(
+                    if_stmt_output_edge.src,
+                    if_stmt_output_edge.src_conn,
+                    if_stmt_state.add_access(if_stmt_global_output),
+                    None,
+                    dace.Memlet(data=if_stmt_global_output, subset="0", other_subset=src_subset),
+                )
+
+    scan_compute_st.add_edge(
+        if_stmt_node,
+        if_stmt_global_output,
+        output_node,
+        None,
+        dace.Memlet(data=output_data, subset=output_subset),
+    )
+    scan_compute_st.remove_edge(scan_output_edge)
+
+    gtx_transformations.gt_propagate_strides_from_access_node(
+        sdfg=scan_sdfg, state=scan_compute_st, outer_node=output_node
+    )
 
     # retrieve the destination data outside the scan map scope
     assert len(list(state.out_edges_by_connector(scan_node, output_data))) == 1
@@ -197,33 +235,7 @@ def _cleanup_global_self_update(
     assert isinstance(top_level_dst_node, dace_nodes.AccessNode)
     top_level_dst_node_subset = map_exit_out_edge.data.get_dst_subset(map_exit_out_edge, state)
 
-    # reroute the write edge in the compute state
-    scan_compute_st.add_edge(
-        if_stmt_node,
-        if_stmt_output,
-        output_node,
-        None,
-        scan_sdfg.make_array_memlet(output_data),
-    )
-
-    scan_compute_st.remove_node(compute_dst_node)
-    scan_sdfg.remove_data(compute_dst_node.data, validate=gtx_config.DEBUG)
-
-    gtx_transformations.gt_propagate_strides_from_access_node(
-        sdfg=scan_sdfg,
-        state=scan_compute_st,
-        outer_node=output_node,
-    )
-
-    # reroute the write edge in the update state
-    scan_update_st.add_nedge(
-        scan_update_st.add_access(output_data),
-        update_dst_node,
-        dace.Memlet(data=output_data, subset=output_subset, other_subset="0"),
-    )
-    scan_update_st.remove_node(update_src_node)
-
-    # we still need to replace the source node outside the scan map with the output node
+    # replace the source node outside the scan map with the output node
     new_top_level_src_node = state.add_access(top_level_dst_node.data)
     _replace_scan_input(
         sdfg=sdfg,
@@ -245,7 +257,6 @@ def _graupel_run_self_copy_removal_inside_if_stmt(
     scan_update_st: dace.SDFGState,
     if_stmt_node: dace_nodes.NestedSDFG,
 ) -> None:
-    scan_inout_copies = _graupel_scan_inout_copies.get(if_stmt_node.label, [])
     scan_sdfg = scan_node.sdfg
     nsdfg = if_stmt_node.sdfg
     assert len(nsdfg.nodes()) == 1 and isinstance(
@@ -259,7 +270,6 @@ def _graupel_run_self_copy_removal_inside_if_stmt(
     else_st = else_br.start_block
     src_nodes = [node for node in else_st.source_nodes() if isinstance(node, dace_nodes.AccessNode)]
 
-    nodes_to_remove_inside_else_branch = []
     for src_node in src_nodes:
         assert not src_node.desc(nsdfg).transient
         if else_st.out_degree(src_node) != 1:
@@ -319,29 +329,20 @@ def _graupel_run_self_copy_removal_inside_if_stmt(
                 scan_compute_st=scan_compute_st,
                 scan_update_st=scan_update_st,
             )
-        # TODO(edopao): if we make 't' an inout field, this branch can become an else
-        elif src_node.data in scan_inout_copies:
+            else_st.remove_nodes_from([src_node, dst_node])
+        else:
             _cleanup_global_self_update(
                 sdfg=sdfg,
                 state=state,
-                scan_node=scan_node,
                 if_stmt_node=if_stmt_node,
+                if_stmt_else_state=else_st,
+                scan_node=scan_node,
+                scan_compute_st=scan_compute_st,
                 if_stmt_output=dst_node.data,
                 compute_src_node=compute_src_node,
                 compute_dst_node=compute_dst_node,
-                update_src_node=update_src_node,
-                update_dst_node=update_dst_node,
-                scan_compute_st=scan_compute_st,
-                scan_update_st=scan_update_st,
             )
-        else:
-            continue
 
-        # now it is safe to remove the data descriptor
-        scan_sdfg.remove_data(temp_data_name, validate=gtx_config.DEBUG)
-        nodes_to_remove_inside_else_branch.extend([src_node, dst_node])
-
-    else_st.remove_nodes_from(nodes_to_remove_inside_else_branch)
     if else_st.is_empty():
         if_region.remove_branch(else_br)
 
