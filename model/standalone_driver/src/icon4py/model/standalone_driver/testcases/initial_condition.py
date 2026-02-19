@@ -124,7 +124,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=grid,
         allocator=allocator,
-        ntracer=0,
     )
     diagnostic_state = diagnostics.initialize_diagnostic_state(grid=grid, allocator=allocator)
     eta_v = data_alloc.zero_field(

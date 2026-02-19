@@ -11,6 +11,7 @@ from types import ModuleType
 
 import numpy as np
 
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -19,7 +20,7 @@ def compute_advection_deepatmo_fields(
     nlev: int,
     grid_sphere_radius: float,
     array_ns: ModuleType = np,
-):
+) -> tuple[fa.KField[ta.wpfloat], fa.KField[ta.wpfloat], fa.KField[ta.wpfloat]]:
     deepatmo_divh_mc = array_ns.zeros((nlev,))
     deepatmo_divzU_mc = array_ns.zeros((nlev,))
     deepatmo_divzL_mc = array_ns.zeros((nlev,))

@@ -960,7 +960,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "vct_a": "vct_a",
             },
-            domain=(),
+            domain=(dims.KDim),
             fields=(
                 attrs.DEEPATMO_DIVH,
                 attrs.DEEPATMO_DIVZL,
