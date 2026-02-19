@@ -236,6 +236,7 @@ def test_velocity_predictor_step(
         theta_v=None,
         rho=None,
         exner=None,
+        tracer=[],
     )
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, grid_savepoint)
@@ -393,6 +394,7 @@ def test_velocity_corrector_step(
         theta_v=None,
         rho=None,
         exner=None,
+        tracer=[],
     )
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)

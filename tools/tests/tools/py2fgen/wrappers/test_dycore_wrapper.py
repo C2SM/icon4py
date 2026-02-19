@@ -538,6 +538,7 @@ def test_dycore_wrapper_granule_inputs(
         theta_v=sp.theta_v_now(),
         rho=sp.rho_now(),
         exner=sp.exner_now(),
+        tracer=[],
     )
     prognostic_state_nnew = prognostics.PrognosticState(
         w=sp.w_new(),
@@ -545,6 +546,7 @@ def test_dycore_wrapper_granule_inputs(
         theta_v=sp.theta_v_new(),
         rho=sp.rho_new(),
         exner=sp.exner_new(),
+        tracer=[],
     )
     expected_prognostic_states = common_utils.TimeStepPair(
         prognostic_state_nnow, prognostic_state_nnew

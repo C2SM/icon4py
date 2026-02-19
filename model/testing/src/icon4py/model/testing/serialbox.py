@@ -921,6 +921,7 @@ class IconDiffusionInitSavepoint(IconSavepoint):
             exner=self.exner(),
             theta_v=self.theta_v(),
             rho=self.rho(),
+            tracer=[],
         )
 
 
