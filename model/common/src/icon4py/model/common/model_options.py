@@ -57,6 +57,10 @@ def get_dace_options(
     if backend_descriptor["device"] == model_backends.DeviceType.ROCM:
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
+    if program_name == "graupel_run":
+        backend_descriptor["use_zero_origin"] = True
+        optimization_args["fuse_tasklets"] = True
+        optimization_args["gpu_maxnreg"] = 128
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:

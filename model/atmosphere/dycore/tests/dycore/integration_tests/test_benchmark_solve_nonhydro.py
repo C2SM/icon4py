@@ -138,7 +138,6 @@ def solve_nonhydro(
     )
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
-        bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
         mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
         rayleigh_w=metrics_field_source.get(metrics_attributes.RAYLEIGH_W),
         time_extrapolation_parameter_for_exner=metrics_field_source.get(
