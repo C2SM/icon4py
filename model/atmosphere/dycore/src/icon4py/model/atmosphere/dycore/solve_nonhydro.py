@@ -1061,8 +1061,9 @@ class SolveNonhydro:
             rho_now=prognostic_states.current.rho,
             rho_new=prognostic_states.next.rho,
             theta_v_now=prognostic_states.current.theta_v,
-            exner_new=prognostic_states.next.exner,
+            theta_v_new=prognostic_states.next.theta_v,
             exner_now=prognostic_states.current.exner,
+            exner_new=prognostic_states.next.exner,
         )
 
     # flake8: noqa: C901
