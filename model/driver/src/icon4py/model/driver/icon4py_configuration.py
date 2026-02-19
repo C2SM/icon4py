@@ -117,6 +117,8 @@ def read_config(
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
             velocity_boundary_diffusion_denom=200.0,
+            thslp_zdiffu=0.02,
+            thhgtd_zdiffu=125.0,
         )
 
     def _jabw_nonhydro_config():

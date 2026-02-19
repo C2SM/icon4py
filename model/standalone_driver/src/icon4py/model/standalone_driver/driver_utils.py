@@ -43,7 +43,7 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
-
+from icon4py.model.testing.definitions import construct_metrics_config
 
 log = logging.getLogger(__name__)
 
@@ -144,6 +144,8 @@ def create_static_field_factories(
         rayleigh_coeff=0.1,
         exner_expol=0.333,
         vwind_offctr=0.2,
+        thslp_zdiffu=0.02,
+        thhgtd_zdiffu=125.0,
     )
 
     return driver_states.StaticFieldFactories(
