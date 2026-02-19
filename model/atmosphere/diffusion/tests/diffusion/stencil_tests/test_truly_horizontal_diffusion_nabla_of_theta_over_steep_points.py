@@ -52,7 +52,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     )
 
     geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)  # add KDim
-    z_temp = z_temp + z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over)
+    z_temp = z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over)
     return z_temp
 
 
