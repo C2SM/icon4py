@@ -768,8 +768,8 @@ class MetricSavepoint(IconSavepoint):
         k = ar.shape[1]
         wgtfac_c = self.wgtfac_c()
         cell_range = wgtfac_c.domain[dims.CellDim].unit_range
-        nlevp1 = wgtfac_c.domain[dims.KDim].unit_range.stop
-        k_range = (nlevp1 - k, nlevp1)
+        nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
+        k_range = (nlev - k, nlev)
         cell_kflip_domain = gtx.domain({
             dims.CellDim: cell_range,
             dims.KDim: k_range,
@@ -823,8 +823,8 @@ class MetricSavepoint(IconSavepoint):
         k = ar.shape[1]
         wgtfac_e = self.wgtfac_e()
         edge_range = wgtfac_e.domain[dims.EdgeDim].unit_range
-        nlevp1 = wgtfac_e.domain[dims.KDim].unit_range.stop
-        k_range = (nlevp1 - k, nlevp1)
+        nlev = wgtfac_e.domain[dims.KDim].unit_range.stop - 1
+        k_range = (nlev - k, nlev)
         edge_kflip_domain = gtx.domain({
             dims.EdgeDim: edge_range,
             dims.KDim: k_range,

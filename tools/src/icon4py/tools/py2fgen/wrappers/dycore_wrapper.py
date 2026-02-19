@@ -192,16 +192,16 @@ def solve_nh_init(
         nudgecoeff_e=nudgecoeff_e,
     )
 
-    nlevp1 = wgtfac_c.domain[dims.KDim].unit_range.stop  # wgtfac_c/e have nlevp1 levels
+    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
     k = wgtfacq_c.ndarray.shape[1]
     cell_kflip_domain = gtx.domain({
         dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
-        dims.KDim: (nlevp1 - k, nlevp1),
+        dims.KDim: (nlev - k, nlev),
     })
     k = wgtfacq_e.ndarray.shape[1]
     edge_kflip_domain = gtx.domain({
         dims.EdgeDim: wgtfac_e.domain[dims.EdgeDim].unit_range,
-        dims.KDim: (nlevp1 - k, nlevp1),
+        dims.KDim: (nlev - k, nlev),
     })
     wgtfacq_c = wrapper_common.kflip_wgtfacq(
         arr=wgtfacq_c.ndarray,

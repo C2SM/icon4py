@@ -806,7 +806,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(weight_factors.compute_wgtfacq_c_dsl, array_ns=self._xp),
             domain = gtx.domain({
                 dims.CellDim: (0, self._grid.num_cells),
-                dims.KDim: (self._grid.num_levels+1 - 3, self._grid.num_levels+1),
+                dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
             }),
             fields=(attrs.WGTFACQ_C,),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
@@ -829,7 +829,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"e2c": dims.E2CDim},
             domain = gtx.domain({
                 dims.EdgeDim: (0, self._grid.num_edges),
-                dims.KDim: (self._grid.num_levels+1 - 3, self._grid.num_levels+1),
+                dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
             }),
             fields=(attrs.WGTFACQ_E,),
             params={"n_edges": self._grid.num_edges, "nlev": self._grid.num_levels},
