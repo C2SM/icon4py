@@ -35,7 +35,7 @@ gt4py_input = {
 }
 gt4py_metrics = ["compute"]  # here we can add other metrics, e.g. 'total'
 gt4py_unmatched_ncalls_threshold = (
-    0  # ignore unmatched icon4py stencils if less than this threshold
+    2  # ignore unmatched icon4py stencils if less than this threshold
 )
 
 # Mapping from fortran stencil to gt4py stencil variants. The mapped value contains,
