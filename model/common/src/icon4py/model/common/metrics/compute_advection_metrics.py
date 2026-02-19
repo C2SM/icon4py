@@ -21,35 +21,29 @@ def compute_advection_deepatmo_fields(
     grid_sphere_radius: float,
     array_ns: ModuleType = np,
 ) -> tuple[fa.KField[ta.wpfloat], fa.KField[ta.wpfloat], fa.KField[ta.wpfloat]]:
-    deepatmo_divh_mc = array_ns.zeros((nlev,))
-    deepatmo_divzU_mc = array_ns.zeros((nlev,))
-    deepatmo_divzL_mc = array_ns.zeros((nlev,))
-    height_uifc = vct_a[:nlev]
-    height_lifc = vct_a[1 : nlev + 1]
-    height_mc = 0.5 * (height_lifc + height_uifc)
-    radial_distance_mc = height_mc + grid_sphere_radius
-    radial_distance_lifc = grid_sphere_radius + height_lifc
-    radial_distance_uifc = grid_sphere_radius + height_uifc
-    deepatmo_gradh_mc = grid_sphere_radius / radial_distance_mc
-    deepatmo_divh_mc = (
-        deepatmo_gradh_mc
+    deepatmo_divh = array_ns.zeros((nlev,))
+    deepatmo_divzU = array_ns.zeros((nlev,))
+    deepatmo_divzL = array_ns.zeros((nlev,))
+    height_u = vct_a[:nlev]
+    height_l = vct_a[1 : nlev + 1]
+    height = 0.5 * (height_l + height_u)
+    radial_distance = height + grid_sphere_radius
+    radial_distance_l = grid_sphere_radius + height_l
+    radial_distance_u = grid_sphere_radius + height_u
+    deepatmo_gradh = grid_sphere_radius / radial_distance
+    deepatmo_divh = (
+        deepatmo_gradh
         * 3.0
         / 4.0
         / (
             1.0
-            - radial_distance_lifc
-            * radial_distance_uifc
-            / (radial_distance_lifc + radial_distance_uifc) ** 2
+            - radial_distance_l * radial_distance_u / (radial_distance_l + radial_distance_u) ** 2
         )
     )
-    deepatmo_divzL_mc = 3.0 / (
-        1.0
-        + radial_distance_uifc / radial_distance_lifc
-        + (radial_distance_uifc / radial_distance_lifc) ** 2
+    deepatmo_divzL = 3.0 / (
+        1.0 + radial_distance_u / radial_distance_l + (radial_distance_u / radial_distance_l) ** 2
     )
-    deepatmo_divzU_mc = 3.0 / (
-        1.0
-        + radial_distance_lifc / radial_distance_uifc
-        + (radial_distance_lifc / radial_distance_uifc) ** 2
+    deepatmo_divzU = 3.0 / (
+        1.0 + radial_distance_l / radial_distance_u + (radial_distance_l / radial_distance_u) ** 2
     )
-    return deepatmo_divh_mc, deepatmo_divzL_mc, deepatmo_divzU_mc
+    return deepatmo_divh, deepatmo_divzL, deepatmo_divzU

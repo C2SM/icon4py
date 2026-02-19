@@ -68,9 +68,9 @@ ZD_DIFFCOEF_DSL: Final[str] = "zd_diffcoef_dsl"
 ZD_INTCOEF_DSL: Final[str] = "zd_intcoef_dsl"
 ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
 CELL_HEIGHT_ON_HALF_LEVEL: Final[str] = "vertical_coordinates_on_half_levels"
-DEEPATMO_DIVH: Final[str] = "deepatmo_divh_mc"
-DEEPATMO_DIVZL: Final[str] = "deepatmo_divzL_mc"
-DEEPATMO_DIVZU: Final[str] = "deepatmo_divzU_mc"
+DEEPATMO_DIVH: Final[str] = "deepatmo_divh"
+DEEPATMO_DIVZL: Final[str] = "deepatmo_divzL"
+DEEPATMO_DIVZU: Final[str] = "deepatmo_divzU"
 
 
 attrs: dict[str, model.FieldMetaData] = {
