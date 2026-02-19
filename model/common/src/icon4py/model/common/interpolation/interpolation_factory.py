@@ -100,7 +100,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     def _register_computed_fields(self) -> None:
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
-            func=nudgecoeffs.compute_nudgecoeffs.with_backend(None),
+            func=nudgecoeffs.compute_nudgecoeffs,
             domain={
                 dims.EdgeDim: (
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2),

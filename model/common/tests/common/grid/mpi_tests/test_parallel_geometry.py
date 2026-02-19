@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import geometry, geometry_attributes as attrs, horizontal as h_grid
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -38,6 +38,10 @@ from .. import utils
 
 if TYPE_CHECKING:
     from icon4py.model.testing import serialbox as sb
+
+if mpi_decomposition.mpi4py is None:
+    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
+
 
 edge_domain = h_grid.domain(dims.EdgeDim)
 lb_local = edge_domain(h_grid.Zone.LOCAL)
@@ -73,13 +77,11 @@ def test_distributed_geometry_attrs(
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
-    grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
-    field = grid_geometry.get(attrs_name).asnumpy()
+    field = geometry_from_savepoint.get(attrs_name).asnumpy()
     assert test_utils.dallclose(field, field_ref, atol=1e-12)
 
 
-@pytest.mark.xfail(reason="Wrong results")
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
