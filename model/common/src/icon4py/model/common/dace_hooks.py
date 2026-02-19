@@ -213,6 +213,7 @@ def _cleanup_global_self_update(
         if sym in if_stmt_sdfg.symbols:
             assert if_stmt_node.symbol_mapping[sym] == sym
         else:
+            if_stmt_sdfg.add_symbol(sym, dace.int32)
             if_stmt_node.symbol_mapping[sym] = sym
 
     scan_compute_st.add_edge(
