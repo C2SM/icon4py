@@ -64,6 +64,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         metrics_field_source: metric field factory
         backend: GT4Py backend
     Returns: driver state
+
+    The reference experiment config for this is in icon-exclaim/run/exp.exclaim_nh35_tri_jws_sb.
     """
 
     allocator = model_backends.get_allocator(backend)
@@ -119,7 +121,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )  # latitude of the perturb centre in baroclinic wave test (jw_baroclinic_amplitude !=0)
 
     # Initialize prognostic state, diagnostic state and other local fields
-    # NOTE(ricoh): [c34] ntracer=0, according to exp.exclaim_nh35_tri_jws_sb
     prognostic_state_now = prognostics.initialize_prognostic_state(
         grid=grid,
         allocator=allocator,
@@ -314,7 +315,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         allocator=allocator,
     )
     prep_adv = dycore_states.initialize_prep_advection(grid=grid, allocator=allocator)
-    # NOTE(ricoh): [c34] zero-initialized
     tracer_advection_diagnostic_state = advection_states.initialize_advection_diagnostic_state(
         grid=grid, allocator=allocator
     )

@@ -49,7 +49,7 @@ class Icon4pyDriver:
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
-        tracer_advection_granule: advection.Advection,  # NOTE(ricoh): [c34] wip
+        tracer_advection_granule: advection.Advection,
     ):
         self.config = config
         self.backend = backend
@@ -58,7 +58,7 @@ class Icon4pyDriver:
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
         self.model_time_variables = driver_states.ModelTimeVariables(config=config)
-        self.tracer_advection = tracer_advection_granule  # NOTE (ricoh): [c34] wip
+        self.tracer_advection = tracer_advection_granule
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
@@ -182,8 +182,8 @@ class Icon4pyDriver:
                 )
             timer_diffusion.capture()
 
-        # NOTE (ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
-        # NOTE (ricoh): self.tracer_advection.run(..., p_tracers_now=prognostic_states.now.tracer, p_tracers_new=prognostic_states.new.tracer, ...)
+        # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
+        # Precondition: passing data test with ntracer > 0
         for tracer_idx in range(self.config.ntracer):
             self.tracer_advection.run(
                 diagnostic_state=tracer_advection_diagnostic_state,
@@ -511,7 +511,8 @@ def _read_config(
         velocity_boundary_diffusion_denom=200.0,
     )
 
-    # NOTE(ricoh): [c34] ICON defaults
+    # NOTE(ricoh): adjust when switching experiments!
+    # These are ICON defaults, irrelevant for Jablonowski_Williamson (no tracers)
     advection_config = advection.AdvectionConfig(
         horizontal_advection_limiter=advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
         horizontal_advection_type=advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
@@ -593,7 +594,7 @@ def initialize_driver(
 
     backend = model_options.customize_backend(
         program=None, backend=driver_utils.get_backend_from_name(backend_name)
-    )  # TODO(ricoh): [c34] customize the backend
+    )
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
@@ -646,7 +647,7 @@ def initialize_driver(
     (
         diffusion_granule,
         solve_nonhydro_granule,
-        tracer_advection_granule,  # NOTE(ricoh): [c34] wip
+        tracer_advection_granule,
     ) = driver_utils.initialize_granules(
         grid=grid_manager.grid,
         vertical_grid=vertical_grid,

@@ -361,21 +361,13 @@ def initialize_granules(
             ),
         ),
         least_squares_state=advection_states.AdvectionLeastSquaresState(
-            # TODO(ricoh): [c34] integrate #1028 after that's merged
-            lsq_pseudoinv_1=data_alloc.constant_field(
-                grid,
-                0.0,
-                dims.CellDim,
-                dims.C2E2CDim,
-                allocator=backend,
-            ),
-            lsq_pseudoinv_2=data_alloc.constant_field(
-                grid,
-                0.0,
-                dims.CellDim,
-                dims.C2E2CDim,
-                allocator=backend,
-            ),
+            # TODO(ricoh): [c34] check integration with #1065
+            lsq_pseudoinv_1=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
+                :, 0, :
+            ],
+            lsq_pseudoinv_2=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
+                :, 1, :
+            ],
         ),
         metric_state=advection_states.AdvectionMetricState(
             deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
