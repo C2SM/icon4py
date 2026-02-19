@@ -29,14 +29,13 @@ output_filename = "bench_blueline_stencil_compute"
 
 # the default 'file_prefix' assumes that the json files are in the script folder
 file_prefix = pathlib.Path(__file__).parent
-openacc_input = file_prefix / "bencher=exp.mch_icon-ch1_medium_stencils=0.373574=ACC.json"
+openacc_input = file_prefix / "bencher=exp.mch_icon-ch1_medium_stencils.run=0.599744=ACC.json"
 gt4py_input = {
-    "gtfn_gpu": file_prefix / "gt4py_gtfn_timers_20251008_G-89541209_I-dda0d1872.json",
-    "dace_gpu": file_prefix / "gt4py_dace_timers_20251008_G-89541209_I-dda0d1872.json",
+    "gt4py_v1.1.4": file_prefix / "gt4py_timers_gt4py114.json",
 }
 gt4py_metrics = ["compute"]  # here we can add other metrics, e.g. 'total'
 gt4py_unmatched_ncalls_threshold = (
-    2  # ignore unmatched icon4py stencils if less than this threshold
+    0  # ignore unmatched icon4py stencils if less than this threshold
 )
 
 # Mapping from fortran stencil to gt4py stencil variants. The mapped value contains,
@@ -65,41 +64,43 @@ fortran_to_icon4py: dict[str, VariantDescriptor | None] = {
         "compute_averaged_vn_and_fluxes",
         {
             "at_first_substep": False,
+            "prepare_advection": True,
         },
     ),
     "compute_averaged_vn_and_fluxes_and_prepare_tracer_advection_first": (
         "compute_averaged_vn_and_fluxes",
         {
             "at_first_substep": True,
+            "prepare_advection": True,
         },
     ),
-    "compute_contravariant_correction_and_advection_in_vertical_momentum_equation": (
+    "compute_advection_in_predictor_vertical_momentum": (
         "compute_advection_in_predictor_vertical_momentum",
         {
             "skip_compute_predictor_vertical_advection": False,
         },
     ),
-    "compute_contravariant_correction_and_advection_in_vertical_momentum_equation_skip": (
+    "compute_advection_in_predictor_vertical_momentum_skip": (
         "compute_advection_in_predictor_vertical_momentum",
         {
             "skip_compute_predictor_vertical_advection": True,
         },
     ),
-    "compute_derived_horizontal_winds_and_ke_and_contravariant_correction": (
+    "compute_diagnostics_from_normal_wind": (
         "compute_diagnostics_from_normal_wind",
         {"skip_compute_predictor_vertical_advection": False},
     ),
-    "compute_derived_horizontal_winds_and_ke_and_contravariant_correction_skip": (
+    "compute_diagnostics_from_normal_wind_skip": (
         "compute_diagnostics_from_normal_wind",
         {"skip_compute_predictor_vertical_advection": True},
     ),
     "compute_horizontal_velocity_quantities_and_fluxes": None,
     "compute_perturbed_quantities_and_interpolation": None,
-    "compute_theta_rho_face_values_and_pressure_gradient_and_update_vn": (
+    "compute_rho_theta_pgrad_and_update_vn": (
         "compute_rho_theta_pgrad_and_update_vn",
         {},
     ),
-    "interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration": (
+    "compute_interpolation_and_nonhydro_buoy": (
         "compute_interpolation_and_nonhydro_buoy",
         {},
     ),
@@ -198,7 +199,11 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
                     k
                     for k, desc in icon4py_stencils[stencil]
                     # all static args specified in the fortran stencil variant must match
-                    if desc.items() <= stencil_metadata["static_args"].items()
+                    if all(
+                        stencil_metadata["static_args"].get(key) == value
+                        for key, value in desc.items()
+                    )
+                    or len(desc) == 0
                 ]
                 if len(fortran_names) != 1:
                     raise ValueError(
@@ -236,12 +241,12 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
         )
     ]
 
-    # Merge 'compute_hydrostatic_correction_term' stencil into 'compute_theta_rho_face_values_and_pressure_gradient_and_update_vn'
+    # Merge 'compute_hydrostatic_correction_term' stencil into 'compute_rho_theta_pgrad_and_update_vn'
     assert "compute_hydrostatic_correction_term" in unmatched_data
-    data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"] = [
+    data["compute_rho_theta_pgrad_and_update_vn"] = [
         a + b
         for a, b in zip(
-            data["compute_theta_rho_face_values_and_pressure_gradient_and_update_vn"],
+            data["compute_rho_theta_pgrad_and_update_vn"],
             unmatched_data.pop("compute_hydrostatic_correction_term"),
             strict=True,
         )
@@ -272,7 +277,7 @@ def load_gt4py_timers(filename: pathlib.Path, metric: str) -> tuple[dict, dict]:
 
     diff = set(fortran_to_icon4py.keys()) - set(data.keys())
     if len(diff) != 0:
-        raise ValueError(f"Missing icon4py meas for these stencils: {diff}.")
+        print(f"Missing icon4py meas for these stencils: {diff} in file {filename}.")
 
     return data, unmatched_data
 
