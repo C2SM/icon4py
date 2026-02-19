@@ -18,10 +18,10 @@ cd icon4py
 git checkout amd_profiling
 
 # Pull the correct `uenv` image. *!* NECESSARY ONLY ONCE *!*
-uenv image pull build::prgenv-gnu/25.12:2288359995
+uenv image pull build::prgenv-gnu/25.12:2333839235
 
 # Start the uenv and mount the ROCm 7.1.0 environment. *!* This needs to be executed before running anything everytime *!*
-uenv start --view default prgenv-gnu/25.12:2288359995
+uenv start --view default prgenv-gnu/25.12:2333839235
 
 # Install the necessary venv
 bash amd_scripts/install_icon4py_venv.sh
@@ -144,16 +144,16 @@ The runtimes of the individual kernels are collected using `nsys` and `rocprofv3
 
 The benchmarks were run on `Santis` (`GH200 GPU`) and `Beverin` (`MI300A GPU`) using the following uenv images:
 - GH200: `icon/25.2:v3` (CUDA 12.6)
-- MI300A: `build::prgenv-gnu/25.12:2288359995` (ROCM 7.1.0)
+- MI300A: `build::prgenv-gnu/25.12:2333839235` (ROCM 7.1.0)
 
 To reproduce the benchmark results on `Beverin` you can follow the instructions below:
 
 ```
 # Pull the correct `uenv` image. *!* NECESSARY ONLY ONCE *!*
-uenv image pull build::prgenv-gnu/25.12:2288359995
+uenv image pull build::prgenv-gnu/25.12:2333839235
 
 # Start the uenv and mount the ROCm 7.1.0 environment. *!* This needs to be executed before running anything everytime *!*
-uenv start --view default prgenv-gnu/25.12:2288359995
+uenv start --view default prgenv-gnu/25.12:2333839235
 
 # Run the whole `dycore` granule and gather the runtimes of the `GT4PY Programs`
 sbatch benchmark_dycore.sh
