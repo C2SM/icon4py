@@ -1402,13 +1402,13 @@ name = "gridtools-cpp"
 version = "2.3.9"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b6/8f/08ae062f2b7714c2753faeeead091fc5aa6344ec919ff63d242b95990573/gridtools_cpp-2.3.9-py3-none-any.whl", hash = "sha256:e4deefd804670e101083df9eb27d6b454e3d39ae903b4f7b043846a181452286", size = 1044245 },
+    { url = "https://files.pythonhosted.org/packages/b6/8f/08ae062f2b7714c2753faeeead091fc5aa6344ec919ff63d242b95990573/gridtools_cpp-2.3.9-py3-none-any.whl", hash = "sha256:e4deefd804670e101083df9eb27d6b454e3d39ae903b4f7b043846a181452286", size = 1044245, upload-time = "2025-04-11T13:55:39.966Z" },
 ]
 
 [[package]]
 name = "gt4py"
-version = "1.1.4"
-source = { registry = "https://pypi.org/simple" }
+version = "1.1.4.post6+d531967e"
+source = { git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging#d531967e28d79cc161cad91f215f6480a8e0d9d7" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
@@ -1437,10 +1437,6 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "versioningit" },
     { name = "xxhash" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/37/cc/f8f2c086324d0eb75a0fc0a68635693eab9ed7339ac9021c0cd0ecf88fc8/gt4py-1.1.4.tar.gz", hash = "sha256:f9200185dfea5690385ac6afabf54ef05364ac7276ddc80a470276439ed65028", size = 789822 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c2/76/f392e26f8a6304468f499bd93fbb267d1013f66a66b10f1df267b33a3b6a/gt4py-1.1.4-py3-none-any.whl", hash = "sha256:0a2906372b6d73784b486a116dcb13cd7ffc34af4571256daad0081734732519", size = 999302 },
 ]
 
 [package.optional-dependencies]
@@ -1764,7 +1760,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.4" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1781,7 +1777,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.4" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1798,7 +1794,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.4" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1815,7 +1811,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.4" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1833,7 +1829,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.4" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1903,9 +1899,9 @@ requires-dist = [
     { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
-    { name = "gt4py", specifier = "==1.1.4" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1941,7 +1937,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.4" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1969,7 +1965,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.4" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1998,7 +1994,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", specifier = "==1.1.4" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2047,9 +2043,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", specifier = "==1.1.4" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=amd_profiling_staging" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
