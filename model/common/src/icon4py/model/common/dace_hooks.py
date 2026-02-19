@@ -181,8 +181,8 @@ def _cleanup_global_self_update(
     assert output_subset.num_elements() == 1
 
     if_stmt_sdfg = if_stmt_node.sdfg
-    if_stmt_global_output, _ = if_stmt_sdfg.add_array(
-        output_data, output_desc.shape, output_desc.dtype, find_new_name=True
+    if_stmt_global_output, _ = if_stmt_sdfg.add_scalar(
+        output_data, output_desc.dtype, find_new_name=True
     )
     if_stmt_node.add_out_connector(if_stmt_global_output)
 
@@ -204,30 +204,17 @@ def _cleanup_global_self_update(
                     if_stmt_output_edge.src_conn,
                     if_stmt_state.add_access(if_stmt_global_output),
                     None,
-                    dace.Memlet(
-                        data=if_stmt_global_output, subset=output_subset, other_subset=src_subset
-                    ),
+                    dace.Memlet(data=if_stmt_global_output, subset="0", other_subset=src_subset),
                 )
-
-    for sym in output_subset.free_symbols:
-        if sym in if_stmt_sdfg.symbols:
-            assert if_stmt_node.symbol_mapping[sym] == sym
-        else:
-            if_stmt_sdfg.add_symbol(sym, dace.int32)
-            if_stmt_node.symbol_mapping[sym] = sym
 
     scan_compute_st.add_edge(
         if_stmt_node,
         if_stmt_global_output,
         output_node,
         None,
-        dace.Memlet.from_array(output_data, output_desc),
+        dace.Memlet(data=output_data, subset=output_subset),
     )
     scan_compute_st.remove_edge(scan_output_edge)
-
-    gtx_transformations.gt_propagate_strides_from_access_node(
-        sdfg=scan_sdfg, state=scan_compute_st, outer_node=output_node
-    )
 
     # retrieve the destination data outside the scan map scope
     assert len(list(state.out_edges_by_connector(scan_node, output_data))) == 1
