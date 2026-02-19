@@ -34,8 +34,26 @@ from ..fixtures import *  # noqa: F403
             1,
             2,
             "2021-06-20T12:00:10.000",
+            2,
+        ),
+        (
+            test_defs.Experiments.GAUSS3D,
             1,
-        )
+            "2001-01-01T00:00:04.000",
+            1,
+            2,
+            "2001-01-01T00:00:04.000",
+            5,
+        ),
+        (
+            test_defs.Experiments.EXCLAIM_APE,
+            1,
+            "2000-01-01T00:00:02.000",
+            1,
+            2,
+            "2000-01-01T00:00:02.000",
+            2,
+        ),
     ],
 )
 @pytest.mark.mpi
