@@ -43,7 +43,7 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
-from icon4py.model.testing.definitions import construct_metrics_config
+
 
 log = logging.getLogger(__name__)
 

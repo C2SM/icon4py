@@ -30,6 +30,7 @@ dependencies = [
   "icon4py-testing>=0.0.6",  # TODO(): remove this dependency when driver is fully standalone
   # external dependencies
   "typer>=0.20.0",
+  "pytest",
   "devtools>=0.12",
   "gt4py==1.1.4",
   "packaging>=20.0",
