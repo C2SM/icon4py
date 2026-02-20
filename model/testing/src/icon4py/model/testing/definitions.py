@@ -172,7 +172,7 @@ class Experiments:
         grid=Grids.MCH_CH_R04B09_DSL,
         num_levels=65,
     )
-    JW: Final = Experiment(
+    JW: Final = Experiment(  # ti serve questo
         name="exclaim_nh35_tri_jws",
         description="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
