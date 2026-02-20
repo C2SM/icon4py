@@ -779,7 +779,6 @@ contains
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
-      !$acc end host_data
    end subroutine diffusion_init
 
 end module
