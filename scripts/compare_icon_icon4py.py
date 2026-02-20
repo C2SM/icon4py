@@ -29,7 +29,7 @@ output_filename = "bench_blueline_stencil_compute"
 
 # the default 'file_prefix' assumes that the json files are in the script folder
 file_prefix = pathlib.Path(__file__).parent
-openacc_input = file_prefix / "bencher=exp.mch_icon-ch1_medium_stencils.run=0.599744=ACC.json"
+openacc_input = file_prefix / "bencher=mch_icon-ch1_medium_stencils=0.604598=ACC.json"
 gt4py_input = {
     "gt4py_v1.1.4": file_prefix / "gt4py_timers_gt4py114.json",
 }
