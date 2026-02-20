@@ -373,15 +373,13 @@ def diffusion_init_wrapper(
     rbf_coeff_2_size_1,
     zd_cellidx,
     zd_cellidx_size_0,
+    zd_cellidx_size_1,
     zd_vertidx,
     zd_vertidx_size_0,
     zd_vertidx_size_1,
-    zd_vertidx_size_2,
-    zd_vertidx_size_3,
     zd_intcoef,
     zd_intcoef_size_0,
     zd_intcoef_size_1,
-    zd_intcoef_size_2,
     zd_diffcoef,
     zd_diffcoef_size_0,
     ndyn_substeps,
@@ -506,15 +504,21 @@ def diffusion_init_wrapper(
                 False,
             )
 
-            zd_cellidx = (zd_cellidx, (zd_cellidx_size_0,), on_gpu, True)
+            zd_cellidx = (
+                zd_cellidx,
+                (
+                    zd_cellidx_size_0,
+                    zd_cellidx_size_1,
+                ),
+                on_gpu,
+                True,
+            )
 
             zd_vertidx = (
                 zd_vertidx,
                 (
                     zd_vertidx_size_0,
                     zd_vertidx_size_1,
-                    zd_vertidx_size_2,
-                    zd_vertidx_size_3,
                 ),
                 on_gpu,
                 True,
@@ -525,7 +529,6 @@ def diffusion_init_wrapper(
                 (
                     zd_intcoef_size_0,
                     zd_intcoef_size_1,
-                    zd_intcoef_size_2,
                 ),
                 on_gpu,
                 True,

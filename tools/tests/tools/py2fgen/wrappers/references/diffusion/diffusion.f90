@@ -134,15 +134,13 @@ module diffusion
                                       rbf_coeff_2_size_1, &
                                       zd_cellidx, &
                                       zd_cellidx_size_0, &
+                                      zd_cellidx_size_1, &
                                       zd_vertidx, &
                                       zd_vertidx_size_0, &
                                       zd_vertidx_size_1, &
-                                      zd_vertidx_size_2, &
-                                      zd_vertidx_size_3, &
                                       zd_intcoef, &
                                       zd_intcoef_size_0, &
                                       zd_intcoef_size_1, &
-                                      zd_intcoef_size_2, &
                                       zd_diffcoef, &
                                       zd_diffcoef_size_0, &
                                       ndyn_substeps, &
@@ -228,23 +226,19 @@ module diffusion
 
          integer(c_int), value :: zd_cellidx_size_0
 
+         integer(c_int), value :: zd_cellidx_size_1
+
          type(c_ptr), value, target :: zd_vertidx
 
          integer(c_int), value :: zd_vertidx_size_0
 
          integer(c_int), value :: zd_vertidx_size_1
 
-         integer(c_int), value :: zd_vertidx_size_2
-
-         integer(c_int), value :: zd_vertidx_size_3
-
          type(c_ptr), value, target :: zd_intcoef
 
          integer(c_int), value :: zd_intcoef_size_0
 
          integer(c_int), value :: zd_intcoef_size_1
-
-         integer(c_int), value :: zd_intcoef_size_2
 
          type(c_ptr), value, target :: zd_diffcoef
 
@@ -535,11 +529,11 @@ contains
 
       real(c_double), dimension(:, :), target :: rbf_coeff_2
 
-      integer(c_int), dimension(:), pointer :: zd_cellidx
+      integer(c_int), dimension(:, :), pointer :: zd_cellidx
 
-      integer(c_int), dimension(:, :, :, :), pointer :: zd_vertidx
+      integer(c_int), dimension(:, :), pointer :: zd_vertidx
 
-      real(c_double), dimension(:, :, :), pointer :: zd_intcoef
+      real(c_double), dimension(:, :), pointer :: zd_intcoef
 
       real(c_double), dimension(:), pointer :: zd_diffcoef
 
@@ -619,19 +613,15 @@ contains
 
       integer(c_int) :: zd_cellidx_size_0
 
+      integer(c_int) :: zd_cellidx_size_1
+
       integer(c_int) :: zd_vertidx_size_0
 
       integer(c_int) :: zd_vertidx_size_1
 
-      integer(c_int) :: zd_vertidx_size_2
-
-      integer(c_int) :: zd_vertidx_size_3
-
       integer(c_int) :: zd_intcoef_size_0
 
       integer(c_int) :: zd_intcoef_size_1
-
-      integer(c_int) :: zd_intcoef_size_2
 
       integer(c_int) :: zd_diffcoef_size_0
 
@@ -707,21 +697,19 @@ contains
       if (associated(zd_cellidx)) then
          zd_cellidx_ptr = c_loc(zd_cellidx)
          zd_cellidx_size_0 = SIZE(zd_cellidx, 1)
+         zd_cellidx_size_1 = SIZE(zd_cellidx, 2)
       end if
 
       if (associated(zd_vertidx)) then
          zd_vertidx_ptr = c_loc(zd_vertidx)
          zd_vertidx_size_0 = SIZE(zd_vertidx, 1)
          zd_vertidx_size_1 = SIZE(zd_vertidx, 2)
-         zd_vertidx_size_2 = SIZE(zd_vertidx, 3)
-         zd_vertidx_size_3 = SIZE(zd_vertidx, 4)
       end if
 
       if (associated(zd_intcoef)) then
          zd_intcoef_ptr = c_loc(zd_intcoef)
          zd_intcoef_size_0 = SIZE(zd_intcoef, 1)
          zd_intcoef_size_1 = SIZE(zd_intcoef, 2)
-         zd_intcoef_size_2 = SIZE(zd_intcoef, 3)
       end if
 
       if (associated(zd_diffcoef)) then
@@ -760,15 +748,13 @@ contains
                                   rbf_coeff_2_size_1=rbf_coeff_2_size_1, &
                                   zd_cellidx=zd_cellidx_ptr, &
                                   zd_cellidx_size_0=zd_cellidx_size_0, &
+                                  zd_cellidx_size_1=zd_cellidx_size_1, &
                                   zd_vertidx=zd_vertidx_ptr, &
                                   zd_vertidx_size_0=zd_vertidx_size_0, &
                                   zd_vertidx_size_1=zd_vertidx_size_1, &
-                                  zd_vertidx_size_2=zd_vertidx_size_2, &
-                                  zd_vertidx_size_3=zd_vertidx_size_3, &
                                   zd_intcoef=zd_intcoef_ptr, &
                                   zd_intcoef_size_0=zd_intcoef_size_0, &
                                   zd_intcoef_size_1=zd_intcoef_size_1, &
-                                  zd_intcoef_size_2=zd_intcoef_size_2, &
                                   zd_diffcoef=zd_diffcoef_ptr, &
                                   zd_diffcoef_size_0=zd_diffcoef_size_0, &
                                   ndyn_substeps=ndyn_substeps, &

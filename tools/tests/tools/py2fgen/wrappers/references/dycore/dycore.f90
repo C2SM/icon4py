@@ -1612,11 +1612,11 @@ contains
 
       integer(c_int), dimension(:, :, :), target :: vertoffset_gradp
 
-      integer(c_int), dimension(:), target :: pg_edgeidx
+      integer(c_int), dimension(:), pointer :: pg_edgeidx
 
-      integer(c_int), dimension(:), target :: pg_vertidx
+      integer(c_int), dimension(:), pointer :: pg_vertidx
 
-      real(c_double), dimension(:), target :: pg_exdist
+      real(c_double), dimension(:), pointer :: pg_exdist
 
       real(c_double), dimension(:, :), target :: ddqz_z_full_e
 
@@ -1877,6 +1877,18 @@ contains
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
+      type(c_ptr) :: pg_edgeidx_ptr
+
+      type(c_ptr) :: pg_vertidx_ptr
+
+      type(c_ptr) :: pg_exdist_ptr
+
+      pg_edgeidx_ptr = c_null_ptr
+
+      pg_vertidx_ptr = c_null_ptr
+
+      pg_exdist_ptr = c_null_ptr
+
       !$acc host_data use_device(c_lin_e)
       !$acc host_data use_device(c_intp)
       !$acc host_data use_device(e_flx_avg)
@@ -1913,9 +1925,6 @@ contains
       !$acc host_data use_device(ddxn_z_full)
       !$acc host_data use_device(zdiff_gradp)
       !$acc host_data use_device(vertoffset_gradp)
-      !$acc host_data use_device(pg_edgeidx)
-      !$acc host_data use_device(pg_vertidx)
-      !$acc host_data use_device(pg_exdist)
       !$acc host_data use_device(ddqz_z_full_e)
       !$acc host_data use_device(ddxt_z_full)
       !$acc host_data use_device(wgtfac_e)
@@ -1927,6 +1936,9 @@ contains
       !$acc host_data use_device(coeff2_dwdz)
       !$acc host_data use_device(coeff_gradekin)
       !$acc host_data use_device(c_owner_mask)
+      !$acc host_data use_device(pg_edgeidx) if(associated(pg_edgeidx))
+      !$acc host_data use_device(pg_vertidx) if(associated(pg_vertidx))
+      !$acc host_data use_device(pg_exdist) if(associated(pg_exdist))
 
 #ifdef _OPENACC
       on_gpu = .True.
@@ -2040,12 +2052,6 @@ contains
       vertoffset_gradp_size_1 = SIZE(vertoffset_gradp, 2)
       vertoffset_gradp_size_2 = SIZE(vertoffset_gradp, 3)
 
-      pg_edgeidx_size_0 = SIZE(pg_edgeidx, 1)
-
-      pg_vertidx_size_0 = SIZE(pg_vertidx, 1)
-
-      pg_exdist_size_0 = SIZE(pg_exdist, 1)
-
       ddqz_z_full_e_size_0 = SIZE(ddqz_z_full_e, 1)
       ddqz_z_full_e_size_1 = SIZE(ddqz_z_full_e, 2)
 
@@ -2074,6 +2080,21 @@ contains
       coeff_gradekin_size_1 = SIZE(coeff_gradekin, 2)
 
       c_owner_mask_size_0 = SIZE(c_owner_mask, 1)
+
+      if (associated(pg_edgeidx)) then
+         pg_edgeidx_ptr = c_loc(pg_edgeidx)
+         pg_edgeidx_size_0 = SIZE(pg_edgeidx, 1)
+      end if
+
+      if (associated(pg_vertidx)) then
+         pg_vertidx_ptr = c_loc(pg_vertidx)
+         pg_vertidx_size_0 = SIZE(pg_vertidx, 1)
+      end if
+
+      if (associated(pg_exdist)) then
+         pg_exdist_ptr = c_loc(pg_exdist)
+         pg_exdist_size_0 = SIZE(pg_exdist, 1)
+      end if
 
       rc = solve_nh_init_wrapper(c_lin_e=c_loc(c_lin_e), &
                                  c_lin_e_size_0=c_lin_e_size_0, &
@@ -2181,11 +2202,11 @@ contains
                                  vertoffset_gradp_size_0=vertoffset_gradp_size_0, &
                                  vertoffset_gradp_size_1=vertoffset_gradp_size_1, &
                                  vertoffset_gradp_size_2=vertoffset_gradp_size_2, &
-                                 pg_edgeidx=c_loc(pg_edgeidx), &
+                                 pg_edgeidx=pg_edgeidx_ptr, &
                                  pg_edgeidx_size_0=pg_edgeidx_size_0, &
-                                 pg_vertidx=c_loc(pg_vertidx), &
+                                 pg_vertidx=pg_vertidx_ptr, &
                                  pg_vertidx_size_0=pg_vertidx_size_0, &
-                                 pg_exdist=c_loc(pg_exdist), &
+                                 pg_exdist=pg_exdist_ptr, &
                                  pg_exdist_size_0=pg_exdist_size_0, &
                                  ddqz_z_full_e=c_loc(ddqz_z_full_e), &
                                  ddqz_z_full_e_size_0=ddqz_z_full_e_size_0, &

@@ -1679,11 +1679,11 @@ def solve_nh_init_wrapper(
                 False,
             )
 
-            pg_edgeidx = (pg_edgeidx, (pg_edgeidx_size_0,), on_gpu, False)
+            pg_edgeidx = (pg_edgeidx, (pg_edgeidx_size_0,), on_gpu, True)
 
-            pg_vertidx = (pg_vertidx, (pg_vertidx_size_0,), on_gpu, False)
+            pg_vertidx = (pg_vertidx, (pg_vertidx_size_0,), on_gpu, True)
 
-            pg_exdist = (pg_exdist, (pg_exdist_size_0,), on_gpu, False)
+            pg_exdist = (pg_exdist, (pg_exdist_size_0,), on_gpu, True)
 
             ddqz_z_full_e = (
                 ddqz_z_full_e,
