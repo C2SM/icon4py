@@ -713,8 +713,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(pressure_gradient_fields)
 
-        compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
-            func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),
+        compute_mask_prog_halo_c = factory.ProgramFieldProvider(
+            func=mf.compute_mask_prog_halo_c.with_backend(self._backend),
             deps={
                 "c_refin_ctrl": "c_refin_ctrl",
             },
@@ -726,11 +726,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={
                 attrs.MASK_PROG_HALO_C: attrs.MASK_PROG_HALO_C,
-                attrs.BDY_HALO_C: attrs.BDY_HALO_C,
             },
             do_exchange=False,
         )
-        self.register_provider(compute_mask_bdy_halo_c)
+        self.register_provider(compute_mask_prog_halo_c)
 
         compute_horizontal_mask_for_3d_divdamp = factory.ProgramFieldProvider(
             func=mf.compute_horizontal_mask_for_3d_divdamp.with_backend(self._backend),

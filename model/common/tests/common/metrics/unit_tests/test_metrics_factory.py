@@ -445,25 +445,22 @@ def test_factory_pressure_gradient_fields(
 
 
 @pytest.mark.datatest
-def test_factory_mask_bdy_prog_halo_c(
+def test_factory_mask_prog_halo_c(
     grid_savepoint: serialbox.IconGridSavepoint,
     metrics_savepoint: serialbox.MetricSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    field_ref_1 = metrics_savepoint.mask_prog_halo_c()
-    field_ref_2 = metrics_savepoint.bdy_halo_c()
+    field_ref = metrics_savepoint.mask_prog_halo_c()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field_1 = factory.get(attrs.MASK_PROG_HALO_C)
-    field_2 = factory.get(attrs.BDY_HALO_C)
-    assert (field_ref_1.asnumpy() == field_1.asnumpy()).all()
-    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())
+    field = factory.get(attrs.MASK_PROG_HALO_C)
+    assert (field_ref.asnumpy() == field.asnumpy()).all()
 
 
 @pytest.mark.level("integration")

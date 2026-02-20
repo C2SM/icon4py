@@ -76,8 +76,9 @@ def test_setup_program_defaults(
     testee = setup_program(backend=backend, program=program_return_field)
     expected_backend = model_backends.make_custom_dace_backend(device=model_backends.CPU)
     expected_program = functools.partial(
-        program_return_field.with_backend(expected_backend).compile(
-            enable_jit=False,
+        program_return_field.with_backend(expected_backend)
+        .with_compilation_options(enable_jit=False)
+        .compile(
             offset_provider={},
         ),
         offset_provider={},
@@ -121,8 +122,9 @@ def test_setup_program_specify_inputs(
         )
     else:
         expected_program = functools.partial(
-            program_return_field.with_backend(expected_backend).compile(
-                enable_jit=False,
+            program_return_field.with_backend(expected_backend)
+            .with_compilation_options(enable_jit=False)
+            .compile(
                 offset_provider={},
             ),
             offset_provider={},
