@@ -40,11 +40,11 @@ from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
     model_backends,
+    model_options,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -63,7 +63,19 @@ class HorizontalFluxLimiter:
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ): ...
+    ) -> None: ...
+
+
+class NoLimiter(HorizontalFluxLimiter):
+    """Do not apply any limiting."""
+
+    def apply_flux_limiter(
+        self,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ) -> None: ...
 
 
 class PositiveDefinite(HorizontalFluxLimiter):
@@ -78,7 +90,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
     ):
         self._grid = grid
         self._interpolation_state = interpolation_state
-        self._backend = backend
+        self._backend = model_options.customize_backend(program=None, backend=backend)
         self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
@@ -101,35 +113,39 @@ class PositiveDefinite(HorizontalFluxLimiter):
         )
 
         # stencils
-        self._compute_positive_definite_horizontal_multiplicative_flux_factor = setup_program(
-            backend=self._backend,
-            program=compute_positive_definite_horizontal_multiplicative_flux_factor,
-            constant_args={
-                "geofac_div": self._interpolation_state.geofac_div,
-                "dbl_eps": constants.DBL_EPS,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._start_cell_lateral_boundary_level_2,
-                "horizontal_end": self._end_cell_local,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
-            },
-            offset_provider=self._grid.connectivities,
+        self._compute_positive_definite_horizontal_multiplicative_flux_factor = (
+            model_options.setup_program(
+                backend=self._backend,
+                program=compute_positive_definite_horizontal_multiplicative_flux_factor,
+                constant_args={
+                    "geofac_div": self._interpolation_state.geofac_div,
+                    "dbl_eps": constants.DBL_EPS,
+                },
+                horizontal_sizes={
+                    "horizontal_start": self._start_cell_lateral_boundary_level_2,
+                    "horizontal_end": self._end_cell_local,
+                },
+                vertical_sizes={
+                    "vertical_start": gtx.int32(0),
+                    "vertical_end": gtx.int32(self._grid.num_levels),
+                },
+                offset_provider=self._grid.connectivities,
+            )
         )
-        self._apply_positive_definite_horizontal_multiplicative_flux_factor = setup_program(
-            backend=self._backend,
-            program=apply_positive_definite_horizontal_multiplicative_flux_factor,
-            horizontal_sizes={
-                "horizontal_start": self._start_edge_lateral_boundary_level_5,
-                "horizontal_end": self._end_edge_halo,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
-            },
-            offset_provider=self._grid.connectivities,
+        self._apply_positive_definite_horizontal_multiplicative_flux_factor = (
+            model_options.setup_program(
+                backend=self._backend,
+                program=apply_positive_definite_horizontal_multiplicative_flux_factor,
+                horizontal_sizes={
+                    "horizontal_start": self._start_edge_lateral_boundary_level_5,
+                    "horizontal_end": self._end_edge_halo,
+                },
+                vertical_sizes={
+                    "vertical_start": gtx.int32(0),
+                    "vertical_end": gtx.int32(self._grid.num_levels),
+                },
+                offset_provider=self._grid.connectivities,
+            )
         )
 
     def apply_flux_limiter(
@@ -138,7 +154,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         # compute multiplicative flux factor to guarantee no undershoot
         log.debug(
             "running stencil compute_positive_definite_horizontal_multiplicative_flux_factor - start"
@@ -180,11 +196,11 @@ class SemiLagrangianTracerFlux(ABC):
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-        p_distv_bary_1: fa.EdgeKField[ta.vpfloat],
-        p_distv_bary_2: fa.EdgeKField[ta.vpfloat],
+        p_distv_bary_1: fa.EdgeKField[ta.vpfloat_t],
+        p_distv_bary_2: fa.EdgeKField[ta.vpfloat_t],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ): ...
+    ) -> None: ...
 
 
 class SecondOrderMiura(SemiLagrangianTracerFlux):
@@ -199,8 +215,8 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
     ):
         self._grid = grid
         self._least_squares_state = least_squares_state
-        self._backend = backend
-        self._horizontal_limiter = horizontal_limiter or HorizontalFluxLimiter()
+        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._horizontal_limiter = horizontal_limiter or NoLimiter()
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -228,7 +244,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         )
 
         # stencils
-        self._reconstruct_linear_coefficients_svd = setup_program(
+        self._reconstruct_linear_coefficients_svd = model_options.setup_program(
             backend=self._backend,
             program=reconstruct_linear_coefficients_svd,
             horizontal_sizes={
@@ -241,18 +257,20 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
             },
             offset_provider=self._grid.connectivities,
         )
-        self._compute_horizontal_tracer_flux_from_linear_coefficients_alt = setup_program(
-            backend=self._backend,
-            program=compute_horizontal_tracer_flux_from_linear_coefficients_alt,
-            horizontal_sizes={
-                "horizontal_start": self._start_edge_lateral_boundary_level_5,
-                "horizontal_end": self._end_edge_halo,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
-            },
-            offset_provider=self._grid.connectivities,
+        self._compute_horizontal_tracer_flux_from_linear_coefficients_alt = (
+            model_options.setup_program(
+                backend=self._backend,
+                program=compute_horizontal_tracer_flux_from_linear_coefficients_alt,
+                horizontal_sizes={
+                    "horizontal_start": self._start_edge_lateral_boundary_level_5,
+                    "horizontal_end": self._end_edge_halo,
+                },
+                vertical_sizes={
+                    "vertical_start": gtx.int32(0),
+                    "vertical_end": gtx.int32(self._grid.num_levels),
+                },
+                offset_provider=self._grid.connectivities,
+            )
         )
 
     def compute_tracer_flux(
@@ -260,11 +278,11 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-        p_distv_bary_1: fa.EdgeKField[ta.vpfloat],
-        p_distv_bary_2: fa.EdgeKField[ta.vpfloat],
+        p_distv_bary_1: fa.EdgeKField[ta.vpfloat_t],
+        p_distv_bary_2: fa.EdgeKField[ta.vpfloat_t],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("horizontal tracer flux computation - start")
 
         # linear reconstruction using singular value decomposition
@@ -320,7 +338,7 @@ class HorizontalAdvection(ABC):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         """
         Run a horizontal advection step.
 
@@ -344,7 +362,7 @@ class NoAdvection(HorizontalAdvection):
         log.debug("horizontal advection class init - start")
 
         # input arguments
-        self._backend = backend
+        self._backend = model_options.customize_backend(program=None, backend=backend)
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -352,7 +370,7 @@ class NoAdvection(HorizontalAdvection):
         self._end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         # stencils
-        self._copy_cell_kdim_field = setup_program(
+        self._copy_cell_kdim_field = model_options.setup_program(
             backend=self._backend,
             program=copy_cell_kdim_field,
             horizontal_sizes={
@@ -377,7 +395,7 @@ class NoAdvection(HorizontalAdvection):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("horizontal advection run - start")
 
         log.debug("running stencil copy_cell_kdim_field - start")
@@ -402,7 +420,7 @@ class FiniteVolume(HorizontalAdvection):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("horizontal advection run - start")
 
         self._compute_numerical_flux(
@@ -432,7 +450,7 @@ class FiniteVolume(HorizontalAdvection):
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ): ...
+    ) -> None: ...
 
     @abstractmethod
     def _update_unknowns(
@@ -443,7 +461,7 @@ class FiniteVolume(HorizontalAdvection):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ): ...
+    ) -> None: ...
 
 
 class SemiLagrangian(FiniteVolume):
@@ -469,7 +487,7 @@ class SemiLagrangian(FiniteVolume):
         self._metric_state = metric_state
         self._edge_params = edge_params
         self._cell_params = cell_params
-        self._backend = backend
+        self._backend = model_options.customize_backend(program=None, backend=backend)
         self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
@@ -499,7 +517,7 @@ class SemiLagrangian(FiniteVolume):
         )
 
         # stencils
-        self._compute_edge_tangential = setup_program(
+        self._compute_edge_tangential = model_options.setup_program(
             backend=self._backend,
             program=compute_edge_tangential,
             constant_args={
@@ -516,7 +534,7 @@ class SemiLagrangian(FiniteVolume):
             offset_provider=self._grid.connectivities,
         )
 
-        self._compute_barycentric_backtrajectory_alt = setup_program(
+        self._compute_barycentric_backtrajectory_alt = model_options.setup_program(
             backend=self._backend,
             program=compute_barycentric_backtrajectory_alt,
             constant_args={
@@ -537,7 +555,7 @@ class SemiLagrangian(FiniteVolume):
             },
             offset_provider=self._grid.connectivities,
         )
-        self._integrate_tracer_horizontally = setup_program(
+        self._integrate_tracer_horizontally = model_options.setup_program(
             backend=self._backend,
             program=integrate_tracer_horizontally,
             constant_args={
@@ -564,7 +582,7 @@ class SemiLagrangian(FiniteVolume):
         rhodz_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("horizontal numerical flux computation - start")
 
         ## tracer-independent part
@@ -610,7 +628,7 @@ class SemiLagrangian(FiniteVolume):
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
+    ) -> None:
         log.debug("horizontal unknowns update - start")
 
         # update tracer mass fraction

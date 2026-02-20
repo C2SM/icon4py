@@ -342,6 +342,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
         theta_v=theta_v,
         rho=rho,
         exner=exner,
+        tracer=[],
     )
     prognostic_state_next = prognostics.PrognosticState(
         w=w_next,
@@ -349,6 +350,7 @@ def model_initialization_jabw(  # noqa: PLR0915 [too-many-statements]
         theta_v=theta_v_next,
         rho=rho_next,
         exner=exner_next,
+        tracer=[],
     )
 
     diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(

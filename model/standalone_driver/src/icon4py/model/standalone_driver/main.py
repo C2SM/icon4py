@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
+import pathlib
 from typing import Annotated
 
 import typer
@@ -19,8 +20,10 @@ log = logging.getLogger(__name__)
 
 
 def main(
-    configuration_file_path: Annotated[str, typer.Argument(help="Configuration file path.")],
-    grid_file_path: Annotated[str, typer.Option(help="Grid file path.")],
+    configuration_file_path: Annotated[
+        pathlib.Path, typer.Argument(help="Configuration file path.")
+    ],
+    grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
     # it may be better to split device from backend,
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
     # whether to automatically use gpu if cupy is installed can be discussed further
@@ -31,8 +34,8 @@ def main(
         ),
     ],
     output_path: Annotated[
-        str, typer.Option(help="Folder path that holds the output and log files.")
-    ] = "./output",
+        pathlib.Path, typer.Option(help="Folder path that holds the output and log files.")
+    ] = pathlib.Path("./output"),
     log_level: Annotated[
         str,
         typer.Option(
@@ -78,10 +81,5 @@ def main(
     log.info("time loop:  DONE")
 
 
-def click():
-    """Entry point for the standalone driver CLI."""
-    typer.run(main)
-
-
 if __name__ == "__main__":
-    click()
+    typer.run(main)
