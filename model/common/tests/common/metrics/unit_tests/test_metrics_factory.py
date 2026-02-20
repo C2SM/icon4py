@@ -546,6 +546,9 @@ def test_factory_wgtfacq_e(
     )
     field = factory.get(attrs.WGTFACQ_E)
     field_ref = metrics_savepoint.wgtfacq_e_dsl()
+    # TODO: upgrade the dallclose such that it verifies the domain ranges.
+    # This field is defined on k (nlev-3, nlev) an converting to numpy
+    # doesn't know if it's there or (whatever-3, whatever)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
