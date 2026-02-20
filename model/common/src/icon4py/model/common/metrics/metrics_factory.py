@@ -708,7 +708,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"pg_edgeidx_dsl": attrs.PG_EDGEIDX_DSL, "pg_exdist_dsl": attrs.PG_EDGEDIST_DSL},
+            fields={"pg_exdist_dsl": attrs.PG_EXDIST_DSL},
             do_exchange=False,
         )
         self.register_provider(pressure_gradient_fields)
@@ -804,7 +804,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         compute_wgtfacq_c = factory.NumpyDataProvider(
             func=functools.partial(weight_factors.compute_wgtfacq_c_dsl, array_ns=self._xp),
-            domain=(dims.CellDim, dims.KDim),
+            domain=gtx.domain(
+                {
+                    dims.CellDim: (0, self._grid.num_cells),
+                    dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
+                }
+            ),
             fields=(attrs.WGTFACQ_C,),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
             params={"nlev": self._grid.num_levels},
@@ -824,7 +829,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "wgtfacq_c_dsl": attrs.WGTFACQ_C,
             },
             connectivities={"e2c": dims.E2CDim},
-            domain=(dims.EdgeDim, dims.KDim),
+            domain=gtx.domain(
+                {
+                    dims.EdgeDim: (0, self._grid.num_edges),
+                    dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
+                }
+            ),
             fields=(attrs.WGTFACQ_E,),
             params={"n_edges": self._grid.num_edges, "nlev": self._grid.num_levels},
         )
@@ -905,10 +915,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"c2e2c": dims.C2E2CDim},
             domain=(dims.CellDim, dims.KDim),
-            fields=(
-                attrs.MASK_HDIFF,
-                attrs.ZD_DIFFCOEF_DSL,
-            ),
+            fields=(attrs.ZD_DIFFCOEF,),
             params={
                 "thslp_zdiffu": self._config["thslp_zdiffu"],
                 "thhgtd_zdiffu": self._config["thhgtd_zdiffu"],
@@ -936,8 +943,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"c2e2c": dims.C2E2CDim},
             domain=(dims.CellDim, dims.C2E2CDim, dims.KDim),
             fields=(
-                attrs.ZD_INTCOEF_DSL,
-                attrs.ZD_VERTOFFSET_DSL,
+                attrs.ZD_INTCOEF,
+                attrs.ZD_VERTOFFSET,
             ),
             params={
                 "thslp_zdiffu": self._config["thslp_zdiffu"],

@@ -1276,12 +1276,12 @@ def solve_nh_init_wrapper(
     vertoffset_gradp_size_0,
     vertoffset_gradp_size_1,
     vertoffset_gradp_size_2,
-    ipeidx_dsl,
-    ipeidx_dsl_size_0,
-    ipeidx_dsl_size_1,
+    pg_edgeidx,
+    pg_edgeidx_size_0,
+    pg_vertidx,
+    pg_vertidx_size_0,
     pg_exdist,
     pg_exdist_size_0,
-    pg_exdist_size_1,
     ddqz_z_full_e,
     ddqz_z_full_e_size_0,
     ddqz_z_full_e_size_1,
@@ -1679,25 +1679,11 @@ def solve_nh_init_wrapper(
                 False,
             )
 
-            ipeidx_dsl = (
-                ipeidx_dsl,
-                (
-                    ipeidx_dsl_size_0,
-                    ipeidx_dsl_size_1,
-                ),
-                on_gpu,
-                False,
-            )
+            pg_edgeidx = (pg_edgeidx, (pg_edgeidx_size_0,), on_gpu, True)
 
-            pg_exdist = (
-                pg_exdist,
-                (
-                    pg_exdist_size_0,
-                    pg_exdist_size_1,
-                ),
-                on_gpu,
-                False,
-            )
+            pg_vertidx = (pg_vertidx, (pg_vertidx_size_0,), on_gpu, True)
+
+            pg_exdist = (pg_exdist, (pg_exdist_size_0,), on_gpu, True)
 
             ddqz_z_full_e = (
                 ddqz_z_full_e,
@@ -1830,7 +1816,8 @@ def solve_nh_init_wrapper(
                 ddxn_z_full=ddxn_z_full,
                 zdiff_gradp=zdiff_gradp,
                 vertoffset_gradp=vertoffset_gradp,
-                ipeidx_dsl=ipeidx_dsl,
+                pg_edgeidx=pg_edgeidx,
+                pg_vertidx=pg_vertidx,
                 pg_exdist=pg_exdist,
                 ddqz_z_full_e=ddqz_z_full_e,
                 ddxt_z_full=ddxt_z_full,
@@ -2462,18 +2449,34 @@ def solve_nh_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    ipeidx_dsl_arr = (
-                        _conversion.as_array(ffi, ipeidx_dsl, _definitions.BOOL)
-                        if ipeidx_dsl is not None
+                    pg_edgeidx_arr = (
+                        _conversion.as_array(ffi, pg_edgeidx, _definitions.INT32)
+                        if pg_edgeidx is not None
                         else None
                     )
-                    msg = "shape of ipeidx_dsl after computation = %s" % str(
-                        ipeidx_dsl_arr.shape if ipeidx_dsl is not None else "None"
+                    msg = "shape of pg_edgeidx after computation = %s" % str(
+                        pg_edgeidx_arr.shape if pg_edgeidx is not None else "None"
                     )
                     logger.debug(msg)
                     msg = (
-                        "ipeidx_dsl after computation: %s" % str(ipeidx_dsl_arr)
-                        if ipeidx_dsl is not None
+                        "pg_edgeidx after computation: %s" % str(pg_edgeidx_arr)
+                        if pg_edgeidx is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    pg_vertidx_arr = (
+                        _conversion.as_array(ffi, pg_vertidx, _definitions.INT32)
+                        if pg_vertidx is not None
+                        else None
+                    )
+                    msg = "shape of pg_vertidx after computation = %s" % str(
+                        pg_vertidx_arr.shape if pg_vertidx is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "pg_vertidx after computation: %s" % str(pg_vertidx_arr)
+                        if pg_vertidx is not None
                         else "None"
                     )
                     logger.debug(msg)

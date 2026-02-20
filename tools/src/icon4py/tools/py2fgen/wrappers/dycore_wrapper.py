@@ -85,8 +85,9 @@ def solve_nh_init(
     ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.float64],
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
-    ipeidx_dsl: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool],
-    pg_exdist: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    pg_edgeidx: wrapper_common.OptionalInt32Array1D,
+    pg_vertidx: wrapper_common.OptionalInt32Array1D,
+    pg_exdist: wrapper_common.OptionalFloat64Array1D,
     ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddxt_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     wgtfac_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
@@ -134,6 +135,28 @@ def solve_nh_init(
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
 
+    xp = rho_ref_me.array_ns
+    domain = rho_ref_me.domain
+    default_value = gtx.float64(0.0)
+    if (pg_edgeidx is None) or (pg_vertidx is None) or (pg_exdist is None):
+        # if any of the fields is missing, return a zero field with the correct shape
+        pg_exdist_dsl = gtx.as_field(
+            domain,
+            xp.full(domain.shape, fill_value=default_value, dtype=gtx.float64),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+    else:
+        pg_exdist_dsl = wrapper_common.list2field(
+            domain=domain,
+            values=pg_exdist,
+            indices=(
+                wrapper_common.adjust_fortran_indices(pg_edgeidx),
+                wrapper_common.adjust_fortran_indices(pg_vertidx),
+            ),
+            default_value=default_value,
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
@@ -180,6 +203,32 @@ def solve_nh_init(
         nudgecoeff_e=nudgecoeff_e,
     )
 
+    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
+    k = wgtfacq_c.ndarray.shape[1]
+    cell_kflip_domain = gtx.domain(
+        {
+            dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
+            dims.KDim: (nlev - k, nlev),
+        }
+    )
+    k = wgtfacq_e.ndarray.shape[1]
+    edge_kflip_domain = gtx.domain(
+        {
+            dims.EdgeDim: wgtfac_e.domain[dims.EdgeDim].unit_range,
+            dims.KDim: (nlev - k, nlev),
+        }
+    )
+    wgtfacq_c = wrapper_common.kflip_wgtfacq(
+        arr=wgtfacq_c.ndarray,
+        domain=cell_kflip_domain,
+        allocator=model_backends.get_allocator(actual_backend),
+    )
+    wgtfacq_e = wrapper_common.kflip_wgtfacq(
+        arr=wgtfacq_e.ndarray,
+        domain=edge_kflip_domain,
+        allocator=model_backends.get_allocator(actual_backend),
+    )
+
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
         mask_prog_halo_c=mask_prog_halo_c,
         rayleigh_w=rayleigh_w,
@@ -202,8 +251,7 @@ def solve_nh_init(
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
         nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
-        pg_edgeidx_dsl=ipeidx_dsl,
-        pg_exdist=pg_exdist,
+        pg_exdist=pg_exdist_dsl,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
         wgtfac_e=wgtfac_e,

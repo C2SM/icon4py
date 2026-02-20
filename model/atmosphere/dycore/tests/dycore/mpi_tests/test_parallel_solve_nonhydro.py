@@ -35,7 +35,7 @@ from ..fixtures import *  # noqa: F403
             2,
             "2021-06-20T12:00:10.000",
             1,
-        )
+        ),
     ],
 )
 @pytest.mark.mpi
