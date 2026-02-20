@@ -1394,7 +1394,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.1.4+unknown.version.details"
-source = { git = "https://github.com/edopao/gt4py?branch=dace_scan_single_level#6d18188a0279203574ffbb8715d8e57a0ac315a7" }
+source = { git = "https://github.com/edopao/gt4py?branch=dace_scan_single_level#ec6b3cb74790ef1f5f53d832462d774f3fb4fbe8" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
