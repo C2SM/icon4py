@@ -65,11 +65,7 @@ def test_damping_layer_calculation(
         flat_height=flat_height,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=vct_a_field,
-        vct_b=None,  # type: ignore[arg-type]
-    )
+    vertical_params = v_grid.VerticalGrid(config=vertical_config, vct_a=vct_a_field)
     assert (
         vertical_params.end_index_of_damping_layer
         == vct_a.shape[0] - math.ceil(damping_height / delta) - 1
@@ -81,18 +77,13 @@ def test_damping_layer_calculation_from_icon_input(
     grid_savepoint: sb.IconGridSavepoint, damping_height: float, flat_height: float
 ) -> None:
     a = grid_savepoint.vct_a()
-    b = grid_savepoint.vct_b()
     nrdmax = grid_savepoint.nrdmax()
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(dims.KDim),
         flat_height=flat_height,
         rayleigh_damping_height=damping_height,
     )
-    vertical_grid = v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=a,
-        vct_b=b,
-    )
+    vertical_grid = v_grid.VerticalGrid(config=vertical_config, vct_a=a)
     assert nrdmax == vertical_grid.end_index_of_damping_layer
     a_array = a.ndarray
     damping_height = min(damping_height, a_array[0])
@@ -106,11 +97,7 @@ def test_grid_size(
     experiment: definitions.Experiment, grid_savepoint: sb.IconGridSavepoint
 ) -> None:
     config = v_grid.VerticalGridConfig(num_levels=grid_savepoint.num(dims.KDim))
-    vertical_grid = v_grid.VerticalGrid(
-        config=config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-    )
+    vertical_grid = v_grid.VerticalGrid(config=config, vct_a=grid_savepoint.vct_a())
 
     assert experiment.num_levels == vertical_grid.size(dims.KDim)
     assert experiment.num_levels + 1 == vertical_grid.size(dims.KHalfDim)
@@ -142,11 +129,7 @@ def configure_vertical_grid(
     config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(dims.KDim), htop_moist_proc=top_moist_threshold
     )
-    vertical_grid = v_grid.VerticalGrid(
-        config=config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-    )
+    vertical_grid = v_grid.VerticalGrid(config=config, vct_a=grid_savepoint.vct_a())
 
     return vertical_grid
 
@@ -321,7 +304,7 @@ def test_grid_index_raises_if_index_below_zero(
 
 
 @pytest.mark.datatest
-def test_vct_a_vct_b_calculation_from_icon_input(
+def test_vct_a_calculation_from_icon_input(
     grid_savepoint: sb.IconGridSavepoint,
     maximal_layer_thickness: float,
     top_height_limit_for_maximal_layer_thickness: float,
@@ -344,10 +327,9 @@ def test_vct_a_vct_b_calculation_from_icon_input(
         rayleigh_damping_height=damping_height,
         htop_moist_proc=htop_moist_proc,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+    vct_a = v_grid.get_vct_a(vertical_config, backend)
 
     assert test_utils.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
-    assert test_utils.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
 
 
 @pytest.mark.level("unit")
@@ -372,7 +354,6 @@ def test_compute_vertical_coordinate(
 ) -> None:
     xp = data_alloc.array_ns(device_utils.is_cupy_device(backend))
     vct_a = grid_savepoint.vct_a()
-    vct_b = grid_savepoint.vct_b()
     cell_geometry = grid_savepoint.construct_cell_geometry()
 
     specific_values = (
@@ -393,11 +374,7 @@ def test_compute_vertical_coordinate(
         **specific_values,  # type: ignore[arg-type]
     )
 
-    vertical_geometry = v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=vct_a,
-        vct_b=vct_b,
-    )
+    vertical_geometry = v_grid.VerticalGrid(config=vertical_config, vct_a=vct_a)
     assert vertical_geometry.nflatlev == grid_savepoint.nflatlev()
 
     if experiment in (definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.GAUSS3D):

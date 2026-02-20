@@ -126,7 +126,7 @@ class VerticalGrid:
     """
     Contains vertical physical parameters defined on the vertical grid derived from vertical grid configuration.
 
-    _vct_a and _vct_b: See docstring of get_vct_a_and_vct_b. Note that the height index starts from the model top.
+    _vct_a: See docstring of get_vct_a. Note that the height index starts from the model top.
     _end_index_of_damping_layer: Height index above which Rayleigh damping of vertical wind is applied.
     _start_index_for_moist_physics: Height index above which moist physics and advection of cloud and precipitation variables are turned off.
     _end_index_of_flat_layer: Height index above which coordinate surfaces are flat.
@@ -134,23 +134,16 @@ class VerticalGrid:
 
     config: VerticalGridConfig
     vct_a: dataclasses.InitVar[fa.KField[ta.wpfloat]]
-    vct_b: dataclasses.InitVar[fa.KField[ta.wpfloat]]
     _vct_a: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
-    _vct_b: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
 
-    def __post_init__(self, vct_a, vct_b):
+    def __post_init__(self, vct_a):
         object.__setattr__(
             self,
             "_vct_a",
             vct_a,
-        )
-        object.__setattr__(
-            self,
-            "_vct_b",
-            vct_b,
         )
         vct_a_array = self._vct_a.asnumpy()
         object.__setattr__(
@@ -248,10 +241,6 @@ class VerticalGrid:
     def vct_a(self) -> fa.KField:
         return self._vct_a
 
-    @property
-    def vct_b(self) -> fa.KField:
-        return self._vct_b
-
     def size(self, dim: gtx.Dimension) -> int:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported."
         match dim:
@@ -293,11 +282,11 @@ class VerticalGrid:
         )
 
 
-def _read_vct_a_and_vct_b_from_file(
+def _read_vct_a_from_file(
     file_path: pathlib.Path, num_levels: int, allocator: gtx_typing.FieldBufferAllocationUtil
 ) -> tuple[fa.KField, fa.KField]:
     """
-    Read vct_a and vct_b from a file.
+    Read vct_a from a file.
     The file format should be as follows (the same format used for icon):
         #    k     vct_a(k) [Pa]   vct_b(k) []
         1  12000.0000000000  0.0000000000
@@ -311,11 +300,10 @@ def _read_vct_a_and_vct_b_from_file(
         file_path: Path to the vertical grid file
         num_levels: number of cell levels
         allocator: GT4Py field allocator
-    Returns:  one dimensional vct_a and vct_b arrays.
+    Returns:  one dimensional vct_a arrays.
     """
     num_levels_plus_one = num_levels + 1
     vct_a = np.zeros(num_levels_plus_one, dtype=ta.wpfloat)
-    vct_b = np.zeros(num_levels_plus_one, dtype=ta.wpfloat)
     try:
         with file_path.open() as vertical_grid_file:
             # skip the first line that contains titles
@@ -323,7 +311,6 @@ def _read_vct_a_and_vct_b_from_file(
             for k in range(num_levels_plus_one):
                 grid_content = vertical_grid_file.readline().split()
                 vct_a[k] = ta.wpfloat(grid_content[1])
-                vct_b[k] = ta.wpfloat(grid_content[2])
     except OSError as err:
         raise FileNotFoundError(
             f"Vertical coord table file {file_path} could not be read."
@@ -334,16 +321,14 @@ def _read_vct_a_and_vct_b_from_file(
         ) from err
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
-    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator), gtx.as_field(
-        (dims.KDim,), vct_b, allocator=allocator
-    )
+    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator)
 
 
-def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
+def _compute_vct_a(  # noqa: PLR0912 [too-many-branches]
     vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil
-) -> tuple[fa.KField, fa.KField]:
+) -> fa.KField:
     """
-    Compute vct_a and vct_b.
+    Compute vct_a.
 
     When the thickness of lowest level grid cells is larger than 0.01:
         vct_a[k] = H (2/pi arccos((k/N)^s) )^d      N = num_levels      s = stretch_factor in vertical configuration
@@ -379,8 +364,8 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
 
     Args:
         vertical_config: Vertical grid configuration
-        backend: GT4Py backend
-    Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
+        allocator: GT4Py allocator
+    Returns:  one dimensional (dims.KDim) vct_a gt4py fields.
     """
     num_levels_plus_one = vertical_config.num_levels + 1
     if vertical_config.lowest_layer_thickness > 0.01:
@@ -516,42 +501,36 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
             )
             / ta.wpfloat(vertical_config.num_levels)
         )
-    vct_b = np.exp(-vct_a / 5000.0)
 
     if not np.allclose(vct_a[0], vertical_config.model_top_height):
         log.warning(
             f" Warning. vct_a[0], {vct_a[0]}, is not equal to model top height, {vertical_config.model_top_height}, of vertical configuration. Please consider changing the vertical setting."
         )
 
-    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator), gtx.as_field(
-        (dims.KDim,), vct_b, allocator=allocator
-    )
+    return gtx.as_field((dims.KDim,), vct_a, allocator=allocator)
 
 
-def get_vct_a_and_vct_b(
+def get_vct_a(
     vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil
-) -> tuple[fa.KField, fa.KField]:
+) -> fa.KField:
     """
-    get vct_a and vct_b.
+    get vct_a.
     vct_a is an array that contains the height of grid interfaces (or half levels) from model surface to model top, before terrain-following coordinates are applied.
-    vct_b is an array that is used to initialize vertical wind speed above surface by a prescribed vertical profile when the surface vertical wind is given.
     It is also used to modify the initial vertical wind speed above surface according to a prescribed vertical profile by linearly merging the surface vertical wind with the existing vertical wind.
     See init_w and adjust_w in mo_nh_init_utils.f90.
 
-    When file_name is given in vertical_config, it will read both vct_a and vct_b from that file. Otherwise, they are analytically derived based on vertical configuration.
+    When file_name is given in vertical_config, it will read both vct_a from that file. Otherwise, they are analytically derived based on vertical configuration.
 
     Args:
         vertical_config: Vertical grid configuration
-        backend: GT4Py backend
-    Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
+        allocator: GT4Py allocator
+    Returns:  one dimensional (dims.KDim) vct_a gt4py fields.
     """
 
     return (
-        _read_vct_a_and_vct_b_from_file(
-            vertical_config.file_path, vertical_config.num_levels, allocator
-        )
+        _read_vct_a_from_file(vertical_config.file_path, vertical_config.num_levels, allocator)
         if vertical_config.file_path
-        else _compute_vct_a_and_vct_b(vertical_config, allocator)
+        else _compute_vct_a(vertical_config, allocator)
     )
 
 

@@ -48,7 +48,6 @@ def initialized_writer(
     vertical_params = v_grid.VerticalGrid(
         vertical_config,
         vct_a=gtx.as_field((dims.KDim,), heights),
-        vct_b=None,
     )
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"

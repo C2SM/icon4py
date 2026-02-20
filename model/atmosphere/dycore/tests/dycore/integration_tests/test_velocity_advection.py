@@ -62,9 +62,7 @@ def _compare_cfl(
 def create_vertical_params(
     vertical_config: v_grid.VerticalGridConfig, grid_savepoint: serialbox.IconGridSavepoint
 ) -> v_grid.VerticalGrid:
-    return v_grid.VerticalGrid(
-        config=vertical_config, vct_a=grid_savepoint.vct_a(), vct_b=grid_savepoint.vct_b()
-    )
+    return v_grid.VerticalGrid(config=vertical_config, vct_a=grid_savepoint.vct_a())
 
 
 @pytest.mark.embedded_static_args

@@ -94,14 +94,11 @@ def create_vertical_grid(
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.FieldBufferAllocationUtil,
 ) -> v_grid.VerticalGrid:
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(
-        vertical_config=vertical_grid_config, allocator=allocator
-    )
+    vct_a = v_grid.get_vct_a(vertical_config=vertical_grid_config, allocator=allocator)
 
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_grid_config,
         vct_a=vct_a,
-        vct_b=vct_b,
     )
     return vertical_grid
 

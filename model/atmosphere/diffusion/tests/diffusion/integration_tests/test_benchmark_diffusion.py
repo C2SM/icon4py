@@ -113,12 +113,11 @@ def test_diffusion_benchmark(
         stretch_factor=1.0,
         rayleigh_damping_height=1.0,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, allocator=allocator)
+    vct_a = v_grid.get_vct_a(vertical_config, allocator=allocator)
 
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
-        vct_b=vct_b,
     )
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(

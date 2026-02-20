@@ -159,11 +159,7 @@ def test_run_timeloop_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-    )
+    vertical_params = v_grid.VerticalGrid(config=vertical_config, vct_a=grid_savepoint.vct_a())
     additional_parameters = diffusion.DiffusionParams(diffusion_config)
 
     diffusion_granule = diffusion.Diffusion(

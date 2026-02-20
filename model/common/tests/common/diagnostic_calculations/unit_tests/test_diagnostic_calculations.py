@@ -267,11 +267,7 @@ def test_diagnostic_update_after_saturation_adjustement(
     dtime = 2.0
 
     vertical_config = v_grid.VerticalGridConfig(icon_grid.num_levels)
-    vertical_params = v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-    )
+    vertical_params = v_grid.VerticalGrid(config=vertical_config, vct_a=grid_savepoint.vct_a())
     virtual_temperature_tendency = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
