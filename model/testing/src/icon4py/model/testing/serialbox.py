@@ -770,13 +770,15 @@ class MetricSavepoint(IconSavepoint):
         cell_range = wgtfac_c.domain[dims.CellDim].unit_range
         nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
         k_range = (nlev - k, nlev)
-        cell_kflip_domain = gtx.domain({
-            dims.CellDim: cell_range,
-            dims.KDim: k_range,
-        })
+        cell_kflip_domain = gtx.domain(
+            {
+                dims.CellDim: cell_range,
+                dims.KDim: k_range,
+            }
+        )
         return wrapper_common.kflip_wgtfacq(
-            arr = ar,
-            domain = cell_kflip_domain,
+            arr=ar,
+            domain=cell_kflip_domain,
             allocator=model_backends.get_allocator(self.backend),
         )
 
@@ -825,13 +827,15 @@ class MetricSavepoint(IconSavepoint):
         edge_range = wgtfac_e.domain[dims.EdgeDim].unit_range
         nlev = wgtfac_e.domain[dims.KDim].unit_range.stop - 1
         k_range = (nlev - k, nlev)
-        edge_kflip_domain = gtx.domain({
-            dims.EdgeDim: edge_range,
-            dims.KDim: k_range,
-        })
+        edge_kflip_domain = gtx.domain(
+            {
+                dims.EdgeDim: edge_range,
+                dims.KDim: k_range,
+            }
+        )
         return wrapper_common.kflip_wgtfacq(
-            arr = ar,
-            domain = edge_kflip_domain,
+            arr=ar,
+            domain=edge_kflip_domain,
             allocator=model_backends.get_allocator(self.backend),
         )
 
@@ -845,19 +849,23 @@ class MetricSavepoint(IconSavepoint):
     @IconSavepoint.optionally_registered()
     def zd_vertidx(self):
         # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
-        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[0,:]
+        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[0, :]
 
     @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
     def zd_vertoffset(self):
         zd_cellidx = self.zd_cellidx()
         zd_vertidx = self.zd_vertidx()
         # these are the three k offsets for the C2E2C neighbors
-        zd_vertoffset = np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[1:,:] - zd_vertidx
-        cell_c2e2c_k_domain = gtx.domain({
-            dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
-            dims.C2E2CDim: 3,
-            dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
-        })
+        zd_vertoffset = (
+            np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[1:, :] - zd_vertidx
+        )
+        cell_c2e2c_k_domain = gtx.domain(
+            {
+                dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
+                dims.C2E2CDim: 3,
+                dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
+            }
+        )
         return wrapper_common.list2field(
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
@@ -875,11 +883,13 @@ class MetricSavepoint(IconSavepoint):
         zd_cellidx = self.zd_cellidx()
         zd_vertidx = self.zd_vertidx()
         zd_intcoef = np.squeeze(self.serializer.read("zd_intcoef", self.savepoint))
-        cell_c2e2c_k_domain = gtx.domain({
-            dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
-            dims.C2E2CDim: 3,
-            dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
-        })
+        cell_c2e2c_k_domain = gtx.domain(
+            {
+                dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
+                dims.C2E2CDim: 3,
+                dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
+            }
+        )
         return wrapper_common.list2field(
             domain=cell_c2e2c_k_domain,
             values=zd_intcoef.T,

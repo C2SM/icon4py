@@ -94,9 +94,7 @@ def test_compute_wgtfacq_e_dsl(
         array_ns=xp,
     )
 
-    assert test_utils.dallclose(
-        data_alloc.as_numpy(wgtfacq_e_dsl), wgtfacq_e_dsl_ref.asnumpy()
-    )
+    assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_e_dsl), wgtfacq_e_dsl_ref.asnumpy())
 
 
 @pytest.mark.datatest
