@@ -96,6 +96,7 @@ def main():
             "qr": inp.qr,
             "qs": inp.qs,
             "qg": inp.qg,
+            "t": inp.t,
         }
     else:
         references = None

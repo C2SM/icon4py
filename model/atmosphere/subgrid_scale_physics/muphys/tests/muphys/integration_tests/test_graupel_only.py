@@ -79,6 +79,7 @@ def test_graupel_only(
             "qr": inp.qr,
             "qs": inp.qs,
             "qg": inp.qg,
+            "t": inp.t,
         },
     )
 
