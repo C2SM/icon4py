@@ -218,7 +218,6 @@ def initialize_granules(
 
     log.info("creating diffusion metric state")
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
         theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
         wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
         zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF_DSL),
