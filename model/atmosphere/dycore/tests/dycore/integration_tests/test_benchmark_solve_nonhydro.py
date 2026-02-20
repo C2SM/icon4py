@@ -9,9 +9,11 @@
 from __future__ import annotations
 
 import functools
+import os
 from typing import TYPE_CHECKING, Any
 
 import gt4py.next as gtx
+from gt4py.next.instrumentation import metrics as gtx_metrics
 import pytest
 
 
@@ -346,3 +348,6 @@ def test_benchmark_solve_nonhydro(
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
     )
+
+    if gtx_metrics.sources:
+        gtx_metrics.dump_json("dycore_gt4py_program_metrics.json")

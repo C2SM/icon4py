@@ -52,12 +52,15 @@ def get_dace_options(
     # due to it falling into a less optimized code generation (on santis).
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
+    # TODO(AMD): For now disable problematic `hipMallocAsync` calls on each GT4Py Program call that have high runtime variability.
+    #            Needs to be fixed for realistic simulations due to increased memory footprint of persistent memory.
+    if backend_descriptor["device"] == model_backends.DeviceType.ROCM:
+        optimization_args["gpu_memory_pool"] = False
+        optimization_args["make_persistent"] = True
     if program_name == "graupel_run":
         backend_descriptor["use_zero_origin"] = True
         optimization_args["fuse_tasklets"] = True
         optimization_args["gpu_maxnreg"] = 128
-        optimization_args["gpu_memory_pool"] = False
-        optimization_args["make_persistent"] = True
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
