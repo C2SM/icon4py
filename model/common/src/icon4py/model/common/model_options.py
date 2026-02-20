@@ -43,11 +43,21 @@ def get_dace_options(
                     validate_all=False,
                 )
             )
+        if "scan_loop_unrolling" not in optimization_args:
+            optimization_args["scan_loop_unrolling"] = True
+        if "scan_loop_unrolling_factor" not in optimization_args:
+            optimization_args["scan_loop_unrolling_factor"] = 0
     # TODO(havogt): Eventually the option `use_zero_origin` should be removed and the default behavior should be `use_zero_origin=False`.
     # We keep it `True` for 'compute_rho_theta_pgrad_and_update_vn' as performance drops,
     # due to it falling into a less optimized code generation (on santis).
     if program_name == "compute_rho_theta_pgrad_and_update_vn":
         backend_descriptor["use_zero_origin"] = True
+    if program_name == "graupel_run":
+        backend_descriptor["use_zero_origin"] = True
+        optimization_args["fuse_tasklets"] = True
+        optimization_args["gpu_maxnreg"] = 128
+        optimization_args["gpu_memory_pool"] = False
+        optimization_args["make_persistent"] = True
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
@@ -139,12 +149,12 @@ def setup_program(
     bound_static_args = {k: v for k, v in constant_args.items() if gtx.is_scalar_type(v)}
     static_args_program = program.with_backend(backend)
     if backend is not None:
+        static_args_program = static_args_program.with_compilation_options(enable_jit=False)
         static_args_program.compile(
             **dict_values_to_list(horizontal_sizes),
             **dict_values_to_list(vertical_sizes),
             **variants,
             **dict_values_to_list(bound_static_args),
-            enable_jit=False,
             offset_provider=offset_provider,
         )
 

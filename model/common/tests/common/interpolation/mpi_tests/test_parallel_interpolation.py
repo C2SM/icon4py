@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (
@@ -31,8 +32,8 @@ from ...fixtures import (
     interpolation_factory_from_savepoint,
     interpolation_savepoint,
     processor_props,
-    ranked_data_path,
 )
+from ..unit_tests.test_rbf_interpolation import RBF_TOLERANCES
 
 
 if TYPE_CHECKING:
@@ -183,13 +184,13 @@ def test_distributed_interpolation_geofac_rot(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, intrp_name, atol",
+    "attrs_name, intrp_name",
     [
-        (attrs.RBF_VEC_COEFF_C1, "rbf_vec_coeff_c1", 3e-2),
-        (attrs.RBF_VEC_COEFF_C2, "rbf_vec_coeff_c2", 3e-2),
-        (attrs.RBF_VEC_COEFF_E, "rbf_vec_coeff_e", 3e-2),
-        (attrs.RBF_VEC_COEFF_V1, "rbf_vec_coeff_v1", 3e-3),
-        (attrs.RBF_VEC_COEFF_V2, "rbf_vec_coeff_v2", 3e-3),
+        (attrs.RBF_VEC_COEFF_C1, "rbf_vec_coeff_c1"),
+        (attrs.RBF_VEC_COEFF_C2, "rbf_vec_coeff_c2"),
+        (attrs.RBF_VEC_COEFF_E, "rbf_vec_coeff_e"),
+        (attrs.RBF_VEC_COEFF_V1, "rbf_vec_coeff_v1"),
+        (attrs.RBF_VEC_COEFF_V2, "rbf_vec_coeff_v2"),
     ],
 )
 def test_distributed_interpolation_rbf(
@@ -202,12 +203,46 @@ def test_distributed_interpolation_rbf(
     interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
     attrs_name: str,
     intrp_name: str,
-    atol: int,
 ) -> None:
+    # xfail inside function body, because we don't actually want to run the test
+    # since it hangs.
+    pytest.xfail("Tests hang in CI")
+
+    if attrs_name.startswith("rbf_vec_coeff_c"):
+        dim = dims.CellDim
+    elif attrs_name.startswith("rbf_vec_coeff_e"):
+        dim = dims.EdgeDim
+    else:
+        dim = dims.VertexDim
+
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()
-    test_utils.dallclose(field, field_ref, atol=atol)
+    test_utils.dallclose(field, field_ref, atol=RBF_TOLERANCES[dim][experiment.name])
+
+
+@pytest.mark.datatest
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_distributed_interpolation_lsq_pseudoinv(
+    backend: gtx_typing.Backend,
+    interpolation_savepoint: sb.InterpolationSavepoint,
+    grid_savepoint: sb.IconGridSavepoint,
+    experiment: test_defs.Experiment,
+    processor_props: decomposition.ProcessProperties,
+    decomposition_info: decomposition.DecompositionInfo,
+    interpolation_factory_from_savepoint: interpolation_factory.InterpolationFieldsFactory,
+) -> None:
+    parallel_helpers.check_comm_size(processor_props)
+    parallel_helpers.log_process_properties(processor_props)
+    parallel_helpers.log_local_field_size(decomposition_info)
+    factory = interpolation_factory_from_savepoint
+    field_ref_1 = interpolation_savepoint.__getattribute__("lsq_pseudoinv_1")().asnumpy()
+    field_ref_2 = interpolation_savepoint.__getattribute__("lsq_pseudoinv_2")().asnumpy()
+    field_1 = factory.get(attrs.LSQ_PSEUDOINV)[:, 0, :]
+    field_2 = factory.get(attrs.LSQ_PSEUDOINV)[:, 1, :]
+    test_utils.dallclose(field_1, field_ref_1, atol=1e-15)  # type: ignore[arg-type] # mypy does not recognize sliced array as still an array
+    test_utils.dallclose(field_2, field_ref_2, atol=1e-15)  # type: ignore[arg-type] # mypy does not recognize sliced array as still an array

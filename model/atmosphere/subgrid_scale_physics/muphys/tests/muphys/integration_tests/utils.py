@@ -12,19 +12,13 @@ import dataclasses
 import enum
 import pathlib
 
-import numpy as np
 import pytest
 
-from icon4py.model.testing import data_handling, definitions as testing_defs
+from icon4py.model.testing import config, data_handling
 
 
 def _path_to_experiment_testdata(experiment: MuphysExperiment) -> pathlib.Path:
-    return (
-        testing_defs.get_test_data_root_path()
-        / "muphys"
-        / experiment.type.name.lower()
-        / experiment.name
-    )
+    return config.TEST_DATA_PATH / "muphys" / experiment.type.name.lower() / experiment.name
 
 
 class ExperimentType(int, enum.Enum):
@@ -37,7 +31,6 @@ class MuphysExperiment:
     name: str
     type: ExperimentType
     uri: str
-    dtype: np.dtype
     dt: float = 30.0
     qnc: float = 100.0
 

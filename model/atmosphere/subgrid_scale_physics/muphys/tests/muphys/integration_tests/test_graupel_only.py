@@ -23,27 +23,24 @@ from .utils import download_test_data
 
 
 class Experiments:
-    # TODO currently on havogt's polybox
     MINI: Final = utils.MuphysExperiment(
         name="mini",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri="https://polybox.ethz.ch/index.php/s/55oHBDxS2SiqAGN/download/mini.tar.gz",
-        dtype=np.float32,
+        uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=mini.tar.gz",
     )
     TINY: Final = utils.MuphysExperiment(
         name="tiny",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri="https://polybox.ethz.ch/index.php/s/5Ceop3iaWkbc7gf/download/tiny.tar.gz",
-        dtype=np.float64,
+        uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=tiny.tar.gz",
     )
     R2B05: Final = utils.MuphysExperiment(
         name="R2B05",
         type=utils.ExperimentType.GRAUPEL_ONLY,
-        uri="https://polybox.ethz.ch/index.php/s/RBib8rFSEd7Eomo/download/R2B05.tar.gz",
-        dtype=np.float32,
+        uri="https://polybox.ethz.ch/index.php/s/7B9MWyKTTBrNQBd/download?files=R2B05.tar.gz",
     )
 
 
+@pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment",
@@ -62,13 +59,28 @@ def test_graupel_only(
         filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
     )
 
+    graupel_run_program = run_graupel_only.setup_graupel(
+        inp,
+        dt=experiment.dt,
+        qnc=experiment.qnc,
+        backend=backend_like,
+        enable_masking=True,  # `False` would require different reference data (or relaxing thresholds)
+    )
+
+    # We are passing the same buffers for `Q` as input and output. This is not best GT4Py practice,
+    # but save in this case as we are not reading the input with an offset.
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
-    )
-
-    graupel_run_program = run_graupel_only.setup_graupel(
-        inp, dt=experiment.dt, qnc=experiment.qnc, backend=backend_like
+        references={
+            "qv": inp.qv,
+            "qc": inp.qc,
+            "qi": inp.qi,
+            "qr": inp.qr,
+            "qs": inp.qs,
+            "qg": inp.qg,
+            "t": inp.t,
+        },
     )
 
     graupel_run_program(
@@ -91,10 +103,8 @@ def test_graupel_only(
         filename=experiment.reference_file, allocator=model_backends.get_allocator(backend_like)
     )
 
-    # TODO check tolerances
-    rtol = 1e-14 if experiment.dtype == np.float64 else 1e-7
-    atol = 1e-16 if experiment.dtype == np.float64 else 1e-8
-    # TODO we run the float32 input experiments with float64
+    rtol = 1e-14
+    atol = 1e-16
 
     np.testing.assert_allclose(ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol)
     np.testing.assert_allclose(ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol)

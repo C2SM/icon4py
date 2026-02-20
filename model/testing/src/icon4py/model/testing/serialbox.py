@@ -151,9 +151,7 @@ class IconGridSavepoint(IconSavepoint):
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
-        self.global_grid_params = icon.GlobalGridParams(
-            mean_cell_area=self.mean_cell_area(), grid_shape=grid_shape
-        )
+        self.global_grid_params = icon.GlobalGridParams(grid_shape=grid_shape)
 
     def verts_vertex_lat(self):
         """vertex latituted"""
@@ -581,6 +579,7 @@ class IconGridSavepoint(IconSavepoint):
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
+            mean_cell_area=self.mean_cell_area(),
         )
 
 
@@ -672,9 +671,6 @@ class InterpolationSavepoint(IconSavepoint):
 
 
 class MetricSavepoint(IconSavepoint):
-    def bdy_halo_c(self):
-        return self._get_field("bdy_halo_c", dims.CellDim, dtype=bool)
-
     def d2dexdz2_fac1_mc(self):
         return self._get_field("d2dexdz2_fac1_mc", dims.CellDim, dims.KDim)
 
@@ -2080,15 +2076,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelSavepoint:
-        # TODO (Chia Rui): fix typo microphy[s]ics
-        savepoint = self.serializer.savepoint["microphyics-init"].date[date].as_savepoint()
+        savepoint = self.serializer.savepoint["microphysics-init"].date[date].as_savepoint()
         return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelSavepoint:
-        # TODO (Chia Rui): fix typo microphy[s]ics
-        savepoint = self.serializer.savepoint["microphyics-exit"].date[date].as_savepoint()
+        savepoint = self.serializer.savepoint["microphysics-exit"].date[date].as_savepoint()
         return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
