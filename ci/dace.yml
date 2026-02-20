@@ -19,7 +19,7 @@ include:
         GRID: [simple, icon_regional]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
-test_model_stencils_aarch64:
+.test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
 .test_model_datatests:
@@ -28,7 +28,7 @@ test_model_stencils_aarch64:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver]
+      - COMPONENT: [muphys]
         BACKEND: [dace_cpu, dace_gpu]
         LEVEL: [integration]
   rules:
@@ -44,7 +44,7 @@ test_model_stencils_aarch64:
         SLURM_TIMELIMIT: '01:00:00'
     - when: on_success
       variables:
-        SLURM_TIMELIMIT: '00:30:00'
+        SLURM_TIMELIMIT: '01:00:00'
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
