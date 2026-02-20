@@ -198,8 +198,8 @@ def kflip_wgtfacq(
     arr: NDArray,
     domain: gtx.Domain,
     allocator: gtx_allocators.FieldBufferAllocatorProtocol,
-):
-    return gtx.as_field(domain, arr[:, ::-1], allocator=allocator)
+) -> gtx.Field:
+    return gtx.as_field(domain, arr[:, ::-1], allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, dtype[Any] | Any"; expected "NDArrayObject"
 
 
 def construct_icon_grid(
