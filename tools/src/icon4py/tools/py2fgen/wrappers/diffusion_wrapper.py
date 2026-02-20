@@ -64,7 +64,7 @@ def diffusion_init(
     nudgecoeff_e: fa.EdgeField[wpfloat],
     rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
     rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    zd_cellidx: wrapper_common.OptionalInt32Array1D,
+    zd_cellidx: wrapper_common.OptionalInt32Array2D,
     zd_vertidx: wrapper_common.OptionalInt32Array2D,
     zd_intcoef: wrapper_common.OptionalFloat64Array2D,
     zd_diffcoef: wrapper_common.OptionalFloat64Array1D,
@@ -138,10 +138,13 @@ def diffusion_init(
     else:
         # transform lists to fields
         #
+        # only the first row is needed, the others are for C2E2C neighbors, but slicing in fortran causes issues
+        zd_cellidx = zd_cellidx[0,:]
         # these are the three k offsets for the C2E2C neighbors
         zd_vertoffset = zd_vertidx[1:,:] - zd_vertidx[0,:]
         # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
         zd_vertidx = zd_vertidx[0,:]
+
         zd_diffcoef = wrapper_common.list2field(
             domain=cell_k_domain,
             values=zd_diffcoef,
