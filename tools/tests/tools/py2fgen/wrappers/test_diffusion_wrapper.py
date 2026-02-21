@@ -59,8 +59,6 @@ def test_diffusion_wrapper_granule_inputs(
     hdiff_efdt_ratio = 24.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
-    thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
     max_nudging_coefficient = 0.375
     itype_sher = (
@@ -175,8 +173,6 @@ def test_diffusion_wrapper_granule_inputs(
             hdiff_efdt_ratio=hdiff_efdt_ratio,
             smagorinski_scaling_factor=smagorinski_scaling_factor,
             hdiff_temp=hdiff_temp,
-            thslp_zdiffu=thslp_zdiffu,
-            thhgtd_zdiffu=thhgtd_zdiffu,
             denom_diffu_v=denom_diffu_v,
             nudge_max_coeff=max_nudging_coefficient,
             itype_sher=itype_sher.value,
@@ -289,8 +285,6 @@ def test_diffusion_wrapper_single_step(
     hdiff_efdt_ratio = 24.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
-    thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
     max_nudging_coefficient = 0.375
     itype_sher = (
@@ -372,8 +366,6 @@ def test_diffusion_wrapper_single_step(
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
         denom_diffu_v=denom_diffu_v,
         nudge_max_coeff=max_nudging_coefficient,
         itype_sher=itype_sher.value,

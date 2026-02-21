@@ -209,8 +209,6 @@ def construct_diffusion_config(
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
-            thslp_zdiffu=0.02,
-            thhgtd_zdiffu=125.0,
             velocity_boundary_diffusion_denom=150.0,
             max_nudging_coefficient=0.375,
             n_substeps=ndyn_substeps,
