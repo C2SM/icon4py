@@ -187,7 +187,7 @@ def list2field(
 ) -> gtx.Field:
     if len(domain) != len(indices):
         raise RuntimeError("The number of indices must match the shape of the domain.")
-    assert all(index.shape == indices[0].shape for index in indices)
+    assert all(index.shape == indices[0].shape for index in indices if not isinstance(index, slice))
     xp = data_alloc.get_array_namespace(values)
     arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
     arr[indices] = values
