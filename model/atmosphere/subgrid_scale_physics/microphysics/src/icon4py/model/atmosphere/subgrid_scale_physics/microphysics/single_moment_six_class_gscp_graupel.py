@@ -61,11 +61,11 @@ class SingleMomentSixClassIconGraupelConfig:
     """
 
     #: liquid auto conversion mode. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
-    liquid_autoconversion_option: mphys_options.LiquidAutoConversionType = (
+    liquid_autoconversion_option: mphys_options.ValidLiquidAutoConversionType = (
         mphys_options.LiquidAutoConversionType.KESSLER
     )
     #: snow size distribution interception parameter. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
-    snow_intercept_option: mphys_options.SnowInterceptParametererization = (
+    snow_intercept_option: mphys_options.ValidSnowInterceptParametererization = (
         mphys_options.SnowInterceptParametererization.FIELD_GENERAL_MOMENT_ESTIMATION
     )
     #: Do latent heat nudging. Originally defined as dass_lhn in mo_run_config.f90 in ICON.
