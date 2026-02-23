@@ -204,6 +204,7 @@ def model_initialization_serialbox(
         theta_v=solve_nonhydro_init_savepoint.theta_v_new(),
         rho=solve_nonhydro_init_savepoint.rho_new(),
         exner=solve_nonhydro_init_savepoint.exner_new(),
+        tracer=[],
     )
 
     prep_adv = dycore_states.PrepAdvection(

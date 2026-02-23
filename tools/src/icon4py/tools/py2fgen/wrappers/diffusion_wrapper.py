@@ -204,6 +204,7 @@ def diffusion_run(
         exner=exner,
         theta_v=theta_v,
         rho=rho,
+        tracer=[],
     )
 
     if hdef_ic is None:

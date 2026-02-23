@@ -88,11 +88,7 @@ def test_graupel(
         qg=entry_savepoint.qg(),
     )
     prognostic_state = prognostics.PrognosticState(
-        rho=entry_savepoint.rho(),
-        vn=None,
-        w=None,
-        exner=None,
-        theta_v=None,
+        rho=entry_savepoint.rho(), vn=None, w=None, exner=None, theta_v=None, tracer=[]
     )
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=entry_savepoint.temperature(),

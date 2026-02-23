@@ -156,6 +156,7 @@ def test_diffusion_benchmark(
         exner=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         theta_v=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
         rho=data_alloc.random_field(mesh, dims.CellDim, dims.KDim, allocator=allocator),
+        tracer=[],
     )
 
     diffusion_granule = diffusion.Diffusion(

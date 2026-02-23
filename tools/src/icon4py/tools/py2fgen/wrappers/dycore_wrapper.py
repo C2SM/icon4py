@@ -355,6 +355,7 @@ def solve_nh_run(
         theta_v=theta_v_now,
         rho=rho_now,
         exner=exner_now,
+        tracer=[],
     )
     prognostic_state_nnew = PrognosticState(
         w=w_new,
@@ -362,6 +363,7 @@ def solve_nh_run(
         theta_v=theta_v_new,
         rho=rho_new,
         exner=exner_new,
+        tracer=[],
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
