@@ -763,8 +763,11 @@ class MetricSavepoint(IconSavepoint):
     def vwind_impl_wgt(self):
         return self._get_field("vwind_impl_wgt", dims.CellDim)
 
+    def wgtfacq_c(self):
+        return self._get_field("wgtfacq_c", dims.CellDim, dims.KDim)
+
     def wgtfacq_c_dsl(self):
-        ar = self._get_field("wgtfacq_c", dims.CellDim, dims.KDim).ndarray
+        ar = self.wgtfacq_c().ndarray
         k = ar.shape[1]
         wgtfac_c = self.wgtfac_c()
         cell_range = wgtfac_c.domain[dims.CellDim].unit_range
@@ -820,8 +823,11 @@ class MetricSavepoint(IconSavepoint):
     def wgtfac_e(self):
         return self._get_field("wgtfac_e", dims.EdgeDim, dims.KDim)
 
+    def wgtfacq_e(self):
+        return self._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim)
+
     def wgtfacq_e_dsl(self):
-        ar = self._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim).ndarray
+        ar = self.wgtfacq_e().ndarray
         k = ar.shape[1]
         wgtfac_e = self.wgtfac_e()
         edge_range = wgtfac_e.domain[dims.EdgeDim].unit_range
