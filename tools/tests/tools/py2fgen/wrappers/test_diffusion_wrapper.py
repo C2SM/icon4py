@@ -73,10 +73,20 @@ def test_diffusion_wrapper_granule_inputs(
 
     # The wrapper expects [cellidx, c2e2c_ids] and then extracts `zd_cellidx[0,:]` because it only needs the cellidxs
     # (this is because slicing causes issue in the bindings, but not for serialization)
-    zd_cellidx = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_cellidx", metrics_savepoint.savepoint))[np.newaxis,:])
-    zd_vertidx = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_vertidx", metrics_savepoint.savepoint)))
-    zd_intcoef = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_intcoef", metrics_savepoint.savepoint)))
-    zd_diffcoef = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_diffcoef", metrics_savepoint.savepoint)))
+    zd_cellidx = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_cellidx", metrics_savepoint.savepoint))[
+            np.newaxis, :
+        ]
+    )
+    zd_vertidx = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_vertidx", metrics_savepoint.savepoint))
+    )
+    zd_intcoef = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_intcoef", metrics_savepoint.savepoint))
+    )
+    zd_diffcoef = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_diffcoef", metrics_savepoint.savepoint))
+    )
 
     # --- Extract Interpolation State Parameters ---
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
@@ -292,10 +302,20 @@ def test_diffusion_wrapper_single_step(
 
     # The wrapper expects [cellidx, c2e2c_ids] and then extracts `zd_cellidx[0,:]` because it only needs the cellidxs
     # (this is because slicing causes issue in the bindings, but not for serialization)
-    zd_cellidx = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_cellidx", metrics_savepoint.savepoint))[np.newaxis,:])
-    zd_vertidx = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_vertidx", metrics_savepoint.savepoint)))
-    zd_intcoef = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_intcoef", metrics_savepoint.savepoint)))
-    zd_diffcoef = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_diffcoef", metrics_savepoint.savepoint)))
+    zd_cellidx = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_cellidx", metrics_savepoint.savepoint))[
+            np.newaxis, :
+        ]
+    )
+    zd_vertidx = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_vertidx", metrics_savepoint.savepoint))
+    )
+    zd_intcoef = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_intcoef", metrics_savepoint.savepoint))
+    )
+    zd_diffcoef = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_diffcoef", metrics_savepoint.savepoint))
+    )
 
     # Interpolation state parameters
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
