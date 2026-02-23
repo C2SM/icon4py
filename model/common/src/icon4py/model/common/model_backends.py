@@ -9,7 +9,7 @@ from typing import Any, Final, TypeAlias, TypeGuard
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+from gt4py.next import backend as gtx_backend, custom_layout_allocators as gtx_allocators
 from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
 

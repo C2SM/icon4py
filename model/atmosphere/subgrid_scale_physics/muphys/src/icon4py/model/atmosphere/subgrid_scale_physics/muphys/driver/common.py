@@ -34,7 +34,7 @@ def _calc_dz(z: np.ndarray) -> np.ndarray:
 
 def _as_field_from_nc(
     dataset: netCDF4.Dataset,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
     varname: str,
     optional: bool = False,
     dtype: np.dtype | None = None,
@@ -96,7 +96,7 @@ class GraupelInput:
     def load(
         cls,
         filename: pathlib.Path | str,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
         dtype=np.float64,
     ) -> None:
         with netCDF4.Dataset(filename, mode="r") as ncfile:
@@ -146,7 +146,7 @@ class GraupelOutput:
     @classmethod
     def allocate(
         cls,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
         domain: gtx.Domain,
         references: dict[str, gtx.Field] | None = None,
     ):
@@ -169,7 +169,7 @@ class GraupelOutput:
         )
 
     @classmethod
-    def load(cls, filename: pathlib.Path | str, allocator: gtx_typing.FieldBufferAllocationUtil):
+    def load(cls, filename: pathlib.Path | str, allocator: gtx_typing.Allocator):
         with netCDF4.Dataset(filename, mode="r") as ncfile:
             field_from_nc = functools.partial(_as_field_from_nc, ncfile, allocator)
             return cls(
