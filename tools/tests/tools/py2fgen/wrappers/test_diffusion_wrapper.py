@@ -70,9 +70,13 @@ def test_diffusion_wrapper_granule_inputs(
     # --- Extract Metric State Parameters ---
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
-    zd_vertoffset = test_utils.array_to_array_info(metrics_savepoint.zd_vertoffset().ndarray)
-    zd_intcoef = test_utils.array_to_array_info(metrics_savepoint.zd_intcoef().ndarray)
+
+    # The wrapper expects [cellidx, c2e2c_ids] and then extracts `zd_cellidx[0,:]` because it only needs the cellidxs
+    # (this is because slicing causes issue in the bindings, but not for serialization)
+    zd_cellidx = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_cellidx", metrics_savepoint.savepoint))[np.newaxis,:])
+    zd_vertidx = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_vertidx", metrics_savepoint.savepoint)))
+    zd_intcoef = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_intcoef", metrics_savepoint.savepoint)))
+    zd_diffcoef = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_diffcoef", metrics_savepoint.savepoint)))
 
     # --- Extract Interpolation State Parameters ---
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
@@ -146,9 +150,10 @@ def test_diffusion_wrapper_granule_inputs(
             nudgecoeff_e=nudgecoeff_e,
             rbf_coeff_1=rbf_coeff_1,
             rbf_coeff_2=rbf_coeff_2,
-            zd_diffcoef=zd_diffcoef,
-            zd_vertoffset=zd_vertoffset,
+            zd_cellidx=zd_cellidx,
+            zd_vertidx=zd_vertidx,
             zd_intcoef=zd_intcoef,
+            zd_diffcoef=zd_diffcoef,
             ndyn_substeps=ndyn_substeps,
             diffusion_type=diffusion_type,
             hdiff_w=hdiff_w,
@@ -285,9 +290,12 @@ def test_diffusion_wrapper_single_step(
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
 
-    zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
-    zd_vertoffset = test_utils.array_to_array_info(metrics_savepoint.zd_vertoffset().ndarray)
-    zd_intcoef = test_utils.array_to_array_info(metrics_savepoint.zd_intcoef().ndarray)
+    # The wrapper expects [cellidx, c2e2c_ids] and then extracts `zd_cellidx[0,:]` because it only needs the cellidxs
+    # (this is because slicing causes issue in the bindings, but not for serialization)
+    zd_cellidx = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_cellidx", metrics_savepoint.savepoint))[np.newaxis,:])
+    zd_vertidx = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_vertidx", metrics_savepoint.savepoint)))
+    zd_intcoef = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_intcoef", metrics_savepoint.savepoint)))
+    zd_diffcoef = test_utils.array_to_array_info(np.squeeze(metrics_savepoint.serializer.read("zd_diffcoef", metrics_savepoint.savepoint)))
 
     # Interpolation state parameters
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
@@ -329,9 +337,10 @@ def test_diffusion_wrapper_single_step(
         nudgecoeff_e=nudgecoeff_e,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        zd_diffcoef=zd_diffcoef,
-        zd_vertoffset=zd_vertoffset,
+        zd_cellidx=zd_cellidx,
+        zd_vertidx=zd_vertidx,
         zd_intcoef=zd_intcoef,
+        zd_diffcoef=zd_diffcoef,
         ndyn_substeps=ndyn_substeps,
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
