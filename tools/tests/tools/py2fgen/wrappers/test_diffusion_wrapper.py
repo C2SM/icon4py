@@ -71,21 +71,8 @@ def test_diffusion_wrapper_granule_inputs(
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
     zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
-
-    # TODO(): special handling, determine if this is necessary for Fortran arrays too
-    zd_vertoffset = np.squeeze(
-        metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
-    )
-    zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
-        zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
-    )
-    zd_vertoffset = test_utils.array_to_array_info(zd_vertoffset)
-
-    zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
-    zd_intcoef = metrics_savepoint._reduce_to_dim_size(
-        zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
-    )
-    zd_intcoef = test_utils.array_to_array_info(zd_intcoef)
+    zd_vertoffset = test_utils.array_to_array_info(metrics_savepoint.zd_vertoffset().ndarray)
+    zd_intcoef = test_utils.array_to_array_info(metrics_savepoint.zd_intcoef().ndarray)
 
     # --- Extract Interpolation State Parameters ---
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
@@ -297,22 +284,10 @@ def test_diffusion_wrapper_single_step(
     # Metric state parameters
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
+
     zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
-
-    # TODO(): special handling, determine if this is necessary for Fortran arrays too
-    zd_vertoffset = np.squeeze(
-        metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
-    )
-    zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
-        zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
-    )
-    zd_vertoffset = test_utils.array_to_array_info(zd_vertoffset)
-
-    zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
-    zd_intcoef = metrics_savepoint._reduce_to_dim_size(
-        zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
-    )
-    zd_intcoef = test_utils.array_to_array_info(zd_intcoef)
+    zd_vertoffset = test_utils.array_to_array_info(metrics_savepoint.zd_vertoffset().ndarray)
+    zd_intcoef = test_utils.array_to_array_info(metrics_savepoint.zd_intcoef().ndarray)
 
     # Interpolation state parameters
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
