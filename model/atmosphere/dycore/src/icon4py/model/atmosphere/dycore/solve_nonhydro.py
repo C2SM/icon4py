@@ -1401,9 +1401,10 @@ class SolveNonhydro:
                 r_nsubsteps=r_nsubsteps,
             )
             log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
-            self._exchange.exchange_and_wait(
-                dims.CellDim,
-                prognostic_states.next.rho,
-                prognostic_states.next.exner,
-                prognostic_states.next.w,
-            )
+
+        self._exchange.exchange_and_wait(
+            dims.CellDim,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.w,
+        )
