@@ -58,7 +58,6 @@ def test_graupel(
     lowest_layer_thickness: ta.wpfloat,
     backend: gtx_typing.Backend,
 ):
-    pytest.xfail("Tolerances have increased with new ser_data, need to check with @ongchia")
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -105,13 +104,7 @@ def test_graupel(
 
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
         liquid_autoconversion_option=mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG,
-        ice_stickeff_min=0.01,
-        power_law_coeff_for_ice_mean_fall_speed=1.25,
-        exponent_for_density_factor_in_ice_sedimentation=0.3,
-        power_law_coeff_for_snow_fall_speed=20.0,
-        rain_mu=0.0,
-        rain_n0=1.0,
-        snow2graupel_riming_coeff=0.5,
+        ice_stickeff_min=0.075,
     )
 
     graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(

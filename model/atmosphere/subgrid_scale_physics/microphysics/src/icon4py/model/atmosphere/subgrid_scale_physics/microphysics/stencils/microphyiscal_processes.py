@@ -31,7 +31,7 @@ _snow_intercept_parameterization = mphys_options.SnowInterceptParametererization
 
 @gtx.field_operator
 def compute_cooper_inp_concentration(temperature: ta.wpfloat) -> ta.wpfloat:
-    cnin = 5.0 * exp(0.304 * (_phy_const.tmelt - temperature))
+    cnin = wpfloat("5.0") * exp(wpfloat("0.304") * (_phy_const.tmelt - temperature))
     cnin = minimum(cnin, _microphy_const.NIMAX_THOM)
     return cnin
 
