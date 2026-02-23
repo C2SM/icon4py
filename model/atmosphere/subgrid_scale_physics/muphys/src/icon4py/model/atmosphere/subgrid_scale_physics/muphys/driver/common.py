@@ -248,3 +248,8 @@ class GraupelOutput:
                 write_surface_field("prg_gsp", self.pg)
             if self.pre is not None:
                 write_surface_field("pre_gsp", self.pre)
+
+
+@dataclasses.dataclass
+class GraupelReference(GraupelOutput):
+    _surface_fields: ClassVar[list[str]] = []

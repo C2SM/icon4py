@@ -99,7 +99,7 @@ def test_graupel_only(
         pre=out.pre,
     )
 
-    ref = common.GraupelOutput.load(
+    ref = common.GraupelReference.load(
         filename=experiment.reference_file, allocator=model_backends.get_allocator(backend_like)
     )
 
