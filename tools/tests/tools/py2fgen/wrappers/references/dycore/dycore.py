@@ -1217,8 +1217,6 @@ def solve_nh_init_wrapper(
     geofac_grg_y_size_1,
     nudgecoeff_e,
     nudgecoeff_e_size_0,
-    bdy_halo_c,
-    bdy_halo_c_size_0,
     mask_prog_halo_c,
     mask_prog_halo_c_size_0,
     rayleigh_w,
@@ -1499,8 +1497,6 @@ def solve_nh_init_wrapper(
             )
 
             nudgecoeff_e = (nudgecoeff_e, (nudgecoeff_e_size_0,), on_gpu, False)
-
-            bdy_halo_c = (bdy_halo_c, (bdy_halo_c_size_0,), on_gpu, False)
 
             mask_prog_halo_c = (mask_prog_halo_c, (mask_prog_halo_c_size_0,), on_gpu, False)
 
@@ -1801,7 +1797,6 @@ def solve_nh_init_wrapper(
                 geofac_grg_x=geofac_grg_x,
                 geofac_grg_y=geofac_grg_y,
                 nudgecoeff_e=nudgecoeff_e,
-                bdy_halo_c=bdy_halo_c,
                 mask_prog_halo_c=mask_prog_halo_c,
                 rayleigh_w=rayleigh_w,
                 exner_exfac=exner_exfac,
@@ -2129,22 +2124,6 @@ def solve_nh_init_wrapper(
                     msg = (
                         "nudgecoeff_e after computation: %s" % str(nudgecoeff_e_arr)
                         if nudgecoeff_e is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    bdy_halo_c_arr = (
-                        _conversion.as_array(ffi, bdy_halo_c, _definitions.BOOL)
-                        if bdy_halo_c is not None
-                        else None
-                    )
-                    msg = "shape of bdy_halo_c after computation = %s" % str(
-                        bdy_halo_c_arr.shape if bdy_halo_c is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "bdy_halo_c after computation: %s" % str(bdy_halo_c_arr)
-                        if bdy_halo_c is not None
                         else "None"
                     )
                     logger.debug(msg)

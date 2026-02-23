@@ -51,7 +51,6 @@ FLAT_IDX_MAX: Final[str] = "flat_idx_max"
 NFLAT_GRADP: Final[str] = "nflat_gradp"
 PG_EDGEDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
 MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
-BDY_HALO_C: Final[str] = "bdy_halo_c"
 HORIZONTAL_MASK_FOR_3D_DIVDAMP: Final[str] = "horizontal_mask_for_3d_divdamp"
 ZDIFF_GRADP: Final[str] = "zdiff_gradp"
 VERTOFFSET_GRADP: Final[str] = "vertoffset_gradp"
@@ -316,14 +315,6 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.CellDim,),
         icon_var_name="mask_prog_halo_c",
-        dtype=bool,
-    ),
-    BDY_HALO_C: dict(
-        standard_name=BDY_HALO_C,
-        long_name="bdy_halo_c",
-        units="",
-        dims=(dims.CellDim,),
-        icon_var_name="bdy_halo_c",
         dtype=bool,
     ),
     HORIZONTAL_MASK_FOR_3D_DIVDAMP: dict(

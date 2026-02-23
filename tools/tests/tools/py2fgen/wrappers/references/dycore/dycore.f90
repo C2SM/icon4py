@@ -402,8 +402,6 @@ module dycore
                                      geofac_grg_y_size_1, &
                                      nudgecoeff_e, &
                                      nudgecoeff_e_size_0, &
-                                     bdy_halo_c, &
-                                     bdy_halo_c_size_0, &
                                      mask_prog_halo_c, &
                                      mask_prog_halo_c_size_0, &
                                      rayleigh_w, &
@@ -617,10 +615,6 @@ module dycore
          type(c_ptr), value, target :: nudgecoeff_e
 
          integer(c_int), value :: nudgecoeff_e_size_0
-
-         type(c_ptr), value, target :: bdy_halo_c
-
-         integer(c_int), value :: bdy_halo_c_size_0
 
          type(c_ptr), value, target :: mask_prog_halo_c
 
@@ -1475,7 +1469,6 @@ contains
                             geofac_grg_x, &
                             geofac_grg_y, &
                             nudgecoeff_e, &
-                            bdy_halo_c, &
                             mask_prog_halo_c, &
                             rayleigh_w, &
                             exner_exfac, &
@@ -1567,8 +1560,6 @@ contains
       real(c_double), dimension(:, :), target :: geofac_grg_y
 
       real(c_double), dimension(:), target :: nudgecoeff_e
-
-      logical(c_int), dimension(:), target :: bdy_halo_c
 
       logical(c_int), dimension(:), target :: mask_prog_halo_c
 
@@ -1748,8 +1739,6 @@ contains
 
       integer(c_int) :: nudgecoeff_e_size_0
 
-      integer(c_int) :: bdy_halo_c_size_0
-
       integer(c_int) :: mask_prog_halo_c_size_0
 
       integer(c_int) :: rayleigh_w_size_0
@@ -1887,7 +1876,6 @@ contains
       !$acc host_data use_device(geofac_grg_x)
       !$acc host_data use_device(geofac_grg_y)
       !$acc host_data use_device(nudgecoeff_e)
-      !$acc host_data use_device(bdy_halo_c)
       !$acc host_data use_device(mask_prog_halo_c)
       !$acc host_data use_device(rayleigh_w)
       !$acc host_data use_device(exner_exfac)
@@ -1973,8 +1961,6 @@ contains
       geofac_grg_y_size_1 = SIZE(geofac_grg_y, 2)
 
       nudgecoeff_e_size_0 = SIZE(nudgecoeff_e, 1)
-
-      bdy_halo_c_size_0 = SIZE(bdy_halo_c, 1)
 
       mask_prog_halo_c_size_0 = SIZE(mask_prog_halo_c, 1)
 
@@ -2114,8 +2100,6 @@ contains
                                  geofac_grg_y_size_1=geofac_grg_y_size_1, &
                                  nudgecoeff_e=c_loc(nudgecoeff_e), &
                                  nudgecoeff_e_size_0=nudgecoeff_e_size_0, &
-                                 bdy_halo_c=c_loc(bdy_halo_c), &
-                                 bdy_halo_c_size_0=bdy_halo_c_size_0, &
                                  mask_prog_halo_c=c_loc(mask_prog_halo_c), &
                                  mask_prog_halo_c_size_0=mask_prog_halo_c_size_0, &
                                  rayleigh_w=c_loc(rayleigh_w), &
