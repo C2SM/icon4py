@@ -68,7 +68,7 @@ def make_custom_dace_backend(
     optimization_args: dict[str, Any] | None = None,
     use_metrics: bool = True,
     use_zero_origin: bool = False,
-    use_max_domain_range_on_unstructured_shift: bool | None = None,
+    use_max_domain_range_on_unstructured_shift: bool | None = True,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
@@ -86,6 +86,9 @@ def make_custom_dace_backend(
         use_max_domain_range_on_unstructured_shift: When True, compute `as_fieldop`
             expressions everywhere. Otherwise, when all connectivities are given
             at compile time, infer the domain of all `as_fieldop` expressions statically.
+
+    TODO(edopao): We should use the default `use_max_domain_range_on_unstructured_shift=None`
+        once the shrinked domain produces the correct result.
 
     Returns:
         A dace backend with custom configuration for the target device.
