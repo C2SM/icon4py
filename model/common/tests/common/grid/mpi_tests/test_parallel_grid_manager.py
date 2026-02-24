@@ -115,6 +115,7 @@ def check_local_global_field(
     dim: gtx.Dimension,
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
+    check_halos: bool,
 ) -> None:
     _log.info(
         f" rank= {processor_props.rank}/{processor_props.comm_size}----exchanging field of main dim {dim}"
@@ -126,21 +127,18 @@ def check_local_global_field(
         ]
     )
 
-    # Compare full local field, including halos, against global reference field.
-    # TODO(msimberg): Is halo always expected to be populated?
-    global_indices_local_field = decomposition_info.global_index(
-        dim,
-        decomp_defs.DecompositionInfo.EntryType.OWNED,  # ALL if checking halos
-    )
-    local_indices_local_field = decomposition_info.local_index(
-        dim,
-        decomp_defs.DecompositionInfo.EntryType.OWNED,  # ALL if checking halos
-    )
-    local_field_from_global_field = global_reference_field[global_indices_local_field]
-    local_field_from_local_field = local_field[local_indices_local_field]
-    np.testing.assert_allclose(
-        local_field_from_global_field, local_field_from_local_field, atol=1e-9, verbose=True
-    )
+    # Compare halo against global reference field
+    if check_halos:
+        np.testing.assert_allclose(
+            global_reference_field[
+                decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
+            ],
+            local_field[
+                decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
+            ],
+            atol=1e-9,
+            verbose=True,
+        )
 
     # Compare owned local field, excluding halos, against global reference
     # field, by gathering owned entries to the first rank. This ensures that in
@@ -259,12 +257,14 @@ def test_geometry_fields_compare_single_multi_rank(
         metadata=geometry_attributes.attrs,
     )
 
+    check_halos = True
     check_local_global_field(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         processor_props=processor_props,
         dim=dim,
         global_reference_field=single_rank_geometry.get(attrs_name).asnumpy(),
         local_field=multi_rank_geometry.get(attrs_name).asnumpy(),
+        check_halos=check_halos,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -353,12 +353,14 @@ def test_interpolation_fields_compare_single_multi_rank(
     field_ref = single_rank_interpolation.get(attrs_name).asnumpy()
     field = multi_rank_interpolation.get(attrs_name).asnumpy()
 
+    check_halos = True
     check_local_global_field(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         processor_props=processor_props,
         dim=dim,
         global_reference_field=field_ref,
         local_field=field,
+        check_halos=check_halos,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -523,12 +525,14 @@ def test_metrics_fields_compare_single_multi_rank(
     field_ref = single_rank_metrics.get(attrs_name).asnumpy()
     field = multi_rank_metrics.get(attrs_name).asnumpy()
 
+    check_halos = True
     check_local_global_field(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         processor_props=processor_props,
         dim=dim,
         global_reference_field=field_ref,
         local_field=field,
+        check_halos=check_halos,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")

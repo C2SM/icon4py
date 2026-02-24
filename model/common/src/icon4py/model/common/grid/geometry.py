@@ -148,18 +148,18 @@ class GridGeometry(factory.FieldSource):
                 attrs.CELL_AREA: extra_fields[gridfile.GeometryName.CELL_AREA],
                 attrs.DUAL_AREA: extra_fields[gridfile.GeometryName.DUAL_AREA],
                 attrs.TANGENT_ORIENTATION: extra_fields[gridfile.GeometryName.TANGENT_ORIENTATION],
-                "edge_owner_mask": gtx.as_field(
-                    (dims.EdgeDim,),
-                    decomposition_info.owner_mask(dims.EdgeDim),
-                    dtype=bool,
-                    allocator=self._backend,
-                ),
                 attrs.CELL_NORMAL_ORIENTATION: extra_fields[
                     gridfile.GeometryName.CELL_NORMAL_ORIENTATION
                 ],
                 attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
                     gridfile.GeometryName.EDGE_ORIENTATION_ON_VERTEX
                 ],
+                "edge_owner_mask": gtx.as_field(
+                    (dims.EdgeDim,),
+                    decomposition_info.owner_mask(dims.EdgeDim),
+                    dtype=bool,
+                    allocator=self._backend,
+                ),
                 "vertex_owner_mask": gtx.as_field(
                     (dims.VertexDim,),
                     decomposition_info.owner_mask(dims.VertexDim),
