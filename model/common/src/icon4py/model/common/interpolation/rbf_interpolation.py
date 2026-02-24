@@ -329,6 +329,7 @@ def _compute_rbf_interpolation_coeffs(
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, ...]:
     rbf_offset_shape_full = rbf_offset.shape
+    assert 0 <= horizontal_start <= horizontal_end <= rbf_offset_shape_full[0]
     rbf_offset = rbf_offset[horizontal_start:horizontal_end]
     num_elements = rbf_offset.shape[0]
 
