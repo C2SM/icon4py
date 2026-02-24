@@ -307,9 +307,6 @@ class NonHydrostaticConfig:
         if self.iadv_rhotheta != dycore_states.RhoThetaAdvectionType.MIURA:
             raise NotImplementedError("iadv_rhotheta can only be 2 (Miura scheme)")
 
-        if self.divdamp_order != dycore_states.DivergenceDampingOrder.COMBINED:
-            raise NotImplementedError("divdamp_order can only be 24")
-
         if self.divdamp_type == dycore_states.DivergenceDampingType.TWO_DIMENSIONAL:
             raise NotImplementedError(
                 "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
@@ -1303,8 +1300,11 @@ class SolveNonhydro:
 
         log.debug("corrector: start stencil apply_divergence_damping_and_update_vn")
         apply_2nd_order_divergence_damping = (
-            self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
-            and second_order_divdamp_scaling_coeff > 1.0e-6
+            self._config.divdamp_order == dycore_states.DivergenceDampingOrder.SECOND_ORDER
+            or (
+                self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
+                and second_order_divdamp_scaling_coeff > 1.0e-6
+            )
         )
         apply_4th_order_divergence_damping = (
             self._config.divdamp_order == dycore_states.DivergenceDampingOrder.FOURTH_ORDER
