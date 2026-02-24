@@ -38,6 +38,7 @@ test_model_stencils_aarch64:
   rules:
     - if: $BACKEND == 'dace_gpu'
       variables:
+        NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '00:40:00'
     - when: on_success
       variables:
