@@ -289,7 +289,6 @@ def test_exchange_on_dummy_data(
     processor_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
     grid_savepoint: serialbox.IconGridSavepoint,
-    metrics_savepoint: serialbox.MetricSavepoint,
     dimension: gtx.Dimension,
 ) -> None:
     exchange = definitions.create_exchange(processor_props, decomposition_info)
