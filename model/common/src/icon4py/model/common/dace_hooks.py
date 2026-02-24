@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from collections.abc import Sequence
+import copy
 
 import dace
 from dace import nodes as dace_nodes, sdfg as dace_sdfg, symbolic as dace_sym
@@ -292,9 +293,48 @@ def _graupel_run_self_copy_removal_inside_if_stmt(
             isinstance(compute_dst_node, dace_nodes.AccessNode)
             and scan_compute_st.in_degree(compute_dst_node) == 1
         )
-        if not compute_dst_node.desc(scan_sdfg).transient:
+        if not compute_dst_node.desc(scan_sdfg).transient and src_node.data != "t_":
             continue
         temp_data_name = compute_dst_node.data
+
+        if src_node.data == "t_":
+            else_br_an_output_4_0 = [node for node in else_br.nodes()[0].nodes() if isinstance(node, dace_nodes.AccessNode) and node.data == "__output_4_0"][0]
+            else_br_an_t = [node for node in else_br.nodes()[0].nodes() if isinstance(node, dace_nodes.AccessNode) and node.data == "t_"][0]
+            else_br.nodes()[0].remove_node(else_br_an_output_4_0)
+            else_br.nodes()[0].remove_node(else_br_an_t)
+            true_branch_post_state = [state for state in if_region.nodes()[0].nodes() if "true_branch_post_state" in state.label][0]
+            tbps_an_output_4_0 = [node for node in true_branch_post_state.nodes() if isinstance(node, dace_nodes.AccessNode) and node.data == "__output_4_0"][0]
+            tbps_an_output_4_0_in_edge = true_branch_post_state.in_edges(tbps_an_output_4_0)[0]
+            an_output_4_0_out_edge = [edges for edges in scan_compute_st.edges_by_connector(if_stmt_node, "__output_4_0")][0]
+            new_output_4_0_data = an_output_4_0_out_edge.dst.data
+            tbps_an_output_4_0.data = new_output_4_0_data
+            tbps_an_output_4_0_in_edge.data.data = new_output_4_0_data
+            if_stmt_node.remove_out_connector("__output_4_0")
+            if_stmt_node.add_out_connector(new_output_4_0_data)
+            an_output_4_0_out_edge.src_conn = new_output_4_0_data
+            if_stmt_node.sdfg.arrays[new_output_4_0_data] = copy.copy(scan_node.sdfg.arrays[new_output_4_0_data])
+            an_gtir_tmp_1680 = [node for node in sdfg.nodes()[0].nodes() if isinstance(node, dace_nodes.AccessNode) and node.data == "gtir_tmp_1680"][0]
+            an_gtir_tmp_1680.data = "t_out"
+            in_edge_gtir_tmp_1680 = sdfg.nodes()[0].in_edges(an_gtir_tmp_1680)[0]
+            in_edge_gtir_tmp_1680.data.data = "t_out"
+            map_682 = in_edge_gtir_tmp_1680.src
+            map_682.remove_out_connector(in_edge_gtir_tmp_1680.src_conn)
+            map_682.add_out_connector("OUT_t_out")
+            in_edge_gtir_tmp_1680.src_conn = "OUT_t_out"
+            map_682_in_edge = [edge for edge in sdfg.nodes()[0].in_edges(map_682) if edge.data.data == "gtir_tmp_1680"][0]
+            map_682_in_edge.data.data = "t_out"
+            map_682.remove_in_connector("IN_gtir_tmp_1680")
+            map_682.add_in_connector("IN_t_out")
+            map_682_in_edge.dst_conn = "IN_t_out"
+            sdfg.nodes()[0].out_edges(an_gtir_tmp_1680)[0].data.data = "t_out"
+            sdfg.nodes()[0].sdfg.arrays.pop("gtir_tmp_1680")
+            map_688 = sdfg.nodes()[0].out_edges(an_gtir_tmp_1680)[0].dst
+            gtir_tmp_1680_map_edge = [edge for edge in sdfg.nodes()[0].out_edges(map_688) if edge.data.data == "gtir_tmp_1680"][0]
+            gtir_tmp_1680_map_edge.data.data = "t_out"
+            if_stmt_node.sdfg.arrays.pop("__output_4_0")
+            if_region.sdfg.add_symbol("__t_out_K_stride", stype=if_stmt_node.sdfg.parent.sdfg.symbols["__t_out_K_stride"])
+            if_stmt_node.symbol_mapping["__t_out_K_stride"] = "__t_out_K_stride"
+            continue
 
         # retrieve the data access inside the scan update state
         update_src_nodes = [
@@ -375,6 +415,22 @@ def graupel_run_self_copy_removal_inside_scan(sdfg: dace.SDFG) -> None:
     else:
         assert scan_loop.nodes()[0].label.startswith("scan_update")
         scan_update_st, scan_compute_st = scan_loop.nodes()
+
+    scan_access_nodes = [node for node in scan_compute_st.nodes() if isinstance(node, dace_nodes.AccessNode) and "1680" in node.data]
+    for node in scan_access_nodes:
+        node.data = "t_"
+        out_edge = scan_compute_st.out_edges(node)[0]
+        out_edge.data.data = "t_"
+    sdfg_maps = [map for map in st.nodes() if isinstance(map, dace_nodes.MapEntry)]
+    scan_map = [map for map in sdfg_maps if map.label == "map_688_fieldop"]
+    edges_with_1680 = [edge for edge in st.out_edges(scan_map[0]) if "1680" in edge.dst_conn]
+    st.remove_edge(edges_with_1680[0])
+    st.remove_edge(edges_with_1680[1])
+    scan_nsdfg_node.remove_in_connector("gtir_tmp_1680")
+    scan_nsdfg_node.remove_in_connector("gtir_tmp_1680_0")
+    scan_sdfg.arrays.pop("gtir_tmp_1680")
+    scan_sdfg.arrays.pop("gtir_tmp_1680_0")
+
 
     if_stmt_nodes = [
         node
