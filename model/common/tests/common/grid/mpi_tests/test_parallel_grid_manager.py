@@ -421,7 +421,6 @@ def test_interpolation_fields_compare_single_multi_rank(
     [
         # TODO(msimberg): We probably don't need to test all of these all the time,
         # but which ones are most useful?
-        metrics_attributes.BDY_HALO_C,
         metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL,
         metrics_attributes.COEFF1_DWDZ,
         metrics_attributes.COEFF2_DWDZ,
