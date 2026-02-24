@@ -577,7 +577,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
-                "horizontal_end": self.grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
+                "horizontal_end": self.grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.global_properties.domain_length
                 if self._grid.global_properties.domain_length
                 else -1.0,
@@ -617,7 +617,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
-                "horizontal_end": self.grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
+                "horizontal_end": self.grid.end_index(vertex_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.global_properties.domain_length
                 if self._grid.global_properties.domain_length
                 else -1.0,
