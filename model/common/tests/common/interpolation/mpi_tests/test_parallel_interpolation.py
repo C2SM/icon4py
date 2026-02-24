@@ -217,7 +217,7 @@ def test_distributed_interpolation_rbf(
     factory = interpolation_factory_from_savepoint
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
     field = factory.get(attrs_name).asnumpy()
-    test_utils.dallclose(field, field_ref, atol=RBF_TOLERANCES[dim][experiment.name])
+    assert test_utils.dallclose(field, field_ref, atol=RBF_TOLERANCES[dim][experiment.name])
 
 
 @pytest.mark.datatest
