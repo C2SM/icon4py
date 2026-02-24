@@ -199,8 +199,8 @@ class SemiLagrangianTracerFlux(ABC):
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-        p_distv_bary_1: fa.EdgeKField[ta.vpfloat_t],
-        p_distv_bary_2: fa.EdgeKField[ta.vpfloat_t],
+        p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
+        p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None: ...
@@ -282,8 +282,8 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-        p_distv_bary_1: fa.EdgeKField[ta.vpfloat_t],
-        p_distv_bary_2: fa.EdgeKField[ta.vpfloat_t],
+        p_distv_bary_1: fa.EdgeKField[ta.anyfloat],
+        p_distv_bary_2: fa.EdgeKField[ta.anyfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
