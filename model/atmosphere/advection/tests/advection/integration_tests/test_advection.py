@@ -10,14 +10,14 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.atmosphere.advection import advection, advection_states
-from icon4py.model.atmosphere.advection.advection_lsq_coeffs import lsq_compute_coeffs
+from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import (
     base as base_grid,
     geometry_attributes as geometry_attrs,
     horizontal as h_grid,
 )
+from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     definitions,
@@ -142,7 +142,7 @@ def test_advection_run_single_step(
     )
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
-    least_squares_coeffs = lsq_compute_coeffs(
+    least_squares_coeffs = compute_lsq_coeffs(
         cell_center_x=geometry.get(geometry_attrs.CELL_CENTER_X).asnumpy(),
         cell_center_y=geometry.get(geometry_attrs.CELL_CENTER_Y).asnumpy(),
         cell_lat=geometry.get(geometry_attrs.CELL_LAT).asnumpy(),
@@ -216,7 +216,7 @@ def test_advection_run_single_step(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-def test_lsq_compute_coeffs(
+def test_compute_lsq_coeffs(
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
@@ -251,7 +251,7 @@ def test_lsq_compute_coeffs(
     coordinates = gm.coordinates
     cell_lat = coordinates[dims.CellDim]["lat"].asnumpy()
     cell_lon = coordinates[dims.CellDim]["lon"].asnumpy()
-    lsq_pseudoinv = lsq_compute_coeffs(
+    lsq_pseudoinv = compute_lsq_coeffs(
         cell_center_x,
         cell_center_y,
         cell_lat,

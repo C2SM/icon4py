@@ -307,9 +307,6 @@ class NonHydrostaticConfig:
         if self.iadv_rhotheta != dycore_states.RhoThetaAdvectionType.MIURA:
             raise NotImplementedError("iadv_rhotheta can only be 2 (Miura scheme)")
 
-        if self.divdamp_order != dycore_states.DivergenceDampingOrder.COMBINED:
-            raise NotImplementedError("divdamp_order can only be 24")
-
         if self.divdamp_type == dycore_states.DivergenceDampingType.TWO_DIMENSIONAL:
             raise NotImplementedError(
                 "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
@@ -381,12 +378,12 @@ class SolveNonhydro:
             backend=backend,
             program=compute_theta_and_exner,
             constant_args={
-                "bdy_halo_c": self._metric_state_nonhydro.bdy_halo_c,
+                "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
                 "rd_o_cvd": constants.RD_O_CVD,
                 "rd_o_p0ref": constants.RD_O_P0REF,
             },
             horizontal_sizes={
-                "horizontal_start": self._start_cell_local,
+                "horizontal_start": self._start_cell_halo,
                 "horizontal_end": self._end_cell_end,
             },
             vertical_sizes={
@@ -1303,8 +1300,11 @@ class SolveNonhydro:
 
         log.debug("corrector: start stencil apply_divergence_damping_and_update_vn")
         apply_2nd_order_divergence_damping = (
-            self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
-            and second_order_divdamp_scaling_coeff > 1.0e-6
+            self._config.divdamp_order == dycore_states.DivergenceDampingOrder.SECOND_ORDER
+            or (
+                self._config.divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
+                and second_order_divdamp_scaling_coeff > 1.0e-6
+            )
         )
         apply_4th_order_divergence_damping = (
             self._config.divdamp_order == dycore_states.DivergenceDampingOrder.FOURTH_ORDER
