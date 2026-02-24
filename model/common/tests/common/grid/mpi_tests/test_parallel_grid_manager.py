@@ -183,6 +183,8 @@ def check_local_global_field(
 @pytest.mark.parametrize(
     "attrs_name",
     [
+        # TODO(msimberg): We probably don't need to test all of these all the time,
+        # but which ones are most useful?
         geometry_attributes.CELL_AREA,
         geometry_attributes.CELL_CENTER_X,
         geometry_attributes.CELL_CENTER_Y,
@@ -304,6 +306,8 @@ def test_geometry_fields_compare_single_multi_rank(
 @pytest.mark.parametrize(
     "attrs_name",
     [
+        # TODO(msimberg): We probably don't need to test all of these all the time,
+        # but which ones are most useful?
         interpolation_attributes.CELL_AW_VERTS,
         interpolation_attributes.C_BLN_AVG,
         interpolation_attributes.C_LIN_E,
@@ -412,7 +416,63 @@ def test_interpolation_fields_compare_single_multi_rank(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("attrs_name", [metrics_attributes.DDXT_Z_HALF_E])
+@pytest.mark.parametrize(
+    "attrs_name",
+    [
+        # TODO(msimberg): We probably don't need to test all of these all the time,
+        # but which ones are most useful?
+        metrics_attributes.BDY_HALO_C,
+        metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL,
+        metrics_attributes.COEFF1_DWDZ,
+        metrics_attributes.COEFF2_DWDZ,
+        metrics_attributes.COEFF_GRADEKIN,
+        metrics_attributes.D2DEXDZ2_FAC1_MC,
+        metrics_attributes.D2DEXDZ2_FAC2_MC,
+        metrics_attributes.DDQZ_Z_FULL,
+        metrics_attributes.DDQZ_Z_FULL_E,
+        metrics_attributes.DDQZ_Z_HALF,
+        metrics_attributes.DDXN_Z_FULL,
+        metrics_attributes.DDXN_Z_HALF_E,
+        metrics_attributes.DDXT_Z_FULL,
+        metrics_attributes.DDXT_Z_HALF_E,
+        metrics_attributes.D_EXNER_DZ_REF_IC,
+        metrics_attributes.EXNER_EXFAC,
+        metrics_attributes.EXNER_REF_MC,
+        metrics_attributes.EXNER_W_EXPLICIT_WEIGHT_PARAMETER,
+        metrics_attributes.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,
+        metrics_attributes.FLAT_IDX_MAX,
+        metrics_attributes.HORIZONTAL_MASK_FOR_3D_DIVDAMP,
+        metrics_attributes.INV_DDQZ_Z_FULL,
+        metrics_attributes.MASK_HDIFF,
+        metrics_attributes.MASK_PROG_HALO_C,
+        metrics_attributes.MAXHGTD,
+        metrics_attributes.MAXHGTD_AVG,
+        metrics_attributes.MAXSLP,
+        metrics_attributes.MAXSLP_AVG,
+        metrics_attributes.MAX_NBHGT,
+        metrics_attributes.NFLAT_GRADP,
+        metrics_attributes.PG_EDGEDIST_DSL,
+        metrics_attributes.PG_EDGEIDX_DSL,
+        metrics_attributes.RAYLEIGH_W,
+        metrics_attributes.RHO_REF_MC,
+        metrics_attributes.RHO_REF_ME,
+        metrics_attributes.SCALING_FACTOR_FOR_3D_DIVDAMP,
+        metrics_attributes.THETA_REF_IC,
+        metrics_attributes.THETA_REF_MC,
+        metrics_attributes.THETA_REF_ME,
+        metrics_attributes.VERTOFFSET_GRADP,
+        metrics_attributes.WGTFACQ_C,
+        metrics_attributes.WGTFACQ_E,
+        metrics_attributes.WGTFAC_C,
+        metrics_attributes.WGTFAC_E,
+        metrics_attributes.ZDIFF_GRADP,
+        metrics_attributes.ZD_DIFFCOEF_DSL,
+        metrics_attributes.ZD_INTCOEF_DSL,
+        metrics_attributes.ZD_VERTOFFSET_DSL,
+        metrics_attributes.Z_MC,
+        metrics_attributes.Z_MC,
+    ],
+)
 def test_metrics_fields_compare_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
@@ -569,7 +629,7 @@ def test_metrics_fields_compare_single_multi_rank(
         ),
     )
 
-    dim = single_rank_geometry.get(attrs_name).domain.dims[0]
+    dim = single_rank_metrics.get(attrs_name).domain.dims[0]
     field_ref = single_rank_metrics.get(attrs_name).asnumpy()
     field = multi_rank_metrics.get(attrs_name).asnumpy()
 
