@@ -1,0 +1,14 @@
+export CC="$(which gcc)"
+export MPICH_CC="$(which gcc)"
+export CXX="$(which g++)"
+export MPICH_CXX="$(which g++)"
+export HUGETLB_ELFMAP="no"
+export HUGETLB_MORECORE="no"
+export PYTHONOPTIMIZE="2"
+export HCC_AMDGPU_TARGET="gfx942"
+export ROCM_HOME="/user-environment/env/default"
+export HIPCC=$(which hipcc)
+export ROCM_VERSION="7.1.0"
+export LD_LIBRARY_PATH=/user-environment/linux-zen3/rocprofiler-dev-7.1.0-i7wbbbgrx7jjp4o2xroyj5j263dkzplv/lib:$LD_LIBRARY_PATH
+# export LD_LIBRARY_PATH=rocprof-trace-decoder-manylinux-2.28-0.1.6-Linux:$LD_LIBRARY_PATH # TODO(iomaganaris): Add package to uenv properly
+export LD_PRELOAD=/user-environment/env/default/lib/libomp.so:$LD_PRELOAD

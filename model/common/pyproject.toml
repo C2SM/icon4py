@@ -42,6 +42,7 @@ version = "0.0.6"
 all = ["icon4py-common[distributed,io]"]
 cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
 cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
+rocm7_0 = ['amd-cupy>=13.0'] # TODO(havogt): add gt4py[rocm7_0] once available
 distributed = ["ghex>=0.5.0", "mpi4py>=3.1.5"]
 io = [
   # external dependencies
