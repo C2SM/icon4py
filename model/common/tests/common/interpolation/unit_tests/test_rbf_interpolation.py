@@ -173,8 +173,7 @@ def test_rbf_interpolation_coeffs_cell(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     horizontal_end = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL))
-    assert horizontal_start < grid.num_cells
-    assert horizontal_end <= grid.num_cells
+    assert horizontal_start < horizontal_end <= grid.num_cells
 
     geometry_type = (
         grid.global_properties.geometry_type
@@ -251,8 +250,7 @@ def test_rbf_interpolation_coeffs_vertex(
         h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     horizontal_end = grid.end_index(h_grid.domain(dims.VertexDim)(h_grid.Zone.LOCAL))
-    assert horizontal_start < grid.num_vertices
-    assert horizontal_end <= grid.num_vertices
+    assert horizontal_start < horizontal_end <= grid.num_vertices
 
     geometry_type = (
         grid.global_properties.geometry_type
@@ -329,8 +327,7 @@ def test_rbf_interpolation_coeffs_edge(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     horizontal_end = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LOCAL))
-    assert horizontal_start < grid.num_edges
-    assert horizontal_end <= grid.num_edges
+    assert horizontal_start < horizontal_end <= grid.num_edges
 
     geometry_type = (
         grid.global_properties.geometry_type
