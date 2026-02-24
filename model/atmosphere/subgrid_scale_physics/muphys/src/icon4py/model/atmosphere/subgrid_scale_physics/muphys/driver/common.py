@@ -221,6 +221,7 @@ class GraupelOutput:
         with netCDF4.Dataset(filename, mode="w") as ncfile:
             ncfile.createDimension("ncells", ncells)
             ncfile.createDimension("height", nlev)
+            ncfile.createDimension("surface", 1)
 
             write_height_field = functools.partial(
                 _field_to_nc, ncfile, ("height", "ncells"), dtype=np.float64
