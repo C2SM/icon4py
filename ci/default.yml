@@ -54,7 +54,7 @@ test_tools_datatests_aarch64:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success
       variables:
-        SLURM_TIMELIMIT: '00:05:00'
+        SLURM_TIMELIMIT: '00:10:00'
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
