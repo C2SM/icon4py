@@ -29,7 +29,7 @@ horizontal.py provides an interface to a Python port of constants wrapped in a c
 custom index range and makes sure that for each dimension only legal values can be passed.
 
 The horizontal domain zones are denoted by a set of named enums for the different zones:
-see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nwv_icon_tutorial/pdf_einzelbaende/icon_tutorial2024.html).
+see Fig. 9.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nwv_icon_tutorial/pdf_einzelbaende/icon_tutorial2024.html).
 
 
 """
