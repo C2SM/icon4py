@@ -181,18 +181,53 @@ def check_local_global_field(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, dim",
+    "attrs_name",
     [
-        # TODO(msimberg): Get dim out of field?
-        (geometry_attributes.CELL_AREA, dims.CellDim),
-        (geometry_attributes.EDGE_LENGTH, dims.EdgeDim),
-        (geometry_attributes.VERTEX_LAT, dims.VertexDim),
-        (geometry_attributes.EDGE_NORMAL_VERTEX_U, dims.EdgeDim),
-        (geometry_attributes.EDGE_NORMAL_VERTEX_V, dims.EdgeDim),
-        (geometry_attributes.EDGE_NORMAL_CELL_U, dims.EdgeDim),
-        (geometry_attributes.EDGE_NORMAL_CELL_V, dims.EdgeDim),
-        (geometry_attributes.EDGE_TANGENT_X, dims.EdgeDim),
-        (geometry_attributes.EDGE_TANGENT_Y, dims.EdgeDim),
+        geometry_attributes.EDGE_LENGTH,
+        geometry_attributes.DUAL_EDGE_LENGTH,
+        geometry_attributes.EDGE_AREA,
+        geometry_attributes.EDGE_CELL_DISTANCE,
+        geometry_attributes.EDGE_VERTEX_DISTANCE,
+        geometry_attributes.CELL_AREA,
+        geometry_attributes.DUAL_AREA,
+        geometry_attributes.TANGENT_ORIENTATION,
+        geometry_attributes.CELL_NORMAL_ORIENTATION,
+        geometry_attributes.VERTEX_EDGE_ORIENTATION,
+        geometry_attributes.VERTEX_LON,
+        geometry_attributes.VERTEX_LAT,
+        geometry_attributes.CELL_LON,
+        geometry_attributes.CELL_LAT,
+        geometry_attributes.EDGE_LON,
+        geometry_attributes.EDGE_LAT,
+        geometry_attributes.VERTEX_X,
+        geometry_attributes.VERTEX_Y,
+        geometry_attributes.VERTEX_Z,
+        geometry_attributes.CELL_CENTER_X,
+        geometry_attributes.CELL_CENTER_Y,
+        geometry_attributes.CELL_CENTER_Z,
+        geometry_attributes.EDGE_CENTER_X,
+        geometry_attributes.EDGE_CENTER_Y,
+        geometry_attributes.EDGE_CENTER_Z,
+        geometry_attributes.EDGE_NORMAL_U,
+        geometry_attributes.EDGE_NORMAL_V,
+        geometry_attributes.EDGE_DUAL_U,
+        geometry_attributes.EDGE_DUAL_V,
+        geometry_attributes.EDGE_NORMAL_VERTEX_U,
+        geometry_attributes.EDGE_NORMAL_VERTEX_V,
+        geometry_attributes.EDGE_NORMAL_CELL_U,
+        geometry_attributes.EDGE_NORMAL_CELL_V,
+        geometry_attributes.EDGE_TANGENT_VERTEX_U,
+        geometry_attributes.EDGE_TANGENT_VERTEX_V,
+        geometry_attributes.EDGE_TANGENT_CELL_U,
+        geometry_attributes.EDGE_TANGENT_CELL_V,
+        geometry_attributes.EDGE_TANGENT_X,
+        geometry_attributes.EDGE_TANGENT_Y,
+        geometry_attributes.EDGE_TANGENT_Z,
+        geometry_attributes.EDGE_NORMAL_X,
+        geometry_attributes.EDGE_NORMAL_Y,
+        geometry_attributes.EDGE_NORMAL_Z,
+        geometry_attributes.VERTEX_VERTEX_LENGTH,  # TODO(msimberg): Also inverse?
+        geometry_attributes.CORIOLIS_PARAMETER,
     ],
 )
 def test_geometry_fields_compare_single_multi_rank(
@@ -200,23 +235,9 @@ def test_geometry_fields_compare_single_multi_rank(
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
     attrs_name: str,
-    dim: gtx.Dimension,
 ) -> None:
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
-
-    if (
-        test_utils.is_embedded(backend)
-        and attrs_name
-        in (
-            geometry_attributes.EDGE_NORMAL_VERTEX_U,
-            geometry_attributes.EDGE_NORMAL_VERTEX_V,
-            geometry_attributes.EDGE_NORMAL_CELL_U,
-            geometry_attributes.EDGE_NORMAL_CELL_V,
-        )
-        and experiment == test_defs.Experiments.EXCLAIM_APE
-    ):
-        pytest.xfail("IndexOutOfBounds with embedded backend")
 
     # TODO(msimberg): Add fixtures for single/multi-rank
     # grid/geometry/interpolation/metrics factories.
@@ -255,15 +276,23 @@ def test_geometry_fields_compare_single_multi_rank(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         extra_fields=multi_rank_grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
+        exchange=decomp_defs.create_exchange(
+            processor_props, multi_rank_grid_manager.decomposition_info
+        ),
+        global_reductions=decomp_defs.create_reduction(processor_props),
     )
+
+    dim = single_rank_geometry.get(attrs_name).domain.dims[0]
+    field_ref = single_rank_geometry.get(attrs_name).asnumpy()
+    field = multi_rank_geometry.get(attrs_name).asnumpy()
 
     check_halos = True
     check_local_global_field(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         processor_props=processor_props,
         dim=dim,
-        global_reference_field=single_rank_geometry.get(attrs_name).asnumpy(),
-        local_field=multi_rank_geometry.get(attrs_name).asnumpy(),
+        global_reference_field=field_ref,
+        local_field=field,
         check_halos=check_halos,
     )
 
@@ -273,16 +302,16 @@ def test_geometry_fields_compare_single_multi_rank(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize(
-    "attrs_name, dim",
+    "attrs_name",
     [
-        (interpolation_attributes.GEOFAC_DIV, dims.CellDim),
-        (interpolation_attributes.GEOFAC_ROT, dims.VertexDim),
-        (interpolation_attributes.C_BLN_AVG, dims.CellDim),
-        (interpolation_attributes.RBF_VEC_COEFF_C1, dims.CellDim),
-        (interpolation_attributes.RBF_VEC_COEFF_C2, dims.CellDim),
-        (interpolation_attributes.RBF_VEC_COEFF_E, dims.EdgeDim),
-        (interpolation_attributes.RBF_VEC_COEFF_V1, dims.VertexDim),
-        (interpolation_attributes.RBF_VEC_COEFF_V2, dims.VertexDim),
+        interpolation_attributes.GEOFAC_DIV,
+        interpolation_attributes.GEOFAC_ROT,
+        interpolation_attributes.C_BLN_AVG,
+        interpolation_attributes.RBF_VEC_COEFF_C1,
+        interpolation_attributes.RBF_VEC_COEFF_C2,
+        interpolation_attributes.RBF_VEC_COEFF_E,
+        interpolation_attributes.RBF_VEC_COEFF_V1,
+        interpolation_attributes.RBF_VEC_COEFF_V2,
     ],
 )
 def test_interpolation_fields_compare_single_multi_rank(
@@ -290,7 +319,6 @@ def test_interpolation_fields_compare_single_multi_rank(
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
     attrs_name: str,
-    dim: gtx.Dimension,
 ) -> None:
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
@@ -338,6 +366,10 @@ def test_interpolation_fields_compare_single_multi_rank(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         extra_fields=multi_rank_grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
+        exchange=decomp_defs.create_exchange(
+            processor_props, multi_rank_grid_manager.decomposition_info
+        ),
+        global_reductions=decomp_defs.create_reduction(processor_props),
     )
     multi_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
         grid=multi_rank_grid_manager.grid,
@@ -345,11 +377,12 @@ def test_interpolation_fields_compare_single_multi_rank(
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=mpi_decomposition.GHexMultiNodeExchange(
+        exchange=decomp_defs.create_exchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
     )
 
+    dim = single_rank_geometry.get(attrs_name).domain.dims[0]
     field_ref = single_rank_interpolation.get(attrs_name).asnumpy()
     field = multi_rank_interpolation.get(attrs_name).asnumpy()
 
@@ -368,13 +401,12 @@ def test_interpolation_fields_compare_single_multi_rank(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("attrs_name, dim", [(metrics_attributes.DDXT_Z_HALF_E, dims.EdgeDim)])
+@pytest.mark.parametrize("attrs_name", [metrics_attributes.DDXT_Z_HALF_E])
 def test_metrics_fields_compare_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
     attrs_name: str,
-    dim: gtx.Dimension,
 ) -> None:
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
@@ -484,6 +516,10 @@ def test_metrics_fields_compare_single_multi_rank(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         extra_fields=multi_rank_grid_manager.geometry_fields,
         metadata=geometry_attributes.attrs,
+        exchange=decomp_defs.create_exchange(
+            processor_props, multi_rank_grid_manager.decomposition_info
+        ),
+        global_reductions=decomp_defs.create_reduction(processor_props),
     )
     multi_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
         grid=multi_rank_grid_manager.grid,
@@ -491,7 +527,7 @@ def test_metrics_fields_compare_single_multi_rank(
         geometry_source=multi_rank_geometry,
         backend=backend,
         metadata=interpolation_attributes.attrs,
-        exchange=mpi_decomposition.GHexMultiNodeExchange(
+        exchange=decomp_defs.create_exchange(
             processor_props, multi_rank_grid_manager.decomposition_info
         ),
     )
@@ -522,6 +558,7 @@ def test_metrics_fields_compare_single_multi_rank(
         ),
     )
 
+    dim = single_rank_geometry.get(attrs_name).domain.dims[0]
     field_ref = single_rank_metrics.get(attrs_name).asnumpy()
     field = multi_rank_metrics.get(attrs_name).asnumpy()
 
