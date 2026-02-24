@@ -54,13 +54,15 @@ def get_dace_options(
         backend_descriptor["use_zero_origin"] = True
     # TODO(AMD): For now disable problematic `hipMallocAsync` calls on each GT4Py Program call that have high runtime variability.
     #            Needs to be fixed for realistic simulations due to increased memory footprint of persistent memory.
-    if backend_descriptor["device"] == model_backends.DeviceType.ROCM:
+    is_rocm_backend = backend_descriptor.get("device") == model_backends.DeviceType.ROCM
+    if is_rocm_backend:
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
     if program_name == "graupel_run":
         backend_descriptor["use_zero_origin"] = True
         optimization_args["fuse_tasklets"] = True
-        optimization_args["gpu_maxnreg"] = 128
+        if not is_rocm_backend:
+            optimization_args["gpu_maxnreg"] = 128
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:
