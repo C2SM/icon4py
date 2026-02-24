@@ -49,7 +49,7 @@ test_tools_datatests_aarch64:
       variables:
         NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '00:30:00'
-    - if: $BACKEND == 'embedded'
+    - if: $BACKEND == 'embedded' || $COMPONENT == 'driver' || $COMPONENT == 'dycore'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success
