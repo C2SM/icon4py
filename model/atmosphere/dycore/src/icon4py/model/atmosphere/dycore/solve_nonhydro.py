@@ -1361,26 +1361,29 @@ class SolveNonhydro:
             at_last_substep=at_last_substep,
         )
 
-        if lprep_adv:
-            if at_first_substep:
-                log.debug(
-                    "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+        # prepare flux field for tracer advection on lateral boundary, if exists
+        if self._grid.limited_area:
+            if lprep_adv:
+                if at_first_substep:
+                    log.debug(
+                        "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+                    )
+                    self._init_cell_kdim_field_with_zero_wp(
+                        field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    )
+                self._update_mass_flux_weighted(
+                    rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
+                    w_now=prognostic_states.current.w,
+                    w_new=prognostic_states.next.w,
+                    w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+                    mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    r_nsubsteps=r_nsubsteps,
                 )
-                self._init_cell_kdim_field_with_zero_wp(
-                    field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
-                )
-            self._update_mass_flux_weighted(
-                rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
-                w_now=prognostic_states.current.w,
-                w_new=prognostic_states.next.w,
-                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-                mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
-                r_nsubsteps=r_nsubsteps,
-            )
-            log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
-            self._exchange.exchange_and_wait(
-                dims.CellDim,
-                prognostic_states.next.rho,
-                prognostic_states.next.exner,
-                prognostic_states.next.w,
-            )
+
+        log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
+        self._exchange.exchange_and_wait(
+            dims.CellDim,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.w,
+        )
