@@ -46,7 +46,6 @@ def construct_metric_state(
     metrics_savepoint: sb.MetricSavepoint, grid_savepoint: sb.IconGridSavepoint
 ) -> dycore_states.MetricStateNonHydro:
     return dycore_states.MetricStateNonHydro(
-        bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
         time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),

@@ -144,6 +144,8 @@ def create_static_field_factories(
         rayleigh_coeff=0.1,
         exner_expol=0.333,
         vwind_offctr=0.2,
+        thslp_zdiffu=0.02,
+        thhgtd_zdiffu=125.0,
     )
 
     return driver_states.StaticFieldFactories(
@@ -252,7 +254,6 @@ def initialize_granules(
 
     log.info("creating solve nonhydro metric state")
     solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
-        bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
         mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
         rayleigh_w=metrics_field_source.get(metrics_attributes.RAYLEIGH_W),
         time_extrapolation_parameter_for_exner=metrics_field_source.get(
