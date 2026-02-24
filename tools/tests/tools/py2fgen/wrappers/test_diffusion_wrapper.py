@@ -57,6 +57,7 @@ def test_diffusion_wrapper_granule_inputs(
     type_t_diffu = 2
     type_vn_diffu = 1
     hdiff_efdt_ratio = 24.0
+    hdiff_w_efdt_ratio = 15.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
     denom_diffu_v = 150.0
@@ -171,6 +172,7 @@ def test_diffusion_wrapper_granule_inputs(
             type_t_diffu=type_t_diffu,
             type_vn_diffu=type_vn_diffu,
             hdiff_efdt_ratio=hdiff_efdt_ratio,
+            hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
             smagorinski_scaling_factor=smagorinski_scaling_factor,
             hdiff_temp=hdiff_temp,
             denom_diffu_v=denom_diffu_v,
@@ -283,6 +285,7 @@ def test_diffusion_wrapper_single_step(
     type_t_diffu = 2
     type_vn_diffu = 1
     hdiff_efdt_ratio = 24.0
+    hdiff_w_efdt_ratio = 15.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
     denom_diffu_v = 150.0
@@ -364,6 +367,7 @@ def test_diffusion_wrapper_single_step(
         type_t_diffu=type_t_diffu,
         type_vn_diffu=type_vn_diffu,
         hdiff_efdt_ratio=hdiff_efdt_ratio,
+        hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
         denom_diffu_v=denom_diffu_v,
