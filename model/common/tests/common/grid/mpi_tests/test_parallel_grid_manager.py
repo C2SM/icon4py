@@ -304,9 +304,20 @@ def test_geometry_fields_compare_single_multi_rank(
 @pytest.mark.parametrize(
     "attrs_name",
     [
-        interpolation_attributes.GEOFAC_DIV,
-        interpolation_attributes.GEOFAC_ROT,
+        interpolation_attributes.CELL_AW_VERTS,
         interpolation_attributes.C_BLN_AVG,
+        interpolation_attributes.C_LIN_E,
+        interpolation_attributes.E_BLN_C_S,
+        interpolation_attributes.E_FLX_AVG,
+        interpolation_attributes.GEOFAC_DIV,
+        interpolation_attributes.GEOFAC_GRDIV,
+        interpolation_attributes.GEOFAC_GRG_X,
+        interpolation_attributes.GEOFAC_GRG_Y,
+        interpolation_attributes.GEOFAC_N2S,
+        interpolation_attributes.GEOFAC_ROT,
+        interpolation_attributes.NUDGECOEFFS_E,
+        interpolation_attributes.POS_ON_TPLANE_E_X,
+        interpolation_attributes.POS_ON_TPLANE_E_Y,
         interpolation_attributes.RBF_VEC_COEFF_C1,
         interpolation_attributes.RBF_VEC_COEFF_C2,
         interpolation_attributes.RBF_VEC_COEFF_E,
@@ -382,7 +393,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         ),
     )
 
-    dim = single_rank_geometry.get(attrs_name).domain.dims[0]
+    dim = single_rank_interpolation.get(attrs_name).domain.dims[0]
     field_ref = single_rank_interpolation.get(attrs_name).asnumpy()
     field = multi_rank_interpolation.get(attrs_name).asnumpy()
 
