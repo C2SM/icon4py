@@ -85,10 +85,10 @@ def make_custom_dace_backend(
             compute time.
         use_max_domain_range_on_unstructured_shift: When True, compute `as_fieldop`
             expressions everywhere. Otherwise, when all connectivities are given
-            at compile time, infer the domain of all `as_fieldop` expressions statically.
+            at compile time, infer the minimal domain of all `as_fieldop` statically.
 
     TODO(edopao): We should use the default `use_max_domain_range_on_unstructured_shift=None`
-        once the shrinked domain produces the correct result.
+        once the minimal static domain produces the correct result.
 
     Returns:
         A dace backend with custom configuration for the target device.
