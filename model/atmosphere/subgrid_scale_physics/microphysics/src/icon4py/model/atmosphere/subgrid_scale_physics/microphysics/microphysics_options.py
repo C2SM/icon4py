@@ -34,9 +34,9 @@ class SnowInterceptParametererization(eve_utils.FrozenNamespace[gtx.int32]):
 
 
 ValidLiquidAutoConversionType = Literal[
-    LiquidAutoConversionType.KESSLER.value, LiquidAutoConversionType.SEIFERT_BEHENG.value
+    LiquidAutoConversionType.KESSLER, LiquidAutoConversionType.SEIFERT_BEHENG
 ]
 ValidSnowInterceptParametererization = Literal[
-    SnowInterceptParametererization.FIELD_BEST_FIT_ESTIMATION.value,
-    SnowInterceptParametererization.FIELD_GENERAL_MOMENT_ESTIMATION.value,
+    SnowInterceptParametererization.FIELD_BEST_FIT_ESTIMATION,
+    SnowInterceptParametererization.FIELD_GENERAL_MOMENT_ESTIMATION,
 ]
