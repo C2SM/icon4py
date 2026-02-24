@@ -43,7 +43,7 @@ class PrognosticState:
 
 def initialize_prognostic_state(
     grid: icon_grid.IconGrid,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> PrognosticState:
     """Initialize the prognostic state with zero fields."""
     rho = data_alloc.zero_field(
