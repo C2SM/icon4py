@@ -204,10 +204,6 @@ def test_distributed_interpolation_rbf(
     attrs_name: str,
     intrp_name: str,
 ) -> None:
-    # xfail inside function body, because we don't actually want to run the test
-    # since it hangs.
-    pytest.xfail("Tests hang in CI")
-
     if attrs_name.startswith("rbf_vec_coeff_c"):
         dim = dims.CellDim
     elif attrs_name.startswith("rbf_vec_coeff_e"):

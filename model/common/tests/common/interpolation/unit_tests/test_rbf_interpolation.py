@@ -172,7 +172,9 @@ def test_rbf_interpolation_coeffs_cell(
     horizontal_start = grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
+    horizontal_end = grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL))
     assert horizontal_start < grid.num_cells
+    assert horizontal_end <= grid.num_cells
 
     geometry_type = (
         grid.global_properties.geometry_type
@@ -201,6 +203,7 @@ def test_rbf_interpolation_coeffs_cell(
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
+        horizontal_end,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
         exchange=utils.dummy_exchange,
@@ -221,13 +224,13 @@ def test_rbf_interpolation_coeffs_cell(
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_c1[horizontal_start:],
-        rbf_vec_coeff_c1_ref[horizontal_start:],
+        rbf_vec_coeff_c1[horizontal_start:horizontal_end],
+        rbf_vec_coeff_c1_ref[horizontal_start:horizontal_end],
         atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_c2[horizontal_start:],
-        rbf_vec_coeff_c2_ref[horizontal_start:],
+        rbf_vec_coeff_c2[horizontal_start:horizontal_end],
+        rbf_vec_coeff_c2_ref[horizontal_start:horizontal_end],
         atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
     )
 
@@ -247,7 +250,9 @@ def test_rbf_interpolation_coeffs_vertex(
     horizontal_start = grid.start_index(
         h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
+    horizontal_end = grid.start_index(h_grid.domain(dims.VertexDim)(h_grid.Zone.LOCAL))
     assert horizontal_start < grid.num_vertices
+    assert horizontal_end <= grid.num_vertices
 
     geometry_type = (
         grid.global_properties.geometry_type
@@ -276,6 +281,7 @@ def test_rbf_interpolation_coeffs_vertex(
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
+        horizontal_end,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
         exchange=utils.dummy_exchange,
@@ -296,13 +302,13 @@ def test_rbf_interpolation_coeffs_vertex(
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_v1[horizontal_start:],
-        rbf_vec_coeff_v1_ref.asnumpy()[horizontal_start:],
+        rbf_vec_coeff_v1[horizontal_start:horizontal_end],
+        rbf_vec_coeff_v1_ref.asnumpy()[horizontal_start:horizontal_end],
         atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_v2[horizontal_start:],
-        rbf_vec_coeff_v2_ref.asnumpy()[horizontal_start:],
+        rbf_vec_coeff_v2[horizontal_start:horizontal_end],
+        rbf_vec_coeff_v2_ref.asnumpy()[horizontal_start:horizontal_end],
         atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
     )
 
@@ -322,7 +328,9 @@ def test_rbf_interpolation_coeffs_edge(
     horizontal_start = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
+    horizontal_end = grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LOCAL))
     assert horizontal_start < grid.num_edges
+    assert horizontal_end <= grid.num_edges
 
     geometry_type = (
         grid.global_properties.geometry_type
@@ -353,6 +361,7 @@ def test_rbf_interpolation_coeffs_edge(
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
+        horizontal_end,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
         exchange=utils.dummy_exchange,
@@ -367,7 +376,7 @@ def test_rbf_interpolation_coeffs_edge(
         rbf.RBF_STENCIL_SIZE[rbf_dim],
     )
     assert test_helpers.dallclose(
-        rbf_vec_coeff_e[horizontal_start:],
-        rbf_vec_coeff_e_ref.asnumpy()[horizontal_start:],
+        rbf_vec_coeff_e[horizontal_start:horizontal_end],
+        rbf_vec_coeff_e_ref.asnumpy()[horizontal_start:horizontal_end],
         atol=RBF_TOLERANCES[dims.EdgeDim][experiment.name],
     )
