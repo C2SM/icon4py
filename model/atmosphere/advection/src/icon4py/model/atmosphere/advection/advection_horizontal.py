@@ -85,12 +85,12 @@ class PositiveDefinite(HorizontalFluxLimiter):
         self,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
-        backend: model_backends.BackendLike,
+        backend: gtx.typing.Backend | None,
         exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
     ):
         self._grid = grid
         self._interpolation_state = interpolation_state
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
         self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
@@ -109,7 +109,10 @@ class PositiveDefinite(HorizontalFluxLimiter):
 
         # limiter fields
         self._r_m = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            allocator=model_backends.get_allocator(self._backend),
         )
 
         # stencils
@@ -210,12 +213,12 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self,
         grid: icon_grid.IconGrid,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
-        backend: model_backends.BackendLike,
+        backend: gtx.typing.Backend | None,
         horizontal_limiter: HorizontalFluxLimiter | None = None,
     ):
         self._grid = grid
         self._least_squares_state = least_squares_state
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
         self._horizontal_limiter = horizontal_limiter or NoLimiter()
 
         # cell indices
@@ -233,14 +236,15 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         # reconstruction fields
+        allocator = model_backends.get_allocator(self._backend)
         self._p_coeff_1 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
         self._p_coeff_2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
         self._p_coeff_3 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
 
         # stencils
@@ -358,7 +362,7 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: model_backends.BackendLike):
+    def __init__(self, grid: icon_grid.IconGrid, backend: gtx.typing.Backend | None):
         log.debug("horizontal advection class init - start")
 
         # input arguments
@@ -475,7 +479,7 @@ class SemiLagrangian(FiniteVolume):
         metric_state: advection_states.AdvectionMetricState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: model_backends.BackendLike,
+        backend: gtx.typing.Backend | None,
         exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
     ):
         log.debug("horizontal advection class init - start")
@@ -487,7 +491,7 @@ class SemiLagrangian(FiniteVolume):
         self._metric_state = metric_state
         self._edge_params = edge_params
         self._cell_params = cell_params
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
         self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
@@ -506,14 +510,15 @@ class SemiLagrangian(FiniteVolume):
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         # backtrajectory fields
+        allocator = model_backends.get_allocator(self._backend)
         self._z_real_vt = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
         self._p_distv_bary_1 = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
         self._p_distv_bary_2 = data_alloc.zero_field(
-            self._grid, dims.EdgeDim, dims.KDim, allocator=self._backend
+            self._grid, dims.EdgeDim, dims.KDim, allocator=allocator
         )
 
         # stencils

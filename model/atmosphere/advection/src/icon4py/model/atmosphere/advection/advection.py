@@ -30,7 +30,7 @@ from icon4py.model.atmosphere.advection.stencils.copy_cell_kdim_field import cop
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
-    model_options,
+    model_backends,
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -173,7 +173,7 @@ class NoAdvection(Advection):
 
         # input arguments
         self._grid = grid
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
         self._exchange = exchange or decomposition.SingleNodeExchange()
 
         # cell indices
@@ -240,14 +240,17 @@ class GodunovSplittingAdvection(Advection):
         self._vertical_advection = vertical_advection
         self._grid = grid
         self._metric_state = metric_state
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
         self._exchange = exchange or decomposition.SingleNodeExchange()
         self._even_timestep = even_timestep  # originally jstep_adv(:)%marchuk_order = 1
 
         # density fields
         #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
         self._rhodz_ast2 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            allocator=model_backends.get_allocator(self._backend),
         )
         self._determine_local_domains()
         # stencils

@@ -61,6 +61,7 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
+    model_backends,
     model_options,
     type_alias as ta,
 )
@@ -103,7 +104,7 @@ class NoFluxCondition(BoundaryConditions):
     def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
 
         # stencils
         self._init_constant_cell_kdim_field = init_constant_cell_kdim_field.with_backend(
@@ -184,11 +185,14 @@ class NoLimiter(VerticalLimiter):
     def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
 
         # fields
         self._l_limit = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid,
+            dims.CellDim,
+            dims.KDim,
+            allocator=model_backends.get_allocator(self._backend),
         )
 
         # stencils
@@ -260,14 +264,15 @@ class SemiMonotonicLimiter(VerticalLimiter):
     def __init__(self, grid: icon_grid.IconGrid, backend: gtx_typing.Backend | None):
         # input arguments
         self._grid = grid
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
 
         # fields
+        allocator = model_backends.get_allocator(self._backend)
         self._k_field = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=self._backend
+            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=allocator
         )  # TODO(dastrm): should be KHalfDim
         self._l_limit = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, dtype=gtx.int32, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, dtype=gtx.int32, allocator=allocator
         )
 
         # stencils
@@ -405,7 +410,7 @@ class NoAdvection(VerticalAdvection):
 
         # input arguments
         self._grid = grid
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -545,7 +550,7 @@ class FirstOrderUpwind(FiniteVolume):
         self._boundary_conditions = boundary_conditions
         self._grid = grid
         self._metric_state = metric_state
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -565,7 +570,7 @@ class FirstOrderUpwind(FiniteVolume):
             dims.KDim,
             extend={dims.KDim: 1},
             dtype=gtx.int32,
-            allocator=self._backend,
+            allocator=model_backends.get_allocator(self._backend),
         )  # TODO(dastrm): should be KHalfDim
 
         # stencils
@@ -695,7 +700,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._vertical_limiter = vertical_limiter
         self._grid = grid
         self._metric_state = metric_state
-        self._backend = model_options.customize_backend(program=None, backend=backend)
+        self._backend = backend
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -707,30 +712,29 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         # fields
+        allocator = model_backends.get_allocator(self._backend)
         self._k_field = data_alloc.index_field(
-            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=self._backend
+            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, allocator=allocator
         )  # TODO(dastrm): should be KHalfDim
         self._z_cfl = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         )  # TODO(dastrm): should be KHalfDim
         self._z_slope = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
         self._z_face = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, allocator=allocator
         )  # TODO(dastrm): should be KHalfDim
         self._z_face_up = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
         self._z_face_low = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
         self._z_delta_q = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
+            self._grid, dims.CellDim, dims.KDim, allocator=allocator
         )
-        self._z_a1 = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, allocator=self._backend
-        )
+        self._z_a1 = data_alloc.zero_field(self._grid, dims.CellDim, dims.KDim, allocator=allocator)
 
         # misc
         self._slev = 0
