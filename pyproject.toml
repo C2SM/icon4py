@@ -234,7 +234,7 @@ module = [
 [[tool.mypy.overrides]]  # complains about dims not being valid types
 disable_error_code = [
   "no-untyped-def",  # programs are not annotated with -> None in icon4py
-  "call-overload",  # my doesn't catch the @program overload with grid_type kwarg
+  "call-overload",  # mypy doesn't catch the @program overload with grid_type kwarg
   "operator",  # mypy thinks float < Field[..., float] is not allowed
   "attr-defined",  # mypy can not see gtx dtypes
   "name-defined",  # mypy can not see gtx dtypes

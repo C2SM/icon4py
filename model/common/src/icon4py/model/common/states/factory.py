@@ -239,7 +239,7 @@ class FieldSource(GridProvider, Protocol):
                 buffer = provider(field_name, self._sources, self.backend, self, self._exchange)
                 return (
                     buffer
-                    if type_ in {RetrievalType.FIELD, RetrievalType.SCALAR}
+                    if type_ in (RetrievalType.FIELD, RetrievalType.SCALAR)
                     else state_utils.to_data_array(buffer, self.metadata[field_name])
                 )
             case _:
