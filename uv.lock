@@ -1402,8 +1402,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.4.post11+ed0deb4d"
-source = { git = "https://github.com/GridTools/gt4py?branch=main#ed0deb4d4ef44bb553c6e8f41b54bed7c35cc694" }
+version = "1.1.4.post13+ed9f7b4c"
+source = { git = "https://github.com/GridTools/gt4py?branch=main#ed9f7b4c16a64998aa09364925800c010a10d7a4" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
