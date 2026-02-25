@@ -129,6 +129,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 {
                     "topography": topography,
                     "vct_a": self._vertical_grid.interface_physical_height,
+                    "height_u": self._vertical_grid.interface_physical_height[
+                        : self._grid.num_levels
+                    ],
+                    "height_l": self._vertical_grid.interface_physical_height[
+                        1 : self._grid.num_levels + 1
+                    ],
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
@@ -952,21 +958,27 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
 
-        compute_advection_deepatmo_fields = factory.NumpyDataProvider(
-            func=functools.partial(
-                compute_advection_metrics.compute_advection_deepatmo_fields,
-                array_ns=self._xp,
+        compute_advection_deepatmo_fields = factory.ProgramFieldProvider(
+            func=compute_advection_metrics.compute_advection_deepatmo_fields.with_backend(
+                self._backend
             ),
-            deps={
-                "vct_a": "vct_a",
+            domain={
+                dims.KDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
             },
-            domain=(dims.KDim,),
-            fields=(
-                attrs.DEEPATMO_DIVH,
-                attrs.DEEPATMO_DIVZL,
-                attrs.DEEPATMO_DIVZU,
-            ),
-            params={"nlev": self._grid.num_levels, "grid_sphere_radius": constants.EARTH_RADIUS},
+            fields={
+                attrs.DEEPATMO_DIVH: attrs.DEEPATMO_DIVH,
+                attrs.DEEPATMO_DIVZL: attrs.DEEPATMO_DIVZL,
+                attrs.DEEPATMO_DIVZU: attrs.DEEPATMO_DIVZU,
+            },
+            deps={
+                "height_u": "height_u",
+                "height_l": "height_l",
+            },
+            params={"grid_sphere_radius": constants.EARTH_RADIUS},
+            do_exchange=False,
         )
 
         self.register_provider(compute_advection_deepatmo_fields)

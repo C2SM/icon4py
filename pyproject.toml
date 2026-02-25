@@ -197,7 +197,8 @@ disable_error_code = ["attr-defined", "name-defined"]
 module = [
   '*.stencil_tests.*',
   '*.unit_tests.*',
-  "icon4py.model.atmosphere.advection.advection_vertical"  # complains about gt4py.next not containing int32
+  "icon4py.model.atmosphere.advection.advection_vertical",  # complains about gt4py.next not containing int32
+  "icon4py.model.common.metrics.compute_advection_metrics"  # complains about gt4py.next not containing int32
 ]
 
 [[tool.mypy.overrides]]

@@ -7,25 +7,29 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-from types import ModuleType
+from gt4py import next as gtx
 
-import numpy as np
-
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-def compute_advection_deepatmo_fields(
-    vct_a: data_alloc.NDArray,
-    nlev: int,
+@gtx.field_operator(backend=None, grid_type=gtx.GridType.UNSTRUCTURED)  # type: ignore[arg-type] # see https://github.com/GridTools/gt4py/issues/2496
+def _compute_advection_deepatmo_fields(
+    height_u: fa.KField[ta.wpfloat],
+    height_l: fa.KField[ta.wpfloat],
     grid_sphere_radius: float,
-    array_ns: ModuleType = np,
 ) -> tuple[fa.KField[ta.wpfloat], fa.KField[ta.wpfloat], fa.KField[ta.wpfloat]]:
-    deepatmo_divh = array_ns.zeros((nlev,))
-    deepatmo_divzU = array_ns.zeros((nlev,))
-    deepatmo_divzL = array_ns.zeros((nlev,))
-    height_u = vct_a[:nlev]
-    height_l = vct_a[1 : nlev + 1]
+    """
+    Compute 'deepatmo_divh', 'deepatmo_divzL', 'deepatmo_divzU' from 'vct_a' and 'grid_sphere_radius'.
+
+    # Input Fields:
+    - height_u: expects vct_a[:nlev]
+    - height_l: expects vct_a[1:nlev+1]
+
+    # Output Fields:
+    - deepatmo_divh
+    - deepatmo_divzL
+    - deepatmo_divzU
+    """
     height = 0.5 * (height_l + height_u)
     radial_distance = height + grid_sphere_radius
     radial_distance_l = grid_sphere_radius + height_l
@@ -47,3 +51,35 @@ def compute_advection_deepatmo_fields(
         1.0 + radial_distance_l / radial_distance_u + (radial_distance_l / radial_distance_u) ** 2
     )
     return deepatmo_divh, deepatmo_divzL, deepatmo_divzU
+
+
+@gtx.program(backend=None, grid_type=gtx.GridType.UNSTRUCTURED)  # type: ignore[arg-type] # see https://github.com/GridTools/gt4py/issues/2496
+def compute_advection_deepatmo_fields(
+    height_u: fa.KField[ta.wpfloat],
+    height_l: fa.KField[ta.wpfloat],
+    deepatmo_divh: fa.KField[ta.wpfloat],
+    deepatmo_divzL: fa.KField[ta.wpfloat],
+    deepatmo_divzU: fa.KField[ta.wpfloat],
+    grid_sphere_radius: float,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+) -> None:
+    """
+    Compute 'deepatmo_divh', 'deepatmo_divzL', 'deepatmo_divzU' from 'vct_a' and 'grid_sphere_radius'.
+
+    # Input Fields:
+    - height_u: expects vct_a[:nlev]
+    - height_l: expects vct_a[1:nlev+1]
+
+    # Inout Fields:
+    - deepatmo_divh
+    - deepatmo_divzL
+    - deepatmo_divzU
+    """
+    _compute_advection_deepatmo_fields(
+        height_u=height_u,
+        height_l=height_l,
+        grid_sphere_radius=grid_sphere_radius,
+        out=(deepatmo_divh, deepatmo_divzL, deepatmo_divzU),
+        domain={dims.KDim: (vertical_start, vertical_end)},
+    )
