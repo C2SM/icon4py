@@ -24,6 +24,7 @@ from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     horizontal as h_grid,
     icon as icon_grid,
+    vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import (
@@ -32,6 +33,7 @@ from icon4py.model.common.interpolation.stencils import (
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
+from icon4py.model.common.model_options import customize_backend
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -50,6 +52,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: model_backends.BackendLike,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
@@ -249,7 +255,29 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         primal_normal_x=primal_normal_x,
         eta_v_at_edge=eta_v_at_edge.ndarray,
     )
+    vertical_config = v_grid.VerticalGridConfig(
+        grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    backend = customize_backend(None, model_backends.CPU)
+    vct_a, _ = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+        grid,
+        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL),
+        inv_dual_edge_length=geometry_field_source.get(
+            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+        ),
+        edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE),
+        primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH),
+        cell_area=geometry_field_source.get(geometry_meta.CELL_AREA),
+        vn=prognostic_state_now.vn.ndarray,
+        vct_a=vct_a,
+        nlev=num_levels,
+    )
     log.info("U2vn computation completed.")
 
     functools.partial(testcases_utils.apply_hydrostatic_adjustment_ndarray, array_ns=xp)(

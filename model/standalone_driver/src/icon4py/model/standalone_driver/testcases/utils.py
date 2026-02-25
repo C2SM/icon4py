@@ -7,10 +7,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from types import ModuleType
 
+import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.math import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -168,3 +170,66 @@ def zonalwind_2_normalwind_ndarray(
     vn = u * primal_normal_x
 
     return vn
+
+
+def init_w(
+    grid,
+    z_ifc,
+    inv_dual_edge_length,
+    edge_cell_length,
+    primal_edge_length,
+    cell_area,
+    vn,
+    vct_a,
+    nlev,
+):
+    c2e = grid.get_connectivity("C2E")
+    e2c = grid.get_connectivity("E2C")
+    horizontal_start_e = grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    horizontal_end_e = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.INTERIOR))
+
+    horizontal_start_c = grid.start_index(
+        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    horizontal_end_c = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.INTERIOR))
+
+    z_slope_e = gtx.as_field((dims.EdgeDim, dims.KDim), np.zeros((horizontal_end_e, nlev + 1)))
+    z_wsfc_e = np.zeros((horizontal_end_e, 1))
+
+    nlevp1 = nlev + 1
+    helpers.grad_fd_norm(
+        z_ifc,
+        inv_dual_edge_length,
+        out=z_slope_e,
+        domain={
+            dims.EdgeDim: (horizontal_start_e, horizontal_end_e),
+            dims.KDim: (0, nlevp1),
+        },
+        offset_provider={"E2C": grid.get_connectivity("E2C")},
+    )
+    for je in range(horizontal_start_e, horizontal_end_e):
+        z_wsfc_e[je, 0] = vn[je, nlev - 1] * z_slope_e.asnumpy()[je, nlevp1 - 1]
+
+    e_inn_c = np.zeros((horizontal_end_c, 3))  # or 1
+    for jc in range(horizontal_end_c):
+        for je in range(3):
+            idx_ce = 0 if e2c.asnumpy()[c2e.asnumpy()][jc, je, 0] == jc else 1
+            e_inn_c[jc, je] = (
+                edge_cell_length.asnumpy()[c2e.asnumpy()[jc, je], idx_ce]
+                * primal_edge_length.asnumpy()[c2e.asnumpy()[jc, je]]
+                / cell_area.asnumpy()[jc]
+            )
+
+    z_wsfc_c = np.sum(z_wsfc_e[c2e.asnumpy()] * e_inn_c[:, :, np.newaxis], axis=1)
+
+    w = np.zeros((horizontal_end_c, nlevp1))
+    for jc in range(horizontal_start_c, horizontal_end_c):
+        w[jc, nlevp1 - 1] = z_wsfc_c[jc]
+
+    for jk in reversed(range(1, nlev)):
+        for jc in range(horizontal_start_c, horizontal_end_c):
+            w[jc, jk] = z_wsfc_c[jc, 0] * np.exp(-vct_a.asnumpy()[jk] / 5000.0)
+
+    return w

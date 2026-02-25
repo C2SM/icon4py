@@ -14,13 +14,13 @@ from icon4py.model.standalone_driver import main
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
 
-from ..fixtures import *
+from ..fixtures import *  # noqa: F403
 
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, substep_exit, prep_adv, dyn_timestep, step_date_init, step_date_exit, timeloop_diffusion_linit_exit",  # istep_exit, substep_exit"#, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit",
+    "experiment, substep_exit, prep_adv, dyn_timestep, step_date_exit, timeloop_diffusion_linit_exit",
     [
         (
             definitions.Experiments.JW,
@@ -28,12 +28,12 @@ from ..fixtures import *
             False,
             1,
             "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
             False,
         )
     ],
 )
 def test_standalone_driver(
+    icon_grid,
     backend_like,
     backend,
     tmp_path: pathlib.Path,
@@ -43,11 +43,9 @@ def test_standalone_driver(
     substep_exit,
     prep_adv,
     dyn_timestep,
-    step_date_init,
     step_date_exit,
-):
+) -> None:
     """
-    Currently, this is a only test to check if the driver runs from a grid file without verifying the end result.
     TODO(anyone): Modify this test for scientific validation after IO is ready.
     """
 
