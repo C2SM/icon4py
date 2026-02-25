@@ -75,7 +75,7 @@ def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
 
 
 @pytest.fixture
-def cpu_allocator() -> gtx_typing.FieldBufferAllocationUtil:
+def cpu_allocator() -> gtx_typing.Allocator:
     return model_backends.get_allocator(None)
 
 
