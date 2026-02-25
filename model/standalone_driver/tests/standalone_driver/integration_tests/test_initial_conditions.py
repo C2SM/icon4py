@@ -20,10 +20,7 @@ from icon4py.model.testing.fixtures.datatest import (
     damping_height,
     data_provider,
     download_ser_data,
-    lowest_layer_thickness,
-    model_top_height,
     processor_props,
-    stretch_factor,
 )
 
 
@@ -37,10 +34,6 @@ def test_standalone_driver_initial_conditions(
     experiment: definitions.Experiments,
     data_provider,
     rank: int,
-    lowest_layer_thickness: float,
-    model_top_height: float,
-    stretch_factor: float,
-    damping_height: float,
 ) -> None:
     backend_name = None
     for k, v in model_backends.BACKENDS.items():
@@ -60,10 +53,10 @@ def test_standalone_driver_initial_conditions(
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
         backend=icon4py_driver.backend,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        damping_height=damping_height,
+        lowest_layer_thickness=icon4py_driver.vertical_grid_config.lowest_layer_thickness,
+        model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
+        stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
+        damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
     )
     jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
     default_w_1 = data_alloc.zero_field(icon4py_driver.grid, dims.CellDim)
