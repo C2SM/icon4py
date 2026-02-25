@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
 GRID_DATA_DIR: Final = "grids"
+NAMELIST_FILENAME: Final = "NAMELIST_ICON_output_atm"
 
 
 def serialized_data_path() -> pathlib.Path:
@@ -200,6 +201,7 @@ def construct_diffusion_config(
     experiment: Experiment, ndyn_substeps: int = 5
 ) -> diffusion.DiffusionConfig:
     from icon4py.model.atmosphere.diffusion import diffusion
+
 
     if experiment == Experiments.MCH_CH_R04B09:
         return diffusion.DiffusionConfig(

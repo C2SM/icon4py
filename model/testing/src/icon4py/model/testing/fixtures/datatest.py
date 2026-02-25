@@ -16,7 +16,7 @@ import pytest
 import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import RayleighType
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.grid import base as base_grid, vertical as v_grid
 from icon4py.model.testing import data_handling, datatest_utils as dt_utils, definitions
 
 
@@ -153,6 +153,42 @@ def data_provider(
     data_path = dt_utils.get_datapath_for_experiment(experiment, processor_props)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
 
+
+@pytest.fixture
+def icon_namelist(
+    download_ser_data: None,  # downloads data as side-effect
+    experiment: definitions.Experiment,
+    processor_props: decomposition.ProcessProperties,
+) -> dict:
+    experiment_dir = dt_utils.get_ranked_experiment_name_with_version(
+        experiment,
+        processor_props.comm_size,
+    )
+    namelist_path = definitions.serialized_data_path().joinpath(
+        experiment_dir, definitions.NAMELIST_FILENAME
+    )
+    return dt_utils.read_namelist(namelist_path)
+
+
+@pytest.fixture
+def vertical_grid_config(
+    icon_namelist: dict,
+) -> v_grid.VerticalGridConfig:
+    return v_grid.VerticalGridConfig(
+        # TODO (Chia Rui): where should we put the config construction? And remove this hardcoded style in next commits
+        num_levels=icon_namelist["RUN_NML"]["NUM_LEV"],
+        maximal_layer_thickness=icon_namelist["SLEVE_NML"]["MAX_LAY_THCKN"],
+        top_height_limit_for_maximal_layer_thickness=icon_namelist["SLEVE_NML"]["HTOP_THCKNLIMIT"],
+        lowest_layer_thickness=icon_namelist["SLEVE_NML"]["MIN_LAY_THCKN"],
+        model_top_height=icon_namelist["SLEVE_NML"]["TOP_HEIGHT"],
+        flat_height=icon_namelist["SLEVE_NML"]["FLAT_HEIGHT"],
+        stretch_factor=icon_namelist["SLEVE_NML"]["STRETCH_FAC"],
+        rayleigh_damping_height=icon_namelist["NONHYDROSTATIC_NML"]["DAMP_HEIGHT"],
+        htop_moist_proc=icon_namelist["NONHYDROSTATIC_NML"]["HTOP_MOIST_PROC"],
+        SLEVE_decay_scale_1=icon_namelist["SLEVE_NML"]["DECAY_SCALE_1"],
+        SLEVE_decay_scale_2=icon_namelist["SLEVE_NML"]["DECAY_SCALE_2"],
+        SLEVE_decay_exponent=icon_namelist["SLEVE_NML"]["DECAY_EXP"],
+    )
 
 @pytest.fixture
 def grid_savepoint(
