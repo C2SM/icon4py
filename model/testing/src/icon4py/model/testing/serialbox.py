@@ -17,10 +17,11 @@ import serialbox
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common import dimension as dims, type_alias
+from icon4py.model.common import dimension as dims, model_backends, type_alias
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common
 
 
 log = logging.getLogger(__name__)
@@ -614,10 +615,6 @@ class InterpolationSavepoint(IconSavepoint):
             (dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 1], allocator=self.backend
         )
 
-    @IconSavepoint.optionally_registered()
-    def zd_intcoef(self):
-        return self._get_field("vcoef", dims.CellDim, dims.C2E2CDim, dims.KDim)
-
     def geofac_n2s(self):
         return self._get_field("geofac_n2s", dims.CellDim, dims.C2E2CODim)
 
@@ -699,11 +696,42 @@ class MetricSavepoint(IconSavepoint):
     def mask_prog_halo_c(self):
         return self._get_field("mask_prog_halo_c", dims.CellDim, dtype=bool)
 
-    def pg_exdist(self):
-        return self._get_field("pg_exdist_dsl", dims.EdgeDim, dims.KDim)
+    @IconSavepoint.optionally_registered()
+    def pg_edgeidx(self):
+        return np.squeeze(self.serializer.read("pg_edgeidx", self.savepoint))
 
-    def pg_edgeidx_dsl(self):
-        return self._get_field("pg_edgeidx_dsl", dims.EdgeDim, dims.KDim, dtype=bool)
+    @IconSavepoint.optionally_registered()
+    def pg_vertidx(self):
+        return np.squeeze(self.serializer.read("pg_vertidx", self.savepoint))
+
+    @IconSavepoint.optionally_registered()
+    def pg_exdist(self):
+        return np.squeeze(self.serializer.read("pg_exdist", self.savepoint))
+
+    def pg_exdist_dsl(self):
+        pg_edgeidx = self.pg_edgeidx()
+        pg_vertidx = self.pg_vertidx()
+        pg_exdist = self.pg_exdist()
+        domain = self.rho_ref_me().domain
+        default_value = gtx.float64(0.0)
+        if (pg_edgeidx is None) or (pg_vertidx is None) or (pg_exdist is None):
+            # if any of the fields is missing, return a zero field with the correct shape
+            return gtx.as_field(
+                domain,
+                self.xp.full(domain.shape, fill_value=default_value, dtype=gtx.float64),
+                allocator=model_backends.get_allocator(self.backend),
+            )
+        else:
+            return wrapper_common.list2field(
+                domain=domain,
+                values=pg_exdist,
+                indices=(
+                    wrapper_common.adjust_fortran_indices(pg_edgeidx),
+                    wrapper_common.adjust_fortran_indices(pg_vertidx),
+                ),
+                default_value=default_value,
+                allocator=model_backends.get_allocator(self.backend),
+            )
 
     def rayleigh_w(self):
         return self._get_field("rayleigh_w", dims.KDim)
@@ -735,8 +763,27 @@ class MetricSavepoint(IconSavepoint):
     def vwind_impl_wgt(self):
         return self._get_field("vwind_impl_wgt", dims.CellDim)
 
+    def wgtfacq_c(self):
+        return self._get_field("wgtfacq_c", dims.CellDim, dims.KDim)
+
     def wgtfacq_c_dsl(self):
-        return self._get_field("wgtfacq_c_dsl", dims.CellDim, dims.KDim)
+        ar = self.wgtfacq_c().ndarray
+        k = ar.shape[1]
+        wgtfac_c = self.wgtfac_c()
+        cell_range = wgtfac_c.domain[dims.CellDim].unit_range
+        nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
+        k_range = (nlev - k, nlev)
+        cell_kflip_domain = gtx.domain(
+            {
+                dims.CellDim: cell_range,
+                dims.KDim: k_range,
+            }
+        )
+        return wrapper_common.kflip_wgtfacq(
+            arr=ar,
+            domain=cell_kflip_domain,
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
     def zdiff_gradp(self):
         return self._get_field("zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim)
@@ -767,10 +814,6 @@ class MetricSavepoint(IconSavepoint):
     def ddxt_z_full(self):
         return self._get_field("ddxt_z_full", dims.EdgeDim, dims.KDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim, dtype=gtx.bool)
-    def mask_hdiff(self):
-        return self._get_field("mask_hdiff", dims.CellDim, dims.KDim, dtype=bool)
-
     def theta_ref_mc(self):
         return self._get_field("theta_ref_mc", dims.CellDim, dims.KDim)
 
@@ -780,42 +823,106 @@ class MetricSavepoint(IconSavepoint):
     def wgtfac_e(self):
         return self._get_field("wgtfac_e", dims.EdgeDim, dims.KDim)
 
-    def wgtfacq_e_dsl(self, k_level):
-        ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
-        k = k_level - 3
-        ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
-        return self._get_field_from_ndarray(ar, dims.EdgeDim, dims.KDim)
+    def wgtfacq_e(self):
+        return self._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
-    def zd_diffcoef(self):
-        return self._get_field("zd_diffcoef", dims.CellDim, dims.KDim)
-
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim)
-    def zd_intcoef(self):
-        return self._read_and_reorder_sparse_field("vcoef")
+    def wgtfacq_e_dsl(self):
+        ar = self.wgtfacq_e().ndarray
+        k = ar.shape[1]
+        wgtfac_e = self.wgtfac_e()
+        edge_range = wgtfac_e.domain[dims.EdgeDim].unit_range
+        nlev = wgtfac_e.domain[dims.KDim].unit_range.stop - 1
+        k_range = (nlev - k, nlev)
+        edge_kflip_domain = gtx.domain(
+            {
+                dims.EdgeDim: edge_range,
+                dims.KDim: k_range,
+            }
+        )
+        return wrapper_common.kflip_wgtfacq(
+            arr=ar,
+            domain=edge_kflip_domain,
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
     def geopot(self):
         return self._get_field("geopot", dims.CellDim, dims.KDim)
 
-    def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
-        ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
-        ser_input = self._reduce_to_dim_size(ser_input, (dims.CellDim, dims.C2E2CDim, dims.KDim))
-        if ser_input.shape[1] != sparse_size:
-            ser_input = np.moveaxis(ser_input, 1, -1)
+    @IconSavepoint.optionally_registered()
+    def zd_cellidx(self):
+        return np.squeeze(self.serializer.read("zd_cellidx", self.savepoint))
 
-        return gtx.as_field(
-            (dims.CellDim, dims.C2E2CDim, dims.KDim), ser_input, allocator=self.backend
-        )
+    @IconSavepoint.optionally_registered()
+    def zd_vertidx(self):
+        # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
+        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[0, :]
 
     @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
     def zd_vertoffset(self):
-        return self._read_and_reorder_sparse_field("zd_vertoffset")
+        zd_cellidx = self.zd_cellidx()
+        zd_vertidx = self.zd_vertidx()
+        # these are the three k offsets for the C2E2C neighbors
+        zd_vertoffset = (
+            np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[1:, :] - zd_vertidx
+        )
+        cell_c2e2c_k_domain = gtx.domain(
+            {
+                dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
+                dims.C2E2CDim: 3,
+                dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
+            }
+        )
+        return wrapper_common.list2field(
+            domain=cell_c2e2c_k_domain,
+            values=zd_vertoffset.T,
+            indices=(
+                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                slice(None),
+                wrapper_common.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.int32(0),
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
-    def zd_vertidx(self):
-        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim)
+    def zd_intcoef(self):
+        zd_cellidx = self.zd_cellidx()
+        zd_vertidx = self.zd_vertidx()
+        zd_intcoef = np.squeeze(self.serializer.read("zd_intcoef", self.savepoint))
+        cell_c2e2c_k_domain = gtx.domain(
+            {
+                dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
+                dims.C2E2CDim: 3,
+                dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
+            }
+        )
+        return wrapper_common.list2field(
+            domain=cell_c2e2c_k_domain,
+            values=zd_intcoef.T,
+            indices=(
+                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                slice(None),
+                wrapper_common.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
-    def zd_indlist(self):
-        return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def zd_diffcoef(self):
+        zd_cellidx = self.zd_cellidx()
+        zd_vertidx = self.zd_vertidx()
+        zd_diffcoef = np.squeeze(self.serializer.read("zd_diffcoef", self.savepoint))
+        return wrapper_common.list2field(
+            domain=self.geopot().domain,
+            values=zd_diffcoef,
+            indices=(
+                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                wrapper_common.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
 
 class AdvectionInitSavepoint(IconSavepoint):

@@ -1513,8 +1513,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         ikoffset=metrics_savepoint.vertoffset_gradp(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
-        ipeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-        pg_exdist=metrics_savepoint.pg_exdist(),
+        pg_exdist=metrics_savepoint.pg_exdist_dsl(),
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         iau_wgt_dyn=iau_wgt_dyn,
@@ -1769,7 +1768,7 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
     wgtfac_e = metrics_savepoint.wgtfac_e()
-    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
+    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl()
     rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
     nflatlev = vertical_params.nflatlev

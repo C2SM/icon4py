@@ -197,3 +197,19 @@ def index_field(
     xp = import_array_ns(allocator)
     shapex = _shape(grid, dim, extend=extend)[0]
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=allocator)
+
+
+def get_array_namespace(array: NDArray) -> ModuleType:
+    """
+    Returns the array namespace for a given array.
+    """
+    if hasattr(array, "__array_namespace__"):
+        return array.__array_namespace__()
+    elif isinstance(array, np.ndarray):
+        return np
+    elif isinstance(array, xp.ndarray):
+        return xp
+    else:
+        raise RuntimeError(
+            f"Unsupported array type '{type(array)}'. Cannot detect the array namespace."
+        )

@@ -133,12 +133,11 @@ def test_diffusion_benchmark(
     )
 
     metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
         theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
         wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF_DSL),
-        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
-        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
+        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF),
+        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET),
+        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF),
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(

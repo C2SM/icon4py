@@ -30,9 +30,6 @@ from icon4py.model.atmosphere.dycore.stencils.apply_2nd_order_divergence_damping
 from icon4py.model.atmosphere.dycore.stencils.apply_4th_order_divergence_damping import (
     _apply_4th_order_divergence_damping,
 )
-from icon4py.model.atmosphere.dycore.stencils.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
-    _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
-)
 from icon4py.model.atmosphere.dycore.stencils.apply_weighted_2nd_and_4th_order_divergence_damping import (
     _apply_weighted_2nd_and_4th_order_divergence_damping,
 )
@@ -80,6 +77,18 @@ def apply_on_vertical_level(
 
 
 @gtx.field_operator
+def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
+    pg_exdist: fa.EdgeKField[ta.vpfloat],
+    z_hydro_corr: fa.EdgeField[ta.wpfloat],
+    z_gradh_exner: fa.EdgeKField[ta.vpfloat],
+) -> fa.EdgeKField[ta.vpfloat]:
+    # Note: In the original Fortran code `pg_exdist` is implemented as a list,
+    # in ICON4Py it's a full field intialized with zeros for points that are not in the list.
+    z_gradh_exner_vp = z_gradh_exner + z_hydro_corr * pg_exdist
+    return z_gradh_exner_vp
+
+
+@gtx.field_operator
 def _compute_horizontal_pressure_gradient(
     temporal_extrapolation_of_perturbed_exner: fa.CellKField[ta.vpfloat],
     ddz_of_temporal_extrapolation_of_perturbed_exner_on_model_levels: fa.CellKField[ta.vpfloat],
@@ -89,7 +98,6 @@ def _compute_horizontal_pressure_gradient(
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
-    ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     nflatlev: gtx.int32,
@@ -120,8 +128,7 @@ def _compute_horizontal_pressure_gradient(
         ),
     )
 
-    return _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
-        ipeidx_dsl=ipeidx_dsl,
+    return apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
         pg_exdist=pg_exdist,
         z_hydro_corr=hydrostatic_correction_on_lowest_level,
         z_gradh_exner=horizontal_pressure_gradient,
@@ -157,7 +164,6 @@ def _compute_rho_theta_pgrad_and_update_vn(
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
-    ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
@@ -218,7 +224,6 @@ def _compute_rho_theta_pgrad_and_update_vn(
         c_lin_e=c_lin_e,
         ikoffset=ikoffset,
         zdiff_gradp=zdiff_gradp,
-        ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
         nflatlev=nflatlev,
@@ -401,7 +406,6 @@ def compute_rho_theta_pgrad_and_update_vn(
     c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     ikoffset: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     zdiff_gradp: gtx.Field[[dims.EdgeDim, dims.E2CDim, dims.KDim], ta.vpfloat],
-    ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[ta.vpfloat],
     inv_dual_edge_length: fa.EdgeField[ta.wpfloat],
     dtime: ta.wpfloat,
@@ -458,7 +462,6 @@ def compute_rho_theta_pgrad_and_update_vn(
         - c_lin_e: interpolation coefficient for computation of interpolating a cell-based variables to an edge-based variable
         - ikoffset: k offset index (offset from the lowest k index where the neighboring cell centers lie within the thickness of the layer) for hyrostatic correction
         - zdiff_gradp: vertical distance between current cell height and neighboring cell height for pressure gradient over multiple levels [m]
-        - ipeidx_dsl: A mask for hydrostatic correction
         - pg_exdist: vertical distance between current cell height and neighboring cell height for hydrostatic correction [m]
         - inv_dual_edge_length: inverse dual edge length [m]
         - dtime: time step [s]
@@ -508,7 +511,6 @@ def compute_rho_theta_pgrad_and_update_vn(
         c_lin_e=c_lin_e,
         ikoffset=ikoffset,
         zdiff_gradp=zdiff_gradp,
-        ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         inv_dual_edge_length=inv_dual_edge_length,
         dtime=dtime,

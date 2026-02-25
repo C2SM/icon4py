@@ -179,7 +179,6 @@ program diffusion_simulation
    real(c_double), dimension(:, :), allocatable :: primal_normal_vert_x
    real(c_double), dimension(:, :), allocatable :: primal_normal_vert_y
    real(c_double), dimension(:, :), allocatable :: zd_diffcoef
-   logical(c_int), dimension(:, :), allocatable :: mask_hdiff
 
    integer(c_int), dimension(:, :, :), allocatable :: zd_vertoffset
    real(c_double), dimension(:, :, :), allocatable :: zd_intcoef
@@ -191,14 +190,12 @@ program diffusion_simulation
     !$acc dual_normal_vert_y, primal_normal_cell_x, primal_normal_cell_y, &
     !$acc primal_normal_vert_x, primal_normal_vert_y, tangent_orientation, &
     !$acc inverse_primal_edge_lengths, inv_dual_edge_length, inv_vert_vert_length, &
-    !$acc edge_areas, cell_areas, f_e, zd_diffcoef, zd_vertoffset, zd_intcoef, &
-    !$acc mask_hdiff)
+    !$acc edge_areas, cell_areas, f_e, zd_diffcoef, zd_vertoffset, zd_intcoef)
 
    ! allocating arrays
    allocate(zd_diffcoef(num_cells, num_levels))
    allocate(zd_vertoffset(num_cells, num_c2e2c, num_levels))
    allocate(zd_intcoef(num_cells, num_c2e2c, num_levels))
-   allocate(mask_hdiff(num_cells, num_levels))
    allocate (vct_a(num_levels))
    allocate (theta_ref_mc(num_cells, num_levels))
    allocate (wgtfac_c(num_cells, num_levels + 1))
@@ -265,7 +262,6 @@ program diffusion_simulation
    call fill_random_2d(theta_v, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(rho, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(zd_diffcoef, 0.0_c_double, 1.0_c_double)
-   call fill_random_2d_bool(mask_hdiff)
 
    call fill_random_2d(e_bln_c_s, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(geofac_div, 0.0_c_double, 1.0_c_double)
@@ -290,8 +286,7 @@ program diffusion_simulation
     !$acc dual_normal_vert_y, primal_normal_cell_x, primal_normal_cell_y, &
     !$acc primal_normal_vert_x, primal_normal_vert_y, tangent_orientation, &
     !$acc inverse_primal_edge_lengths, inv_dual_edge_length, inv_vert_vert_length, &
-    !$acc edge_areas, cell_areas, f_e, zd_diffcoef, zd_vertoffset, zd_intcoef, &
-    !$acc mask_hdiff)
+    !$acc edge_areas, cell_areas, f_e, zd_diffcoef, zd_vertoffset, zd_intcoef)
 
    ! Call diffusion_init
    call diffusion_init(vct_a, &
@@ -305,7 +300,6 @@ program diffusion_simulation
                       nudgecoeff_e, &
                       rbf_coeff_1, &
                       rbf_coeff_2, &
-                      mask_hdiff, &
                       zd_diffcoef, &
                       zd_vertoffset, &
                       zd_intcoef, &
@@ -372,8 +366,7 @@ program diffusion_simulation
     !$acc dual_normal_vert_y, primal_normal_cell_x, primal_normal_cell_y, &
     !$acc primal_normal_vert_x, primal_normal_vert_y, tangent_orientation, &
     !$acc inverse_primal_edge_lengths, inv_dual_edge_length, inv_vert_vert_length, &
-    !$acc edge_areas, cell_areas, f_e, zd_diffcoef, zd_vertoffset, zd_intcoef, &
-    !$acc mask_hdiff)
+    !$acc edge_areas, cell_areas, f_e, zd_diffcoef, zd_vertoffset, zd_intcoef)
 
    print *, "passed: could run diffusion"
 
@@ -385,6 +378,5 @@ program diffusion_simulation
     !$acc dual_normal_vert_y, primal_normal_cell_x, primal_normal_cell_y, &
     !$acc primal_normal_vert_x, primal_normal_vert_y, tangent_orientation, &
     !$acc inverse_primal_edge_lengths, inv_dual_edge_length, inv_vert_vert_length, &
-    !$acc edge_areas, cell_areas, f_e, zd_diffcoef, zd_vertoffset, zd_intcoef, &
-    !$acc mask_hdiff)
+    !$acc edge_areas, cell_areas, f_e, zd_diffcoef, zd_vertoffset, zd_intcoef)
 end program diffusion_simulation
