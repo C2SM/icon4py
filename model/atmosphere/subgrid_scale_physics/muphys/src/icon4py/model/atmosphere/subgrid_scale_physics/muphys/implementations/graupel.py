@@ -96,17 +96,18 @@ def precip_qx_level_update(
 
     rhox_prev = (previous_level_q.x + q) * 0.5 * previous_level_rho
 
-    if previous_level_q.activated:
-        vt = previous_level_q.vc * prefactor * power((rhox_prev + offset), exponent)
-    else:
-        vt = 0.0
-
     if current_level_activated:
+        vt = (
+            previous_level_q.vc * prefactor * power((rhox_prev + offset), exponent)
+            if previous_level_q.activated
+            else 0.0
+        )
         x = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
         p = (x * rho * vt + flx_partial) * 0.5  # flux
     else:
         x = q
         p = 0.0
+
     return PrecipStateQx(
         x=x,
         p=p,
@@ -190,74 +191,88 @@ def _precip_and_t(
     vc_s = _vel_scale_factor_snow_scalar(xrho, rho, t, q.s)
     vc_i = _vel_scale_factor_ice_scalar(xrho)
     vc_g = _vel_scale_factor_default_scalar(xrho)
+    any_mask = mask_r | mask_s | mask_i | mask_g
+    previous_level_activated = (
+        previous_level.r.activated
+        | previous_level.s.activated
+        | previous_level.i.activated
+        | previous_level.g.activated
+        | previous_level.t_state.activated
+    )
+    current_level_activated = any_mask | previous_level_activated
+    # TODO(): Use of combined if-statement to reduce checks in case any of the masks or previous levels are not activated. Can be made unnecessary with future transformations.
+    if current_level_activated:
+        r_update = precip_qx_level_update(
+            previous_level.r,
+            previous_level.rho,
+            idx.prefactor_r,
+            idx.exponent_r,
+            idx.offset_r,
+            zeta,
+            vc_r,
+            q.r,
+            rho,
+            mask_r,
+        )
+        s_update = precip_qx_level_update(
+            previous_level.s,
+            previous_level.rho,
+            idx.prefactor_s,
+            idx.exponent_s,
+            idx.offset_s,
+            zeta,
+            vc_s,
+            q.s,
+            rho,
+            mask_s,
+        )
+        i_update = precip_qx_level_update(
+            previous_level.i,
+            previous_level.rho,
+            idx.prefactor_i,
+            idx.exponent_i,
+            idx.offset_i,
+            zeta,
+            vc_i,
+            q.i,
+            rho,
+            mask_i,
+        )
+        g_update = precip_qx_level_update(
+            previous_level.g,
+            previous_level.rho,
+            idx.prefactor_g,
+            idx.exponent_g,
+            idx.offset_g,
+            zeta,
+            vc_g,
+            q.g,
+            rho,
+            mask_g,
+        )
 
-    r_update = precip_qx_level_update(
-        previous_level.r,
-        previous_level.rho,
-        idx.prefactor_r,
-        idx.exponent_r,
-        idx.offset_r,
-        zeta,
-        vc_r,
-        q.r,
-        rho,
-        mask_r,
-    )
-    s_update = precip_qx_level_update(
-        previous_level.s,
-        previous_level.rho,
-        idx.prefactor_s,
-        idx.exponent_s,
-        idx.offset_s,
-        zeta,
-        vc_s,
-        q.s,
-        rho,
-        mask_s,
-    )
-    i_update = precip_qx_level_update(
-        previous_level.i,
-        previous_level.rho,
-        idx.prefactor_i,
-        idx.exponent_i,
-        idx.offset_i,
-        zeta,
-        vc_i,
-        q.i,
-        rho,
-        mask_i,
-    )
-    g_update = precip_qx_level_update(
-        previous_level.g,
-        previous_level.rho,
-        idx.prefactor_g,
-        idx.exponent_g,
-        idx.offset_g,
-        zeta,
-        vc_g,
-        q.g,
-        rho,
-        mask_g,
-    )
-
-    qliq = q.c + r_update.x
-    qice = s_update.x + i_update.x + g_update.x
-    kmin_rsig = mask_r | mask_s | mask_i | mask_g
-
-    t_update = _temperature_update(
-        previous_level.t_state,
-        t=t,
-        t_kp1=t_kp1,
-        pr=r_update.p,
-        pflx_tot=s_update.p + i_update.p + g_update.p,
-        q=q,
-        qliq=qliq,
-        qice=qice,
-        rho=rho,
-        dz=dz,
-        dt=dt,
-        mask=kmin_rsig,
-    )
+        qliq = q.c + r_update.x
+        qice = s_update.x + i_update.x + g_update.x
+        t_update = _temperature_update(
+            previous_level.t_state,
+            t=t,
+            t_kp1=t_kp1,
+            pr=r_update.p,
+            pflx_tot=s_update.p + i_update.p + g_update.p,
+            q=q,
+            qliq=qliq,
+            qice=qice,
+            rho=rho,
+            dz=dz,
+            dt=dt,
+            mask=any_mask,
+        )
+    else:
+        r_update = PrecipStateQx(x=q.r, p=0.0, vc=vc_r, activated=False)
+        s_update = PrecipStateQx(x=q.s, p=0.0, vc=vc_s, activated=False)
+        i_update = PrecipStateQx(x=q.i, p=0.0, vc=vc_i, activated=False)
+        g_update = PrecipStateQx(x=q.g, p=0.0, vc=vc_g, activated=False)
+        t_update = TempState(t=t, eflx=previous_level.t_state.eflx, activated=False)
 
     return IntegrationState(
         r=r_update,

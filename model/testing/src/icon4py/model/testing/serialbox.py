@@ -720,9 +720,6 @@ class InterpolationSavepoint(IconSavepoint):
 
 
 class MetricSavepoint(IconSavepoint):
-    def bdy_halo_c(self):
-        return self._get_field("bdy_halo_c", dims.CellDim, dtype=bool)
-
     def d2dexdz2_fac1_mc(self):
         return self._get_field("d2dexdz2_fac1_mc", dims.CellDim, dims.KDim)
 
