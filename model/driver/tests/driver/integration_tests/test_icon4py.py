@@ -317,7 +317,6 @@ def test_run_timeloop_single_step(
             theta_v=sp.theta_v_now(),
             rho=sp.rho_now(),
             exner=sp.exner_now(),
-            tracer=[],
         )
 
     prognostic_state_new = prognostics.PrognosticState(
@@ -326,7 +325,6 @@ def test_run_timeloop_single_step(
         theta_v=sp.theta_v_new(),
         rho=sp.rho_new(),
         exner=sp.exner_new(),
-        tracer=[],
     )
 
     prognostic_states = common_utils.TimeStepPair(prognostic_state, prognostic_state_new)

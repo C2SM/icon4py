@@ -250,10 +250,10 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
     )
 
     prognostic_state_now = prognostics.PrognosticState(
-        w=w, vn=vn, theta_v=theta_v, rho=rho, exner=exner, tracer=[]
+        w=w, vn=vn, theta_v=theta_v, rho=rho, exner=exner
     )
     prognostic_state_next = prognostics.PrognosticState(
-        w=w_next, vn=vn_next, theta_v=theta_v_next, rho=rho_next, exner=exner_next, tracer=[]
+        w=w_next, vn=vn_next, theta_v=theta_v_next, rho=rho_next, exner=exner_next
     )
 
     diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(

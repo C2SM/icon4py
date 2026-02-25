@@ -35,9 +35,9 @@ class PrognosticState:
     ]  # horizontal wind normal to edges, vn(nproma, nlev, nblks_e)  [m/s]
     exner: fa.CellKField[ta.wpfloat]  # exner function, exner(nrpoma, nlev, nblks_c)
     theta_v: fa.CellKField[ta.wpfloat]  # virtual temperature, (nproma, nlev, nlbks_c) [K]
-    tracer: list[
-        fa.CellKField[ta.wpfloat]
-    ]  # tracer concentration (nproma,nlev,nblks_c,ntracer) [kg/kg]
+    tracer: list[fa.CellKField[ta.wpfloat]] = dataclasses.field(
+        default_factory=list
+    )  # tracer concentration (nproma,nlev,nblks_c,ntracer) [kg/kg]
 
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:

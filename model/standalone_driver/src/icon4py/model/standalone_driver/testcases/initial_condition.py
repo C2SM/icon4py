@@ -273,7 +273,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         exner=data_alloc.as_field(prognostic_state_now.exner, allocator=allocator),
         rho=data_alloc.as_field(prognostic_state_now.rho, allocator=allocator),
         theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
-        tracer=[],
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
