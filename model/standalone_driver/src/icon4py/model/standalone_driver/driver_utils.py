@@ -145,8 +145,8 @@ def create_static_field_factories(
         rayleigh_coeff=0.1,
         exner_expol=0.333,
         vwind_offctr=0.2,
-        thslp_zdiffu=0.025,  # ICON default
-        thhgtd_zdiffu=200.0,  # ICON default
+        thslp_zdiffu=0.02,
+        thhgtd_zdiffu=125.0,
     )
 
     return driver_states.StaticFieldFactories(
