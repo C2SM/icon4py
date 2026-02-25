@@ -154,7 +154,7 @@ def data_provider(
 def grid_savepoint(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> serialbox.IconGridSavepoint:
-    return data_provider.from_savepoint_grid(experiment.name, experiment.grid.shape)
+    return data_provider.from_savepoint_grid(experiment.name, experiment.grid.params)
 
 
 @pytest.fixture
@@ -174,7 +174,7 @@ def decomposition_info(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
     return data_provider.from_savepoint_grid(
-        grid_id=experiment.name, grid_shape=experiment.grid.shape
+        grid_id=experiment.name, global_grid_params=experiment.grid.params
     ).construct_decomposition_info()
 
 

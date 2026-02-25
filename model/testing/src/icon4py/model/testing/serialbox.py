@@ -146,12 +146,12 @@ class IconGridSavepoint(IconSavepoint):
         ser: serialbox.Serializer,
         grid_id: str,
         size: dict,
-        grid_shape: icon.GridShape,
+        global_grid_params: icon.GlobalGridParams,
         backend: gtx_typing.Backend | None,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
-        self.global_grid_params = icon.GlobalGridParams(grid_shape=grid_shape)
+        self.global_grid_params = global_grid_params
 
     def verts_vertex_lat(self):
         """vertex latituted"""
@@ -1902,14 +1902,16 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(self, grid_id: str, grid_shape: icon.GridShape) -> IconGridSavepoint:
+    def from_savepoint_grid(
+        self, grid_id: str, global_grid_params: icon.GlobalGridParams
+    ) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
             savepoint,
             self.serializer,
             grid_id=grid_id,
             size=self.grid_size,
-            grid_shape=grid_shape,
+            global_grid_params=global_grid_params,
             backend=self.backend,
         )
 

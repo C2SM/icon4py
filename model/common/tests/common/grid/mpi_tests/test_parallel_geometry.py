@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import (
     base,
@@ -76,9 +76,6 @@ def test_distributed_geometry_attrs(
     grid_name: str,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment == test_defs.Experiments.GAUSS3D:
-        pytest.xfail("domain_length and domain_height are not serialized or available for GAUSS3D")
-
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
@@ -109,15 +106,18 @@ def test_distributed_geometry_attrs_for_inverse(
     lb_domain: h_grid.Domain,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment == test_defs.Experiments.GAUSS3D and grid_name == "inv_vert_vert_length":
-        pytest.xfail("domain_length and domain_height are not serialized or available for GAUSS3D")
-
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = grid_geometry.get(attrs_name).asnumpy()
+    if (
+        grid_geometry.grid.geometry_type == base.GeometryType.TORUS
+        and grid_name == "inv_vert_vert_length"
+    ):
+        # TODO(msimberg, jcanton): See non-distributed test for details.
+        field = field / constants.EARTH_RADIUS
     lb = grid_geometry.grid.start_index(lb_domain)
     assert test_utils.dallclose(field[lb:], field_ref[lb:], rtol=5e-10)
 
@@ -146,9 +146,6 @@ def test_geometry_attr_no_halos(
     grid_name: str,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment == test_defs.Experiments.GAUSS3D:
-        pytest.xfail("domain_length and domain_height are not serialized or available for GAUSS3D")
-
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
