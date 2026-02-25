@@ -224,7 +224,7 @@ def test_e_flx_avg(
     grid = factory.grid
     field = factory.get(attrs.E_FLX_AVG).asnumpy()
     assert field.shape == (grid.num_edges, grid.get_connectivity(dims.E2C2EO).shape[1])
-    test_helpers.dallclose(field, field_ref.asnumpy())
+    assert test_helpers.dallclose(field, field_ref.asnumpy(), atol=1e-12)
 
 
 @pytest.mark.level("integration")
