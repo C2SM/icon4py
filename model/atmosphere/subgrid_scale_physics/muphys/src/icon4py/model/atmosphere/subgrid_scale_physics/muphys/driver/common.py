@@ -11,6 +11,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import pathlib
+from typing import ClassVar
 
 import netCDF4
 import numpy as np
@@ -143,6 +144,8 @@ class GraupelOutput:
     pg: gtx.Field[dims.CellDim, dims.KDim] | None
     pre: gtx.Field[dims.CellDim, dims.KDim] | None
 
+    _surface_fields: ClassVar[list[str]] = ["pr", "ps", "pi", "pg", "pre"]
+
     @classmethod
     def allocate(
         cls,
@@ -160,10 +163,22 @@ class GraupelOutput:
         if references is None:
             references = {}
 
-        zeros = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
+        zeros_full = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
+        surface_domain = gtx.Domain(
+            dims=domain.dims,
+            ranges=(
+                domain.ranges[0],
+                gtx.unit_range((domain.ranges[1].stop - 1, domain.ranges[1].stop)),
+            ),
+        )
+        zeros_surface = functools.partial(gtx.zeros, domain=surface_domain, allocator=allocator)
         return cls(
             **{
-                field.name: zeros() if field.name not in references else references[field.name]
+                field.name: references[field.name]
+                if field.name in references
+                else zeros_surface()
+                if field.name in cls._surface_fields
+                else zeros_full()
                 for field in dataclasses.fields(cls)
             }
         )
@@ -206,9 +221,13 @@ class GraupelOutput:
         with netCDF4.Dataset(filename, mode="w") as ncfile:
             ncfile.createDimension("ncells", ncells)
             ncfile.createDimension("height", nlev)
+            ncfile.createDimension("surface", 1)
 
             write_height_field = functools.partial(
                 _field_to_nc, ncfile, ("height", "ncells"), dtype=np.float64
+            )
+            write_surface_field = functools.partial(
+                _field_to_nc, ncfile, ("surface", "ncells"), dtype=np.float64
             )
 
             write_height_field("ta", self.t)
@@ -221,14 +240,12 @@ class GraupelOutput:
             if self.pflx is not None:
                 write_height_field("pflx", self.pflx)
             if self.pr is not None:
-                write_height_field(
-                    "prr_gsp", self.pr
-                )  # TODO(havogt): see https://github.com/C2SM/icon4py/pull/995
+                write_surface_field("prr_gsp", self.pr)
             if self.ps is not None:
-                write_height_field("prs_gsp", self.ps)  # TODO(havogt): see above
+                write_surface_field("prs_gsp", self.ps)
             if self.pi is not None:
-                write_height_field("pri_gsp", self.pi)  # TODO(havogt): see above
+                write_surface_field("pri_gsp", self.pi)
             if self.pg is not None:
-                write_height_field("prg_gsp", self.pg)  # TODO(havogt): see above
+                write_surface_field("prg_gsp", self.pg)
             if self.pre is not None:
-                write_height_field("pre_gsp", self.pre)  # TODO(havogt): see above
+                write_surface_field("pre_gsp", self.pre)
