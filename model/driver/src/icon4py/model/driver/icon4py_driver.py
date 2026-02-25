@@ -65,7 +65,7 @@ class TimeLoop:
         self._simulation_date: datetime.datetime = self.run_config.start_date
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
-        self._allocator: gtx_typing.FieldBufferAllocationUtil = model_backends.get_allocator(
+        self._allocator: gtx_typing.Allocator = model_backends.get_allocator(
             self.run_config.backend
         )
 
