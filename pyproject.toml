@@ -197,8 +197,8 @@ disable_error_code = ["attr-defined", "name-defined"]
 module = [
   '*.stencil_tests.*',
   '*.unit_tests.*',
-  "icon4py.model.atmosphere.advection.advection_vertical",  # complains about gt4py.next not containing int32
-  "icon4py.model.common.metrics.compute_advection_metrics"  # complains about gt4py.next not containing int32
+  "icon4py.model.atmosphere.advection.advection_vertical",  # https://github.com/GridTools/gt4py/pull/2484
+  "icon4py.model.common.metrics.compute_advection_metrics"  # https://github.com/GridTools/gt4py/pull/2484
 ]
 
 [[tool.mypy.overrides]]
@@ -219,26 +219,26 @@ module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
 disable_error_code = ["index"]
 module = ["icon4py.model.standalone_driver.testcases.initial_condition"]
 
-[[tool.mypy.overrides]]  # complains about gt4py.next not containing int32
-disable_error_code = ["attr-defined"]
+[[tool.mypy.overrides]]
+disable_error_code = ["attr-defined"]  # https://github.com/GridTools/gt4py/pull/2484
 module = [
   "icon4py.model.atmosphere.advection.advection_horizontal",
   "icon4py.model.atmosphere.advection.advection"
 ]
 
-[[tool.mypy.overrides]]  # complains about dims not being valid types
-disable_error_code = ["valid-type"]
+[[tool.mypy.overrides]]
+disable_error_code = ["valid-type"]  # complains about dims not being valid types
 module = [
   "icon4py.model.atmosphere.advection.advection_states"
 ]
 
-[[tool.mypy.overrides]]  # complains about dims not being valid types
+[[tool.mypy.overrides]]
 disable_error_code = [
   "no-untyped-def",  # programs are not annotated with -> None in icon4py
-  "call-overload",  # mypy doesn't catch the @program overload with grid_type kwarg
+  "call-overload",  # https://github.com/GridTools/gt4py/issues/2496
   "operator",  # mypy thinks float < Field[..., float] is not allowed
-  "attr-defined",  # mypy can not see gtx dtypes
-  "name-defined",  # mypy can not see gtx dtypes
+  "attr-defined",  # https://github.com/GridTools/gt4py/pull/2484
+  "name-defined",  # https://github.com/GridTools/gt4py/pull/2484
   "valid-type"  # dims are not valid types according to mypy
 ]
 module = [
