@@ -12,7 +12,7 @@ from gt4py import next as gtx
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-@gtx.field_operator(backend=None, grid_type=gtx.GridType.UNSTRUCTURED)  # type: ignore[arg-type] # see https://github.com/GridTools/gt4py/issues/2496
+@gtx.field_operator  # type: ignore[call-overload] # see https://github.com/GridTools/gt4py/issues/2496
 def _compute_advection_deepatmo_fields(
     height_u: fa.KField[ta.wpfloat],
     height_l: fa.KField[ta.wpfloat],
@@ -53,7 +53,7 @@ def _compute_advection_deepatmo_fields(
     return deepatmo_divh, deepatmo_divzL, deepatmo_divzU
 
 
-@gtx.program(backend=None, grid_type=gtx.GridType.UNSTRUCTURED)  # type: ignore[arg-type] # see https://github.com/GridTools/gt4py/issues/2496
+@gtx.program  # type: ignore[call-overload] # see https://github.com/GridTools/gt4py/issues/2496
 def compute_advection_deepatmo_fields(
     height_u: fa.KField[ta.wpfloat],
     height_l: fa.KField[ta.wpfloat],

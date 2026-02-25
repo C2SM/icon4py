@@ -959,9 +959,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
 
         compute_advection_deepatmo_fields = factory.ProgramFieldProvider(
-            func=compute_advection_metrics.compute_advection_deepatmo_fields.with_backend(
-                self._backend
-            ),
+            func=compute_advection_metrics.compute_advection_deepatmo_fields,
             domain={
                 dims.KDim: (
                     vertical_domain(v_grid.Zone.TOP),
