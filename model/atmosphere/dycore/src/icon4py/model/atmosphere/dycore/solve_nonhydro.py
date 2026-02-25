@@ -176,7 +176,7 @@ class NonHydrostaticConfig:
         fourth_order_divdamp_z3: float = 60000.0,
         fourth_order_divdamp_z4: float = 80000.0,
     ):
-        # parameters from namelist diffusion_nml
+        # parameters from namelist nonhydrostatic_nml
         self.itime_scheme: int = itime_scheme
 
         #: Miura scheme for advection of rho and theta
@@ -310,6 +310,11 @@ class NonHydrostaticConfig:
         if self.divdamp_type == dycore_states.DivergenceDampingType.TWO_DIMENSIONAL:
             raise NotImplementedError(
                 "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
+            )
+
+        if self.rayleigh_type != constants.RayleighType.KLEMP:
+            raise NotImplementedError(
+                "Onle Klemp type of the Rayleigh damping (nudging vertical wind towards zero) is implemented."
             )
 
 
