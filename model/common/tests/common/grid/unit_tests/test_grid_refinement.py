@@ -98,7 +98,7 @@ vertex_bounds: dict[h_grid.Zone, tuple[int, int]] = {
 def test_compute_start_index_for_limited_area_grid(
     dim: gtx.Dimension,
     expected: dict[h_grid.Zone, tuple[int, int]],
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(
         test_defs.Grids.MCH_OPR_R04B07_DOMAIN01, 1, True, cpu_allocator
@@ -124,7 +124,7 @@ def test_compute_start_index_for_limited_area_grid(
 def test_compute_domain_bounds_for_global_grid(
     file: test_defs.GridDescription,
     dim: gtx.Dimension,
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(file, 1, True, cpu_allocator).grid
     refinement_fields = grid.refinement_control

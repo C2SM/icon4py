@@ -11,6 +11,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import pathlib
+from typing import ClassVar
 
 import netCDF4
 import numpy as np
@@ -34,7 +35,7 @@ def _calc_dz(z: np.ndarray) -> np.ndarray:
 
 def _as_field_from_nc(
     dataset: netCDF4.Dataset,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
     varname: str,
     optional: bool = False,
     dtype: np.dtype | None = None,
@@ -96,7 +97,7 @@ class GraupelInput:
     def load(
         cls,
         filename: pathlib.Path | str,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
         dtype=np.float64,
     ) -> None:
         with netCDF4.Dataset(filename, mode="r") as ncfile:
@@ -143,10 +144,12 @@ class GraupelOutput:
     pg: gtx.Field[dims.CellDim, dims.KDim] | None
     pre: gtx.Field[dims.CellDim, dims.KDim] | None
 
+    _surface_fields: ClassVar[list[str]] = ["pr", "ps", "pi", "pg", "pre"]
+
     @classmethod
     def allocate(
         cls,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
         domain: gtx.Domain,
         references: dict[str, gtx.Field] | None = None,
     ):
@@ -160,16 +163,28 @@ class GraupelOutput:
         if references is None:
             references = {}
 
-        zeros = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
+        zeros_full = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
+        surface_domain = gtx.Domain(
+            dims=domain.dims,
+            ranges=(
+                domain.ranges[0],
+                gtx.unit_range((domain.ranges[1].stop - 1, domain.ranges[1].stop)),
+            ),
+        )
+        zeros_surface = functools.partial(gtx.zeros, domain=surface_domain, allocator=allocator)
         return cls(
             **{
-                field.name: zeros() if field.name not in references else references[field.name]
+                field.name: references[field.name]
+                if field.name in references
+                else zeros_surface()
+                if field.name in cls._surface_fields
+                else zeros_full()
                 for field in dataclasses.fields(cls)
             }
         )
 
     @classmethod
-    def load(cls, filename: pathlib.Path | str, allocator: gtx_typing.FieldBufferAllocationUtil):
+    def load(cls, filename: pathlib.Path | str, allocator: gtx_typing.Allocator):
         with netCDF4.Dataset(filename, mode="r") as ncfile:
             field_from_nc = functools.partial(_as_field_from_nc, ncfile, allocator)
             return cls(
