@@ -83,7 +83,7 @@ def graupel_run(
     if graupel_program is None:
         on_gpu = t.array_ns != np
         backend = wrapper_common.select_backend(wrapper_common.BackendIntEnum.DACE, on_gpu=on_gpu)
-        with muphys_utils.utils.recursion_limit(10**4):
+        with muphys_utils.recursion_limit(10**4):
             graupel_program = model_options.setup_program(
                 backend=backend,
                 program=graupel.graupel_run,
