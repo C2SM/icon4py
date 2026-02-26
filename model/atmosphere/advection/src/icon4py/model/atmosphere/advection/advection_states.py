@@ -101,7 +101,7 @@ class AdvectionMetricState:
 
 def initialize_advection_diagnostic_state(
     grid: icon_grid.IconGrid,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> AdvectionDiagnosticState:
     return AdvectionDiagnosticState(
         airmass_now=data_alloc.zero_field(
