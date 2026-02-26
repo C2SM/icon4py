@@ -74,7 +74,6 @@ def test_distributed_geometry_attrs(
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
-    experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
@@ -104,7 +103,6 @@ def test_distributed_geometry_attrs_for_inverse(
     attrs_name: str,
     grid_name: str,
     lb_domain: h_grid.Domain,
-    experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
@@ -144,7 +142,6 @@ def test_geometry_attr_no_halos(
     geometry_from_savepoint: geometry.GridGeometry,
     attrs_name: str,
     grid_name: str,
-    experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
