@@ -296,6 +296,11 @@ def _graupel_run_self_copy_removal_inside_if_stmt(
         if not compute_dst_node.desc(scan_sdfg).transient and src_node.data != "t_":
             continue
         temp_data_name = compute_dst_node.data
+        scan_update_last_level = scan_node.sdfg.nodes()[-1]
+        assert "scan_last_level" in scan_update_last_level.label
+        # If only the last level of the output data is updated then don't consider it as a self-copy as we only write in the end only its last level
+        if any(node for node in scan_update_last_level.nodes() if isinstance(node, dace_nodes.AccessNode) and node.data == compute_dst_node.data):
+            continue
 
         if src_node.data == "t_":
             else_br_an_output_4_0 = [node for node in else_br.nodes()[0].nodes() if isinstance(node, dace_nodes.AccessNode) and node.data == "__output_4_0"][0]
@@ -403,7 +408,7 @@ def graupel_run_self_copy_removal_inside_scan(sdfg: dace.SDFG) -> None:
         if isinstance(node, dace_nodes.NestedSDFG) and node.label.startswith("scan_")
     )
     scan_sdfg = scan_nsdfg_node.sdfg
-    assert len(scan_sdfg.nodes()) == 2
+    assert len(scan_sdfg.nodes()) == 3
     assert isinstance(scan_sdfg.nodes()[1], dace_sdfg.state.LoopRegion)
     scan_loop = scan_sdfg.nodes()[1]
     assert len(scan_loop.nodes()) == 2 and all(
