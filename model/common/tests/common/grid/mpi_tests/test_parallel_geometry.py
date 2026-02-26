@@ -193,10 +193,10 @@ def test_cartesian_geometry_attr_no_halos(
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
         case base.GeometryType.TORUS:
             assert all(x_field.asnumpy() >= 0.0)
+            assert all(x_field.asnumpy() <= grid_geometry.grid.global_properties.domain_length)
             assert all(y_field.asnumpy() >= 0.0)
+            assert all(y_field.asnumpy() <= grid_geometry.grid.global_properties.domain_height)
             assert all(z_field.asnumpy() == 0.0)
-            # TODO(msimberg): This should check that points are less than the
-            # domain_length/height, when that information is available.
 
 
 @pytest.mark.datatest
