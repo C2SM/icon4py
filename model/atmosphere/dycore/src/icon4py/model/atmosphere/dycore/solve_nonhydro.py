@@ -163,6 +163,7 @@ class NonHydrostaticConfig:
         divdamp_trans_start: float = 12500.0,
         divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
+        deepatmos_mode: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
         _nudge_max_coeff: float | None = None,  # default is set in __init__
@@ -284,6 +285,10 @@ class NonHydrostaticConfig:
         #: use vertical nesting
         self.l_vert_nested: bool = l_vert_nested
 
+        #: from dynamics_nml.f90
+        #: deep atmosphere mode, originally defined as ldeepatmo in ICON
+        self.deepatmos_mode: bool = deepatmos_mode
+
         #: from mo_initicon_nml.f90/ mo_initicon_config.f90
         #: whether IAU is active at current time
         self.is_iau_active: bool = is_iau_active
@@ -297,6 +302,9 @@ class NonHydrostaticConfig:
 
         if self.l_vert_nested:
             raise NotImplementedError("Vertical nesting support not implemented")
+
+        if self.deepatmos_mode:
+            raise NotImplementedError("Deep atmosphere mode not implemented")
 
         if self.igradp_method != dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             raise NotImplementedError("igradp_method can only be 3")
@@ -314,7 +322,7 @@ class NonHydrostaticConfig:
 
         if self.rayleigh_type != constants.RayleighType.KLEMP:
             raise NotImplementedError(
-                "Onle Klemp type of the Rayleigh damping (nudging vertical wind towards zero) is implemented."
+                "Only Klemp type of the Rayleigh damping (nudging vertical wind towards zero) is implemented."
             )
 
 

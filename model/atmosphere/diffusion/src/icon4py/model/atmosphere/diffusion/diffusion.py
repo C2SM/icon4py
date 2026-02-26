@@ -162,9 +162,10 @@ class DiffusionConfig:
     def __init__(
         self,
         diffusion_type: ValidDiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        hdiff_temp=True,
+        hdiff_w: bool = True,
+        hdiff_vn: bool = True,
+        hdiff_temp: bool = True,
+        hdiff_smag_w: bool = False,
         type_vn_diffu: ValidSmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
         smag_3d: bool = False,
         type_t_diffu: ValidTemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENOUS,
@@ -199,6 +200,10 @@ class DiffusionConfig:
         #:  If True, apply horizontal diffusion to temperature field
         #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
         self.apply_to_temperature: bool = hdiff_temp
+
+        #: If True, compute Smagorinsky diffusion to vertical wind field
+        #: Called 'lhdiff_smag_w' in mo_diffusion_nml.f90
+        self.apply_smag_diff_to_vertical_wind: bool = hdiff_smag_w
 
         #: If True, compute 3D Smagorinsky diffusion coefficient
         #: Called 'lsmag_3d' in mo_diffusion_nml.f90
@@ -310,10 +315,11 @@ class DiffusionConfig:
                 "Only type_t_diffu 2 = `Smagorinsky diffusion with heterogeneous discretization` is implemented"
             )
 
+        if self.apply_smag_diff_to_vertical_wind:
+            raise NotImplementedError("Smagorinsky diffusion for vertical wind is not implemented")
+
         if self.compute_3d_smag_coeff:
             raise NotImplementedError("3D Smagorinsky diffusion computation is not implemented")
-
-        # TODO (Chia Rui): lhdiff_smag_w is missing in the initialization, it is not supported
 
         if self.shear_type not in (
             TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
