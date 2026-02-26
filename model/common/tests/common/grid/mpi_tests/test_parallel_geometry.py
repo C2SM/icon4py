@@ -194,6 +194,7 @@ def test_cartesian_geometry_attr_no_halos(
             math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
             assert test_utils.dallclose(norm.asnumpy(), 1.0)
         case base.GeometryType.TORUS:
+            # on a torus coordinates should be within the domain
             assert all(x_field.asnumpy() >= 0.0)
             assert all(x_field.asnumpy() <= grid_geometry.grid.global_properties.domain_length)
             assert all(y_field.asnumpy() >= 0.0)
