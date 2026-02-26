@@ -114,7 +114,11 @@ def test_distributed_geometry_attrs_for_inverse(
         grid_geometry.grid.geometry_type == base.GeometryType.TORUS
         and grid_name == "inv_vert_vert_length"
     ):
-        # TODO(msimberg, jcanton): See non-distributed test for details.
+        # TODO(msimberg, jcanton): icon fortran multiplies sphere radius even
+        # for torus grids. Fix submitted upstream. The following can be removed
+        # when fixed serialized data is available.
+        # https://gitlab.dkrz.de/icon-libraries/libiconmath/-/merge_requests/82
+        # https://gitlab.dkrz.de/icon/icon-nwp/-/merge_requests/1916
         field = field / constants.EARTH_RADIUS
     lb = grid_geometry.grid.start_index(lb_domain)
     assert test_utils.dallclose(field[lb:], field_ref[lb:], rtol=5e-10)
