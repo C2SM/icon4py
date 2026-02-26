@@ -137,6 +137,8 @@ def solve_nh_run_wrapper(
     divdamp_fac_o2,
     ndyn_substeps_var,
     idyn_timestep,
+    is_iau_active,
+    iau_wgt_dyn,
     on_gpu,
 ):
     with runtime_config.HOOK_BINDINGS_FUNCTION["solve_nh_run"]:
@@ -566,6 +568,8 @@ def solve_nh_run_wrapper(
                 divdamp_fac_o2=divdamp_fac_o2,
                 ndyn_substeps_var=ndyn_substeps_var,
                 idyn_timestep=idyn_timestep,
+                is_iau_active=is_iau_active,
+                iau_wgt_dyn=iau_wgt_dyn,
             )
 
             if __debug__:

@@ -121,6 +121,8 @@ module dycore
                                     divdamp_fac_o2, &
                                     ndyn_substeps_var, &
                                     idyn_timestep, &
+                                    is_iau_active, &
+                                    iau_wgt_dyn, &
                                     on_gpu) bind(c, name="solve_nh_run_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
@@ -350,6 +352,10 @@ module dycore
          integer(c_int), value, target :: ndyn_substeps_var
 
          integer(c_int), value, target :: idyn_timestep
+
+         logical(c_int), value, target :: is_iau_active
+
+         real(c_double), value, target :: iau_wgt_dyn
 
          logical(c_int), value :: on_gpu
 
@@ -901,6 +907,8 @@ contains
                            divdamp_fac_o2, &
                            ndyn_substeps_var, &
                            idyn_timestep, &
+                           is_iau_active, &
+                           iau_wgt_dyn, &
                            rc)
       use, intrinsic :: iso_c_binding
 
@@ -987,6 +995,10 @@ contains
       integer(c_int), value, target :: ndyn_substeps_var
 
       integer(c_int), value, target :: idyn_timestep
+
+      logical(c_int), value, target :: is_iau_active
+
+      real(c_double), value, target :: iau_wgt_dyn
 
       logical(c_int) :: on_gpu
 
@@ -1418,6 +1430,8 @@ contains
                                 divdamp_fac_o2=divdamp_fac_o2, &
                                 ndyn_substeps_var=ndyn_substeps_var, &
                                 idyn_timestep=idyn_timestep, &
+                                is_iau_active=is_iau_active, &
+                                iau_wgt_dyn=iau_wgt_dyn, &
                                 on_gpu=on_gpu)
       !$acc end host_data
       !$acc end host_data
