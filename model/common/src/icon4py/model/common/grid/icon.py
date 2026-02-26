@@ -12,7 +12,7 @@ from collections.abc import Callable
 from typing import Final, TypeVar
 
 import gt4py.next as gtx
-from gt4py.next import allocators as gtx_allocators
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -184,7 +184,7 @@ def _should_replace_skip_values(
 
 def icon_grid(
     id_: str,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.Allocator | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
     start_index: Callable[[h_grid.Domain], gtx.int32],

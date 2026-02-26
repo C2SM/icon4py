@@ -339,7 +339,7 @@ def assert_up_to_order(
 
 @pytest.mark.with_netcdf
 def test_gridmanager_given_file_not_found_then_abort(
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:

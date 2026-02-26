@@ -121,7 +121,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, allocator: gtx_typing.FieldBufferAllocationUtil, keep_skip_values: bool):
+    def __call__(self, allocator: gtx_typing.Allocator, keep_skip_values: bool):
         if not self._reader:
             self.open()
 
@@ -141,7 +141,7 @@ class GridManager:
 
     def _read_coordinates(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
         geometry_type: base.GeometryType,
     ) -> CoordinateDict:
         coordinates = {
@@ -249,7 +249,7 @@ class GridManager:
 
     def _read_geometry_fields(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
@@ -311,7 +311,7 @@ class GridManager:
         self,
         *,
         decomposition_info: decomposition.DecompositionInfo | None = None,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
@@ -354,7 +354,7 @@ class GridManager:
 
     def _construct_grid(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil | None,
+        allocator: gtx_typing.Allocator | None,
         with_skip_values: bool,
         geometry_type: base.GeometryType,
     ) -> icon.IconGrid:
