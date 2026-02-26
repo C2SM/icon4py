@@ -174,8 +174,6 @@ program solve_nh_simulation
    integer(c_int), parameter :: rayleigh_type = 1
    real(c_double), parameter :: rayleigh_coeff = 0.1
    integer(c_int), parameter :: divdamp_order = 24
-   logical(c_int), parameter :: is_iau_active = .false.
-   real(c_double), parameter :: iau_wgt_dyn = 0.5
    real(c_double), parameter :: divdamp_fac_o2 = 0.5
    integer(c_int), parameter :: divdamp_type = 1
    real(c_double), parameter :: divdamp_trans_start = 1000.0
@@ -751,8 +749,6 @@ program solve_nh_simulation
         rayleigh_type=rayleigh_type, &
         rayleigh_coeff=rayleigh_coeff, &
         divdamp_order=divdamp_order, &
-        is_iau_active=is_iau_active, &
-        iau_wgt_dyn=iau_wgt_dyn, &
         divdamp_type=divdamp_type, &
         divdamp_trans_start=divdamp_trans_start, &
         divdamp_trans_end=divdamp_trans_end, &

@@ -152,6 +152,8 @@ def test_run_solve_nonhydro_single_step(
         lprep_adv=lprep_adv,
         at_first_substep=(substep_init == 1),
         at_last_substep=(substep_init == ndyn_substeps),
+        is_iau_active=False,
+        iau_wgt_dyn=0.0,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: dycore step run ")
 

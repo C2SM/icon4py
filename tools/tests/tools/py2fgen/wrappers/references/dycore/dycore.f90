@@ -121,6 +121,8 @@ module dycore
                                     divdamp_fac_o2, &
                                     ndyn_substeps_var, &
                                     idyn_timestep, &
+                                    is_iau_active, &
+                                    iau_wgt_dyn, &
                                     on_gpu) bind(c, name="solve_nh_run_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
@@ -351,6 +353,10 @@ module dycore
 
          integer(c_int), value, target :: idyn_timestep
 
+         logical(c_int), value, target :: is_iau_active
+
+         real(c_double), value, target :: iau_wgt_dyn
+
          logical(c_int), value :: on_gpu
 
       end function solve_nh_run_wrapper
@@ -502,8 +508,6 @@ module dycore
                                      rayleigh_type, &
                                      rayleigh_coeff, &
                                      divdamp_order, &
-                                     is_iau_active, &
-                                     iau_wgt_dyn, &
                                      divdamp_type, &
                                      divdamp_trans_start, &
                                      divdamp_trans_end, &
@@ -819,10 +823,6 @@ module dycore
 
          integer(c_int), value, target :: divdamp_order
 
-         logical(c_int), value, target :: is_iau_active
-
-         real(c_double), value, target :: iau_wgt_dyn
-
          integer(c_int), value, target :: divdamp_type
 
          real(c_double), value, target :: divdamp_trans_start
@@ -907,6 +907,8 @@ contains
                            divdamp_fac_o2, &
                            ndyn_substeps_var, &
                            idyn_timestep, &
+                           is_iau_active, &
+                           iau_wgt_dyn, &
                            rc)
       use, intrinsic :: iso_c_binding
 
@@ -993,6 +995,10 @@ contains
       integer(c_int), value, target :: ndyn_substeps_var
 
       integer(c_int), value, target :: idyn_timestep
+
+      logical(c_int), value, target :: is_iau_active
+
+      real(c_double), value, target :: iau_wgt_dyn
 
       logical(c_int) :: on_gpu
 
@@ -1424,6 +1430,8 @@ contains
                                 divdamp_fac_o2=divdamp_fac_o2, &
                                 ndyn_substeps_var=ndyn_substeps_var, &
                                 idyn_timestep=idyn_timestep, &
+                                is_iau_active=is_iau_active, &
+                                iau_wgt_dyn=iau_wgt_dyn, &
                                 on_gpu=on_gpu)
       !$acc end host_data
       !$acc end host_data
@@ -1517,8 +1525,6 @@ contains
                             rayleigh_type, &
                             rayleigh_coeff, &
                             divdamp_order, &
-                            is_iau_active, &
-                            iau_wgt_dyn, &
                             divdamp_type, &
                             divdamp_trans_start, &
                             divdamp_trans_end, &
@@ -1648,10 +1654,6 @@ contains
       real(c_double), value, target :: rayleigh_coeff
 
       integer(c_int), value, target :: divdamp_order
-
-      logical(c_int), value, target :: is_iau_active
-
-      real(c_double), value, target :: iau_wgt_dyn
 
       integer(c_int), value, target :: divdamp_type
 
@@ -2220,8 +2222,6 @@ contains
                                  rayleigh_type=rayleigh_type, &
                                  rayleigh_coeff=rayleigh_coeff, &
                                  divdamp_order=divdamp_order, &
-                                 is_iau_active=is_iau_active, &
-                                 iau_wgt_dyn=iau_wgt_dyn, &
                                  divdamp_type=divdamp_type, &
                                  divdamp_trans_start=divdamp_trans_start, &
                                  divdamp_trans_end=divdamp_trans_end, &

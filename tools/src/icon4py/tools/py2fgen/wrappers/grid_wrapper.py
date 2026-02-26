@@ -116,6 +116,7 @@ def grid_init(
     num_edges: gtx.int32,
     vertical_size: gtx.int32,
     limited_area: bool,
+    iau_init: bool,
     backend: gtx.int32,
 ) -> None:
     on_gpu = c2e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
@@ -145,6 +146,7 @@ def grid_init(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        iau_init=iau_init,
         allocator=allocator,
     )
 

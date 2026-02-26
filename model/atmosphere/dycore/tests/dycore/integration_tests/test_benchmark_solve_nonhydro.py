@@ -55,7 +55,6 @@ def solve_nonhydro(
     config = solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
         divdamp_order=dycore_states.DivergenceDampingOrder.COMBINED,  # type: ignore[arg-type]
-        iau_wgt_dyn=1.0,
         fourth_order_divdamp_factor=0.004,
         max_nudging_coefficient=0.375,
     )

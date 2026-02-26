@@ -44,8 +44,6 @@ def solve_nh_init(
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
-    is_iau_active = False
-    iau_wgt_dyn = 1.0
     divdamp_type = 3
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
@@ -208,8 +206,6 @@ def solve_nh_init(
         rayleigh_type=rayleigh_type,
         rayleigh_coeff=rayleigh_coeff,
         divdamp_order=divdamp_order,
-        is_iau_active=is_iau_active,
-        iau_wgt_dyn=iau_wgt_dyn,
         divdamp_type=divdamp_type,
         divdamp_trans_start=divdamp_trans_start,
         divdamp_trans_end=divdamp_trans_end,
@@ -279,8 +275,6 @@ def test_dycore_wrapper_granule_inputs(
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
     divdamp_order = dycore_states.DivergenceDampingOrder.COMBINED
-    is_iau_active = False
-    iau_wgt_dyn = 1.0
     divdamp_type = 3
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
@@ -629,8 +623,6 @@ def test_dycore_wrapper_granule_inputs(
             rayleigh_type=rayleigh_type,
             rayleigh_coeff=rayleigh_coeff,
             divdamp_order=divdamp_order,
-            is_iau_active=is_iau_active,
-            iau_wgt_dyn=iau_wgt_dyn,
             divdamp_type=divdamp_type,
             divdamp_trans_start=divdamp_trans_start,
             divdamp_trans_end=divdamp_trans_end,
@@ -748,6 +740,8 @@ def test_dycore_wrapper_granule_inputs(
             divdamp_fac_o2=second_order_divdamp_factor,
             ndyn_substeps_var=ndyn_substeps,
             idyn_timestep=substep,
+            is_iau_active=False,
+            iau_wgt_dyn=0.0,
         )
 
         # Check input arguments to SolveNonhydro.time_step
@@ -942,6 +936,8 @@ def test_granule_solve_nonhydro_single_step_regional(
         divdamp_fac_o2=second_order_divdamp_factor,  # This is a scalar
         ndyn_substeps_var=ndyn_substeps,
         idyn_timestep=substep,
+        is_iau_active=False,
+        iau_wgt_dyn=0.0,
     )
 
     # Comparison asserts should now use py2fgen.as_array
@@ -1130,6 +1126,8 @@ def test_granule_solve_nonhydro_multi_step_regional(
             divdamp_fac_o2=second_order_divdamp_factor,
             ndyn_substeps_var=ndyn_substeps,
             idyn_timestep=i_substep,
+            is_iau_active=False,
+            iau_wgt_dyn=0.0,
         )
 
         w_new, w_now = w_now, w_new
