@@ -87,6 +87,7 @@ class GridManager:
         transformation: IndexTransformation,
         grid_file: pathlib.Path | str,
         config: v_grid.VerticalGridConfig,  # TODO(halungge): remove to separate vertical and horizontal grid
+        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._transformation = transformation
         self._file_name = str(grid_file)
@@ -96,6 +97,7 @@ class GridManager:
         self._geometry: GeometryDict = {}
         self._reader = None
         self._coordinates: CoordinateDict = {}
+        self._global_reductions = global_reductions
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -119,7 +121,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, allocator: gtx_typing.FieldBufferAllocationUtil, keep_skip_values: bool):
+    def __call__(self, allocator: gtx_typing.Allocator, keep_skip_values: bool):
         if not self._reader:
             self.open()
 
@@ -130,14 +132,16 @@ class GridManager:
 
         self._geometry = self._read_geometry_fields(allocator)
         self._grid = self._construct_grid(
-            allocator=allocator, with_skip_values=keep_skip_values, geometry_type=geometry_type
+            allocator=allocator,
+            with_skip_values=keep_skip_values,
+            geometry_type=geometry_type,
         )
         self._coordinates = self._read_coordinates(allocator, geometry_type)
         self.close()
 
     def _read_coordinates(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
         geometry_type: base.GeometryType,
     ) -> CoordinateDict:
         coordinates = {
@@ -245,7 +249,7 @@ class GridManager:
 
     def _read_geometry_fields(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
         return {
             # TODO(halungge): still needs to ported, values from "our" grid files contains (wrong) values:
@@ -307,7 +311,7 @@ class GridManager:
         self,
         *,
         decomposition_info: decomposition.DecompositionInfo | None = None,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
@@ -350,7 +354,7 @@ class GridManager:
 
     def _construct_grid(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil | None,
+        allocator: gtx_typing.Allocator | None,
         with_skip_values: bool,
         geometry_type: base.GeometryType,
     ) -> icon.IconGrid:
@@ -370,32 +374,13 @@ class GridManager:
         num_edges = self._reader.dimension(gridfile.DimensionName.EDGE_NAME)
         num_vertices = self._reader.dimension(gridfile.DimensionName.VERTEX_NAME)
         uuid_ = self._reader.attribute(gridfile.MandatoryPropertyName.GRID_UUID)
-        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
-        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+
         sphere_radius = self._reader.try_attribute(gridfile.MPIMPropertyName.SPHERE_RADIUS)
         domain_length = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_LENGTH)
         domain_height = self._reader.try_attribute(gridfile.MPIMPropertyName.DOMAIN_HEIGHT)
-
-        # TODO(msimberg): Compute these in GridGeometry once FieldProviders can produce scalars.
-        # This will also allow easier handling once grids are distributed.
-        mean_edge_length = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_EDGE_LENGTH)
-        mean_dual_edge_length = self._reader.try_attribute(
-            gridfile.MPIMPropertyName.MEAN_DUAL_EDGE_LENGTH
-        )
-        mean_cell_area = self._reader.try_attribute(gridfile.MPIMPropertyName.MEAN_CELL_AREA)
-        mean_dual_cell_area = self._reader.try_attribute(
-            gridfile.MPIMPropertyName.MEAN_DUAL_CELL_AREA
-        )
-
-        edge_lengths = self.geometry_fields[gridfile.GeometryName.EDGE_LENGTH.value].ndarray
-        dual_edge_lengths = self.geometry_fields[
-            gridfile.GeometryName.DUAL_EDGE_LENGTH.value
-        ].ndarray
-        cell_areas = self.geometry_fields[gridfile.GeometryName.CELL_AREA.value].ndarray
-        dual_cell_areas = self.geometry_fields[gridfile.GeometryName.DUAL_AREA.value].ndarray
-
-        global_params = icon.GlobalGridParams.from_fields(
-            array_ns=xp,
+        grid_root = self._reader.attribute(gridfile.MandatoryPropertyName.ROOT)
+        grid_level = self._reader.attribute(gridfile.MandatoryPropertyName.LEVEL)
+        global_grid_params = icon.GlobalGridParams(
             grid_shape=icon.GridShape(
                 geometry_type=geometry_type,
                 subdivision=icon.GridSubdivision(root=grid_root, level=grid_level),
@@ -404,15 +389,8 @@ class GridManager:
             domain_length=domain_length,
             domain_height=domain_height,
             num_cells=num_cells,
-            mean_edge_length=mean_edge_length,
-            mean_dual_edge_length=mean_dual_edge_length,
-            mean_cell_area=mean_cell_area,
-            mean_dual_cell_area=mean_dual_cell_area,
-            edge_lengths=edge_lengths,
-            dual_edge_lengths=dual_edge_lengths,
-            cell_areas=cell_areas,
-            dual_cell_areas=dual_cell_areas,
         )
+
         grid_size = base.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
@@ -446,7 +424,7 @@ class GridManager:
             neighbor_tables=neighbor_tables,
             start_index=start_index,
             end_index=end_index,
-            global_properties=global_params,
+            global_properties=global_grid_params,
             refinement_control=refinement_fields,
         )
 

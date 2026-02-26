@@ -83,6 +83,7 @@ def solve_nonhydro(
         cell_center_lat=geometry_field_source.get(geometry_meta.CELL_LAT),
         cell_center_lon=geometry_field_source.get(geometry_meta.CELL_LON),
         area=geometry_field_source.get(geometry_meta.CELL_AREA),
+        mean_cell_area=geometry_field_source.get(geometry_meta.MEAN_CELL_AREA),  # type: ignore[arg-type]
     )
     edge_geometry = grid_states.EdgeParams(
         tangent_orientation=geometry_field_source.get(geometry_meta.TANGENT_ORIENTATION),
@@ -135,7 +136,6 @@ def solve_nonhydro(
     )
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
-        bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
         mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
         rayleigh_w=metrics_field_source.get(metrics_attributes.RAYLEIGH_W),
         time_extrapolation_parameter_for_exner=metrics_field_source.get(

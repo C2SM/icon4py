@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_vertical_momentum_equation import (
-    compute_advection_in_vertical_momentum_equation,
-    compute_contravariant_correction_and_advection_in_vertical_momentum_equation,
+    compute_advection_in_corrector_vertical_momentum,
+    compute_advection_in_predictor_vertical_momentum,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -271,7 +271,7 @@ def compute_advective_vertical_wind_tendency_and_apply_diffusion_numpy(
 @pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
 class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
-    PROGRAM = compute_advection_in_vertical_momentum_equation
+    PROGRAM = compute_advection_in_corrector_vertical_momentum
     OUTPUTS = (
         "vertical_wind_advective_tendency",
         "contravariant_corrected_w_at_cells_on_model_levels",
@@ -486,7 +486,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
 @pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
 class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.StencilTest):
-    PROGRAM = compute_contravariant_correction_and_advection_in_vertical_momentum_equation
+    PROGRAM = compute_advection_in_predictor_vertical_momentum
     OUTPUTS = (
         "contravariant_correction_at_cells_on_half_levels",
         "vertical_wind_advective_tendency",

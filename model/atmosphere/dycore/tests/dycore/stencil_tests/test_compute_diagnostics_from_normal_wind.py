@@ -9,8 +9,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.stencils.compute_derived_horizontal_winds_and_ke_and_contravariant_correction import (
-    compute_derived_horizontal_winds_and_ke_and_contravariant_correction,
+from icon4py.model.atmosphere.dycore.stencils.compute_diagnostics_from_normal_wind import (
+    compute_diagnostics_from_normal_wind,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -36,7 +36,7 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 )
 
 
-def compute_derived_horizontal_winds_and_ke_and_contravariant_correction_numpy(
+def compute_diagnostics_from_normal_wind_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
     tangential_wind_on_half_levels: np.ndarray,
     tangential_wind: np.ndarray,
@@ -153,7 +153,7 @@ def extrapolate_to_surface_numpy(wgtfacq_e: np.ndarray, vn: np.ndarray) -> np.nd
 class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContravariantCorrection(
     stencil_tests.StencilTest
 ):
-    PROGRAM = compute_derived_horizontal_winds_and_ke_and_contravariant_correction
+    PROGRAM = compute_diagnostics_from_normal_wind
     OUTPUTS = (
         "tangential_wind",
         "tangential_wind_on_half_levels",
@@ -224,7 +224,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             horizontal_kinetic_energy_at_edges_on_model_levels,
             contravariant_correction_at_edges_on_model_levels,
             horizontal_advection_of_w_at_edges_on_half_levels,
-        ) = compute_derived_horizontal_winds_and_ke_and_contravariant_correction_numpy(
+        ) = compute_diagnostics_from_normal_wind_numpy(
             connectivities=connectivities,
             tangential_wind_on_half_levels=tangential_wind_on_half_levels,
             tangential_wind=tangential_wind,

@@ -106,7 +106,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         theta_v_flux_at_edges_on_model_levels: np.ndarray,
         predictor_vertical_wind_advective_tendency: np.ndarray,
         corrector_vertical_wind_advective_tendency: np.ndarray,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels: np.ndarray,
+        nonhydro_buoy_at_cells_on_half_levels: np.ndarray,
         rho_at_cells_on_half_levels: np.ndarray,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         exner_w_explicit_weight_parameter: np.ndarray,
@@ -182,7 +182,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
                 w_nnow=current_w[:, :n_lev],
                 ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency[:, :n_lev],
                 ddt_w_adv_ntl2=corrector_vertical_wind_advective_tendency[:, :n_lev],
-                z_th_ddz_exner_c=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+                z_th_ddz_exner_c=nonhydro_buoy_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                 vwind_expl_wgt=exner_w_explicit_weight_parameter,
@@ -431,7 +431,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
         corrector_vertical_wind_advective_tendency = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.random_field(
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )
         rho_at_cells_on_half_levels = data_alloc.random_field(
@@ -505,7 +505,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
             corrector_vertical_wind_advective_tendency=corrector_vertical_wind_advective_tendency,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,

@@ -29,7 +29,6 @@ from icon4py.model.testing.fixtures.datatest import (
     interpolation_savepoint,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 from ... import utils
@@ -149,14 +148,16 @@ def test_compute_rayleigh_w(
         icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     (
-        _lowest_layer_thickness,
-        _model_top_height,
-        _stretch_factor,
+        _,
+        _,
+        _,
         damping_height,
         rayleigh_coeff,
-        _exner_expol,
-        _vwind_offctr,
+        _,
+        _,
         rayleigh_type,
+        _,
+        _,
     ) = construct_metrics_config(experiment)
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
@@ -470,47 +471,19 @@ def test_compute_mask_prog_halo_c(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    mask_prog_halo_c_full = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dtype=bool, allocator=backend
-    )
+    mask_prog_halo_c = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, allocator=backend)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
     horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
     mf.compute_mask_prog_halo_c.with_backend(backend)(
         c_refin_ctrl=c_refin_ctrl,
-        mask_prog_halo_c=mask_prog_halo_c_full,
+        mask_prog_halo_c=mask_prog_halo_c,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         offset_provider={},
     )
-    assert testing_helpers.dallclose(
-        mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy()
-    )
-
-
-@pytest.mark.datatest
-def test_compute_bdy_halo_c(
-    metrics_savepoint: sb.MetricSavepoint,
-    icon_grid: base_grid.Grid,
-    grid_savepoint: sb.IconGridSavepoint,
-    backend: gtx_typing.Backend,
-) -> None:
-    bdy_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, allocator=backend)
-    c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
-    bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
-    horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
-    horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
-
-    mf.compute_bdy_halo_c.with_backend(backend)(
-        c_refin_ctrl=c_refin_ctrl,
-        bdy_halo_c=bdy_halo_c_full,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        offset_provider={},
-    )
-
-    assert testing_helpers.dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
+    assert testing_helpers.dallclose(mask_prog_halo_c.asnumpy(), mask_prog_halo_c_ref.asnumpy())
 
 
 @pytest.mark.level("unit")

@@ -32,8 +32,9 @@ from icon4py.model.testing.fixtures import (
     experiment,
     grid_savepoint,
     processor_props,
-    ranked_data_path,
 )
+
+from .. import utils
 
 
 if TYPE_CHECKING:
@@ -472,3 +473,20 @@ def test_create_auxiliary_orientation_coordinates(
     assert test_utils.dallclose(
         lon_1.asnumpy()[cell_coordinates_1], cell_lon.asnumpy()[connectivity[cell_coordinates_1, 1]]
     )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "attr_name", ["mean_edge_length", "mean_dual_edge_length", "mean_cell_area", "mean_dual_area"]
+)
+def test_geometry_mean_fields(
+    backend: gtx_typing.Backend,
+    grid_savepoint: sb.IconGridSavepoint,
+    experiment: definitions.Experiment,
+    attr_name: str,
+) -> None:
+    assert hasattr(experiment, "name")
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment)
+    value_ref = utils.GRID_REFERENCE_VALUES[experiment.name][attr_name]
+    value = grid_geometry.get(attr_name)
+    assert value == pytest.approx(value_ref)

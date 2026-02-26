@@ -26,7 +26,7 @@ class TestComputeThetaAndExner(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        bdy_halo_c: np.ndarray,
+        mask_prog_halo_c: np.ndarray,
         rho: np.ndarray,
         theta_v: np.ndarray,
         exner: np.ndarray,
@@ -34,11 +34,11 @@ class TestComputeThetaAndExner(StencilTest):
         rd_o_p0ref: ta.wpfloat,
         **kwargs: Any,
     ) -> dict:
-        bdy_halo_c = np.expand_dims(bdy_halo_c, axis=-1)
+        mask_prog_halo_c = np.expand_dims(mask_prog_halo_c, axis=-1)
 
-        theta_v = np.where(bdy_halo_c == 1, exner, theta_v)
+        theta_v = np.where(mask_prog_halo_c != 1, exner, theta_v)
         exner = np.where(
-            bdy_halo_c == 1, np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * exner)), exner
+            mask_prog_halo_c != 1, np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * exner)), exner
         )
 
         return dict(theta_v=theta_v, exner=exner)
@@ -47,7 +47,7 @@ class TestComputeThetaAndExner(StencilTest):
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rd_o_cvd = ta.wpfloat("10.0")
         rd_o_p0ref = ta.wpfloat("20.0")
-        bdy_halo_c = data_alloc.random_mask(grid, dims.CellDim)
+        mask_prog_halo_c = data_alloc.random_mask(grid, dims.CellDim)
         exner = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=ta.wpfloat
         )
@@ -59,7 +59,7 @@ class TestComputeThetaAndExner(StencilTest):
         )
 
         return dict(
-            bdy_halo_c=bdy_halo_c,
+            mask_prog_halo_c=mask_prog_halo_c,
             rho=rho,
             theta_v=theta_v,
             exner=exner,

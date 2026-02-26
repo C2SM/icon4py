@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_cell_diagnostics_for_dycore import (
-    interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration,
+    compute_interpolation_and_nonhydro_buoy,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -38,12 +38,12 @@ from icon4py.model.testing import stencil_tests
 class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration(
     stencil_tests.StencilTest
 ):
-    PROGRAM = interpolate_rho_theta_v_to_half_levels_and_compute_pressure_buoyancy_acceleration
+    PROGRAM = compute_interpolation_and_nonhydro_buoy
     OUTPUTS = (
         "rho_at_cells_on_half_levels",
         "perturbed_theta_v_at_cells_on_half_levels",
         "theta_v_at_cells_on_half_levels",
-        "pressure_buoyancy_acceleration_at_cells_on_half_levels",
+        "nonhydro_buoy_at_cells_on_half_levels",
     )
     STATIC_PARAMS = {
         stencil_tests.StandardStaticVariants.NONE: (),
@@ -65,7 +65,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         rho_at_cells_on_half_levels: np.ndarray,
         perturbed_theta_v_at_cells_on_half_levels: np.ndarray,
         theta_v_at_cells_on_half_levels: np.ndarray,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels: np.ndarray,
+        nonhydro_buoy_at_cells_on_half_levels: np.ndarray,
         w: np.ndarray,
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
         current_rho: np.ndarray,
@@ -138,7 +138,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             + back_trajectory_w_at_cells_on_half_levels
             * (time_averaged_theta_v_kup - time_averaged_theta_v)
         )
-        pressure_buoyancy_acceleration_at_cells_on_half_levels_full = (
+        nonhydro_buoy_at_cells_on_half_levels_full = (
             exner_w_explicit_weight_parameter
             * theta_v_at_cells_on_half_levels_full
             * (
@@ -170,16 +170,16 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         ] = theta_v_at_cells_on_half_levels_full[
             horizontal_start:horizontal_end, vertical_start:vertical_end
         ]
-        pressure_buoyancy_acceleration_at_cells_on_half_levels[
+        nonhydro_buoy_at_cells_on_half_levels[
             horizontal_start:horizontal_end, vertical_start:vertical_end
-        ] = pressure_buoyancy_acceleration_at_cells_on_half_levels_full[
+        ] = nonhydro_buoy_at_cells_on_half_levels_full[
             horizontal_start:horizontal_end, vertical_start:vertical_end
         ]
         return dict(
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
         )
 
     @pytest.fixture(scope="class")
@@ -211,9 +211,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
         theta_v_at_cells_on_half_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.zero_field(
-            grid, dims.CellDim, dims.KDim
-        )
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
         dtime = 0.9
         rhotheta_explicit_weight_parameter = 0.25
@@ -229,7 +227,7 @@ class TestInterpolateRhoThetaVToHalfLevelsAndComputePressureBuoyancyAcceleration
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             perturbed_theta_v_at_cells_on_half_levels=perturbed_theta_v_at_cells_on_half_levels,
             theta_v_at_cells_on_half_levels=theta_v_at_cells_on_half_levels,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             w=w,
             contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
             current_rho=current_rho,

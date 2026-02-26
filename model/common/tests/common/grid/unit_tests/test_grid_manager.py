@@ -17,6 +17,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
+    base as base_grid,
     grid_manager as gm,
     grid_refinement as refin,
     gridfile,
@@ -45,7 +46,6 @@ from icon4py.model.testing.fixtures import (
     experiment,
     grid_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 from .. import utils
@@ -80,7 +80,7 @@ def test_grid_manager_eval_v2e(
     # indexes (while REGIONAL and GLOBAL grids can have)
     assert (
         not has_invalid_index(v2e_table)
-        if experiment.grid.kind == definitions.GridKind.TORUS
+        if experiment.grid.shape.geometry_type == base_grid.GeometryType.TORUS
         else has_invalid_index(v2e_table)
     )
     _reset_invalid_index(seralized_v2e)
@@ -126,7 +126,7 @@ def test_grid_manager_eval_v2c(
     # indexes (while REGIONAL and GLOBAL grids can have)
     assert (
         not has_invalid_index(v2c_table)
-        if experiment.grid.kind == definitions.GridKind.TORUS
+        if experiment.grid.shape.geometry_type == base_grid.GeometryType.TORUS
         else has_invalid_index(v2c_table)
     )
     _reset_invalid_index(serialized_v2c)
@@ -337,7 +337,7 @@ def assert_up_to_order(
 
 @pytest.mark.with_netcdf
 def test_gridmanager_given_file_not_found_then_abort(
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:

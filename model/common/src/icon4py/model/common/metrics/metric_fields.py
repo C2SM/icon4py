@@ -32,6 +32,7 @@ from gt4py.next import (
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, Koff
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -596,6 +597,9 @@ def compute_nflat_gradp(
     e_owner_mask: data_alloc.NDArray,
     lateral_boundary_level: int,
     nlev: int,
+    min_reduction: Callable[
+        [data_alloc.NDArray, ModuleType], data_alloc.ScalarT
+    ] = decomposition.single_node_reductions.min,
     array_ns: ModuleType = np,
 ) -> int:
     """
@@ -607,8 +611,8 @@ def compute_nflat_gradp(
         flat_idx_max,
         nlev,
     )
-    nflat_gradp = array_ns.min(mask_array)
-    return nflat_gradp.item()
+    nflat_gradp = min_reduction(mask_array, array_ns=array_ns)
+    return nflat_gradp
 
 
 @gtx.field_operator
@@ -714,13 +718,12 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(
 
 @gtx.field_operator
 def _compute_mask_prog_halo_c(
-    c_refin_ctrl: fa.CellField[gtx.int32], mask_prog_halo_c: fa.CellField[bool]
+    c_refin_ctrl: fa.CellField[gtx.int32],
 ) -> fa.CellField[bool]:
-    mask_prog_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), mask_prog_halo_c, True)
+    mask_prog_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), False, True)
     return mask_prog_halo_c
 
 
-# TODO(halungge): not registered in factory
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_mask_prog_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],
@@ -741,77 +744,7 @@ def compute_mask_prog_halo_c(
     """
     _compute_mask_prog_halo_c(
         c_refin_ctrl,
-        mask_prog_halo_c,
         out=mask_prog_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-
-@gtx.field_operator
-def _compute_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[int32],
-) -> fa.CellField[bool]:
-    bdy_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), True, False)
-    return bdy_halo_c
-
-
-# TODO(halungge): not registered in factory
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[gtx.int32],
-    bdy_halo_c: fa.CellField[bool],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-):
-    """
-    Compute bdy_halo_c.
-
-    See mo_vertical_grid.f90. bdy_halo_c_dsl_low_refin in ICON
-
-    Args:
-        c_refin_ctrl: Cell field of refin_ctrl
-        bdy_halo_c: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-    """
-    _compute_bdy_halo_c(
-        c_refin_ctrl,
-        out=bdy_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_mask_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[int32],
-    mask_prog_halo_c: fa.CellField[bool],
-    bdy_halo_c: fa.CellField[bool],
-    horizontal_start: int32,
-    horizontal_end: int32,
-):
-    """
-    Compute bdy_halo_c.
-    Compute mask_prog_halo_c.
-
-
-    See mo_vertical_grid.f90. bdy_halo_c_dsl_low_refin in ICON
-
-    Args:
-        c_refin_ctrl: Cell field of refin_ctrl
-        bdy_halo_c: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-    """
-    _compute_mask_prog_halo_c(
-        c_refin_ctrl,
-        mask_prog_halo_c,
-        out=mask_prog_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-    _compute_bdy_halo_c(
-        c_refin_ctrl,
-        out=bdy_halo_c,
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
