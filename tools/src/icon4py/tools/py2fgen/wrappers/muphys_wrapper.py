@@ -11,7 +11,7 @@ from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import utils as muphys_utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
-from icon4py.model.common import dimension as dims, model_backends, model_options
+from icon4py.model.common import dimension as dims, model_options
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, icon4py_export
 
 
@@ -72,12 +72,12 @@ def graupel_run(
     qs: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     qg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     qnc: gtx.float64,
-    prr_gsp: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    pri_gsp: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    prs_gsp: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
-    prg_gsp: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    prr_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    pri_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    prs_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    prg_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    pre_gsp: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
 ):
     global graupel_program  # noqa: PLW0603
     if graupel_program is None:
@@ -102,15 +102,6 @@ def graupel_run(
 
     q = graupel.Q(qv, qc, qi, qr, qs, qg)
 
-    # GT4Py expects 2D fields for the output precipitation rates. We reshape them here to avoid unnecessary data movement.
-    surface_origin = { dims.KDim: ke - 1 }
-    allocator = model_backends.get_allocator(backend)
-    prr_gsp_view = gtx.as_field((dims.CellDim, dims.KDim), prr_gsp.ndarray.reshape(prr_gsp.shape[0], 1), allocator=allocator, origin=surface_origin)
-    pri_gsp_view = gtx.as_field((dims.CellDim, dims.KDim), pri_gsp.ndarray.reshape(pri_gsp.shape[0], 1), allocator=allocator, origin=surface_origin)
-    prs_gsp_view = gtx.as_field((dims.CellDim, dims.KDim), prs_gsp.ndarray.reshape(prs_gsp.shape[0], 1), allocator=allocator, origin=surface_origin)
-    prg_gsp_view = gtx.as_field((dims.CellDim, dims.KDim), prg_gsp.ndarray.reshape(prg_gsp.shape[0], 1), allocator=allocator, origin=surface_origin)
-    pre_gsp_view = gtx.as_field((dims.CellDim, dims.KDim), pre_gsp.ndarray.reshape(pre_gsp.shape[0], 1), allocator=allocator, origin=surface_origin)
-
     graupel_program(
         dz=dz,
         te=t,
@@ -120,9 +111,9 @@ def graupel_run(
         t_out=t,
         q_out=q,
         pflx=pflx,
-        pr=prr_gsp_view,
-        ps=prs_gsp_view,
-        pi=pri_gsp_view,
-        pg=prg_gsp_view,
-        pre=pre_gsp_view,
+        pr=prr_gsp(dims.KDim + ke - 1),
+        ps=prs_gsp(dims.KDim + ke - 1),
+        pi=pri_gsp(dims.KDim + ke - 1),
+        pg=prg_gsp(dims.KDim + ke - 1),
+        pre=pre_gsp(dims.KDim + ke - 1),
     )
