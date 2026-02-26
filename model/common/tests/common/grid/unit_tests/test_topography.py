@@ -38,7 +38,7 @@ def test_topography_smoothing_with_serialized_data(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     assert (
         cell_geometry.area is not None
-    ), "Broken assumption: this test assumes it's running from a save point containing a 'cell_area' field."
+    ), "Broken assumption: this test assumes it's running from a savepoint containing a 'cell_area' field."
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     num_iterations = 25

@@ -361,7 +361,6 @@ def initialize_granules(
             ),
         ),
         least_squares_state=advection_states.AdvectionLeastSquaresState(
-            # TODO(ricoh): [c34] check integration with #1065
             lsq_pseudoinv_1=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
                 :, 0, :
             ],
