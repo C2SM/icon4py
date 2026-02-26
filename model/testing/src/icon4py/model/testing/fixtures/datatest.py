@@ -14,6 +14,7 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
+from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid, vertical as v_grid
@@ -189,6 +190,38 @@ def vertical_grid_config(
         SLEVE_decay_scale_2=icon_namelist["SLEVE_NML"]["DECAY_SCALE_2"],
         SLEVE_decay_exponent=icon_namelist["SLEVE_NML"]["DECAY_EXP"],
     )
+
+
+@pytest.fixture
+def solve_nonhydro_config(
+    icon_namelist: dict,
+) -> solve_nh.NonHydrostaticConfig:
+    return solve_nh.NonHydrostaticConfig(
+        itime_scheme=icon_namelist["NONHYDROSTATIC_NML"]["ITIME_SCHEME"],
+        iadv_rhotheta=icon_namelist["NONHYDROSTATIC_NML"]["IADV_RHOTHETA"],
+        igradp_method=icon_namelist["NONHYDROSTATIC_NML"]["IGRADP_METHOD"],
+        rayleigh_type=icon_namelist["NONHYDROSTATIC_NML"]["RAYLEIGH_TYPE"],
+        rayleigh_coeff=icon_namelist["NONHYDROSTATIC_NML"]["RAYLEIGH_COEFF"],
+        divdamp_order=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_ORDER"],
+        is_iau_active=False,  # TODO (Chia RUi): a bug to be fixed in https://github.com/C2SM/icon4py/pull/972
+        iau_wgt_dyn=0.0,  # TODO (Chia RUi): a bug to be fixed in https://github.com/C2SM/icon4py/pull/972
+        divdamp_type=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_TYPE"],
+        divdamp_trans_start=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_TRANS_START"],
+        divdamp_trans_end=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_TRANS_END"],
+        l_vert_nested=icon_namelist["RUN_NML"]["LVERT_NEST"],
+        rhotheta_offctr=icon_namelist["NONHYDROSTATIC_NML"]["RHOTHETA_OFFCTR"],
+        veladv_offctr=icon_namelist["NONHYDROSTATIC_NML"]["VELADV_OFFCTR"],
+        max_nudging_coefficient=icon_namelist["INTERPOL_NML"]["NUDGE_MAX_COEFF"],
+        fourth_order_divdamp_factor=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_FAC"],
+        fourth_order_divdamp_factor2=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_FAC2"],
+        fourth_order_divdamp_factor3=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_FAC3"],
+        fourth_order_divdamp_factor4=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_FAC4"],
+        fourth_order_divdamp_z=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_Z"],
+        fourth_order_divdamp_z2=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_Z2"],
+        fourth_order_divdamp_z3=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_Z3"],
+        fourth_order_divdamp_z4=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_Z4"],
+    )
+
 
 @pytest.fixture
 def grid_savepoint(

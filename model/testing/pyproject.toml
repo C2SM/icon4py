@@ -33,7 +33,8 @@ dependencies = [
   "pytest>=8.0.1",
   "serialbox4py>=2.6.2",
   "typing-extensions>=4.11.0",
-  "wget>=3.2"
+  "wget>=3.2",
+  "f90nml>=1.5"
 ]
 description = "Testing utils for the icon4py model."
 license = {text = "BSD-3 License"}
@@ -70,6 +71,12 @@ version = "{current_version}"
 
 [[tool.bumpversion.files]]
 filename = "src/icon4py/model/testing/__init__.py"
+
+# -- mypy --
+[tool.mypy]
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = ["f90nml.*"]
 
 # -- ruff --
 [tool.ruff]

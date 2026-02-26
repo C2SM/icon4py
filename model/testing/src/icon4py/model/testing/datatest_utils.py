@@ -10,10 +10,8 @@ from __future__ import annotations
 
 import pathlib
 import urllib.parse
-import ast
-import re
 
-
+import f90nml
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -77,83 +75,13 @@ def create_icon_serial_data_provider(
     )
 
 
-def read_namelist(path: pathlib.Path) -> dict:
-    """ICON NAMELIST_ICON_output_atm reader.
-    Returns a dictionary of dictionaries, where the keys are the namelist names
-    and the values are dictionaries of key-value pairs from the namelist.
-
-    Use as:
-    namelists = read_namelist("/path/to/NAMELIST_ICON_output_atm")
-    print(namelists["NWP_TUNING_NML"]["TUNE_ZCEFF_MIN"])
-    """
-    with path.open() as f:
-        txt = f.read()
-    namelist_set = re.findall(r"&(\w+)(.*?)\/", txt, re.S)
-    full_namelist = {}
-    for namelist_name, namelist_content in namelist_set:
-        full_namelist[namelist_name] = _parse_namelist_content(namelist_content)
-    return full_namelist
-
-
-def _parse_namelist_content(namelist_content):
-    """
-    Parse the contents of a single namelist group to a Python dictionary.
-    """
-    result = {}
-    current_variable = None
-
-    # Remove comments
-    namelist_content = re.sub(r"!.*", "", namelist_content)
-
-    # Split into lines
-    lines = namelist_content.splitlines()
-
-    for line in lines:
-        line = line.strip()
-        # skip any non-meaningful empty line
-        if not line:
-            continue
-
-        # Remove trailing comma
-        if line.endswith(","):
-            line = line[:-1]
-
-        if "=" in line:
-            # New variable-value pair
-            variable, value = line.split("=", 1)
-            current_variable = variable.strip()
-            result[current_variable] = _parse_value(value)
-        # TODO(Chia Rui): check if continuation lines is irrelevant in our tests
-        # else:
-        #     # Continuation line (array or multi-line string)
-        #     if current_variable is not None:
-        #         val = _parse_value(line)
-        #         # convert to a list if we have multiple values for the same variable
-        #         if not isinstance(result[current_variable], list):
-        #             result[current_variable] = [result[current_variable]]
-        #         result[current_variable].append(val)
-
-    return result
-
-
-def _parse_value(value):
-    """
-    Convert Fortran-style values to Python types.
-    """
-    value = value.strip()
-
-    # Fortran logical
-    if value in ("T", ".T."):
-        return True
-    if value in ("F", ".F."):
-        return False
-
-    # Quoted string
-    if value.startswith("'") and value.endswith("'"):
-        return value[1:-1].rstrip()
-
-    # Try numeric conversion
-    try:
-        return ast.literal_eval(value)
-    except Exception:
-        return value
+def read_namelist(namelist_path: pathlib.Path) -> dict:
+    """Read namelist file and return a dictionary of parameters."""
+    namelist = f90nml.read(namelist_path)
+    # TODO (Chia Rui): This needs to be checked in the review whether we can just keep the first element of lists for all namelist parameters.
+    for namelist_name, namelist_content in namelist.items():
+        if isinstance(namelist_content, dict):
+            for variable_name, variable_value in namelist_content.items():
+                if isinstance(variable_value, list):
+                    namelist[namelist_name][variable_name] = variable_value[0]
+    return namelist

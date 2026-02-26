@@ -45,9 +45,9 @@ def test_validate_divdamp_fields_against_savepoint_values(
     grid_savepoint: sb.IconGridSavepoint,
     savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
     icon_grid: base_grid.Grid,
+    solve_nonhydro_config: solve_nh.NonHydrostaticConfig,
     backend: gtx_typing.Backend,
 ) -> None:
-    config = solve_nh.NonHydrostaticConfig()
     second_order_divdamp_factor = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
     interpolated_fourth_order_divdamp_factor = data_alloc.zero_field(
@@ -67,20 +67,20 @@ def test_validate_divdamp_fields_against_savepoint_values(
     )
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
-        config.fourth_order_divdamp_factor,
-        config.fourth_order_divdamp_factor2,
-        config.fourth_order_divdamp_factor3,
-        config.fourth_order_divdamp_factor4,
-        config.fourth_order_divdamp_z,
-        config.fourth_order_divdamp_z2,
-        config.fourth_order_divdamp_z3,
-        config.fourth_order_divdamp_z4,
+        solve_nonhydro_config.fourth_order_divdamp_factor,
+        solve_nonhydro_config.fourth_order_divdamp_factor2,
+        solve_nonhydro_config.fourth_order_divdamp_factor3,
+        solve_nonhydro_config.fourth_order_divdamp_factor4,
+        solve_nonhydro_config.fourth_order_divdamp_z,
+        solve_nonhydro_config.fourth_order_divdamp_z2,
+        solve_nonhydro_config.fourth_order_divdamp_z3,
+        solve_nonhydro_config.fourth_order_divdamp_z4,
         interpolated_fourth_order_divdamp_factor,
         offset_provider={"Koff": dims.KDim},
     )
     dycore_utils._calculate_fourth_order_divdamp_scaling_coeff.with_backend(backend)(
         interpolated_fourth_order_divdamp_factor=interpolated_fourth_order_divdamp_factor,
-        divdamp_order=config.divdamp_order,
+        divdamp_order=solve_nonhydro_config.divdamp_order,
         mean_cell_area=mean_cell_area,
         second_order_divdamp_factor=second_order_divdamp_factor,
         out=fourth_order_divdamp_scaling_coeff,
@@ -90,7 +90,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         backend
     )(
         fourth_order_divdamp_scaling_coeff,
-        config.max_nudging_coefficient,
+        solve_nonhydro_config.max_nudging_coefficient,
         constants.DBL_EPS,
         out=reduced_fourth_order_divdamp_coeff_at_nest_boundary,
         offset_provider={},
@@ -172,24 +172,18 @@ def test_nonhydro_predictor_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     experiment,
+    vertical_grid_config,
+    solve_nonhydro_config,
     ndyn_substeps,
     at_initial_timestep,
     caplog,
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = definitions.construct_nonhydrostatic_config(experiment)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    nonhydro_params = solve_nh.NonHydrostaticParams(solve_nonhydro_config)
+    vertical_params = utils.create_vertical_params(vertical_grid_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
 
     diagnostic_state_nh = utils.construct_diagnostics(sp, icon_grid, backend)
@@ -202,7 +196,7 @@ def test_nonhydro_predictor_step(
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
-        config=config,
+        config=solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -503,22 +497,16 @@ def test_nonhydro_corrector_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     experiment,
+    vertical_grid_config,
+    solve_nonhydro_config,
     ndyn_substeps,
     caplog,
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = definitions.construct_nonhydrostatic_config(experiment)
     init_savepoint = savepoint_nonhydro_init
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    nonhydro_params = solve_nh.NonHydrostaticParams(solve_nonhydro_config)
+    vertical_params = utils.create_vertical_params(vertical_grid_config, grid_savepoint)
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
     lprep_adv = init_savepoint.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
@@ -552,7 +540,7 @@ def test_nonhydro_corrector_step(
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
-        config=config,
+        config=solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -690,6 +678,8 @@ def test_run_solve_nonhydro_single_step(
     step_date_init,
     step_date_exit,
     experiment,
+    vertical_grid_config,
+    solve_nonhydro_config,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -706,19 +696,11 @@ def test_run_solve_nonhydro_single_step(
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = definitions.construct_nonhydrostatic_config(experiment)
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    nonhydro_params = solve_nh.NonHydrostaticParams(solve_nonhydro_config)
+    vertical_params = utils.create_vertical_params(vertical_grid_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
@@ -740,7 +722,7 @@ def test_run_solve_nonhydro_single_step(
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
-        config=config,
+        config=solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -822,6 +804,8 @@ def test_run_solve_nonhydro_multi_step(
     at_initial_timestep,
     *,
     icon_grid,
+    vertical_grid_config,
+    solve_nonhydro_config,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
     model_top_height,
@@ -835,18 +819,10 @@ def test_run_solve_nonhydro_multi_step(
     ndyn_substeps,
     backend,
 ):
-    config = definitions.construct_nonhydrostatic_config(experiment)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    nonhydro_params = solve_nh.NonHydrostaticParams(solve_nonhydro_config)
+    vertical_params = utils.create_vertical_params(vertical_grid_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = dycore_states.PrepAdvection(
@@ -873,7 +849,7 @@ def test_run_solve_nonhydro_multi_step(
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
-        config=config,
+        config=solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -979,9 +955,8 @@ def test_run_solve_nonhydro_multi_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
-def test_non_hydrostatic_params(savepoint_nonhydro_init):
-    config = solve_nh.NonHydrostaticConfig()
-    params = solve_nh.NonHydrostaticParams(config)
+def test_non_hydrostatic_params(savepoint_nonhydro_init, solve_nonhydro_config):
+    params = solve_nh.NonHydrostaticParams(solve_nonhydro_config)
 
     assert params.advection_implicit_weight_parameter == savepoint_nonhydro_init.wgt_nnew_vel()
     assert params.advection_explicit_weight_parameter == savepoint_nonhydro_init.wgt_nnow_vel()
@@ -1013,6 +988,8 @@ def test_compute_perturbed_quantities_and_interpolation(
     step_date_init,
     step_date_exit,
     *,
+    vertical_grid_config,
+    solve_nonhydro_config,
     ndyn_substeps,
     icon_grid,
     lowest_layer_thickness,
@@ -1032,14 +1009,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     sp_init = savepoint_nonhydro_init
     sp_ref = savepoint_compute_edge_diagnostics_for_dycore_and_update_vn_init
     sp_exit = savepoint_nonhydro_exit
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_grid_config, grid_savepoint)
 
     current_rho = sp_init.rho_now()
     current_theta_v = sp_init.theta_v_now()
@@ -1074,8 +1044,7 @@ def test_compute_perturbed_quantities_and_interpolation(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
 
-    config = definitions.construct_nonhydrostatic_config(experiment)
-    igradp_method = config.igradp_method
+    igradp_method = solve_nonhydro_config.igradp_method
 
     nflatlev = vertical_params.nflatlev
     nflat_gradp = grid_savepoint.nflat_gradp()
@@ -1370,6 +1339,8 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     step_date_init,
     step_date_exit,
     *,
+    vertical_grid_config,
+    solve_nonhydro_config,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -1405,14 +1376,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     end_edge_halo_level_2 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_grid_config, grid_savepoint)
 
     current_vn = sp_stencil_init.vn()
     next_vn = sp_nh_init.vn_new()
@@ -1438,15 +1402,14 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     grf_tend_vn = sp_nh_init.grf_tend_vn()
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
-    config = definitions.construct_nonhydrostatic_config(experiment)
     primal_normal_cell_1 = grid_savepoint.primal_normal_cell_x()
     primal_normal_cell_2 = grid_savepoint.primal_normal_cell_y()
     dual_normal_cell_1 = grid_savepoint.dual_normal_cell_x()
     dual_normal_cell_2 = grid_savepoint.dual_normal_cell_y()
 
-    iau_wgt_dyn = config.iau_wgt_dyn
-    is_iau_active = config.is_iau_active
-    igradp_method = config.igradp_method
+    iau_wgt_dyn = solve_nonhydro_config.iau_wgt_dyn
+    is_iau_active = solve_nonhydro_config.is_iau_active
+    igradp_method = solve_nonhydro_config.igradp_method
 
     z_rho_e_ref = sp_stencil_exit.z_rho_e()
     z_theta_v_e_ref = sp_stencil_exit.z_theta_v_e()
@@ -1586,6 +1549,7 @@ def test_apply_divergence_damping_and_update_vn(
     step_date_init,
     step_date_exit,
     *,
+    solve_nonhydro_config,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -1620,7 +1584,6 @@ def test_apply_divergence_damping_and_update_vn(
     current_vn = sp_stencil_init.vn()
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
-    config = definitions.construct_nonhydrostatic_config(experiment)
     mean_cell_area = grid_savepoint.mean_cell_area()
 
     # TODO: Use serialized data ('enh_divdamp_fac' in icon) instead of computing 'interpolated_fourth_order_divdamp_factor'
@@ -1630,8 +1593,8 @@ def test_apply_divergence_damping_and_update_vn(
         allocator=backend,
     )
 
-    iau_wgt_dyn = config.iau_wgt_dyn
-    divdamp_order = config.divdamp_order
+    iau_wgt_dyn = solve_nonhydro_config.iau_wgt_dyn
+    divdamp_order = solve_nonhydro_config.divdamp_order
     second_order_divdamp_scaling_coeff = sp_nh_init.divdamp_fac_o2() * mean_cell_area
     second_order_divdamp_factor = savepoint_nonhydro_init.divdamp_fac_o2()
     apply_2nd_order_divergence_damping = (
@@ -1642,23 +1605,25 @@ def test_apply_divergence_damping_and_update_vn(
         divdamp_order == dycore_states.DivergenceDampingOrder.FOURTH_ORDER
         or (
             divdamp_order == dycore_states.DivergenceDampingOrder.COMBINED
-            and second_order_divdamp_factor <= (4.0 * config.fourth_order_divdamp_factor)
+            and second_order_divdamp_factor
+            <= (4.0 * solve_nonhydro_config.fourth_order_divdamp_factor)
         )
     )
-    is_iau_active = config.is_iau_active
+    # TODO (Chia Rui): a bug to be fixed in https://github.com/C2SM/icon4py/pull/972, is_iau_active is a runtime variable and it is not serialized
+    is_iau_active = False
 
     vn_ref = sp_nh_exit.vn_new()
 
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
-        config.fourth_order_divdamp_factor,
-        config.fourth_order_divdamp_factor2,
-        config.fourth_order_divdamp_factor3,
-        config.fourth_order_divdamp_factor4,
-        config.fourth_order_divdamp_z,
-        config.fourth_order_divdamp_z2,
-        config.fourth_order_divdamp_z3,
-        config.fourth_order_divdamp_z4,
+        solve_nonhydro_config.fourth_order_divdamp_factor,
+        solve_nonhydro_config.fourth_order_divdamp_factor2,
+        solve_nonhydro_config.fourth_order_divdamp_factor3,
+        solve_nonhydro_config.fourth_order_divdamp_factor4,
+        solve_nonhydro_config.fourth_order_divdamp_z,
+        solve_nonhydro_config.fourth_order_divdamp_z2,
+        solve_nonhydro_config.fourth_order_divdamp_z3,
+        solve_nonhydro_config.fourth_order_divdamp_z4,
         interpolated_fourth_order_divdamp_factor,
         offset_provider={"Koff": dims.KDim},
     )
@@ -1694,7 +1659,7 @@ def test_apply_divergence_damping_and_update_vn(
         divdamp_order=divdamp_order,
         mean_cell_area=mean_cell_area,
         second_order_divdamp_factor=second_order_divdamp_factor,
-        max_nudging_coefficient=config.max_nudging_coefficient,
+        max_nudging_coefficient=solve_nonhydro_config.max_nudging_coefficient,
         dbl_eps=constants.DBL_EPS,
         horizontal_start=start_edge_nudging_level_2,
         horizontal_end=end_edge_local,
@@ -1733,14 +1698,13 @@ def test_apply_divergence_damping_and_update_vn(
     ],
 )
 def test_compute_horizontal_velocity_quantities_and_fluxes(
-    istep_init,
-    istep_exit,
-    substep_init,
-    substep_exit,
+    experiment,
     step_date_init,
     step_date_exit,
-    experiment,
+    *,
     icon_grid,
+    vertical_grid_config,
+    solve_nonhydro_config,
     ndyn_substeps,
     grid_savepoint,
     lowest_layer_thickness,
@@ -1756,14 +1720,7 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_grid_config, grid_savepoint)
 
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
@@ -2036,6 +1993,8 @@ def test_vertically_implicit_solver_at_predictor_step(
     step_date_init,
     step_date_exit,
     *,
+    vertical_grid_config,
+    solve_nonhydro_config,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -2055,17 +2014,9 @@ def test_vertically_implicit_solver_at_predictor_step(
 ):
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
-    config = definitions.construct_nonhydrostatic_config(experiment)
     xp = data_alloc.import_array_ns(backend)
 
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_grid_config, grid_savepoint)
     at_first_substep = substep_init == 1
 
     contravariant_correction_at_edges_on_model_levels = sp_nh_exit.z_w_concorr_me()
@@ -2092,9 +2043,10 @@ def test_vertically_implicit_solver_at_predictor_step(
     dwdz_at_cells_on_model_levels = sp_stencil_init.z_dwdz_dd()
     exner_dynamical_increment = sp_stencil_init.exner_dyn_incr()
 
-    iau_wgt_dyn = config.iau_wgt_dyn
-    is_iau_active = config.is_iau_active
-    divdamp_type = config.divdamp_type
+    # TODO (Chia Rui): a bug to be fixed in https://github.com/C2SM/icon4py/pull/972, is_iau_active is a runtime variable and it is not serialized
+    iau_wgt_dyn = 0.0
+    is_iau_active = False
+    divdamp_type = solve_nonhydro_config.divdamp_type
 
     w_concorr_c_ref = sp_nh_exit.w_concorr_c()
     w_ref = sp_nh_exit.w_new()
@@ -2157,7 +2109,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         is_iau_active=is_iau_active,
-        rayleigh_type=config.rayleigh_type,
+        rayleigh_type=solve_nonhydro_config.rayleigh_type,
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
         end_index_of_damping_layer=grid_savepoint.nrdmax(),
@@ -2197,7 +2149,7 @@ def test_vertically_implicit_solver_at_predictor_step(
     # manually set the reference equal to zero when k < starting_vertical_index_for_3d_divdamp.
     starting_vertical_index_for_3d_divdamp = (
         xp.min(xp.where(metrics_savepoint.scaling_factor_for_3d_divdamp().ndarray > 0.0))[0]
-        if config.divdamp_type == 32
+        if solve_nonhydro_config.divdamp_type == 32
         else 0
     )
     z_dwdz_dd_ref_with_zero_in_2d_divdamp_layers = z_dwdz_dd_ref.asnumpy()
@@ -2241,6 +2193,8 @@ def test_vertically_implicit_solver_at_corrector_step(
     step_date_init,
     step_date_exit,
     *,
+    vertical_grid_config,
+    solve_nonhydro_config,
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
@@ -2257,20 +2211,12 @@ def test_vertically_implicit_solver_at_corrector_step(
 ):
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_grid_config, grid_savepoint)
 
     at_first_substep = substep_init == 0
     at_last_substep = substep_exit == 0
-    config = definitions.construct_nonhydrostatic_config(experiment)
 
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(solve_nonhydro_config)
 
     mass_flux_at_edges_on_model_levels = sp_stencil_init.mass_fl_e()
     theta_v_flux_at_edges_on_model_levels = sp_stencil_init.z_theta_v_fl_e()
@@ -2301,8 +2247,9 @@ def test_vertically_implicit_solver_at_corrector_step(
     r_nsubsteps = 1.0 / ndyn_substeps
     kstart_moist = vertical_params.kstart_moist
 
-    iau_wgt_dyn = config.iau_wgt_dyn
-    is_iau_active = config.is_iau_active
+    # TODO (Chia Rui): a bug to be fixed in https://github.com/C2SM/icon4py/pull/972, is_iau_active is a runtime variable and it is not serialized
+    iau_wgt_dyn = 0.0
+    is_iau_active = False
 
     w_ref = sp_nh_exit.w_new()
     rho_ref = sp_nh_exit.rho_new()
@@ -2364,7 +2311,7 @@ def test_vertically_implicit_solver_at_corrector_step(
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         is_iau_active=is_iau_active,
-        rayleigh_type=config.rayleigh_type,
+        rayleigh_type=solve_nonhydro_config.rayleigh_type,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
         end_index_of_damping_layer=grid_savepoint.nrdmax(),
