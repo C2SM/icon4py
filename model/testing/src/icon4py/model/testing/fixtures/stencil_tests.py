@@ -36,7 +36,7 @@ def _get_grid_manager_from_preset(
     grid_preset: str,
     *,
     num_levels: int = DEFAULT_NUM_LEVELS,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> gm.GridManager | None:
     match grid_preset:
         case "icon_regional":
