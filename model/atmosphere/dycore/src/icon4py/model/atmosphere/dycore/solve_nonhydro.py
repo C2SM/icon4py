@@ -13,7 +13,7 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators, common as gtx_common
+from gt4py.next import common as gtx_common
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -110,11 +110,7 @@ class IntermediateFields:
     """
 
     @classmethod
-    def allocate(
-        cls,
-        grid: grid_def.Grid,
-        allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-    ):
+    def allocate(cls, grid: grid_def.Grid, allocator: gtx_typing.Allocator | None):
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, allocator=allocator
@@ -829,7 +825,7 @@ class SolveNonhydro:
         recomputed or not. The substep length should only change in case of high CFL condition.
         """
 
-    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
@@ -1397,26 +1393,29 @@ class SolveNonhydro:
             at_last_substep=at_last_substep,
         )
 
-        if lprep_adv:
-            if at_first_substep:
-                log.debug(
-                    "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+        # prepare flux field for tracer advection on lateral boundary, if exists
+        if self._grid.limited_area:
+            if lprep_adv:
+                if at_first_substep:
+                    log.debug(
+                        "corrector step sets prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels to zero"
+                    )
+                    self._init_cell_kdim_field_with_zero_wp(
+                        field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    )
+                self._update_mass_flux_weighted(
+                    rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
+                    w_now=prognostic_states.current.w,
+                    w_new=prognostic_states.next.w,
+                    w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
+                    mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
+                    r_nsubsteps=r_nsubsteps,
                 )
-                self._init_cell_kdim_field_with_zero_wp(
-                    field_with_zero_wp=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
-                )
-            self._update_mass_flux_weighted(
-                rho_ic=diagnostic_state_nh.rho_at_cells_on_half_levels,
-                w_now=prognostic_states.current.w,
-                w_new=prognostic_states.next.w,
-                w_concorr_c=diagnostic_state_nh.contravariant_correction_at_cells_on_half_levels,
-                mass_flx_ic=prep_adv.dynamical_vertical_mass_flux_at_cells_on_half_levels,
-                r_nsubsteps=r_nsubsteps,
-            )
-            log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
-            self._exchange.exchange_and_wait(
-                dims.CellDim,
-                prognostic_states.next.rho,
-                prognostic_states.next.exner,
-                prognostic_states.next.w,
-            )
+
+        log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
+        self._exchange.exchange_and_wait(
+            dims.CellDim,
+            prognostic_states.next.rho,
+            prognostic_states.next.exner,
+            prognostic_states.next.w,
+        )
