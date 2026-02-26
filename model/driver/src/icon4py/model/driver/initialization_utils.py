@@ -611,28 +611,22 @@ def _create_grid_global_params(
 
     match grid_geometry_type:
         case base.GeometryType.ICOSAHEDRON:
-            pass
-        case base.GeometryType.TORUS:
-            domain_length = grid.getncattr("domain_length")
-            domain_height = grid.getncattr("domain_height")
-
-    grid.close()
-
-    match grid_geometry_type:
-        case base.GeometryType.ICOSAHEDRON:
             global_grid_params = icon_grid.GlobalGridParams(
                 grid_shape=icon_grid.GridShape(
                     geometry_type=grid_geometry_type,
                     subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
                 ),
             )
+    match grid_geometry_type:
         case base.GeometryType.TORUS:
             global_grid_params = icon_grid.GlobalGridParams(
                 grid_shape=icon_grid.GridShape(
                     geometry_type=grid_geometry_type,
                 ),
-                domain_length=domain_length,
-                domain_height=domain_height,
+                domain_length=grid.getncattr("domain_length"),
+                domain_height=grid.getncattr("domain_height"),
             )
+
+    grid.close()
 
     return global_grid_params, grid_uuid
