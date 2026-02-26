@@ -9,12 +9,10 @@ import dataclasses
 import logging
 import math
 from collections.abc import Callable
-from types import ModuleType
 from typing import Final, TypeVar
 
 import gt4py.next as gtx
-from gt4py.next import allocators as gtx_allocators
-from typing_extensions import assert_never
+import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
@@ -54,23 +52,16 @@ class GridShape:
     ) -> None:
         if geometry_type is None and subdivision is None:
             raise ValueError("Either geometry_type or subdivision must be provided")
-
-        if geometry_type is None:
-            geometry_type = base.GeometryType.ICOSAHEDRON
-
         match geometry_type:
             case base.GeometryType.ICOSAHEDRON:
                 if subdivision is None:
                     raise ValueError("Subdivision must be provided for icosahedron geometry type")
-
                 if subdivision.root < 1 or subdivision.level < 0:
                     raise ValueError(
                         f"For icosahedron geometry type, root must be >= 1 and level must be >= 0, got {subdivision.root=} and {subdivision.level=}"
                     )
             case base.GeometryType.TORUS:
                 subdivision = None
-            case _:
-                assert_never(geometry_type)
 
         self.geometry_type = geometry_type
         self.subdivision = subdivision
@@ -87,45 +78,7 @@ class GlobalGridParams:
     domain_height: float | None = None
     global_num_cells: int | None = None
     num_cells: int | None = None
-    mean_edge_length: float | None = None
-    mean_dual_edge_length: float | None = None
-    mean_cell_area: float | None = None
-    mean_dual_cell_area: float | None = None
     characteristic_length: float | None = None
-
-    @classmethod
-    def from_fields(
-        cls: type[_T],
-        array_ns: ModuleType,
-        mean_edge_length: float | None = None,
-        edge_lengths: data_alloc.NDArray | None = None,
-        mean_dual_edge_length: float | None = None,
-        dual_edge_lengths: data_alloc.NDArray | None = None,
-        mean_cell_area: float | None = None,
-        cell_areas: data_alloc.NDArray | None = None,
-        mean_dual_cell_area: float | None = None,
-        dual_cell_areas: data_alloc.NDArray | None = None,
-        **kwargs,
-    ) -> _T:
-        def init_mean(value: float | None, data: data_alloc.NDArray | None) -> float | None:
-            if value is not None:
-                return value
-            if data is not None:
-                return array_ns.mean(data).item()
-            return None
-
-        mean_edge_length = init_mean(mean_edge_length, edge_lengths)
-        mean_dual_edge_length = init_mean(mean_dual_edge_length, dual_edge_lengths)
-        mean_cell_area = init_mean(mean_cell_area, cell_areas)
-        mean_dual_cell_area = init_mean(mean_dual_cell_area, dual_cell_areas)
-
-        return cls(
-            mean_edge_length=mean_edge_length,
-            mean_dual_edge_length=mean_dual_edge_length,
-            mean_cell_area=mean_cell_area,
-            mean_dual_cell_area=mean_dual_cell_area,
-            **kwargs,
-        )
 
     def __post_init__(self) -> None:
         if self.geometry_type is not None:
@@ -137,8 +90,6 @@ class GlobalGridParams:
                         object.__setattr__(self, "radius", constants.EARTH_RADIUS)
                 case base.GeometryType.TORUS:
                     object.__setattr__(self, "radius", None)
-                case _:
-                    ...
 
         if self.global_num_cells is None and self.geometry_type is base.GeometryType.ICOSAHEDRON:
             object.__setattr__(
@@ -149,21 +100,6 @@ class GlobalGridParams:
 
         if self.num_cells is None and self.global_num_cells is not None:
             object.__setattr__(self, "num_cells", self.global_num_cells)
-
-        if (
-            self.mean_cell_area is None
-            and self.radius is not None
-            and self.global_num_cells is not None
-            and self.geometry_type is base.GeometryType.ICOSAHEDRON
-        ):
-            object.__setattr__(
-                self,
-                "mean_cell_area",
-                compute_mean_cell_area_for_sphere(self.radius, self.global_num_cells),
-            )
-
-        if self.characteristic_length is None and self.mean_cell_area is not None:
-            object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
 
     @property
     def geometry_type(self) -> base.GeometryType | None:
@@ -246,7 +182,7 @@ def _should_replace_skip_values(
 
 def icon_grid(
     id_: str,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.Allocator | None,
     config: base.GridConfig,
     neighbor_tables: dict[gtx.FieldOffset, data_alloc.NDArray],
     start_index: Callable[[h_grid.Domain], gtx.int32],

@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common.grid import horizontal as h_grid, icon
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
+from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -25,13 +25,14 @@ except ImportError:
 import gt4py.next as gtx
 
 import icon4py.model.testing.test_utils as test_helpers
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.testing import definitions as test_defs, serialbox
-from icon4py.model.testing.parallel_helpers import check_comm_size, processor_props
+from icon4py.model.testing.parallel_helpers import check_comm_size
 
 from ...fixtures import (
     backend,
+    backend_like,
     data_provider,
     decomposition_info,
     download_ser_data,
@@ -40,24 +41,14 @@ from ...fixtures import (
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
-    ranked_data_path,
+    processor_props,
 )
-
-
-"""
-running tests with mpi:
-
-mpirun -np 2 python -m pytest -v --with-mpi tests/mpi_tests/test_parallel_setup.py
-
-mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
-
-
-"""
 
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props: definitions.ProcessProperties) -> None:
     assert processor_props.comm
+    assert processor_props.comm_size > 1
 
 
 @pytest.mark.mpi(min_size=2)
@@ -246,7 +237,7 @@ def test_create_single_node_runtime_without_mpi(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
+@pytest.mark.parametrize("dimension", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_exchange_on_dummy_data(
     processor_props: definitions.ProcessProperties,
     decomposition_info: definitions.DecompositionInfo,
@@ -257,7 +248,7 @@ def test_exchange_on_dummy_data(
     exchange = definitions.create_exchange(processor_props, decomposition_info)
     grid = grid_savepoint.construct_icon_grid()
 
-    number = processor_props.rank + 10.0
+    number = processor_props.rank + 10
     input_field = data_alloc.constant_field(
         grid,
         number,
@@ -271,7 +262,7 @@ def test_exchange_on_dummy_data(
     local_points = decomposition_info.local_index(
         dimension, definitions.DecompositionInfo.EntryType.OWNED
     )
-    assert np.all(input_field == number)
+    assert np.all(input_field.asnumpy() == number)
     exchange.exchange_and_wait(dimension, input_field)
     result = input_field.asnumpy()
     print(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
@@ -295,37 +286,133 @@ def test_halo_exchange_for_sparse_field(
     processor_props: definitions.ProcessProperties,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,
-    backend: gtx_typing.Backend | None,
     decomposition_info: definitions.DecompositionInfo,
 ):
-    xp = data_alloc.import_array_ns(backend)
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    edge_cell_length = grid_savepoint.edge_cell_length()
-    edge_owner_mask = grid_savepoint.e_owner_mask()
-    c_lin_e_ref = interpolation_savepoint.c_lin_e()
+    edge_length = grid_savepoint.primal_edge_length()
+    edge_orientation = grid_savepoint.edge_orientation()
+    area = grid_savepoint.cell_areas()
+    field_ref = interpolation_savepoint.geofac_div()
     print(
-        f"{processor_props.rank}/{processor_props.comm_size}: size of reference field {c_lin_e_ref.asnumpy().shape}"
+        f"{processor_props.rank}/{processor_props.comm_size}: size of reference field {field_ref.asnumpy().shape}"
     )
-
-    horizontal_start = icon_grid.start_index(
-        h_grid.edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    result = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.C2EDim, dtype=gtx.float64, allocator=None
     )
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    c_lin_e = compute_c_lin_e(
-        edge_cell_length.asnumpy(),
-        inv_dual_edge_length.asnumpy(),
-        edge_owner_mask.asnumpy(),
-        horizontal_start,
-        xp,
+    # mandatory computation on embedded because the result is sparse
+    interpolation_fields.compute_geofac_div.with_backend(None)(
+        edge_length,
+        edge_orientation,
+        area,
+        out=result,
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
     )
     print(
-        f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {c_lin_e_ref.asnumpy().shape}"
+        f"{processor_props.rank}/{processor_props.comm_size}: size of computed field {result.asnumpy().shape}"
     )
-    # convert to field
-    c_lin_e_field = gtx.as_field(
-        (dims.EdgeDim, dims.E2CDim), data=c_lin_e, dtype=gtx.float64, allocator=backend
-    )
-    exchange.exchange_and_wait(dims.EdgeDim, c_lin_e_field)
+    exchange.exchange_and_wait(dims.CellDim, result)
 
-    assert test_helpers.dallclose(c_lin_e_field.asnumpy(), c_lin_e_ref.asnumpy())
+    assert test_helpers.dallclose(result.asnumpy(), field_ref.asnumpy())
+
+
+inputs_ls = [[2.0, 2.0, 4.0, 1.0], [2.0, 1.0], [30.0], [], [-10, 20, 4]]
+
+
+@pytest.mark.parametrize("global_list", inputs_ls)
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_global_reductions_min(
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[data_alloc.ScalarT],
+) -> None:
+    my_rank = processor_props.rank
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
+
+    global_reduc = definitions.create_reduction(processor_props)
+
+    if len(global_list) > 0:
+        min_val = global_reduc.min(local_data, array_ns=xp)
+        expected_val = np.min(global_list)
+        assert expected_val == min_val
+    else:
+        with pytest.raises(ValueError, match="global_min requires a non-empty buffer"):
+            global_reduc.min(local_data, array_ns=xp)
+
+
+@pytest.mark.parametrize("global_list", inputs_ls)
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_global_reductions_max(
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[data_alloc.ScalarT],
+) -> None:
+    my_rank = processor_props.rank
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
+
+    global_reduc = definitions.create_reduction(processor_props)
+
+    if len(global_list) > 0:
+        max_val = global_reduc.max(local_data, array_ns=xp)
+        expected_val = np.max(global_list)
+        assert expected_val == max_val
+    else:
+        with pytest.raises(ValueError, match="global_max requires a non-empty buffer"):
+            global_reduc.max(local_data, array_ns=xp)
+
+
+@pytest.mark.parametrize("global_list", inputs_ls)
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_global_reductions_sum(
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[data_alloc.ScalarT],
+) -> None:
+    my_rank = processor_props.rank
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
+
+    global_reduc = definitions.create_reduction(processor_props)
+
+    if len(global_list) > 0:
+        sum_val = global_reduc.sum(local_data, array_ns=xp)
+        expected_val = np.sum(global_list)
+        assert expected_val == sum_val
+    else:
+        with pytest.raises(ValueError, match="global_sum requires a non-empty buffer"):
+            global_reduc.sum(local_data, array_ns=xp)
+
+
+@pytest.mark.parametrize("global_list", inputs_ls)
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_global_reductions_mean(
+    processor_props: definitions.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    global_list: list[data_alloc.ScalarT],
+) -> None:
+    my_rank = processor_props.rank
+    xp = data_alloc.import_array_ns(model_backends.get_allocator(backend_like))
+    comm_size = processor_props.comm_size
+    chunks = np.array_split(global_list, comm_size)
+    local_data = xp.array(chunks[my_rank])
+    global_reduc = definitions.create_reduction(processor_props)
+
+    if len(global_list) > 0:
+        mean_val = global_reduc.mean(local_data, array_ns=xp)
+        expected_val = np.mean(global_list)
+        assert expected_val == mean_val
+    else:
+        with pytest.raises(ValueError, match="global_mean requires a non-empty buffer"):
+            global_reduc.mean(local_data, array_ns=xp)

@@ -22,7 +22,8 @@ from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import config as gtx_config, metrics as gtx_metrics
+from gt4py.next import config as gtx_config
+from gt4py.next.instrumentation import metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
@@ -64,7 +65,6 @@ def solve_nh_init(
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     nudgecoeff_e: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    bdy_halo_c: gtx.Field[gtx.Dims[dims.CellDim], bool],
     mask_prog_halo_c: gtx.Field[gtx.Dims[dims.CellDim], bool],
     rayleigh_w: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     exner_exfac: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -177,7 +177,6 @@ def solve_nh_init(
     )
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
-        bdy_halo_c=bdy_halo_c,
         mask_prog_halo_c=mask_prog_halo_c,
         rayleigh_w=rayleigh_w,
         time_extrapolation_parameter_for_exner=exner_exfac,

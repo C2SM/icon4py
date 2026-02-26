@@ -14,7 +14,7 @@ import pytest
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_coeff_gradekin import compute_coeff_gradekin
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -24,8 +24,9 @@ from icon4py.model.testing.fixtures.datatest import (
     icon_grid,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
 )
+
+from ... import utils
 
 
 if TYPE_CHECKING:
@@ -46,9 +47,11 @@ def test_compute_coeff_gradekin(
     horizontal_start = icon_grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    horizontal_end = icon_grid.num_edges
 
     coeff_gradekin_full = compute_coeff_gradekin(
-        edge_cell_length, inv_dual_edge_length, horizontal_start, horizontal_end
+        edge_cell_length,
+        inv_dual_edge_length,
+        horizontal_start,
+        exchange=utils.dummy_exchange,
     )
     assert test_utils.dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full)

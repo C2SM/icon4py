@@ -9,7 +9,7 @@ from typing import Any, Final, TypeAlias, TypeGuard
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators, backend as gtx_backend
+from gt4py.next import backend as gtx_backend, custom_layout_allocators as gtx_allocators
 from gt4py.next.program_processors.runners import dace as gtx_dace, gtfn
 
 
@@ -68,6 +68,7 @@ def make_custom_dace_backend(
     optimization_args: dict[str, Any] | None = None,
     use_metrics: bool = True,
     use_zero_origin: bool = False,
+    use_max_domain_range_on_unstructured_shift: bool | None = True,
     **_,
 ) -> gtx_typing.Backend:
     """Customize the dace backend with the given configuration parameters.
@@ -82,6 +83,12 @@ def make_custom_dace_backend(
             the SDFG auto-optimize pipeline.
         use_metrics: Add SDFG instrumentation to collect the metric for stencil
             compute time.
+        use_max_domain_range_on_unstructured_shift: When True, compute `as_fieldop`
+            expressions everywhere. Otherwise, when all connectivities are given
+            at compile time, infer the minimal domain of all `as_fieldop` statically.
+
+    TODO(edopao): We should use the default `use_max_domain_range_on_unstructured_shift=None`
+        once the minimal static domain produces the correct result.
 
     Returns:
         A dace backend with custom configuration for the target device.
@@ -95,14 +102,16 @@ def make_custom_dace_backend(
         optimization_args=optimization_args,
         use_metrics=use_metrics,
         use_zero_origin=use_zero_origin,
+        use_max_domain_range_on_unstructured_shift=use_max_domain_range_on_unstructured_shift,
     )
 
 
 BACKENDS: dict[str, BackendLike] = {
     "embedded": None,
-    "roundtrip": gtx.itir_python,
     "gtfn_cpu": {"backend_factory": make_custom_gtfn_backend, "device": CPU},
     "gtfn_gpu": {"backend_factory": make_custom_gtfn_backend, "device": GPU},
     "dace_cpu": {"backend_factory": make_custom_dace_backend, "device": CPU},
     "dace_gpu": {"backend_factory": make_custom_dace_backend, "device": GPU},
+    "cpu": {"device": CPU},
+    "gpu": {"device": GPU},
 }

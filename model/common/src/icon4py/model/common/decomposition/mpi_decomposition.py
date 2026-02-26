@@ -8,10 +8,12 @@
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Union
 
 import dace  # type: ignore[import-untyped]
@@ -20,8 +22,9 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import SingleNodeExchange
+from icon4py.model.common.decomposition.definitions import Reductions, SingleNodeExchange
 from icon4py.model.common.orchestration import halo_exchange
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -45,7 +48,6 @@ except ImportError:
     mpi4py = None
     ghex = None
     unstructured = None
-
 
 if TYPE_CHECKING:
     import mpi4py.MPI  # type: ignore [import-not-found]
@@ -203,42 +205,55 @@ class GHexMultiNodeExchange:
     def _slice_field_based_on_dim(self, field: gtx.Field, dim: gtx.Dimension) -> data_alloc.NDArray:
         """
         Slices the field based on the dimension passed in.
+
+        This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
+        the granule context where fields otherwise have length nproma.
         """
         if dim == dims.VertexDim:
-            return field.ndarray[: self._decomposition_info.num_vertices, :]
+            return field.ndarray[: self._decomposition_info.num_vertices]
         elif dim == dims.EdgeDim:
-            return field.ndarray[: self._decomposition_info.num_edges, :]
+            return field.ndarray[: self._decomposition_info.num_edges]
         elif dim == dims.CellDim:
-            return field.ndarray[: self._decomposition_info.num_cells, :]
+            return field.ndarray[: self._decomposition_info.num_cells]
         else:
             raise ValueError(f"Unknown dimension {dim}")
 
-    def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field) -> str:
-        # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
-        assert hasattr(f, "__gt_buffer_info__")
-        # dimension and buffer_info uniquely identifies the exchange pattern
-        key = (dim, f.__gt_buffer_info__.hash_key)
-        try:
-            return self._applied_patterns_cache[key]
-        except KeyError:
-            assert dim in f.domain.dims
-            array = self._slice_field_based_on_dim(f, dim)
-            self._applied_patterns_cache[key] = self._patterns[dim](
-                make_field_descriptor(
-                    self._domain_descriptors[dim],
-                    array,
-                    arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
-                )
-            )
-            return self._applied_patterns_cache[key]
+    def _make_field_descriptor(self, dim: gtx.Dimension, array: data_alloc.NDArray) -> Any:
+        return make_field_descriptor(
+            self._domain_descriptors[dim],
+            array,
+            arch=Architecture.CPU if isinstance(array, np.ndarray) else Architecture.GPU,
+        )
 
-    def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> MultiNodeResult:
+    def _get_applied_pattern(self, dim: gtx.Dimension, f: gtx.Field | data_alloc.NDArray) -> str:
+        if isinstance(f, gtx.Field):
+            assert hasattr(f, "__gt_buffer_info__")
+            # dimension and buffer_info uniquely identifies the exchange pattern
+            # TODO(havogt): the cache is never cleared, consider using functools.lru_cache in a bigger refactoring.
+            key = (dim, f.__gt_buffer_info__.hash_key)
+            try:
+                return self._applied_patterns_cache[key]
+            except KeyError:
+                assert dim in f.domain.dims
+                array = self._slice_field_based_on_dim(f, dim)
+                self._applied_patterns_cache[key] = self._patterns[dim](
+                    self._make_field_descriptor(dim, array)
+                )
+                return self._applied_patterns_cache[key]
+        else:
+            assert f.ndim in (1, 2), "Buffers must be 1d or 2d"
+            return self._patterns[dim](self._make_field_descriptor(dim, f))
+
+    def exchange(
+        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    ) -> MultiNodeResult:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
-
-            This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
-            the granule context where fields otherwise have length nproma.
         """
+        assert (
+            dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
+        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         # With https://github.com/ghex-org/GHEX/pull/186, ghex will schedule/sync work on the default stream,
         # otherwise we need an explicit device synchronize here.
@@ -246,7 +261,9 @@ class GHexMultiNodeExchange:
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None:
+    def exchange_and_wait(
+        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    ) -> None:
         res = self.exchange(dim, *fields)
         res.wait()
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
@@ -409,3 +426,103 @@ def create_multinode_node_exchange(
         return GHexMultiNodeExchange(props, decomp_info)
     else:
         return SingleNodeExchange()
+
+
+@dataclasses.dataclass
+class GlobalReductions(Reductions):
+    props: definitions.ProcessProperties
+
+    @staticmethod
+    def _min_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
+        if array_ns.issubdtype(dtype, array_ns.integer):
+            return array_ns.asarray([dtype.type(array_ns.iinfo(dtype).max)])
+        elif array_ns.issubdtype(dtype, array_ns.floating):
+            return array_ns.asarray([dtype.type(array_ns.inf)])
+        else:
+            raise TypeError(f"Unsupported dtype for min identity: {dtype}")
+
+    @staticmethod
+    def _max_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
+        if array_ns.issubdtype(dtype, array_ns.integer):
+            return array_ns.asarray([dtype.type(array_ns.iinfo(dtype).min)])
+        elif array_ns.issubdtype(dtype, array_ns.floating):
+            return array_ns.asarray([dtype.type(-array_ns.inf)])
+        else:
+            raise TypeError(f"Unsupported dtype for max identity: {dtype}")
+
+    @staticmethod
+    def _sum_identity(dtype: np.dtype, array_ns: ModuleType = np) -> data_alloc.NDArray:
+        return array_ns.asarray([dtype.type(0)])
+
+    def _reduce(
+        self,
+        buffer: data_alloc.NDArray,
+        local_reduction: Callable[[data_alloc.NDArray], data_alloc.ScalarT],
+        global_reduction: mpi4py.MPI.Op,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        local_red_val = local_reduction(buffer)
+        recv_buffer = array_ns.empty(1, dtype=buffer.dtype)
+        if hasattr(
+            array_ns, "cuda"
+        ):  # https://mpi4py.readthedocs.io/en/stable/tutorial.html#gpu-aware-mpi-python-gpu-arrays
+            array_ns.cuda.runtime.deviceSynchronize()
+        self.props.comm.Allreduce(local_red_val, recv_buffer, global_reduction)
+        return recv_buffer.item()
+
+    def _calc_buffer_size(
+        self,
+        buffer: data_alloc.NDArray,
+        array_ns: ModuleType = np,
+    ) -> state_utils.ScalarType:
+        return self._reduce(array_ns.asarray([buffer.size]), array_ns.sum, mpi4py.MPI.SUM, array_ns)
+
+    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        if self._calc_buffer_size(buffer, array_ns) == 0:
+            raise ValueError("global_min requires a non-empty buffer")
+        return self._reduce(
+            buffer if buffer.size != 0 else self._min_identity(buffer.dtype, array_ns),
+            array_ns.min,
+            mpi4py.MPI.MIN,
+            array_ns,
+        )
+
+    def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        if self._calc_buffer_size(buffer, array_ns) == 0:
+            raise ValueError("global_max requires a non-empty buffer")
+        return self._reduce(
+            buffer if buffer.size != 0 else self._max_identity(buffer.dtype, array_ns),
+            array_ns.max,
+            mpi4py.MPI.MAX,
+            array_ns,
+        )
+
+    def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        if self._calc_buffer_size(buffer, array_ns) == 0:
+            raise ValueError("global_sum requires a non-empty buffer")
+        return self._reduce(
+            buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns),
+            array_ns.sum,
+            mpi4py.MPI.SUM,
+            array_ns,
+        )
+
+    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        global_buffer_size = self._calc_buffer_size(buffer, array_ns)
+        if global_buffer_size == 0:
+            raise ValueError("global_mean requires a non-empty buffer")
+
+        return (
+            self._reduce(
+                (buffer if buffer.size != 0 else self._sum_identity(buffer.dtype, array_ns)),
+                array_ns.sum,
+                mpi4py.MPI.SUM,
+                array_ns,
+            )
+            / global_buffer_size
+        )
+
+
+@definitions.create_reduction.register(MPICommProcessProperties)
+def create_global_reduction(props: MPICommProcessProperties) -> Reductions:
+    return GlobalReductions(props)

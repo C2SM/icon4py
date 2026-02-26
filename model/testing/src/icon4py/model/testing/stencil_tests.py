@@ -20,12 +20,13 @@ from gt4py import eve
 from gt4py.next import (
     config as gtx_config,
     constructors,
-    metrics as gtx_metrics,
+    named_collections as gtx_named_collections,
     typing as gtx_typing,
 )
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base
@@ -33,14 +34,16 @@ from icon4py.model.common.utils import device_utils
 
 
 def allocate_data(
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
-    input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
-    _allocate_field = constructors.as_field.partial(allocator=allocator)  # type:ignore[attr-defined] # TODO(havogt): check why it doesn't understand the fluid_partial
+    allocator: gtx_typing.Allocator | None,
+    input_data: dict[
+        str, Any
+    ],  # `Field`s or collection of `Field`s are re-allocated, the rest is passed through
+) -> dict[str, Any]:
+    def _allocate_field(f: gtx.Field) -> gtx.Field:
+        return constructors.as_field(domain=f.domain, data=f.ndarray, allocator=allocator)
+
     input_data = {
-        k: tuple(_allocate_field(domain=field.domain, data=field.ndarray) for field in v)
-        if isinstance(v, tuple)
-        else _allocate_field(domain=v.domain, data=v.ndarray)
+        k: gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
         if not gtx.is_scalar_type(v) and k != "domain"
         else v
         for k, v in input_data.items()
@@ -195,7 +198,6 @@ class StencilTest:
             else:
                 program.compile(
                     offset_provider=grid.connectivities,
-                    enable_jit=False,
                     **static_args,  # type: ignore[arg-type]
                 )
 
@@ -207,7 +209,7 @@ class StencilTest:
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         backend_like: model_backends.BackendLike,
-    ) -> dict[str, gtx.Field | tuple[gtx.Field, ...]]:
+    ) -> dict[str, Any]:
         # TODO(havogt): this is a workaround,
         # because in the `input_data` fixture provided by the user
         # it does not allocate for the correct device.

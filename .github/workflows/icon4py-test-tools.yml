@@ -31,6 +31,7 @@ jobs:
       - name: run nox session - tools
         env:
           NUM_PROCESSES: auto
+          PYTEST_ADDOPTS: "--durations=0"
         shell: bash
         run: |
           uv run nox -s "test_tools-${{matrix.python-version}}(unittest)" --

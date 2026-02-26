@@ -17,6 +17,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
+    base as base_grid,
     grid_manager as gm,
     grid_refinement as refin,
     gridfile,
@@ -45,7 +46,6 @@ from icon4py.model.testing.fixtures import (
     experiment,
     grid_savepoint,
     processor_props,
-    ranked_data_path,
 )
 
 from .. import utils
@@ -76,7 +76,13 @@ def test_grid_manager_eval_v2e(
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(seralized_v2e)
     v2e_table = grid.get_connectivity("V2E").asnumpy()
-    assert has_invalid_index(v2e_table)
+    # Torus grids have no pentagon points and no boundaries hence no invalid
+    # indexes (while REGIONAL and GLOBAL grids can have)
+    assert (
+        not has_invalid_index(v2e_table)
+        if experiment.grid.shape.geometry_type == base_grid.GeometryType.TORUS
+        else has_invalid_index(v2e_table)
+    )
     _reset_invalid_index(seralized_v2e)
     assert np.allclose(v2e_table, seralized_v2e)
 
@@ -116,9 +122,14 @@ def test_grid_manager_eval_v2c(
     # hence in the grid file there are "missing values"
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(serialized_v2c)
-    assert has_invalid_index(v2c_table)
+    # Torus grids have no pentagon points and no boundaries hence no invalid
+    # indexes (while REGIONAL and GLOBAL grids can have)
+    assert (
+        not has_invalid_index(v2c_table)
+        if experiment.grid.shape.geometry_type == base_grid.GeometryType.TORUS
+        else has_invalid_index(v2c_table)
+    )
     _reset_invalid_index(serialized_v2c)
-
     assert np.allclose(v2c_table, serialized_v2c)
 
 
@@ -326,7 +337,7 @@ def assert_up_to_order(
 
 @pytest.mark.with_netcdf
 def test_gridmanager_given_file_not_found_then_abort(
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:

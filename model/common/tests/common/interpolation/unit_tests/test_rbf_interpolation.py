@@ -32,14 +32,33 @@ from icon4py.model.testing.fixtures.datatest import (
     icon_grid,
     interpolation_savepoint,
     processor_props,
-    ranked_data_path,
 )
+
+from ... import utils
 
 
 if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.testing import serialbox
+
+RBF_TOLERANCES = {
+    dims.CellDim: {
+        definitions.Experiments.EXCLAIM_APE.name: 3.1e-9,
+        definitions.Experiments.MCH_CH_R04B09.name: 4e-2,
+        definitions.Experiments.GAUSS3D.name: 1e-14,
+    },
+    dims.EdgeDim: {
+        definitions.Experiments.EXCLAIM_APE.name: 8e-14,
+        definitions.Experiments.MCH_CH_R04B09.name: 2e-9,
+        definitions.Experiments.GAUSS3D.name: 0,
+    },
+    dims.VertexDim: {
+        definitions.Experiments.EXCLAIM_APE.name: 3e-10,
+        definitions.Experiments.MCH_CH_R04B09.name: 3e-3,
+        definitions.Experiments.GAUSS3D.name: 1e-15,
+    },
+}
 
 
 @pytest.mark.level("unit")
@@ -140,19 +159,11 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, atol",
-    [
-        (definitions.Experiments.EXCLAIM_APE, 3e-9),
-        (definitions.Experiments.MCH_CH_R04B09, 3e-2),
-    ],
-)
 def test_rbf_interpolation_coeffs_cell(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
-    atol: float,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
@@ -162,6 +173,12 @@ def test_rbf_interpolation_coeffs_cell(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     assert horizontal_start < grid.num_cells
+
+    geometry_type = (
+        grid.global_properties.geometry_type
+        if grid.global_properties.geometry_type
+        else pytest.fail("geometry_type cannot be None")
+    )
 
     rbf_vec_coeff_c1, rbf_vec_coeff_c2 = rbf.compute_rbf_interpolation_coeffs_cell(  # type: ignore[misc] # function returns two vars
         geometry.get(geometry_attrs.CELL_LAT).ndarray,
@@ -177,13 +194,21 @@ def test_rbf_interpolation_coeffs_cell(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_cells(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        geometry_type.value,
+        rbf.compute_default_rbf_scale_cell(
+            geometry_type.value,
+            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
+        ),
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
+        exchange=utils.dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
-    rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().ndarray
-    rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2().ndarray
+    rbf_vec_coeff_c1_ref = interpolation_savepoint.rbf_vec_coeff_c1().asnumpy()
+    rbf_vec_coeff_c2_ref = interpolation_savepoint.rbf_vec_coeff_c2().asnumpy()
 
     assert rbf_vec_coeff_c1.shape == rbf_vec_coeff_c1_ref.shape
     assert rbf_vec_coeff_c2.shape == rbf_vec_coeff_c2_ref.shape
@@ -198,30 +223,22 @@ def test_rbf_interpolation_coeffs_cell(
     assert test_helpers.dallclose(
         rbf_vec_coeff_c1[horizontal_start:],
         rbf_vec_coeff_c1_ref[horizontal_start:],
-        atol=atol,
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_c2[horizontal_start:],
         rbf_vec_coeff_c2_ref[horizontal_start:],
-        atol=atol,
+        atol=RBF_TOLERANCES[dims.CellDim][experiment.name],
     )
 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, atol",
-    [
-        (definitions.Experiments.EXCLAIM_APE, 3e-10),
-        (definitions.Experiments.MCH_CH_R04B09, 3e-3),
-    ],
-)
 def test_rbf_interpolation_coeffs_vertex(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
-    atol: float,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
@@ -231,6 +248,12 @@ def test_rbf_interpolation_coeffs_vertex(
         h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     assert horizontal_start < grid.num_vertices
+
+    geometry_type = (
+        grid.global_properties.geometry_type
+        if grid.global_properties.geometry_type
+        else pytest.fail("geometry_type cannot be None")
+    )
 
     rbf_vec_coeff_v1, rbf_vec_coeff_v2 = rbf.compute_rbf_interpolation_coeffs_vertex(
         geometry.get(geometry_attrs.VERTEX_LAT).ndarray,
@@ -246,8 +269,16 @@ def test_rbf_interpolation_coeffs_vertex(
         geometry.get(geometry_attrs.EDGE_NORMAL_Z).ndarray,
         rbf.construct_rbf_matrix_offsets_tables_for_vertices(grid),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        geometry_type.value,
+        rbf.compute_default_rbf_scale_vertex(
+            geometry_type.value,
+            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
+        ),
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
+        exchange=utils.dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -267,30 +298,22 @@ def test_rbf_interpolation_coeffs_vertex(
     assert test_helpers.dallclose(
         rbf_vec_coeff_v1[horizontal_start:],
         rbf_vec_coeff_v1_ref.asnumpy()[horizontal_start:],
-        atol=atol,
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
     )
     assert test_helpers.dallclose(
         rbf_vec_coeff_v2[horizontal_start:],
         rbf_vec_coeff_v2_ref.asnumpy()[horizontal_start:],
-        atol=atol,
+        atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
     )
 
 
 @pytest.mark.level("unit")
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, atol",
-    [
-        (definitions.Experiments.EXCLAIM_APE, 8e-14),
-        (definitions.Experiments.MCH_CH_R04B09, 2e-9),
-    ],
-)
 def test_rbf_interpolation_coeffs_edge(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
     experiment: definitions.Experiment,
-    atol: float,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
@@ -300,6 +323,12 @@ def test_rbf_interpolation_coeffs_edge(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     assert horizontal_start < grid.num_edges
+
+    geometry_type = (
+        grid.global_properties.geometry_type
+        if grid.global_properties.geometry_type
+        else pytest.fail("geometry_type cannot be None")
+    )
 
     rbf_vec_coeff_e = rbf.compute_rbf_interpolation_coeffs_edge(
         geometry.get(geometry_attrs.EDGE_LAT).ndarray,
@@ -317,8 +346,16 @@ def test_rbf_interpolation_coeffs_edge(
         # coefficients in savepoint.
         grid_savepoint.e2c2e(),
         rbf.DEFAULT_RBF_KERNEL[rbf_dim],
-        rbf.compute_default_rbf_scale(math.sqrt(grid_savepoint.mean_cell_area()), rbf_dim),
+        geometry_type.value,
+        rbf.compute_default_rbf_scale_edge(
+            geometry_type.value,
+            geometry.get(geometry_attrs.CHARACTERISTIC_LENGTH),
+            geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
+        ),
         horizontal_start,
+        grid.global_properties.domain_length,
+        grid.global_properties.domain_height,
+        exchange=utils.dummy_exchange,
         array_ns=data_alloc.import_array_ns(backend),
     )
 
@@ -332,5 +369,5 @@ def test_rbf_interpolation_coeffs_edge(
     assert test_helpers.dallclose(
         rbf_vec_coeff_e[horizontal_start:],
         rbf_vec_coeff_e_ref.asnumpy()[horizontal_start:],
-        atol=atol,
+        atol=RBF_TOLERANCES[dims.EdgeDim][experiment.name],
     )

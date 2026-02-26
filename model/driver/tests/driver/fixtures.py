@@ -30,7 +30,6 @@ from icon4py.model.testing.fixtures import (
     model_top_height,
     ndyn_substeps,
     processor_props,
-    ranked_data_path,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_final,

@@ -18,6 +18,7 @@ from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils as testing_helpers
+from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -28,8 +29,9 @@ from icon4py.model.testing.fixtures.datatest import (
     interpolation_savepoint,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
 )
+
+from ... import utils
 
 
 if TYPE_CHECKING:
@@ -135,7 +137,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
 @pytest.mark.datatest
 def test_compute_rayleigh_w(
     icon_grid: base_grid.Grid,
-    experiment: definitions.Experiments,
+    experiment: definitions.Experiment,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
@@ -145,9 +147,18 @@ def test_compute_rayleigh_w(
     rayleigh_w_full = data_alloc.zero_field(
         icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
-    rayleigh_type = 2
-    rayleigh_coeff = 0.1 if experiment == definitions.Experiments.EXCLAIM_APE else 5.0
-    damping_height = 50000.0 if experiment == definitions.Experiments.EXCLAIM_APE else 12500.0
+    (
+        _,
+        _,
+        _,
+        damping_height,
+        rayleigh_coeff,
+        _,
+        _,
+        rayleigh_type,
+        _,
+        _,
+    ) = construct_metrics_config(experiment)
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
@@ -231,12 +242,32 @@ def test_compute_exner_exfac(
     backend: gtx_typing.Backend,
 ) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    exner_expol = 0.333 if experiment == definitions.Experiments.MCH_CH_R04B09 else 0.3333333333333
+    match experiment:
+        case definitions.Experiments.MCH_CH_R04B09:
+            exner_expol = 0.333
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            exner_expol = 0.333
+        case _:
+            exner_expol = 1.0 / 3.0
+
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_slp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    max_hgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
+    mf._compute_maxslp_maxhgtd.with_backend(backend)(
+        metrics_savepoint.ddxn_z_full(),
+        grid_savepoint.dual_edge_length(),
+        out=(max_slp, max_hgtd),
+        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        domain={
+            dims.CellDim: (horizontal_start, icon_grid.num_cells),
+            dims.KDim: (0, icon_grid.num_levels),
+        },
+    )
+
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     mf.compute_exner_exfac.with_backend(backend)(
-        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
-        dual_edge_length=grid_savepoint.dual_edge_length(),
+        maxslp=max_slp,
+        maxhgtd=max_hgtd,
         exner_exfac=exner_exfac,
         exner_expol=exner_expol,
         lateral_boundary_level_2=horizontal_start,
@@ -244,7 +275,7 @@ def test_compute_exner_exfac(
         horizontal_end=gtx.int32(icon_grid.num_cells),
         vertical_start=gtx.int32(0),
         vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"C2E": icon_grid.get_connectivity("C2E")},
+        offset_provider={},
     )
 
     assert testing_helpers.dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
@@ -314,7 +345,14 @@ def test_compute_exner_w_implicit_weight_parameter(
     )
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
-    vwind_offctr = 0.2 if experiment == definitions.Experiments.MCH_CH_R04B09 else 0.15
+    match experiment:
+        case definitions.Experiments.MCH_CH_R04B09:
+            vwind_offctr = 0.2
+        case definitions.Experiments.WEISMAN_KLEMP_TORUS:
+            vwind_offctr = 0.2
+        case _:
+            vwind_offctr = 0.15
+
     xp = data_alloc.import_array_ns(backend)
     exner_w_implicit_weight_parameter = mf.compute_exner_w_implicit_weight_parameter(
         c2e=icon_grid.get_connectivity(dims.C2E).ndarray,
@@ -368,7 +406,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    xp = data_alloc.import_array_ns(backend)
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
 
@@ -396,6 +433,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
+        exchange=utils.dummy_exchange,
         array_ns=xp,
     )
     # TODO (nfarabullini): fix type ignore
@@ -433,47 +471,19 @@ def test_compute_mask_prog_halo_c(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    mask_prog_halo_c_full = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dtype=bool, allocator=backend
-    )
+    mask_prog_halo_c = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, allocator=backend)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
     horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
     mf.compute_mask_prog_halo_c.with_backend(backend)(
         c_refin_ctrl=c_refin_ctrl,
-        mask_prog_halo_c=mask_prog_halo_c_full,
+        mask_prog_halo_c=mask_prog_halo_c,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         offset_provider={},
     )
-    assert testing_helpers.dallclose(
-        mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy()
-    )
-
-
-@pytest.mark.datatest
-def test_compute_bdy_halo_c(
-    metrics_savepoint: sb.MetricSavepoint,
-    icon_grid: base_grid.Grid,
-    grid_savepoint: sb.IconGridSavepoint,
-    backend: gtx_typing.Backend,
-) -> None:
-    bdy_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, allocator=backend)
-    c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
-    bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
-    horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
-    horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
-
-    mf.compute_bdy_halo_c.with_backend(backend)(
-        c_refin_ctrl=c_refin_ctrl,
-        bdy_halo_c=bdy_halo_c_full,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        offset_provider={},
-    )
-
-    assert testing_helpers.dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
+    assert testing_helpers.dallclose(mask_prog_halo_c.asnumpy(), mask_prog_halo_c_ref.asnumpy())
 
 
 @pytest.mark.level("unit")

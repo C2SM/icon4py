@@ -147,7 +147,6 @@ def grid_init(
         vertical_size=vertical_size,
         limited_area=limited_area,
         iau_init=iau_init,
-        mean_cell_area=mean_cell_area,
         allocator=allocator,
     )
 
@@ -197,6 +196,7 @@ def grid_init(
         cell_center_lat=cell_center_lat,
         cell_center_lon=cell_center_lon,
         area=cell_areas,
+        mean_cell_area=mean_cell_area,
     )
 
     if comm_id is None:

@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from types import ModuleType
 from typing import Final
 
@@ -20,6 +21,7 @@ from gt4py.next import (
     astype,
     broadcast,
     int32,
+    max_over,
     maximum,
     minimum,
     neighbor_sum,
@@ -30,6 +32,7 @@ from gt4py.next import (
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import C2E, C2E2C, C2E2CO, E2C, C2E2CODim, Koff
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -422,15 +425,11 @@ def _compute_maxslp_maxhgtd(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    z_maxslp_0_1 = maximum(abs(ddxn_z_full(C2E[0])), abs(ddxn_z_full(C2E[1])))
-    maxslp = maximum(z_maxslp_0_1, abs(ddxn_z_full(C2E[2])))
+    tmp = abs(ddxn_z_full)
+    maxslp = max_over(tmp(C2E), axis=dims.C2EDim)
 
-    z_maxhgtd_0_1 = maximum(
-        abs(ddxn_z_full(C2E[0]) * dual_edge_length(C2E[0])),
-        abs(ddxn_z_full(C2E[1]) * dual_edge_length(C2E[1])),
-    )
-
-    maxhgtd = maximum(z_maxhgtd_0_1, abs(ddxn_z_full(C2E[2]) * dual_edge_length(C2E[2])))
+    tmp_maxhgtd = abs(ddxn_z_full * dual_edge_length)
+    maxhgtd = max_over(tmp_maxhgtd(C2E), axis=dims.C2EDim)
     return maxslp, maxhgtd
 
 
@@ -473,30 +472,26 @@ def compute_maxslp_maxhgtd(
 
 @gtx.field_operator
 def _compute_exner_exfac(
-    ddxn_z_full: fa.EdgeKField[wpfloat],
-    dual_edge_length: fa.EdgeField[wpfloat],
+    maxslp: fa.CellKField[wpfloat],
+    maxhgtd: fa.CellKField[wpfloat],
     exner_expol: wpfloat,
     lateral_boundary_level_2: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
-    z_maxslp, z_maxhgtd = _compute_maxslp_maxhgtd(ddxn_z_full, dual_edge_length)
-
     exner_exfac = concat_where(
         dims.CellDim >= lateral_boundary_level_2,
-        exner_expol * minimum(1.0 - (4.0 * z_maxslp) ** 2, 1.0 - (0.002 * z_maxhgtd) ** 2),
+        exner_expol * minimum(1.0 - (4.0 * maxslp) ** 2, 1.0 - (0.002 * maxhgtd) ** 2),
         exner_expol,
     )
     exner_exfac = maximum(0.0, exner_exfac)
-    exner_exfac = where(
-        z_maxslp > 1.5, maximum(-1.0 / 6.0, 1.0 / 9.0 * (1.5 - z_maxslp)), exner_exfac
-    )
+    exner_exfac = where(maxslp > 1.5, maximum(-1.0 / 6.0, 1.0 / 9.0 * (1.5 - maxslp)), exner_exfac)
 
     return exner_exfac
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_exner_exfac(
-    ddxn_z_full: fa.EdgeKField[wpfloat],
-    dual_edge_length: fa.EdgeField[wpfloat],
+    maxslp: fa.CellKField[wpfloat],
+    maxhgtd: fa.CellKField[wpfloat],
     exner_exfac: fa.CellKField[wpfloat],
     exner_expol: wpfloat,
     lateral_boundary_level_2: gtx.int32,
@@ -511,8 +506,8 @@ def compute_exner_exfac(
     Exner extrapolation reaches zero for a slope of 1/4 or a height difference of 500 m between adjacent grid points (empirically determined values). See mo_vertical_grid.f90
 
     Args:
-        ddxn_z_full: ddxn_z_full
-        dual_edge_length: dual_edge_length
+        maxslp: maxslp
+        maxhgtd: maxhgtd
         exner_exfac: Exner factor
         exner_expol: Exner extrapolation factor
         horizontal_start: horizontal start index
@@ -522,8 +517,8 @@ def compute_exner_exfac(
 
     """
     _compute_exner_exfac(
-        ddxn_z_full=ddxn_z_full,
-        dual_edge_length=dual_edge_length,
+        maxhgtd=maxhgtd,
+        maxslp=maxslp,
         exner_expol=exner_expol,
         lateral_boundary_level_2=lateral_boundary_level_2,
         out=exner_exfac,
@@ -576,11 +571,13 @@ def compute_flat_max_idx(
     c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     k_lev: data_alloc.NDArray,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     k_lev_minus1 = k_lev[:-1]
     coeff_ = np.expand_dims(c_lin_e, axis=-1)
     z_me = np.sum(z_mc[e2c] * coeff_, axis=1)
+    exchange(z_me)
     z_ifc_e_0 = z_ifc[e2c[:, 0], :-1]
     z_ifc_e_k_0 = z_ifc[e2c[:, 0], 1:]
     z_ifc_e_1 = z_ifc[e2c[:, 1], :-1]
@@ -600,6 +597,9 @@ def compute_nflat_gradp(
     e_owner_mask: data_alloc.NDArray,
     lateral_boundary_level: int,
     nlev: int,
+    min_reduction: Callable[
+        [data_alloc.NDArray, ModuleType], data_alloc.ScalarT
+    ] = decomposition.single_node_reductions.min,
     array_ns: ModuleType = np,
 ) -> int:
     """
@@ -611,8 +611,8 @@ def compute_nflat_gradp(
         flat_idx_max,
         nlev,
     )
-    nflat_gradp = array_ns.min(mask_array)
-    return nflat_gradp.item()
+    nflat_gradp = min_reduction(mask_array, array_ns=array_ns)
+    return nflat_gradp
 
 
 @gtx.field_operator
@@ -620,7 +620,7 @@ def _compute_downward_extrapolation_distance(
     z_ifc: fa.CellField[wpfloat],
 ) -> fa.EdgeField[wpfloat]:
     extrapol_dist = 5.0
-    x = maximum(z_ifc(E2C[0]), z_ifc(E2C[1]))
+    x = max_over(z_ifc(E2C), axis=dims.E2CDim)
     return x - extrapol_dist
 
 
@@ -718,13 +718,12 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(
 
 @gtx.field_operator
 def _compute_mask_prog_halo_c(
-    c_refin_ctrl: fa.CellField[gtx.int32], mask_prog_halo_c: fa.CellField[bool]
+    c_refin_ctrl: fa.CellField[gtx.int32],
 ) -> fa.CellField[bool]:
-    mask_prog_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), mask_prog_halo_c, True)
+    mask_prog_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), False, True)
     return mask_prog_halo_c
 
 
-# TODO(halungge): not registered in factory
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_mask_prog_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],
@@ -745,77 +744,7 @@ def compute_mask_prog_halo_c(
     """
     _compute_mask_prog_halo_c(
         c_refin_ctrl,
-        mask_prog_halo_c,
         out=mask_prog_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-
-@gtx.field_operator
-def _compute_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[int32],
-) -> fa.CellField[bool]:
-    bdy_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), True, False)
-    return bdy_halo_c
-
-
-# TODO(halungge): not registered in factory
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[gtx.int32],
-    bdy_halo_c: fa.CellField[bool],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-):
-    """
-    Compute bdy_halo_c.
-
-    See mo_vertical_grid.f90. bdy_halo_c_dsl_low_refin in ICON
-
-    Args:
-        c_refin_ctrl: Cell field of refin_ctrl
-        bdy_halo_c: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-    """
-    _compute_bdy_halo_c(
-        c_refin_ctrl,
-        out=bdy_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_mask_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[int32],
-    mask_prog_halo_c: fa.CellField[bool],
-    bdy_halo_c: fa.CellField[bool],
-    horizontal_start: int32,
-    horizontal_end: int32,
-):
-    """
-    Compute bdy_halo_c.
-    Compute mask_prog_halo_c.
-
-
-    See mo_vertical_grid.f90. bdy_halo_c_dsl_low_refin in ICON
-
-    Args:
-        c_refin_ctrl: Cell field of refin_ctrl
-        bdy_halo_c: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-    """
-    _compute_mask_prog_halo_c(
-        c_refin_ctrl,
-        mask_prog_halo_c,
-        out=mask_prog_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-    _compute_bdy_halo_c(
-        c_refin_ctrl,
-        out=bdy_halo_c,
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
@@ -939,8 +868,7 @@ def compute_weighted_cell_neighbor_sum(
 def _compute_max_nbhgt(
     z_mc_nlev: fa.CellField[wpfloat],
 ) -> fa.CellField[wpfloat]:
-    max_nbhgt_0_1 = maximum(z_mc_nlev(C2E2C[0]), z_mc_nlev(C2E2C[1]))
-    max_nbhgt = maximum(max_nbhgt_0_1, z_mc_nlev(C2E2C[2]))
+    max_nbhgt = max_over(z_mc_nlev(C2E2C), axis=dims.C2E2CDim)
     return max_nbhgt
 
 

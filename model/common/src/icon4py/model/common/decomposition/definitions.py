@@ -8,19 +8,21 @@
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import logging
 from collections.abc import Sequence
-from dataclasses import dataclass
-from enum import IntEnum
+from enum import Enum
+from types import ModuleType
 from typing import Any, Literal, Protocol, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next import Dimension, Field
 
 from icon4py.model.common import utils
 from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -34,7 +36,7 @@ class ProcessProperties(Protocol):
     comm_size: int
 
 
-@dataclass(frozen=True, init=False)
+@dataclasses.dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):
     comm: None
     rank: int
@@ -69,14 +71,14 @@ class DomainDescriptorIdGenerator:
 
 
 class DecompositionInfo:
-    class EntryType(IntEnum):
+    class EntryType(int, Enum):
         ALL = 0
         OWNED = 1
         HALO = 2
 
     @utils.chainable
     def with_dimension(
-        self, dim: Dimension, global_index: data_alloc.NDArray, owner_mask: data_alloc.NDArray
+        self, dim: gtx.Dimension, global_index: data_alloc.NDArray, owner_mask: data_alloc.NDArray
     ) -> None:
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
@@ -87,8 +89,8 @@ class DecompositionInfo:
         num_edges: int | None = None,
         num_vertices: int | None = None,
     ):
-        self._global_index: dict[Dimension, data_alloc.NDArray] = {}
-        self._owner_mask: dict[Dimension, data_alloc.NDArray] = {}
+        self._global_index: dict[gtx.Dimension, data_alloc.NDArray] = {}
+        self._owner_mask: dict[gtx.Dimension, data_alloc.NDArray] = {}
         self._num_vertices = num_vertices
         self._num_cells = num_cells
         self._num_edges = num_edges
@@ -106,7 +108,7 @@ class DecompositionInfo:
         return self._num_vertices
 
     def local_index(
-        self, dim: Dimension, entry_type: EntryType = EntryType.ALL
+        self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
     ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
@@ -120,7 +122,7 @@ class DecompositionInfo:
                 mask = self._owner_mask[dim]
                 return index[mask]
 
-    def _to_local_index(self, dim: Dimension) -> data_alloc.NDArray:
+    def _to_local_index(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         data = self._global_index[dim]
         assert data.ndim == 1
         if isinstance(data, np.ndarray):
@@ -131,11 +133,11 @@ class DecompositionInfo:
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
 
-    def owner_mask(self, dim: Dimension) -> data_alloc.NDArray:
+    def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
     def global_index(
-        self, dim: Dimension, entry_type: EntryType = EntryType.ALL
+        self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
     ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
@@ -156,22 +158,37 @@ class ExchangeResult(Protocol):
 
 @runtime_checkable
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: Dimension, *fields: Field) -> ExchangeResult: ...
+    @overload
+    def exchange(self, dim: gtx.Dimension, *fields: gtx.Field) -> ExchangeResult: ...
 
-    def exchange_and_wait(self, dim: Dimension, *fields: Field) -> None: ...
+    @overload
+    def exchange(self, dim: gtx.Dimension, *buffers: data_alloc.NDArray) -> ExchangeResult: ...
+
+    @overload
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: gtx.Field) -> None: ...
+
+    @overload
+    def exchange_and_wait(self, dim: gtx.Dimension, *buffers: data_alloc.NDArray) -> None: ...
 
     def get_size(self) -> int: ...
 
     def my_rank(self) -> int: ...
 
+    def __str__(self) -> str:
+        return f"{self.__class__} (rank = {self.my_rank()} / {self.get_size()})"
 
-@dataclass
+
+@dataclasses.dataclass
 class SingleNodeExchange:
-    def exchange(self, dim: Dimension, *fields: Field) -> ExchangeResult:
+    def exchange(
+        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    ) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: Dimension, *fields: Field) -> None:
-        return
+    def exchange_and_wait(
+        self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
+    ) -> None:
+        return None
 
     def my_rank(self) -> int:
         return 0
@@ -179,7 +196,7 @@ class SingleNodeExchange:
     def get_size(self) -> int:
         return 1
 
-    def __call__(self, *args: Any, dim: Dimension, wait: bool = True) -> ExchangeResult | None:  # type: ignore[return] # return statment in else condition
+    def __call__(self, *args: Any, dim: gtx.Dimension, wait: bool = True) -> ExchangeResult | None:  # type: ignore[return] # return statment in else condition
         """Perform a halo exchange operation.
 
         Args:
@@ -198,7 +215,9 @@ class SingleNodeExchange:
 
     # Implementation of DaCe SDFGConvertible interface
     # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
-    def dace__sdfg__(self, *args: Any, dim: Dimension, wait: bool = True) -> dace.sdfg.sdfg.SDFG:
+    def dace__sdfg__(
+        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+    ) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
         sdfg.name = "_halo_exchange_"
         return sdfg
@@ -234,7 +253,7 @@ class HaloExchangeWaitRuntime(Protocol):
         ...
 
 
-@dataclass
+@dataclasses.dataclass
 class HaloExchangeWait:
     exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
 
@@ -242,7 +261,9 @@ class HaloExchangeWait:
         communication_handle.wait()
 
     # Implementation of DaCe SDFGConvertible interface
-    def dace__sdfg__(self, *args: Any, dim: Dimension, wait: bool = True) -> dace.sdfg.sdfg.SDFG:
+    def dace__sdfg__(
+        self, *args: Any, dim: gtx.Dimension, wait: bool = True
+    ) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
         sdfg.name = "_halo_exchange_wait_"
         return sdfg
@@ -304,6 +325,38 @@ class SingleNodeRun(RunType):
     pass
 
 
+class Reductions(Protocol):
+    def min(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+    def max(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+    def sum(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+    def mean(
+        self, buffer: data_alloc.NDArray, array_ns: ModuleType = np
+    ) -> state_utils.ScalarType: ...
+
+
+class SingleNodeReductions(Reductions):
+    def min(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.min(buffer).item()
+
+    def max(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.max(buffer).item()
+
+    def sum(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.sum(buffer).item()
+
+    def mean(self, buffer: data_alloc.NDArray, array_ns: ModuleType = np) -> state_utils.ScalarType:
+        return array_ns.sum(buffer).item() / buffer.size
+
+
 @overload
 def get_runtype(with_mpi: Literal[True]) -> MultiNodeRun: ...
 
@@ -344,3 +397,22 @@ def create_single_node_exchange(
     props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
 ) -> ExchangeRuntime:
     return SingleNodeExchange()
+
+
+@functools.singledispatch
+def create_reduction(props: ProcessProperties) -> Reductions:
+    """
+    Create a Global Reduction depending on the runtime size.
+
+    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+    """
+    raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
+
+
+@create_reduction.register(SingleNodeProcessProperties)
+def create_single_reduction_exchange(props: SingleNodeProcessProperties) -> Reductions:
+    return SingleNodeReductions()
+
+
+single_node_default = SingleNodeExchange()
+single_node_reductions = SingleNodeReductions()
