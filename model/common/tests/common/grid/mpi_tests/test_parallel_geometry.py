@@ -187,6 +187,7 @@ def test_cartesian_geometry_attr_no_halos(
     z_field = grid_geometry.get(z)
     match grid_geometry.grid.geometry_type:
         case base.GeometryType.ICOSAHEDRON:
+            # those are coordinates on the unit sphere: hence norm should be 1
             norm = data_alloc.zero_field(
                 grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend
             )
