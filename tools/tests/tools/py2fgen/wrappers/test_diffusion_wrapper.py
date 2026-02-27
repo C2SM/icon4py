@@ -53,6 +53,7 @@ def test_diffusion_wrapper_granule_inputs(
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
+    hdiff_smag_w = False
     ltkeshs = True
     type_t_diffu = 2
     type_vn_diffu = 1
@@ -166,6 +167,7 @@ def test_diffusion_wrapper_granule_inputs(
             diffusion_type=diffusion_type,
             hdiff_w=hdiff_w,
             hdiff_vn=hdiff_vn,
+            hdiff_smag_w=hdiff_smag_w,
             zdiffu_t=zdiffu_t,
             type_t_diffu=type_t_diffu,
             type_vn_diffu=type_vn_diffu,
@@ -280,6 +282,7 @@ def test_diffusion_wrapper_single_step(
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
+    hdiff_smag_w = False
     ltkeshs = True
     type_t_diffu = 2
     type_vn_diffu = 1
@@ -361,6 +364,7 @@ def test_diffusion_wrapper_single_step(
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
         hdiff_vn=hdiff_vn,
+        hdiff_smag_w=hdiff_smag_w,
         zdiffu_t=zdiffu_t,
         type_t_diffu=type_t_diffu,
         type_vn_diffu=type_vn_diffu,
