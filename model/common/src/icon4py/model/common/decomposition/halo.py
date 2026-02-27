@@ -56,7 +56,7 @@ class NoHalos(HaloConstructor):
 
 
 class IconLikeHaloConstructor(HaloConstructor):
-    """Creates necessary halo information for a given rank."""
+    """Creates halo information for a rank with the same structure as fortran ICON."""
 
     def __init__(
         self,
