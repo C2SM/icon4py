@@ -1594,6 +1594,7 @@ dev = [
     { name = "pytest-unused-fixtures" },
     { name = "pytest-xdist", extra = ["psutil"] },
     { name = "ruff" },
+    { name = "scipy-stubs" },
     { name = "setuptools" },
     { name = "sphinx" },
     { name = "sphinx-math-dollar" },
@@ -1641,6 +1642,7 @@ test = [
 ]
 typing = [
     { name = "mypy", extra = ["faster-cache"] },
+    { name = "scipy-stubs" },
     { name = "types-cffi" },
     { name = "typing-extensions" },
 ]
@@ -1693,6 +1695,7 @@ dev = [
     { name = "pytest-unused-fixtures", specifier = ">=0.2.0" },
     { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.5.0" },
     { name = "ruff", specifier = ">=0.8.0" },
+    { name = "scipy-stubs", specifier = ">=1.15.3.0" },
     { name = "setuptools", specifier = ">=70.1.1" },
     { name = "sphinx", specifier = "==7.3.7" },
     { name = "sphinx-math-dollar", specifier = ">=1.2.1" },
@@ -1740,6 +1743,7 @@ test = [
 ]
 typing = [
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
+    { name = "scipy-stubs", specifier = ">=1.15.3.0" },
     { name = "types-cffi", specifier = ">=1.16.0" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
 ]
@@ -2881,6 +2885,18 @@ wheels = [
 ]
 
 [[package]]
+name = "optype"
+version = "0.9.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-7-icon4py-cuda11' and extra == 'extra-7-icon4py-cuda12')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/3c/9d59b0167458b839273ad0c4fc5f62f787058d8f5aed7f71294963a99471/optype-0.9.3.tar.gz", hash = "sha256:5f09d74127d316053b26971ce441a4df01f3a01943601d3712dd6f34cdfbaf48", size = 96143, upload-time = "2025-03-31T17:00:08.392Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/73/d8/ac50e2982bdc2d3595dc2bfe3c7e5a0574b5e407ad82d70b5f3707009671/optype-0.9.3-py3-none-any.whl", hash = "sha256:2935c033265938d66cc4198b0aca865572e635094e60e6e79522852f029d9e8d", size = 84357, upload-time = "2025-03-31T17:00:06.464Z" },
+]
+
+[[package]]
 name = "orderly-set"
 version = "5.2.3"
 source = { registry = "https://pypi.org/simple" }
@@ -3923,6 +3939,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/56/46/2449e6e51e0d7c3575f289f6acb7f828938eaab8874dbccfeb0cd2b71a27/scipy-1.14.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5149e3fd2d686e42144a093b206aef01932a0059c2a33ddfa67f5f035bdfe13e", size = 40798288, upload-time = "2024-08-21T00:06:54.182Z" },
     { url = "https://files.pythonhosted.org/packages/32/cd/9d86f7ed7f4497c9fd3e39f8918dd93d9f647ba80d7e34e4946c0c2d1a7c/scipy-1.14.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:e4f5a7c49323533f9103d4dacf4e4f07078f360743dec7f7596949149efeec06", size = 42524647, upload-time = "2024-08-21T00:07:04.649Z" },
     { url = "https://files.pythonhosted.org/packages/f5/1b/6ee032251bf4cdb0cc50059374e86a9f076308c1512b61c4e003e241efb7/scipy-1.14.1-cp313-cp313-win_amd64.whl", hash = "sha256:baff393942b550823bfce952bb62270ee17504d02a1801d7fd0719534dfb9c84", size = 44469524, upload-time = "2024-08-21T00:07:15.381Z" },
+]
+
+[[package]]
+name = "scipy-stubs"
+version = "1.15.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "optype" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0b/5f/35c43bd7d412add4adcd68475702571b2489b50c40b6564f808b2355e452/scipy_stubs-1.15.3.0.tar.gz", hash = "sha256:e8f76c9887461cf9424c1e2ad78ea5dac71dd4cbb383dc85f91adfe8f74d1e17", size = 275699, upload-time = "2025-05-08T16:58:35.139Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/42/cd8dc81f8060de1f14960885ad5b2d2651f41de8b93d09f3f919d6567a5a/scipy_stubs-1.15.3.0-py3-none-any.whl", hash = "sha256:a251254cf4fd6e7fb87c55c1feee92d32ddbc1f542ecdf6a0159cdb81c2fb62d", size = 459062, upload-time = "2025-05-08T16:58:33.356Z" },
 ]
 
 [[package]]

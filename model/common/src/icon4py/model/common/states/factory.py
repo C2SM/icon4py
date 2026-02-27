@@ -156,6 +156,7 @@ class RetrievalType(enum.Enum):
     FIELD = 0
     DATA_ARRAY = 1
     METADATA = 2
+    SCALAR = 3
 
 
 class FieldSource(GridProvider, Protocol):
@@ -195,7 +196,7 @@ class FieldSource(GridProvider, Protocol):
 
     @overload
     def get(
-        self, field_name: str, type_: Literal[RetrievalType.FIELD] = RetrievalType.FIELD
+        self, field_name: str, type_: Literal[RetrievalType.SCALAR] = RetrievalType.SCALAR
     ) -> state_utils.ScalarType: ...
 
     @overload
@@ -228,7 +229,7 @@ class FieldSource(GridProvider, Protocol):
         match type_:
             case RetrievalType.METADATA:
                 return self.metadata[field_name]
-            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY:
+            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY | RetrievalType.SCALAR:
                 provider = self._providers[field_name]
                 if field_name not in provider.fields:
                     raise ValueError(
@@ -238,7 +239,7 @@ class FieldSource(GridProvider, Protocol):
                 buffer = provider(field_name, self._sources, self.backend, self, self._exchange)
                 return (
                     buffer
-                    if type_ == RetrievalType.FIELD
+                    if type_ in (RetrievalType.FIELD, RetrievalType.SCALAR)
                     else state_utils.to_data_array(buffer, self.metadata[field_name])
                 )
             case _:

@@ -10,6 +10,7 @@ import datetime
 import functools
 import logging
 import pathlib
+import types
 from collections.abc import Callable
 
 import gt4py.next as gtx
@@ -17,6 +18,7 @@ from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
+from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
@@ -42,11 +44,12 @@ class Icon4pyDriver:
     def __init__(
         self,
         config: driver_config.DriverConfig,
-        backend: model_backends.BackendLike,
+        backend: gtx.typing.Backend | None,
         grid: IconGrid,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
+        tracer_advection_granule: advection.Advection,
     ):
         self.config = config
         self.backend = backend
@@ -55,6 +58,7 @@ class Icon4pyDriver:
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
         self.model_time_variables = driver_states.ModelTimeVariables(config=config)
+        self.tracer_advection = tracer_advection_granule
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
@@ -66,16 +70,12 @@ class Icon4pyDriver:
         )
 
     @functools.cached_property
-    def _allocator(self):
+    def _allocator(self) -> gtx.typing.Backend:
         return model_backends.get_allocator(self.backend)
 
     @functools.cached_property
-    def _xp(self):
+    def _xp(self) -> types.ModuleType:
         return data_alloc.import_array_ns(self._allocator)
-
-    @functools.cached_property
-    def _concrete_backend(self):
-        return model_options.customize_backend(program=None, backend=self.backend)
 
     def _is_last_substep(self, step_nr: int) -> bool:
         return step_nr == (self.model_time_variables.ndyn_substeps_var - 1)
@@ -94,8 +94,10 @@ class Icon4pyDriver:
     ) -> None:
         diffusion_diagnostic_state = ds.diffusion_diagnostic
         solve_nonhydro_diagnostic_state = ds.solve_nonhydro_diagnostic
+        tracer_advection_diagnostic_state = ds.tracer_advection_diagnostic
         prognostic_states = ds.prognostics
         prep_adv = ds.prep_advection_prognostic
+        tracer_prep_adv = ds.prep_tracer_advection_prognostic
 
         log.debug(
             f"starting time loop for dtime = {self.model_time_variables.dtime_in_seconds} s, substep_timestep = {self.model_time_variables.substep_timestep} s, n_timesteps = {self.model_time_variables.n_time_steps}"
@@ -123,11 +125,13 @@ class Icon4pyDriver:
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
+                tracer_advection_diagnostic_state,
                 prognostic_states,
                 prep_adv,
                 do_prep_adv,
+                tracer_prep_adv,
             )
-            device_utils.sync(self._concrete_backend)
+            device_utils.sync(self.backend)
 
             self.model_time_variables.is_first_step_in_simulation = False
 
@@ -149,10 +153,12 @@ class Icon4pyDriver:
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        tracer_advection_diagnostic_state: advection_states.AdvectionDiagnosticState,
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
-    ):
+        tracer_prep_adv: advection_states.AdvectionPrepAdvState,
+    ) -> None:
         log.debug(f"Running {self.solve_nonhydro.__class__}")
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
@@ -176,6 +182,17 @@ class Icon4pyDriver:
                 )
             timer_diffusion.capture()
 
+        # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
+        # Precondition: passing data test with ntracer > 0
+        for tracer_idx in range(self.config.ntracer):
+            self.tracer_advection.run(
+                diagnostic_state=tracer_advection_diagnostic_state,
+                prep_adv=tracer_prep_adv,
+                p_tracer_now=prognostic_states.current.tracer[tracer_idx],
+                p_tracer_new=prognostic_states.next.tracer[tracer_idx],
+                dtime=self.model_time_variables.dtime_in_seconds,
+            )
+
         prognostic_states.swap()
 
     def _update_time_levels_for_velocity_tendencies(
@@ -183,7 +200,7 @@ class Icon4pyDriver:
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         at_first_substep: bool,
         at_initial_timestep: bool,
-    ):
+    ) -> None:
         """
         Set time levels of advective tendency fields for call to velocity_tendencies.
 
@@ -223,7 +240,7 @@ class Icon4pyDriver:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         do_prep_adv: bool,
-    ):
+    ) -> None:
         # TODO(OngChia): compute airmass for prognostic_state here
 
         timer_solve_nh = (
@@ -457,7 +474,7 @@ class Icon4pyDriver:
                 log.info(
                     f"{interface_physical_height_ndarray[k]:12.3f}: {self._xp.mean(rho_ndarray[:, k]):.5e} "
                     f"{self._xp.mean(vn_ndarray[:, k]):.5e} "
-                    f"{self._xp.mean(w_ndarray[:, k+1]):.5e} "
+                    f"{self._xp.mean(w_ndarray[:, k + 1]):.5e} "
                     f"{self._xp.mean(theta_v_ndarray[:, k]):.5e} "
                     f"{self._xp.mean(exner_ndarray[:, k]):.5e} "
                 )
@@ -471,6 +488,7 @@ def _read_config(
     driver_config.DriverConfig,
     v_grid.VerticalGridConfig,
     diffusion.DiffusionConfig,
+    advection.AdvectionConfig,
     solve_nh.NonHydrostaticConfig,
 ]:
     vertical_grid_config = v_grid.VerticalGridConfig(
@@ -491,6 +509,15 @@ def _read_config(
         smagorinski_scaling_factor=0.025,
         zdiffu_t=False,
         velocity_boundary_diffusion_denom=200.0,
+    )
+
+    # NOTE(ricoh): adjust when switching experiments!
+    # These are ICON defaults, irrelevant for Jablonowski_Williamson (no tracers)
+    advection_config = advection.AdvectionConfig(
+        horizontal_advection_limiter=advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+        horizontal_advection_type=advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+        vertical_advection_limiter=advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+        vertical_advection_type=advection.VerticalAdvectionType.PPM_3RD_ORDER,
     )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(
@@ -515,6 +542,7 @@ def _read_config(
         icon4py_driver_config,
         vertical_grid_config,
         diffusion_config,
+        advection_config,
         nonhydro_config,
     )
 
@@ -552,27 +580,29 @@ def initialize_driver(
         processor_procs=parallel_props,
     )
 
-    configuration_file_path = pathlib.Path(configuration_file_path)
     global_reductions = decomposition_defs.create_reduction(parallel_props)
-    grid_file_path = pathlib.Path(grid_file_path)
-    if pathlib.Path(output_path).exists():
+    if output_path.exists():
         current_time = datetime.datetime.now()
         log.warning(f"output path {output_path} already exists, a time stamp will be added")
-        output_path = pathlib.Path(
-            output_path
-            + f"_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
+        output_path = (
+            output_path.parent
+            / f"{output_path.name}_{datetime.date.today()}_{current_time.hour}h_{current_time.minute}m_{current_time.second}s"
         )
-    else:
-        output_path = pathlib.Path(output_path)
-    output_path.mkdir(parents=True, exist_ok=False)
 
-    backend = driver_utils.get_backend_from_name(backend_name)
+    else:
+        output_path.mkdir(parents=True, exist_ok=False)
+
+    backend = model_options.customize_backend(
+        program=None, backend=driver_utils.get_backend_from_name(backend_name)
+    )
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
-    driver_config, vertical_grid_config, diffusion_config, solve_nh_config = _read_config(
-        output_path=output_path,
-        enable_profiling=False,
+    driver_config, vertical_grid_config, diffusion_config, advection_config, solve_nh_config = (
+        _read_config(
+            output_path=output_path,
+            enable_profiling=False,
+        )
     )
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
@@ -609,7 +639,7 @@ def initialize_driver(
         grid_manager=grid_manager,
         decomposition_info=decomposition_info,
         vertical_grid=vertical_grid,
-        cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),
+        cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
     )
 
@@ -617,17 +647,19 @@ def initialize_driver(
     (
         diffusion_granule,
         solve_nonhydro_granule,
+        tracer_advection_granule,
     ) = driver_utils.initialize_granules(
         grid=grid_manager.grid,
         vertical_grid=vertical_grid,
         diffusion_config=diffusion_config,
         solve_nh_config=solve_nh_config,
+        advection_config=advection_config,
         static_field_factories=static_field_factories,
         exchange=exchange,
         owner_mask=gtx.as_field(
             (dims.CellDim,),
-            decomposition_info.owner_mask(dims.CellDim),
-            allocator=allocator,  # type: ignore[arg-type]
+            decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type]  # due to array_ns opacity
+            allocator=allocator,
         ),
         backend=backend,
     )
@@ -638,6 +670,7 @@ def initialize_driver(
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
+        tracer_advection_granule=tracer_advection_granule,
     )
 
     return icon4py_driver

@@ -54,7 +54,8 @@ test = [
 typing = [
   "mypy[faster-cache]>=1.13.0",
   "typing-extensions>=4.11.0",
-  "types-cffi>=1.16.0"
+  "types-cffi>=1.16.0",
+  "scipy-stubs>=1.15.3.0"
 ]
 
 # -- Standard project description options (PEP 621) --
@@ -135,7 +136,7 @@ disallow_untyped_defs = true
 explicit_package_bases = true
 files = [
   # TODO(egparedes): activate for all sources and tests
-  # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
+  '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/tests',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src',
   # '$MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/tests',
@@ -157,11 +158,14 @@ files = [
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/initialization',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/io',
   '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/components',
+  '$MYPY_CONFIG_FILE_DIR/model/common/src/icon4py/model/common/metrics/compute_advection_metrics.py',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/driver/tests/',
   '$MYPY_CONFIG_FILE_DIR/model/testing/src/',
   # '$MYPY_CONFIG_FILE_DIR/model/testing/tests/',
-  '$MYPY_CONFIG_FILE_DIR/tools/src/'
+  '$MYPY_CONFIG_FILE_DIR/tools/src/',
+  '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src',
+  '$MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests'
 ]
 ignore_missing_imports = false
 implicit_reexport = true
@@ -173,6 +177,8 @@ $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/microphysics/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/subgrid_scale_physics/muphys/src:
 $MYPY_CONFIG_FILE_DIR/model/common/src:
 $MYPY_CONFIG_FILE_DIR/model/driver/src:
+$MYPY_CONFIG_FILE_DIR/model/standalone_driver/src:
+$MYPY_CONFIG_FILE_DIR/model/standalone_driver/tests:
 $MYPY_CONFIG_FILE_DIR/model/testing/src:
 $MYPY_CONFIG_FILE_DIR/tools/src:
 '''
@@ -188,7 +194,12 @@ warn_unused_ignores = true
 # TODO(): fix gtx.int32 export in gt4py
 [[tool.mypy.overrides]]
 disable_error_code = ["attr-defined", "name-defined"]
-module = ['*.stencil_tests.*', '*.unit_tests.*']
+module = [
+  '*.stencil_tests.*',
+  '*.unit_tests.*',
+  "icon4py.model.atmosphere.advection.advection_vertical",  # https://github.com/GridTools/gt4py/pull/2484
+  "icon4py.model.common.metrics.compute_advection_metrics"  # https://github.com/GridTools/gt4py/pull/2484
+]
 
 [[tool.mypy.overrides]]
 ignore_errors = true
@@ -203,6 +214,36 @@ module = [
 [[tool.mypy.overrides]]
 disallow_untyped_defs = false
 module = ['*.dycore.integration_tests.*', '*.dycore.mpi_tests.*']
+
+[[tool.mypy.overrides]]  # complains about assigning to indices of NDArrayObject
+disable_error_code = ["index"]
+module = ["icon4py.model.standalone_driver.testcases.initial_condition"]
+
+[[tool.mypy.overrides]]
+disable_error_code = ["attr-defined"]  # https://github.com/GridTools/gt4py/pull/2484
+module = [
+  "icon4py.model.atmosphere.advection.advection_horizontal",
+  "icon4py.model.atmosphere.advection.advection"
+]
+
+[[tool.mypy.overrides]]
+disable_error_code = ["valid-type"]  # complains about dims not being valid types
+module = [
+  "icon4py.model.atmosphere.advection.advection_states"
+]
+
+[[tool.mypy.overrides]]
+disable_error_code = [
+  "no-untyped-def",  # programs are not annotated with -> None in icon4py
+  "call-overload",  # https://github.com/GridTools/gt4py/issues/2496
+  "operator",  # mypy thinks float < Field[..., float] is not allowed
+  "attr-defined",  # https://github.com/GridTools/gt4py/pull/2484
+  "name-defined",  # https://github.com/GridTools/gt4py/pull/2484
+  "valid-type"  # dims are not valid types according to mypy
+]
+module = [
+  "icon4py.model.atmosphere.advection.stencils.*"
+]
 
 # -- pytest --
 [tool.pytest]
