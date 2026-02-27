@@ -450,7 +450,7 @@ class DecompositionFlag(int, Enum):
     used for:
     - cells (NOT USED)
     - vertices (NOT USED)
-    - edges that are only on the cell(SECOND_HALO_LINE)
+    - edges that are only on the cell(SECOND_HALO_LEVEL)
     """
 
 
