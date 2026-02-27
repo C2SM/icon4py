@@ -156,7 +156,7 @@ def test_model(
     test_dir = "model" if subpackage == "all" else f"model/{subpackage}"
     with session.chdir(test_dir):
         session.run(
-            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
+            *f"pytest -sv --benchmark-disable --dist=worksteal -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
             *session.posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
@@ -190,7 +190,7 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
 
     with session.chdir("tools"):
         session.run(
-            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
+            *f"pytest -sv --benchmark-disable --dist=worksteal -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
             *session.posargs,
         )
 
