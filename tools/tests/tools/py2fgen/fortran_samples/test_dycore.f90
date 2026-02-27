@@ -181,6 +181,7 @@ program solve_nh_simulation
    real(c_double), parameter :: divdamp_trans_start = 1000.0
    real(c_double), parameter :: divdamp_trans_end = 2000.0
    logical(c_int), parameter :: l_vert_nested = .false.  ! vertical nesting support is not implemented
+   logical(c_int), parameter :: ldeepatmo = .false.  ! deep atmosphere mode is not implemented
    real(c_double), parameter :: divdamp_fac = 1.0
    real(c_double), parameter :: divdamp_fac2 = 2.0
    real(c_double), parameter :: divdamp_fac3 = 3.0
@@ -757,6 +758,7 @@ program solve_nh_simulation
         divdamp_trans_start=divdamp_trans_start, &
         divdamp_trans_end=divdamp_trans_end, &
         l_vert_nested=l_vert_nested, &
+        ldeepatmo=ldeepatmo, &
         rhotheta_offctr=rhotheta_offctr, &
         veladv_offctr=veladv_offctr, &
         max_nudging_coeff=max_nudging_coeff, &

@@ -508,6 +508,7 @@ module dycore
                                      divdamp_trans_start, &
                                      divdamp_trans_end, &
                                      l_vert_nested, &
+                                     ldeepatmo, &
                                      rhotheta_offctr, &
                                      veladv_offctr, &
                                      nudge_max_coeff, &
@@ -830,6 +831,8 @@ module dycore
          real(c_double), value, target :: divdamp_trans_end
 
          logical(c_int), value, target :: l_vert_nested
+
+         logical(c_int), value, target :: ldeepatmo
 
          real(c_double), value, target :: rhotheta_offctr
 
@@ -1523,6 +1526,7 @@ contains
                             divdamp_trans_start, &
                             divdamp_trans_end, &
                             l_vert_nested, &
+                            ldeepatmo, &
                             rhotheta_offctr, &
                             veladv_offctr, &
                             nudge_max_coeff, &
@@ -1660,6 +1664,8 @@ contains
       real(c_double), value, target :: divdamp_trans_end
 
       logical(c_int), value, target :: l_vert_nested
+
+      logical(c_int), value, target :: ldeepatmo
 
       real(c_double), value, target :: rhotheta_offctr
 
@@ -2226,6 +2232,7 @@ contains
                                  divdamp_trans_start=divdamp_trans_start, &
                                  divdamp_trans_end=divdamp_trans_end, &
                                  l_vert_nested=l_vert_nested, &
+                                 ldeepatmo=ldeepatmo, &
                                  rhotheta_offctr=rhotheta_offctr, &
                                  veladv_offctr=veladv_offctr, &
                                  nudge_max_coeff=nudge_max_coeff, &
