@@ -44,12 +44,6 @@ def allocate_data(
         return constructors.as_field(domain=f.domain, data=f.ndarray, allocator=allocator)
 
     gtx_input_data: dict[str, Any] = {}
-    input_data = {
-        k: gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
-        if not gtx.is_scalar_type(v) and k != "domain"
-        else v
-        for k, v in input_data.items()
-    }
     for k, v in input_data.items():
         if not gtx.is_scalar_type(v) and k != "domain":
             gtx_input_data[k] = gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
