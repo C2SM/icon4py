@@ -360,8 +360,13 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path
         if src_file.is_file():
             shutil.copy2(src_file, dest_dir / src_file.name)
 
-    # Translate and include NAMELIST_ICON_atm
-    # f90nml NAMELIST_ICON_output_atm NAMELIST_ICON_output_atm.json
+    # Translate to json and copy NAMELIST_ICON_output_atm
+    cmd = [
+        "f90nml",
+        str(exp_dir / definitions.NAMELIST_ICON_FNAME),
+        str(dest_dir / (definitions.NAMELIST_ICON_FNAME + ".json")),
+    ]
+    _ = run_command(cmd)
 
     # Copy LOG file if available
     if job_id is not None:

@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
 GRID_DATA_DIR: Final = "grids"
+NAMELIST_ICON_FNAME: Final = "NAMELIST_ICON_output_atm"
 
 
 def serialized_data_path() -> pathlib.Path:
