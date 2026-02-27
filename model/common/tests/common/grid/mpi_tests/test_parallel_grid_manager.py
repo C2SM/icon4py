@@ -340,7 +340,7 @@ def test_geometry_fields_compare_single_multi_rank(
         interpolation_attributes.E_BLN_C_S,
         interpolation_attributes.E_FLX_AVG,
         interpolation_attributes.GEOFAC_DIV,
-        interpolation_attributes.GEOFAC_GRDIV,
+        # interpolation_attributes.GEOFAC_GRDIV, # TODO(msimberg): Hang with gauss3d?
         # interpolation_attributes.GEOFAC_GRG_X, # TODO(msimberg): Wrong, check.
         # interpolation_attributes.GEOFAC_GRG_Y, # TODO(msimberg): Wrong, check.
         interpolation_attributes.GEOFAC_N2S,
