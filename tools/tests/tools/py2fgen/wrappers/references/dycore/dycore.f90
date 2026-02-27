@@ -461,9 +461,6 @@ module dycore
                                      vertoffset_gradp_size_0, &
                                      vertoffset_gradp_size_1, &
                                      vertoffset_gradp_size_2, &
-                                     ipeidx_dsl, &
-                                     ipeidx_dsl_size_0, &
-                                     ipeidx_dsl_size_1, &
                                      pg_exdist, &
                                      pg_exdist_size_0, &
                                      pg_exdist_size_1, &
@@ -737,12 +734,6 @@ module dycore
          integer(c_int), value :: vertoffset_gradp_size_1
 
          integer(c_int), value :: vertoffset_gradp_size_2
-
-         type(c_ptr), value, target :: ipeidx_dsl
-
-         integer(c_int), value :: ipeidx_dsl_size_0
-
-         integer(c_int), value :: ipeidx_dsl_size_1
 
          type(c_ptr), value, target :: pg_exdist
 
@@ -1501,7 +1492,6 @@ contains
                             ddxn_z_full, &
                             zdiff_gradp, &
                             vertoffset_gradp, &
-                            ipeidx_dsl, &
                             pg_exdist, &
                             ddqz_z_full_e, &
                             ddxt_z_full, &
@@ -1614,8 +1604,6 @@ contains
       real(c_double), dimension(:, :, :), target :: zdiff_gradp
 
       integer(c_int), dimension(:, :, :), target :: vertoffset_gradp
-
-      logical(c_int), dimension(:, :), target :: ipeidx_dsl
 
       real(c_double), dimension(:, :), target :: pg_exdist
 
@@ -1835,10 +1823,6 @@ contains
 
       integer(c_int) :: vertoffset_gradp_size_2
 
-      integer(c_int) :: ipeidx_dsl_size_0
-
-      integer(c_int) :: ipeidx_dsl_size_1
-
       integer(c_int) :: pg_exdist_size_0
 
       integer(c_int) :: pg_exdist_size_1
@@ -1918,7 +1902,6 @@ contains
       !$acc host_data use_device(ddxn_z_full)
       !$acc host_data use_device(zdiff_gradp)
       !$acc host_data use_device(vertoffset_gradp)
-      !$acc host_data use_device(ipeidx_dsl)
       !$acc host_data use_device(pg_exdist)
       !$acc host_data use_device(ddqz_z_full_e)
       !$acc host_data use_device(ddxt_z_full)
@@ -2043,9 +2026,6 @@ contains
       vertoffset_gradp_size_0 = SIZE(vertoffset_gradp, 1)
       vertoffset_gradp_size_1 = SIZE(vertoffset_gradp, 2)
       vertoffset_gradp_size_2 = SIZE(vertoffset_gradp, 3)
-
-      ipeidx_dsl_size_0 = SIZE(ipeidx_dsl, 1)
-      ipeidx_dsl_size_1 = SIZE(ipeidx_dsl, 2)
 
       pg_exdist_size_0 = SIZE(pg_exdist, 1)
       pg_exdist_size_1 = SIZE(pg_exdist, 2)
@@ -2185,9 +2165,6 @@ contains
                                  vertoffset_gradp_size_0=vertoffset_gradp_size_0, &
                                  vertoffset_gradp_size_1=vertoffset_gradp_size_1, &
                                  vertoffset_gradp_size_2=vertoffset_gradp_size_2, &
-                                 ipeidx_dsl=c_loc(ipeidx_dsl), &
-                                 ipeidx_dsl_size_0=ipeidx_dsl_size_0, &
-                                 ipeidx_dsl_size_1=ipeidx_dsl_size_1, &
                                  pg_exdist=c_loc(pg_exdist), &
                                  pg_exdist_size_0=pg_exdist_size_0, &
                                  pg_exdist_size_1=pg_exdist_size_1, &
@@ -2247,7 +2224,6 @@ contains
                                  nflat_gradp=nflat_gradp, &
                                  backend=backend, &
                                  on_gpu=on_gpu)
-      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data

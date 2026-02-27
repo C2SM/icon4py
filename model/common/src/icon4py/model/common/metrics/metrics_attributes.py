@@ -49,7 +49,6 @@ WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
 FLAT_IDX_MAX: Final[str] = "flat_idx_max"
 NFLAT_GRADP: Final[str] = "nflat_gradp"
-PG_EDGEIDX_DSL: Final[str] = "edge_mask_for_pressure_gradient_extrapolation"
 PG_EDGEDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
 MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
 HORIZONTAL_MASK_FOR_3D_DIVDAMP: Final[str] = "horizontal_mask_for_3d_divdamp"
@@ -301,14 +300,6 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.EdgeDim,),
         icon_var_name="flat_idx_max",
         dtype=ta.wpfloat,
-    ),
-    PG_EDGEIDX_DSL: dict(
-        standard_name=PG_EDGEIDX_DSL,
-        long_name="edge mask for pressure gradient downward extrapolation",
-        units="",
-        dims=(dims.EdgeDim, dims.KDim),
-        icon_var_name="pg_edgeidx_dsl",
-        dtype=bool,
     ),
     PG_EDGEDIST_DSL: dict(
         standard_name=PG_EDGEDIST_DSL,

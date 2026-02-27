@@ -85,7 +85,6 @@ def solve_nh_init(
     ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.float64],
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
-    ipeidx_dsl: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool],
     pg_exdist: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddxt_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
@@ -204,7 +203,6 @@ def solve_nh_init(
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
         nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
-        pg_edgeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
