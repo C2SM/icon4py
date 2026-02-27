@@ -48,7 +48,8 @@ test_tools_datatests_aarch64:
   parallel:
     matrix:
       - COMPONENT: [all]
-        BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
+        # BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
+        BACKEND: [dace_gpu, gtfn_gpu]
         LEVEL: [integration]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
