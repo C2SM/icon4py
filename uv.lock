@@ -1951,6 +1951,7 @@ dependencies = [
     { name = "icon4py-testing" },
     { name = "numpy" },
     { name = "packaging" },
+    { name = "pytest" },
     { name = "typer" },
 ]
 
@@ -1964,6 +1965,7 @@ requires-dist = [
     { name = "icon4py-testing", editable = "model/testing" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "pytest" },
     { name = "typer", specifier = ">=0.20.0" },
 ]
 
@@ -2010,6 +2012,7 @@ dependencies = [
     { name = "icon4py-atmosphere-diffusion" },
     { name = "icon4py-atmosphere-dycore" },
     { name = "icon4py-common" },
+    { name = "icon4py-standalone-driver" },
     { name = "numpy" },
     { name = "packaging" },
 ]
@@ -2042,6 +2045,7 @@ requires-dist = [
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
+    { name = "icon4py-standalone-driver", editable = "model/standalone_driver" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
     { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },

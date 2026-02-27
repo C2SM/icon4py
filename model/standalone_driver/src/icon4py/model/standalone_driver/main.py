@@ -39,7 +39,7 @@ def main(
             help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
-) -> None:
+) -> driver_states.DriverStates:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
     condition from the Jablonowski Williamson test case
@@ -65,6 +65,10 @@ def main(
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
         backend=icon4py_driver.backend,
+        lowest_layer_thickness=icon4py_driver.vertical_grid_config.lowest_layer_thickness,
+        model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
+        stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
+        damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
     )
 
     log.info("driver setup: DONE")
@@ -76,6 +80,7 @@ def main(
     )
 
     log.info("time loop:  DONE")
+    return ds
 
 
 def click():
