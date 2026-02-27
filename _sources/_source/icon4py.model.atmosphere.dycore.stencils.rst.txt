@@ -396,14 +396,6 @@ icon4py.model.atmosphere.dycore.stencils.compute\_tangential\_wind module
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.compute\_theta\_and\_exner module
---------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.compute\_virtual\_potential\_temperatures\_and\_pressure\_gradient module
 ------------------------------------------------------------------------------------------------------------------
 
@@ -588,10 +580,10 @@ icon4py.model.atmosphere.dycore.stencils.update\_mass\_volume\_flux module
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.update\_theta\_v module
-----------------------------------------------------------------
+icon4py.model.atmosphere.dycore.stencils.update\_theta\_and\_exner\_in\_halo module
+-----------------------------------------------------------------------------------
 
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.update_theta_v
+.. automodule:: icon4py.model.atmosphere.dycore.stencils.update_theta_and_exner_in_halo
    :members:
    :undoc-members:
    :show-inheritance:
