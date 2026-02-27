@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators  # TODO(havogt): expose in gtx_typing
 
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.compute_advection_in_horizontal_momentum_equation import (
@@ -181,7 +180,7 @@ class VelocityAdvection:
             offset_provider=self.grid.connectivities,
         )
 
-    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self._horizontal_advection_of_w_at_edges_on_half_levels = data_alloc.zero_field(
             self.grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat
         )
@@ -302,6 +301,7 @@ class VelocityAdvection:
 
         # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
         # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
+        # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
         apply_extra_diffusion_on_vn = True
         self._compute_advection_in_horizontal_momentum(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
@@ -373,6 +373,7 @@ class VelocityAdvection:
 
         # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
         # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
+        # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
         apply_extra_diffusion_on_vn = True
         self._compute_advection_in_horizontal_momentum(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,

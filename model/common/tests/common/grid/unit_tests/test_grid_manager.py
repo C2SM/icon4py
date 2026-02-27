@@ -82,9 +82,10 @@ def test_grid_manager_eval_v2e(
     v2e_table = grid.get_connectivity("V2E").asnumpy()
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
+    assert experiment.grid.params.grid_shape is not None
     assert (
         not has_invalid_index(v2e_table)
-        if experiment.grid.shape.geometry_type == base_grid.GeometryType.TORUS
+        if experiment.grid.params.grid_shape.geometry_type == base_grid.GeometryType.TORUS
         else has_invalid_index(v2e_table)
     )
     _reset_invalid_index(seralized_v2e)
@@ -128,9 +129,10 @@ def test_grid_manager_eval_v2c(
     assert not has_invalid_index(serialized_v2c)
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
+    assert experiment.grid.params.grid_shape is not None
     assert (
         not has_invalid_index(v2c_table)
-        if experiment.grid.shape.geometry_type == base_grid.GeometryType.TORUS
+        if experiment.grid.params.grid_shape.geometry_type == base_grid.GeometryType.TORUS
         else has_invalid_index(v2c_table)
     )
     _reset_invalid_index(serialized_v2c)
@@ -320,9 +322,9 @@ def test_grid_manager_grid_size(
     backend: gtx_typing.Backend, grid_descriptor: definitions.GridDescription
 ) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    assert grid_descriptor.sizes["cell"] == grid.size[dims.CellDim]
-    assert grid_descriptor.sizes["edge"] == grid.size[dims.EdgeDim]
-    assert grid_descriptor.sizes["vertex"] == grid.size[dims.VertexDim]
+    assert grid_descriptor.params.num_cells == grid.size[dims.CellDim]
+    assert grid_descriptor.params.num_edges == grid.size[dims.EdgeDim]
+    assert grid_descriptor.params.num_vertices == grid.size[dims.VertexDim]
 
 
 def assert_up_to_order(
@@ -341,7 +343,7 @@ def assert_up_to_order(
 
 @pytest.mark.with_netcdf
 def test_gridmanager_given_file_not_found_then_abort(
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:
@@ -368,7 +370,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
 @pytest.mark.parametrize(
     "grid_descriptor, global_num_cells",
     [
-        (definitions.Grids.R02B04_GLOBAL, definitions.Grids.R02B04_GLOBAL.sizes["cell"]),
+        (definitions.Grids.R02B04_GLOBAL, definitions.Grids.R02B04_GLOBAL.params.num_cells),
         (definitions.Grids.MCH_CH_R04B09_DSL, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
     ],
 )

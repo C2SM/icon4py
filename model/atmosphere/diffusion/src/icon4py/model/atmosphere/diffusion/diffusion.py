@@ -12,11 +12,10 @@ import functools
 import logging
 import math
 import sys
-from typing import Final
+from typing import Final, Literal
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
@@ -83,6 +82,32 @@ class DiffusionType(int, enum.Enum):
     SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
 
 
+class SmagorinskyStencilType(int, enum.Enum):
+    """
+    Type of the reconstruction stencil for the Smagorinsky diffusion of normal wind (vn).
+
+    Note: Called `itype_vn_diffu` in `mo_diffusion_nml.f90`.
+    Note: We currently only support type 1 in combination with lsmag_3d=False.
+    """
+
+    DIAMOND_VERTICES = (
+        1  #: Smagorinsky diffusion of vn with diamond stencil on vertices (only for vn)
+    )
+    CELLS_AND_VERTICES = 2  #: Smagorinsky diffusion of vn with stencil on neighboring vertices (E2V) and cell centers (E2C)
+
+
+class TemperatureDiscretizationType(int, enum.Enum):
+    """
+    Type of the discretization of the Smagorinsky diffusion of temperature.
+
+    Note: Called `itype_t_diffu` in `mo_diffusion_nml.f90`.
+    Note: We currently only support type 2.
+    """
+
+    HOMOGENEOUS = 1  #: K Lap(T)
+    HETEROGENOUS = 2  #: Div (K Grad(T))
+
+
 class TurbulenceShearForcingType(int, enum.Enum):
     """
     Type of shear forcing used in turbulance.
@@ -100,6 +125,27 @@ class TurbulenceShearForcingType(int, enum.Enum):
     VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
 
 
+ValidDiffusionType = Literal[
+    DiffusionType.NO_DIFFUSION,
+    DiffusionType.LINEAR_2ND_ORDER,
+    DiffusionType.SMAGORINSKY_NO_BACKGROUND,
+    DiffusionType.LINEAR_4TH_ORDER,
+    DiffusionType.SMAGORINSKY_4TH_ORDER,
+]
+ValidSmagorinskyStencilType = Literal[
+    SmagorinskyStencilType.DIAMOND_VERTICES, SmagorinskyStencilType.CELLS_AND_VERTICES
+]
+ValidTemperatureDiscretizationType = Literal[
+    TemperatureDiscretizationType.HOMOGENEOUS, TemperatureDiscretizationType.HETEROGENOUS
+]
+ValidTurbulenceShearForcingType = Literal[
+    TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+    TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND,
+    TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+    TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH,
+]
+
+
 class DiffusionConfig:
     """
     Contains necessary parameter to configure a diffusion run.
@@ -114,13 +160,14 @@ class DiffusionConfig:
 
     def __init__(
         self,
-        diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        hdiff_temp=True,
-        type_vn_diffu: int = 1,
+        diffusion_type: ValidDiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
+        hdiff_w: bool = True,
+        hdiff_vn: bool = True,
+        hdiff_temp: bool = True,
+        hdiff_smag_w: bool = False,
+        type_vn_diffu: ValidSmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
         smag_3d: bool = False,
-        type_t_diffu: int = 2,
+        type_t_diffu: ValidTemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENOUS,
         hdiff_efdt_ratio: float = 36.0,
         hdiff_w_efdt_ratio: float = 15.0,
         smagorinski_scaling_factor: float = 0.015,
@@ -133,7 +180,7 @@ class DiffusionConfig:
         _nudge_max_coeff: float | None = None,  # default is set in __init__
         max_nudging_coefficient: float | None = None,  # default is set in __init__
         nudging_decay_rate: float = 2.0,
-        shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+        shear_type: ValidTurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         ltkeshs: bool = True,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
@@ -152,6 +199,10 @@ class DiffusionConfig:
         #:  If True, apply horizontal diffusion to temperature field
         #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
         self.apply_to_temperature: bool = hdiff_temp
+
+        #: If True, compute Smagorinsky diffusion to vertical wind field
+        #: Called 'lhdiff_smag_w' in mo_diffusion_nml.f90
+        self.apply_smag_diff_to_vertical_wind: bool = hdiff_smag_w
 
         #: If True, compute 3D Smagorinsky diffusion coefficient
         #: Called 'lsmag_3d' in mo_diffusion_nml.f90
@@ -247,16 +298,27 @@ class DiffusionConfig:
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
-        if self.diffusion_type != 5:
+        if self.diffusion_type != DiffusionType.SMAGORINSKY_4TH_ORDER:
             raise NotImplementedError(
                 "Only diffusion type 5 = `Smagorinsky diffusion with fourth-order background "
                 "diffusion` is implemented"
             )
 
-        if self.diffusion_type < 0:
-            self.apply_to_temperature = False
-            self.apply_to_horizontal_wind = False
-            self.apply_to_vertical_wind = False
+        if self.type_vn_diffu != SmagorinskyStencilType.DIAMOND_VERTICES:
+            raise NotImplementedError(
+                "Only type_vn_diffu 1 = `Smagorinsky diffusion with diamond stencil on vertices` is implemented"
+            )
+
+        if self.type_t_diffu != TemperatureDiscretizationType.HETEROGENOUS:
+            raise NotImplementedError(
+                "Only type_t_diffu 2 = `Smagorinsky diffusion with heterogeneous discretization` is implemented"
+            )
+
+        if self.apply_smag_diff_to_vertical_wind:
+            raise NotImplementedError("Smagorinsky diffusion for vertical wind is not implemented")
+
+        if self.compute_3d_smag_coeff:
+            raise NotImplementedError("3D Smagorinsky diffusion computation is not implemented")
 
         if self.shear_type not in (
             TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
@@ -598,7 +660,7 @@ class Diffusion:
         #   but this requires some changes in gt4py domain inference.
         self.compile_time_connectivities = self._grid.connectivities
 
-    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
@@ -812,13 +874,6 @@ class Diffusion:
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
             )
-
-        # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
-        # TODO(halungge): move this up and do asynchronous exchange
-        if self.config.type_vn_diffu > 1:
-            log.debug("communication rbf extrapolation of z_nable2_e - start")
-            self._exchange(self.z_nabla2_e, dim=dims.EdgeDim, wait=True)
-            log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(

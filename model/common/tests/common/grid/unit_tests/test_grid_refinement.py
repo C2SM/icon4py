@@ -148,7 +148,7 @@ def test_compute_domain_bounds_for_limited_area_grid(
     grid_description: test_defs.GridDescription,
     dim: gtx.Dimension,
     expected: dict[h_grid.Zone, tuple[int, int]],
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     grid_manager = grid_utils.get_grid_manager_from_identifier(
         grid_description, 1, True, cpu_allocator
@@ -181,7 +181,7 @@ def test_compute_domain_bounds_for_limited_area_grid(
 def test_compute_domain_bounds_for_global_grid(
     file: test_defs.GridDescription,
     dim: gtx.Dimension,
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     grid_manager = grid_utils.get_grid_manager_from_identifier(file, 1, True, cpu_allocator)
     grid = grid_manager.grid

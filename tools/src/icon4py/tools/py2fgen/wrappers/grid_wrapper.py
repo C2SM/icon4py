@@ -170,7 +170,6 @@ def grid_init(
         vertical_size=vertical_size,
         limited_area=limited_area,
         distributed=not processor_props.is_single_rank(),
-        mean_cell_area=mean_cell_area,
         allocator=allocator,
     )
 

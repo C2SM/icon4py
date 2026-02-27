@@ -61,7 +61,7 @@ _LOGGING_LEVELS: dict[str, int] = {
 def create_grid_manager(
     grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
 ) -> gm.GridManager:
     grid_manager = gm.GridManager(
@@ -77,7 +77,7 @@ def create_grid_manager(
 
 def create_decomposition_info(
     grid_manager: gm.GridManager,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> decomposition_defs.DecompositionInfo:
     decomposition_info = decomposition_defs.DecompositionInfo()
     xp = data_alloc.import_array_ns(allocator)
@@ -96,7 +96,7 @@ def create_decomposition_info(
 
 def create_vertical_grid(
     vertical_grid_config: v_grid.VerticalGridConfig,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> v_grid.VerticalGrid:
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(
         vertical_config=vertical_grid_config, allocator=allocator

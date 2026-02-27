@@ -30,7 +30,7 @@ class NoHalos(HaloConstructor):
     def __init__(
         self,
         horizontal_size: base.HorizontalGridSize,
-        allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
+        allocator: gtx_typing.Allocator | None = None,
     ):
         self._size = horizontal_size
         self._allocator = allocator
@@ -62,7 +62,7 @@ class IconLikeHaloConstructor(HaloConstructor):
         self,
         run_properties: defs.ProcessProperties,
         connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
-        allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
+        allocator: gtx_typing.Allocator | None = None,
     ):
         """
 
@@ -417,7 +417,7 @@ def get_halo_constructor(
     run_properties: defs.ProcessProperties,
     full_grid_size: base.HorizontalGridSize,
     connectivities: dict[gtx.FieldOffset | str, data_alloc.NDArray],
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.Allocator | None,
 ) -> HaloConstructor:
     """
     Factory method to create the halo constructor.

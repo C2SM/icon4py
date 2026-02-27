@@ -15,9 +15,14 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
-from icon4py.model.common.grid import geometry, geometry_attributes as attrs, horizontal as h_grid
+from icon4py.model.common.grid import (
+    base,
+    geometry,
+    geometry_attributes as attrs,
+    horizontal as h_grid,
+)
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, test_utils
@@ -108,6 +113,16 @@ def test_distributed_geometry_attrs_for_inverse(
     grid_geometry = geometry_from_savepoint
     field_ref = grid_savepoint.__getattribute__(grid_name)().asnumpy()
     field = grid_geometry.get(attrs_name).asnumpy()
+    if (
+        grid_geometry.grid.geometry_type == base.GeometryType.TORUS
+        and grid_name == "inv_vert_vert_length"
+    ):
+        # TODO(msimberg, jcanton): icon fortran multiplies sphere radius even
+        # for torus grids. Fix submitted upstream. The following can be removed
+        # when fixed serialized data is available.
+        # https://gitlab.dkrz.de/icon-libraries/libiconmath/-/merge_requests/82
+        # https://gitlab.dkrz.de/icon/icon-nwp/-/merge_requests/1916
+        field = field / constants.EARTH_RADIUS
     lb = grid_geometry.grid.start_index(lb_domain)
     assert test_utils.dallclose(field[lb:], field_ref[lb:], rtol=5e-10)
 
@@ -173,11 +188,21 @@ def test_cartesian_geometry_attr_no_halos(
     x_field = grid_geometry.get(x)
     y_field = grid_geometry.get(y)
     z_field = grid_geometry.get(z)
-    norm = data_alloc.zero_field(
-        grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend
-    )
-    math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
-    assert test_utils.dallclose(norm.asnumpy(), 1.0)
+    match grid_geometry.grid.geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            # those are coordinates on the unit sphere: hence norm should be 1
+            norm = data_alloc.zero_field(
+                grid_geometry.grid, dimension, dtype=x_field.dtype, allocator=backend
+            )
+            math_helpers.norm2_on_vertices(x_field, z_field, y_field, out=norm, offset_provider={})
+            assert test_utils.dallclose(norm.asnumpy(), 1.0)
+        case base.GeometryType.TORUS:
+            # on a torus coordinates should be within the domain
+            assert all(x_field.asnumpy() >= 0.0)
+            assert all(x_field.asnumpy() <= grid_geometry.grid.global_properties.domain_length)
+            assert all(y_field.asnumpy() >= 0.0)
+            assert all(y_field.asnumpy() <= grid_geometry.grid.global_properties.domain_height)
+            assert all(z_field.asnumpy() == 0.0)
 
 
 @pytest.mark.datatest

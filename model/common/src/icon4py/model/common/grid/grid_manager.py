@@ -103,7 +103,7 @@ class GridManager:
 
     def __call__(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil | None,
+        allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
         decomposer: decomp.Decomposer = _single_node_decomposer,
         run_properties=_single_process_props,
@@ -135,7 +135,7 @@ class GridManager:
 
     def _read_coordinates(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
         geometry_type: base.GeometryType,
     ) -> CoordinateDict:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
@@ -258,7 +258,7 @@ class GridManager:
 
     def _read_geometry_fields(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
     ) -> GeometryDict:
         my_cell_indices = self._decomposition_info.global_index(dims.CellDim)
         my_edge_indices = self._decomposition_info.global_index(dims.EdgeDim)
@@ -338,7 +338,7 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
     ) -> dict[gtx.Dimension, gtx.Field]:
         """
         Reads the refinement control fields from the grid file.
@@ -347,8 +347,7 @@ class GridManager:
         see [grid_refinement.py](grid_refinement.py)
 
         Args:
-            decomposition_info: Optional decomposition information, if not provided the grid is assumed to be a single node run.
-            allocator: Optional allocator to use for reading the fields, if not provided the default backend is used.
+            allocator: Allocator to use for reading the fields.
         Returns:
             dict[gtx.Dimension, gtx.Field]: A dictionary containing the refinement control fields for each dimension.
         """
@@ -390,7 +389,7 @@ class GridManager:
 
     def _construct_decomposed_grid(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil | None,
+        allocator: gtx_typing.Allocator | None,
         keep_skip_values: bool,
         geometry_type: base.GeometryType,
         decomposer: decomp.Decomposer,
@@ -495,7 +494,7 @@ class GridManager:
 
     def _construct_global_params(
         self,
-        allocator: gtx_typing.FieldBufferAllocationUtil,
+        allocator: gtx_typing.Allocator,
         global_size: base.HorizontalGridSize,
         geometry_type: base.GeometryType,
     ):

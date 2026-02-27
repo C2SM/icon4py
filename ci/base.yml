@@ -63,6 +63,12 @@ build_image_aarch64:
     SLURM_NTASKS: 1
     SLURM_GPUS_PER_NODE: 4
     SLURM_TIMELIMIT: '01:30:00'
+    CSCS_CUDA_MPS: 1
+    # The default without MPS is 8 for both max connection variables. With MPS
+    # they are lowered to 2 by default, so we set them back to their non-MPS
+    # defaults for potentially increased concurrency on the GPU.
+    CUDA_DEVICE_MAX_CONNECTIONS: 8
+    CUDA_DEVICE_MAX_COPY_CONNECTIONS: 8
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
@@ -71,6 +77,7 @@ build_image_aarch64:
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
+    PYTEST_ADDOPTS: "--durations=0"
 # .test_template_x86_64:
 #   extends: [.container-runner-daint-gpu-f7t, .test_template]
 #   needs: [build_image_x86_64]
@@ -88,7 +95,10 @@ build_image_aarch64:
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
-    # Limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage.
-    NUM_PROCESSES: 16
+    # Creating more pytest workers does speeds up testing, but pytest startup
+    # time also scales with number of workers; 32 is a balance between these for
+    # jobs that don't run many tests.
+    NUM_PROCESSES: 32
     GT4PY_BUILD_JOBS: 8
+    GT4PY_BUILD_CACHE_LIFETIME: "persistent"
     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
