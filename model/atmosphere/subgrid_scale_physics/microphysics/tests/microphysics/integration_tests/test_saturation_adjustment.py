@@ -33,32 +33,29 @@ if TYPE_CHECKING:
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, model_top_height",
-    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0)],
+    "experiment",
+    [definitions.Experiments.WEISMAN_KLEMP_TORUS],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 @pytest.mark.parametrize("location", ["nwp-gscp-interface", "interface-nwp"])
 def test_saturation_adjustement(
-    location: str,
-    model_top_height: ta.wpfloat,
     date: str,
+    location: str,
     *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     icon_grid: base_grid.Grid,
+    model_top_height: ta.wpfloat,
     backend: gtx_typing.Backend,
 ) -> None:
     satad_init = data_provider.from_savepoint_satad_init(location=location, date=date)
     satad_exit = data_provider.from_savepoint_satad_exit(location=location, date=date)
 
-    config = satad.SaturationAdjustmentConfig(
-        tolerance=1e-3,
-        max_iter=10,
-    )
-    dtime = 2.0
+    config = satad.SaturationAdjustmentConfig()
+    dtime = data_provider.from_savepoint_weisman_klemp_graupel_entry(date=date).dtime()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,

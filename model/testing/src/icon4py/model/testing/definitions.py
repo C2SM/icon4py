@@ -19,11 +19,15 @@ from icon4py.model.testing import config
 if TYPE_CHECKING:
     from icon4py.model.atmosphere.diffusion import diffusion
     from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+    from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+        single_moment_six_class_gscp_graupel as graupel,
+    )
 
 
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
 GRID_DATA_DIR: Final = "grids"
+NAMELIST_FILENAME: Final = "NAMELIST_ICON_output_atm"
 
 
 def serialized_data_path() -> pathlib.Path:
@@ -236,6 +240,7 @@ def construct_diffusion_config(
 ) -> diffusion.DiffusionConfig:
     from icon4py.model.atmosphere.diffusion import diffusion
 
+
     if experiment == Experiments.MCH_CH_R04B09:
         return diffusion.DiffusionConfig(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
@@ -302,6 +307,25 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
         )
 
 
+def construct_gscp_graupel_config(
+    experiment: Experiment,
+) -> graupel.SingleMomentSixClassIconGraupelConfig:
+    from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+        microphysics_options as mphys_options,
+        single_moment_six_class_gscp_graupel as graupel,
+    )
+
+    if experiment == Experiments.WEISMAN_KLEMP_TORUS:
+        return graupel.SingleMomentSixClassIconGraupelConfig(
+            liquid_autoconversion_option=mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG,
+            ice_stickeff_min=0.075,
+        )
+    else:
+        raise NotImplementedError(
+            f"SingleMomentSixClassIconGraupelConfig for experiment {experiment.name} not implemented."
+        )
+
+
 def construct_metrics_config(experiment: Experiment) -> tuple:
     match experiment:
         case Experiments.MCH_CH_R04B09:
@@ -339,13 +363,13 @@ def construct_metrics_config(experiment: Experiment) -> tuple:
             thhgtd_zdiffu = 200.0
         case Experiments.WEISMAN_KLEMP_TORUS:
             lowest_layer_thickness = 50.0
-            model_top_height = 23500.0
-            stretch_factor = 1.0
-            damping_height = 8000.0
+            model_top_height = 30000.0
+            stretch_factor = 0.85
+            damping_height = 12000.0
             rayleigh_coeff = 0.75
             exner_expol = 0.333
-            vwind_offctr = 0.15
-            rayleigh_type = 2
+            vwind_offctr = 0.20
+            rayleigh_type = 3
             thslp_zdiffu = 0.025
             thhgtd_zdiffu = 125.0
         case _:

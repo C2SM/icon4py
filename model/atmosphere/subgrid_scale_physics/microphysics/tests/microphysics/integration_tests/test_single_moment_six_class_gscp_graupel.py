@@ -38,9 +38,9 @@ if TYPE_CHECKING:
 @pytest.mark.embedded_static_args
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, model_top_height",
+    "experiment",
     [
-        (definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0),
+        definitions.Experiments.WEISMAN_KLEMP_TORUS,
     ],
 )
 @pytest.mark.parametrize(
@@ -48,20 +48,17 @@ if TYPE_CHECKING:
 )
 def test_graupel(
     experiment: definitions.Experiments,
-    model_top_height: ta.wpfloat,
     date: str,
     *,
     data_provider: sb.IconSerialDataProvider,
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     icon_grid: icon_grid.IconGrid,
-    lowest_layer_thickness: ta.wpfloat,
+    model_top_height: ta.wpfloat,
     backend: gtx_typing.Backend,
 ):
-    pytest.xfail("Tolerances have increased with new ser_data, need to check with @ongchia")
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
     )
     vertical_params = v_grid.VerticalGrid(
@@ -103,16 +100,7 @@ def test_graupel(
         v=None,
     )
 
-    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
-        liquid_autoconversion_option=mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG,
-        ice_stickeff_min=0.01,
-        power_law_coeff_for_ice_mean_fall_speed=1.25,
-        exponent_for_density_factor_in_ice_sedimentation=0.3,
-        power_law_coeff_for_snow_fall_speed=20.0,
-        rain_mu=0.0,
-        rain_n0=1.0,
-        snow2graupel_riming_coeff=0.5,
-    )
+    graupel_config = definitions.construct_gscp_graupel_config(experiment)
 
     graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(
         graupel_config=graupel_config,
