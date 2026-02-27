@@ -134,7 +134,7 @@ class VerticalGrid:
 
     config: VerticalGridConfig
     vct_a: dataclasses.InitVar[fa.KField[ta.wpfloat]]
-    vct_b: dataclasses.InitVar[fa.KField[ta.wpfloat]]
+    vct_b: dataclasses.InitVar[fa.KField[ta.wpfloat]] | None = None
     _vct_a: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
     _vct_b: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
