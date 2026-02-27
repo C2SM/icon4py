@@ -87,7 +87,9 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
         theta_v_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        zd_vertoffset = data_alloc.zero_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
+        zd_vertoffset = data_alloc.zero_field(
+            grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32
+        )
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)

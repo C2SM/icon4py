@@ -27,7 +27,6 @@ def calculate_nabla2_for_z_numpy(
     z_nabla2_e: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    z_nabla2_e_cp = z_nabla2_e.copy()
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
     theta_v_e2c = theta_v[connectivities[dims.E2CDim]]
@@ -62,8 +61,6 @@ class TestCalculateNabla2ForZ(StencilTest):
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-
-        edge_domain = h_grid.domain(dims.EdgeDim)
 
         return dict(
             kh_smag_e=kh_smag_e,
