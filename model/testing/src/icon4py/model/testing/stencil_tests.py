@@ -50,7 +50,7 @@ def allocate_data(
             input_data[k] = None  # free original allocation in input_data
         else:
             gtx_input_data[k] = v
-    gc.collect()
+
     return gtx_input_data
 
 
@@ -222,7 +222,6 @@ class StencilTest:
         gtx_allocated_data = allocate_data(allocator=allocator, input_data=input_data)
         yield gtx_allocated_data
         del gtx_allocated_data
-        gc.collect()
 
     def _verify_stencil_test(
         self,
