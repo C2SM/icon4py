@@ -197,7 +197,8 @@ module = [
   'icon4py.model.testing.serialbox',
   'icon4py.tools.py2fgen.wrappers.diffusion_wrapper',
   'icon4py.tools.py2fgen.wrappers.dycore_wrapper',
-  'icon4py.tools.py2fgen.wrappers.grid_wrapper'
+  'icon4py.tools.py2fgen.wrappers.grid_wrapper',
+  'icon4py.tools.py2fgen.wrappers.muphys_wrapper'
 ]
 
 [[tool.mypy.overrides]]
