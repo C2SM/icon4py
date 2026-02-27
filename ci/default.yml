@@ -6,12 +6,16 @@ include:
   script:
     - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   rules:
-    - if: $COMPONENT == 'dycore' || $COMPONENT == 'diffusion'
+    - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
-        SLURM_TIMELIMIT: '00:20:00'
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '00:30:00'
+    - if: $COMPONENT == 'dycore'
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
     - when: on_success
       variables:
-        SLURM_TIMELIMIT: '00:10:00'
+        SLURM_TIMELIMIT: '00:05:00'
   parallel:
     matrix:
       - COMPONENT: [diffusion, dycore, microphysics, muphys, common, driver]
@@ -41,19 +45,19 @@ test_tools_datatests_aarch64:
       when: never  # run only in daily CI, to save compute resources
     - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'driver'
       when: never  # run only in daily CI, to save compute resources
-    - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'dycore'
+    - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
-        SLURM_TIMELIMIT: '01:00:00'
-    - if: $COMPONENT == 'common'
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '00:30:00'
+    - if: $COMPONENT == 'driver' || $COMPONENT == 'dycore' || $COMPONENT == 'muphys'
       variables:
-        NUM_PROCESSES: 1
-        SLURM_TIMELIMIT: '00:45:00'
+        SLURM_TIMELIMIT: '00:30:00'
     - if: $BACKEND == 'embedded'
       variables:
         SLURM_TIMELIMIT: '00:15:00'
     - when: on_success
       variables:
-        SLURM_TIMELIMIT: '00:30:00'
+        SLURM_TIMELIMIT: '00:10:00'
   parallel:
     matrix:
       - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
