@@ -125,8 +125,6 @@ class DiffusionConfig:
         smagorinski_scaling_factor: float = 0.015,
         n_substeps: int = 5,
         zdiffu_t: bool = True,
-        thslp_zdiffu: float = 0.025,
-        thhgtd_zdiffu: float = 200.0,
         velocity_boundary_diffusion_denom: float = 200.0,
         temperature_boundary_diffusion_denom: float = 135.0,
         _nudge_max_coeff: float | None = None,  # default is set in __init__
@@ -179,11 +177,6 @@ class DiffusionConfig:
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
-
-        #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f90
-        self.thslp_zdiffu = thslp_zdiffu
-        #: threshold [m] for height difference between adjacent grid points, defaults to 200m (temperature diffusion)
-        self.thhgtd_zdiffu = thhgtd_zdiffu
 
         # from other namelists:
         # from parent namelist mo_nonhydrostatic_nml
@@ -269,6 +262,11 @@ class DiffusionConfig:
                 f"implemented"
             )
 
+        if self.compute_3d_smag_coeff:
+            raise NotImplementedError(
+                "3D Smagorinsky diffusion coefficient computation is not implemented yet."
+            )
+
     @functools.cached_property
     def substep_as_float(self):
         return float(self.ndyn_substeps)
@@ -332,9 +330,6 @@ class DiffusionParams:
                 smagorinski_height = None
             case _:
                 raise NotImplementedError("Only implemented for diffusion type 4 and 5")
-                smagorinski_factor = None
-                smagorinski_height = None
-                pass
         return smagorinski_factor, smagorinski_height
 
 
