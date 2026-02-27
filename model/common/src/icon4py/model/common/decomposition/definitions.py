@@ -440,7 +440,7 @@ class DecompositionFlag(int, Enum):
     """
     used for:
     - cells that share one vertex with an OWNED cell
-    - vertices that are on a cell(FIRST_HALO_LINE) but not on an owned cell
+    - vertices that are on a cell(FIRST_HALO_LEVEL) but not on an owned cell
     - edges that have _exactly_ one vertex shared with and OWNED Cell
     """
 
