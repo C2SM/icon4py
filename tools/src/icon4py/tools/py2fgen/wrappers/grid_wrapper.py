@@ -163,6 +163,7 @@ def grid_init(
     vertical_grid = vertical.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
+        vct_b=None,
     )
 
     # Edge geometry
