@@ -13,7 +13,7 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators, common as gtx_common
+from gt4py.next import common as gtx_common
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -110,11 +110,7 @@ class IntermediateFields:
     """
 
     @classmethod
-    def allocate(
-        cls,
-        grid: grid_def.Grid,
-        allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-    ):
+    def allocate(cls, grid: grid_def.Grid, allocator: gtx_typing.Allocator | None):
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, allocator=allocator
@@ -816,7 +812,7 @@ class SolveNonhydro:
         recomputed or not. The substep length should only change in case of high CFL condition.
         """
 
-    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
             self._grid,
             dims.CellDim,

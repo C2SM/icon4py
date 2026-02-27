@@ -16,7 +16,6 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
@@ -597,7 +596,7 @@ class Diffusion:
         #   but this requires some changes in gt4py domain inference.
         self.compile_time_connectivities = self._grid.connectivities
 
-    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
         self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, allocator=allocator)
