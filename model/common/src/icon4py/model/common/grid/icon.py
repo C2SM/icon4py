@@ -139,23 +139,22 @@ class IconGrid(base.Grid):
     )
 
 
-def _has_skip_values(offset: gtx.FieldOffset, limited_area: bool) -> bool:
+def _has_skip_values(offset: gtx.FieldOffset, limited_area_or_distributed: bool) -> bool:
     """
     For the icosahedral global grid skip values are only present for the pentagon points.
 
-    In the local area model there are also skip values at the boundaries when
+    In the local area model or a distributed grid there are also skip values at the boundaries or halos when
     accessing neighbouring cells or edges from vertices.
     """
     dimension = offset.target[1]
     assert dimension.kind == gtx.DimensionKind.LOCAL, "only local dimensions can have skip values"
-    value = dimension in CONNECTIVITIES_ON_PENTAGONS or (
-        limited_area and dimension in CONNECTIVITIES_ON_BOUNDARIES
+    return dimension in CONNECTIVITIES_ON_PENTAGONS or (
+        limited_area_or_distributed and dimension in CONNECTIVITIES_ON_BOUNDARIES
     )
-    return value
 
 
 def _should_replace_skip_values(
-    offset: gtx.FieldOffset, keep_skip_values: bool, limited_area: bool
+    offset: gtx.FieldOffset, keep_skip_values: bool, limited_area_or_distributed: bool
 ) -> bool:
     """
     Check if the skip_values in a neighbor table  should be replaced.
@@ -179,7 +178,9 @@ def _should_replace_skip_values(
         bool: True if the skip values in the neighbor table should be replaced, False otherwise.
 
     """
-    return not keep_skip_values and (limited_area or not _has_skip_values(offset, limited_area))
+    return not keep_skip_values and (
+        limited_area_or_distributed or not _has_skip_values(offset, limited_area_or_distributed)
+    )
 
 
 def icon_grid(
@@ -192,14 +193,15 @@ def icon_grid(
     global_properties: GlobalGridParams,
     refinement_control: dict[gtx.Dimension, gtx.Field] | None = None,
 ) -> IconGrid:
+    limited_area_or_distributed = config.limited_area or config.distributed
     connectivities = {
         offset.value: base.construct_connectivity(
             offset,
             data_alloc.import_array_ns(allocator).asarray(table),
-            skip_value=-1 if _has_skip_values(offset, config.limited_area) else None,
+            skip_value=-1 if _has_skip_values(offset, limited_area_or_distributed) else None,
             allocator=allocator,
             replace_skip_values=_should_replace_skip_values(
-                offset, config.keep_skip_values, config.limited_area
+                offset, config.keep_skip_values, limited_area_or_distributed
             ),
         )
         for offset, table in neighbor_tables.items()

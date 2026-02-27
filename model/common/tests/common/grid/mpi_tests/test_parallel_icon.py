@@ -8,24 +8,31 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
+import gt4py.next as gtx
+import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common.decomposition import definitions as decomp_defs
-from icon4py.model.testing import definitions as test_defs, parallel_helpers
+from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common.decomposition.decomposer import MetisDecomposer
+from icon4py.model.common.grid import base as base_grid, gridfile, horizontal as h_grid
+from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
 
 from ...fixtures import (
     backend,
     data_provider,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     processor_props,
 )
 from .. import utils
+from . import utils as parallel_utils
 
 
 if TYPE_CHECKING:
@@ -33,26 +40,24 @@ if TYPE_CHECKING:
 
     from icon4py.model.common.grid import base as base_grid
 
+if mpi_decomposition.mpi4py is None:
+    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
-try:
-    import mpi4py  # type: ignore[import-not-found] # F401:  import mpi4py to check for optional mpi dependency
+from mpi4py import MPI
 
-    from icon4py.model.common.decomposition import mpi_decomposition
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+
+_log = logging.getLogger(__name__)
 
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_props(processor_props: decomp_defs.ProcessProperties) -> None:
+def test_props(processor_props: decomposition.ProcessProperties) -> None:
     """dummy test to check whether the MPI initialization and GHEX setup works."""
     import ghex.context as ghex  # type: ignore[import-not-found]
 
     assert processor_props.comm
 
-    assert isinstance(
-        processor_props.comm, mpi4py.MPI.Comm
-    ), "comm needs to be an instance of MPI.Comm"
+    assert isinstance(processor_props.comm, MPI.Comm), "comm needs to be an instance of MPI.Comm"
     ghex.make_context(processor_props.comm)
 
 
@@ -81,20 +86,20 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
     ],
 )
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
-def test_distributed_local(
-    processor_props: decomp_defs.ProcessProperties,
+def test_start_index_end_index_local_zone_on_distributed_lam_grid(
+    processor_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     icon_grid: base_grid.Grid,
     experiment: test_defs.Experiment,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
-    print(
+    _log.info(
         f"rank {processor_props.rank}/{processor_props.comm_size} dim = {dim} : {icon_grid.size[dim]}"
     )
     # local still runs entire field:
     assert icon_grid.start_index(domain) == 0
-    print(
+    _log.info(
         f"rank {processor_props.rank}/{processor_props.comm_size} dim = {dim}  LOCAL : ({icon_grid.start_index(domain)}, {icon_grid.end_index(domain)})"
     )
     assert (
@@ -152,8 +157,8 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
     ],
 )
 @pytest.mark.parametrize("zone, level", [(h_grid.Zone.HALO, 1), (h_grid.Zone.HALO_LEVEL_2, 2)])
-def test_distributed_halo(
-    processor_props: decomp_defs.ProcessProperties,
+def test_start_index_end_index_halo_zones_on_distributed_lam_grid(
+    processor_props: decomposition.ProcessProperties,
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
@@ -165,7 +170,7 @@ def test_distributed_halo(
     start_index = icon_grid.start_index(domain)
     end_index = icon_grid.end_index(domain)
     rank = processor_props.rank
-    print(
+    _log.info(
         f"rank {rank}/{processor_props.comm_size} dim = {dim}  {zone} : ({start_index}, {end_index})"
     )
     expected = HALO_IDX[processor_props.comm_size][dim][rank][level - 1]

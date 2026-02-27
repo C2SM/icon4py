@@ -16,17 +16,13 @@ import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 from gt4py.next import common as gtx_common
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 _log = logging.getLogger(__name__)
-
-
-class MissingConnectivity(ValueError):
-    pass
 
 
 class GeometryType(enum.Enum):
@@ -45,6 +41,9 @@ class HorizontalGridSize:
     num_edges: int
     num_cells: int
 
+    def __repr__(self):
+        return f"{self.__class__} (<num_cells = {self.num_cells}>, <num_edges={self.num_edges}>, <num_verts = {self.num_vertices})"
+
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class GridConfig:
@@ -52,6 +51,7 @@ class GridConfig:
     # TODO(halungge): Decouple the vertical from horizontal grid.
     vertical_size: int
     limited_area: bool = True
+    distributed: bool = False
     n_shift_total: int = 0
     length_rescale_factor: float = 1.0
     lvertnest: bool = False
@@ -157,7 +157,7 @@ class Grid:
         if isinstance(offset, gtx.FieldOffset):
             offset = offset.value
         if offset not in self.connectivities:
-            raise MissingConnectivity(
+            raise exceptions.MissingConnectivityError(
                 f"Missing connectivity for offset {offset} in grid {self.id}."
             )
         connectivity = self.connectivities[offset]

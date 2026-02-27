@@ -126,6 +126,7 @@ def construct_icon_grid(
     num_edges: int,
     vertical_size: int,
     limited_area: bool,
+    distributed: bool,
     allocator: gtx_typing.Allocator | None,
 ) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
@@ -170,6 +171,7 @@ def construct_icon_grid(
         ),
         vertical_size=vertical_size,
         limited_area=limited_area,
+        distributed=distributed,
         keep_skip_values=False,
     )
 
@@ -234,12 +236,11 @@ def construct_decomposition(
     v_owner_mask = v_owner_mask[:num_vertices]
 
     decomposition_info = (
-        definitions.DecompositionInfo(
-            num_cells=num_cells, num_edges=num_edges, num_vertices=num_vertices
-        )
-        .with_dimension(dims.CellDim, c_glb_index, c_owner_mask)
-        .with_dimension(dims.EdgeDim, e_glb_index, e_owner_mask)
-        .with_dimension(dims.VertexDim, v_glb_index, v_owner_mask)
+        definitions.DecompositionInfo()
+        # TODO (halungge): last argument is called `decomp_domain` in icon, it is not needed in the granules should we pass it nevertheless?
+        .set_dimension(dims.CellDim, c_glb_index, c_owner_mask, None)
+        .set_dimension(dims.EdgeDim, e_glb_index, e_owner_mask, None)
+        .set_dimension(dims.VertexDim, v_glb_index, v_owner_mask, None)
     )
     processor_props = definitions.get_processor_properties(definitions.MultiNodeRun(), comm_id)
     exchange = definitions.create_exchange(processor_props, decomposition_info)

@@ -20,7 +20,8 @@ import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import utils
+from icon4py.model.common import dimension as dims, utils
+from icon4py.model.common.grid import base
 from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -34,6 +35,9 @@ class ProcessProperties(Protocol):
     rank: int
     comm_name: str
     comm_size: int
+
+    def is_single_rank(self) -> bool:
+        return self.comm_size == 1
 
 
 @dataclasses.dataclass(frozen=True, init=False)
@@ -71,41 +75,32 @@ class DomainDescriptorIdGenerator:
 
 
 class DecompositionInfo:
+    def __init__(
+        self,
+    ) -> None:
+        self._global_index: dict[gtx.Dimension, data_alloc.NDArray] = {}
+        self._halo_levels: dict[gtx.Dimension, data_alloc.NDArray] = {}
+        self._owner_mask: dict[gtx.Dimension, data_alloc.NDArray] = {}
+
     class EntryType(int, Enum):
         ALL = 0
         OWNED = 1
         HALO = 2
 
     @utils.chainable
-    def with_dimension(
-        self, dim: gtx.Dimension, global_index: data_alloc.NDArray, owner_mask: data_alloc.NDArray
+    def set_dimension(
+        self,
+        dim: gtx.Dimension,
+        global_index: data_alloc.NDArray,
+        owner_mask: data_alloc.NDArray,
+        halo_levels: data_alloc.NDArray,
     ) -> None:
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
+        self._halo_levels[dim] = halo_levels
 
-    def __init__(
-        self,
-        num_cells: int | None = None,
-        num_edges: int | None = None,
-        num_vertices: int | None = None,
-    ):
-        self._global_index: dict[gtx.Dimension, data_alloc.NDArray] = {}
-        self._owner_mask: dict[gtx.Dimension, data_alloc.NDArray] = {}
-        self._num_vertices = num_vertices
-        self._num_cells = num_cells
-        self._num_edges = num_edges
-
-    @property
-    def num_cells(self) -> int | None:
-        return self._num_cells
-
-    @property
-    def num_edges(self) -> int | None:
-        return self._num_edges
-
-    @property
-    def num_vertices(self) -> int | None:
-        return self._num_vertices
+    def is_distributed(self) -> bool:
+        return max(self._halo_levels[dims.CellDim]).item() > DecompositionFlag.OWNED
 
     def local_index(
         self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
@@ -125,19 +120,15 @@ class DecompositionInfo:
     def _to_local_index(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         data = self._global_index[dim]
         assert data.ndim == 1
-        if isinstance(data, np.ndarray):
-            import numpy as xp
-        else:
-            import cupy as xp  # type: ignore[import-not-found, no-redef]
-
-            xp.arange(data.shape[0])
-        return xp.arange(data.shape[0])
+        return data_alloc.array_ns_from_array(data).arange(data.shape[0])
 
     def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
     def global_index(
-        self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL
+        self,
+        dim: gtx.Dimension,
+        entry_type: DecompositionInfo.EntryType = EntryType.ALL,
     ) -> data_alloc.NDArray:
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
@@ -148,6 +139,24 @@ class DecompositionInfo:
                 return self._global_index[dim][~self._owner_mask[dim]]
             case _:
                 raise NotImplementedError()
+
+    def get_horizontal_size(self) -> base.HorizontalGridSize:
+        return base.HorizontalGridSize(
+            num_cells=self.global_index(dims.CellDim, self.EntryType.ALL).shape[0],
+            num_edges=self.global_index(dims.EdgeDim, self.EntryType.ALL).shape[0],
+            num_vertices=self.global_index(dims.VertexDim, self.EntryType.ALL).shape[0],
+        )
+
+    def get_halo_size(self, dim: gtx.Dimension, flag: DecompositionFlag) -> int:
+        level_mask = self.halo_level_mask(dim, flag)
+        return data_alloc.array_ns_from_array(level_mask).count_nonzero(level_mask)
+
+    def halo_levels(self, dim: gtx.Dimension) -> data_alloc.NDArray:
+        return self._halo_levels[dim]
+
+    def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag) -> data_alloc.NDArray:
+        levels = self._halo_levels[dim]
+        return data_alloc.array_ns_from_array(levels).where(levels == level.value, True, False)
 
 
 class ExchangeResult(Protocol):
@@ -412,6 +421,37 @@ def create_reduction(props: ProcessProperties) -> Reductions:
 @create_reduction.register(SingleNodeProcessProperties)
 def create_single_reduction_exchange(props: SingleNodeProcessProperties) -> Reductions:
     return SingleNodeReductions()
+
+
+class DecompositionFlag(int, Enum):
+    UNDEFINED = -1
+    OWNED = 0
+    """used for locally owned cells, vertices, edges"""
+
+    FIRST_HALO_LEVEL = 1
+    """
+    used for:
+    - cells that share 1 edge with an OWNED cell
+    - vertices that are on OWNED cell, but not owned (because they belong to the neighboring rank)
+    - edges that are on OWNED cell, but not owned (because they belong to the neighboring rank)
+    """
+
+    SECOND_HALO_LEVEL = 2
+    """
+    used for:
+    - cells that share one vertex with an OWNED cell
+    - vertices that are on a cell(FIRST_HALO_LEVEL) but not on an owned cell
+    - edges that have _exactly_ one vertex shared with and OWNED Cell
+    """
+
+    THIRD_HALO_LEVEL = 3
+    """
+    This type does not exist in ICON. It denotes the "closing/far" edges of the SECOND_HALO_LINE cells
+    used for:
+    - cells (NOT USED)
+    - vertices (NOT USED)
+    - edges that are only on the cell(SECOND_HALO_LEVEL)
+    """
 
 
 single_node_default = SingleNodeExchange()
