@@ -279,6 +279,7 @@ def test_exchange_on_dummy_data(
 
 @pytest.mark.mpi
 @pytest.mark.datatest
+@pytest.mark.embedded_only
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
 def test_halo_exchange_for_sparse_field(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
