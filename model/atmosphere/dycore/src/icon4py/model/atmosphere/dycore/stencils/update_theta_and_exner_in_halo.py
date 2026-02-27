@@ -8,7 +8,7 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import where
+from gt4py.next import exp, log, where
 
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
@@ -18,50 +18,65 @@ dycore_consts: Final = constants.PhysicsConstants()
 
 
 @gtx.field_operator
-def _update_theta_v(
+def _update_theta_and_exner_in_halo(
     mask_prog_halo_c: fa.CellField[bool],
     rho_now: fa.CellKField[wpfloat],
-    theta_v_now: fa.CellKField[wpfloat],
-    exner_new: fa.CellKField[wpfloat],
-    exner_now: fa.CellKField[wpfloat],
     rho_new: fa.CellKField[wpfloat],
-    theta_v_new: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_68."""
-    theta_v_new_wp = where(
+    theta_v_now: fa.CellKField[wpfloat],
+    exner_now: fa.CellKField[wpfloat],
+    exner_new: fa.CellKField[wpfloat],
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+    #
+    # ICON (fortran) uses one list (bdy_halo_c) and one mask (mask_prog_halo_c)
+    # for these operations. In the halo one is the inverse of the other:
+    # `mask_prog_halo_c = ~bdy_halo_c` so these operations (formerly
+    # _mo_solve_nonhydro_stencil_66 and 68) can be merged.
+    # `mask_prog_halo_c` is true for prognostic (_prog) cells (_c) in the halo
+    # region (_halo)
+    # `bdy_halo_c` lists the indices of cells (_c) which are located in the
+    # lateral boundary (bdy) and halo region (_halo)
+    # A visual representation can be found at
+    # https://github.com/C2SM/icon4py/pull/1066
+
+    theta_v_new = where(
         mask_prog_halo_c,
         rho_now
         * theta_v_now
         * ((exner_new / exner_now - wpfloat("1.0")) * dycore_consts.cvd_o_rd + wpfloat("1.0"))
         / rho_new,
-        theta_v_new,
+        exner_new,
     )
-    return theta_v_new_wp
+    exner_new = where(
+        mask_prog_halo_c,
+        exner_new,
+        exp(dycore_consts.rd_o_cvd * log(dycore_consts.rd_o_p0ref * rho_new * exner_new)),
+    )
+
+    return theta_v_new, exner_new
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def update_theta_v(
+def update_theta_and_exner_in_halo(
     mask_prog_halo_c: fa.CellField[bool],
     rho_now: fa.CellKField[wpfloat],
+    rho_new: fa.CellKField[wpfloat],
     theta_v_now: fa.CellKField[wpfloat],
+    theta_v_new: fa.CellKField[wpfloat],
     exner_new: fa.CellKField[wpfloat],
     exner_now: fa.CellKField[wpfloat],
-    rho_new: fa.CellKField[wpfloat],
-    theta_v_new: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _update_theta_v(
+    _update_theta_and_exner_in_halo(
         mask_prog_halo_c,
         rho_now,
-        theta_v_now,
-        exner_new,
-        exner_now,
         rho_new,
-        theta_v_new,
-        out=theta_v_new,
+        theta_v_now,
+        exner_now,
+        exner_new,
+        out=(theta_v_new, exner_new),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
