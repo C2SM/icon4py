@@ -35,11 +35,16 @@ def test_grid_file_dimension() -> None:
     parser = gridfile.GridFile(global_grid_file)
     try:
         parser.open()
-        assert parser.dimension(gridfile.DimensionName.CELL_NAME) == grid_descriptor.sizes["cell"]
         assert (
-            parser.dimension(gridfile.DimensionName.VERTEX_NAME) == grid_descriptor.sizes["vertex"]
+            parser.dimension(gridfile.DimensionName.CELL_NAME) == grid_descriptor.params.num_cells
         )
-        assert parser.dimension(gridfile.DimensionName.EDGE_NAME) == grid_descriptor.sizes["edge"]
+        assert (
+            parser.dimension(gridfile.DimensionName.VERTEX_NAME)
+            == grid_descriptor.params.num_vertices
+        )
+        assert (
+            parser.dimension(gridfile.DimensionName.EDGE_NAME) == grid_descriptor.params.num_edges
+        )
     except Exception:
         pytest.fail()
     finally:
