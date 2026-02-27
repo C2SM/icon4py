@@ -224,8 +224,6 @@ class InterpolationState:
 class MetricStateNonHydro:
     """Dataclass containing metric fields needed in dynamical core (SolveNonhydro)."""
 
-    bdy_halo_c: fa.CellField[bool]
-    # Finally, a mask field that excludes boundary halo points
     mask_prog_halo_c: fa.CellKField[bool]
     rayleigh_w: fa.KField[ta.wpfloat]
 
@@ -331,7 +329,7 @@ class PrepAdvection:
 def initialize_solve_nonhydro_diagnostic_state(
     perturbed_exner_at_cells_on_model_levels: fa.CellKField[ta.wpfloat],
     grid: icon_grid.IconGrid,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> DiagnosticStateNonHydro:
     normal_wind_advective_tendency = common_utils.PredictorCorrectorPair(
         data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.vpfloat),
@@ -455,7 +453,7 @@ def initialize_solve_nonhydro_diagnostic_state(
 
 
 def initialize_prep_advection(
-    grid: icon_grid.IconGrid, allocator: gtx_typing.FieldBufferAllocationUtil
+    grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator
 ) -> PrepAdvection:
     vn_traj = data_alloc.zero_field(
         grid, dims.EdgeDim, dims.KDim, allocator=allocator, dtype=ta.wpfloat

@@ -57,6 +57,8 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         self._exchange = exchange
+        domain_length = self.grid.global_properties.domain_length
+        domain_height = self.grid.global_properties.domain_height
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {
             "divergence_averaging_central_cell_weight": 0.5,  # divavg_cntrwgt in ICON
@@ -67,6 +69,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             "rbf_kernel_cell": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.CELL],
             "rbf_kernel_edge": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.EDGE],
             "rbf_kernel_vertex": rbf.DEFAULT_RBF_KERNEL[rbf.RBFDimension.VERTEX],
+            "lsq_dim_unk": 2,
+            "lsq_dim_c": 3,
+            "lsq_wgt_exp": 2,
+            "lsq_dim_stencil": 3,
+            "domain_length": 0.0 if domain_length is None else domain_length,
+            "domain_height": 0.0 if domain_height is None else domain_height,
         }
         log.info(
             f"initialized interpolation factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
@@ -227,6 +235,39 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields=(attrs.RBF_SCALE_VERTEX,),
         )
         self.register_provider(rbf_scale_vertex_np)
+
+        lsq_pseudoinv = factory.NumpyDataProvider(
+            func=functools.partial(
+                interpolation_fields.compute_lsq_coeffs,
+                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
+                array_ns=self._xp,
+            ),
+            fields=(attrs.LSQ_PSEUDOINV,),
+            domain=(),
+            deps={
+                "cell_center_x": geometry_attrs.CELL_CENTER_X,
+                "cell_center_y": geometry_attrs.CELL_CENTER_Y,
+                "cell_lat": geometry_attrs.CELL_LAT,
+                "cell_lon": geometry_attrs.CELL_LON,
+                "cell_owner_mask": "cell_owner_mask",
+            },
+            connectivities={"c2e2c": dims.C2E2CDim},
+            params={
+                "domain_length": self._config["domain_length"],
+                "domain_height": self._config["domain_height"],
+                "grid_sphere_radius": constants.EARTH_RADIUS,
+                "lsq_dim_unk": self._config["lsq_dim_unk"],
+                "lsq_dim_c": self._config["lsq_dim_c"],
+                "lsq_wgt_exp": self._config["lsq_wgt_exp"],
+                "lsq_dim_stencil": self._config["lsq_dim_stencil"],
+                "start_idx": self.grid.start_index(
+                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                ),
+                "min_rlcell_int": self.grid.end_index(cell_domain(h_grid.Zone.HALO_LEVEL_2)),
+                "geometry_type": self.grid.global_properties.geometry_type.value,
+            },
+        )
+        self.register_provider(lsq_pseudoinv)
 
         match self.grid.global_properties.geometry_type:
             case base.GeometryType.ICOSAHEDRON:
@@ -497,6 +538,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
+                "horizontal_end": self.grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.global_properties.domain_length
                 if self._grid.global_properties.domain_length
                 else -1.0,
@@ -535,6 +577,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
+                "horizontal_end": self.grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.global_properties.domain_length
                 if self._grid.global_properties.domain_length
                 else -1.0,
@@ -574,6 +617,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
+                "horizontal_end": self.grid.end_index(vertex_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.global_properties.domain_length
                 if self._grid.global_properties.domain_length
                 else -1.0,

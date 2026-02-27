@@ -50,6 +50,7 @@ def solve_nh_init(
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     l_vert_nested = False
+    ldeepatmo = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
     max_nudging_coefficient = 0.375
@@ -69,7 +70,6 @@ def solve_nh_init(
     )  # undo the -1 to go back to Fortran value
 
     # metric state parameters
-    bdy_halo_c = test_utils.array_to_array_info(metrics_savepoint.bdy_halo_c().ndarray)
     mask_prog_halo_c = test_utils.array_to_array_info(metrics_savepoint.mask_prog_halo_c().ndarray)
     rayleigh_w = test_utils.array_to_array_info(metrics_savepoint.rayleigh_w().ndarray)
     exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
@@ -170,7 +170,6 @@ def solve_nh_init(
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
-        bdy_halo_c=bdy_halo_c,
         mask_prog_halo_c=mask_prog_halo_c,
         rayleigh_w=rayleigh_w,
         exner_exfac=exner_exfac,
@@ -216,6 +215,7 @@ def solve_nh_init(
         divdamp_trans_start=divdamp_trans_start,
         divdamp_trans_end=divdamp_trans_end,
         l_vert_nested=l_vert_nested,
+        ldeepatmo=ldeepatmo,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
         nudge_max_coeff=max_nudging_coefficient,
@@ -287,6 +287,7 @@ def test_dycore_wrapper_granule_inputs(
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     l_vert_nested = False
+    ldeepatmo = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
     max_nudging_coefficient = 0.375
@@ -310,7 +311,6 @@ def test_dycore_wrapper_granule_inputs(
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
 
     # metric state parameters
-    bdy_halo_c = test_utils.array_to_array_info(metrics_savepoint.bdy_halo_c().ndarray)
     mask_prog_halo_c = test_utils.array_to_array_info(metrics_savepoint.mask_prog_halo_c().ndarray)
     rayleigh_w = test_utils.array_to_array_info(metrics_savepoint.rayleigh_w().ndarray)
     exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
@@ -471,7 +471,6 @@ def test_dycore_wrapper_granule_inputs(
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
     expected_metric_state = dycore_states.MetricStateNonHydro(
-        bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
         time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
@@ -594,7 +593,6 @@ def test_dycore_wrapper_granule_inputs(
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
             nudgecoeff_e=nudgecoeff_e,
-            bdy_halo_c=bdy_halo_c,
             mask_prog_halo_c=mask_prog_halo_c,
             rayleigh_w=rayleigh_w,
             exner_exfac=exner_exfac,
@@ -640,6 +638,7 @@ def test_dycore_wrapper_granule_inputs(
             divdamp_trans_start=divdamp_trans_start,
             divdamp_trans_end=divdamp_trans_end,
             l_vert_nested=l_vert_nested,
+            ldeepatmo=ldeepatmo,
             rhotheta_offctr=rhotheta_offctr,
             veladv_offctr=veladv_offctr,
             nudge_max_coeff=max_nudging_coefficient,

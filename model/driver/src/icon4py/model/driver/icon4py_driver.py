@@ -15,7 +15,8 @@ from typing import NamedTuple
 import click
 import numpy as np
 from devtools import Timer
-from gt4py.next import config as gtx_config, metrics as gtx_metrics, typing as gtx_typing
+from gt4py.next import config as gtx_config, typing as gtx_typing
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
@@ -64,7 +65,7 @@ class TimeLoop:
         self._simulation_date: datetime.datetime = self.run_config.start_date
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
-        self._allocator: gtx_typing.FieldBufferAllocationUtil = model_backends.get_allocator(
+        self._allocator: gtx_typing.Allocator = model_backends.get_allocator(
             self.run_config.backend
         )
 

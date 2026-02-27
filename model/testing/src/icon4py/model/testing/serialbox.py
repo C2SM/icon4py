@@ -146,12 +146,12 @@ class IconGridSavepoint(IconSavepoint):
         ser: serialbox.Serializer,
         grid_id: str,
         size: dict,
-        grid_shape: icon.GridShape,
+        global_grid_params: icon.GlobalGridParams,
         backend: gtx_typing.Backend | None,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
-        self.global_grid_params = icon.GlobalGridParams(grid_shape=grid_shape)
+        self.global_grid_params = global_grid_params
 
     def verts_vertex_lat(self):
         """vertex latituted"""
@@ -160,6 +160,18 @@ class IconGridSavepoint(IconSavepoint):
     def verts_vertex_lon(self):
         """vertex longitude"""
         return self._get_field("verts_vertex_lon", dims.VertexDim)
+
+    def verts_vertex_cart_x(self):
+        """vertex cartesian x coordinate"""
+        return self._get_field("verts_vertex_cart_x", dims.VertexDim)
+
+    def verts_vertex_cart_y(self):
+        """vertex cartesian y coordinate"""
+        return self._get_field("verts_vertex_cart_y", dims.VertexDim)
+
+    def verts_vertex_cart_z(self):
+        """vertex cartesian z coordinate"""
+        return self._get_field("verts_vertex_cart_z", dims.VertexDim)
 
     def primal_normal_v1(self):
         return self._get_field("primal_normal_v1", dims.EdgeDim)
@@ -180,6 +192,18 @@ class IconGridSavepoint(IconSavepoint):
     def edges_center_lon(self):
         """edge center longitude"""
         return self._get_field("edges_center_lon", dims.EdgeDim)
+
+    def edges_center_cart_x(self):
+        """edge center cartesian x coordinate"""
+        return self._get_field("edges_center_cart_x", dims.EdgeDim)
+
+    def edges_center_cart_y(self):
+        """edge center cartesian y coordinate"""
+        return self._get_field("edges_center_cart_y", dims.EdgeDim)
+
+    def edges_center_cart_z(self):
+        """edge center cartesian z coordinate"""
+        return self._get_field("edges_center_cart_z", dims.EdgeDim)
 
     def edge_vert_length(self):
         """length of edge midpoint to vertex"""
@@ -280,17 +304,42 @@ class IconGridSavepoint(IconSavepoint):
                 raise ValueError
 
     def coordinates(self):
-        return {
+        coords = {
             dims.CellDim: {"lat": self.cell_center_lat(), "lon": self.cell_center_lon()},
             dims.EdgeDim: {"lat": self.edges_center_lat(), "lon": self.edges_center_lon()},
             dims.VertexDim: {"lat": self.verts_vertex_lat(), "lon": self.verts_vertex_lon()},
         }
+
+        if self.global_grid_params.geometry_type == base.GeometryType.TORUS:
+            coords[dims.CellDim]["x"] = self.cell_center_cart_x()
+            coords[dims.CellDim]["y"] = self.cell_center_cart_y()
+            coords[dims.CellDim]["z"] = self.cell_center_cart_z()
+            coords[dims.EdgeDim]["x"] = self.edges_center_cart_x()
+            coords[dims.EdgeDim]["y"] = self.edges_center_cart_y()
+            coords[dims.EdgeDim]["z"] = self.edges_center_cart_z()
+            coords[dims.VertexDim]["x"] = self.verts_vertex_cart_x()
+            coords[dims.VertexDim]["y"] = self.verts_vertex_cart_y()
+            coords[dims.VertexDim]["z"] = self.verts_vertex_cart_z()
+
+        return coords
 
     def cell_center_lat(self):
         return self._get_field("cell_center_lat", dims.CellDim)
 
     def cell_center_lon(self):
         return self._get_field("cell_center_lon", dims.CellDim)
+
+    def cell_center_cart_x(self):
+        """cell center cartesian x coordinate"""
+        return self._get_field("cell_center_cart_x", dims.CellDim)
+
+    def cell_center_cart_y(self):
+        """cell center cartesian y coordinate"""
+        return self._get_field("cell_center_cart_y", dims.CellDim)
+
+    def cell_center_cart_z(self):
+        """cell center cartesian z coordinate"""
+        return self._get_field("cell_center_cart_z", dims.CellDim)
 
     def edge_center_lat(self):
         return self._get_field("edges_center_lat", dims.EdgeDim)
@@ -670,9 +719,6 @@ class InterpolationSavepoint(IconSavepoint):
 
 
 class MetricSavepoint(IconSavepoint):
-    def bdy_halo_c(self):
-        return self._get_field("bdy_halo_c", dims.CellDim, dtype=bool)
-
     def d2dexdz2_fac1_mc(self):
         return self._get_field("d2dexdz2_fac1_mc", dims.CellDim, dims.KDim)
 
@@ -1855,14 +1901,16 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(self, grid_id: str, grid_shape: icon.GridShape) -> IconGridSavepoint:
+    def from_savepoint_grid(
+        self, grid_id: str, global_grid_params: icon.GlobalGridParams
+    ) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
             savepoint,
             self.serializer,
             grid_id=grid_id,
             size=self.grid_size,
-            grid_shape=grid_shape,
+            global_grid_params=global_grid_params,
             backend=self.backend,
         )
 

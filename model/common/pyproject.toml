@@ -23,12 +23,12 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
-  'gt4py==1.1.3',
+  'gt4py==1.1.6',
   'packaging>=20.0',
   'typing-extensions>=4.11.0',
   'numpy>=1.23.3',
   'scipy>=1.14.1',
-  'dace==43!2026.01.21'  # uses custom index at 'https://github.com/GridTools/pypi'
+  'dace==43!2026.02.12'  # uses custom index at 'https://github.com/GridTools/pypi'
 ]
 description = "Shared code for the icon4py model."
 license = {text = "BSD-3 License"}
