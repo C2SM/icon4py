@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import dataclasses
 import os
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
 from typing import Any, ClassVar
 
 import gt4py.next as gtx
@@ -42,13 +42,15 @@ def allocate_data(
     def _allocate_field(f: gtx.Field) -> gtx.Field:
         return constructors.as_field(domain=f.domain, data=f.ndarray, allocator=allocator)
 
-    input_data = {
-        k: gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
-        if not gtx.is_scalar_type(v) and k != "domain"
-        else v
-        for k, v in input_data.items()
-    }
-    return input_data
+    gtx_input_data: dict[str, Any] = {}
+    for k, v in input_data.items():
+        if not gtx.is_scalar_type(v) and k != "domain":
+            gtx_input_data[k] = gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
+            input_data[k] = None  # free original allocation in input_data
+        else:
+            gtx_input_data[k] = v
+
+    return gtx_input_data
 
 
 @dataclasses.dataclass(frozen=True)
@@ -158,7 +160,9 @@ class StencilTest:
         ...     OUTPUTS = ("some_output",)
         ...     STATIC_PARAMS = {"category_a": ["flag0"], "category_b": ["flag0", "flag1"]}
         ...
-        ...     @pytest.fixture
+        ...     @pytest.fixture(
+        ...         scope="class"
+        ...     )  # make sure that input data are not allocated multiple times
         ...     def input_data(self):
         ...         return {"some_input": ..., "some_output": ...}
         ...
@@ -204,17 +208,19 @@ class StencilTest:
         test_func = device_utils.synchronized_function(program, allocator=backend)
         return test_func
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def _properly_allocated_input_data(
         self,
-        input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+        input_data: dict[str, gtx.Field | tuple[gtx.Field, ...] | None],
         backend_like: model_backends.BackendLike,
-    ) -> dict[str, Any]:
+    ) -> Generator[dict[str, gtx.Field | tuple[gtx.Field, ...] | None]]:
         # TODO(havogt): this is a workaround,
         # because in the `input_data` fixture provided by the user
         # it does not allocate for the correct device.
         allocator = model_backends.get_allocator(backend_like)
-        return allocate_data(allocator=allocator, input_data=input_data)
+        gtx_allocated_data = allocate_data(allocator=allocator, input_data=input_data)
+        yield gtx_allocated_data
+        del gtx_allocated_data
 
     def _verify_stencil_test(
         self,
@@ -274,7 +280,7 @@ class StencilTest:
         # parametrization is only available in the concrete subclass definition
         if cls.STATIC_PARAMS is None:
             # not parametrized, return an empty tuple
-            cls.static_variant = staticmethod(pytest.fixture(lambda: ()))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
+            cls.static_variant = staticmethod(pytest.fixture(lambda: (), scope="class"))  # type: ignore[method-assign, assignment] # we override with a non-parametrized function
         else:
             cls.static_variant = staticmethod(  # type: ignore[method-assign]
                 pytest.fixture(params=cls.STATIC_PARAMS.items(), scope="class", ids=lambda p: p[0])(

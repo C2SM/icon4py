@@ -57,7 +57,7 @@ class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(stencil_tests.Stenc
         )
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
         z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)

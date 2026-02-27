@@ -49,7 +49,7 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         p_face[:, 1:] = np.where((k[1:] == elevp1), p_cc[:, :-1], p_face[:, 1:])
         return dict(p_face=p_face)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

@@ -72,7 +72,7 @@ class TestComputeBarycentricBacktrajectoryAlt(stencil_tests.StencilTest):
             p_distv_bary_2=p_distv_bary_2,
         )
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

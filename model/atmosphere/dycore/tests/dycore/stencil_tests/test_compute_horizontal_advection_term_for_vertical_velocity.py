@@ -82,7 +82,7 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         )[horizontal_start:horizontal_end, :]
         return dict(z_v_grad_w=z_v_grad_w)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)

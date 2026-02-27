@@ -61,7 +61,7 @@ class TestIntegrateTracerDensityHorizontally(stencil_tests.StencilTest):
             z_tracer_new_dsl=z_tracer_new_dsl,
         )
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict:
         p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)

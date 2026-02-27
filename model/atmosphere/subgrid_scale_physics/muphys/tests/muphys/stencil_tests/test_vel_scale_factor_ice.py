@@ -25,7 +25,7 @@ class TestVelScaleFactorIce(StencilTest):
     def reference(grid, xrho: np.ndarray, **kwargs) -> dict:
         return dict(scale_factor=np.full(xrho.shape, 1.1158596098981044))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             xrho=data_alloc.constant_field(grid, 1.17873, dims.CellDim, dims.KDim, dtype=wpfloat),

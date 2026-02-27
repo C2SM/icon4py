@@ -46,7 +46,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
 
         return dict(div=div, kh_c=kh_c)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid):
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)
