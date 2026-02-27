@@ -34,7 +34,6 @@ from icon4py.model.testing.fixtures import (
     metrics_savepoint,
     model_top_height,
     processor_props,
-    ranked_data_path,
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
     topography_savepoint,
