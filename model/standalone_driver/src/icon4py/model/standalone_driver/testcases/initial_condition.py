@@ -28,7 +28,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
-    edge_2_cell_vector_rbf_interpolation,
+    compute_edge_2_cell_vector_interpolation,
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
@@ -277,7 +277,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
-    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(
+    compute_edge_2_cell_vector_interpolation.compute_edge_2_cell_vector_interpolation.with_backend(
         concrete_backend
     )(
         p_e_in=prognostic_states.current.vn,

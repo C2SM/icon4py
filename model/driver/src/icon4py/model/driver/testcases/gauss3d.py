@@ -22,7 +22,7 @@ from icon4py.model.common import (
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
-    edge_2_cell_vector_rbf_interpolation,
+    compute_edge_2_cell_vector_interpolation,
 )
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -213,7 +213,7 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
         allocator=allocator,
     )
 
-    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+    compute_edge_2_cell_vector_interpolation.compute_edge_2_cell_vector_interpolation.with_backend(backend)(
         vn,
         rbf_vec_coeff_c1,
         rbf_vec_coeff_c2,

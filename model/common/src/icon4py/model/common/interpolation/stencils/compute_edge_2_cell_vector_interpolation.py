@@ -13,7 +13,7 @@ from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim
 
 
 @gtx.field_operator
-def _edge_2_cell_vector_rbf_interpolation(
+def _compute_edge_2_cell_vector_interpolation(
     p_e_in: fa.EdgeKField[ta.wpfloat],
     ptr_coeff_1: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],
     ptr_coeff_2: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],
@@ -24,7 +24,6 @@ def _edge_2_cell_vector_rbf_interpolation(
 
     The theory is described in Narcowich and Ward (Math Comp. 1994) and Bonaventura and Baudisch (Mox Report n. 75).
     It takes edge based variables as input and combines them into three dimensional cartesian vectors at each cell center.
-    TODO(OngChia): This stencil actually just use the c2e2c2e connectivity and the corresponding coefficients to compute cell-center value without knowledge of how the coefficients are computed. A better name is perferred.
 
     Args:
         p_e_in: Input values at edge center.
@@ -39,7 +38,7 @@ def _edge_2_cell_vector_rbf_interpolation(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def edge_2_cell_vector_rbf_interpolation(
+def compute_edge_2_cell_vector_interpolation(
     p_e_in: fa.EdgeKField[ta.wpfloat],
     ptr_coeff_1: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],
     ptr_coeff_2: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],
@@ -50,7 +49,7 @@ def edge_2_cell_vector_rbf_interpolation(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _edge_2_cell_vector_rbf_interpolation(
+    _compute_edge_2_cell_vector_interpolation(
         p_e_in,
         ptr_coeff_1,
         ptr_coeff_2,
