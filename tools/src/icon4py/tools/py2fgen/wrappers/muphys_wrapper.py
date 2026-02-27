@@ -55,16 +55,16 @@ def graupel_run(
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(ivstart),
                     "horizontal_end": gtx.int32(ivend),
-                },  # TODO(edopao): double-check these ranges
+                },
                 vertical_sizes={
                     "vertical_start": gtx.int32(kstart),
                     "vertical_end": gtx.int32(ke),
-                },  # TODO(edopao): double-check these ranges
+                },
                 offset_provider={"Koff": dims.KDim},
             )
             gtx.wait_for_compilation()
 
-    q = graupel.Q(qv, qc, qi, qr, qs, qg)
+    q = graupel.Q(qv, qc, qr, qs, qi, qg)
 
     graupel_program(
         dz=dz,
