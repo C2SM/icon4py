@@ -432,8 +432,8 @@ class DecompositionFlag(int, Enum):
     """
     used for:
     - cells that share 1 edge with an OWNED cell
-    - vertices that are on OWNED cell, but not owned
-    - edges that are on OWNED cell, but not owned
+    - vertices that are on OWNED cell, but not owned (because they belong to the neighboring rank)
+    - edges that are on OWNED cell, but not owned (because they belong to the neighboring rank)
     """
 
     SECOND_HALO_LEVEL = 2
