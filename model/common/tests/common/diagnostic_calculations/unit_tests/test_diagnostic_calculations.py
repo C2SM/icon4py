@@ -21,8 +21,8 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_temperature,
 )
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
-from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_state as tracers
+from icon4py.model.common.interpolation.stencils import compute_edge_2_cell_vector_interpolation
+from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_state
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import (
@@ -62,21 +62,17 @@ def test_diagnose_temperature(
     virtual_temperature = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend
     )
-
-    qv = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    qc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    qr = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    qi = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    qs = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
-    qg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend)
+    tracers = tracer_state.TracerState(
+        qv=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
+        qc=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
+        qr=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
+        qi=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
+        qs=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
+        qg=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, allocator=backend),
+    )
 
     diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(backend)(
-        qv=qv,
-        qc=qc,
-        qr=qr,
-        qi=qi,
-        qs=qs,
-        qg=qg,
+        tracers=tracers,
         theta_v=theta_v,
         exner=exner,
         virtual_temperature=virtual_temperature,
@@ -125,7 +121,7 @@ def test_diagnose_meridional_and_zonal_winds(
     )
     end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
 
-    rbf.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
+    compute_edge_2_cell_vector_interpolation.compute_edge_2_cell_vector_interpolation.with_backend(backend)(
         p_e_in=vn,
         ptr_coeff_1=rbv_vec_coeff_c1,
         ptr_coeff_2=rbv_vec_coeff_c2,

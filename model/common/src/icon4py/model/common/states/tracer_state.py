@@ -31,3 +31,23 @@ class TracerState:
     qs: fa.CellKField[ta.wpfloat]
     #: specific graupel content [kg/kg] at cell center
     qg: fa.CellKField[ta.wpfloat]
+
+
+@dataclasses.dataclass
+class TracerStateScalar:
+    """
+    Class that contains the scalar of the tracer state which includes hydrometeors and aerosols.
+    """
+
+    #: specific humidity [kg/kg]
+    qv: ta.wpfloat
+    #: specific cloud water content [kg/kg]
+    qc: ta.wpfloat
+    #: specific rain content [kg/kg]
+    qr: ta.wpfloat
+    #: specific cloud ice content [kg/kg]
+    qi: ta.wpfloat
+    #: specific snow content [kg/kg]
+    qs: ta.wpfloat
+    #: specific graupel content [kg/kg]
+    qg: ta.wpfloat
