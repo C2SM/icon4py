@@ -371,9 +371,6 @@ def diffusion_init_wrapper(
     rbf_coeff_2,
     rbf_coeff_2_size_0,
     rbf_coeff_2_size_1,
-    mask_hdiff,
-    mask_hdiff_size_0,
-    mask_hdiff_size_1,
     zd_diffcoef,
     zd_diffcoef_size_0,
     zd_diffcoef_size_1,
@@ -508,16 +505,6 @@ def diffusion_init_wrapper(
                 False,
             )
 
-            mask_hdiff = (
-                mask_hdiff,
-                (
-                    mask_hdiff_size_0,
-                    mask_hdiff_size_1,
-                ),
-                on_gpu,
-                True,
-            )
-
             zd_diffcoef = (
                 zd_diffcoef,
                 (
@@ -577,7 +564,6 @@ def diffusion_init_wrapper(
                 nudgecoeff_e=nudgecoeff_e,
                 rbf_coeff_1=rbf_coeff_1,
                 rbf_coeff_2=rbf_coeff_2,
-                mask_hdiff=mask_hdiff,
                 zd_diffcoef=zd_diffcoef,
                 zd_vertoffset=zd_vertoffset,
                 zd_intcoef=zd_intcoef,
@@ -773,22 +759,6 @@ def diffusion_init_wrapper(
                     msg = (
                         "rbf_coeff_2 after computation: %s" % str(rbf_coeff_2_arr)
                         if rbf_coeff_2 is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    mask_hdiff_arr = (
-                        _conversion.as_array(ffi, mask_hdiff, _definitions.BOOL)
-                        if mask_hdiff is not None
-                        else None
-                    )
-                    msg = "shape of mask_hdiff after computation = %s" % str(
-                        mask_hdiff_arr.shape if mask_hdiff is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "mask_hdiff after computation: %s" % str(mask_hdiff_arr)
-                        if mask_hdiff is not None
                         else "None"
                     )
                     logger.debug(msg)

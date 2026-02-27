@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import astype, where
+from gt4py.next import astype
 from gt4py.next.experimental import as_offset
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -16,7 +16,6 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-    mask: fa.CellKField[bool],
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
@@ -45,18 +44,15 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         * (vcoef[C2E2CDim(2)] * theta_v_2 + (wpfloat("1.0") - vcoef[C2E2CDim(2)]) * theta_v_2_m1)
     )
 
-    z_temp_wp = where(
-        mask,
-        z_temp_wp + zd_diffcoef * sum_tmp,
-        z_temp_wp,
-    )
+    # Note: In the original Fortran code `zd_diffcoef` is implemented as a list,
+    # in ICON4Py it's a full field intialized with zeros for points that are not in the list.
+    z_temp_wp = z_temp_wp + zd_diffcoef * sum_tmp
 
     return astype(z_temp_wp, vpfloat)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-    mask: fa.CellKField[bool],
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
@@ -70,7 +66,6 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     vertical_end: gtx.int32,
 ):
     _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-        mask,
         zd_vertoffset,
         zd_diffcoef,
         geofac_n2s_c,

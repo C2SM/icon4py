@@ -5,7 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import gt4py.next as gtx
+from gt4py.next import where
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     _calculate_nabla2_for_z,
@@ -29,7 +31,6 @@ def _apply_diffusion_to_theta_and_exner(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    mask: fa.CellKField[bool],
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
@@ -42,21 +43,26 @@ def _apply_diffusion_to_theta_and_exner(
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
-    z_temp = (
-        _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-            mask,
-            zd_vertoffset,
-            zd_diffcoef,
-            geofac_n2s_c,
-            geofac_n2s_nbh,
-            vcoef,
-            theta_v,
+
+    if apply_zdiffusion_t:
+        # Only where `zd_diffcoef` is not 0 to avoid loading the other fields.
+        # Eventually the toolchain could consider extracting a mask `zd_diffcoef != 0` if we tell gt4py that `zd_diffcoef` is static.
+        z_temp = where(
+            zd_diffcoef != 0.0,
+            _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
+                zd_vertoffset,
+                zd_diffcoef,
+                geofac_n2s_c,
+                geofac_n2s_nbh,
+                vcoef,
+                theta_v,
+                z_temp,
+            ),
             z_temp,
         )
-        if apply_zdiffusion_t
-        else z_temp
-    )
+
     theta_v, exner = _update_theta_and_exner(z_temp, area, theta_v, exner, rd_o_cvd)
+
     return theta_v, exner
 
 
@@ -66,7 +72,6 @@ def apply_diffusion_to_theta_and_exner(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v_in: fa.CellKField[wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    mask: fa.CellKField[bool],
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
@@ -87,7 +92,6 @@ def apply_diffusion_to_theta_and_exner(
         inv_dual_edge_length,
         theta_v_in,
         geofac_div,
-        mask,
         zd_vertoffset,
         zd_diffcoef,
         geofac_n2s_c,
