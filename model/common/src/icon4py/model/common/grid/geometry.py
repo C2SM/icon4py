@@ -866,7 +866,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.Allocator | None,
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],

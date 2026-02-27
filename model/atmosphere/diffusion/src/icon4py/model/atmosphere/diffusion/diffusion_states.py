@@ -90,7 +90,7 @@ class DiffusionInterpolationState:
 
 
 def initialize_diffusion_diagnostic_state(
-    grid: icon_grid.IconGrid, allocator: gtx_typing.FieldBufferAllocationUtil
+    grid: icon_grid.IconGrid, allocator: gtx_typing.Allocator
 ) -> DiffusionDiagnosticState:
     hdef_ic = data_alloc.zero_field(
         grid,
