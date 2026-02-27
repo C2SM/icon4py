@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import dataclasses
-import gc
 import os
 from collections.abc import Callable, Generator, Mapping, Sequence
 from typing import Any, ClassVar
