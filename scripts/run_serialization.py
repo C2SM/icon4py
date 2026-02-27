@@ -14,6 +14,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -359,6 +360,9 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path
         if src_file.is_file():
             shutil.copy2(src_file, dest_dir / src_file.name)
 
+    # Translate and include NAMELIST_ICON_atm
+    # f90nml NAMELIST_ICON_output_atm NAMELIST_ICON_output_atm.json
+
     # Copy LOG file if available
     if job_id is not None:
         log_file = RUNSCRIPTS_DIR / f"LOG.{get_slurmscript_name(experiment)}.{job_id}.o"
@@ -431,9 +435,18 @@ def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
         raise
 
 
+def require_cli(command_name):
+    if shutil.which(command_name) is None:
+        print(f"Error: '{command_name}' is not installed or not on PATH.")
+        sys.exit(1)
+
+
 @cli.command()
 def run_experiment_series() -> None:
     """Run the serialization experiment series."""
+
+    require_cli("f90nml")
+
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
     total_tasks = len(EXPERIMENTS) * len(COMM_SIZES)
