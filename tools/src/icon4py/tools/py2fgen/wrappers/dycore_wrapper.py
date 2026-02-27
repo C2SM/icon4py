@@ -297,6 +297,8 @@ def solve_nh_run(
     ndyn_substeps_var: gtx.int32,
     idyn_timestep: gtx.int32,
 ):
+    dtime = wpfloat(dtime)
+
     if granule is None:
         raise RuntimeError("SolveNonhydro granule not initialized. Call 'solve_nh_init' first.")
 

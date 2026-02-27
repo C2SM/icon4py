@@ -194,6 +194,8 @@ def diffusion_run(
     dtime: wpfloat,
     linit: bool,
 ):
+    dtime = wpfloat(dtime)
+
     if granule is None:
         raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init' first.")
 
