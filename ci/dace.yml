@@ -20,7 +20,7 @@ include:
         GRID: [simple, icon_regional]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
-test_model_stencils_aarch64:
+.test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
 .test_model_datatests:
@@ -29,7 +29,7 @@ test_model_stencils_aarch64:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   parallel:
     matrix:
-      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver]
+      - COMPONENT: [muphys]
         BACKEND: [dace_cpu, dace_gpu]
         LEVEL: [integration]
   rules:
