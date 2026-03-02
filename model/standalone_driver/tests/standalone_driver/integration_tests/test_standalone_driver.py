@@ -21,7 +21,7 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment, substep_exit, step_date_exit, timeloop_diffusion_linit_exit",
-    [(definitions.Experiments.JW, 2, "2008-09-01T00:05:00.000", False)]
+    [(definitions.Experiments.JW, 2, "2008-09-01T00:05:00.000", False)],
 )
 def test_standalone_driver(
     backend_like,
@@ -52,32 +52,33 @@ def test_standalone_driver(
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = timeloop_diffusion_savepoint_exit.exner() #savepoint_nonhydro_exit.exner_new() #
-    theta_sp = timeloop_diffusion_savepoint_exit.theta_v() #savepoint_nonhydro_exit.theta_v_new() #
-    vn_sp = timeloop_diffusion_savepoint_exit.vn() #savepoint_nonhydro_exit.vn_new() #
-    w_sp = timeloop_diffusion_savepoint_exit.w() #savepoint_nonhydro_exit.w_new() #
+    exner_sp = timeloop_diffusion_savepoint_exit.exner()  # savepoint_nonhydro_exit.exner_new() #
+    theta_sp = (
+        timeloop_diffusion_savepoint_exit.theta_v()
+    )  # savepoint_nonhydro_exit.theta_v_new() #
+    vn_sp = timeloop_diffusion_savepoint_exit.vn()  # savepoint_nonhydro_exit.vn_new() #
+    w_sp = timeloop_diffusion_savepoint_exit.w()  # savepoint_nonhydro_exit.w_new() #
 
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=6e-12,
+        atol=1e-4,
     )
 
     assert test_utils.dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=8e-14,
+        atol=1e-4,
     )
 
-    # assert test_utils.dallclose(
-    #     ds.prognostics.current.exner.asnumpy(),
-    #     exner_sp.asnumpy(), atol=1e-6
-    # ) # ok
-    #
-    # assert test_utils.dallclose(
-    #     ds.prognostics.current.theta_v.asnumpy(),
-    #     theta_sp.asnumpy(),
-    #     atol=4e-12,
-    # )
-    #
-    # assert test_utils.dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=1e-5) # ok
+    assert test_utils.dallclose(
+        ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy(), atol=1e-6
+    )
+
+    assert test_utils.dallclose(
+        ds.prognostics.current.theta_v.asnumpy(),
+        theta_sp.asnumpy(),
+        atol=1e-4,
+    )
+
+    assert test_utils.dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=1e-5)

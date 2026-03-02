@@ -94,7 +94,7 @@ if TYPE_CHECKING:
             "2008-09-01T00:05:00.000",
             False,
             False,
-        )
+        ),
     ],
 )
 def test_run_timeloop_single_step(
@@ -120,7 +120,11 @@ def test_run_timeloop_single_step(
     backend: gtx_typing.Backend,
 ):
     if experiment in (definitions.Experiments.GAUSS3D, definitions.Experiments.JW):
-        experiment_type = driver_init.ExperimentType.GAUSS3D if experiment == definitions.Experiments.GAUSS3D else driver_init.ExperimentType.JABW
+        experiment_type = (
+            driver_init.ExperimentType.GAUSS3D
+            if experiment == definitions.Experiments.GAUSS3D
+            else driver_init.ExperimentType.JABW
+        )
         config = icon4py_configuration.read_config(
             experiment_type=experiment_type,
             backend=backend,
