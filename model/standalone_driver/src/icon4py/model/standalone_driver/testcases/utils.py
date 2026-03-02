@@ -210,7 +210,7 @@ def init_w(
         offset_provider={"E2C": grid.get_connectivity("E2C")},
     )
     for je in range(horizontal_start_e, horizontal_end_e):
-        z_wsfc_e[je, 0] = vn[je, nlev - 1] * z_slope_e[je, nlevp1 - 1]
+        z_wsfc_e[je, 0] = vn[je, nlev - 1] * z_slope_e.asnumpy()[je, nlevp1 - 1]
 
     e_inn_c = np.zeros((horizontal_end_c, 3))  # or 1
     for jc in range(horizontal_end_c):
