@@ -218,6 +218,7 @@ embedded_broken_fields = {
         geometry_attributes.CORIOLIS_PARAMETER,
         geometry_attributes.DUAL_AREA,
         geometry_attributes.DUAL_EDGE_LENGTH,
+        f"inverse_of_{geometry_attributes.DUAL_EDGE_LENGTH}",
         geometry_attributes.EDGE_AREA,
         geometry_attributes.EDGE_CELL_DISTANCE,
         geometry_attributes.EDGE_CENTER_X,
@@ -336,7 +337,7 @@ def test_geometry_fields_compare_single_multi_rank(
         # but which ones are most useful?
         interpolation_attributes.CELL_AW_VERTS,
         interpolation_attributes.C_BLN_AVG,
-        # interpolation_attributes.C_LIN_E, # TODO(msimberg): Wrong, check.
+        interpolation_attributes.C_LIN_E,
         interpolation_attributes.E_BLN_C_S,
         interpolation_attributes.E_FLX_AVG,
         interpolation_attributes.GEOFAC_DIV,

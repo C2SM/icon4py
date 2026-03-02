@@ -188,7 +188,9 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(
+                        h_grid.Zone.HALO
+                    ),  # TODO(msimberg): LOCAL too little but should be enough. HALO and END enough.
                 )
             },
             do_exchange=True,
