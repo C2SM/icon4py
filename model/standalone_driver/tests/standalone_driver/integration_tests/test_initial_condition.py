@@ -27,7 +27,7 @@ from icon4py.model.testing.fixtures.datatest import (
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment, rank", [(definitions.Experiments.JW, 0)])
 @pytest.mark.datatest
-def test_standalone_driver_initial_conditions(
+def test_standalone_driver_initial_condition(
     backend_like,
     backend,
     tmp_path: pathlib.Path,
@@ -40,7 +40,6 @@ def test_standalone_driver_initial_conditions(
         if backend_like == v:
             backend_name = k
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        configuration_file_path="./",
         output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}",
         grid_file_path=grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
@@ -88,6 +87,7 @@ def test_standalone_driver_initial_conditions(
         atol=1e-11,
     )
 
+    # TODO remove w_1 from here, prognostics, and _apply_rayleigh_damping_mechanism
     assert test_utils.dallclose(
         ds.prognostics.current.w_1.asnumpy(),
         default_w_1.asnumpy(),

@@ -180,7 +180,7 @@ def init_w(
     primal_edge_length,
     cell_area,
     vn,
-    vct_a,
+    vct_b,
     nlev,
 ):
     c2e = grid.get_connectivity("C2E")
@@ -230,6 +230,6 @@ def init_w(
 
     for jk in reversed(range(1, nlev)):
         for jc in range(horizontal_start_c, horizontal_end_c):
-            w[jc, jk] = z_wsfc_c[jc, 0] * np.exp(-vct_a.asnumpy()[jk] / 5000.0)
+            w[jc, jk] = z_wsfc_c[jc, 0] * vct_b.asnumpy()[jk]
 
     return w

@@ -117,8 +117,6 @@ def read_config(
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
             velocity_boundary_diffusion_denom=200.0,
-            thslp_zdiffu=0.02,
-            thhgtd_zdiffu=125.0,
         )
 
     def _jabw_nonhydro_config():
@@ -126,6 +124,7 @@ def read_config(
             # original igradp_method is 2
             # original divdamp_order is 4
             fourth_order_divdamp_factor=0.0025,
+            rayleigh_coeff=0.1
         )
 
     def _mch_ch_r04b09_config():

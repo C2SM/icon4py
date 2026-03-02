@@ -263,7 +263,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         rayleigh_damping_height=damping_height,
     )
     backend = customize_backend(None, model_backends.CPU)
-    vct_a, _ = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid,
@@ -275,7 +275,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH),
         cell_area=geometry_field_source.get(geometry_meta.CELL_AREA),
         vn=prognostic_state_now.vn.ndarray,
-        vct_a=vct_a,
+        vct_b=vct_b,
         nlev=num_levels,
     )
     log.info("U2vn computation completed.")

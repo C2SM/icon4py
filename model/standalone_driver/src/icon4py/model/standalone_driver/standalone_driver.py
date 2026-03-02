@@ -497,6 +497,7 @@ def _read_config(
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(
         fourth_order_divdamp_factor=0.0025,
+        rayleigh_coeff=0.1
     )
 
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
@@ -508,7 +509,7 @@ def _read_config(
         end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
-        vertical_cfl_threshold=ta.wpfloat("0.85"),
+        vertical_cfl_threshold=ta.wpfloat("1.05"),
         enable_statistics_output=True,
         profiling_stats=profiling_stats,
     )
@@ -522,7 +523,6 @@ def _read_config(
 
 
 def initialize_driver(
-    configuration_file_path: pathlib.Path,
     output_path: pathlib.Path,
     grid_file_path: pathlib.Path,
     log_level: str,
@@ -554,7 +554,6 @@ def initialize_driver(
         processor_procs=parallel_props,
     )
 
-    configuration_file_path = pathlib.Path(configuration_file_path)
     global_reductions = decomposition_defs.create_reduction(parallel_props)
     grid_file_path = pathlib.Path(grid_file_path)
     if pathlib.Path(output_path).exists():
