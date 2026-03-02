@@ -183,6 +183,7 @@ $MYPY_CONFIG_FILE_DIR/model/testing/src:
 $MYPY_CONFIG_FILE_DIR/tools/src:
 '''
 namespace_packages = true
+plugins = ["gt4py.next.type_system.mypy_plugin"]
 # install_types = true
 # non_interactive = true
 show_column_numbers = true
@@ -403,6 +404,7 @@ url = 'https://gridtools.github.io/pypi/'
 [tool.uv.sources]
 dace = {index = "gridtools"}
 ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
+gt4py = {path = "/Users/ricoh/Code/gt4py"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}

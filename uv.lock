@@ -1402,8 +1402,7 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.6"
-source = { registry = "https://pypi.org/simple" }
+source = { directory = "../gt4py" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -1434,10 +1433,6 @@ dependencies = [
     { name = "versioningit" },
     { name = "xxhash" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/2a/af0c70f00adaa8c01330798bba25ee51cd9a537e2f14b3f54807950955d8/gt4py-1.1.6.tar.gz", hash = "sha256:f206874fe5e5c087e670cc31cd18bb4cfafcc462f89f407e4f5dd2072b23553e", size = 811160, upload-time = "2026-02-27T11:09:21.91Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/bd/b6ab2fdc5bc997c824c89df8ee7a1bb83e98815e2e0db096664c49fe2799/gt4py-1.1.6-py3-none-any.whl", hash = "sha256:b095bc1ac6591ce8da14f6e6e1da66383d49f94482379f4ed471d0a65893b561", size = 1022175, upload-time = "2026-02-27T11:09:19.695Z" },
-]
 
 [package.optional-dependencies]
 cuda11 = [
@@ -1445,6 +1440,156 @@ cuda11 = [
 ]
 cuda12 = [
     { name = "cupy-cuda12x" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "array-api-compat", specifier = ">=1.13" },
+    { name = "attrs", specifier = ">=21.3" },
+    { name = "black", specifier = ">=25.11" },
+    { name = "boltons", specifier = ">=20.1" },
+    { name = "cached-property", specifier = ">=1.5.1" },
+    { name = "clang-format", marker = "extra == 'standard'", specifier = ">=18.1" },
+    { name = "click", specifier = ">=8.0.0" },
+    { name = "cmake", specifier = ">=3.22" },
+    { name = "cupy", marker = "extra == 'rocm6-0'", specifier = ">=13.4.1" },
+    { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=12.0" },
+    { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=12.0" },
+    { name = "cupy-rocm-4-3", marker = "extra == 'rocm4-3'", specifier = ">=13.3.0" },
+    { name = "cupy-rocm-5-0", marker = "extra == 'rocm5-0'", specifier = ">=13.3.0" },
+    { name = "cytoolz", specifier = ">=1.0.1" },
+    { name = "deepdiff", specifier = ">=8.1.0" },
+    { name = "devtools", specifier = ">=0.6" },
+    { name = "factory-boy", specifier = ">=3.3.3" },
+    { name = "filelock", specifier = ">=3.18.0" },
+    { name = "frozendict", specifier = ">=2.3" },
+    { name = "gridtools-cpp", specifier = "==2.*,>=2.3.9" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'jax-cuda12'" },
+    { name = "gt4py", extras = ["jax", "standard", "testing"], marker = "extra == 'cartesian'" },
+    { name = "gt4py", extras = ["jax", "standard", "testing"], marker = "extra == 'next'" },
+    { name = "hypothesis", marker = "extra == 'testing'", specifier = ">=6.93" },
+    { name = "jax", marker = "extra == 'jax'", specifier = ">=0.4.26" },
+    { name = "jax", extras = ["cuda12-local"], marker = "extra == 'jax-cuda12'", specifier = ">=0.4.26" },
+    { name = "jinja2", specifier = ">=3.0.0" },
+    { name = "lark", specifier = ">=1.1.2" },
+    { name = "mako", specifier = ">=1.3" },
+    { name = "nanobind", specifier = ">=1.9.0" },
+    { name = "ninja", specifier = ">=1.11" },
+    { name = "numpy", specifier = ">=1.26.4" },
+    { name = "packaging", specifier = ">=20.0" },
+    { name = "pybind11", specifier = ">=2.10.1,<3" },
+    { name = "pytest", marker = "extra == 'testing'", specifier = ">=7.0" },
+    { name = "scipy", marker = "python_full_version >= '3.11' and extra == 'standard'", specifier = ">=1.16.1" },
+    { name = "scipy", marker = "python_full_version < '3.11' and extra == 'standard'", specifier = ">=1.14.1" },
+    { name = "setuptools", specifier = ">=77.0.3" },
+    { name = "tabulate", specifier = ">=0.8.10" },
+    { name = "toolz", specifier = ">=0.12.1" },
+    { name = "typing-extensions", specifier = ">=4.12.0" },
+    { name = "versioningit", specifier = ">=3.1.1" },
+    { name = "xxhash", specifier = ">=3.5.0" },
+]
+provides-extras = ["cartesian", "cuda11", "cuda12", "jax", "jax-cuda12", "next", "rocm4-3", "rocm5-0", "rocm6-0", "standard", "testing"]
+
+[package.metadata.requires-dev]
+build = [
+    { name = "cython", specifier = ">=3.0.0" },
+    { name = "pip", specifier = ">=22.1.1" },
+    { name = "setuptools", specifier = ">=77.0.3" },
+    { name = "wheel", specifier = ">=0.33.6" },
+]
+dace-cartesian = [{ name = "dace", git = "https://github.com/GridTools/dace?branch=romanc%2Fstree-v2" }]
+dace-next = [{ name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/", conflict = { package = "gt4py", group = "dace-next" } }]
+dev = [
+    { name = "atlas4py", specifier = ">=0.41", index = "https://test.pypi.org/simple" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.6.1" },
+    { name = "cython", specifier = ">=3.0.0" },
+    { name = "esbonio", specifier = ">=0.16.0" },
+    { name = "hypothesis", specifier = ">=6.0.0" },
+    { name = "jupytext", specifier = ">=1.14" },
+    { name = "matplotlib", specifier = ">=3.9.0" },
+    { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
+    { name = "myst-parser", specifier = ">=4.0.0" },
+    { name = "nbmake", specifier = ">=1.4.6" },
+    { name = "nox", specifier = ">=2025.2.9" },
+    { name = "packaging" },
+    { name = "pip", specifier = ">=22.1.1" },
+    { name = "pre-commit", specifier = ">=4.0.1" },
+    { name = "pygments", specifier = ">=2.7.3" },
+    { name = "pytest", specifier = ">=8.0.1" },
+    { name = "pytest-benchmark", specifier = ">=5.0.0" },
+    { name = "pytest-cache", specifier = ">=1.0" },
+    { name = "pytest-cov", specifier = ">=5.0.0" },
+    { name = "pytest-factoryboy", specifier = ">=2.6.1" },
+    { name = "pytest-instafail", specifier = ">=0.5.0" },
+    { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.5.0" },
+    { name = "pyyaml", specifier = ">=6.0.1" },
+    { name = "ruff", specifier = ">=0.8.0" },
+    { name = "setuptools", specifier = ">=77.0.3" },
+    { name = "sphinx", specifier = ">=7.3.7" },
+    { name = "sphinx-rtd-theme", specifier = ">=3.0.1" },
+    { name = "sphinx-toolbox", specifier = ">=3.8.1" },
+    { name = "tach", specifier = ">=0.23.0" },
+    { name = "typer", specifier = ">=0.12.3" },
+    { name = "types-decorator", specifier = ">=5.1.8" },
+    { name = "types-docutils", specifier = ">=0.21.0" },
+    { name = "types-pytz", specifier = ">=2024.2.0" },
+    { name = "types-pyyaml", specifier = ">=6.0.10" },
+    { name = "types-tabulate", specifier = ">=0.8.10" },
+    { name = "validate-pyproject-schema-store", extras = ["all"], specifier = ">=2025.6.13" },
+    { name = "wheel", specifier = ">=0.33.6" },
+]
+docs = [
+    { name = "esbonio", specifier = ">=0.16.0" },
+    { name = "jupytext", specifier = ">=1.14" },
+    { name = "matplotlib", specifier = ">=3.9.0" },
+    { name = "myst-parser", specifier = ">=4.0.0" },
+    { name = "pygments", specifier = ">=2.7.3" },
+    { name = "sphinx", specifier = ">=7.3.7" },
+    { name = "sphinx-rtd-theme", specifier = ">=3.0.1" },
+    { name = "sphinx-toolbox", specifier = ">=3.8.1" },
+]
+external-typing = [
+    { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
+    { name = "pytest-mypy-plugins" },
+    { name = "types-decorator", specifier = ">=5.1.8" },
+    { name = "types-docutils", specifier = ">=0.21.0" },
+    { name = "types-pytz", specifier = ">=2024.2.0" },
+    { name = "types-pyyaml", specifier = ">=6.0.10" },
+    { name = "types-six" },
+    { name = "types-tabulate", specifier = ">=0.8.10" },
+]
+frameworks = [{ name = "atlas4py", specifier = ">=0.41", index = "https://test.pypi.org/simple" }]
+lint = [
+    { name = "pre-commit", specifier = ">=4.0.1" },
+    { name = "ruff", specifier = ">=0.8.0" },
+    { name = "tach", specifier = ">=0.23.0" },
+    { name = "validate-pyproject-schema-store", extras = ["all"], specifier = ">=2025.6.13" },
+]
+scripts = [
+    { name = "packaging" },
+    { name = "pyyaml", specifier = ">=6.0.1" },
+    { name = "typer", specifier = ">=0.12.3" },
+]
+test = [
+    { name = "coverage", extras = ["toml"], specifier = ">=7.6.1" },
+    { name = "hypothesis", specifier = ">=6.0.0" },
+    { name = "nbmake", specifier = ">=1.4.6" },
+    { name = "nox", specifier = ">=2025.2.9" },
+    { name = "pytest", specifier = ">=8.0.1" },
+    { name = "pytest-benchmark", specifier = ">=5.0.0" },
+    { name = "pytest-cache", specifier = ">=1.0" },
+    { name = "pytest-cov", specifier = ">=5.0.0" },
+    { name = "pytest-factoryboy", specifier = ">=2.6.1" },
+    { name = "pytest-instafail", specifier = ">=0.5.0" },
+    { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.5.0" },
+]
+typing = [
+    { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
+    { name = "types-decorator", specifier = ">=5.1.8" },
+    { name = "types-docutils", specifier = ">=0.21.0" },
+    { name = "types-pytz", specifier = ">=2024.2.0" },
+    { name = "types-pyyaml", specifier = ">=6.0.10" },
+    { name = "types-tabulate", specifier = ">=0.8.10" },
 ]
 
 [[package]]
@@ -1760,7 +1905,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", directory = "../gt4py" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1777,7 +1922,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", directory = "../gt4py" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1794,7 +1939,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", directory = "../gt4py" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1811,7 +1956,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", directory = "../gt4py" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1829,7 +1974,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", directory = "../gt4py" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1895,9 +2040,9 @@ requires-dist = [
     { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
-    { name = "gt4py", specifier = "==1.1.6" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", directory = "../gt4py" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", directory = "../gt4py" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", directory = "../gt4py" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1933,7 +2078,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", directory = "../gt4py" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1961,7 +2106,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", directory = "../gt4py" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1990,7 +2135,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", directory = "../gt4py" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2039,9 +2184,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", specifier = "==1.1.6" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", directory = "../gt4py" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", directory = "../gt4py" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", directory = "../gt4py" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
