@@ -12,17 +12,15 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
-from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
-    diagnose_pressure,
-)
+from icon4py.model.common.diagnostic_calculations import stencils as diagnostic_stencils
 from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import stencil_tests
 
 
 class TestDiagnosePressure(stencil_tests.StencilTest):
-    PROGRAM = diagnose_pressure
-    OUTPUTS = ("pressure", "pressure_ifc")
+    PROGRAM = diagnostic_stencils.diagnose_pressure
+    OUTPUTS = ("pressure", "pressure_at_half_levels")
 
     @staticmethod
     def reference(
@@ -32,24 +30,24 @@ class TestDiagnosePressure(stencil_tests.StencilTest):
         ddqz_z_full: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        pressure_ifc = np.zeros_like(virtual_temperature)
+        pressure_at_half_levels = np.zeros_like(virtual_temperature)
         pressure = np.zeros_like(virtual_temperature)
         ground_level = virtual_temperature.shape[1] - 1
-        pressure_ifc[:, ground_level] = surface_pressure * np.exp(
+        pressure_at_half_levels[:, ground_level] = surface_pressure * np.exp(
             -phy_const.GRAV_O_RD
             * ddqz_z_full[:, ground_level]
             / virtual_temperature[:, ground_level]
         )
-        pressure[:, ground_level] = np.sqrt(pressure_ifc[:, ground_level] * surface_pressure)
+        pressure[:, ground_level] = np.sqrt(pressure_at_half_levels[:, ground_level] * surface_pressure)
         for k in range(ground_level - 1, -1, -1):
-            pressure_ifc[:, k] = pressure_ifc[:, k + 1] * np.exp(
+            pressure_at_half_levels[:, k] = pressure_at_half_levels[:, k + 1] * np.exp(
                 -phy_const.GRAV_O_RD * ddqz_z_full[:, k] / virtual_temperature[:, k]
             )
-            pressure[:, k] = np.sqrt(pressure_ifc[:, k] * pressure_ifc[:, k + 1])
+            pressure[:, k] = np.sqrt(pressure_at_half_levels[:, k] * pressure_at_half_levels[:, k + 1])
 
         return dict(
             pressure=pressure,
-            pressure_ifc=pressure_ifc,
+            pressure_at_half_levels=pressure_at_half_levels,
         )
 
     @pytest.fixture
@@ -62,14 +60,14 @@ class TestDiagnosePressure(stencil_tests.StencilTest):
         )
         surface_pressure = data_alloc.random_field(grid, dims.CellDim, low=1.0, dtype=ta.wpfloat)
         pressure = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        pressure_ifc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        pressure_at_half_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             ddqz_z_full=ddqz_z_full,
             virtual_temperature=virtual_temperature,
             surface_pressure=surface_pressure,
             pressure=pressure,
-            pressure_ifc=pressure_ifc,
+            pressure_at_half_levels=pressure_at_half_levels,
             horizontal_start=gtx.int32(0),
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=gtx.int32(0),

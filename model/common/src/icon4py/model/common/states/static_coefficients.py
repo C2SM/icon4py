@@ -10,13 +10,11 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING
 
-import gt4py.next as gtx
-
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-
 
 if TYPE_CHECKING:
-    pass
+    import gt4py.next as gtx
+
+    from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
 @dataclasses.dataclass

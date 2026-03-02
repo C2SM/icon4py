@@ -8,7 +8,7 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import exp, sqrt, log, neighbor_sum
+from gt4py.next import exp, log, neighbor_sum, sqrt
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -16,12 +16,53 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     type_alias as ta,
 )
-from icon4py.model.common.dimension import Koff, E2C, E2CDim
-from icon4py.model.common.states import static_coefficients as static_coeff, tracer_state
+from icon4py.model.common.dimension import E2C, E2CDim, Koff
+from icon4py.model.common.states import tracer_state
 from icon4py.model.common.type_alias import wpfloat
 
 
 physics_constants: Final = phy_const.PhysicsConstants()
+
+
+@gtx.field_operator
+def _diagnose_surface_pressure(
+    exner: fa.CellKField[ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    ddqz_z_full: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    surface_pressure = physics_constants.p0ref * exp(
+        physics_constants.cpd_o_rd * log(exner(Koff[-3]))
+        + physics_constants.grav_o_rd
+        * (
+            ddqz_z_full(Koff[-1]) / virtual_temperature(Koff[-1])
+            + ddqz_z_full(Koff[-2]) / virtual_temperature(Koff[-2])
+            + 0.5 * ddqz_z_full(Koff[-3]) / virtual_temperature(Koff[-3])
+        )
+    )
+    return surface_pressure
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def diagnose_surface_pressure(
+    surface_pressure: fa.CellKField[ta.wpfloat],
+    exner: fa.CellKField[ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    ddqz_z_full: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _diagnose_surface_pressure(
+        exner,
+        virtual_temperature,
+        ddqz_z_full,
+        out=surface_pressure,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
 
 
 @gtx.scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
@@ -46,9 +87,9 @@ def _scan_pressure(
 
 @gtx.field_operator
 def _diagnose_pressure(
-    ddqz_z_full: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
     surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    ddqz_z_full: fa.CellKField[ta.wpfloat],
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     """
     Update pressure by assuming hydrostatic balance (dp/dz = -rho g = p g / Rd / Tv).
@@ -61,68 +102,29 @@ def _diagnose_pressure(
     Returns:
         pressure at full levels, pressure at half levels (excluding surface level)
     """
-    pressure, pressure_ifc, _ = _scan_pressure(ddqz_z_full, virtual_temperature, surface_pressure)
-    return pressure, pressure_ifc
+    pressure, pressure_at_half_levels, _ = _scan_pressure(
+        ddqz_z_full, virtual_temperature, surface_pressure
+    )
+    return pressure, pressure_at_half_levels
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def diagnose_pressure(
-    ddqz_z_full: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    surface_pressure: fa.CellField[ta.wpfloat],
     pressure: fa.CellKField[ta.wpfloat],
-    pressure_ifc: fa.CellKField[ta.wpfloat],
+    pressure_at_half_levels: fa.CellKField[ta.wpfloat],
+    surface_pressure: fa.CellField[ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    ddqz_z_full: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
     _diagnose_pressure(
-        ddqz_z_full,
-        virtual_temperature,
         surface_pressure,
-        out=(pressure, pressure_ifc),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _diagnose_surface_pressure(
-    exner: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    ddqz_z_full: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
-    surface_pressure = physics_constants.p0ref * exp(
-        physics_constants.cpd_o_rd * log(exner(Koff[-3]))
-        + physics_constants.grav_o_rd
-        * (
-            ddqz_z_full(Koff[-1]) / virtual_temperature(Koff[-1])
-            + ddqz_z_full(Koff[-2]) / virtual_temperature(Koff[-2])
-            + 0.5 * ddqz_z_full(Koff[-3]) / virtual_temperature(Koff[-3])
-        )
-    )
-    return surface_pressure
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def diagnose_surface_pressure(
-    exner: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    ddqz_z_full: fa.CellKField[ta.wpfloat],
-    surface_pressure: fa.CellKField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _diagnose_surface_pressure(
-        exner,
         virtual_temperature,
         ddqz_z_full,
-        out=surface_pressure,
+        out=(pressure, pressure_at_half_levels),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -177,11 +179,11 @@ def _diagnose_virtual_temperature_and_temperature_from_exner(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def diagnose_virtual_temperature_and_temperature_from_exner(
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    temperature: fa.CellKField[ta.wpfloat],
     tracers: tracer_state.TracerState,
     theta_v: fa.CellKField[ta.wpfloat],
     exner: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    temperature: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -283,7 +285,7 @@ def diagnose_exner_and_theta_v_from_virtual_temperature(
 
 
 @gtx.field_operator
-def _diagnose_exner_and_virtual_temperature(
+def _diagnose_virtual_temperature_and_exner(
     virtual_temperature: fa.CellKField[ta.wpfloat],
     exner: fa.CellKField[ta.wpfloat],
     tracers: tracer_state.TracerState,
@@ -297,7 +299,7 @@ def _diagnose_exner_and_virtual_temperature(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def diagnose_exner_and_virtual_temperature(
+def diagnose_virtual_temperature_and_exner(
     virtual_temperature: fa.CellKField[ta.wpfloat],
     exner: fa.CellKField[ta.wpfloat],
     tracers: tracer_state.TracerState,
@@ -307,7 +309,7 @@ def diagnose_exner_and_virtual_temperature(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _diagnose_exner_and_virtual_temperature(
+    _diagnose_virtual_temperature_and_exner(
         virtual_temperature,
         exner,
         tracers,
@@ -326,14 +328,12 @@ def _update_vn_from_u_v_tendencies(
     u_tendency: fa.CellKField[ta.wpfloat],
     v_tendency: fa.CellKField[ta.wpfloat],
     dt: ta.wpfloat,
-    coeff: static_coeff.StaticCoeff,
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],
+    primal_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
     new_vn = vn + dt * neighbor_sum(
-        coeff.c_lin_e
-        * (
-            u_tendency(E2C) * coeff.primal_normal_cell_x
-            + v_tendency(E2C) * coeff.primal_normal_cell_y
-        ),
+        c_lin_e * (u_tendency(E2C) * primal_normal_cell_x + v_tendency(E2C) * primal_normal_cell_y),
         axis=E2CDim,
     )
     return new_vn
@@ -345,7 +345,9 @@ def update_vn_from_u_v_tendencies(
     u_tendency: fa.CellKField[ta.wpfloat],
     v_tendency: fa.CellKField[ta.wpfloat],
     dt: ta.wpfloat,
-    coeff: static_coeff.StaticCoeff,
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], ta.wpfloat],
+    primal_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    primal_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -356,7 +358,9 @@ def update_vn_from_u_v_tendencies(
         u_tendency,
         v_tendency,
         dt,
-        coeff,
+        c_lin_e,
+        primal_normal_cell_x,
+        primal_normal_cell_y,
         out=vn,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -367,7 +371,6 @@ def update_vn_from_u_v_tendencies(
 
 @gtx.field_operator
 def _calculate_virtual_temperature_tendency(
-    dtime: ta.wpfloat,
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
     qi: fa.CellKField[ta.wpfloat],
@@ -376,6 +379,7 @@ def _calculate_virtual_temperature_tendency(
     qg: fa.CellKField[ta.wpfloat],
     temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     """
     Update virtual temperature tendency.
@@ -404,7 +408,7 @@ def _calculate_virtual_temperature_tendency(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def calculate_virtual_temperature_tendency(
-    dtime: ta.wpfloat,
+    virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
     qi: fa.CellKField[ta.wpfloat],
@@ -413,14 +417,13 @@ def calculate_virtual_temperature_tendency(
     qg: fa.CellKField[ta.wpfloat],
     temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
-    virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
     _calculate_virtual_temperature_tendency(
-        dtime,
         qv,
         qc,
         qi,
@@ -429,6 +432,7 @@ def calculate_virtual_temperature_tendency(
         qg,
         temperature,
         virtual_temperature,
+        dtime,
         out=virtual_temperature_tendency,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -439,10 +443,10 @@ def calculate_virtual_temperature_tendency(
 
 @gtx.field_operator
 def _calculate_exner_tendency(
-    dtime: ta.wpfloat,
     virtual_temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
     exner: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     """
     Update exner tendency.
@@ -466,21 +470,21 @@ def _calculate_exner_tendency(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def calculate_exner_tendency(
-    dtime: ta.wpfloat,
+    exner_tendency: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
     exner: fa.CellKField[ta.wpfloat],
-    exner_tendency: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
     _calculate_exner_tendency(
-        dtime,
         virtual_temperature,
         virtual_temperature_tendency,
         exner,
+        dtime,
         out=exner_tendency,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -491,9 +495,9 @@ def calculate_exner_tendency(
 
 @gtx.field_operator
 def _calculate_cell_kdim_field_tendency(
-    dtime: ta.wpfloat,
     old_field: fa.CellKField[ta.wpfloat],
     new_field: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:
     """
     Update tendency of Cell-K Dim field.
@@ -511,19 +515,19 @@ def _calculate_cell_kdim_field_tendency(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def calculate_cell_kdim_field_tendency(
-    dtime: ta.wpfloat,
+    tendency: fa.CellKField[ta.wpfloat],
     old_field: fa.CellKField[ta.wpfloat],
     new_field: fa.CellKField[ta.wpfloat],
-    tendency: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
     _calculate_cell_kdim_field_tendency(
-        dtime,
         old_field,
         new_field,
+        dtime,
         out=tendency,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

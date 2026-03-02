@@ -32,6 +32,29 @@ class TracerState:
     #: specific graupel content [kg/kg] at cell center
     qg: fa.CellKField[ta.wpfloat]
 
+    #: number concentration of cloud droplets [/m3] at cell center
+    qnc: fa.CellKField[ta.wpfloat]
+
+
+@dataclasses.dataclass
+class TracerStateTendency:
+    """
+    Class that contains the tendency of the tracer state which includes hydrometeors and aerosols.
+    """
+
+    #: specific humidity [kg/kg] at cell center
+    qv_tendency: fa.CellKField[ta.wpfloat]
+    #: specific cloud water content [kg/kg] at cell center
+    qc_tendency: fa.CellKField[ta.wpfloat]
+    #: specific rain content [kg/kg] at cell center
+    qr_tendency: fa.CellKField[ta.wpfloat]
+    #: specific cloud ice content [kg/kg] at cell center
+    qi_tendency: fa.CellKField[ta.wpfloat]
+    #: specific snow content [kg/kg] at cell center
+    qs_tendency: fa.CellKField[ta.wpfloat]
+    #: specific graupel content [kg/kg] at cell center
+    qg_tendency: fa.CellKField[ta.wpfloat]
+
 
 @dataclasses.dataclass
 class TracerStateScalar:
