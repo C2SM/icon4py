@@ -47,16 +47,19 @@ RBF_TOLERANCES = {
         definitions.Experiments.EXCLAIM_APE.name: 3.1e-9,
         definitions.Experiments.MCH_CH_R04B09.name: 4e-2,
         definitions.Experiments.GAUSS3D.name: 1e-14,
+        definitions.Experiments.WEISMAN_KLEMP_TORUS.name: 1e-14,
     },
     dims.EdgeDim: {
         definitions.Experiments.EXCLAIM_APE.name: 8e-14,
         definitions.Experiments.MCH_CH_R04B09.name: 2e-9,
         definitions.Experiments.GAUSS3D.name: 0,
+        definitions.Experiments.WEISMAN_KLEMP_TORUS.name: 0,
     },
     dims.VertexDim: {
         definitions.Experiments.EXCLAIM_APE.name: 3e-10,
         definitions.Experiments.MCH_CH_R04B09.name: 3e-3,
         definitions.Experiments.GAUSS3D.name: 1e-15,
+        definitions.Experiments.WEISMAN_KLEMP_TORUS.name: 1e-15,
     },
 }
 
