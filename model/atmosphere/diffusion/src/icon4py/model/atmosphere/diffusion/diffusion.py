@@ -167,7 +167,7 @@ class DiffusionConfig:
         hdiff_smag_w: bool = False,
         type_vn_diffu: int | ValidSmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
         smag_3d: bool = False,
-        type_t_diffu: int | ValidTemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENOUS,
+        type_t_diffu: int | ValidTemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENEOUS,
         hdiff_efdt_ratio: float = 36.0,
         hdiff_w_efdt_ratio: float = 15.0,
         smagorinski_scaling_factor: float = 0.015,
