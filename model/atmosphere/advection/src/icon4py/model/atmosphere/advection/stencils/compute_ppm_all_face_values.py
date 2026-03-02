@@ -40,7 +40,7 @@ def _compute_ppm_all_face_values(
 
     p_face = concat_where(dims.KDim == elevp1, p_cc(Koff[-1]), p_face)
 
-    return p_face
+    return p_face  # type: ignore[return-value] # concat_where leads to static type-erasure
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
