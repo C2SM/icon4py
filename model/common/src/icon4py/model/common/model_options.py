@@ -92,7 +92,7 @@ def customize_backend(
     In case a certain option is already provided in the 'BackendDesriptor', the customization
     should not override it. Any option that doesn't apply to the backend factory should be ignored.
 
-    Note: the current customization mechanism is an adhoc solution that needs better design,
+    Note: The current customization mechanism is an adhoc solution that needs better design,
     e.g. program specific options should not be gathered in this general module.
     """
 
