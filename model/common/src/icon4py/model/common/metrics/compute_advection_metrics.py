@@ -12,11 +12,11 @@ from gt4py import next as gtx
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
-@gtx.field_operator  # type: ignore[call-overload] # see https://github.com/GridTools/gt4py/issues/2496
+@gtx.field_operator
 def _compute_advection_deepatmo_fields(
     height_u: fa.KField[ta.wpfloat],
     height_l: fa.KField[ta.wpfloat],
-    grid_sphere_radius: float,
+    grid_sphere_radius: ta.wpfloat,
 ) -> tuple[fa.KField[ta.wpfloat], fa.KField[ta.wpfloat], fa.KField[ta.wpfloat]]:
     """
     Compute 'deepatmo_divh', 'deepatmo_divzL', 'deepatmo_divzU' from 'vct_a' and 'grid_sphere_radius'.
@@ -30,7 +30,7 @@ def _compute_advection_deepatmo_fields(
     - deepatmo_divzL
     - deepatmo_divzU
     """
-    height = 0.5 * (height_l + height_u)
+    height = ta.wpfloat(0.5) * (height_l + height_u)
     radial_distance = height + grid_sphere_radius
     radial_distance_l = grid_sphere_radius + height_l
     radial_distance_u = grid_sphere_radius + height_u

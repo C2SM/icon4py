@@ -190,7 +190,7 @@ def index_field(
     grid: grid_base.Grid,
     dim: gtx.Dimension,
     extend: dict[gtx.Dimension, int] | None = None,
-    dtype: npt.DTypeLike = gtx.int32,  # type: ignore [attr-defined]
+    dtype: npt.DTypeLike = gtx.int32,
     allocator: gtx_typing.Allocator | None = None,
 ) -> gtx.Field:
     xp = import_array_ns(allocator)

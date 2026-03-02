@@ -227,11 +227,11 @@ module = [
   "icon4py.model.atmosphere.advection.advection"
 ]
 
-[[tool.mypy.overrides]]
-disable_error_code = ["valid-type"]  # complains about dims not being valid types
-module = [
-  "icon4py.model.atmosphere.advection.advection_states"
-]
+# [[tool.mypy.overrides]]
+# disable_error_code = ["valid-type"]  # complains about dims not being valid types
+# module = [
+#   "icon4py.model.atmosphere.advection.advection_states"
+# ]
 
 [[tool.mypy.overrides]]
 disable_error_code = [
