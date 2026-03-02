@@ -77,6 +77,22 @@ def array_ns(try_cupy: bool) -> ModuleType:
     return np
 
 
+def array_ns_from_array(array: NDArray) -> ModuleType:
+    """
+    Returns the array namespace for a given array.
+    """
+    if hasattr(array, "__array_namespace__"):
+        return array.__array_namespace__()
+    elif isinstance(array, np.ndarray):
+        return np
+    elif isinstance(array, xp.ndarray):
+        return xp
+    else:
+        raise RuntimeError(
+            f"Unsupported array type '{type(array)}'. Cannot detect the array namespace."
+        )
+
+
 def import_array_ns(allocator: gtx_typing.Allocator | None) -> ModuleType:
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
     return array_ns(device_utils.is_cupy_device(allocator))
