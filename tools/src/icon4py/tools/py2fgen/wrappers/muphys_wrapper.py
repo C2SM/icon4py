@@ -83,6 +83,7 @@ def graupel_run(
         pre=pre_gsp(dims.KDim - (ke - 1)),
     )
 
+
 @icon4py_export.export
 def graupel_finalize():
     # The atexit function is not called when embedding cpython into another application
