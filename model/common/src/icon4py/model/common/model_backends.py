@@ -9,12 +9,11 @@
 """
 This module defines the available backends for ICON4Py and provides utilities to work with them.
 
-Backends can either be concrete GT4Py backends or 'BackendLike's, which are either concrete backends
-or descriptions of how to construct a concrete backend ('BackendDescriptor' or 'DeviceType')
-for a certain program.
-
-If a 'BackendLike' is a 'DeviceType', the default backend for the device will be constructed.
-If it is a 'BackendDescriptor', the backend will be constructed according to the provided configuration parameters.
+Backends ('BackendLike') are one of the following
+- concrete GT4Py backends (instances of 'gtx_typing.Backend')
+- 'None', which indicates embedded execution
+- 'BackendDescriptor's, which are dictionaries containing the configuration parameters to construct a concrete backend
+- 'DeviceType's, which indicate the target device for which the default backend should be constructed.
 See 'model_options.customize_backend()' for details.
 
 Note: A concrete GT4Py backend (an instance of 'gtx_typing.Backend') is also a 'gtx_typing.Allocator' as it implements
