@@ -13,7 +13,7 @@ from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
-from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
+from icon4py.model.testing import definitions, grid_utils, serialbox, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
@@ -28,11 +28,11 @@ from icon4py.model.testing.fixtures.datatest import (
 @pytest.mark.parametrize("experiment, rank", [(definitions.Experiments.JW, 0)])
 @pytest.mark.datatest
 def test_standalone_driver_initial_condition(
-    backend_like,
-    backend,
+    backend_like: model_backends.BackendLike,
+    backend: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     experiment: definitions.Experiments,
-    data_provider,
+    data_provider: serialbox.IconSerialDataProvider,
     rank: int,
 ) -> None:
     backend_name = None

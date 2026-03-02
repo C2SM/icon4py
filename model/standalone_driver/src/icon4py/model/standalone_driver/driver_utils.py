@@ -60,7 +60,7 @@ _LOGGING_LEVELS: dict[str, int] = {
 
 
 def create_grid_manager(
-    grid_file_path: pathlib.Path,
+    grid_file_path: str | pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.Allocator,
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
@@ -577,12 +577,15 @@ def configure_logging(
     display_icon4py_logo_in_log_file()
 
 
-def get_backend_from_name(backend_name: str) -> model_backends.BackendLike:
+def get_backend_from_name(
+    backend_name: str | model_backends.BackendLike | None,
+) -> model_backends.BackendLike:
     if backend_name not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {backend_name}. \n"
             f"Available backends are {', '.join([*model_backends.BACKENDS.keys()])}"
         )
+    assert isinstance(backend_name, str)
     backend = model_backends.BACKENDS[backend_name]
     log.info(f"Backend name used for the model: {backend_name}")
     log.info(f"BackendLike derived from the backend name: {backend}")

@@ -25,12 +25,12 @@ from ..fixtures import *  # noqa: F403
 )
 def test_standalone_driver(
     backend_like: model_backends.BackendLike,
-    backend,
+    backend: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     experiment: definitions.Experiments,
-    substep_exit,
-    step_date_exit,
+    substep_exit: int,
+    step_date_exit: str,
     timeloop_diffusion_savepoint_exit: sb.IconDiffusionExitSavepoint,
 ) -> None:
     """

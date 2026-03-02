@@ -21,7 +21,12 @@ import numpy as np
 
 import icon4py.model.common.states.metadata as data
 import icon4py.model.common.type_alias as ta
-from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common import (
+    dimension as dims,
+    exceptions,
+    field_type_aliases as fa,
+    model_backends,
+)
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -529,7 +534,8 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
 
 
 def get_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, allocator: gtx_typing.Allocator
+    vertical_config: VerticalGridConfig,
+    allocator: gtx_typing.Allocator | model_backends.BackendLike,
 ) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.

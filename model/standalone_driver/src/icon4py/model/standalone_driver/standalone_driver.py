@@ -551,9 +551,9 @@ def _read_config(
 
 def initialize_driver(
     output_path: pathlib.Path,
-    grid_file_path: pathlib.Path,
+    grid_file_path: pathlib.Path | str,
     log_level: str,
-    backend_name: str,
+    backend_name: str | model_backends.BackendLike | None,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:

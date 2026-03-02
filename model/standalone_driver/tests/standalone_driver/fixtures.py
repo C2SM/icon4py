@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
 
+from icon4py.model.testing import serialbox
 from icon4py.model.testing.fixtures import (
     damping_height,
     data_provider,
@@ -34,14 +35,15 @@ from icon4py.model.testing.fixtures import (
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
 )
+from icon4py.model.testing.serialbox import IconDiffusionExitSavepoint
 
 
 @pytest.fixture
 def timeloop_diffusion_savepoint_exit(
-    data_provider,  # imported fixtures data_provider`
-    step_date_exit,  # imported fixtures step_date_exit`
-    timeloop_diffusion_linit_exit,
-):
+    data_provider: serialbox.IconSerialDataProvider,  # imported fixtures data_provider`
+    step_date_exit: str,  # imported fixtures step_date_exit`
+    timeloop_diffusion_linit_exit: bool,
+) -> IconDiffusionExitSavepoint:
     """
     Load data from ICON savepoint at exist of diffusion module.
 

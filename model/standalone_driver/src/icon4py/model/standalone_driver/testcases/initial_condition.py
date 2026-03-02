@@ -54,10 +54,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx.typing.Backend | None,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
+    lowest_layer_thickness: float,
+    model_top_height: float,
+    stretch_factor: float,
+    damping_height: float,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
@@ -268,15 +268,15 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid,
-        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL),
+        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).asnumpy(),
         inv_dual_edge_length=geometry_field_source.get(
             f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
-        ),
-        edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE),
-        primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH),
-        cell_area=geometry_field_source.get(geometry_meta.CELL_AREA),
+        ).asnumpy(),
+        edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).asnumpy(),
+        primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).asnumpy(),
+        cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).asnumpy(),
         vn=prognostic_state_now.vn.ndarray,
-        vct_b=vct_b,
+        vct_b=vct_b.asnumpy(),
         nlev=num_levels,
     )
     log.info("U2vn computation completed.")
