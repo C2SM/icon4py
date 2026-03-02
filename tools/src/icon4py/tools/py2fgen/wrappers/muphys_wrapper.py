@@ -67,6 +67,11 @@ def graupel_run(
 
     q = graupel.Q(qv, qc, qr, qs, qi, qg)
 
+    # The precipitation fields (pr, ps, pi, pg, pre) are defined as 1D-fields with
+    # horizontal domain, in the driver, because they represent precipitation at the
+    # surface level. The graupel program requires a 2D-domain, with a single vertical
+    # level corresponding to the surface level. The vertcal shift below is to set
+    # the field origin at the surface level, as required by the program.
     graupel_program(
         dz=dz,
         te=t,
