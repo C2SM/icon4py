@@ -68,10 +68,7 @@ def test_custom_backend_device() -> None:
     ],
 )
 def test_setup_program_defaults(
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend: model_backends.BackendLike,
 ) -> None:
     testee = setup_program(backend=backend, program=program_return_field)
     expected_backend = model_backends.make_custom_dace_backend(device=model_backends.CPU)
@@ -109,10 +106,7 @@ def test_setup_program_defaults(
     ],
 )
 def test_setup_program_specify_inputs(
-    backend_params: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend_params: model_backends.BackendLike,
     expected_backend: gtx_typing.Backend | None,
 ) -> None:
     testee = setup_program(backend=backend_params, program=program_return_field)
