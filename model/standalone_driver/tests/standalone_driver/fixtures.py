@@ -39,7 +39,7 @@ from icon4py.model.testing.serialbox import IconDiffusionExitSavepoint
 
 
 @pytest.fixture
-def timeloop_diffusion_savepoint_exit(
+def timeloop_diffusion_savepoint_exit_standalone(
     data_provider: serialbox.IconSerialDataProvider,  # imported fixtures data_provider`
     step_date_exit: str,  # imported fixtures step_date_exit`
     timeloop_diffusion_linit_exit: bool,

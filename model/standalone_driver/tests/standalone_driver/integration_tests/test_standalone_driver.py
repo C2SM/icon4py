@@ -31,7 +31,7 @@ def test_standalone_driver(
     experiment: definitions.Experiments,
     substep_exit: int,
     step_date_exit: str,
-    timeloop_diffusion_savepoint_exit: sb.IconDiffusionExitSavepoint,
+    timeloop_diffusion_savepoint_exit_standalone: sb.IconDiffusionExitSavepoint,
 ) -> None:
     """
     TODO(anyone): Modify this test for scientific validation after IO is ready.
@@ -52,12 +52,12 @@ def test_standalone_driver(
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = timeloop_diffusion_savepoint_exit.exner()  # savepoint_nonhydro_exit.exner_new() #
+    exner_sp = timeloop_diffusion_savepoint_exit_standalone.exner()  # savepoint_nonhydro_exit.exner_new() #
     theta_sp = (
-        timeloop_diffusion_savepoint_exit.theta_v()
+        timeloop_diffusion_savepoint_exit_standalone.theta_v()
     )  # savepoint_nonhydro_exit.theta_v_new() #
-    vn_sp = timeloop_diffusion_savepoint_exit.vn()  # savepoint_nonhydro_exit.vn_new() #
-    w_sp = timeloop_diffusion_savepoint_exit.w()  # savepoint_nonhydro_exit.w_new() #
+    vn_sp = timeloop_diffusion_savepoint_exit_standalone.vn()  # savepoint_nonhydro_exit.vn_new() #
+    w_sp = timeloop_diffusion_savepoint_exit_standalone.w()  # savepoint_nonhydro_exit.w_new() #
 
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
