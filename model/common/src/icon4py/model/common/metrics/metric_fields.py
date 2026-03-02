@@ -878,7 +878,7 @@ def compute_max_nbhgt(
     max_nbhgt: fa.CellField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     """
     Compute max_nbhgt.
 

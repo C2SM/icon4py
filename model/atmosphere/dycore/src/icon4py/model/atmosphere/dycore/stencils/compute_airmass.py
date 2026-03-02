@@ -30,7 +30,7 @@ def compute_airmass(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_airmass(
         rho_in,
         ddqz_z_full_in,

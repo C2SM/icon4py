@@ -532,5 +532,5 @@ def vel_scale_factor_snow(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     qs: fa.CellKField[ta.wpfloat],  # Specific mass
     scale_factor: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _vel_scale_factor_snow(xrho, rho, t, qs, out=scale_factor)

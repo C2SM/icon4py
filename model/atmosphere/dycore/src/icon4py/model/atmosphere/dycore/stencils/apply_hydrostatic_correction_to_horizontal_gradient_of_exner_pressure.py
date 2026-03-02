@@ -34,7 +34,7 @@ def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
         ipeidx_dsl,
         pg_exdist,

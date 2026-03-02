@@ -81,7 +81,7 @@ def apply_diffusion_to_theta_and_exner(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_diffusion_to_theta_and_exner(
         kh_smag_e,
         inv_dual_edge_length,

@@ -37,7 +37,7 @@ def foo(
     horizontal_end,
     vertical_start,
     vertical_end,
-):
+) -> None:
     _foo(
         input_var,
         k_field,
@@ -76,7 +76,7 @@ def foo(
     horizontal_end,
     vertical_start,
     vertical_end,
-):
+) -> None:
     _compute_var(
         input_var,
         out=(half_level_var, full_level_var),

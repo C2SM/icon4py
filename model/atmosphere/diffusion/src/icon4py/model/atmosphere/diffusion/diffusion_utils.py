@@ -176,7 +176,7 @@ def init_nabla2_factor_in_upper_damping_zone(
     heights_1: float,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Calculate diff_multfac_n2w.
 

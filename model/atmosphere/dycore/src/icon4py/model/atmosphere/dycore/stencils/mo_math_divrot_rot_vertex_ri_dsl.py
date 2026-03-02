@@ -31,7 +31,7 @@ def mo_math_divrot_rot_vertex_ri_dsl(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _mo_math_divrot_rot_vertex_ri_dsl(
         vec_e,
         geofac_rot,
