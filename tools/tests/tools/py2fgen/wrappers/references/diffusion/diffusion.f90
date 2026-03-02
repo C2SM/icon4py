@@ -150,6 +150,7 @@ module diffusion
                                       diffusion_type, &
                                       hdiff_w, &
                                       hdiff_vn, &
+                                      hdiff_smag_w, &
                                       zdiffu_t, &
                                       type_t_diffu, &
                                       type_vn_diffu, &
@@ -260,6 +261,8 @@ module diffusion
          logical(c_int), value, target :: hdiff_w
 
          logical(c_int), value, target :: hdiff_vn
+
+         logical(c_int), value, target :: hdiff_smag_w
 
          logical(c_int), value, target :: zdiffu_t
 
@@ -502,6 +505,7 @@ contains
                              diffusion_type, &
                              hdiff_w, &
                              hdiff_vn, &
+                             hdiff_smag_w, &
                              zdiffu_t, &
                              type_t_diffu, &
                              type_vn_diffu, &
@@ -553,6 +557,8 @@ contains
       logical(c_int), value, target :: hdiff_w
 
       logical(c_int), value, target :: hdiff_vn
+
+      logical(c_int), value, target :: hdiff_smag_w
 
       logical(c_int), value, target :: zdiffu_t
 
@@ -782,6 +788,7 @@ contains
                                   diffusion_type=diffusion_type, &
                                   hdiff_w=hdiff_w, &
                                   hdiff_vn=hdiff_vn, &
+                                  hdiff_smag_w=hdiff_smag_w, &
                                   zdiffu_t=zdiffu_t, &
                                   type_t_diffu=type_t_diffu, &
                                   type_vn_diffu=type_vn_diffu, &
