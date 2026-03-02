@@ -24,7 +24,7 @@ from ..fixtures import *  # noqa: F403
     [(definitions.Experiments.JW, 2, "2008-09-01T00:05:00.000", False)],
 )
 def test_standalone_driver(
-    backend_like,
+    backend_like: model_backends.BackendLike,
     backend,
     tmp_path: pathlib.Path,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
@@ -37,7 +37,7 @@ def test_standalone_driver(
     TODO(anyone): Modify this test for scientific validation after IO is ready.
     """
 
-    backend_name = None
+    backend_name = "embedded"
     for k, v in model_backends.BACKENDS.items():
         if backend_like == v:
             backend_name = k
@@ -48,7 +48,7 @@ def test_standalone_driver(
     ds = main.main(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_name,
-        output_path=str(output_path),
+        output_path=output_path,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()

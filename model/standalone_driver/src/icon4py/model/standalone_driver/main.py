@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
+import pathlib
 from typing import Annotated
 
 import typer
@@ -30,8 +31,8 @@ def main(
         ),
     ],
     output_path: Annotated[
-        str, typer.Option(help="Folder path that holds the output and log files.")
-    ] = "./output",
+        pathlib.Path, typer.Option(help="Folder path that holds the output and log files.")
+    ] = pathlib.Path("./output"),
     log_level: Annotated[
         str,
         typer.Option(
@@ -81,10 +82,5 @@ def main(
     return ds
 
 
-def click():
-    """Entry point for the standalone driver CLI."""
-    typer.run(main)
-
-
 if __name__ == "__main__":
-    click()
+    typer.run(main)
