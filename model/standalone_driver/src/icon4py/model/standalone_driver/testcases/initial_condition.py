@@ -268,10 +268,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid,
-        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).asnumpy(),
+        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL),
         inv_dual_edge_length=geometry_field_source.get(
             f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
-        ).asnumpy(),
+        ),
         edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).asnumpy(),
         primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).asnumpy(),
         cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).asnumpy(),
