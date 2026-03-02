@@ -37,14 +37,15 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_velocity_quanti
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import compute_theta_and_exner
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
 )
-from icon4py.model.atmosphere.dycore.stencils.update_theta_v import update_theta_v
+from icon4py.model.atmosphere.dycore.stencils.update_theta_and_exner_in_halo import (
+    update_theta_and_exner_in_halo,
+)
 from icon4py.model.atmosphere.dycore.velocity_advection import VelocityAdvection
 from icon4py.model.common import (
     constants,
@@ -159,6 +160,7 @@ class NonHydrostaticConfig:
         divdamp_trans_start: float = 12500.0,
         divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
+        deepatmos_mode: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
         _nudge_max_coeff: float | None = None,  # default is set in __init__
@@ -172,7 +174,7 @@ class NonHydrostaticConfig:
         fourth_order_divdamp_z3: float = 60000.0,
         fourth_order_divdamp_z4: float = 80000.0,
     ):
-        # parameters from namelist diffusion_nml
+        # parameters from namelist nonhydrostatic_nml
         self.itime_scheme: int = itime_scheme
 
         #: Miura scheme for advection of rho and theta
@@ -280,6 +282,10 @@ class NonHydrostaticConfig:
         #: use vertical nesting
         self.l_vert_nested: bool = l_vert_nested
 
+        #: from dynamics_nml.f90
+        #: deep atmosphere mode, originally defined as ldeepatmo in ICON
+        self.deepatmos_mode: bool = deepatmos_mode
+
         #: from mo_initicon_nml.f90/ mo_initicon_config.f90
         #: whether IAU is active at current time
         self.is_iau_active: bool = is_iau_active
@@ -294,6 +300,9 @@ class NonHydrostaticConfig:
         if self.l_vert_nested:
             raise NotImplementedError("Vertical nesting support not implemented")
 
+        if self.deepatmos_mode:
+            raise NotImplementedError("Deep atmosphere mode not implemented")
+
         if self.igradp_method != dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             raise NotImplementedError("igradp_method can only be 3")
 
@@ -306,6 +315,11 @@ class NonHydrostaticConfig:
         if self.divdamp_type == dycore_states.DivergenceDampingType.TWO_DIMENSIONAL:
             raise NotImplementedError(
                 "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
+            )
+
+        if self.rayleigh_type != constants.RayleighType.KLEMP:
+            raise NotImplementedError(
+                "Only Klemp type of the Rayleigh damping (nudging vertical wind towards zero) is implemented."
             )
 
 
@@ -370,25 +384,7 @@ class SolveNonhydro:
         self._cell_params = cell_geometry
         self._determine_local_domains()
 
-        self._compute_theta_and_exner = setup_program(
-            backend=backend,
-            program=compute_theta_and_exner,
-            constant_args={
-                "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
-                "rd_o_cvd": constants.RD_O_CVD,
-                "rd_o_p0ref": constants.RD_O_P0REF,
-            },
-            horizontal_sizes={
-                "horizontal_start": self._start_cell_halo,
-                "horizontal_end": self._end_cell_end,
-            },
-            vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(self._grid.num_levels),
-            },
-        )
-
-        self._compute_exner_from_rhotheta = setup_program(
+        self._compute_exner_from_rhotheta_in_lateral_boundary = setup_program(
             backend=backend,
             program=compute_exner_from_rhotheta,
             constant_args={
@@ -405,9 +401,9 @@ class SolveNonhydro:
             },
         )
 
-        self._update_theta_v = setup_program(
+        self._update_theta_and_exner_in_halo = setup_program(
             backend=backend,
-            program=update_theta_v,
+            program=update_theta_and_exner_in_halo,
             constant_args={
                 "mask_prog_halo_c": self._metric_state_nonhydro.mask_prog_halo_c,
             },
@@ -1062,23 +1058,18 @@ class SolveNonhydro:
             at_last_substep=at_last_substep,
         )
         if self._grid.limited_area:
-            self._compute_theta_and_exner(
+            self._compute_exner_from_rhotheta_in_lateral_boundary(
                 rho=prognostic_states.next.rho,
                 theta_v=prognostic_states.next.theta_v,
                 exner=prognostic_states.next.exner,
             )
-            self._compute_exner_from_rhotheta(
-                rho=prognostic_states.next.rho,
-                theta_v=prognostic_states.next.theta_v,
-                exner=prognostic_states.next.exner,
-            )
-        self._update_theta_v(
+        self._update_theta_and_exner_in_halo(
             rho_now=prognostic_states.current.rho,
-            theta_v_now=prognostic_states.current.theta_v,
-            exner_new=prognostic_states.next.exner,
-            exner_now=prognostic_states.current.exner,
             rho_new=prognostic_states.next.rho,
+            theta_v_now=prognostic_states.current.theta_v,
             theta_v_new=prognostic_states.next.theta_v,
+            exner_now=prognostic_states.current.exner,
+            exner_new=prognostic_states.next.exner,
         )
 
     # flake8: noqa: C901
