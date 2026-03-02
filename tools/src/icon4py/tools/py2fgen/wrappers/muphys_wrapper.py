@@ -8,6 +8,7 @@
 
 import numpy as np
 from gt4py import next as gtx
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import utils as muphys_utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
@@ -81,3 +82,9 @@ def graupel_run(
         pg=prg_gsp(dims.KDim - (ke - 1)),
         pre=pre_gsp(dims.KDim - (ke - 1)),
     )
+
+@icon4py_export.export
+def graupel_finalize():
+    # The atexit function is not called when embedding cpython into another application
+    # with cffi, so we call it explicitly here to dump the metrics.
+    gtx_metrics._dump_metrics_at_exit()
