@@ -42,7 +42,7 @@ class TestSaturationAdjustment(StencilTest):
             qce_out=np.full(te.shape, 9.5724552280369163e-007),
         )
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base_grid.Grid) -> dict:
         return dict(
             te=data_alloc.constant_field(

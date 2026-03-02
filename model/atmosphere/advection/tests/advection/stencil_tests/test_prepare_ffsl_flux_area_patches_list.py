@@ -1470,7 +1470,7 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
             dreg_patch2_4_lat_vmask=dreg_patch2_4_lat_vmask,
         )
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid) -> dict:
         famask_int = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

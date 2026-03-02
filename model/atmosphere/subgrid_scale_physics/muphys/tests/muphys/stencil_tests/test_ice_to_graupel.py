@@ -31,7 +31,7 @@ class TestIceToGraupel(StencilTest):
     ) -> dict:
         return dict(aggregation=np.full(rho.shape, 7.1049436957697864e-19))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             rho=data_alloc.constant_field(grid, 1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),

@@ -58,7 +58,7 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
         vn = apply_4th_order_divergence_damping_numpy(scal_divdamp, z_graddiv2_vn, vn)
         return dict(vn=vn)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim)
         z_graddiv2_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

@@ -92,7 +92,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
             z_th_ddz_exner_c=z_th_ddz_exner_c,
         )
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

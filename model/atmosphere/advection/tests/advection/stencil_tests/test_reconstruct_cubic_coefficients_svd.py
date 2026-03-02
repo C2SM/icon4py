@@ -304,7 +304,7 @@ class TestReconstructCubicCoefficientsSvd(stencil_tests.StencilTest):
             p_coeff_10_dsl=p_coeff_10_dsl,
         )
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         lsq_pseudoinv_1_field = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)

@@ -66,7 +66,7 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest
         )
         return dict(rho_ic=rho_ic, z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         rho = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

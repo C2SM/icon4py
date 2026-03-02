@@ -23,7 +23,7 @@ class TestQsatRho(StencilTest):
     def reference(grid, rho: np.ndarray, **kwargs) -> dict:
         return dict(pressure=np.full(rho.shape, 0.0038828182695875113))
 
-    @pytest.fixture
+    @pytest.fixture(scope="class")
     def input_data(self, grid):
         return dict(
             rho=data_alloc.constant_field(grid, 1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
