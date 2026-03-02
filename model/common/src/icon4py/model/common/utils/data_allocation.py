@@ -78,12 +78,19 @@ def array_ns(try_cupy: bool) -> ModuleType:
 
 
 def array_ns_from_array(array: NDArray) -> ModuleType:
-    if isinstance(array, np.ndarray):
-        import numpy as xp
+    """
+    Returns the array namespace for a given array.
+    """
+    if hasattr(array, "__array_namespace__"):
+        return array.__array_namespace__()
+    elif isinstance(array, np.ndarray):
+        return np
+    elif isinstance(array, xp.ndarray):
+        return xp
     else:
-        import cupy as xp  # type: ignore[no-redef]
-
-    return xp
+        raise RuntimeError(
+            f"Unsupported array type '{type(array)}'. Cannot detect the array namespace."
+        )
 
 
 def import_array_ns(allocator: gtx_typing.Allocator | None) -> ModuleType:
