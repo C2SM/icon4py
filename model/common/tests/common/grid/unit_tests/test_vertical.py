@@ -400,6 +400,7 @@ def test_compute_vertical_coordinate(
     )
     assert vertical_geometry.nflatlev == grid_savepoint.nflatlev()
 
+    topography = None
     if experiment in (definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.GAUSS3D):
         topography = topography_savepoint.topo_c()
     elif experiment == definitions.Experiments.EXCLAIM_APE:
@@ -408,6 +409,9 @@ def test_compute_vertical_coordinate(
         )
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()
+
+    assert cell_geometry.area is not None
+    assert topography is not None
 
     vertical_coordinates_on_half_levels = v_grid.compute_vertical_coordinate(
         vct_a=vct_a.ndarray,
