@@ -147,7 +147,7 @@ def solve_nh_init(
             allocator=model_backends.get_allocator(actual_backend),
         )
     else:
-        pg_exdist_dsl = wrapper_common.list2field(
+        pg_exdist_dsl = data_alloc.list2field(
             domain=domain,
             values=pg_exdist,
             indices=(
@@ -220,12 +220,12 @@ def solve_nh_init(
             dims.KDim: (nlev - k, nlev),
         }
     )
-    wgtfacq_c = wrapper_common.kflip_wgtfacq(
+    wgtfacq_c = data_alloc.kflip_wgtfacq(
         arr=wgtfacq_c.ndarray,
         domain=cell_kflip_domain,
         allocator=model_backends.get_allocator(actual_backend),
     )
-    wgtfacq_e = wrapper_common.kflip_wgtfacq(
+    wgtfacq_e = data_alloc.kflip_wgtfacq(
         arr=wgtfacq_e.ndarray,
         domain=edge_kflip_domain,
         allocator=model_backends.get_allocator(actual_backend),

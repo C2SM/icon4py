@@ -22,6 +22,7 @@ from collections.abc import Callable
 import gt4py.next as gtx
 import numpy as np
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -151,7 +152,7 @@ def diffusion_init(
         # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
         zd_vertidx = zd_vertidx[0, :]
 
-        zd_diffcoef = wrapper_common.list2field(
+        zd_diffcoef = data_alloc.list2field(
             domain=cell_k_domain,
             values=zd_diffcoef,
             indices=(
@@ -161,7 +162,7 @@ def diffusion_init(
             default_value=gtx.float64(0.0),
             allocator=model_backends.get_allocator(actual_backend),
         )
-        zd_intcoef = wrapper_common.list2field(
+        zd_intcoef = data_alloc.list2field(
             domain=cell_c2e2c_k_domain,
             values=zd_intcoef.T,
             indices=(
@@ -172,7 +173,7 @@ def diffusion_init(
             default_value=gtx.float64(0.0),
             allocator=model_backends.get_allocator(actual_backend),
         )
-        zd_vertoffset = wrapper_common.list2field(
+        zd_vertoffset = data_alloc.list2field(
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(

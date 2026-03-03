@@ -771,7 +771,7 @@ class MetricSavepoint(IconSavepoint):
                 allocator=model_backends.get_allocator(self.backend),
             )
         else:
-            return wrapper_common.list2field(
+            return data_alloc.list2field(
                 domain=domain,
                 values=pg_exdist,
                 indices=(
@@ -828,7 +828,7 @@ class MetricSavepoint(IconSavepoint):
                 dims.KDim: k_range,
             }
         )
-        return wrapper_common.kflip_wgtfacq(
+        return data_alloc.kflip_wgtfacq(
             arr=ar,
             domain=cell_kflip_domain,
             allocator=model_backends.get_allocator(self.backend),
@@ -888,7 +888,7 @@ class MetricSavepoint(IconSavepoint):
                 dims.KDim: k_range,
             }
         )
-        return wrapper_common.kflip_wgtfacq(
+        return data_alloc.kflip_wgtfacq(
             arr=ar,
             domain=edge_kflip_domain,
             allocator=model_backends.get_allocator(self.backend),
@@ -921,7 +921,7 @@ class MetricSavepoint(IconSavepoint):
                 dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
             }
         )
-        return wrapper_common.list2field(
+        return data_alloc.list2field(
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(
@@ -945,7 +945,7 @@ class MetricSavepoint(IconSavepoint):
                 dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
             }
         )
-        return wrapper_common.list2field(
+        return data_alloc.list2field(
             domain=cell_c2e2c_k_domain,
             values=zd_intcoef.T,
             indices=(
@@ -962,7 +962,7 @@ class MetricSavepoint(IconSavepoint):
         zd_cellidx = self.zd_cellidx()
         zd_vertidx = self.zd_vertidx()
         zd_diffcoef = np.squeeze(self.serializer.read("zd_diffcoef", self.savepoint))
-        return wrapper_common.list2field(
+        return data_alloc.list2field(
             domain=self.geopot().domain,
             values=zd_diffcoef,
             indices=(

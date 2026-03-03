@@ -12,10 +12,11 @@ import logging as log
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, TypeVar
 
+import array_api_compat
+import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import numpy.typing as npt
-from gt4py import next as gtx
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.utils import device_utils
@@ -198,17 +199,32 @@ def index_field(
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=allocator)
 
 
-def get_array_namespace(array: NDArray) -> ModuleType:
+def array_namespace(array: NDArray) -> ModuleType:
     """
     Returns the array namespace for a given array.
     """
-    if hasattr(array, "__array_namespace__"):
-        return array.__array_namespace__()
-    elif isinstance(array, np.ndarray):
-        return np
-    elif isinstance(array, xp.ndarray):
-        return xp
-    else:
-        raise RuntimeError(
-            f"Unsupported array type '{type(array)}'. Cannot detect the array namespace."
-        )
+    return array_api_compat.array_namespace(array)
+
+
+def list2field(
+    domain: gtx.Domain,
+    values: NDArray,
+    indices: tuple[NDArray, ...],
+    default_value: state_utils.ScalarType,
+    allocator: gtx_typing.Allocator,
+) -> gtx.Field:
+    if len(domain) != len(indices):
+        raise RuntimeError("The number of indices must match the shape of the domain.")
+    assert all(index.shape == indices[0].shape for index in indices if not isinstance(index, slice))
+    xp = array_namespace(values)
+    arr = xp.full(domain.shape, fill_value=default_value, dtype=values.dtype)
+    arr[indices] = values
+    return gtx.as_field(domain, arr, allocator=allocator)
+
+
+def kflip_wgtfacq(
+    arr: NDArray,
+    domain: gtx.Domain,
+    allocator: gtx_typing.Allocator,
+) -> gtx.Field:
+    return gtx.as_field(domain, arr[:, ::-1], allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, dtype[Any] | Any"; expected "NDArrayObject"
