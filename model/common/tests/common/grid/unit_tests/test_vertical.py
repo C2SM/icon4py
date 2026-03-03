@@ -68,7 +68,7 @@ def test_damping_layer_calculation(
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a_field,
-        vct_b=None,  # type: ignore[arg-type]
+        vct_b=None,
     )
     assert (
         vertical_params.end_index_of_damping_layer

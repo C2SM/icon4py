@@ -55,8 +55,8 @@ def test_diffusion_wrapper_granule_inputs(
     hdiff_temp = True
     hdiff_smag_w = False
     ltkeshs = True
-    type_t_diffu = 2
-    type_vn_diffu = 1
+    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
+    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
     hdiff_efdt_ratio = 24.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
@@ -71,7 +71,6 @@ def test_diffusion_wrapper_granule_inputs(
     # --- Extract Metric State Parameters ---
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
     zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
 
     # TODO(): special handling, determine if this is necessary for Fortran arrays too
@@ -128,7 +127,6 @@ def test_diffusion_wrapper_granule_inputs(
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
     expected_metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         zd_intcoef=metrics_savepoint.zd_intcoef(),
@@ -162,7 +160,6 @@ def test_diffusion_wrapper_granule_inputs(
             nudgecoeff_e=nudgecoeff_e,
             rbf_coeff_1=rbf_coeff_1,
             rbf_coeff_2=rbf_coeff_2,
-            mask_hdiff=mask_hdiff,
             zd_diffcoef=zd_diffcoef,
             zd_vertoffset=zd_vertoffset,
             zd_intcoef=zd_intcoef,
@@ -287,8 +284,8 @@ def test_diffusion_wrapper_single_step(
     hdiff_temp = True
     hdiff_smag_w = False
     ltkeshs = True
-    type_t_diffu = 2
-    type_vn_diffu = 1
+    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
+    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
     hdiff_efdt_ratio = 24.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
@@ -303,7 +300,6 @@ def test_diffusion_wrapper_single_step(
     # Metric state parameters
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
     zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
 
     # TODO(): special handling, determine if this is necessary for Fortran arrays too
@@ -361,7 +357,6 @@ def test_diffusion_wrapper_single_step(
         nudgecoeff_e=nudgecoeff_e,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        mask_hdiff=mask_hdiff,
         zd_diffcoef=zd_diffcoef,
         zd_vertoffset=zd_vertoffset,
         zd_intcoef=zd_intcoef,
