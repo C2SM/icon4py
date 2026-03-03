@@ -176,7 +176,7 @@ def check_local_global_field(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
-        # TODO(msimberg): Is this true? Not true for RBF itnerpolation... why?
+        # TODO(msimberg): Is this true? Not true for RBF interpolation... why?
         # We expect an exact match, since the starting point is the same (grid
         # file) and we are doing the exact same computations in single rank and
         # multi rank mode.
@@ -227,6 +227,7 @@ embedded_broken_fields = {
         geometry_attributes.EDGE_DUAL_U,
         geometry_attributes.EDGE_DUAL_V,
         geometry_attributes.EDGE_LAT,
+        f"inverse_of_{geometry_attributes.EDGE_LENGTH}",
         geometry_attributes.EDGE_LENGTH,
         geometry_attributes.EDGE_LON,
         geometry_attributes.EDGE_NORMAL_CELL_U,
@@ -250,7 +251,8 @@ embedded_broken_fields = {
         geometry_attributes.VERTEX_EDGE_ORIENTATION,
         geometry_attributes.VERTEX_LAT,
         geometry_attributes.VERTEX_LON,
-        geometry_attributes.VERTEX_VERTEX_LENGTH,  # TODO(msimberg): Also inverse?
+        geometry_attributes.VERTEX_VERTEX_LENGTH,
+        f"inverse_of_{geometry_attributes.VERTEX_VERTEX_LENGTH}",
         geometry_attributes.VERTEX_X,
         geometry_attributes.VERTEX_Y,
         geometry_attributes.VERTEX_Z,
@@ -341,9 +343,9 @@ def test_geometry_fields_compare_single_multi_rank(
         interpolation_attributes.E_BLN_C_S,
         interpolation_attributes.E_FLX_AVG,
         interpolation_attributes.GEOFAC_DIV,
-        # interpolation_attributes.GEOFAC_GRDIV, # TODO(msimberg): Hang with gauss3d?
-        # interpolation_attributes.GEOFAC_GRG_X, # TODO(msimberg): Wrong, check.
-        # interpolation_attributes.GEOFAC_GRG_Y, # TODO(msimberg): Wrong, check.
+        interpolation_attributes.GEOFAC_GRDIV,
+        interpolation_attributes.GEOFAC_GRG_X,
+        interpolation_attributes.GEOFAC_GRG_Y,
         interpolation_attributes.GEOFAC_N2S,
         interpolation_attributes.GEOFAC_ROT,
         interpolation_attributes.NUDGECOEFFS_E,
@@ -454,7 +456,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL,
         metrics_attributes.COEFF1_DWDZ,
         metrics_attributes.COEFF2_DWDZ,
-        # metrics_attributes.COEFF_GRADEKIN, # TODO(msimberg): Halo wrong. Expected or not?
+        metrics_attributes.COEFF_GRADEKIN,
         metrics_attributes.D2DEXDZ2_FAC1_MC,
         metrics_attributes.D2DEXDZ2_FAC2_MC,
         metrics_attributes.DDQZ_Z_FULL,
