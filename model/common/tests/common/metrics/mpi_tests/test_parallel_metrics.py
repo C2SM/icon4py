@@ -102,7 +102,6 @@ def test_distributed_metrics_attrs(
         (attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER, "vwind_impl_wgt"),
         (attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER, "vwind_expl_wgt"),
         (attrs.PG_EDGEDIST_DSL, "pg_exdist"),
-        (attrs.PG_EDGEIDX_DSL, "pg_edgeidx_dsl"),
         (attrs.MASK_PROG_HALO_C, "mask_prog_halo_c"),
         (attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP, "hmask_dd3d"),
         (attrs.WGTFAC_C, "wgtfac_c"),
@@ -136,7 +135,6 @@ def test_distributed_metrics_attrs_no_halo(
 @pytest.mark.parametrize(
     "attrs_name, metrics_name",
     [
-        (attrs.MASK_HDIFF, "mask_hdiff"),
         (attrs.ZD_DIFFCOEF_DSL, "zd_diffcoef"),
         (attrs.ZD_INTCOEF_DSL, "zd_intcoef"),
         (attrs.ZD_VERTOFFSET_DSL, "zd_vertoffset"),

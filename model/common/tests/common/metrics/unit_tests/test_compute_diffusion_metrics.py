@@ -111,7 +111,7 @@ def test_compute_diffusion_mask_and_coeff(
         offset_provider={"C2E2C": icon_grid.get_connectivity("C2E2C")},
     )
 
-    mask_hdiff, zd_diffcoef_dsl = compute_diffusion_mask_and_coef(
+    zd_diffcoef_dsl = compute_diffusion_mask_and_coef(
         c2e2c=c2e2c,
         z_mc=z_mc.asnumpy(),
         max_nbhgt=max_nbhgt.asnumpy(),
@@ -123,7 +123,6 @@ def test_compute_diffusion_mask_and_coeff(
         cell_nudging=cell_nudging,
         nlev=nlev,
     )
-    assert (mask_hdiff == metrics_savepoint.mask_hdiff().asnumpy()).all()
     assert test_utils.dallclose(
         zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
     )
