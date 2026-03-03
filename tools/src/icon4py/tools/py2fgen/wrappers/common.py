@@ -175,6 +175,7 @@ def get_nproma(tables: Iterable[NDArray]) -> int:
         raise ValueError("All connectivity tables must have the same number of rows (nproma).")
     return nproma
 
+
 def construct_icon_grid(
     cell_starts: np.ndarray,
     cell_ends: np.ndarray,
