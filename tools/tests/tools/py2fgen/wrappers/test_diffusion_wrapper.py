@@ -55,8 +55,8 @@ def test_diffusion_wrapper_granule_inputs(
     hdiff_temp = True
     hdiff_smag_w = False
     ltkeshs = True
-    type_t_diffu = 2
-    type_vn_diffu = 1
+    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
+    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
     hdiff_efdt_ratio = 24.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
@@ -287,8 +287,8 @@ def test_diffusion_wrapper_single_step(
     hdiff_temp = True
     hdiff_smag_w = False
     ltkeshs = True
-    type_t_diffu = 2
-    type_vn_diffu = 1
+    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
+    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
     hdiff_efdt_ratio = 24.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
