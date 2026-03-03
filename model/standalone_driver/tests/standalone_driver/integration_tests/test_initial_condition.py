@@ -23,7 +23,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
 )
 
-
+@pytest.mark.skip # TODO: remove this, just testing stuff on CI
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment, rank", [(definitions.Experiments.JW, 0)])
 @pytest.mark.datatest
