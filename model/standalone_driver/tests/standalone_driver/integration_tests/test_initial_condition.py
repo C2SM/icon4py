@@ -23,7 +23,8 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
 )
 
-@pytest.mark.skip # TODO: remove this, just testing stuff on CI
+
+@pytest.mark.skip  # TODO: remove this, just testing stuff on CI
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment, rank", [(definitions.Experiments.JW, 0)])
 @pytest.mark.datatest
@@ -85,4 +86,3 @@ def test_standalone_driver_initial_condition(
         jabw_exit_savepoint.theta_v().asnumpy(),
         atol=1e-11,
     )
-

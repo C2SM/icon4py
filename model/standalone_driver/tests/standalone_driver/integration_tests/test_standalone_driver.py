@@ -52,7 +52,9 @@ def test_standalone_driver(
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = timeloop_diffusion_savepoint_exit_standalone.exner()  # savepoint_nonhydro_exit.exner_new() #
+    exner_sp = (
+        timeloop_diffusion_savepoint_exit_standalone.exner()
+    )  # savepoint_nonhydro_exit.exner_new() #
     theta_sp = (
         timeloop_diffusion_savepoint_exit_standalone.theta_v()
     )  # savepoint_nonhydro_exit.theta_v_new() #
