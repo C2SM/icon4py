@@ -43,7 +43,7 @@ def get_args():
         "--masking",
         dest="enable_masking",
         choices=[True, False],
-        type=lambda x: (str(x).lower() == "true"),
+        type=lambda x: str(x).lower() == "true",
         default=True,
         help="Enable compatibility with reference implementation.",
     )
