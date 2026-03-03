@@ -58,7 +58,6 @@ def test_standalone_driver_initial_condition(
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
     )
     jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
-    default_w_1 = data_alloc.zero_field(icon4py_driver.grid, dims.CellDim)
 
     assert test_utils.dallclose(
         ds.prognostics.current.rho.asnumpy(),
@@ -87,8 +86,3 @@ def test_standalone_driver_initial_condition(
         atol=1e-11,
     )
 
-    # TODO remove w_1 from here, prognostics, and _apply_rayleigh_damping_mechanism
-    assert test_utils.dallclose(
-        ds.prognostics.current.w_1.asnumpy(),
-        default_w_1.asnumpy(),
-    )
