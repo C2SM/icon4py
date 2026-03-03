@@ -34,7 +34,7 @@ class Experiments:
     # i.e. reference of full_muphys and graupel_only differ significantly.
     MINI: Final = utils.MuphysExperiment(
         name="mini",
-        type=utils.ExperimentType.GRAUPEL_ONLY,
+        type=utils.ExperimentType.FULL_MUPHYS,
         uri="https://polybox.ethz.ch/index.php/s/F8bK2C8tkpf8Xy2/download?files=mini.tar.gz",
     )
 
