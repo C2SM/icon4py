@@ -49,7 +49,6 @@ WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
 FLAT_IDX_MAX: Final[str] = "flat_idx_max"
 NFLAT_GRADP: Final[str] = "nflat_gradp"
-PG_EDGEIDX_DSL: Final[str] = "edge_mask_for_pressure_gradient_extrapolation"
 PG_EDGEDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
 MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
 HORIZONTAL_MASK_FOR_3D_DIVDAMP: Final[str] = "horizontal_mask_for_3d_divdamp"
@@ -63,11 +62,13 @@ MAXHGTD: Final[str] = "maxhgtd"
 MAXSLP_AVG: Final[str] = "maxslp_avg"
 MAXHGTD_AVG: Final[str] = "maxhgtd_avg"
 MAX_NBHGT: Final[str] = "max_nbhgt"
-MASK_HDIFF: Final[str] = "mask_hdiff"
 ZD_DIFFCOEF_DSL: Final[str] = "zd_diffcoef_dsl"
 ZD_INTCOEF_DSL: Final[str] = "zd_intcoef_dsl"
 ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
 CELL_HEIGHT_ON_HALF_LEVEL: Final[str] = "vertical_coordinates_on_half_levels"
+DEEPATMO_DIVH: Final[str] = "deepatmo_divh"
+DEEPATMO_DIVZL: Final[str] = "deepatmo_divzL"
+DEEPATMO_DIVZU: Final[str] = "deepatmo_divzU"
 
 
 attrs: dict[str, model.FieldMetaData] = {
@@ -302,14 +303,6 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="flat_idx_max",
         dtype=ta.wpfloat,
     ),
-    PG_EDGEIDX_DSL: dict(
-        standard_name=PG_EDGEIDX_DSL,
-        long_name="edge mask for pressure gradient downward extrapolation",
-        units="",
-        dims=(dims.EdgeDim, dims.KDim),
-        icon_var_name="pg_edgeidx_dsl",
-        dtype=bool,
-    ),
     PG_EDGEDIST_DSL: dict(
         standard_name=PG_EDGEDIST_DSL,
         long_name="extrapolation distance for pressure gradient downward extrapolation",
@@ -414,14 +407,6 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="max_nbhgt",
         dtype=ta.wpfloat,
     ),
-    MASK_HDIFF: dict(
-        standard_name=MASK_HDIFF,
-        long_name="mask_hdiff",
-        units="",
-        dims=(dims.CellDim, dims.KDim),
-        icon_var_name="mask_hdiff",
-        dtype=bool,
-    ),
     ZD_DIFFCOEF_DSL: dict(
         standard_name=ZD_DIFFCOEF_DSL,
         long_name="zd_diffcoef_dsl",
@@ -452,6 +437,30 @@ attrs: dict[str, model.FieldMetaData] = {
         units="m",
         dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="z_ifc",
+        dtype=ta.wpfloat,
+    ),
+    DEEPATMO_DIVH: dict(
+        standard_name=DEEPATMO_DIVH,
+        long_name="",
+        units="",
+        dims=(dims.KDim),
+        icon_var_name="deepatmo_divh_mc",
+        dtype=ta.wpfloat,
+    ),
+    DEEPATMO_DIVZL: dict(
+        standard_name=DEEPATMO_DIVZL,
+        long_name="",
+        units="",
+        dims=(dims.KDim),
+        icon_var_name="deepatmo_divzL_mc",
+        dtype=ta.wpfloat,
+    ),
+    DEEPATMO_DIVZU: dict(
+        standard_name=DEEPATMO_DIVZU,
+        long_name="",
+        units="",
+        dims=(dims.KDim),
+        icon_var_name="deepatmo_divzU_mc",
         dtype=ta.wpfloat,
     ),
 }

@@ -750,9 +750,6 @@ class MetricSavepoint(IconSavepoint):
     def pg_exdist(self):
         return self._get_field("pg_exdist_dsl", dims.EdgeDim, dims.KDim)
 
-    def pg_edgeidx_dsl(self):
-        return self._get_field("pg_edgeidx_dsl", dims.EdgeDim, dims.KDim, dtype=bool)
-
     def rayleigh_w(self):
         return self._get_field("rayleigh_w", dims.KDim)
 
@@ -814,10 +811,6 @@ class MetricSavepoint(IconSavepoint):
 
     def ddxt_z_full(self):
         return self._get_field("ddxt_z_full", dims.EdgeDim, dims.KDim)
-
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim, dtype=gtx.bool)
-    def mask_hdiff(self):
-        return self._get_field("mask_hdiff", dims.CellDim, dims.KDim, dtype=bool)
 
     def theta_ref_mc(self):
         return self._get_field("theta_ref_mc", dims.CellDim, dims.KDim)
