@@ -145,7 +145,7 @@ def read_config(
     def _jablonowski_williamson_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
-            end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
+            end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend=backend,
