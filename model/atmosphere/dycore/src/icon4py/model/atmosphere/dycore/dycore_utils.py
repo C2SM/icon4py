@@ -24,11 +24,13 @@ def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[floa
 
 
 @gtx.field_operator
-def _broadcast_zero_to_three_edge_kdim_fields_wp() -> tuple[
-    fa.EdgeKField[wpfloat],
-    fa.EdgeKField[wpfloat],
-    fa.EdgeKField[wpfloat],
-]:
+def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
+    tuple[
+        fa.EdgeKField[wpfloat],
+        fa.EdgeKField[wpfloat],
+        fa.EdgeKField[wpfloat],
+    ]
+):
     return (
         broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
         broadcast(wpfloat("0.0"), (EdgeDim, KDim)),

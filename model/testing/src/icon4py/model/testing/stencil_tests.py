@@ -125,9 +125,9 @@ def test_and_benchmark(
 
         # Collect GT4Py runtime metrics if enabled
         if gtx_config.COLLECT_METRICS_LEVEL > 0:
-            assert len(_configured_program._compiled_programs.compiled_programs) == 1, (
-                "Multiple compiled programs found, cannot extract metrics."
-            )
+            assert (
+                len(_configured_program._compiled_programs.compiled_programs) == 1
+            ), "Multiple compiled programs found, cannot extract metrics."
             # Get compiled programs from the _configured_program passed to test
             compiled_programs = _configured_program._compiled_programs.compiled_programs
             # Get the pool key necessary to find the right metrics key. There should be only one compiled program in _configured_program

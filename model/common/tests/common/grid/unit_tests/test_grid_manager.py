@@ -332,9 +332,9 @@ def assert_up_to_order(
     reduced_table = table[start_index:, :]
     reduced_reference = reference_table[start_index:, :]
     for n in range(reduced_table.shape[0]):
-        assert np.all(np.isin(reduced_table[n, :], reduced_reference[n, :])), (
-            f"values in row {n + start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
-        )
+        assert np.all(
+            np.isin(reduced_table[n, :], reduced_reference[n, :])
+        ), f"values in row {n + start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
 
 
 @pytest.mark.with_netcdf
@@ -415,15 +415,15 @@ def test_grid_manager_start_end_index_compare_with_serialized_data(
     for domain in h_grid.get_domains_for_dim(dim):
         if not (experiment == definitions.Experiments.EXCLAIM_APE and domain.dim == dims.EdgeDim):
             # serialized start indices for EdgeDim are all zero
-            assert grid.start_index(domain) == serialized_grid.start_index(domain), (
-                f"start index wrong for domain {domain}"
-            )
+            assert grid.start_index(domain) == serialized_grid.start_index(
+                domain
+            ), f"start index wrong for domain {domain}"
         if not grid.limited_area and domain.zone in [h_grid.Zone.END, h_grid.Zone.INTERIOR]:
             assert grid.end_index(domain) == grid.size[domain.dim]
         else:
-            assert grid.end_index(domain) == serialized_grid.end_index(domain), (
-                f"end index wrong for domain {domain}"
-            )
+            assert grid.end_index(domain) == serialized_grid.end_index(
+                domain
+            ), f"end index wrong for domain {domain}"
 
 
 @pytest.mark.datatest
