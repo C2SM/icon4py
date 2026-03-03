@@ -21,7 +21,16 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment, substep_exit, istep_exit, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_exit",
-    [(definitions.Experiments.JW, 5, 2, "2008-09-01T00:05:00.000", "2008-09-01T00:05:00.000", False)],
+    [
+        (
+            definitions.Experiments.JW,
+            5,
+            2,
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            False,
+        )
+    ],
 )
 def test_standalone_driver(
     backend_like: model_backends.BackendLike,
@@ -61,18 +70,16 @@ def test_standalone_driver(
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=1e-6,
+        atol=6e-12,
     )
 
     assert test_utils.dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=1e-4,
+        atol=9e-14,
     )
 
-    assert test_utils.dallclose(
-        ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy(), atol=1e-6
-    )
+    assert test_utils.dallclose(ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy())
 
     assert test_utils.dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
@@ -80,4 +87,4 @@ def test_standalone_driver(
         atol=1e-4,
     )
 
-    assert test_utils.dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=1e-5)
+    assert test_utils.dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy())
