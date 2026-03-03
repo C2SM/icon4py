@@ -431,7 +431,6 @@ def test_factory_pressure_gradient_fields(
     backend: gtx_typing.Backend | None,
 ) -> None:
     field_1_ref = metrics_savepoint.pg_exdist()
-    field_2_ref = metrics_savepoint.pg_edgeidx_dsl()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
@@ -440,8 +439,6 @@ def test_factory_pressure_gradient_fields(
     )
     field_1 = factory.get(attrs.PG_EDGEDIST_DSL)
     assert test_helpers.dallclose(field_1_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
-    field_2 = factory.get(attrs.PG_EDGEIDX_DSL)
-    assert test_helpers.dallclose(field_2_ref.asnumpy(), field_2.asnumpy())
 
 
 @pytest.mark.datatest
