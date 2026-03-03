@@ -151,8 +151,8 @@ def solve_nh_init(
             domain=domain,
             values=pg_exdist,
             indices=(
-                wrapper_common.adjust_fortran_indices(pg_edgeidx),
-                wrapper_common.adjust_fortran_indices(pg_vertidx),
+                data_alloc.adjust_fortran_indices(pg_edgeidx),
+                data_alloc.adjust_fortran_indices(pg_vertidx),
             ),
             default_value=default_value,
             allocator=model_backends.get_allocator(actual_backend),

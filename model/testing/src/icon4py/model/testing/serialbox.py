@@ -21,7 +21,6 @@ from icon4py.model.common import dimension as dims, model_backends, type_alias
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common
 
 
 log = logging.getLogger(__name__)
@@ -775,8 +774,8 @@ class MetricSavepoint(IconSavepoint):
                 domain=domain,
                 values=pg_exdist,
                 indices=(
-                    wrapper_common.adjust_fortran_indices(pg_edgeidx),
-                    wrapper_common.adjust_fortran_indices(pg_vertidx),
+                    data_alloc.adjust_fortran_indices(pg_edgeidx),
+                    data_alloc.adjust_fortran_indices(pg_vertidx),
                 ),
                 default_value=default_value,
                 allocator=model_backends.get_allocator(self.backend),
@@ -925,9 +924,9 @@ class MetricSavepoint(IconSavepoint):
             domain=cell_c2e2c_k_domain,
             values=zd_vertoffset.T,
             indices=(
-                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                data_alloc.adjust_fortran_indices(zd_cellidx),
                 slice(None),
-                wrapper_common.adjust_fortran_indices(zd_vertidx),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
             ),
             default_value=gtx.int32(0),
             allocator=model_backends.get_allocator(self.backend),
@@ -949,9 +948,9 @@ class MetricSavepoint(IconSavepoint):
             domain=cell_c2e2c_k_domain,
             values=zd_intcoef.T,
             indices=(
-                wrapper_common.adjust_fortran_indices(zd_cellidx),
+                data_alloc.adjust_fortran_indices(zd_cellidx),
                 slice(None),
-                wrapper_common.adjust_fortran_indices(zd_vertidx),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
             ),
             default_value=gtx.float64(0.0),
             allocator=model_backends.get_allocator(self.backend),
@@ -966,8 +965,8 @@ class MetricSavepoint(IconSavepoint):
             domain=self.geopot().domain,
             values=zd_diffcoef,
             indices=(
-                wrapper_common.adjust_fortran_indices(zd_cellidx),
-                wrapper_common.adjust_fortran_indices(zd_vertidx),
+                data_alloc.adjust_fortran_indices(zd_cellidx),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
             ),
             default_value=gtx.float64(0.0),
             allocator=model_backends.get_allocator(self.backend),

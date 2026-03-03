@@ -24,6 +24,7 @@ from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, horizontal as h_grid, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils.data_allocation import adjust_fortran_indices
 from icon4py.tools import py2fgen
 
 
@@ -150,11 +151,6 @@ def cached_dummy_field_factory(
         return gtx.zeros(domain, dtype=dtype, allocator=allocator)
 
     return impl
-
-
-def adjust_fortran_indices(inp: NDArray) -> NDArray:
-    """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
-    return inp - 1
 
 
 def shrink_to_dimension(
