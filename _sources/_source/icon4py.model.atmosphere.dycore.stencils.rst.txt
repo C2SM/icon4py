@@ -92,14 +92,6 @@ icon4py.model.atmosphere.dycore.stencils.apply\_4th\_order\_divergence\_damping 
    :undoc-members:
    :show-inheritance:
 
-icon4py.model.atmosphere.dycore.stencils.apply\_hydrostatic\_correction\_to\_horizontal\_gradient\_of\_exner\_pressure module
------------------------------------------------------------------------------------------------------------------------------
-
-.. automodule:: icon4py.model.atmosphere.dycore.stencils.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 icon4py.model.atmosphere.dycore.stencils.apply\_rayleigh\_damping\_mechanism module
 -----------------------------------------------------------------------------------
 
