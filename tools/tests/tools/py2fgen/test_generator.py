@@ -56,9 +56,9 @@ def test_compile_and_run_cffi_plugin_from_C():
             compiled_library_path = build_path / f"lib{shared_library}.so"
 
             # Verify the shared library was created
-            assert (
-                compiled_library_path.exists()
-            ), f"Compiled library {compiled_library_path} does not exist."
+            assert compiled_library_path.exists(), (
+                f"Compiled library {compiled_library_path} does not exist."
+            )
             assert compiled_library_path.stat().st_size > 0, "Compiled library is empty."
 
             # Write the main C program to a file

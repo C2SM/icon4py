@@ -250,9 +250,9 @@ class GHexMultiNodeExchange:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
         """
-        assert (
-            dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values()
-        ), f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+        assert dim in dims.MAIN_HORIZONTAL_DIMENSIONS.values(), (
+            f"first dimension must be one of ({dims.MAIN_HORIZONTAL_DIMENSIONS.values()})"
+        )
 
         applied_patterns = [self._get_applied_pattern(dim, f) for f in fields]
         # With https://github.com/ghex-org/GHEX/pull/186, ghex will schedule/sync work on the default stream,

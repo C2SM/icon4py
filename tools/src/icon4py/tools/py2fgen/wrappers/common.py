@@ -18,7 +18,6 @@ import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
-from gt4py.next import allocators as gtx_allocators
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.common import dimension as dims, model_backends
@@ -143,7 +142,7 @@ def select_backend(
 
 
 def cached_dummy_field_factory(
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.Allocator | None,
 ) -> Callable[[str, gtx.Domain, gt4py_definitions.DType], gtx.Field]:
     # curried to exclude non-hashable backend from cache
     @functools.lru_cache(maxsize=20)
@@ -183,7 +182,7 @@ def list2field(
     values: NDArray,
     indices: tuple[NDArray, ...],
     default_value: state_utils.ScalarType,
-    allocator: gtx_allocators.FieldBufferAllocatorProtocol,
+    allocator: gtx_typing.Allocator,
 ) -> gtx.Field:
     if len(domain) != len(indices):
         raise RuntimeError("The number of indices must match the shape of the domain.")
@@ -197,7 +196,7 @@ def list2field(
 def kflip_wgtfacq(
     arr: NDArray,
     domain: gtx.Domain,
-    allocator: gtx_allocators.FieldBufferAllocatorProtocol,
+    allocator: gtx_typing.Allocator,
 ) -> gtx.Field:
     return gtx.as_field(domain, arr[:, ::-1], allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, dtype[Any] | Any"; expected "NDArrayObject"
 
@@ -224,8 +223,7 @@ def construct_icon_grid(
     num_edges: int,
     vertical_size: int,
     limited_area: bool,
-    mean_cell_area: gtx.float64,  # type:ignore[name-defined]  # TODO(): fix type hint
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.Allocator | None,
 ) -> icon.IconGrid:
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)

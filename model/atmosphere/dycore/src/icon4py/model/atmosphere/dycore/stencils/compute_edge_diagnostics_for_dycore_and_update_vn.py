@@ -9,7 +9,7 @@
 
 import gt4py.next as gtx
 from gt4py.eve import utils as eve_utils
-from gt4py.next import broadcast
+from gt4py.next import broadcast, where
 from gt4py.next.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
@@ -84,7 +84,9 @@ def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
 ) -> fa.EdgeKField[ta.vpfloat]:
     # Note: In the original Fortran code `pg_exdist` is implemented as a list,
     # in ICON4Py it's a full field intialized with zeros for points that are not in the list.
-    z_gradh_exner_vp = z_gradh_exner + z_hydro_corr * pg_exdist
+    z_gradh_exner_vp = where(
+        pg_exdist != 0.0, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner
+    )
     return z_gradh_exner_vp
 
 

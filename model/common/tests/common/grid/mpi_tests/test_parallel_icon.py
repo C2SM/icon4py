@@ -50,9 +50,9 @@ def test_props(processor_props: decomp_defs.ProcessProperties) -> None:
 
     assert processor_props.comm
 
-    assert isinstance(
-        processor_props.comm, mpi4py.MPI.Comm
-    ), "comm needs to be an instance of MPI.Comm"
+    assert isinstance(processor_props.comm, mpi4py.MPI.Comm), (
+        "comm needs to be an instance of MPI.Comm"
+    )
     ghex.make_context(processor_props.comm)
 
 

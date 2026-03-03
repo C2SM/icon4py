@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# ruff: noqa: ERA001, B008
+# ruff: noqa: B008
 
 import dataclasses
 import logging
@@ -13,7 +13,7 @@ from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
-from gt4py.next import allocators as gtx_allocators, common as gtx_common
+from gt4py.next import common as gtx_common
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -111,11 +111,7 @@ class IntermediateFields:
     """
 
     @classmethod
-    def allocate(
-        cls,
-        grid: grid_def.Grid,
-        allocator: gtx_allocators.FieldBufferAllocationUtil | None,
-    ):
+    def allocate(cls, grid: grid_def.Grid, allocator: gtx_typing.Allocator | None):
         return IntermediateFields(
             horizontal_pressure_gradient=data_alloc.zero_field(
                 grid, dims.EdgeDim, dims.KDim, allocator=allocator
@@ -164,6 +160,7 @@ class NonHydrostaticConfig:
         divdamp_trans_start: float = 12500.0,
         divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
+        deepatmos_mode: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
         _nudge_max_coeff: float | None = None,  # default is set in __init__
@@ -177,7 +174,7 @@ class NonHydrostaticConfig:
         fourth_order_divdamp_z3: float = 60000.0,
         fourth_order_divdamp_z4: float = 80000.0,
     ):
-        # parameters from namelist diffusion_nml
+        # parameters from namelist nonhydrostatic_nml
         self.itime_scheme: int = itime_scheme
 
         #: Miura scheme for advection of rho and theta
@@ -285,6 +282,10 @@ class NonHydrostaticConfig:
         #: use vertical nesting
         self.l_vert_nested: bool = l_vert_nested
 
+        #: from dynamics_nml.f90
+        #: deep atmosphere mode, originally defined as ldeepatmo in ICON
+        self.deepatmos_mode: bool = deepatmos_mode
+
         #: from mo_initicon_nml.f90/ mo_initicon_config.f90
         #: whether IAU is active at current time
         self.is_iau_active: bool = is_iau_active
@@ -299,6 +300,9 @@ class NonHydrostaticConfig:
         if self.l_vert_nested:
             raise NotImplementedError("Vertical nesting support not implemented")
 
+        if self.deepatmos_mode:
+            raise NotImplementedError("Deep atmosphere mode not implemented")
+
         if self.igradp_method != dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             raise NotImplementedError("igradp_method can only be 3")
 
@@ -311,6 +315,11 @@ class NonHydrostaticConfig:
         if self.divdamp_type == dycore_states.DivergenceDampingType.TWO_DIMENSIONAL:
             raise NotImplementedError(
                 "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
+            )
+
+        if self.rayleigh_type != constants.RayleighType.KLEMP:
+            raise NotImplementedError(
+                "Only Klemp type of the Rayleigh damping (nudging vertical wind towards zero) is implemented."
             )
 
 
@@ -798,7 +807,7 @@ class SolveNonhydro:
         recomputed or not. The substep length should only change in case of high CFL condition.
         """
 
-    def _allocate_local_fields(self, allocator: gtx_allocators.FieldBufferAllocationUtil | None):
+    def _allocate_local_fields(self, allocator: gtx_typing.Allocator | None):
         self.temporal_extrapolation_of_perturbed_exner = data_alloc.zero_field(
             self._grid,
             dims.CellDim,
@@ -1062,7 +1071,6 @@ class SolveNonhydro:
             exner_new=prognostic_states.next.exner,
         )
 
-    # flake8: noqa: C901
     def run_predictor_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,

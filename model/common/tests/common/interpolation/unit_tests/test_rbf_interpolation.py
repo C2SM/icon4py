@@ -172,7 +172,8 @@ def test_rbf_interpolation_coeffs_cell(
     horizontal_start = grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    assert horizontal_start < grid.num_cells
+    horizontal_end = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LOCAL))
+    assert horizontal_start < horizontal_end <= grid.num_cells
 
     geometry_type = (
         grid.global_properties.geometry_type
@@ -201,6 +202,7 @@ def test_rbf_interpolation_coeffs_cell(
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
+        horizontal_end,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
         exchange=utils.dummy_exchange,
@@ -247,7 +249,8 @@ def test_rbf_interpolation_coeffs_vertex(
     horizontal_start = grid.start_index(
         h_grid.domain(dims.VertexDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    assert horizontal_start < grid.num_vertices
+    horizontal_end = grid.end_index(h_grid.domain(dims.VertexDim)(h_grid.Zone.LOCAL))
+    assert horizontal_start < horizontal_end <= grid.num_vertices
 
     geometry_type = (
         grid.global_properties.geometry_type
@@ -276,6 +279,7 @@ def test_rbf_interpolation_coeffs_vertex(
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
+        horizontal_end,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
         exchange=utils.dummy_exchange,
@@ -322,7 +326,8 @@ def test_rbf_interpolation_coeffs_edge(
     horizontal_start = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    assert horizontal_start < grid.num_edges
+    horizontal_end = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LOCAL))
+    assert horizontal_start < horizontal_end <= grid.num_edges
 
     geometry_type = (
         grid.global_properties.geometry_type
@@ -353,6 +358,7 @@ def test_rbf_interpolation_coeffs_edge(
             geometry.get(geometry_attrs.MEAN_DUAL_EDGE_LENGTH),
         ),
         horizontal_start,
+        horizontal_end,
         grid.global_properties.domain_length,
         grid.global_properties.domain_height,
         exchange=utils.dummy_exchange,

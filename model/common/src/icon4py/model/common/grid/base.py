@@ -13,7 +13,8 @@ from collections.abc import Callable, Sequence
 from types import ModuleType
 
 import gt4py.next as gtx
-from gt4py.next import allocators as gtx_allocators, common as gtx_common
+import gt4py.next.typing as gtx_typing
+from gt4py.next import common as gtx_common
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
@@ -169,7 +170,7 @@ def construct_connectivity(
     table: data_alloc.NDArray,
     skip_value: int | None = None,
     *,
-    allocator: gtx_allocators.FieldBufferAllocationUtil | None = None,
+    allocator: gtx_typing.Allocator | None = None,
     replace_skip_values: bool = False,
 ):
     from_dim, dim = offset.target

@@ -98,7 +98,7 @@ vertex_bounds: dict[h_grid.Zone, tuple[int, int]] = {
 def test_compute_start_index_for_limited_area_grid(
     dim: gtx.Dimension,
     expected: dict[h_grid.Zone, tuple[int, int]],
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(
         test_defs.Grids.MCH_OPR_R04B07_DOMAIN01, 1, True, cpu_allocator
@@ -108,15 +108,15 @@ def test_compute_start_index_for_limited_area_grid(
 
     for d, v in start_index.items():
         expected_value = expected.get(d.zone, _FALLBACK_FAIL)[0]
-        assert (
-            v == expected_value
-        ), f"Expected start index {expected_value} for domain = {d} , but got {v}"
+        assert v == expected_value, (
+            f"Expected start index {expected_value} for domain = {d} , but got {v}"
+        )
 
     for d, v in end_index.items():
         expected_value = expected.get(d.zone, _FALLBACK_FAIL)[1]
-        assert (
-            v == expected_value
-        ), f"Expected end index {expected_value} for domain = {d} , but got {v}"
+        assert v == expected_value, (
+            f"Expected end index {expected_value} for domain = {d} , but got {v}"
+        )
 
 
 @pytest.mark.parametrize("file", (test_defs.Grids.R02B04_GLOBAL,))
@@ -124,7 +124,7 @@ def test_compute_start_index_for_limited_area_grid(
 def test_compute_domain_bounds_for_global_grid(
     file: test_defs.GridDescription,
     dim: gtx.Dimension,
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     grid = grid_utils.get_grid_manager_from_identifier(file, 1, True, cpu_allocator).grid
     refinement_fields = grid.refinement_control
@@ -132,9 +132,9 @@ def test_compute_domain_bounds_for_global_grid(
     for k, v in start_index.items():
         assert isinstance(v, gtx.int32)
         if k.zone.is_halo() or k.zone is h_grid.Zone.END:
-            assert (
-                v == grid.size[dim]
-            ), f"Expected start index '{grid.size[dim]}' for '{dim}' in zone '{k.zone}', but got '{v}'"
+            assert v == grid.size[dim], (
+                f"Expected start index '{grid.size[dim]}' for '{dim}' in zone '{k.zone}', but got '{v}'"
+            )
         else:
             assert v == 0, f"Expected start index '0' for {dim} in {k.zone}, but got '{v}'"
 
@@ -143,6 +143,6 @@ def test_compute_domain_bounds_for_global_grid(
         if k.zone.is_lateral_boundary() or k.zone.is_nudging():
             assert v == 0, f"Expected end index '0' for '{dim}' in zone '{k.zone}', but got '{v}'"
         else:
-            assert (
-                v == grid.size[k.dim]
-            ), f"Expected end index '{grid.size[k.dim]}' for {dim} in {k.zone}, but got '{v}'"
+            assert v == grid.size[k.dim], (
+                f"Expected end index '{grid.size[k.dim]}' for {dim} in {k.zone}, but got '{v}'"
+            )

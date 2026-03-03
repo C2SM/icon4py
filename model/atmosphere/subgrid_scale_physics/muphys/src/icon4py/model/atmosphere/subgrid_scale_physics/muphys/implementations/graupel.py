@@ -594,8 +594,68 @@ def graupel_run(
         qnc=qnc,
         enable_masking=enable_masking,
         out=(t_out, q_out, pflx, pr, ps, pi, pg, pre),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+        domain=(
+            # t_out
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            # q_out
+            (
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+            ),
+            # pflx
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            # pr
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
+            },
+            # ps
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
+            },
+            # pi
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
+            },
+            # pg
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
+            },
+            # pre
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
+            },
+        ),
     )

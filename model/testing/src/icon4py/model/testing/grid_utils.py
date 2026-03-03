@@ -29,7 +29,7 @@ grid_geometries: dict[str, geometry.GridGeometry] = {}
 def get_grid_manager_from_experiment(
     experiment: definitions.Experiment,
     keep_skip_values: bool,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> gm.GridManager:
     return get_grid_manager_from_identifier(
         experiment.grid,
@@ -43,7 +43,7 @@ def get_grid_manager_from_identifier(
     grid: definitions.GridDescription,
     num_levels: int,
     keep_skip_values: bool,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> gm.GridManager:
     grid_file = _download_grid_file(grid)
     return get_grid_manager(
@@ -55,7 +55,7 @@ def get_grid_manager(
     grid_file: pathlib.Path,
     num_levels: int,
     keep_skip_values: bool,
-    allocator: gtx_typing.FieldBufferAllocationUtil,
+    allocator: gtx_typing.Allocator,
 ) -> gm.GridManager:
     """
     Construct a GridManager instance for an ICON grid file.
@@ -101,7 +101,7 @@ def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
 
 def construct_decomposition_info(
     grid: icon.IconGrid,
-    allocator: gtx_typing.FieldBufferAllocationUtil | None = None,
+    allocator: gtx_typing.Allocator | None = None,
 ) -> decomposition_defs.DecompositionInfo:
     on_gpu = device_utils.is_cupy_device(allocator)
     xp = data_alloc.array_ns(on_gpu)

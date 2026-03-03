@@ -48,7 +48,12 @@ class GridGeometry(factory.FieldSource):
 
     Examples:
         >>> geometry = GridGeometry(
-        ...     grid, decomposition_info, backend, coordinates, extra_fields, geometry_attributes.attrs
+        ...     grid,
+        ...     decomposition_info,
+        ...     backend,
+        ...     coordinates,
+        ...     extra_fields,
+        ...     geometry_attributes.attrs,
         ... )
         GridGeometry for geometry_type=SPHERE grid=f2e06839-694a-cca1-a3d5-028e0ff326e0 : R9B4
         >>> geometry.get("edge_length")
@@ -866,7 +871,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.Allocator | None,
 ) -> tuple[
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],

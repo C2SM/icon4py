@@ -128,6 +128,7 @@ program diffusion_simulation
    integer(c_int), parameter :: diffusion_type = 5 ! Assuming DiffusionType.SMAGORINSKY_4TH_ORDER is represented by 5
    logical(c_int), parameter :: hdiff_w = .true.
    logical(c_int), parameter :: hdiff_vn = .true.
+   logical(c_int), parameter :: hdiff_smag_w = .false. ! Smagorinsky diffusion for w is not implemented
    logical(c_int), parameter :: zdiffu_t = .true. ! this runs stencil 15 which uses the boolean mask
    integer(c_int), parameter :: type_t_diffu = 2
    integer(c_int), parameter :: type_vn_diffu = 1
@@ -312,6 +313,7 @@ program diffusion_simulation
                       diffusion_type, &
                       hdiff_w, &
                       hdiff_vn, &
+                      hdiff_smag_w, &
                       zdiffu_t, &
                       type_t_diffu, &
                       type_vn_diffu, &

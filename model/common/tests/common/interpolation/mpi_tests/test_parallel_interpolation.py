@@ -79,9 +79,9 @@ def test_distributed_interpolation_with_custom_tolerance(
     field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
     field_ref = field_ref.asnumpy()
     field = intp_factory.get(attrs_name).asnumpy()
-    assert test_utils.dallclose(
-        field, field_ref, atol=atol, rtol=rtol
-    ), f"comparison of {attrs_name} failed"
+    assert test_utils.dallclose(field, field_ref, atol=atol, rtol=rtol), (
+        f"comparison of {attrs_name} failed"
+    )
 
 
 # attrs.E_FLX_AVG should work here
@@ -175,9 +175,9 @@ def test_distributed_interpolation_geofac_rot(
     )
     field_ref = interpolation_savepoint.geofac_rot().asnumpy()
     field = factory.get(attrs.GEOFAC_ROT).asnumpy()
-    assert test_utils.dallclose(
-        field[horizontal_start:, :], field_ref[horizontal_start:, :]
-    ), f"comparison of {attrs.GEOFAC_ROT} failed"
+    assert test_utils.dallclose(field[horizontal_start:, :], field_ref[horizontal_start:, :]), (
+        f"comparison of {attrs.GEOFAC_ROT} failed"
+    )
 
 
 @pytest.mark.datatest
@@ -204,24 +204,16 @@ def test_distributed_interpolation_rbf(
     attrs_name: str,
     intrp_name: str,
 ) -> None:
-    # xfail inside function body, because we don't actually want to run the test
-    # since it hangs.
-    pytest.xfail("Tests hang in CI")
-
-    if attrs_name.startswith("rbf_vec_coeff_c"):
-        dim = dims.CellDim
-    elif attrs_name.startswith("rbf_vec_coeff_e"):
-        dim = dims.EdgeDim
-    else:
-        dim = dims.VertexDim
-
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = interpolation_factory_from_savepoint
-    field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
-    field = factory.get(attrs_name).asnumpy()
-    test_utils.dallclose(field, field_ref, atol=RBF_TOLERANCES[dim][experiment.name])
+    field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
+    field = factory.get(attrs_name)
+    dim = field.domain.dims[0]
+    assert test_utils.dallclose(
+        field.asnumpy(), field_ref.asnumpy(), atol=RBF_TOLERANCES[dim][experiment.name]
+    )
 
 
 @pytest.mark.datatest

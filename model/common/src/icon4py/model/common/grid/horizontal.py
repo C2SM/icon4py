@@ -99,12 +99,12 @@ The values here are translations of these indices taking into account that all a
 
 def _icon_domain_index(value_dict: dict, dim: gtx.Dimension, offset: int = 0) -> int:
     index = value_dict[dim] + offset
-    assert (
-        index <= _ICON_CONSTANTS_BOUNDS[dim][1]
-    ), f"Index {index} out of bounds for {dim}:  {_ICON_CONSTANTS_BOUNDS[dim]}"
-    assert (
-        index >= _ICON_CONSTANTS_BOUNDS[dim][0]
-    ), f"Index {index} out of bounds for {dim}: {_ICON_CONSTANTS_BOUNDS[dim]}"
+    assert index <= _ICON_CONSTANTS_BOUNDS[dim][1], (
+        f"Index {index} out of bounds for {dim}:  {_ICON_CONSTANTS_BOUNDS[dim]}"
+    )
+    assert index >= _ICON_CONSTANTS_BOUNDS[dim][0], (
+        f"Index {index} out of bounds for {dim}: {_ICON_CONSTANTS_BOUNDS[dim]}"
+    )
     return index
 
 
@@ -340,9 +340,9 @@ class Domain:
         return f"Domain (dim = {self.dim}: zone = {self.zone} /ICON index[ {_map_zone_to_icon_array_index(self.dim, self.zone)} ])"
 
     def __post_init__(self) -> None:
-        assert _validate(
-            self.dim, self.zone
-        ), f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {_get_zones_for_dim(self.dim)}"
+        assert _validate(self.dim, self.zone), (
+            f"Invalid zone {self.zone} for dimension {self.dim}. Valid zones are: {_get_zones_for_dim(self.dim)}"
+        )
 
     @functools.cached_property
     def is_local(self) -> bool:

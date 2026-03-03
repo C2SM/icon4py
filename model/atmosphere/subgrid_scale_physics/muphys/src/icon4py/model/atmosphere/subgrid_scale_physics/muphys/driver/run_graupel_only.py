@@ -43,7 +43,7 @@ def get_args():
         "--masking",
         dest="enable_masking",
         choices=[True, False],
-        type=lambda x: (str(x).lower() == "true"),
+        type=lambda x: str(x).lower() == "true",
         default=True,
         help="Enable compatibility with reference implementation.",
     )
@@ -88,7 +88,7 @@ def main():
     use_inout_buffers = True  # Set to True to reuse input buffers for output.
     if use_inout_buffers:
         # We are passing the same buffers for `Q` as input and output. This is not best GT4Py practice,
-        # but should be save in this case as we are not reading the input with an offset.
+        # but should be safe in this case as we are not reading the input with an offset.
         references = {
             "qv": inp.qv,
             "qc": inp.qc,

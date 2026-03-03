@@ -78,9 +78,10 @@ def test_grid_manager_eval_v2e(
     v2e_table = grid.get_connectivity("V2E").asnumpy()
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
+    assert experiment.grid.params.grid_shape is not None
     assert (
         not has_invalid_index(v2e_table)
-        if experiment.grid.shape.geometry_type == base_grid.GeometryType.TORUS
+        if experiment.grid.params.grid_shape.geometry_type == base_grid.GeometryType.TORUS
         else has_invalid_index(v2e_table)
     )
     _reset_invalid_index(seralized_v2e)
@@ -124,9 +125,10 @@ def test_grid_manager_eval_v2c(
     assert not has_invalid_index(serialized_v2c)
     # Torus grids have no pentagon points and no boundaries hence no invalid
     # indexes (while REGIONAL and GLOBAL grids can have)
+    assert experiment.grid.params.grid_shape is not None
     assert (
         not has_invalid_index(v2c_table)
-        if experiment.grid.shape.geometry_type == base_grid.GeometryType.TORUS
+        if experiment.grid.params.grid_shape.geometry_type == base_grid.GeometryType.TORUS
         else has_invalid_index(v2c_table)
     )
     _reset_invalid_index(serialized_v2c)
@@ -316,9 +318,9 @@ def test_grid_manager_grid_size(
     backend: gtx_typing.Backend, grid_descriptor: definitions.GridDescription
 ) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=backend).grid
-    assert grid_descriptor.sizes["cell"] == grid.size[dims.CellDim]
-    assert grid_descriptor.sizes["edge"] == grid.size[dims.EdgeDim]
-    assert grid_descriptor.sizes["vertex"] == grid.size[dims.VertexDim]
+    assert grid_descriptor.params.num_cells == grid.size[dims.CellDim]
+    assert grid_descriptor.params.num_edges == grid.size[dims.EdgeDim]
+    assert grid_descriptor.params.num_vertices == grid.size[dims.VertexDim]
 
 
 def assert_up_to_order(
@@ -330,14 +332,14 @@ def assert_up_to_order(
     reduced_table = table[start_index:, :]
     reduced_reference = reference_table[start_index:, :]
     for n in range(reduced_table.shape[0]):
-        assert np.all(
-            np.isin(reduced_table[n, :], reduced_reference[n, :])
-        ), f"values in row {n+start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
+        assert np.all(np.isin(reduced_table[n, :], reduced_reference[n, :])), (
+            f"values in row {n + start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
+        )
 
 
 @pytest.mark.with_netcdf
 def test_gridmanager_given_file_not_found_then_abort(
-    cpu_allocator: gtx_typing.FieldBufferAllocationUtil,
+    cpu_allocator: gtx_typing.Allocator,
 ) -> None:
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:
@@ -362,7 +364,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
 @pytest.mark.parametrize(
     "grid_descriptor, global_num_cells",
     [
-        (definitions.Grids.R02B04_GLOBAL, definitions.Grids.R02B04_GLOBAL.sizes["cell"]),
+        (definitions.Grids.R02B04_GLOBAL, definitions.Grids.R02B04_GLOBAL.params.num_cells),
         (definitions.Grids.MCH_CH_R04B09_DSL, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
     ],
 )
@@ -413,15 +415,15 @@ def test_grid_manager_start_end_index_compare_with_serialized_data(
     for domain in h_grid.get_domains_for_dim(dim):
         if not (experiment == definitions.Experiments.EXCLAIM_APE and domain.dim == dims.EdgeDim):
             # serialized start indices for EdgeDim are all zero
-            assert grid.start_index(domain) == serialized_grid.start_index(
-                domain
-            ), f"start index wrong for domain {domain}"
+            assert grid.start_index(domain) == serialized_grid.start_index(domain), (
+                f"start index wrong for domain {domain}"
+            )
         if not grid.limited_area and domain.zone in [h_grid.Zone.END, h_grid.Zone.INTERIOR]:
             assert grid.end_index(domain) == grid.size[domain.dim]
         else:
-            assert grid.end_index(domain) == serialized_grid.end_index(
-                domain
-            ), f"end index wrong for domain {domain}"
+            assert grid.end_index(domain) == serialized_grid.end_index(domain), (
+                f"end index wrong for domain {domain}"
+            )
 
 
 @pytest.mark.datatest
