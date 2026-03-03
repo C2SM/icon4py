@@ -24,6 +24,7 @@ nox.options.sessions = ["test_model", "test_tools"]
 
 # -- Parameter sets --
 ModelSubpackagePath: TypeAlias = Literal[
+    "all",
     "atmosphere/advection",
     "atmosphere/diffusion",
     "atmosphere/dycore",
@@ -152,9 +153,10 @@ def test_model(
     _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
-    with session.chdir(f"model/{subpackage}"):
+    test_dir = "model" if subpackage == "all" else f"model/{subpackage}"
+    with session.chdir(test_dir):
         session.run(
-            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
+            *f"pytest -sv --benchmark-disable --dist=worksteal -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
             *session.posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
@@ -188,7 +190,7 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
 
     with session.chdir("tools"):
         session.run(
-            *f"pytest -sv --benchmark-disable -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
+            *f"pytest -sv --benchmark-disable --dist=worksteal -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest-only' if datatest else '--datatest-skip'}".split(),
             *session.posargs,
         )
 
