@@ -64,7 +64,6 @@ def diffusion_init(
     nudgecoeff_e: fa.EdgeField[wpfloat],
     rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
     rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    mask_hdiff: fa.CellKField[bool] | None,
     zd_diffcoef: fa.CellKField[wpfloat] | None,
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32] | None,
     zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.float64] | None,
@@ -131,8 +130,6 @@ def diffusion_init(
         dims.KDim: nlev,
     }
     xp = wgtfac_c.array_ns
-    if mask_hdiff is None:
-        mask_hdiff = gtx.zeros(cell_k_domain, dtype=xp.bool_)
     if zd_diffcoef is None:
         zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype)
     if zd_intcoef is None:
@@ -141,7 +138,6 @@ def diffusion_init(
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
     # Metric state
     metric_state = DiffusionMetricState(
-        mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
         zd_intcoef=zd_intcoef,
