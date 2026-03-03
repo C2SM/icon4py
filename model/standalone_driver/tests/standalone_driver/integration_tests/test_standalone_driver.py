@@ -20,8 +20,8 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, substep_exit, step_date_exit, timeloop_diffusion_linit_exit",
-    [(definitions.Experiments.JW, 2, "2008-09-01T00:05:00.000", False)],
+    "experiment, substep_exit, istep_exit, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_exit",
+    [(definitions.Experiments.JW, 5, 2, "2008-09-01T00:05:00.000", "2008-09-01T00:05:00.000", False)],
 )
 def test_standalone_driver(
     backend_like: model_backends.BackendLike,
@@ -31,12 +31,9 @@ def test_standalone_driver(
     experiment: definitions.Experiments,
     substep_exit: int,
     step_date_exit: str,
+    timeloop_date_exit: str,
     timeloop_diffusion_savepoint_exit_standalone: sb.IconDiffusionExitSavepoint,
 ) -> None:
-    """
-    TODO(anyone): Modify this test for scientific validation after IO is ready.
-    """
-
     backend_name = "embedded"
     for k, v in model_backends.BACKENDS.items():
         if backend_like == v:
