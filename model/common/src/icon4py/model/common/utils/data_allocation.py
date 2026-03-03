@@ -19,12 +19,12 @@ import numpy as np
 import numpy.typing as npt
 
 from icon4py.model.common import type_alias as ta
-from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import device_utils
 
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as grid_base
+    from icon4py.model.common.states import utils as state_utils
 
 
 try:
