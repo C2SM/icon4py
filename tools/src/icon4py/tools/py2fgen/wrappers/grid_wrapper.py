@@ -103,7 +103,6 @@ def grid_init(
     primal_normal_x: fa.EdgeField[wpfloat],
     primal_normal_y: fa.EdgeField[wpfloat],
     vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
-    vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     lowest_layer_thickness: gtx.float64,
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,
@@ -164,7 +163,7 @@ def grid_init(
     vertical_grid = vertical.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
-        vct_b=vct_b,
+        vct_b=None,
     )
 
     # Edge geometry

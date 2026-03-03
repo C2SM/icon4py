@@ -459,7 +459,6 @@ def read_static_fields(
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
         diffusion_metric_state = diffusion_states.DiffusionMetricState(
-            mask_hdiff=metrics_savepoint.mask_hdiff(),
             theta_ref_mc=metrics_savepoint.theta_ref_mc(),
             wgtfac_c=metrics_savepoint.wgtfac_c(),
             zd_intcoef=metrics_savepoint.zd_intcoef(),
@@ -508,7 +507,6 @@ def read_static_fields(
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
             nflat_gradp=grid_savepoint.nflat_gradp(),
-            pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
             pg_exdist=metrics_savepoint.pg_exdist(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
