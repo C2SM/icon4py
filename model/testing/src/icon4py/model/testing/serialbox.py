@@ -816,10 +816,6 @@ class MetricSavepoint(IconSavepoint):
     def ddxt_z_full(self):
         return self._get_field("ddxt_z_full", dims.EdgeDim, dims.KDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim, dtype=gtx.bool)
-    def mask_hdiff(self):
-        return self._get_field("mask_hdiff", dims.CellDim, dims.KDim, dtype=bool)
-
     def theta_ref_mc(self):
         return self._get_field("theta_ref_mc", dims.CellDim, dims.KDim)
 
