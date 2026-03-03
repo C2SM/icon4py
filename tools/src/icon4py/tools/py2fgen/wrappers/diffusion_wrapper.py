@@ -26,6 +26,8 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
+    SmagorinskyStencilType,
+    TemperatureDiscretizationType,
     TurbulenceShearForcingType,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -106,8 +108,8 @@ def diffusion_init(
         hdiff_vn=hdiff_vn,
         hdiff_smag_w=hdiff_smag_w,
         zdiffu_t=zdiffu_t,
-        type_t_diffu=type_t_diffu,
-        type_vn_diffu=type_vn_diffu,
+        type_t_diffu=TemperatureDiscretizationType(type_t_diffu),
+        type_vn_diffu=SmagorinskyStencilType(type_vn_diffu),
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
