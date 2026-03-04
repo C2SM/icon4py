@@ -11,9 +11,14 @@ import logging
 import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import (
+    decomposer as decomp,
+    definitions as decomposition,
+    mpi_decomposition,
+)
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
-from icon4py.model.testing import definitions, serialbox
+from icon4py.model.testing import definitions, grid_utils, serialbox
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -24,6 +29,7 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 from .. import utils
+from . import utils as mpi_test_utils
 
 
 if mpi_decomposition.mpi4py is None:
@@ -65,3 +71,76 @@ def test_compute_domain_bounds(
         assert (
             computed_end == ref_end_index
         ), f"rank={processor_props.rank}/{processor_props.comm_size} - experiment = {experiment.name}: end_index for {domain} does not match: is {computed_end}, expected {ref_end_index}"
+
+
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("dim", utils.main_horizontal_dims())
+def test_bounds_decomposition(
+    processor_props: decomposition.ProcessProperties,
+    backend: gtx.typing.Backend | None,
+    experiment: definitions.Experiment,
+    dim: gtx.Dimension,
+) -> None:
+    if experiment == definitions.Experiments.MCH_CH_R04B09:
+        pytest.xfail("Limited-area grids not yet supported")
+
+    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
+    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+
+    grid_manager = mpi_test_utils.run_grid_manager_for_multi_rank(
+        file=file,
+        run_properties=processor_props,
+        decomposer=decomp.MetisDecomposer(),
+    )
+    _log.info(
+        f"rank = {processor_props.rank} : {grid_manager.decomposition_info.get_horizontal_size()!r}"
+    )
+    _log.info(
+        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"(1: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomposition.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomposition.DecompositionFlag.SECOND_HALO_LEVEL)})"
+    )
+
+    decomposition_info = grid_manager.decomposition_info
+    start_index = grid_manager.grid.start_index
+    end_index = grid_manager.grid.end_index
+    domain = h_grid.domain(dim)
+
+    local_owned_size = decomposition_info.local_index(
+        dim, decomposition.DecompositionInfo.EntryType.OWNED
+    ).shape[0]
+    local_all_size = decomposition_info.local_index(
+        dim, decomposition.DecompositionInfo.EntryType.ALL
+    ).shape[0]
+    local_halo_size = decomposition_info.local_index(
+        dim, decomposition.DecompositionInfo.EntryType.HALO
+    ).shape[0]
+    global_owned_size = decomposition_info.global_index(
+        dim, decomposition.DecompositionInfo.EntryType.OWNED
+    ).shape[0]
+    global_all_size = decomposition_info.global_index(
+        dim, decomposition.DecompositionInfo.EntryType.ALL
+    ).shape[0]
+    global_halo_size = decomposition_info.global_index(
+        dim, decomposition.DecompositionInfo.EntryType.HALO
+    ).shape[0]
+
+    # NOTE: These assumptions may change once limited area grids are supported
+    # for icon4py domain decomposition.
+    assert start_index(domain(h_grid.Zone.LOCAL)) == 0
+    assert end_index(domain(h_grid.Zone.LOCAL)) == local_owned_size
+    assert end_index(domain(h_grid.Zone.LOCAL)) == global_owned_size
+
+    assert start_index(domain(h_grid.Zone.HALO)) == local_owned_size
+    assert start_index(domain(h_grid.Zone.HALO)) == global_owned_size
+    assert end_index(domain(h_grid.Zone.END)) == local_all_size
+    assert end_index(domain(h_grid.Zone.END)) == global_all_size
+    assert (
+        end_index(domain(h_grid.Zone.END)) - start_index(domain(h_grid.Zone.HALO))
+        == local_halo_size
+    )
+    assert (
+        end_index(domain(h_grid.Zone.END)) - start_index(domain(h_grid.Zone.HALO))
+        == global_halo_size
+    )

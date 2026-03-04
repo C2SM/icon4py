@@ -15,6 +15,7 @@ from icon4py.model.common.decomposition import decomposer as decomp, definitions
 from icon4py.model.common.grid import base as base_grid, simple
 
 from ...fixtures import backend_like, processor_props
+from ...grid.utils import main_horizontal_dims
 from .. import utils
 from ..fixtures import simple_neighbor_tables
 from ..utils import dummy_four_ranks
@@ -179,8 +180,36 @@ def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor
     assert "The distribution assumes more nodes than the current run" in e.value.args[0]
 
 
+@pytest.mark.parametrize("rank", (0,)) # 1, 2, 3))
+def test_owned_halo_mask_contiguous(rank):
+    simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
+    props = dummy_four_ranks(rank)
+    halo_generator = halo.IconLikeHaloConstructor(
+        connectivities=simple_neighbor_tables,
+        run_properties=props,
+    )
+    decomp_info = halo_generator(utils.SIMPLE_DISTRIBUTION)
+
+    for dim in main_horizontal_dims():
+        owner_mask = decomp_info.owner_mask(dim)
+        owned_indices = np.where(owner_mask)[0]
+        # NOTE: These assumptions may change once limited area grids are
+        # supported for icon4py domain decomposition.
+        if len(utils.OWNED[dim][rank]) > 0:
+            assert (
+                owned_indices[0] == 0
+            ), f"Owned indices for {dim} should start at 0, but starts at {owned_indices[0]}, {owned_indices=}"
+            assert (
+                owned_indices[-1] == owned_indices.size - 1
+            ), f"Owned indices for {dim} should end at {len(owned_indices) - 1}, but ends at {owned_indices[-1]}, {owned_indices=}"
+        else:
+            assert (
+                owned_indices.size == 0
+            ), f"Expected no owned indices for {dim} on rank {rank}, but got {owned_indices=}"
+
+
 @pytest.mark.parametrize("offset", offsets)
-@pytest.mark.parametrize("rank", [0, 1, 2, 3])
+@pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_global_to_local_index(offset, rank):
     grid = simple.simple_grid()
     neighbor_tables = {
