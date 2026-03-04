@@ -221,9 +221,13 @@ class GraupelOutput:
         with netCDF4.Dataset(filename, mode="w") as ncfile:
             ncfile.createDimension("ncells", ncells)
             ncfile.createDimension("height", nlev)
+            ncfile.createDimension("surface", 1)
 
             write_height_field = functools.partial(
                 _field_to_nc, ncfile, ("height", "ncells"), dtype=np.float64
+            )
+            write_surface_field = functools.partial(
+                _field_to_nc, ncfile, ("surface", "ncells"), dtype=np.float64
             )
 
             write_height_field("ta", self.t)
@@ -236,14 +240,12 @@ class GraupelOutput:
             if self.pflx is not None:
                 write_height_field("pflx", self.pflx)
             if self.pr is not None:
-                write_height_field(
-                    "prr_gsp", self.pr
-                )  # TODO(havogt): see https://github.com/C2SM/icon4py/pull/995
+                write_surface_field("prr_gsp", self.pr)
             if self.ps is not None:
-                write_height_field("prs_gsp", self.ps)  # TODO(havogt): see above
+                write_surface_field("prs_gsp", self.ps)
             if self.pi is not None:
-                write_height_field("pri_gsp", self.pi)  # TODO(havogt): see above
+                write_surface_field("pri_gsp", self.pi)
             if self.pg is not None:
-                write_height_field("prg_gsp", self.pg)  # TODO(havogt): see above
+                write_surface_field("prg_gsp", self.pg)
             if self.pre is not None:
-                write_height_field("pre_gsp", self.pre)  # TODO(havogt): see above
+                write_surface_field("pre_gsp", self.pre)

@@ -78,6 +78,8 @@ class GlobalGridParams:
     domain_height: float | None = None
     global_num_cells: int | None = None
     num_cells: int | None = None
+    num_edges: int | None = None
+    num_vertices: int | None = None
     characteristic_length: float | None = None
 
     def __post_init__(self) -> None:
