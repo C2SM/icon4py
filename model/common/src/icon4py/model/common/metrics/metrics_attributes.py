@@ -49,7 +49,7 @@ WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
 FLAT_IDX_MAX: Final[str] = "flat_idx_max"
 NFLAT_GRADP: Final[str] = "nflat_gradp"
-PG_EDGEDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
+PG_EXDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
 MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
 HORIZONTAL_MASK_FOR_3D_DIVDAMP: Final[str] = "horizontal_mask_for_3d_divdamp"
 ZDIFF_GRADP: Final[str] = "zdiff_gradp"
@@ -62,9 +62,9 @@ MAXHGTD: Final[str] = "maxhgtd"
 MAXSLP_AVG: Final[str] = "maxslp_avg"
 MAXHGTD_AVG: Final[str] = "maxhgtd_avg"
 MAX_NBHGT: Final[str] = "max_nbhgt"
-ZD_DIFFCOEF_DSL: Final[str] = "zd_diffcoef_dsl"
-ZD_INTCOEF_DSL: Final[str] = "zd_intcoef_dsl"
-ZD_VERTOFFSET_DSL: Final[str] = "zd_vertoffset_dsl"
+ZD_DIFFCOEF: Final[str] = "zd_diffcoef"
+ZD_INTCOEF: Final[str] = "zd_intcoef"
+ZD_VERTOFFSET: Final[str] = "zd_vertoffset"
 CELL_HEIGHT_ON_HALF_LEVEL: Final[str] = "vertical_coordinates_on_half_levels"
 DEEPATMO_DIVH: Final[str] = "deepatmo_divh"
 DEEPATMO_DIVZL: Final[str] = "deepatmo_divzL"
@@ -303,8 +303,8 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="flat_idx_max",
         dtype=ta.wpfloat,
     ),
-    PG_EDGEDIST_DSL: dict(
-        standard_name=PG_EDGEDIST_DSL,
+    PG_EXDIST_DSL: dict(
+        standard_name=PG_EXDIST_DSL,
         long_name="extrapolation distance for pressure gradient downward extrapolation",
         units="",
         dims=(dims.EdgeDim, dims.KDim),
@@ -407,28 +407,28 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="max_nbhgt",
         dtype=ta.wpfloat,
     ),
-    ZD_DIFFCOEF_DSL: dict(
-        standard_name=ZD_DIFFCOEF_DSL,
-        long_name="zd_diffcoef_dsl",
+    ZD_DIFFCOEF: dict(
+        standard_name=ZD_DIFFCOEF,
+        long_name="zd_diffcoef",
         units="",
         dims=(dims.CellDim, dims.KDim),
         icon_var_name="zd_diffcoef",
         dtype=ta.wpfloat,
     ),
-    ZD_INTCOEF_DSL: dict(
-        standard_name=ZD_INTCOEF_DSL,
-        long_name="zd_intcoef_dsl",
+    ZD_INTCOEF: dict(
+        standard_name=ZD_INTCOEF,
+        long_name="zd_intcoef",
         units="",
         dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
         icon_var_name="zd_intcoef",
         dtype=ta.wpfloat,
     ),
-    ZD_VERTOFFSET_DSL: dict(
-        standard_name=ZD_VERTOFFSET_DSL,
-        long_name="zd_vertoffset_dsl",
+    ZD_VERTOFFSET: dict(
+        standard_name=ZD_VERTOFFSET,
+        long_name="zd_vertoffset",
         units="",
         dims=(dims.CellDim, dims.C2E2CDim, dims.KDim),
-        icon_var_name="zd_vertoffset_dsl",
+        icon_var_name="zd_vertoffset",
         dtype=gtx.int32,
     ),
     CELL_HEIGHT_ON_HALF_LEVEL: dict(

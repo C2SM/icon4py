@@ -179,10 +179,5 @@ class TimerCollection:
                 )
             else:
                 log.info(
-                    f"|{timer_name:^30}|"
-                    f"{'not started':^23}|"
-                    f"{'':^23}|"
-                    f"{'':^23}|"
-                    f"{'':^23}|"
-                    f"{'':^23}|"
+                    f"|{timer_name:^30}|{'not started':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|"
                 )

@@ -188,7 +188,7 @@ class VerticalGrid:
         array_value = [
             f"   0   {vct_a_array[0]:12.3f}             ",
             *(
-                f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}"
+                f"{k + 1:4d}   {vct_a_array[k + 1]:12.3f} {dvct[k]:12.3f}"
                 for k in range(vct_a_array.shape[0] - 1)
             ),
         ]
