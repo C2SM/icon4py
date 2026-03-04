@@ -13,6 +13,7 @@ from gt4py.next import common as gtx_common
 from icon4py.model.common import dimension as dims, exceptions, model_backends
 from icon4py.model.common.decomposition import decomposer as decomp, definitions, halo
 from icon4py.model.common.grid import base as base_grid, simple
+from icon4py.model.testing import test_utils
 
 from ...fixtures import backend_like, processor_props
 from ...grid.utils import main_horizontal_dims
@@ -195,6 +196,7 @@ def test_owned_halo_mask_contiguous(rank):
         owned_indices = np.where(owner_mask)[0]
         # NOTE: These assumptions may change once limited area grids are
         # supported for icon4py domain decomposition.
+        assert test_utils.is_sorted(decomp_info.halo_levels(dim)), f"Halo levels for {dim} should be sorted, but are {decomp_info.halo_levels(dim)}"
         if len(utils.OWNED[dim][rank]) > 0:
             assert (
                 owned_indices[0] == 0

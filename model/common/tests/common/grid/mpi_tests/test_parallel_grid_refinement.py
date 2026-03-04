@@ -19,6 +19,7 @@ from icon4py.model.common.decomposition import (
 )
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
 from icon4py.model.testing import definitions, grid_utils, serialbox
+from icon4py.model.testing import test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -106,6 +107,10 @@ def test_bounds_decomposition(
     start_index = grid_manager.grid.start_index
     end_index = grid_manager.grid.end_index
     domain = h_grid.domain(dim)
+
+    assert test_utils.is_sorted(
+        decomposition_info.halo_levels(dim)
+    ), f"Halo levels for {dim} should be sorted, but are {decomposition_info.halo_levels(dim)}"
 
     local_owned_size = decomposition_info.local_index(
         dim, decomposition.DecompositionInfo.EntryType.OWNED
