@@ -206,8 +206,6 @@ embedded_broken_fields = {
 @pytest.mark.parametrize(
     "attrs_name",
     [
-        # TODO(msimberg): We probably don't need to test all of these all the time,
-        # but which ones are most useful?
         geometry_attributes.CELL_AREA,
         geometry_attributes.CELL_CENTER_X,
         geometry_attributes.CELL_CENTER_Y,
