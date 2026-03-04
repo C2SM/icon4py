@@ -79,14 +79,14 @@ def test_compute_wgtfacq_e_dsl(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    wgtfacq_e_dsl_ref = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels + 1)
-    wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
+    wgtfacq_e_dsl_ref = metrics_savepoint.wgtfacq_e_dsl()
+    wgtfacq_c_dsl_ref = metrics_savepoint.wgtfacq_c_dsl()
 
     xp = data_alloc.import_array_ns(backend)
-    wgtfacq_e_dsl_full = weight_factors.compute_wgtfacq_e_dsl(
+    wgtfacq_e_dsl = weight_factors.compute_wgtfacq_e_dsl(
         e2c=icon_grid.get_connectivity("E2C").ndarray,
         z_ifc=metrics_savepoint.z_ifc().ndarray,
-        wgtfacq_c_dsl=wgtfacq_c_dsl.ndarray,
+        wgtfacq_c_dsl=wgtfacq_c_dsl_ref.ndarray,
         c_lin_e=interpolation_savepoint.c_lin_e().ndarray,
         n_edges=icon_grid.num_edges,
         nlev=icon_grid.num_levels,
@@ -94,9 +94,7 @@ def test_compute_wgtfacq_e_dsl(
         array_ns=xp,
     )
 
-    assert test_utils.dallclose(
-        data_alloc.as_numpy(wgtfacq_e_dsl_full), wgtfacq_e_dsl_ref.asnumpy()
-    )
+    assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_e_dsl), wgtfacq_e_dsl_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -105,12 +103,12 @@ def test_compute_wgtfacq_c_dsl(
     metrics_savepoint: sb.MetricSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
+    wgtfacq_c_dsl_ref = metrics_savepoint.wgtfacq_c_dsl()
 
     xp = data_alloc.import_array_ns(backend)
-    wgtfacq_c_dsl_ndarray = weight_factors.compute_wgtfacq_c_dsl(
+    wgtfacq_c_dsl = weight_factors.compute_wgtfacq_c_dsl(
         z_ifc=metrics_savepoint.z_ifc().ndarray,
         nlev=icon_grid.num_levels,
         array_ns=xp,
     )
-    assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_c_dsl_ndarray), wgtfacq_c_dsl.asnumpy())
+    assert test_utils.dallclose(data_alloc.as_numpy(wgtfacq_c_dsl), wgtfacq_c_dsl_ref.asnumpy())

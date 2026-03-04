@@ -334,7 +334,7 @@ def assert_up_to_order(
     for n in range(reduced_table.shape[0]):
         assert np.all(
             np.isin(reduced_table[n, :], reduced_reference[n, :])
-        ), f"values in row {n+start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
+        ), f"values in row {n + start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
 
 
 @pytest.mark.with_netcdf

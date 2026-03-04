@@ -22,6 +22,7 @@ from collections.abc import Callable
 import gt4py.next as gtx
 import numpy as np
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -64,9 +65,10 @@ def diffusion_init(
     nudgecoeff_e: fa.EdgeField[wpfloat],
     rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
     rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    zd_diffcoef: fa.CellKField[wpfloat] | None,
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32] | None,
-    zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.float64] | None,
+    zd_cellidx: wrapper_common.OptionalInt32Array2D,
+    zd_vertidx: wrapper_common.OptionalInt32Array2D,
+    zd_intcoef: wrapper_common.OptionalFloat64Array2D,
+    zd_diffcoef: wrapper_common.OptionalFloat64Array1D,
     ndyn_substeps: gtx.int32,
     diffusion_type: gtx.int32,
     hdiff_w: bool,
@@ -122,20 +124,67 @@ def diffusion_init(
     diffusion_params = DiffusionParams(config)
 
     nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
-    cell_k_domain = {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
+    cell_k_domain = gtx.domain(
+        {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
+    )
     c2e2c_size = geofac_grg_x.domain[dims.C2E2CODim].unit_range.stop - 1
-    cell_c2e2c_k_domain = {
-        dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
-        dims.C2E2CDim: c2e2c_size,
-        dims.KDim: nlev,
-    }
+    cell_c2e2c_k_domain = gtx.domain(
+        {
+            dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
+            dims.C2E2CDim: c2e2c_size,
+            dims.KDim: nlev,
+        }
+    )
     xp = wgtfac_c.array_ns
-    if zd_diffcoef is None:
+
+    if zd_cellidx is None:
+        # then l_zdiffu_t = .false. and these are all not initialized
         zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype)
-    if zd_intcoef is None:
         zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
-    if zd_vertoffset is None:
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
+    else:
+        # transform lists to fields
+        #
+        # only the first row is needed, the others are for C2E2C neighbors, but slicing in fortran causes issues
+        zd_cellidx = zd_cellidx[0, :]
+        # these are the three k offsets for the C2E2C neighbors
+        zd_vertoffset = zd_vertidx[1:, :] - zd_vertidx[0, :]
+        # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
+        zd_vertidx = zd_vertidx[0, :]
+
+        zd_diffcoef = data_alloc.list2field(
+            domain=cell_k_domain,
+            values=zd_diffcoef,
+            indices=(
+                data_alloc.adjust_fortran_indices(zd_cellidx),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+        zd_intcoef = data_alloc.list2field(
+            domain=cell_c2e2c_k_domain,
+            values=zd_intcoef.T,
+            indices=(
+                data_alloc.adjust_fortran_indices(zd_cellidx),
+                slice(None),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+        zd_vertoffset = data_alloc.list2field(
+            domain=cell_c2e2c_k_domain,
+            values=zd_vertoffset.T,
+            indices=(
+                data_alloc.adjust_fortran_indices(zd_cellidx),
+                slice(None),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.int32(0),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+
     # Metric state
     metric_state = DiffusionMetricState(
         theta_ref_mc=theta_ref_mc,
