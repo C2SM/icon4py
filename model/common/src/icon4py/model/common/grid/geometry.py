@@ -188,9 +188,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(
-                        h_grid.Zone.HALO
-                    ),  # TODO(msimberg): LOCAL too little but should be enough. HALO and END enough.
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
             do_exchange=True,
@@ -219,9 +217,7 @@ class GridGeometry(factory.FieldSource):
                     domain={
                         dims.EdgeDim: (
                             self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                            self._edge_domain(
-                                h_grid.Zone.HALO
-                            ),  # TODO(msimberg): END too much, invalid neighbor access. LOCAL too little?
+                            self._edge_domain(h_grid.Zone.LOCAL),
                         )
                     },
                     fields={"far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH},
@@ -257,9 +253,7 @@ class GridGeometry(factory.FieldSource):
                     domain={
                         dims.EdgeDim: (
                             self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                            self._edge_domain(
-                                h_grid.Zone.HALO
-                            ),  # TODO(msimberg): END too much, invalid neighbor access. LOCAL too little?
+                            self._edge_domain(h_grid.Zone.LOCAL),
                         )
                     },
                     fields={"far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH},
@@ -477,9 +471,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(
-                        h_grid.Zone.HALO
-                    ),  # TODO(msimberg): END too much, invalid neighbor access. LOCAL too little?
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
             do_exchange=False,
@@ -514,9 +506,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(
-                        h_grid.Zone.HALO
-                    ),  # TODO(msimberg): END too much, invalid neighbor access. LOCAL too little?
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
             do_exchange=False,
@@ -553,9 +543,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(
-                        h_grid.Zone.HALO
-                    ),  # TODO(msimberg): END too much, invalid neighbor access. LOCAL too little?
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
             do_exchange=False,
@@ -590,9 +578,7 @@ class GridGeometry(factory.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(
-                        h_grid.Zone.HALO
-                    ),  # TODO(msimberg): END too much, invalid neighbor access. LOCAL too little?
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
             do_exchange=False,
