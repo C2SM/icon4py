@@ -433,4 +433,19 @@ def graupel_run_self_copy_removal_inside_scan(sdfg: dace.SDFG) -> None:
 
     sdfg.validate()
 
+    # all_maps_with_te_input = [node for node in st.nodes() if isinstance(node, dace_nodes.MapEntry) and "IN_te" in node.in_connectors]
+    # all_maps_with_te_input_and_if_stmt = [map_with_if for map_with_if in all_maps_with_te_input if any(isinstance(map_node, dace_nodes.NestedSDFG) and map_node.label.startswith("if_stmt_") for map_node in st.scope_subgraph(map_with_if).nodes())]
+    # map_with_te_input_and_if_stmt = next(iter(all_maps_with_te_input_and_if_stmt))
+    # nsdfg_if_stmt_with_te = [node for node in st.scope_subgraph(map_with_te_input_and_if_stmt).nodes() if isinstance(node, dace_nodes.NestedSDFG)][0]
+    # nsdfg_conditional_block = nsdfg_if_stmt_with_te.sdfg.nodes()[0]
+    # else_branch = nsdfg_conditional_block.branches[1][1]
+    # else_branch_state = else_branch.nodes()[0]
+    # assert "else_body" in else_branch.name
+    # assert len(else_branch_state.nodes()) == 2 and all(isinstance(node, dace_nodes.AccessNode) for node in else_branch_state.nodes())
+    # # breakpoint()
+    # else_branch_state.sdfg.remove_nodes_from([internal_node for internal_node in else_branch_state.nodes()])
+    # nsdfg_conditional_block.remove_branch(else_branch)
+    # # breakpoint()
+    # sdfg.validate()
+
     sdfg.save("graupel_run_self_copy_removal_inside_scan_at_exit.sdfg")
