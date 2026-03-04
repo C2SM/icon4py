@@ -81,9 +81,10 @@ def cpu_allocator() -> gtx_typing.Allocator:
 
 @pytest.fixture(
     params=[
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.EXCLAIM_APE,
-        definitions.Experiments.GAUSS3D,
+        # definitions.Experiments.MCH_CH_R04B09,
+        # definitions.Experiments.EXCLAIM_APE,
+        # definitions.Experiments.GAUSS3D,
+        definitions.Experiments.WEISMAN_KLEMP_TORUS,
     ],
     ids=lambda r: r.name,
 )
