@@ -367,6 +367,21 @@ class IconLikeHaloConstructor(HaloConstructor):
             vertex_on_cutting_line,
             self._connectivity(dims.V2C),
         )
+
+        # Once mask has been updated, some owned cells may now belong to the
+        # halo and be in the wrong position. We reorder the list of all
+        # vertices, and then we have to update the mask again, since it was
+        # based on the old list of all vertices.
+        vertex_owner_list = all_vertices[vertex_owner_mask]
+        all_vertices = self._xp.hstack(
+            (
+                vertex_owner_list,
+                self._xp.setdiff1d(vertex_on_owned_cells, vertex_owner_list),
+                vertex_second_halo,
+            )
+        )
+        vertex_owner_mask = self._xp.isin(all_vertices, vertex_owner_list)
+
         vertex_halo_levels = self._xp.full(
             all_vertices.size,
             defs.DecompositionFlag.UNDEFINED.value,
@@ -403,6 +418,21 @@ class IconLikeHaloConstructor(HaloConstructor):
             edge_on_cutting_line,
             self._connectivity(dims.E2C),
         )
+
+        # Once mask has been updated, some owned cells may now belong to the
+        # halo and be in the wrong position. We reorder the list of all
+        # vertices, and then we have to update the mask again, since it was
+        # based on the old list of all vertices.
+        edge_owner_list = all_edges[edge_owner_mask]
+        all_edges = self._xp.hstack(
+            (
+                edge_owner_list,
+                self._xp.setdiff1d(edge_on_owned_cells, edge_owner_list),
+                edge_second_level,
+                edge_third_level,
+            )
+        )
+        edge_owner_mask = self._xp.isin(all_edges, edge_owner_list)
 
         edge_halo_levels = self._xp.full(
             all_edges.shape,
