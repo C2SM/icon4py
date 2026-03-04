@@ -199,17 +199,11 @@ def test_owned_halo_mask_contiguous(rank):
         assert test_utils.is_sorted(
             decomp_info.halo_levels(dim)
         ), f"Halo levels for {dim} should be sorted, but are {decomp_info.halo_levels(dim)}"
-        if len(utils.OWNED[dim][rank]) > 0:
-            assert (
-                owned_indices[0] == 0
-            ), f"Owned indices for {dim} should start at 0, but starts at {owned_indices[0]}, {owned_indices=}"
-            assert (
-                owned_indices[-1] == owned_indices.size - 1
-            ), f"Owned indices for {dim} should end at {len(owned_indices) - 1}, but ends at {owned_indices[-1]}, {owned_indices=}"
-        else:
-            assert (
-                owned_indices.size == 0
-            ), f"Expected no owned indices for {dim} on rank {rank}, but got {owned_indices=}"
+        assert (
+            owned_indices == np.arange(owned_indices.size)
+        ).all(), (
+            f"Owned indices for {dim} should be contiguous and start at 0, but are {owned_indices=}"
+        )
 
 
 @pytest.mark.parametrize("offset", offsets)
