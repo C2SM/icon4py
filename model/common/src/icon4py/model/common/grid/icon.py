@@ -81,6 +81,7 @@ class GlobalGridParams:
     num_edges: int | None = None
     num_vertices: int | None = None
     characteristic_length: float | None = None
+    limited_area: bool = False
 
     def __post_init__(self) -> None:
         if self.geometry_type is not None:
