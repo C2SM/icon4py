@@ -23,7 +23,7 @@ from ..utils import dummy_four_ranks
 from .test_definitions import get_neighbor_tables_for_simple_grid, offsets
 
 
-@pytest.mark.parametrize("rank", [0, 1, 2, 4])
+@pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like):
     processor_props = utils.DummyProps(rank=rank)
     allocator = model_backends.get_allocator(backend_like)
@@ -40,7 +40,7 @@ def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like
 
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
-@pytest.mark.parametrize("rank", [0, 1, 2, 4])
+@pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_halo_constructor_decomposition_info_global_indices(rank, simple_neighbor_tables, dim):
     processor_props = utils.dummy_four_ranks(rank=rank)
     if processor_props.comm_size != 4:
@@ -181,7 +181,7 @@ def test_halo_constructor_validate_number_of_node_mismatch(rank, simple_neighbor
     assert "The distribution assumes more nodes than the current run" in e.value.args[0]
 
 
-@pytest.mark.parametrize("rank", (0,)) # 1, 2, 3))
+@pytest.mark.parametrize("rank", (0, 1, 2, 3))
 def test_owned_halo_mask_contiguous(rank):
     simple_neighbor_tables = get_neighbor_tables_for_simple_grid()
     props = dummy_four_ranks(rank)
@@ -196,7 +196,9 @@ def test_owned_halo_mask_contiguous(rank):
         owned_indices = np.where(owner_mask)[0]
         # NOTE: These assumptions may change once limited area grids are
         # supported for icon4py domain decomposition.
-        assert test_utils.is_sorted(decomp_info.halo_levels(dim)), f"Halo levels for {dim} should be sorted, but are {decomp_info.halo_levels(dim)}"
+        assert test_utils.is_sorted(
+            decomp_info.halo_levels(dim)
+        ), f"Halo levels for {dim} should be sorted, but are {decomp_info.halo_levels(dim)}"
         if len(utils.OWNED[dim][rank]) > 0:
             assert (
                 owned_indices[0] == 0
