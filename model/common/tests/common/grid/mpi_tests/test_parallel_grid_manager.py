@@ -673,6 +673,143 @@ def test_metrics_fields_compare_single_multi_rank(
     _log.info(f"rank = {processor_props.rank} - DONE")
 
 
+# MASK_PROG_HALO_C is defined specially only on halos, so we have a separate
+# test for it. It doesn't make sense to compare to a single-rank reference since
+# it has no halos.
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_metrics_mask_prog_halo_c(
+    processor_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
+    experiment: test_defs.Experiment,
+) -> None:
+    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+        pytest.xfail("Limited-area grids not yet supported")
+
+    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
+
+    (
+        lowest_layer_thickness,
+        model_top_height,
+        stretch_factor,
+        damping_height,
+        rayleigh_coeff,
+        exner_expol,
+        vwind_offctr,
+        rayleigh_type,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
+    ) = test_defs.construct_metrics_config(experiment)
+    vertical_config = v_grid.VerticalGridConfig(
+        experiment.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    # TODO(msimberg): Dummy vct_a? Taken from test_io.py.
+    xp = data_alloc.import_array_ns(backend)
+    allocator = model_backends.get_allocator(backend)
+    vertical_grid = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=gtx.as_field(
+            (dims.KDim,),
+            xp.linspace(12000.0, 0.0, experiment.num_levels + 1),
+            allocator=allocator,
+        ),
+        vct_b=gtx.as_field(
+            (dims.KDim,),
+            xp.linspace(12000.0, 0.0, experiment.num_levels + 1),
+            allocator=allocator,
+        ),
+    )
+
+    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+
+    multi_rank_grid_manager = utils.run_grid_manager_for_multi_rank(
+        file=file,
+        run_properties=processor_props,
+        decomposer=decomp.MetisDecomposer(),
+        num_levels=experiment.num_levels,
+    )
+    _log.info(
+        f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
+    )
+    _log.info(
+        f"rank = {processor_props.rank}: halo size for 'CellDim' "
+        f"(1: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.FIRST_HALO_LEVEL)}), "
+        f"(2: {multi_rank_grid_manager.decomposition_info.get_halo_size(dims.CellDim, decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL)})"
+    )
+    multi_rank_geometry = geometry.GridGeometry(
+        backend=backend,
+        grid=multi_rank_grid_manager.grid,
+        coordinates=multi_rank_grid_manager.coordinates,
+        decomposition_info=multi_rank_grid_manager.decomposition_info,
+        extra_fields=multi_rank_grid_manager.geometry_fields,
+        metadata=geometry_attributes.attrs,
+        exchange=decomp_defs.create_exchange(
+            processor_props, multi_rank_grid_manager.decomposition_info
+        ),
+        global_reductions=decomp_defs.create_reduction(processor_props),
+    )
+    multi_rank_interpolation = interpolation_factory.InterpolationFieldsFactory(
+        grid=multi_rank_grid_manager.grid,
+        decomposition_info=multi_rank_grid_manager.decomposition_info,
+        geometry_source=multi_rank_geometry,
+        backend=backend,
+        metadata=interpolation_attributes.attrs,
+        exchange=decomp_defs.create_exchange(
+            processor_props, multi_rank_grid_manager.decomposition_info
+        ),
+    )
+    multi_rank_metrics = metrics_factory.MetricsFieldsFactory(
+        grid=multi_rank_geometry.grid,
+        vertical_grid=vertical_grid,
+        decomposition_info=multi_rank_grid_manager.decomposition_info,
+        geometry_source=multi_rank_geometry,
+        # TODO(msimberg): Valid dummy topography?
+        topography=(
+            gtx.as_field(
+                (dims.CellDim,),
+                xp.zeros(multi_rank_geometry.grid.num_cells),
+                allocator=allocator,
+            )
+        ),
+        interpolation_source=multi_rank_interpolation,
+        backend=backend,
+        metadata=metrics_attributes.attrs,
+        rayleigh_type=rayleigh_type,
+        rayleigh_coeff=rayleigh_coeff,
+        exner_expol=exner_expol,
+        vwind_offctr=vwind_offctr,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        exchange=mpi_decomposition.GHexMultiNodeExchange(
+            processor_props, multi_rank_grid_manager.decomposition_info
+        ),
+    )
+
+    attrs_name = metrics_attributes.MASK_PROG_HALO_C
+    field = multi_rank_metrics.get(attrs_name).asnumpy()
+    c_refin_ctrl = multi_rank_metrics.get("c_refin_ctrl").asnumpy()
+    assert not np.any(
+        field[
+            multi_rank_grid_manager.decomposition_info.local_index(
+                dims.CellDim, decomp_defs.DecompositionInfo.EntryType.OWNED
+            )
+        ]
+    ), f"rank={processor_props.rank} - found nonzero in owned entries of {attrs_name}"
+    halo_indices = multi_rank_grid_manager.decomposition_info.local_index(
+        dims.CellDim, decomp_defs.DecompositionInfo.EntryType.HALO
+    )
+    assert np.all(
+        field[halo_indices]
+        == ~((c_refin_ctrl[halo_indices] >= 1) & (c_refin_ctrl[halo_indices] <= 4))
+    ), f"rank={processor_props.rank} - halo for MASK_PROG_HALO_C is incorrect"
+
+    _log.info(f"rank = {processor_props.rank} - DONE")
+
+
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_validate_skip_values_in_distributed_connectivities(
