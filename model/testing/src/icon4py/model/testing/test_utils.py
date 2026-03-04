@@ -28,6 +28,10 @@ def dallclose(
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
+def is_sorted(array: npt.ArrayLike) -> bool:
+    return np.all(array[:-1] <= array[1:])
+
+
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
     return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]
 
