@@ -28,7 +28,7 @@ exclude = [
     "uxarray",
     "cftime",
     "viztracer",
-
+    "clang_format",
 ]
 rename = ["serialbox:serialbox4py"]
 

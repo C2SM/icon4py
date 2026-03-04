@@ -11,18 +11,21 @@ import functools
 import logging
 from collections.abc import Callable, Iterable
 from types import ModuleType
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Annotated, Final, TypeAlias
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 from gt4py import eve
 from gt4py._core import definitions as gt4py_definitions
+from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, horizontal as h_grid, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils.data_allocation import adjust_fortran_indices
+from icon4py.tools import py2fgen
 
 
 if TYPE_CHECKING:
@@ -43,6 +46,76 @@ NDArray: TypeAlias = np.ndarray | xp.ndarray
 assert hasattr(mpi_decomposition, "get_multinode_properties")
 
 log = logging.getLogger(__name__)
+
+Int32Array1D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.INT32,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=False,
+    ),
+]
+
+OptionalInt32Array1D: TypeAlias = Annotated[
+    data_alloc.NDArray | None,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.INT32,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=True,
+    ),
+]
+
+OptionalInt32Array2D: TypeAlias = Annotated[
+    data_alloc.NDArray | None,
+    py2fgen.ArrayParamDescriptor(
+        rank=2,
+        dtype=ts.ScalarKind.INT32,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=True,
+    ),
+]
+
+Float64Array1D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=False,
+    ),
+]
+
+Float64Array2D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=2,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=False,
+    ),
+]
+
+OptionalFloat64Array1D: TypeAlias = Annotated[
+    data_alloc.NDArray | None,
+    py2fgen.ArrayParamDescriptor(
+        rank=1,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=True,
+    ),
+]
+
+OptionalFloat64Array2D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=2,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=True,
+    ),
+]
 
 
 class BackendIntEnum(eve.IntEnum):
@@ -78,11 +151,6 @@ def cached_dummy_field_factory(
         return gtx.zeros(domain, dtype=dtype, allocator=allocator)
 
     return impl
-
-
-def adjust_fortran_indices(inp: NDArray) -> NDArray:
-    """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
-    return inp - 1
 
 
 def shrink_to_dimension(

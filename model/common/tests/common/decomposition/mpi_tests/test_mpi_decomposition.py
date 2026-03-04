@@ -313,7 +313,7 @@ def test_exchange_on_dummy_data(
     result = input_field.asnumpy()
     _log.info(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
     _log.info(
-        f" rank={processor_props.rank} - exchanged points: {np.sum(result != number)/grid.num_levels}"
+        f" rank={processor_props.rank} - exchanged points: {np.sum(result != number) / grid.num_levels}"
     )
     _log.info(f"rank={processor_props.rank} - halo points: {halo_points}")
     changed_points = np.argwhere(result[:, 2] != number)

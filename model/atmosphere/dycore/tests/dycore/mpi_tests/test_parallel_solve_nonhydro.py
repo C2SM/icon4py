@@ -40,7 +40,7 @@ _log = logging.getLogger(__name__)
             2,
             "2021-06-20T12:00:10.000",
             1,
-        )
+        ),
     ],
 )
 @pytest.mark.mpi
@@ -88,7 +88,7 @@ def test_run_solve_nonhydro_single_step(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
     _log.info(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo edges {np.count_nonzero(np.invert( decomposition_info.owner_mask(dims.EdgeDim)))}"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo edges {np.count_nonzero(np.invert(decomposition_info.owner_mask(dims.EdgeDim)))}"
     )
     _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"

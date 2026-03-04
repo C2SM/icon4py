@@ -12,7 +12,7 @@ import functools
 import logging
 import math
 import sys
-from typing import Final, Literal
+from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -105,7 +105,7 @@ class TemperatureDiscretizationType(int, enum.Enum):
     """
 
     HOMOGENEOUS = 1  #: K Lap(T)
-    HETEROGENOUS = 2  #: Div (K Grad(T))
+    HETEROGENEOUS = 2  #: Div (K Grad(T))
 
 
 class TurbulenceShearForcingType(int, enum.Enum):
@@ -125,27 +125,6 @@ class TurbulenceShearForcingType(int, enum.Enum):
     VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
 
 
-ValidDiffusionType = Literal[
-    DiffusionType.NO_DIFFUSION,
-    DiffusionType.LINEAR_2ND_ORDER,
-    DiffusionType.SMAGORINSKY_NO_BACKGROUND,
-    DiffusionType.LINEAR_4TH_ORDER,
-    DiffusionType.SMAGORINSKY_4TH_ORDER,
-]
-ValidSmagorinskyStencilType = Literal[
-    SmagorinskyStencilType.DIAMOND_VERTICES, SmagorinskyStencilType.CELLS_AND_VERTICES
-]
-ValidTemperatureDiscretizationType = Literal[
-    TemperatureDiscretizationType.HOMOGENEOUS, TemperatureDiscretizationType.HETEROGENOUS
-]
-ValidTurbulenceShearForcingType = Literal[
-    TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
-    TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND,
-    TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
-    TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH,
-]
-
-
 class DiffusionConfig:
     """
     Contains necessary parameter to configure a diffusion run.
@@ -160,14 +139,14 @@ class DiffusionConfig:
 
     def __init__(
         self,
-        diffusion_type: ValidDiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
+        diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w: bool = True,
         hdiff_vn: bool = True,
         hdiff_temp: bool = True,
         hdiff_smag_w: bool = False,
-        type_vn_diffu: ValidSmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
+        type_vn_diffu: SmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
         smag_3d: bool = False,
-        type_t_diffu: ValidTemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENOUS,
+        type_t_diffu: TemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENEOUS,
         hdiff_efdt_ratio: float = 36.0,
         hdiff_w_efdt_ratio: float = 15.0,
         smagorinski_scaling_factor: float = 0.015,
@@ -180,7 +159,7 @@ class DiffusionConfig:
         _nudge_max_coeff: float | None = None,  # default is set in __init__
         max_nudging_coefficient: float | None = None,  # default is set in __init__
         nudging_decay_rate: float = 2.0,
-        shear_type: ValidTurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+        shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         ltkeshs: bool = True,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
@@ -309,7 +288,7 @@ class DiffusionConfig:
                 "Only type_vn_diffu 1 = `Smagorinsky diffusion with diamond stencil on vertices` is implemented"
             )
 
-        if self.type_t_diffu != TemperatureDiscretizationType.HETEROGENOUS:
+        if self.type_t_diffu != TemperatureDiscretizationType.HETEROGENEOUS:
             raise NotImplementedError(
                 "Only type_t_diffu 2 = `Smagorinsky diffusion with heterogeneous discretization` is implemented"
             )
@@ -592,7 +571,6 @@ class Diffusion:
             program=apply_diffusion_to_theta_and_exner,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
-                "mask": self._metric_state.mask_hdiff,
                 "zd_vertoffset": self._metric_state.zd_vertoffset,
                 "zd_diffcoef": self._metric_state.zd_diffcoef,
                 "vcoef": self._metric_state.zd_intcoef,
