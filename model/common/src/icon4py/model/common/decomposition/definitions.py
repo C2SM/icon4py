@@ -120,7 +120,7 @@ class DecompositionInfo:
     def _to_local_index(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         data = self._global_index[dim]
         assert data.ndim == 1
-        return data_alloc.array_ns_from_array(data).arange(data.shape[0])
+        return data_alloc.array_namespace(data).arange(data.shape[0])
 
     def owner_mask(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
@@ -149,14 +149,14 @@ class DecompositionInfo:
 
     def get_halo_size(self, dim: gtx.Dimension, flag: DecompositionFlag) -> int:
         level_mask = self.halo_level_mask(dim, flag)
-        return data_alloc.array_ns_from_array(level_mask).count_nonzero(level_mask)
+        return data_alloc.array_namespace(level_mask).count_nonzero(level_mask)
 
     def halo_levels(self, dim: gtx.Dimension) -> data_alloc.NDArray:
         return self._halo_levels[dim]
 
     def halo_level_mask(self, dim: gtx.Dimension, level: DecompositionFlag) -> data_alloc.NDArray:
         levels = self._halo_levels[dim]
-        return data_alloc.array_ns_from_array(levels).where(levels == level.value, True, False)
+        return data_alloc.array_namespace(levels).where(levels == level.value, True, False)
 
 
 class ExchangeResult(Protocol):

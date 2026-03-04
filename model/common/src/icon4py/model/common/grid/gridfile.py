@@ -44,7 +44,7 @@ class NoTransformation(IndexTransformation):
     """Empty implementation of the Protocol. Just return zeros."""
 
     def __call__(self, array: data_alloc.NDArray) -> data_alloc.NDArray:
-        return data_alloc.array_ns_from_array(array).zeros_like(array)
+        return data_alloc.array_namespace(array).zeros_like(array)
 
 
 class ToZeroBasedIndexTransformation(IndexTransformation):
@@ -55,7 +55,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         Fortran indices are 1-based, hence the offset is -1 for 0-based ness of python except for
         INVALID values which are marked with -1 in the grid file and are kept such.
         """
-        xp = data_alloc.array_ns_from_array(array)
+        xp = data_alloc.array_namespace(array)
         return xp.asarray(xp.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
 
