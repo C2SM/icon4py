@@ -1236,7 +1236,7 @@ def compute_lsq_coeffs(
             for js in range(lsq_dim_stencil):
                 z_dist_g[:, js, :] = np.asarray(
                     gnomonic_proj(
-                        cell_lon[:], cell_lat[:], cell_lon[c2e2c[:, js]], cell_lat[c2e2c[:, js]]
+                        cell_lon, cell_lat, cell_lon[c2e2c[:, js]], cell_lat[c2e2c[:, js]]
                     )
                 ).T
 
