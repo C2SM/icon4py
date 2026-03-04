@@ -315,14 +315,13 @@ def test_geometry_fields_compare_single_multi_rank(
     field = multi_rank_geometry.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
-    check_halos = True
     check_local_global_field(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         processor_props=processor_props,
         dim=dim,
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
-        check_halos=check_halos,
+        check_halos=True,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -333,8 +332,6 @@ def test_geometry_fields_compare_single_multi_rank(
 @pytest.mark.parametrize(
     "attrs_name",
     [
-        # TODO(msimberg): We probably don't need to test all of these all the time,
-        # but which ones are most useful?
         interpolation_attributes.CELL_AW_VERTS,
         interpolation_attributes.C_BLN_AVG,
         interpolation_attributes.C_LIN_E,
@@ -431,14 +428,13 @@ def test_interpolation_fields_compare_single_multi_rank(
     field = multi_rank_interpolation.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
-    check_halos = True
     check_local_global_field(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         processor_props=processor_props,
         dim=dim,
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
-        check_halos=check_halos,
+        check_halos=True,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -449,8 +445,6 @@ def test_interpolation_fields_compare_single_multi_rank(
 @pytest.mark.parametrize(
     "attrs_name",
     [
-        # TODO(msimberg): We probably don't need to test all of these all the time,
-        # but which ones are most useful?
         metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL,
         metrics_attributes.COEFF1_DWDZ,
         metrics_attributes.COEFF2_DWDZ,
@@ -470,10 +464,10 @@ def test_interpolation_fields_compare_single_multi_rank(
         metrics_attributes.EXNER_W_EXPLICIT_WEIGHT_PARAMETER,
         metrics_attributes.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,
         metrics_attributes.FLAT_IDX_MAX,
-        # metrics_attributes.HORIZONTAL_MASK_FOR_3D_DIVDAMP, # TODO(msimberg): Wrong?
+        metrics_attributes.HORIZONTAL_MASK_FOR_3D_DIVDAMP,
         metrics_attributes.INV_DDQZ_Z_FULL,
         metrics_attributes.MASK_HDIFF,
-        # metrics_attributes.MASK_PROG_HALO_C, # TODO(msimberg): By definition only different on halos, so global comparison doesn't make sense?
+        # metrics_attributes.MASK_PROG_HALO_C, # TODO(msimberg): Add separate test. Local to global comparison doesn't make sense.
         metrics_attributes.MAXHGTD,
         metrics_attributes.MAXHGTD_AVG,
         metrics_attributes.MAXSLP,
@@ -493,7 +487,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         metrics_attributes.WGTFACQ_C,
         metrics_attributes.WGTFACQ_E,
         metrics_attributes.WGTFAC_C,
-        # metrics_attributes.WGTFAC_E, # TODO(msimberg): Fails, but not computed on halos and no halos exchanged. Do not check halos?
+        metrics_attributes.WGTFAC_E,
         metrics_attributes.ZDIFF_GRADP,
         metrics_attributes.ZD_DIFFCOEF_DSL,
         metrics_attributes.ZD_INTCOEF_DSL,
@@ -667,14 +661,13 @@ def test_metrics_fields_compare_single_multi_rank(
         assert isinstance(field, state_utils.ScalarType)
         assert pytest.approx(field) == field_ref
     else:
-        check_halos = True
         check_local_global_field(
             decomposition_info=multi_rank_grid_manager.decomposition_info,
             processor_props=processor_props,
             dim=field_ref.domain.dims[0],
             global_reference_field=field_ref.asnumpy(),
             local_field=field.asnumpy(),
-            check_halos=check_halos,
+            check_halos=(attrs_name != metrics_attributes.WGTFAC_E),
         )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
