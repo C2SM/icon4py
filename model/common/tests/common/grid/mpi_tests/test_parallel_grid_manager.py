@@ -37,6 +37,7 @@ from icon4py.model.testing import definitions as test_defs, grid_utils, test_uti
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     experiment,
+    grid_description,
     processor_props,
     topography_savepoint,
 )
@@ -259,10 +260,10 @@ embedded_broken_fields = {
 def test_geometry_fields_compare_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
-    experiment: test_defs.Experiment,
+    grid_description: test_defs.GridDescription,
     attrs_name: str,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if grid_description.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
@@ -270,9 +271,9 @@ def test_geometry_fields_compare_single_multi_rank(
 
     # TODO(msimberg): Add fixtures for single/multi-rank
     # grid/geometry/interpolation/metrics factories.
-    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
+    grid_file = grid_utils._download_grid_file(grid_description)
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file)
+    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(grid_file)
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
         grid=single_rank_grid_manager.grid,
@@ -286,7 +287,7 @@ def test_geometry_fields_compare_single_multi_rank(
     )
 
     multi_rank_grid_manager = utils.run_grid_manager_for_multi_rank(
-        file=file,
+        file=grid_file,
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
     )
