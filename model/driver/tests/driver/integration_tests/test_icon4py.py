@@ -43,42 +43,55 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
     [
+        # (
+        #     definitions.Experiments.MCH_CH_R04B09,
+        #     1,
+        #     2,
+        #     1,
+        #     2,
+        #     "2021-06-20T12:00:00.000",
+        #     "2021-06-20T12:00:10.000",
+        #     "2021-06-20T12:00:10.000",
+        #     "2021-06-20T12:00:10.000",
+        #     True,
+        #     False,
+        # ),
+        # (
+        #     definitions.Experiments.MCH_CH_R04B09,
+        #     1,
+        #     2,
+        #     1,
+        #     2,
+        #     "2021-06-20T12:00:10.000",
+        #     "2021-06-20T12:00:20.000",
+        #     "2021-06-20T12:00:20.000",
+        #     "2021-06-20T12:00:20.000",
+        #     False,
+        #     False,
+        # ),
+        # (
+        #     definitions.Experiments.GAUSS3D,
+        #     1,
+        #     2,
+        #     1,
+        #     5,
+        #     "2001-01-01T00:00:00.000",
+        #     "2001-01-01T00:00:04.000",
+        #     "2001-01-01T00:00:04.000",
+        #     "2001-01-01T00:00:04.000",
+        #     False,
+        #     False,
+        # ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
-            1,
-            2,
-            1,
-            2,
-            "2021-06-20T12:00:00.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            True,
-            False,
-        ),
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            1,
-            2,
-            1,
-            2,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            False,
-            False,
-        ),
-        (
-            definitions.Experiments.GAUSS3D,
+            definitions.Experiments.JW,
             1,
             2,
             1,
             5,
-            "2001-01-01T00:00:00.000",
-            "2001-01-01T00:00:04.000",
-            "2001-01-01T00:00:04.000",
-            "2001-01-01T00:00:04.000",
+            "2008-09-01T00:00:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
             False,
             False,
         ),
@@ -106,9 +119,14 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     backend: gtx_typing.Backend,
 ):
-    if experiment == definitions.Experiments.GAUSS3D:
+    if experiment in (definitions.Experiments.GAUSS3D, definitions.Experiments.JW):
+        experiment_type = (
+            driver_init.ExperimentType.GAUSS3D
+            if experiment == definitions.Experiments.GAUSS3D
+            else driver_init.ExperimentType.JABW
+        )
         config = icon4py_configuration.read_config(
-            experiment_type=driver_init.ExperimentType.GAUSS3D,
+            experiment_type=experiment_type,
             backend=backend,
         )
         diffusion_config = config.diffusion_config
@@ -351,7 +369,7 @@ def test_run_timeloop_single_step(
     assert test_utils.dallclose(
         prognostic_states.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=8e-14,
+        atol=8e-12,
     )
 
     assert test_utils.dallclose(

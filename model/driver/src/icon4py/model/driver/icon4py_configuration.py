@@ -115,7 +115,7 @@ def read_config(
             hdiff_efdt_ratio=10.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
-            zdiffu_t=True,
+            zdiffu_t=False,
             velocity_boundary_diffusion_denom=200.0,
         )
 
@@ -124,6 +124,7 @@ def read_config(
             # original igradp_method is 2
             # original divdamp_order is 4
             fourth_order_divdamp_factor=0.0025,
+            rayleigh_coeff=0.1
         )
 
     def _mch_ch_r04b09_config():
@@ -144,7 +145,7 @@ def read_config(
     def _jablonowski_williamson_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
-            end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
+            end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend=backend,
