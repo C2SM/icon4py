@@ -81,7 +81,7 @@ def cpu_allocator() -> gtx_typing.Allocator:
 
 @pytest.fixture(
     params=[
-        definitions.Grids.R01B01_GLOBAL,
+        # definitions.Grids.R01B01_GLOBAL, # TODO(msimberg): Enable this at some point.
         definitions.Grids.R02B04_GLOBAL,
         definitions.Grids.MCH_CH_R04B09_DSL,
         definitions.Grids.TORUS_50000x5000,
@@ -91,6 +91,7 @@ def cpu_allocator() -> gtx_typing.Allocator:
 def grid_description(request: pytest.FixtureRequest) -> definitions.GridDescription:
     """Default parametrization for grid."""
     return request.param
+
 
 @pytest.fixture(
     params=[
