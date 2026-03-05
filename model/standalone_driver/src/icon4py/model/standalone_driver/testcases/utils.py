@@ -7,12 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from types import ModuleType
 
-import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.math import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -195,22 +193,16 @@ def init_w(
     )
     horizontal_end_c = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.INTERIOR))
 
-    z_slope_e = gtx.as_field((dims.EdgeDim, dims.KDim), np.zeros((horizontal_end_e, nlev + 1)))  # type: ignore[arg-type] # this has to be a gt4py field
+    z_slope_e = np.zeros((horizontal_end_e, nlev + 1))
     z_wsfc_e = np.zeros((horizontal_end_e, 1))
 
     nlevp1 = nlev + 1
-    helpers.grad_fd_norm(
-        z_ifc,
-        inv_dual_edge_length,
-        out=z_slope_e,
-        domain={
-            dims.EdgeDim: (horizontal_start_e, horizontal_end_e),
-            dims.KDim: (0, nlevp1),
-        },
-        offset_provider={"E2C": grid.get_connectivity("E2C")},
-    )
+    z_slope_e[horizontal_start_e:horizontal_end_e, :] = (z_ifc[e2c[1]] - z_ifc[e2c[0]])[
+        horizontal_start_e:horizontal_end_e, :
+    ] * inv_dual_edge_length[horizontal_start_e:horizontal_end_e, :]
+
     for je in range(horizontal_start_e, horizontal_end_e):
-        z_wsfc_e[je, 0] = vn[je, nlev - 1] * z_slope_e.asnumpy()[je, nlevp1 - 1]
+        z_wsfc_e[je, 0] = vn[je, nlev - 1] * z_slope_e[je, nlevp1 - 1]
 
     e_inn_c = np.zeros((horizontal_end_c, 3))  # or 1
     for jc in range(horizontal_end_c):
