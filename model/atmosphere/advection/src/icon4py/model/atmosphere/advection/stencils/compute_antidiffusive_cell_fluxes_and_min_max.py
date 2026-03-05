@@ -75,7 +75,7 @@ def compute_antidiffusive_cell_fluxes_and_min_max(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_antidiffusive_cell_fluxes_and_min_max(
         geofac_div,
         p_rhodz_now,

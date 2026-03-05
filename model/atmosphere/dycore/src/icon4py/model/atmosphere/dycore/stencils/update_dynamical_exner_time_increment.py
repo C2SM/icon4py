@@ -38,7 +38,7 @@ def update_dynamical_exner_time_increment(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _update_dynamical_exner_time_increment(
         exner,
         ddt_exner_phy,
