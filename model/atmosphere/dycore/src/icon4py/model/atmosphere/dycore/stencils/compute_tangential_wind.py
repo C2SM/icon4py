@@ -32,7 +32,7 @@ def compute_tangential_wind(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_tangential_wind(
         vn,
         rbf_vec_coeff_e,

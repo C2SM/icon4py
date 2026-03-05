@@ -46,7 +46,7 @@ def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
         theta_v,
         theta_ref_mc,

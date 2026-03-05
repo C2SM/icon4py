@@ -68,7 +68,7 @@ def update_theta_and_exner_in_halo(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _update_theta_and_exner_in_halo(
         mask_prog_halo_c,
         rho_now,

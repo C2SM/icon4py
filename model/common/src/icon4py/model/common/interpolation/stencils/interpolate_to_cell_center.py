@@ -33,7 +33,7 @@ def interpolate_to_cell_center(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _interpolate_to_cell_center(
         interpolant,
         e_bln_c_s,

@@ -201,7 +201,7 @@ def compute_perturbed_exner(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_perturbed_exner(
         exner,
         reference_exner,

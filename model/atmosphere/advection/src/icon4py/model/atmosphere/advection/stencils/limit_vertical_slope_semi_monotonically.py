@@ -37,7 +37,7 @@ def limit_vertical_slope_semi_monotonically(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _limit_vertical_slope_semi_monotonically(
         p_cc,
         z_slope,
