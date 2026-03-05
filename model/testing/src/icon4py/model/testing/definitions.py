@@ -271,6 +271,21 @@ def construct_diffusion_config(
         return diffusion.DiffusionConfig(
             n_substeps=ndyn_substeps,
         )
+    elif experiment == Experiments.JW:
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+            hdiff_w=True,
+            hdiff_vn=True,
+            hdiff_temp=False,
+            n_substeps=5,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
+            hdiff_efdt_ratio=10.0,
+            hdiff_w_efdt_ratio=15.0,
+            smagorinski_scaling_factor=0.025,
+            zdiffu_t=True,
+            velocity_boundary_diffusion_denom=200.0,
+        )
     else:
         raise NotImplementedError(
             f"DiffusionConfig for experiment {experiment.name} not implemented."
@@ -294,6 +309,11 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
         )
     elif experiment == Experiments.GAUSS3D:
         return solve_nh.NonHydrostaticConfig(
+            fourth_order_divdamp_factor=0.0025,
+        )
+    elif experiment == Experiments.JW:
+        return solve_nh.NonHydrostaticConfig(
+            rayleigh_coeff=0.1,
             fourth_order_divdamp_factor=0.0025,
         )
     else:

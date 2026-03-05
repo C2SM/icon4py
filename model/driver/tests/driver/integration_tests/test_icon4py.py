@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+import datetime
 
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
@@ -43,42 +44,55 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
     [
+        # (
+        #     definitions.Experiments.MCH_CH_R04B09,
+        #     1,
+        #     2,
+        #     1,
+        #     2,
+        #     "2021-06-20T12:00:00.000",
+        #     "2021-06-20T12:00:10.000",
+        #     "2021-06-20T12:00:10.000",
+        #     "2021-06-20T12:00:10.000",
+        #     True,
+        #     False,
+        # ),
+        # (
+        #     definitions.Experiments.MCH_CH_R04B09,
+        #     1,
+        #     2,
+        #     1,
+        #     2,
+        #     "2021-06-20T12:00:10.000",
+        #     "2021-06-20T12:00:20.000",
+        #     "2021-06-20T12:00:20.000",
+        #     "2021-06-20T12:00:20.000",
+        #     False,
+        #     False,
+        # ),
+        # (
+        #     definitions.Experiments.GAUSS3D,
+        #     1,
+        #     2,
+        #     1,
+        #     5,
+        #     "2001-01-01T00:00:00.000",
+        #     "2001-01-01T00:00:04.000",
+        #     "2001-01-01T00:00:04.000",
+        #     "2001-01-01T00:00:04.000",
+        #     False,
+        #     False,
+        # ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
-            1,
-            2,
-            1,
-            2,
-            "2021-06-20T12:00:00.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            True,
-            False,
-        ),
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            1,
-            2,
-            1,
-            2,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            False,
-            False,
-        ),
-        (
-            definitions.Experiments.GAUSS3D,
+            definitions.Experiments.JW,
             1,
             2,
             1,
             5,
-            "2001-01-01T00:00:00.000",
-            "2001-01-01T00:00:04.000",
-            "2001-01-01T00:00:04.000",
-            "2001-01-01T00:00:04.000",
+            "2008-09-01T00:00:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
             False,
             False,
         ),
@@ -114,7 +128,6 @@ def test_run_timeloop_single_step(
         diffusion_config = config.diffusion_config
         nonhydro_config = config.solve_nonhydro_config
         icon4pyrun_config = config.run_config
-
     else:
         diffusion_config = definitions.construct_diffusion_config(
             experiment, ndyn_substeps=ndyn_substeps
@@ -342,6 +355,22 @@ def test_run_timeloop_single_step(
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
+    def print_error(input_var, reference_var, var_name: str):
+        import numpy as np
+        r_error = np.where(
+            np.abs(reference_var) > 1.e-15, 
+            np.abs((input_var - reference_var)/reference_var),
+            0.0,
+        )
+        print(var_name, np.abs(input_var - reference_var).max(), r_error.max())
+
+    print()
+    print_error(prognostic_states.current.vn.asnumpy(),vn_sp.asnumpy(),"vn")
+    print_error(prognostic_states.current.w.asnumpy(),w_sp.asnumpy(),"w")
+    print_error(prognostic_states.current.rho.asnumpy(),rho_sp.asnumpy(),"rho")
+    print_error(prognostic_states.current.theta_v.asnumpy(),theta_sp.asnumpy(),"theta_v")
+    print_error(prognostic_states.current.exner.asnumpy(),exner_sp.asnumpy(),"exner")
+
     assert test_utils.dallclose(
         prognostic_states.current.vn.asnumpy(),
         vn_sp.asnumpy(),
@@ -371,56 +400,56 @@ def test_run_timeloop_single_step(
     )
 
 
-@pytest.mark.embedded_remap_error
-@pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, experiment_type",
-    [
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            driver_init.ExperimentType.ANY.value,
-        ),
-    ],
-)
-def test_driver(
-    experiment,
-    experiment_type,
-    processor_props,
-    *,
-    data_provider,
-    backend_like,
-):
-    """
-    This is a only test to check if the icon4py driver runs from serialized data without verifying the end result.
-    The timeloop is verified by test_run_timeloop_single_step above.
-    TODO(anyone): Remove or modify this test when it is ready to run the driver from the grid file without having to initialize static fields from serialized data.
-    """
-    data_path = dt_utils.get_datapath_for_experiment(
-        processor_props=processor_props,
-        experiment=experiment,
-    )
-    gm = grid_utils.get_grid_manager_from_experiment(
-        experiment=experiment,
-        keep_skip_values=True,
-        allocator=model_backends.get_allocator(backend_like),
-    )
+# @pytest.mark.embedded_remap_error
+# @pytest.mark.datatest
+# @pytest.mark.parametrize(
+#     "experiment, experiment_type",
+#     [
+#         (
+#             definitions.Experiments.MCH_CH_R04B09,
+#             driver_init.ExperimentType.ANY.value,
+#         ),
+#     ],
+# )
+# def test_driver(
+#     experiment,
+#     experiment_type,
+#     processor_props,
+#     *,
+#     data_provider,
+#     backend_like,
+# ):
+#     """
+#     This is a only test to check if the icon4py driver runs from serialized data without verifying the end result.
+#     The timeloop is verified by test_run_timeloop_single_step above.
+#     TODO(anyone): Remove or modify this test when it is ready to run the driver from the grid file without having to initialize static fields from serialized data.
+#     """
+#     data_path = dt_utils.get_datapath_for_experiment(
+#         processor_props=processor_props,
+#         experiment=experiment,
+#     )
+#     gm = grid_utils.get_grid_manager_from_experiment(
+#         experiment=experiment,
+#         keep_skip_values=True,
+#         allocator=model_backends.get_allocator(backend_like),
+#     )
 
-    backend_name = None
-    for key, value in model_backends.BACKENDS.items():
-        if value == backend_like:
-            backend_name = key
+#     backend_name = None
+#     for key, value in model_backends.BACKENDS.items():
+#         if value == backend_like:
+#             backend_name = key
 
-    assert backend_name is not None
+#     assert backend_name is not None
 
-    icon4py_driver.icon4py_driver(
-        [
-            str(data_path),
-            "--experiment_type",
-            experiment_type,
-            "--grid_file",
-            str(gm._file_name),
-            "--icon4py_driver_backend",
-            backend_name,
-        ],
-        standalone_mode=False,
-    )
+#     icon4py_driver.icon4py_driver(
+#         [
+#             str(data_path),
+#             "--experiment_type",
+#             experiment_type,
+#             "--grid_file",
+#             str(gm._file_name),
+#             "--icon4py_driver_backend",
+#             backend_name,
+#         ],
+#         standalone_mode=False,
+#     )

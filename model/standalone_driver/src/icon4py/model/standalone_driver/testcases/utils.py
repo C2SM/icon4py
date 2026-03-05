@@ -144,7 +144,7 @@ def zonalwind_2_normalwind_ndarray(
         jw_u0 * (array_ns.cos(eta_v_at_edge) ** 1.5) * (array_ns.sin(2.0 * edge_lat) ** 2),
         0.0,
     )
-    if jw_baroclinic_amplitude > 1.0e-20:
+    if jw_baroclinic_amplitude > 1.0e-10:
         u = array_ns.where(
             mask,
             u

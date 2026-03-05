@@ -62,6 +62,30 @@ def exclaim_ape_icon4pyrun_config(
     )
 
 
+def exclaim_jw_icon4pyrun_config(
+    date_init: str,
+    date_exit: str,
+    diffusion_linit_init: bool,
+    backend: gtx_typing.Backend,
+    ndyn_substeps: int,
+) -> driver_config.Icon4pyRunConfig:
+    """
+    Create Icon4pyRunConfig matching exclaim_ape_R02B04.
+
+    Set values to the ones used in the exclaim_ape_R02B04 experiment where they differ
+    from the default. Backend is not used because granules are set independently in test_icon4py.py
+    """
+    return driver_config.Icon4pyRunConfig(
+        dtime=timedelta(seconds=300.0),
+        start_date=datetime.fromisoformat(date_init),
+        end_date=datetime.fromisoformat(date_exit),
+        n_substeps=5,
+        apply_initial_stabilization=False,
+        restart_mode=False,
+        backend=backend,
+    )
+
+
 def construct_icon4pyrun_config(
     experiment: definitions.Experiment,
     date_init: str,
@@ -78,3 +102,17 @@ def construct_icon4pyrun_config(
         return exclaim_ape_icon4pyrun_config(
             date_init, date_exit, diffusion_linit_init, backend, ndyn_substeps
         )
+    elif experiment == definitions.Experiments.JW:
+        backup = exclaim_jw_icon4pyrun_config(
+            date_init, date_exit, diffusion_linit_init, backend, ndyn_substeps
+        )
+        print()
+        print(backup)
+        # return driver_config.Icon4pyRunConfig(
+        #     dtime=timedelta(seconds=300.0),
+        #     end_date=datetime(1, 1, 1, 0, 5, 0),
+        #     apply_initial_stabilization=False,
+        #     n_substeps=5,
+        #     backend=backend,
+        # )
+        return backup

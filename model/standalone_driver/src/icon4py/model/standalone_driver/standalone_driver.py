@@ -135,7 +135,7 @@ class Icon4pyDriver:
 
             self.model_time_variables.is_first_step_in_simulation = False
 
-            self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
+            # self._adjust_ndyn_substeps_var(solve_nonhydro_diagnostic_state)
 
             # TODO(OngChia): simple IO enough for JW test
 
@@ -184,14 +184,14 @@ class Icon4pyDriver:
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
-        for tracer_idx in range(self.config.ntracer):
-            self.tracer_advection.run(
-                diagnostic_state=tracer_advection_diagnostic_state,
-                prep_adv=tracer_prep_adv,
-                p_tracer_now=prognostic_states.current.tracer[tracer_idx],
-                p_tracer_new=prognostic_states.next.tracer[tracer_idx],
-                dtime=self.model_time_variables.dtime_in_seconds,
-            )
+        # for tracer_idx in range(self.config.ntracer):
+        #     self.tracer_advection.run(
+        #         diagnostic_state=tracer_advection_diagnostic_state,
+        #         prep_adv=tracer_prep_adv,
+        #         p_tracer_now=prognostic_states.current.tracer[tracer_idx],
+        #         p_tracer_new=prognostic_states.next.tracer[tracer_idx],
+        #         dtime=self.model_time_variables.dtime_in_seconds,
+        #     )
 
         prognostic_states.swap()
 
@@ -521,6 +521,7 @@ def _read_config(
     )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(
+        rayleigh_coeff=0.1,
         fourth_order_divdamp_factor=0.0025,
     )
 
@@ -530,7 +531,7 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 1, 0, 0),
+        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
         vertical_cfl_threshold=ta.wpfloat("0.85"),
@@ -671,6 +672,9 @@ def initialize_driver(
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
         tracer_advection_granule=tracer_advection_granule,
+        # diffusion_granule=diffusion_config,
+        # solve_nonhydro_granule=solve_nh_config,
+        # tracer_advection_granule=advection_config,
     )
 
     return icon4py_driver
