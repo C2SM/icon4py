@@ -47,7 +47,7 @@ def limit_vertical_parabola_semi_monotonically(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _limit_vertical_parabola_semi_monotonically(
         l_limit,
         p_face,
