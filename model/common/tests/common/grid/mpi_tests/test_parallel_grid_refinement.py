@@ -46,7 +46,11 @@ def test_compute_domain_bounds(
     grid_savepoint: serialbox.IconGridSavepoint,
     processor_props: decomposition.ProcessProperties,
 ) -> None:
-    if processor_props.is_single_rank() and experiment == definitions.Experiments.EXCLAIM_APE:
+    if (
+        processor_props.is_single_rank()
+        and experiment == definitions.Experiments.EXCLAIM_APE
+        and dim == dims.EdgeDim
+    ):
         pytest.xfail(
             "end index data for single node APE are all 0 - re- serialization should fix that (patch%cells%end_index vs patch%cells%end_idx)"
         )
