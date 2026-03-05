@@ -334,12 +334,7 @@ def _q_t_update(  # noqa: PLR0915
     qnc: ta.wpfloat,
     enable_masking: bool,
 ) -> tuple[
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
+    Q,
     fa.CellKField[ta.wpfloat],
 ]:
     if enable_masking:
@@ -459,7 +454,7 @@ def _q_t_update(  # noqa: PLR0915
         + (g_ct.ci - t_d.cvv) * qice
     )
     t = t + dt * ((dqdt_c + dqdt_r) * (g_ct.lvc - (t_d.clw - t_d.cvv) * t) + (dqdt_i + dqdt_s + dqdt_g) * (g_ct.lsc - (g_ct.ci - t_d.cvv) * t)) / cv
-    return qv, qc, qr, qs, qi, qg, t
+    return Q(v=qv, c=qc, r=qr, s=qs, i=qi, g=qg), t
 
 
 @gtx.field_operator
@@ -469,12 +464,7 @@ def _precipitation_effects(
     kmin_i: fa.CellKField[bool],  # ice minimum level
     kmin_s: fa.CellKField[bool],  # snow minimum level
     kmin_g: fa.CellKField[bool],  # graupel minimum level
-    q_in_v: fa.CellKField[ta.wpfloat],  # specific humidity
-    q_in_c: fa.CellKField[ta.wpfloat],  # specific cloud water
-    q_in_r: fa.CellKField[ta.wpfloat],  # specific rain water
-    q_in_s: fa.CellKField[ta.wpfloat],  # specific snow water
-    q_in_i: fa.CellKField[ta.wpfloat],  # specific ice water
-    q_in_g: fa.CellKField[ta.wpfloat],  # specific graupel water
+    q_in: Q,
     t: fa.CellKField[ta.wpfloat],  # temperature,
     rho: fa.CellKField[ta.wpfloat],  # density
     dz: fa.CellKField[ta.wpfloat],
@@ -498,7 +488,7 @@ def _precipitation_effects(
         t,
         t_kp1,
         rho,
-        Q(v=q_in_v, c=q_in_c, r=q_in_r, s=q_in_s, i=q_in_i, g=q_in_g),
+        q_in,
         kmin_r,
         kmin_s,
         kmin_i,
@@ -551,12 +541,12 @@ def graupel(
     mask = (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > g_ct.qmin) | (
         (te < g_ct.tfrz_het2) & (q.v > _qsat_ice_rho(te, rho))
     )
-    qv_new, qc_new, qr_new, qs_new, qi_new, qg_new, t_new = where(mask, _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking), (q.v, q.c, q.r, q.s, q.i, q.g, te))
+    q, t = where(mask, _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking), (q, te))
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
-        last_level, kmin_r, kmin_i, kmin_s, kmin_g, qv_new, qc_new, qr_new, qs_new, qi_new, qg_new, t_new, rho, dz, dt
+        last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
 
-    return t, Q(v=qv_new, c=qc_new, r=qr, s=qs, i=qi, g=qg), pflx, pr, ps, pi, pg, pre
+    return t, Q(v=q.v, c=q.c, r=qr, s=qs, i=qi, g=qg), pflx, pr, ps, pi, pg, pre
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
