@@ -18,8 +18,7 @@ from icon4py.model.common.decomposition import (
     mpi_decomposition,
 )
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
-from icon4py.model.testing import definitions, grid_utils, serialbox
-from icon4py.model.testing import test_utils
+from icon4py.model.testing import definitions, grid_utils, serialbox, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
