@@ -200,6 +200,35 @@ class IconLikeHaloConstructor(HaloConstructor):
             updated_owner_mask[local_index] = max(owning_ranks) <= self._props.rank
         return updated_owner_mask
 
+    def _set_decomposition_info_dimension(
+        self,
+        decomp_info: defs.DecompositionInfo,
+        dim: gtx.Dimension,
+        all_indices: data_alloc.NDArray,
+        owner_mask: data_alloc.NDArray,
+        first_halo_level_mask: data_alloc.NDArray,
+        second_halo_level_mask: data_alloc.NDArray,
+        third_halo_level_mask: data_alloc.NDArray,
+    ) -> None:
+        halo_levels = self._xp.full(
+            all_indices.size,
+            defs.DecompositionFlag.UNDEFINED.value,
+            dtype=gtx.int32,  # type: ignore  [attr-defined]
+        )
+
+        halo_levels[owner_mask] = defs.DecompositionFlag.OWNED
+
+        assert (halo_levels[first_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value).all()
+        halo_levels[first_halo_level_mask] = defs.DecompositionFlag.FIRST_HALO_LEVEL
+
+        assert (halo_levels[second_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value).all()
+        halo_levels[second_halo_level_mask] = defs.DecompositionFlag.SECOND_HALO_LEVEL
+
+        assert (halo_levels[third_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value).all()
+        halo_levels[third_halo_level_mask] = defs.DecompositionFlag.THIRD_HALO_LEVEL
+
+        decomp_info.set_dimension(dim, all_indices, owner_mask, halo_levels)
+
     def __call__(self, cell_to_rank: data_alloc.NDArray) -> defs.DecompositionInfo:
         """
              Constructs the DecompositionInfo for the current rank.
@@ -299,10 +328,13 @@ class IconLikeHaloConstructor(HaloConstructor):
 
         self._validate_mapping(cell_to_rank)
 
-        #: cells
+        decomp_info = defs.DecompositionInfo()
+
+        # Cells
         owned_cells = self.owned_cells(cell_to_rank)
         first_halo_cells = self._next_halo_line(owned_cells)
-        #: vertices
+
+        # Vertices on cutting line are needed to complete the cell halo lines
         vertex_on_owned_cells = self._find_vertex_neighbors_for_cells(owned_cells)
         vertex_on_halo_cells = self._find_vertex_neighbors_for_cells(
             self._xp.hstack(
@@ -313,52 +345,26 @@ class IconLikeHaloConstructor(HaloConstructor):
             )
         )
         vertex_on_cutting_line = self._xp.intersect1d(vertex_on_owned_cells, vertex_on_halo_cells)
-        vertex_second_halo = self._xp.setdiff1d(vertex_on_halo_cells, vertex_on_cutting_line)
-        all_vertices = self._xp.hstack((vertex_on_owned_cells, vertex_second_halo))
 
-        #: update cells to include all cells of the "dual cell" (hexagon) for nodes on the cutting line
+        # Update cells to include all cells of the "dual cell" (hexagon) for nodes on the cutting line
         dual_cells = self._find_cell_neighbors_for_vertices(vertex_on_cutting_line)
         total_halo_cells = self._xp.setdiff1d(dual_cells, owned_cells)
         second_halo_cells = self._xp.setdiff1d(total_halo_cells, first_halo_cells)
         all_cells = self._xp.hstack((owned_cells, first_halo_cells, second_halo_cells))
 
-        #: edges
-        edge_on_owned_cells = self._find_edge_neighbors_for_cells(owned_cells)
-        edge_on_any_halo_line = self._find_edge_neighbors_for_cells(total_halo_cells)
-
-        edge_on_cutting_line = self._xp.intersect1d(edge_on_owned_cells, edge_on_any_halo_line)
-
-        # needs to be defined as vertex neighbor due to "corners" in the cut.
-        edge_second_level = self._xp.setdiff1d(
-            self._find_edge_neighbors_for_vertices(vertex_on_cutting_line), edge_on_owned_cells
+        self._set_decomposition_info_dimension(
+            decomp_info,
+            dim=dims.CellDim,
+            all_indices=all_cells,
+            owner_mask=self._xp.isin(all_cells, owned_cells),
+            first_halo_level_mask=self._xp.isin(all_cells, first_halo_cells),
+            second_halo_level_mask=self._xp.isin(all_cells, second_halo_cells),
+            third_halo_level_mask=self._xp.zeros_like(all_cells, dtype=bool),
         )
-        edge_third_level = self._xp.setdiff1d(edge_on_any_halo_line, edge_second_level)
-        edge_third_level = self._xp.setdiff1d(edge_third_level, edge_on_cutting_line)
 
-        all_edges = self._xp.hstack((edge_on_owned_cells, edge_second_level, edge_third_level))
-        #: construct decomposition info
-        decomp_info = defs.DecompositionInfo()
-        cell_owner_mask = self._xp.isin(all_cells, owned_cells)
-        cell_halo_levels = self._xp.full(
-            all_cells.size,
-            defs.DecompositionFlag.UNDEFINED.value,
-            dtype=gtx.int32,  # type: ignore  [attr-defined]
-        )
-        cell_halo_levels[cell_owner_mask] = defs.DecompositionFlag.OWNED
-        cell_first_halo_level_mask = self._xp.isin(all_cells, first_halo_cells)
-        assert self._xp.all(
-            cell_halo_levels[cell_first_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value
-        ), "overlapping halo levels for first halo cells"
-        cell_halo_levels[cell_first_halo_level_mask] = defs.DecompositionFlag.FIRST_HALO_LEVEL
-        cell_second_halo_level_mask = self._xp.isin(all_cells, second_halo_cells)
-        assert self._xp.all(
-            cell_halo_levels[cell_second_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value
-        ), "overlapping halo levels for second halo cells"
-        cell_halo_levels[cell_second_halo_level_mask] = defs.DecompositionFlag.SECOND_HALO_LEVEL
-        assert not self._xp.any(
-            cell_halo_levels == defs.DecompositionFlag.UNDEFINED.value
-        ), "some cells have not been assigned a halo level"
-        decomp_info.set_dimension(dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels)
+        # Vertices
+        vertex_second_halo = self._xp.setdiff1d(vertex_on_halo_cells, vertex_on_cutting_line)
+        all_vertices = self._xp.hstack((vertex_on_owned_cells, vertex_second_halo))
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_on_owned_cells)
         vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
             cell_to_rank,
@@ -382,34 +388,35 @@ class IconLikeHaloConstructor(HaloConstructor):
         )
         vertex_owner_mask = self._xp.isin(all_vertices, vertex_owner_list)
 
-        vertex_halo_levels = self._xp.full(
-            all_vertices.size,
-            defs.DecompositionFlag.UNDEFINED.value,
-            dtype=gtx.int32,  # type: ignore  [attr-defined]
-        )
-        vertex_halo_levels[vertex_owner_mask] = defs.DecompositionFlag.OWNED
-        vertex_first_halo_level_mask = self._xp.logical_not(vertex_owner_mask) & self._xp.isin(
-            all_vertices, vertex_on_cutting_line
-        )
-        assert self._xp.all(
-            vertex_halo_levels[vertex_first_halo_level_mask]
-            == defs.DecompositionFlag.UNDEFINED.value
-        ), "overlapping halo levels for vertices on the cutting line"
-        vertex_halo_levels[vertex_first_halo_level_mask] = defs.DecompositionFlag.FIRST_HALO_LEVEL
-        vertex_second_level = self._xp.setdiff1d(vertex_on_halo_cells, vertex_on_owned_cells)
-        vertex_second_halo_level_mask = self._xp.isin(all_vertices, vertex_second_level)
-        assert self._xp.all(
-            vertex_halo_levels[vertex_second_halo_level_mask]
-            == defs.DecompositionFlag.UNDEFINED.value
-        ), "overlapping halo levels for vertices on the second halo line"
-        vertex_halo_levels[vertex_second_halo_level_mask] = defs.DecompositionFlag.SECOND_HALO_LEVEL
-        assert self._xp.all(
-            vertex_halo_levels != defs.DecompositionFlag.UNDEFINED.value
-        ), "some vertices have not been assigned a halo level"
-        decomp_info.set_dimension(
-            dims.VertexDim, all_vertices, vertex_owner_mask, vertex_halo_levels
+        self._set_decomposition_info_dimension(
+            decomp_info,
+            dims.VertexDim,
+            all_vertices,
+            vertex_owner_mask,
+            first_halo_level_mask=(
+                self._xp.logical_not(vertex_owner_mask)
+                & self._xp.isin(all_vertices, vertex_on_cutting_line)
+            ),
+            second_halo_level_mask=self._xp.isin(
+                all_vertices, self._xp.setdiff1d(vertex_on_halo_cells, vertex_on_owned_cells)
+            ),
+            third_halo_level_mask=self._xp.zeros_like(vertex_owner_mask, dtype=bool),
         )
 
+        # Edges
+        edge_on_owned_cells = self._find_edge_neighbors_for_cells(owned_cells)
+        edge_on_any_halo_line = self._find_edge_neighbors_for_cells(total_halo_cells)
+
+        edge_on_cutting_line = self._xp.intersect1d(edge_on_owned_cells, edge_on_any_halo_line)
+
+        # needs to be defined as vertex neighbor due to "corners" in the cut.
+        edge_second_level = self._xp.setdiff1d(
+            self._find_edge_neighbors_for_vertices(vertex_on_cutting_line), edge_on_owned_cells
+        )
+        edge_third_level = self._xp.setdiff1d(edge_on_any_halo_line, edge_second_level)
+        edge_third_level = self._xp.setdiff1d(edge_third_level, edge_on_cutting_line)
+
+        all_edges = self._xp.hstack((edge_on_owned_cells, edge_second_level, edge_third_level))
         edge_owner_mask = self._xp.isin(all_edges, edge_on_owned_cells)
         edge_owner_mask = self._update_owner_mask_by_max_rank_convention(
             cell_to_rank,
@@ -421,8 +428,8 @@ class IconLikeHaloConstructor(HaloConstructor):
 
         # Once mask has been updated, some owned cells may now belong to the
         # halo and be in the wrong position. We reorder the list of all
-        # vertices, and then we have to update the mask again, since it was
-        # based on the old list of all vertices.
+        # edges, and then we have to update the mask again, since it was
+        # based on the old list of all edges.
         edge_owner_list = all_edges[edge_owner_mask]
         all_edges = self._xp.hstack(
             (
@@ -434,39 +441,19 @@ class IconLikeHaloConstructor(HaloConstructor):
         )
         edge_owner_mask = self._xp.isin(all_edges, edge_owner_list)
 
-        edge_halo_levels = self._xp.full(
-            all_edges.shape,
-            defs.DecompositionFlag.UNDEFINED.value,
-            dtype=gtx.int32,  # type: ignore  [attr-defined]
+        self._set_decomposition_info_dimension(
+            decomp_info,
+            dim=dims.EdgeDim,
+            all_indices=all_edges,
+            owner_mask=edge_owner_mask,
+            first_halo_level_mask=(
+                self._xp.logical_not(edge_owner_mask)
+                & self._xp.isin(all_edges, edge_on_cutting_line)
+            ),
+            second_halo_level_mask=self._xp.isin(all_edges, edge_second_level),
+            third_halo_level_mask=self._xp.isin(all_edges, edge_third_level),
         )
-        edge_halo_levels[edge_owner_mask] = defs.DecompositionFlag.OWNED
 
-        # LEVEL_ONE edges are on an owned cell but are not owned: these are all edges on the cutting line that are not owned (by the convention)
-        edge_first_halo_level_mask = self._xp.logical_not(edge_owner_mask) & self._xp.isin(
-            all_edges, edge_on_cutting_line
-        )
-        assert self._xp.all(
-            edge_halo_levels[edge_first_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value
-        ), "overlapping halo levels for edges on the cutting line"
-        edge_halo_levels[edge_first_halo_level_mask] = defs.DecompositionFlag.FIRST_HALO_LEVEL
-
-        # LEVEL_TWO edges share exactly one vertex with an owned cell, they are on the first halo-line cells, but not on the cutting line
-        edge_second_halo_level_mask = self._xp.isin(all_edges, edge_second_level)
-        assert self._xp.all(
-            edge_halo_levels[edge_second_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value
-        ), "overlapping halo levels for edges on the second halo line"
-        edge_halo_levels[edge_second_halo_level_mask] = defs.DecompositionFlag.SECOND_HALO_LEVEL
-
-        # LEVEL_THREE edges are the "closing" edges of the second halo line, i.e. share no vertex with owned cells
-        edge_third_halo_level_mask = self._xp.isin(all_edges, edge_third_level)
-        assert self._xp.all(
-            edge_halo_levels[edge_third_halo_level_mask] == defs.DecompositionFlag.UNDEFINED.value
-        ), "overlapping halo levels for edges on the third halo line"
-        edge_halo_levels[edge_third_halo_level_mask] = defs.DecompositionFlag.THIRD_HALO_LEVEL
-        assert not self._xp.any(
-            edge_halo_levels == defs.DecompositionFlag.UNDEFINED.value
-        ), "some edges have not been assigned a halo level"
-        decomp_info.set_dimension(dims.EdgeDim, all_edges, edge_owner_mask, edge_halo_levels)
         return decomp_info
 
 

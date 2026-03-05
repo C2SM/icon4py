@@ -97,6 +97,7 @@ class DecompositionInfo:
     ) -> None:
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
+        assert (halo_levels != DecompositionFlag.UNDEFINED.value).all()
         self._halo_levels[dim] = halo_levels
 
     def is_distributed(self) -> bool:
