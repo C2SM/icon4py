@@ -1294,7 +1294,7 @@ def compute_lsq_coeffs(
         min_rlcell_int,
         lsq_dim_unk,
         lsq_dim_c,
-        array_ns
+        array_ns,
     )
     if exchange != decomposition.single_node_default:
         exchange(lsq_pseudoinv[:, 0, :])
