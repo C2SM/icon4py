@@ -1167,7 +1167,7 @@ def compute_lsq_pseudoinv(
     for jjb in range(lsq_dim_c):
         for jjk in range(lsq_dim_unk):
             for jc in range(start_idx, min_rlcell_int):
-                u, s, v_t, _ = array_ns.linalg.svd(z_lsq_mat_c[jc, :, :])
+                u, s, v_t = array_ns.linalg.svd(z_lsq_mat_c[jc, :, :])
                 if cell_owner_mask[jc]:
                     lsq_pseudoinv[jc, :lsq_dim_unk, jjb] = (
                         lsq_pseudoinv[jc, :lsq_dim_unk, jjb]
