@@ -87,7 +87,7 @@ def create_decomposition_info(
     def _add_dimension(dim: gtx.Dimension) -> None:
         indices = data_alloc.index_field(grid_manager.grid, dim, allocator=allocator)
         owner_mask = xp.ones((grid_manager.grid.size[dim],), dtype=bool)
-        decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
+        decomposition_info.set_dimension(dim, indices.ndarray, owner_mask, None)
 
     _add_dimension(dims.EdgeDim)
     _add_dimension(dims.VertexDim)
