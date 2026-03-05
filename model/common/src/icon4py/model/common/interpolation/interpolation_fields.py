@@ -1258,14 +1258,16 @@ def compute_lsq_coeffs(
 
                 cc_cv = (cell_center_x[jc], cell_center_y[jc])
                 for js in range(lsq_dim_stencil):
-                    cc_cell[js, :] = array_ns.asarray(diff_on_edges_torus_numpy(
-                        cell_center_x[jc],
-                        cell_center_y[jc],
-                        cell_center_x[ilc_s][js],
-                        cell_center_y[ilc_s][js],
-                        domain_length,
-                        domain_height,
-                    ))
+                    cc_cell[js, :] = array_ns.asarray(
+                        diff_on_edges_torus_numpy(
+                            cell_center_x[jc],
+                            cell_center_y[jc],
+                            cell_center_x[ilc_s][js],
+                            cell_center_y[ilc_s][js],
+                            domain_length,
+                            domain_height,
+                        )
+                    )
                 z_dist_g[jc, :, :] = cc_cell - cc_cv
 
     for jc in range(start_idx, min_rlcell_int):
