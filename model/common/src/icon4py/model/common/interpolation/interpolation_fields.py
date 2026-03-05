@@ -13,7 +13,6 @@ from types import ModuleType
 from typing import Final
 
 import numpy as np
-import scipy
 from gt4py import next as gtx
 from gt4py.next import where
 
@@ -1163,11 +1162,12 @@ def compute_lsq_pseudoinv(
     min_rlcell_int: int,
     lsq_dim_unk: int,
     lsq_dim_c: int,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     for jjb in range(lsq_dim_c):
         for jjk in range(lsq_dim_unk):
             for jc in range(start_idx, min_rlcell_int):
-                u, s, v_t, _ = scipy.linalg.lapack.dgesdd(z_lsq_mat_c[jc, :, :])
+                u, s, v_t, _ = array_ns.linalg.svd(z_lsq_mat_c[jc, :, :])
                 if cell_owner_mask[jc]:
                     lsq_pseudoinv[jc, :lsq_dim_unk, jjb] = (
                         lsq_pseudoinv[jc, :lsq_dim_unk, jjb]
@@ -1294,6 +1294,7 @@ def compute_lsq_coeffs(
         min_rlcell_int,
         lsq_dim_unk,
         lsq_dim_c,
+        array_ns
     )
     if exchange != decomposition.single_node_default:
         exchange(lsq_pseudoinv[:, 0, :])
