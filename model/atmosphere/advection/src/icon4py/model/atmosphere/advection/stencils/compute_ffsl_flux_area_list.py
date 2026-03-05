@@ -214,7 +214,7 @@ def compute_ffsl_flux_area_list(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_ffsl_flux_area_list(
         famask_int,
         p_vn,

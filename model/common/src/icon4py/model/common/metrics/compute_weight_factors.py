@@ -68,7 +68,7 @@ def compute_wgtfac_c(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_wgtfac_c(
         z_ifc,
         nlev,

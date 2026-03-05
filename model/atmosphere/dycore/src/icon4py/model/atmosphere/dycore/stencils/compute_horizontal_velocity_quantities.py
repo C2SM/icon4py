@@ -288,7 +288,7 @@ def compute_averaged_vn_and_fluxes(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     This program performs:
     - Averaging the normal wind component across substeps

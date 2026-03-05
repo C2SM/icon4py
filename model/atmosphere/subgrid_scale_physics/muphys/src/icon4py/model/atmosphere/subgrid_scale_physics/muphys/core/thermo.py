@@ -332,7 +332,7 @@ def _sat_pres_water(
 def sat_pres_water(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     pressure: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _sat_pres_water(t, out=pressure)
 
 

@@ -31,7 +31,7 @@ def compute_cell_2_vertex_interpolation(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Compute the interpolation from cell to vertex field.
 
