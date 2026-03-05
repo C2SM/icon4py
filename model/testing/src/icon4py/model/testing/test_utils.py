@@ -28,8 +28,8 @@ def dallclose(
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
-def is_sorted(array: npt.ArrayLike) -> bool:
-    return np.all(array[:-1] <= array[1:])
+def is_sorted(array: np.ndarray) -> bool:
+    return bool((array[:-1] <= array[1:]).all())
 
 
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
