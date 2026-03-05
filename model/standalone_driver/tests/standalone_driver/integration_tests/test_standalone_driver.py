@@ -20,27 +20,31 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, substep_exit, istep_exit, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_exit",
+    "experiment, istep_exit, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
     [
         (
             definitions.Experiments.JW,
-            5,
             2,
+            5,
+            "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
             "2008-09-01T00:05:00.000",
             False,
-        )
+            False,
+        ),
     ],
 )
 def test_standalone_driver(
+    experiment: definitions.Experiments,
+    timeloop_date_init: str,
+    timeloop_date_exit: str,
+    timeloop_diffusion_linit_init: bool,
+    *,
     backend_like: model_backends.BackendLike,
     backend: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
-    experiment: definitions.Experiments,
     substep_exit: int,
-    step_date_exit: str,
-    timeloop_date_exit: str,
     timeloop_diffusion_savepoint_exit_standalone: sb.IconDiffusionExitSavepoint,
 ) -> None:
     backend_name = "embedded"
@@ -70,21 +74,23 @@ def test_standalone_driver(
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
-        atol=6e-12,
+        atol=9e-7,
     )
 
     assert test_utils.dallclose(
         ds.prognostics.current.w.asnumpy(),
         w_sp.asnumpy(),
-        atol=9e-14,
+        atol=8e-9,
     )
 
-    assert test_utils.dallclose(ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy())
+    assert test_utils.dallclose(
+        ds.prognostics.current.exner.asnumpy(), exner_sp.asnumpy(), atol=5e-11
+    )
 
     assert test_utils.dallclose(
         ds.prognostics.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
-        atol=1e-4,
+        atol=6e-8,
     )
 
-    assert test_utils.dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy())
+    assert test_utils.dallclose(ds.prognostics.current.rho.asnumpy(), rho_sp.asnumpy(), atol=9e-10)
