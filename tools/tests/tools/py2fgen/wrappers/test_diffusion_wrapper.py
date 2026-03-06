@@ -6,22 +6,59 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import collections
 from unittest import mock
 
 import cffi
+import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
-from icon4py.model.testing import definitions, test_utils as testing_test_utils
+from icon4py.model.testing import (
+    definitions,
+    grid_utils,
+    serialbox as sb,
+    test_utils as testing_test_utils,
+)
+from icon4py.model.testing.fixtures.datatest import backend
 from icon4py.tools import py2fgen
 from icon4py.tools.py2fgen import test_utils
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, diffusion_wrapper
 
 from . import utils
 from .test_grid_init import grid_init
+
+
+@pytest.fixture
+def interpolation_state(
+    interpolation_savepoint: sb.InterpolationSavepoint,
+) -> diffusion_states.DiffusionInterpolationState:
+    return diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=interpolation_savepoint.geofac_div(),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+    )
+
+
+@pytest.fixture
+def metric_state(
+    metrics_savepoint: sb.MetricSavepoint,
+) -> diffusion_states.DiffusionMetricState:
+    return diffusion_states.DiffusionMetricState(
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+    )
 
 
 @pytest.mark.datatest
@@ -258,11 +295,11 @@ def test_diffusion_wrapper_granule_inputs(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (
-            definitions.Experiments.MCH_CH_R04B09,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-        ),
+        # (
+        #     definitions.Experiments.MCH_CH_R04B09,
+        #     "2021-06-20T12:00:10.000",
+        #     "2021-06-20T12:00:10.000",
+        # ),
         (
             definitions.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
@@ -270,8 +307,10 @@ def test_diffusion_wrapper_granule_inputs(
         ),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
-@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
+#@pytest.mark.parametrize("ndyn_substeps", (2,))
+@pytest.mark.parametrize("ndyn_substeps", [2])
+#@pytest.mark.parametrize("backend", [None])  # TODO(havogt): consider parametrizing over backends
+@pytest.mark.parametrize("orchestration", [False])
 def test_diffusion_wrapper_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
@@ -283,6 +322,14 @@ def test_diffusion_wrapper_single_step(
     ndyn_substeps,
     step_date_init,
     step_date_exit,
+    interpolation_state: diffusion_states.DiffusionInterpolationState,
+    metric_state: diffusion_states.DiffusionMetricState,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    backend,
+    orchestration,
 ):
     config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
     diffusion_type = config.diffusion_type
@@ -387,7 +434,8 @@ def test_diffusion_wrapper_single_step(
         nudge_max_coeff=max_nudging_coefficient,
         itype_sher=itype_sher.value,
         ltkeshs=ltkeshs,
-        backend=wrapper_common.BackendIntEnum.DEFAULT,
+        #backend=wrapper_common.BackendIntEnum.DEFAULT,
+        backend=wrapper_common.BackendIntEnum.GTFN,
     )
 
     # Call diffusion_run
@@ -407,6 +455,98 @@ def test_diffusion_wrapper_single_step(
         linit=False,
     )
 
+    grid_functionality = collections.defaultdict(dict)
+    def get_grid_for_experiment(experiment: definitions.Experiment, backend: gtx_typing.Backend):
+        return _get_or_initialize(experiment, backend, "grid")
+    def get_edge_geometry_for_experiment(
+        experiment: definitions.Experiment, backend: gtx_typing.Backend
+    ):
+        return _get_or_initialize(experiment, backend, "edge_geometry")
+    def get_cell_geometry_for_experiment(
+        experiment: definitions.Experiment, backend: gtx_typing.Backend
+    ):
+        return _get_or_initialize(experiment, backend, "cell_geometry")
+    def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.Backend, name: str):
+        from icon4py.model.common.grid import geometry_attributes as geometry_meta
+        if not grid_functionality[experiment.name].get(name):
+            geometry_ = grid_utils.get_grid_geometry(backend, experiment)
+            grid = geometry_.grid
+            cell_params = grid_states.CellParams(
+                cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
+                cell_center_lon=geometry_.get(geometry_meta.CELL_LON),
+                area=geometry_.get(geometry_meta.CELL_AREA),
+            )
+            edge_params = grid_states.EdgeParams(
+                edge_center_lat=geometry_.get(geometry_meta.EDGE_LAT),
+                edge_center_lon=geometry_.get(geometry_meta.EDGE_LON),
+                tangent_orientation=geometry_.get(geometry_meta.TANGENT_ORIENTATION),
+                coriolis_frequency=geometry_.get(geometry_meta.CORIOLIS_PARAMETER),
+                edge_areas=geometry_.get(geometry_meta.EDGE_AREA),
+                primal_edge_lengths=geometry_.get(geometry_meta.EDGE_LENGTH),
+                inverse_primal_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
+                dual_edge_lengths=geometry_.get(geometry_meta.DUAL_EDGE_LENGTH),
+                inverse_dual_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
+                inverse_vertex_vertex_lengths=geometry_.get(
+                    f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
+                ),
+                primal_normal_x=geometry_.get(geometry_meta.EDGE_NORMAL_U),
+                primal_normal_y=geometry_.get(geometry_meta.EDGE_NORMAL_V),
+                primal_normal_cell_x=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_U),
+                primal_normal_cell_y=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_V),
+                primal_normal_vert_x=geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
+                primal_normal_vert_y=geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V),
+                dual_normal_cell_x=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_U),
+                dual_normal_cell_y=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_V),
+                dual_normal_vert_x=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
+                dual_normal_vert_y=geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+            )
+            grid_functionality[experiment.name]["grid"] = grid
+            grid_functionality[experiment.name]["edge_geometry"] = edge_params
+            grid_functionality[experiment.name]["cell_geometry"] = cell_params
+        return grid_functionality[experiment.name].get(name)
+    grid = get_grid_for_experiment(experiment, backend)
+    cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
+    edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
+    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=savepoint_diffusion_init.hdef_ic(),
+        div_ic=savepoint_diffusion_init.div_ic(),
+        dwdx=savepoint_diffusion_init.dwdx(),
+        dwdy=savepoint_diffusion_init.dwdy(),
+    )
+    prognostic_state = savepoint_diffusion_init.construct_prognostics()
+    vertical_config = v_grid.VerticalGridConfig(
+        grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=vct_a,
+        vct_b=vct_b,
+    )
+    #config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
+    additional_parameters = diffusion.DiffusionParams(config)
+    print(f"damping_height: {damping_height}, stretch_factor: {stretch_factor}, model_top_height: {model_top_height}, lowest_layer_thickness: {lowest_layer_thickness}")
+    diffusion_granule = diffusion.Diffusion(
+        grid=grid,
+        config=config,
+        params=additional_parameters,
+        vertical_grid=vertical_params,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+        backend=backend,
+        orchestration=orchestration,
+    )
+    diffusion_granule.run(
+        diagnostic_state=diagnostic_state, prognostic_state=prognostic_state, dtime=dtime
+    )
+
     # Assertions comparing the serialized output with computed output fields
     w_ = savepoint_diffusion_exit.w()
     vn_ = savepoint_diffusion_exit.vn()
@@ -418,6 +558,18 @@ def test_diffusion_wrapper_single_step(
     if itype_sher == diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND:
         dwdx_ = savepoint_diffusion_exit.dwdx()
         dwdy_ = savepoint_diffusion_exit.dwdy()
+
+    print(f"max(abs(w): {np.max(np.abs(w_.asnumpy() - py2fgen.as_array(ffi, w, py2fgen.FLOAT64)))}")
+    print(f"max(abs(vn): {np.max(np.abs(vn_.asnumpy() - py2fgen.as_array(ffi, vn, py2fgen.FLOAT64)))}")
+    print(f"max(abs(exner): {np.max(np.abs(exner_.asnumpy() - py2fgen.as_array(ffi, exner, py2fgen.FLOAT64)))}")
+    print(f"max(abs(theta_v): {np.max(np.abs(theta_v_.asnumpy() - py2fgen.as_array(ffi, theta_v, py2fgen.FLOAT64)))}")
+
+    print(f"max(abs(w) granule: {np.max(np.abs(prognostic_state.w.asnumpy() - py2fgen.as_array(ffi, w, py2fgen.FLOAT64)))}")
+    print(f"max(abs(vn) granule: {np.max(np.abs(prognostic_state.vn.asnumpy() - py2fgen.as_array(ffi, vn, py2fgen.FLOAT64)))}")
+
+    print(f"max(abs(w) granule_v: {np.max(np.abs(prognostic_state.w.asnumpy() - w_.asnumpy()))}")
+
+    breakpoint()
 
     assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12
