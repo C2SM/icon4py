@@ -7,8 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
 import pathlib
+from types import ModuleType
 from typing import Annotated
 
+import numpy as np
 import typer
 
 from icon4py.model.common import model_backends
@@ -20,10 +22,7 @@ log = logging.getLogger(__name__)
 
 
 def main(
-    configuration_file_path: Annotated[
-        pathlib.Path, typer.Argument(help="Configuration file path.")
-    ],
-    grid_file_path: Annotated[pathlib.Path, typer.Option(help="Grid file path.")],
+    grid_file_path: pathlib.Path | Annotated[str, typer.Option(help="Grid file path.")],
     # it may be better to split device from backend,
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
     # whether to automatically use gpu if cupy is installed can be discussed further
@@ -42,7 +41,8 @@ def main(
             help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
-) -> None:
+    array_ns: ModuleType = np,
+) -> driver_states.DriverStates:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
     condition from the Jablonowski Williamson test case
@@ -54,7 +54,6 @@ def main(
     """
 
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
-        configuration_file_path=configuration_file_path,
         output_path=output_path,
         grid_file_path=grid_file_path,
         log_level=log_level,
@@ -68,6 +67,11 @@ def main(
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
         backend=icon4py_driver.backend,
+        lowest_layer_thickness=icon4py_driver.vertical_grid_config.lowest_layer_thickness,
+        model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
+        stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
+        damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
+        array_ns=array_ns,
     )
 
     log.info("driver setup: DONE")
@@ -79,6 +83,7 @@ def main(
     )
 
     log.info("time loop:  DONE")
+    return ds
 
 
 if __name__ == "__main__":

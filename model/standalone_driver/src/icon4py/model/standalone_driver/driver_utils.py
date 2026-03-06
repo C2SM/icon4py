@@ -60,7 +60,7 @@ _LOGGING_LEVELS: dict[str, int] = {
 
 
 def create_grid_manager(
-    grid_file_path: pathlib.Path,
+    grid_file_path: str | pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.Allocator,
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
@@ -143,10 +143,10 @@ def create_static_field_factories(
         metadata=metrics_attributes.attrs,
         rayleigh_type=constants.RayleighType.KLEMP,
         rayleigh_coeff=0.1,
-        exner_expol=0.333,
-        vwind_offctr=0.2,
-        thslp_zdiffu=0.02,
-        thhgtd_zdiffu=125.0,
+        exner_expol=1.0 / 3.0,
+        vwind_offctr=0.15,
+        thslp_zdiffu=0.025,
+        thhgtd_zdiffu=200.0,
     )
 
     return driver_states.StaticFieldFactories(
@@ -575,12 +575,15 @@ def configure_logging(
     display_icon4py_logo_in_log_file()
 
 
-def get_backend_from_name(backend_name: str) -> model_backends.BackendLike:
+def get_backend_from_name(
+    backend_name: str | model_backends.BackendLike | None,
+) -> model_backends.BackendLike:
     if backend_name not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {backend_name}. \n"
             f"Available backends are {', '.join([*model_backends.BACKENDS.keys()])}"
         )
+    assert isinstance(backend_name, str)
     backend = model_backends.BACKENDS[backend_name]
     log.info(f"Backend name used for the model: {backend_name}")
     log.info(f"BackendLike derived from the backend name: {backend}")

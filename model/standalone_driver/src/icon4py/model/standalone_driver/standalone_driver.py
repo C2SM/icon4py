@@ -23,7 +23,7 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
+from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
@@ -49,6 +49,7 @@ class Icon4pyDriver:
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
+        vertical_grid_config: vertical.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
     ):
         self.config = config
@@ -57,6 +58,7 @@ class Icon4pyDriver:
         self.static_field_factories = static_field_factories
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
+        self.vertical_grid_config = vertical_grid_config
         self.model_time_variables = driver_states.ModelTimeVariables(config=config)
         self.tracer_advection = tracer_advection_granule
         self.timer_collection = driver_states.TimerCollection(
@@ -521,7 +523,7 @@ def _read_config(
     )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(
-        fourth_order_divdamp_factor=0.0025,
+        fourth_order_divdamp_factor=0.0025, rayleigh_coeff=0.1
     )
 
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
@@ -530,10 +532,10 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 1, 0, 0),
+        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
-        vertical_cfl_threshold=ta.wpfloat("0.85"),
+        vertical_cfl_threshold=ta.wpfloat("1.05"),
         enable_statistics_output=True,
         profiling_stats=profiling_stats,
     )
@@ -548,11 +550,10 @@ def _read_config(
 
 
 def initialize_driver(
-    configuration_file_path: pathlib.Path,
     output_path: pathlib.Path,
-    grid_file_path: pathlib.Path,
+    grid_file_path: pathlib.Path | str,
     log_level: str,
-    backend_name: str,
+    backend_name: str | model_backends.BackendLike | None,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -670,6 +671,7 @@ def initialize_driver(
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
+        vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
     )
 
