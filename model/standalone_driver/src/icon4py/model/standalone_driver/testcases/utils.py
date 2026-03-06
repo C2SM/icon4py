@@ -199,7 +199,7 @@ def init_w(
     nlevp1 = nlev + 1
     z_slope_e[horizontal_start_e:horizontal_end_e, :] = (z_ifc[e2c[1]] - z_ifc[e2c[0]])[
         horizontal_start_e:horizontal_end_e, :
-    ] * inv_dual_edge_length[horizontal_start_e:horizontal_end_e, :]
+    ] * inv_dual_edge_length[horizontal_start_e:horizontal_end_e]
 
     for je in range(horizontal_start_e, horizontal_end_e):
         z_wsfc_e[je, 0] = vn[je, nlev - 1] * z_slope_e[je, nlevp1 - 1]
