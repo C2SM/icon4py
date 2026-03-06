@@ -13,7 +13,7 @@ from gt4py.next.instrumentation import metrics as gtx_metrics
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import utils as muphys_utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
 from icon4py.model.common import dimension as dims, model_backends, model_options
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, icon4py_export
+from icon4py.tools.py2fgen.wrappers import icon4py_export
 
 
 graupel_program = None
@@ -52,7 +52,9 @@ def graupel_run(
             graupel_program = model_options.setup_program(
                 backend={
                     "backend_factory": model_backends.make_custom_dace_backend,
-                    "device": model_backends.DeviceType.GPU if on_gpu else model_backends.DeviceType.CPU,
+                    "device": model_backends.DeviceType.GPU
+                    if on_gpu
+                    else model_backends.DeviceType.CPU,
                     "async_sdfg_call": not wait_result,
                 },
                 program=graupel.graupel_run,
