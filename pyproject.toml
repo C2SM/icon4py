@@ -131,6 +131,8 @@ version = "{current_version}"
 
 # -- mypy --
 [tool.mypy]
+# [[tool.mypy.overrides]]
+disable_error_code = ["attr-defined"]
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
 explicit_package_bases = true
@@ -169,6 +171,10 @@ files = [
 ]
 ignore_missing_imports = false
 implicit_reexport = true
+module = [
+  '*.stencil_tests.*',
+  '*.unit_tests.*'
+]
 mypy_path = '''
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/advection/src:
 $MYPY_CONFIG_FILE_DIR/model/atmosphere/diffusion/src:
@@ -192,16 +198,6 @@ warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
 
-# TODO(): fix gtx.int32 export in gt4py
-[[tool.mypy.overrides]]
-disable_error_code = ["attr-defined", "name-defined"]
-module = [
-  '*.stencil_tests.*',
-  '*.unit_tests.*',
-  "icon4py.model.atmosphere.advection.advection_vertical",  # https://github.com/GridTools/gt4py/pull/2484
-  "icon4py.model.common.metrics.compute_advection_metrics"  # https://github.com/GridTools/gt4py/pull/2484
-]
-
 [[tool.mypy.overrides]]
 ignore_errors = true
 module = [
@@ -221,20 +217,13 @@ disable_error_code = ["index"]
 module = ["icon4py.model.standalone_driver.testcases.initial_condition"]
 
 [[tool.mypy.overrides]]
-disable_error_code = ["attr-defined"]  # https://github.com/GridTools/gt4py/pull/2484
-module = [
-  "icon4py.model.atmosphere.advection.advection_horizontal",
-  "icon4py.model.atmosphere.advection.advection"
-]
-
-[[tool.mypy.overrides]]
 disable_error_code = [
-  "no-untyped-def",  # programs are not annotated with -> None in icon4py
-  "call-overload",  # https://github.com/GridTools/gt4py/issues/2496
-  "operator",  # mypy thinks float < Field[..., float] is not allowed
-  "attr-defined",  # https://github.com/GridTools/gt4py/pull/2484
-  "name-defined",  # https://github.com/GridTools/gt4py/pull/2484
-  "valid-type"  # dims are not valid types according to mypy
+  # "no-untyped-def",  # programs are not annotated with -> None in icon4py
+  # "call-overload",  # https://github.com/GridTools/gt4py/issues/2496
+  # "operator",  # mypy thinks float < Field[..., float] is not allowed
+  # "attr-defined",  # https://github.com/GridTools/gt4py/pull/2484
+  # "name-defined",  # https://github.com/GridTools/gt4py/pull/2484
+  "valid-type"  # vfloat is not a valid type
 ]
 module = [
   "icon4py.model.atmosphere.advection.stencils.*"
