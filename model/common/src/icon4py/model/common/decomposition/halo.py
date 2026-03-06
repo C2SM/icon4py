@@ -137,7 +137,10 @@ class IconLikeHaloConstructor(HaloConstructor):
     ) -> data_alloc.NDArray:
         """Get a flattened list of all (unique) neighbors to a given global index list"""
         assert source_indices.ndim == 1
-        return self._xp.unique(self._connectivity(offset)[source_indices, :].flatten())
+        neighbors = self._xp.unique(self._connectivity(offset)[source_indices, :].flatten())
+        # Connectivities may have invalid neighbors, filter them out to avoid
+        # indexing with negative indices later.
+        return neighbors[neighbors >= 0]
 
     def _find_cell_neighbors(self, cells: data_alloc.NDArray) -> data_alloc.NDArray:
         """Find all neighboring cells of a list of cells."""
@@ -189,10 +192,14 @@ class IconLikeHaloConstructor(HaloConstructor):
         updated_owner_mask = owner_mask.copy()
         for index in indices_on_cutting_line:
             local_index = self._xp.nonzero(all_indices == index)[0][0]
-            owning_ranks = cell_to_rank[target_connectivity[index]]
+            neighbors = target_connectivity[index]
+            # Connectivities may have invalid neighbors, filter them out to
+            # avoid including cells that may not be neighbors.
+            neighbors = neighbors[neighbors >= 0]
+            owning_ranks = cell_to_rank[neighbors]
             assert (
                 self._xp.unique(owning_ranks).size > 1
-            ), f"rank {self._props.rank}: all neighboring cells are owned by the same rank"
+            ), f"rank {self._props.rank}: all neighboring cells {target_connectivity[index]} of index {index} are owned by the same rank {owning_ranks}"
             assert (
                 self._props.rank in owning_ranks
             ), f"rank {self._props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
