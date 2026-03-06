@@ -52,9 +52,7 @@ def graupel_run(
             graupel_program = model_options.setup_program(
                 backend={
                     "backend_factory": model_backends.make_custom_dace_backend,
-                    "device": model_backends.DeviceType.GPU
-                    if on_gpu
-                    else model_backends.DeviceType.CPU,
+                    "device": model_backends.GPU if on_gpu else model_backends.CPU,
                     "async_sdfg_call": not wait_for_completion,
                 },
                 program=graupel.graupel_run,
