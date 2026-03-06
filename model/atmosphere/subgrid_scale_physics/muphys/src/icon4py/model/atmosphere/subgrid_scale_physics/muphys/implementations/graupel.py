@@ -325,7 +325,7 @@ def sink_saturation(
 
 
 @gtx.field_operator
-def _q_t_update(  # noqa: PLR0915
+def _q_t_update(
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
@@ -453,7 +453,15 @@ def _q_t_update(  # noqa: PLR0915
         + (t_d.clw - t_d.cvv) * qliq
         + (g_ct.ci - t_d.cvv) * qice
     )
-    t = t + dt * ((dqdt_c + dqdt_r) * (g_ct.lvc - (t_d.clw - t_d.cvv) * t) + (dqdt_i + dqdt_s + dqdt_g) * (g_ct.lsc - (g_ct.ci - t_d.cvv) * t)) / cv
+    t = (
+        t
+        + dt
+        * (
+            (dqdt_c + dqdt_r) * (g_ct.lvc - (t_d.clw - t_d.cvv) * t)
+            + (dqdt_i + dqdt_s + dqdt_g) * (g_ct.lsc - (g_ct.ci - t_d.cvv) * t)
+        )
+        / cv
+    )
     return Q(v=qv, c=qc, r=qr, s=qs, i=qi, g=qg), t
 
 
@@ -538,8 +546,10 @@ def graupel(
     kmin_i = q.i > g_ct.qmin
     kmin_s = q.s > g_ct.qmin
     kmin_g = q.g > g_ct.qmin
-    mask = (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > g_ct.qmin) | (
-        (te < g_ct.tfrz_het2) & (q.v > _qsat_ice_rho(te, rho))
+    mask = (
+        (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > g_ct.qmin)
+        | ((te < g_ct.tfrz_het2) & (q.v > _qsat_ice_rho(te, rho)))
+        | ~enable_masking
     )
     q, t = where(mask, _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking), (q, te))
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
