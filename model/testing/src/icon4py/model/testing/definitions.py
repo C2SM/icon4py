@@ -194,7 +194,7 @@ class Experiment:
     description: str
     grid: GridDescription
     num_levels: int
-    version: int = 0
+    version: int = 2
 
 
 class Experiments:
@@ -241,7 +241,7 @@ def construct_diffusion_config(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
-            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENOUS,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
             type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
             hdiff_efdt_ratio=24.0,
             hdiff_w_efdt_ratio=15.0,
@@ -260,7 +260,7 @@ def construct_diffusion_config(
             hdiff_w=True,
             hdiff_vn=True,
             zdiffu_t=False,
-            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENOUS,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
             type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
             hdiff_efdt_ratio=24.0,
             smagorinski_scaling_factor=0.025,

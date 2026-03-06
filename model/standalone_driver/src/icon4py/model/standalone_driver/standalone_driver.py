@@ -502,7 +502,7 @@ def _read_config(
         hdiff_vn=True,
         hdiff_temp=False,
         n_substeps=5,
-        type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENOUS,
+        type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
         type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
         hdiff_efdt_ratio=10.0,
         hdiff_w_efdt_ratio=15.0,

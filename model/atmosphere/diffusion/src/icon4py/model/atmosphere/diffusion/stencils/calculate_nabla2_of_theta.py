@@ -31,7 +31,7 @@ def calculate_nabla2_of_theta(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _calculate_nabla2_of_theta(
         z_nabla2_e,
         geofac_div,

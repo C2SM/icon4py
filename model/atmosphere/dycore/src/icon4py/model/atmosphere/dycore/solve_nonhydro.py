@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# ruff: noqa: ERA001, B008
+# ruff: noqa: B008
 
 import dataclasses
 import logging
@@ -456,7 +456,6 @@ class SolveNonhydro:
                 "c_lin_e": self._interpolation_state.c_lin_e,
                 "ikoffset": self._metric_state_nonhydro.vertoffset_gradp,
                 "zdiff_gradp": self._metric_state_nonhydro.zdiff_gradp,
-                "ipeidx_dsl": self._metric_state_nonhydro.pg_edgeidx_dsl,
                 "pg_exdist": self._metric_state_nonhydro.pg_exdist,
                 "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
                 "iau_wgt_dyn": self._config.iau_wgt_dyn,
@@ -1072,7 +1071,6 @@ class SolveNonhydro:
             exner_new=prognostic_states.next.exner,
         )
 
-    # flake8: noqa: C901
     def run_predictor_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,

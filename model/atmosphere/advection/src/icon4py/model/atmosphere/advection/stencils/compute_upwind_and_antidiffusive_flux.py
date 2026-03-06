@@ -43,7 +43,7 @@ def compute_upwind_and_antidiffusive_flux(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_upwind_and_antidiffusive_flux(
         p_mflx_tracer_h,
         p_mass_flx_e,

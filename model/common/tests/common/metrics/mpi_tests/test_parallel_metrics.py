@@ -101,8 +101,7 @@ def test_distributed_metrics_attrs(
         (attrs.DDXT_Z_FULL, "ddxt_z_full"),
         (attrs.EXNER_W_IMPLICIT_WEIGHT_PARAMETER, "vwind_impl_wgt"),
         (attrs.EXNER_W_EXPLICIT_WEIGHT_PARAMETER, "vwind_expl_wgt"),
-        (attrs.PG_EDGEDIST_DSL, "pg_exdist"),
-        (attrs.PG_EDGEIDX_DSL, "pg_edgeidx_dsl"),
+        (attrs.PG_EXDIST_DSL, "pg_exdist_dsl"),
         (attrs.MASK_PROG_HALO_C, "mask_prog_halo_c"),
         (attrs.HORIZONTAL_MASK_FOR_3D_DIVDAMP, "hmask_dd3d"),
         (attrs.WGTFAC_C, "wgtfac_c"),
@@ -136,10 +135,9 @@ def test_distributed_metrics_attrs_no_halo(
 @pytest.mark.parametrize(
     "attrs_name, metrics_name",
     [
-        (attrs.MASK_HDIFF, "mask_hdiff"),
-        (attrs.ZD_DIFFCOEF_DSL, "zd_diffcoef"),
-        (attrs.ZD_INTCOEF_DSL, "zd_intcoef"),
-        (attrs.ZD_VERTOFFSET_DSL, "zd_vertoffset"),
+        (attrs.ZD_DIFFCOEF, "zd_diffcoef"),
+        (attrs.ZD_INTCOEF, "zd_intcoef"),
+        (attrs.ZD_VERTOFFSET, "zd_vertoffset"),
     ],
 )
 def test_distributed_metrics_attrs_no_halo_regional(
@@ -186,7 +184,7 @@ def test_distributed_metrics_wgtfacq_e(
     factory = metrics_factory_from_savepoint
 
     field = factory.get(attrs.WGTFACQ_E).asnumpy()
-    field_ref = metrics_savepoint.wgtfacq_e_dsl(field.shape[1]).asnumpy()
+    field_ref = metrics_savepoint.wgtfacq_e_dsl().asnumpy()
     assert test_utils.dallclose(field, field_ref)
 
 
