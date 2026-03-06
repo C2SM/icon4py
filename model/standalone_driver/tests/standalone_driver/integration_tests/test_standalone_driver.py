@@ -10,6 +10,7 @@ import pathlib
 import pytest
 
 from icon4py.model.common import model_backends
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import main
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
@@ -53,12 +54,13 @@ def test_standalone_driver(
             backend_name = k
 
     grid_file_path = grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL)
-
+    array_ns = data_alloc.import_array_ns(backend)  # type: ignore[arg-type] # backend type is correct
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
     ds = main.main(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_name,
         output_path=output_path,
+        array_ns=array_ns,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()

@@ -180,6 +180,7 @@ def init_w(
     vn: data_alloc.NDArray,
     vct_b: data_alloc.NDArray,
     nlev: int,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     c2e = grid.get_connectivity("C2E").asnumpy()
     e2c = grid.get_connectivity("E2C").asnumpy()
@@ -193,18 +194,18 @@ def init_w(
     )
     horizontal_end_c = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.INTERIOR))
 
-    z_slope_e = np.zeros((horizontal_end_e, nlev + 1))
-    z_wsfc_e = np.zeros((horizontal_end_e, 1))
+    z_slope_e = array_ns.zeros((horizontal_end_e, nlev + 1))
+    z_wsfc_e = array_ns.zeros((horizontal_end_e, 1))
 
     nlevp1 = nlev + 1
     z_slope_e[horizontal_start_e:horizontal_end_e, :] = (z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[
         horizontal_start_e:horizontal_end_e, :
-    ] * inv_dual_edge_length[horizontal_start_e:horizontal_end_e, np.newaxis]
+    ] * inv_dual_edge_length[horizontal_start_e:horizontal_end_e, array_ns.newaxis]
 
     for je in range(horizontal_start_e, horizontal_end_e):
         z_wsfc_e[je, 0] = vn[je, nlev - 1] * z_slope_e[je, nlevp1 - 1]
 
-    e_inn_c = np.zeros((horizontal_end_c, 3))  # or 1
+    e_inn_c = array_ns.zeros((horizontal_end_c, 3))  # or 1
     for jc in range(horizontal_end_c):
         for je in range(3):
             idx_ce = 0 if e2c[c2e][jc, je, 0] == jc else 1
@@ -214,9 +215,9 @@ def init_w(
                 / cell_area[jc]
             )
 
-    z_wsfc_c = np.sum(z_wsfc_e[c2e] * e_inn_c[:, :, np.newaxis], axis=1)
+    z_wsfc_c = array_ns.sum(z_wsfc_e[c2e] * e_inn_c[:, :, array_ns.newaxis], axis=1)
 
-    w = np.zeros((horizontal_end_c, nlevp1))
+    w = array_ns.zeros((horizontal_end_c, nlevp1))
     for jc in range(horizontal_start_c, horizontal_end_c):
         w[jc, nlevp1 - 1] = z_wsfc_c[jc]
 

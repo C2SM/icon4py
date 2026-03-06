@@ -7,8 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
 import pathlib
+from types import ModuleType
 from typing import Annotated
 
+import numpy as np
 import typer
 
 from icon4py.model.common import model_backends
@@ -39,6 +41,7 @@ def main(
             help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
+    array_ns: ModuleType = np,
 ) -> driver_states.DriverStates:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
@@ -68,6 +71,7 @@ def main(
         model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
+        array_ns=array_ns,
     )
 
     log.info("driver setup: DONE")

@@ -8,7 +8,9 @@
 import functools
 import logging
 import math
+from types import ModuleType
 
+import numpy as np
 from gt4py import next as gtx
 
 import icon4py.model.common.utils as common_utils
@@ -58,6 +60,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     model_top_height: float,
     stretch_factor: float,
     damping_height: float,
+    array_ns: ModuleType = np,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
@@ -278,6 +281,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vn=prognostic_state_now.vn.ndarray,
         vct_b=vct_b.asnumpy(),
         nlev=num_levels,
+        array_ns=array_ns,
     )
     log.info("U2vn computation completed.")
 
