@@ -16,7 +16,7 @@ from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.testing import definitions as test_defs, grid_utils
-from icon4py.model.testing.fixtures import backend, cpu_allocator
+from icon4py.model.testing.fixtures import backend, cpu_allocator, grid_description
 
 from .. import utils
 
@@ -176,14 +176,18 @@ def test_compute_domain_bounds_for_limited_area_grid(
         ), f"Expected end index {expected_value} for domain = {d} , but got {v}"
 
 
-@pytest.mark.parametrize("file", (test_defs.Grids.R02B04_GLOBAL,))
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_compute_domain_bounds_for_global_grid(
-    file: test_defs.GridDescription,
+    grid_description: test_defs.GridDescription,
     dim: gtx.Dimension,
     cpu_allocator: gtx_typing.Allocator,
 ) -> None:
-    grid_manager = grid_utils.get_grid_manager_from_identifier(file, 1, True, cpu_allocator)
+    if grid_description.params.limited_area:
+        pytest.skip("This test is not for limited area grids")
+
+    grid_manager = grid_utils.get_grid_manager_from_identifier(
+        grid_description, 1, True, cpu_allocator
+    )
     grid = grid_manager.grid
     refinement_fields = grid.refinement_control
     decomposition_info = grid_manager.decomposition_info
