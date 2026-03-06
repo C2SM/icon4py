@@ -43,7 +43,7 @@ def graupel_run(
     prg_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    wait_result: bool,
+    wait_for_completion: bool,
 ):
     global graupel_program  # noqa: PLW0603 [global-statement]
     if graupel_program is None:
@@ -55,7 +55,7 @@ def graupel_run(
                     "device": model_backends.DeviceType.GPU
                     if on_gpu
                     else model_backends.DeviceType.CPU,
-                    "async_sdfg_call": not wait_result,
+                    "async_sdfg_call": not wait_for_completion,
                 },
                 program=graupel.graupel_run,
                 constant_args={"dt": dt, "qnc": qnc, "enable_masking": True},
