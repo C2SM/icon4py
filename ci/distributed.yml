@@ -38,35 +38,42 @@ build_distributed_baseimage_aarch64:
     DOCKERFILE: ci/docker/checkout_mpi.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}", "VENV=${UV_PROJECT_ENVIRONMENT}"]'
     PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
-    USE_MPI: NO
-    SLURM_MPI_TYPE: pmix
-    PMIX_MCA_psec: native
-    PMIX_MCA_gds: "^shmem2"
 
-.build_distributed_cpu:
+.build_distributed:
   extends: [.build_distributed_template]
   variables:
     UV_PROJECT_ENVIRONMENT: venv_dist
 
-build_distributed_cpu:
+build_distributed:
   stage: image
-  extends: [.container-builder-cscs-gh200, .build_distributed_cpu]
+  extends: [.container-builder-cscs-gh200, .build_distributed]
   needs: [build_distributed_baseimage_aarch64]
 
 .test_template_distributed:
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$UV_PROJECT_ENVIRONMENT-$PYVERSION-mpi
-  extends: [.container-runner-santis-gh200, .build_distributed_cpu]
-  needs: [build_distributed_cpu]
+  extends: [.container-runner-santis-gh200, .build_distributed]
+  needs: [build_distributed]
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_CPU_BIND: 'verbose'
     SLURM_NTASKS: 4
+    SLURM_GPUS_PER_TASK: 1
     ICON4PY_TEST_DATA_PATH: "/icon4py/testdata"
     ICON4PY_ENABLE_GRID_DOWNLOAD: false
     ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
     PYTEST_ADDOPTS: "--durations=0"
     CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/cwci02/icon4py/ci/testdata:$ICON4PY_TEST_DATA_PATH"]'
+    # Do not use libfabric from the host system. Libfabric with slingshot
+    # support is built into the container image.
+    USE_MPI: NO
+    # Use libfabric slingshot (cxi) provider and recommended settings from
+    # https://docs.cscs.ch/software/communication/openmpi.
+    SLURM_MPI_TYPE: pmix
+    PMIX_MCA_psec: native
+    FI_PROVIDER: cxi
+    OMPI_MCA_pml: cm
+    OMPI_MCA_mtl: ofi
 
 .test_distributed_aarch64:
   stage: test
@@ -81,14 +88,17 @@ build_distributed_cpu:
   parallel:
     matrix:
       - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
-        BACKEND: [embedded, gtfn_cpu, dace_cpu]
+        BACKEND: [embedded, gtfn_cpu, dace_cpu, dace_gpu, gtfn_gpu]
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
         SLURM_TIMELIMIT: '00:05:00'
-    - if: $COMPONENT == 'atmosphere/dycore' && $BACKEND == 'dace_cpu'
+    - if: $COMPONENT == 'atmosphere/dycore' && ($BACKEND == 'dace_cpu' || $BACKEND == 'dace_gpu')
       variables:
-        SLURM_TIMELIMIT: '00:20:00'
+        SLURM_TIMELIMIT: '00:30:00'
+    - if: $COMPONENT == 'common' && $BACKEND == 'dace_gpu'
+      variables:
+        SLURM_TIMELIMIT: '00:45:00'
     - if: $COMPONENT == 'atmosphere/dycore'
       variables:
         SLURM_TIMELIMIT: '00:15:00'

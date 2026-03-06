@@ -72,7 +72,7 @@ class IconSavepoint:
                         # as a workaround for the lack of support for optional fields in gt4py.
                         shp = (1,) * len(dims)
                         return gtx.as_field(
-                            dims, np.zeros(shp, dtype=dtype), allocator=self.backend
+                            dims, self.xp.zeros(shp, dtype=dtype), allocator=self.backend
                         )
                     else:
                         return None
@@ -552,9 +552,8 @@ class IconGridSavepoint(IconSavepoint):
             def potentially_revert_icon_index_transformation(ar):
                 return ar
         else:
-            potentially_revert_icon_index_transformation = functools.partial(
-                grid_utils.revert_repeated_index_to_invalid,
-                array_ns=data_alloc.import_array_ns(backend),
+            potentially_revert_icon_index_transformation = (
+                grid_utils.revert_repeated_index_to_invalid
             )
 
         c2e2c = self.c2e2c()
