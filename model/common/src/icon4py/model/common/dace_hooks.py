@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import copy
 
 import dace
-from dace import nodes as dace_nodes, sdfg as dace_sdfg, symbolic as dace_sym
+from dace import nodes as dace_nodes, sdfg as dace_sdfg, symbolic as dace_sym, transformation as dace_transformation
 from gt4py.next import config as gtx_config
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
@@ -441,10 +441,67 @@ def graupel_run_self_copy_removal_inside_scan(sdfg: dace.SDFG) -> None:
         nsdfg_conditional_block = nsdfg_if_stmt_with_accessnode.sdfg.nodes()[0]
         else_branch = nsdfg_conditional_block.branches[1][1]
         else_branch_state = else_branch.nodes()[0]
+        output_edges = [edge for edge in st.out_edges_by_connector(nsdfg_if_stmt_with_accessnode, next(iter(nsdfg_if_stmt_with_accessnode.out_connectors.keys())))]
+        assert len(output_edges) == 1
+        output_edge = next(iter(output_edges))
+        intermediate_an = output_edge.dst
+        assert isinstance(intermediate_an, dace_nodes.AccessNode)
+        out_edge_of_inter_an = st.out_edges(intermediate_an)[0]
+        dst_out_edge_of_inter_an = out_edge_of_inter_an.dst
+        assert isinstance(dst_out_edge_of_inter_an, dace_nodes.MapExit)
+        out_edges_of_map_exit = [oedge_map_exit for oedge_map_exit in st.out_edges_by_connector(dst_out_edge_of_inter_an, "OUT_" + out_edge_of_inter_an.dst_conn[3:])]
+        assert len(out_edges_of_map_exit) == 1
+        out_edge_of_map_exit = next(iter(out_edges_of_map_exit))
+        dst_out_edge_of_map_exit = out_edge_of_map_exit.dst
+        assert isinstance(dst_out_edge_of_map_exit, dace_nodes.AccessNode)
+        #### With view ####
+        # view, _ = st.sdfg.add_view(
+        #     name="view_" + out_edge_of_inter_an.data.data,
+        #     dtype=st.sdfg.arrays[out_edge_of_inter_an.data.data].dtype,
+        #     shape=st.sdfg.arrays[out_edge_of_inter_an.data.data].shape,
+        #     strides=st.sdfg.arrays[out_edge_of_inter_an.data.data].strides,
+        # )
+        # local_view_node = st.add_access(view)
+        # new_memlet = dace.Memlet(
+        #     data=local_view_node.data,
+        #     subset=copy.deepcopy(out_edge_of_inter_an.data.subset),
+        #     other_subset=copy.deepcopy(output_edge.data.subset),
+        # )
+        # new_output_edge = dace_transformation.helpers.redirect_edge(
+        #     state=st, edge=output_edge, new_dst=local_view_node, new_dst_conn=None, new_memlet=new_memlet
+        # )
+        # new_output_edge.data.allow_oob = True
+        # # output_edge.data.allow_oob = True
+        # new_memlet2 = dace.Memlet(
+        #     data=out_edge_of_inter_an.data.data,
+        #     subset=copy.deepcopy(out_edge_of_inter_an.data.subset),
+        #     other_subset=copy.deepcopy(out_edge_of_inter_an.data.subset),
+        # )
+        # # out_edge_of_inter_an.data.allow_oob = True
+        # new_out_edge_of_inter_an = dace_transformation.helpers.redirect_edge(
+        #     state=st, edge=out_edge_of_inter_an, new_src=local_view_node, new_src_conn=None, new_memlet=new_memlet2
+        # )
+        # new_out_edge_of_inter_an.data.allow_oob = True
+        ###########################
+        #### Without access node ####
+        new_memlet = dace.Memlet(
+            data=out_edge_of_inter_an.data.data,
+            subset=copy.deepcopy(out_edge_of_inter_an.data.subset),
+            other_subset=copy.deepcopy(output_edge.data.subset),
+        )
+        new_output_edge = dace_transformation.helpers.redirect_edge(
+            state=st, edge=output_edge, new_dst= dst_out_edge_of_inter_an, new_dst_conn=out_edge_of_inter_an.dst_conn, new_memlet=new_memlet
+        )
+        new_output_edge.data.allow_oob = True
+        st.remove_edge(out_edge_of_inter_an)
+        ###############################
+        st.remove_node(intermediate_an)
+        sdfg.arrays.pop(intermediate_an.data)
         if "else_body" in else_branch.name and len(else_branch_state.nodes()) == 2 and all(isinstance(node, dace_nodes.AccessNode) for node in else_branch_state.nodes()):
             print(f"Removed self-copy in {nsdfg_if_stmt_with_accessnode.label} for '{input_access_nodes}' by removing the else branch")
             else_branch_state.sdfg.remove_nodes_from([internal_node for internal_node in else_branch_state.nodes()])
             nsdfg_conditional_block.remove_branch(else_branch)
+        # breakpoint()
         sdfg.validate()
 
     sdfg.save("graupel_run_self_copy_removal_inside_scan_at_exit.sdfg")
