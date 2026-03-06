@@ -769,6 +769,9 @@ class GridGeometry(factory.FieldSource):
             f"{self.__class__.__name__} for geometry_type={geometry_name} (grid={self._grid.id!r})"
         )
 
+    def get_float(self, name: str) -> float:
+        return float(self.get(name, type_=factory.RetrievalType.SCALAR))
+
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
         return self._attrs

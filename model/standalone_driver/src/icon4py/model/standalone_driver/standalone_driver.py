@@ -290,7 +290,7 @@ class Icon4pyDriver:
 
         if (
             global_max_vertical_cfl
-            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold
+            > driver_constants.CFL_ENTER_WATCHMODE_FACTOR * self.config.vertical_cfl_threshold  # type: ignore[operator]
             and not self.model_time_variables.cfl_watch_mode
         ):
             log.warning(
@@ -303,7 +303,7 @@ class Icon4pyDriver:
                 self.model_time_variables.ndyn_substeps_var / self.config.ndyn_substeps
             )
             if (
-                global_max_vertical_cfl * substep_fraction
+                global_max_vertical_cfl * substep_fraction  # type: ignore[operator] # problem with ScalarLikeArray
                 > driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
             ):
                 log.warning(
@@ -315,13 +315,13 @@ class Icon4pyDriver:
                 driver_constants.CFL_THRESHOLD_FACTOR * self.config.vertical_cfl_threshold
             )
 
-            if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:
+            if global_max_vertical_cfl > vertical_cfl_threshold_for_increment:  # type: ignore[operator] # problem with ScalarLikeArray
                 if self._xp.isfinite(global_max_vertical_cfl):
                     ndyn_substeps_increment = max(
                         1,
                         round(
                             self.model_time_variables.ndyn_substeps_var
-                            * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)
+                            * (global_max_vertical_cfl - vertical_cfl_threshold_for_increment)  # type: ignore[operator] # problem with ScalarLikeArray
                             / vertical_cfl_threshold_for_increment
                         ),
                     )
@@ -342,7 +342,7 @@ class Icon4pyDriver:
             if (
                 self.model_time_variables.ndyn_substeps_var > self.config.ndyn_substeps
                 and global_max_vertical_cfl
-                * ta.wpfloat(
+                * ta.wpfloat(  # type: ignore[operator] # problem with ScalarLikeArray
                     self.model_time_variables.ndyn_substeps_var
                     / (self.model_time_variables.ndyn_substeps_var - 1)
                 )
@@ -359,7 +359,7 @@ class Icon4pyDriver:
                 if (
                     self.model_time_variables.ndyn_substeps_var == self.config.ndyn_substeps
                     and global_max_vertical_cfl
-                    < driver_constants.CFL_LEAVE_WATCHMODE_FACTOR
+                    < driver_constants.CFL_LEAVE_WATCHMODE_FACTOR  # type: ignore[operator] # problem with ScalarLikeArray
                     * self.config.vertical_cfl_threshold
                 ):
                     log.warning(
@@ -502,8 +502,8 @@ def _read_config(
         hdiff_vn=True,
         hdiff_temp=False,
         n_substeps=5,
-        type_t_diffu=2,
-        type_vn_diffu=1,
+        type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENOUS,
+        type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
         hdiff_efdt_ratio=10.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,

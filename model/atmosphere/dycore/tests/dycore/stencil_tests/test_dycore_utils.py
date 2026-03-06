@@ -44,7 +44,7 @@ def test_calculate_fourth_order_divdamp_scaling_coeff_order_24(
     backend: gtx_typing.Backend,
 ) -> None:
     second_order_divdamp_factor = 3.0
-    divdamp_order = 24
+    divdamp_order = gtx.int32(24)
     mean_cell_area = 1000.0
     grid = simple_grid.simple_grid(allocator=backend)
     interpolated_fourth_order_divdamp_factor = data_alloc.random_field(

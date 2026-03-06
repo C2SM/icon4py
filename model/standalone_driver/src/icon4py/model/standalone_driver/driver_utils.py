@@ -293,7 +293,7 @@ def initialize_granules(
         ddxn_z_full=metrics_field_source.get(metrics_attributes.DDXN_Z_FULL),
         zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
         vertoffset_gradp=metrics_field_source.get(metrics_attributes.VERTOFFSET_GRADP),
-        nflat_gradp=metrics_field_source.get(metrics_attributes.NFLAT_GRADP),
+        nflat_gradp=metrics_field_source.get_int(metrics_attributes.NFLAT_GRADP),
         pg_edgeidx_dsl=metrics_field_source.get(metrics_attributes.PG_EDGEIDX_DSL),
         pg_exdist=metrics_field_source.get(metrics_attributes.PG_EDGEDIST_DSL),
         ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),

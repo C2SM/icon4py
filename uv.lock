@@ -1402,7 +1402,7 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-source = { directory = "../gt4py" }
+source = { editable = "../gt4py" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -1905,7 +1905,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", directory = "../gt4py" },
+    { name = "gt4py", editable = "../gt4py" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1922,7 +1922,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", directory = "../gt4py" },
+    { name = "gt4py", editable = "../gt4py" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1939,7 +1939,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", directory = "../gt4py" },
+    { name = "gt4py", editable = "../gt4py" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1956,7 +1956,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", directory = "../gt4py" },
+    { name = "gt4py", editable = "../gt4py" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1974,7 +1974,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", directory = "../gt4py" },
+    { name = "gt4py", editable = "../gt4py" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2040,9 +2040,9 @@ requires-dist = [
     { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
-    { name = "gt4py", directory = "../gt4py" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", directory = "../gt4py" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", directory = "../gt4py" },
+    { name = "gt4py", editable = "../gt4py" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", editable = "../gt4py" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "../gt4py" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -2078,7 +2078,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", directory = "../gt4py" },
+    { name = "gt4py", editable = "../gt4py" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2106,7 +2106,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", directory = "../gt4py" },
+    { name = "gt4py", editable = "../gt4py" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2135,7 +2135,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", directory = "../gt4py" },
+    { name = "gt4py", editable = "../gt4py" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2184,9 +2184,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", directory = "../gt4py" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", directory = "../gt4py" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", directory = "../gt4py" },
+    { name = "gt4py", editable = "../gt4py" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", editable = "../gt4py" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", editable = "../gt4py" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },

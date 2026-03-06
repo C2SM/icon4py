@@ -53,7 +53,7 @@ def _compute_advection_deepatmo_fields(
     return deepatmo_divh, deepatmo_divzL, deepatmo_divzU
 
 
-@gtx.program  # type: ignore[call-overload] # see https://github.com/GridTools/gt4py/issues/2496
+@gtx.program
 def compute_advection_deepatmo_fields(
     height_u: fa.KField[ta.wpfloat],
     height_l: fa.KField[ta.wpfloat],
