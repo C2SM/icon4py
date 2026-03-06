@@ -177,10 +177,6 @@ def check_local_global_field(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
-        # TODO(msimberg): Is this true? Not true for RBF interpolation... why?
-        # We expect an exact match, since the starting point is the same (grid
-        # file) and we are doing the exact same computations in single rank and
-        # multi rank mode.
         np.testing.assert_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
 
 
