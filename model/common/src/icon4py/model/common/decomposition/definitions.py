@@ -93,11 +93,11 @@ class DecompositionInfo:
         dim: gtx.Dimension,
         global_index: data_alloc.NDArray,
         owner_mask: data_alloc.NDArray,
-        halo_levels: data_alloc.NDArray,
+        halo_levels: data_alloc.NDArray | None,
     ) -> None:
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
-        assert (halo_levels != DecompositionFlag.UNDEFINED.value).all()
+        assert halo_levels is None or (halo_levels != DecompositionFlag.UNDEFINED.value).all()
         self._halo_levels[dim] = halo_levels
 
     def is_distributed(self) -> bool:
