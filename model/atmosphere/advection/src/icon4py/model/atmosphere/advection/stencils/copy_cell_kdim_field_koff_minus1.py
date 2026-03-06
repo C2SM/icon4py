@@ -31,7 +31,7 @@ def copy_cell_kdim_field_koff_minus1(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _copy_cell_kdim_field_koff_minus1(
         field_in,
         out=field_out,

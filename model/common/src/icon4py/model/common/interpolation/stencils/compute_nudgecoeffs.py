@@ -38,7 +38,7 @@ def compute_nudgecoeffs(
     nudge_zone_width: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     """Compute nudging coefficient for edges based the grid refinement level of an edge."""
     _compute_nudgecoeffs(
         refin_ctrl,

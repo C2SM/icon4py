@@ -31,7 +31,7 @@ def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
         p_cell_in,
         c_intp,

@@ -84,7 +84,7 @@ def muphys_run(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _muphys(
         vertical_end - 1,
         dz,
