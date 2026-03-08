@@ -41,7 +41,6 @@ def main(
             help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
-    jabw_exit_savepoint = None,
     array_ns: ModuleType = np,
 ) -> driver_states.DriverStates:
     """
@@ -72,7 +71,6 @@ def main(
         model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
-        jabw_exit_savepoint=jabw_exit_savepoint,
         array_ns=array_ns,
     )
 

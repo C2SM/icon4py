@@ -62,7 +62,6 @@ def test_standalone_driver(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_name,
         output_path=output_path,
-        jabw_exit_savepoint=jabw_exit_savepoint,
         array_ns=array_ns,
     )
 
