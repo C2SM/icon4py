@@ -60,6 +60,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     model_top_height: float,
     stretch_factor: float,
     damping_height: float,
+    jabw_exit_savepoint,
     array_ns: ModuleType = np,
 ) -> driver_states.DriverStates:
     """
@@ -298,13 +299,13 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
-
+    #jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
     prognostic_state_next = prognostics.PrognosticState(
-        vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
-        w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),
-        exner=data_alloc.as_field(prognostic_state_now.exner, allocator=allocator),
-        rho=data_alloc.as_field(prognostic_state_now.rho, allocator=allocator),
-        theta_v=data_alloc.as_field(prognostic_state_now.theta_v, allocator=allocator),
+        vn=data_alloc.as_field(jabw_exit_savepoint.vn(), allocator=allocator),
+        w=data_alloc.as_field(jabw_exit_savepoint.w(), allocator=allocator),
+        exner=data_alloc.as_field(jabw_exit_savepoint.exner(), allocator=allocator),
+        rho=data_alloc.as_field(jabw_exit_savepoint.rho(), allocator=allocator),
+        theta_v=data_alloc.as_field(jabw_exit_savepoint.theta_v(), allocator=allocator),
     )
     prognostic_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 

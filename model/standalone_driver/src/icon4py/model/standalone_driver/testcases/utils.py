@@ -202,7 +202,7 @@ def init_w(
     # ] * inv_dual_edge_length[horizontal_start_e:horizontal_end_e, array_ns.newaxis]
 
     for je in range(horizontal_start_e, horizontal_end_e):
-        z_wsfc_e[je, 0] = vn[je, nlev - 1] * (z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[je, :] * inv_dual_edge_length[je][je, nlevp1 - 1]
+        z_wsfc_e[je, 0] = vn[je, nlev - 1] * ((z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[je, :] * inv_dual_edge_length[je])[nlevp1 - 1]
 
     e_inn_c = array_ns.zeros((horizontal_end_c, 3))  # or 1
     for jc in range(horizontal_end_c):
