@@ -204,8 +204,8 @@ ignore_errors = true
 module = [
   'icon4py.model.testing.pytest_hooks',
   'icon4py.model.testing.serialbox',
-  'icon4py.tools.py2fgen.wrappers.diffusion_wrapper',
-  'icon4py.tools.py2fgen.wrappers.dycore_wrapper',
+  'icon4py.tools.py2fgen.wrappers.diffusion_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
+  'icon4py.tools.py2fgen.wrappers.dycore_wrapper',  # TODO(ricoh): replace bare ints with proper enum values, fix or ignore the rest (< 10)
   'icon4py.tools.py2fgen.wrappers.grid_wrapper'
 ]
 
