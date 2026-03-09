@@ -87,7 +87,7 @@ def test_compute_domain_bounds(
         and zone in (h_grid.Zone.LOCAL, h_grid.Zone.INTERIOR, h_grid.Zone.HALO)
     ):
         pytest.xfail(
-            f"start or end index is known to be inconsistent with {experiment=} for {dim=} and {zone=}"
+            f"start or end index is known to be inconsistent with {experiment.name=} for {dim=} and {zone=}"
         )
 
     ref_start_index = ref_grid.start_index(domain)
