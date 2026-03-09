@@ -184,8 +184,6 @@ def init_w(
     nlev: int,
     array_ns: ModuleType,
 ) -> data_alloc.NDArray:
-    # c2e = grid.get_connectivity("C2E").ndarray
-    # e2c = grid.get_connectivity("E2C").ndarray
     horizontal_start_e = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )

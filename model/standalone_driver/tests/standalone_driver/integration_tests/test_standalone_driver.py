@@ -17,6 +17,7 @@ from icon4py.model.testing.fixtures.datatest import backend, backend_like
 
 from ..fixtures import *  # noqa: F403
 
+
 @pytest.mark.cpu_only
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
@@ -47,7 +48,6 @@ def test_standalone_driver(
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
     timeloop_diffusion_savepoint_exit_standalone: sb.IconDiffusionExitSavepoint,
-    data_provider,
 ) -> None:
     backend_name = "embedded"
     for k, v in model_backends.BACKENDS.items():

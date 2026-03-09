@@ -23,6 +23,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
 )
 
+
 @pytest.mark.cpu_only
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment, rank", [(definitions.Experiments.JW, 0)])
@@ -58,7 +59,7 @@ def test_standalone_driver_initial_condition(
         model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
-        array_ns=data_alloc.import_array_ns(backend),
+        array_ns=data_alloc.import_array_ns(backend),  # type: ignore[arg-type] # backend type is correct
     )
     jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
 
