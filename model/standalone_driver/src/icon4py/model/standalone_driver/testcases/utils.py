@@ -171,9 +171,9 @@ def zonalwind_2_normalwind_ndarray(
 
 
 def init_w(
+    grid: icon_grid.IconGrid,
     c2e: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
-    grid: icon_grid.IconGrid,
     z_ifc: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     edge_cell_length: data_alloc.NDArray,
