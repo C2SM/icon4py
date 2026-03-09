@@ -180,7 +180,7 @@ def init_w(
     vn: data_alloc.NDArray,
     vct_b: data_alloc.NDArray,
     nlev: int,
-    array_ns: ModuleType = np,
+    array_ns: ModuleType,
 ) -> data_alloc.NDArray:
     c2e = grid.get_connectivity("C2E").ndarray
     e2c = grid.get_connectivity("E2C").ndarray
@@ -202,7 +202,10 @@ def init_w(
     # ] * inv_dual_edge_length[horizontal_start_e:horizontal_end_e, array_ns.newaxis]
 
     for je in range(horizontal_start_e, horizontal_end_e):
-        z_wsfc_e[je] = vn[je, nlev - 1] * ((z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[je, :] * inv_dual_edge_length[je])[nlevp1 - 1]
+        z_wsfc_e[je] = (
+            vn[je, nlev - 1]
+            * ((z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[je, :] * inv_dual_edge_length[je])[nlevp1 - 1]
+        )
 
     e_inn_c = array_ns.zeros((horizontal_end_c, 3))  # or 1
     for jc in range(horizontal_end_c):
@@ -213,11 +216,7 @@ def init_w(
                 * primal_edge_length[c2e[jc, je]]
                 / cell_area[jc]
             )
-    z_wsfc_c = array_ns.zeros((horizontal_end_c))
-    for jc in range(horizontal_end_c):
-        z_wsfc_c[jc] = (z_wsfc_e[c2e][jc][0] * e_inn_c[jc][0] +
-                        z_wsfc_e[c2e][jc][1] * e_inn_c[jc][1] +
-                        z_wsfc_e[c2e][jc][2] * e_inn_c[jc][2])
+    z_wsfc_c = array_ns.sum(z_wsfc_e[c2e] * e_inn_c, axis=1)
 
     w = array_ns.zeros((horizontal_end_c, nlevp1))
     for jc in range(horizontal_start_c, horizontal_end_c):

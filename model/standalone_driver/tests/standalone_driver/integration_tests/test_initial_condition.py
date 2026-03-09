@@ -56,6 +56,7 @@ def test_standalone_driver_initial_condition(
         model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
+        array_ns=data_alloc.import_array_ns(backend),
     )
     jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
 

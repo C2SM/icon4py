@@ -47,7 +47,7 @@ def test_standalone_driver(
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
     timeloop_diffusion_savepoint_exit_standalone: sb.IconDiffusionExitSavepoint,
-    data_provider
+    data_provider,
 ) -> None:
     backend_name = "embedded"
     for k, v in model_backends.BACKENDS.items():
@@ -57,7 +57,6 @@ def test_standalone_driver(
     grid_file_path = grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL)
     array_ns = data_alloc.import_array_ns(backend)  # type: ignore[arg-type] # backend type is correct
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
-    jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
     ds = main.main(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_name,
@@ -74,7 +73,6 @@ def test_standalone_driver(
     )  # savepoint_nonhydro_exit.theta_v_new() #
     vn_sp = timeloop_diffusion_savepoint_exit_standalone.vn()  # savepoint_nonhydro_exit.vn_new() #
     w_sp = timeloop_diffusion_savepoint_exit_standalone.w()  # savepoint_nonhydro_exit.w_new() #
-    # breakpoint()
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
