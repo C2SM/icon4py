@@ -274,6 +274,7 @@ def solve_nh_init(
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
+    gtx.wait_for_compilation()
 
 
 NumpyFloatArray1D: TypeAlias = Annotated[

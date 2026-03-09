@@ -223,6 +223,7 @@ def diffusion_init(
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
+    gtx.wait_for_compilation()
 
 
 @icon4py_export.export
