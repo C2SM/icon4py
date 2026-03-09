@@ -640,8 +640,22 @@ def _construct_butterfly_cells(
     Returns:
         ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring cells of its cell neighbors
     """
-    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c, array_ns=array_ns)
-    c2e2c2e2c = array_ns.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
+#    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c, array_ns=array_ns)
+#    c2e2c2e2c = array_ns.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
+    c2e2c2e2c = array_ns.zeros((c2e2c.shape[0], 9))
+    for jc in range(c2e2c.shape[0]):
+        for i in range(3):
+            c2e2c2e2c[jc, i * 3] = c2e2c[jc, i]
+            if c2e2c2e2c[jc, i * 3] < 0:
+                c2e2c2e2c[jc, i * 3 + 1] = c2e2c2e2c[jc, i * 3]
+                c2e2c2e2c[jc, i * 3 + 2] = c2e2c2e2c[jc, i * 3]
+            else:
+                k = 1
+                for j in range(3):
+                    if c2e2c[c2e2c[jc, i], j] != jc:
+                        c2e2c2e2c[jc, i * 3 + k] = c2e2c[c2e2c[jc, i], j]
+                        k = k + 1
+
     return c2e2c2e2c
 
 

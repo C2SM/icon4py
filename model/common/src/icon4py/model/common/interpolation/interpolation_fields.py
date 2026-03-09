@@ -1188,6 +1188,22 @@ def compute_lsq_weights_c(
     return lsq_weights_c_jc / np.max(lsq_weights_c_jc)
 
 
+def compute_lsq_moments_hat(
+    z_dist_g: data_alloc.NDArray,
+    jc: int,
+    lsq_dim_unk: int,
+    lsq_dim_c: int,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    lsq_moments_hat = array_ns.zeros((lsq_dim_c, lsq_dim_unk))
+    lsq_moments_hat[:, :2] = z_dist_g[:, :]
+    if lsq_dim_unk > 2:
+        lsq_moments_hat[:, 2] = z_dist_g[:, 0]**2
+        lsq_moments_hat[:, 3] = z_dist_g[:, 1]**2
+        lsq_moments_hat[:, 4] = z_dist_g[:, 0] * z_dist_g[:, 1]
+    return lsq_moments_hat
+
+
 def compute_z_lsq_mat_c(
     cell_owner_mask: data_alloc.NDArray,
     z_lsq_mat_c: data_alloc.NDArray,
@@ -1196,13 +1212,21 @@ def compute_z_lsq_mat_c(
     jc: int,
     lsq_dim_unk: int,
     lsq_dim_c: int,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
     if cell_owner_mask[jc]:
         z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
 
+    lsq_moments_hat = compute_lsq_moments_hat(
+      z_dist_g = z_dist_g,
+      jc = jc,
+      lsq_dim_unk = lsq_dim_unk,
+      lsq_dim_c = lsq_dim_c,
+      array_ns = array_ns
+    )
     for js in range(lsq_dim_c):
-        z_lsq_mat_c[jc, js, :lsq_dim_unk] = lsq_weights_c[jc, js] * z_dist_g[js, :]
+        z_lsq_mat_c[jc, js, :lsq_dim_unk] = lsq_weights_c[jc, js] * lsq_moments_hat[js, :]
 
     return z_lsq_mat_c[jc, js, :lsq_dim_unk]
 
@@ -1275,6 +1299,7 @@ def compute_lsq_coeffs(
             jc,
             lsq_dim_unk,
             lsq_dim_c,
+            array_ns,
         )
 
     if exchange != decomposition.single_node_default:
