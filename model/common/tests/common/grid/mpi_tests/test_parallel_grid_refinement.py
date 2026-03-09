@@ -113,7 +113,7 @@ def test_bounds_decomposition(
     experiment: definitions.Experiment,
     dim: gtx.Dimension,
 ) -> None:
-    if experiment == definitions.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
@@ -166,6 +166,10 @@ def test_bounds_decomposition(
     assert start_index(domain(h_grid.Zone.LOCAL)) == 0
     assert end_index(domain(h_grid.Zone.LOCAL)) == local_owned_size
     assert end_index(domain(h_grid.Zone.LOCAL)) == global_owned_size
+
+    assert start_index(domain(h_grid.Zone.INTERIOR)) == 0
+    assert end_index(domain(h_grid.Zone.INTERIOR)) == local_owned_size
+    assert end_index(domain(h_grid.Zone.INTERIOR)) == global_owned_size
 
     assert start_index(domain(h_grid.Zone.HALO)) == local_owned_size
     assert start_index(domain(h_grid.Zone.HALO)) == global_owned_size
