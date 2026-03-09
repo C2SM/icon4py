@@ -213,7 +213,11 @@ def init_w(
                 * primal_edge_length[c2e[jc, je]]
                 / cell_area[jc]
             )
-    z_wsfc_c = array_ns.sum(z_wsfc_e[c2e] * e_inn_c, axis=1)
+    z_wsfc_c = array_ns.zeros((horizontal_end_c))
+    for jc in range(horizontal_end_c):
+        z_wsfc_c[jc] = (z_wsfc_e[c2e][jc][0] * e_inn_c[jc][0] +
+                        z_wsfc_e[c2e][jc][1] * e_inn_c[jc][1] +
+                        z_wsfc_e[c2e][jc][2] * e_inn_c[jc][2])
 
     w = array_ns.zeros((horizontal_end_c, nlevp1))
     for jc in range(horizontal_start_c, horizontal_end_c):
