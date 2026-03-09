@@ -15,8 +15,8 @@ from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim
 @gtx.field_operator
 def _edge_2_cell_vector_rbf_interpolation(
     p_e_in: fa.EdgeKField[ta.wpfloat],
-    ptr_coeff_1: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],
-    ptr_coeff_2: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],
+    ptr_coeff_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat],
+    ptr_coeff_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat],
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     """
     Performs vector RBF reconstruction at cell center from edge center.
@@ -41,8 +41,8 @@ def _edge_2_cell_vector_rbf_interpolation(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def edge_2_cell_vector_rbf_interpolation(
     p_e_in: fa.EdgeKField[ta.wpfloat],
-    ptr_coeff_1: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],
-    ptr_coeff_2: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],
+    ptr_coeff_1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat],
+    ptr_coeff_2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat],
     p_u_out: fa.CellKField[ta.wpfloat],
     p_v_out: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,

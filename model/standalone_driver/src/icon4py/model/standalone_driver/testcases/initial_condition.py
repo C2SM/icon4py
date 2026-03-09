@@ -320,7 +320,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         horizontal_end=end_cell_end,
         vertical_start=0,
         vertical_end=num_levels,
-        offset_provider=grid.connectivities,
+        offset_provider={"C2E2C2E": grid.connectivities["C2E2C2E"]},
     )
 
     log.info("U, V computation completed.")
