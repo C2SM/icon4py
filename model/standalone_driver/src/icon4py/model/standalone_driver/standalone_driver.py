@@ -669,12 +669,12 @@ def initialize_driver(
         backend=backend,
         grid=grid_manager.grid,
         static_field_factories=static_field_factories,
-        diffusion_granule=diffusion_granule,
-        solve_nonhydro_granule=solve_nonhydro_granule,
-        tracer_advection_granule=tracer_advection_granule,
-        # diffusion_granule=diffusion_config,
-        # solve_nonhydro_granule=solve_nh_config,
-        # tracer_advection_granule=advection_config,
+        # diffusion_granule=diffusion_granule,
+        # solve_nonhydro_granule=solve_nonhydro_granule,
+        # tracer_advection_granule=tracer_advection_granule,
+        diffusion_granule=diffusion_config,
+        solve_nonhydro_granule=solve_nh_config,
+        tracer_advection_granule=advection_config,
     )
 
     return icon4py_driver
