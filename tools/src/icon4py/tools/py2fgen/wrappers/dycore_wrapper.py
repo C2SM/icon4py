@@ -235,6 +235,7 @@ def solve_nh_init(
             model_backends.get_allocator(actual_backend)
         ),
     )
+    gtx.wait_for_compilation()
 
 
 NumpyFloatArray1D: TypeAlias = Annotated[
