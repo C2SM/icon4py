@@ -1427,8 +1427,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.6.post14+96ccd1d8"
-source = { git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if#96ccd1d8e35ffdfda0a5d733397d6d3e0d86e9a4" }
+version = "1.1.6.post30+ed597557"
+source = { git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging#ed5975574c307abac16d15667e787ea15e55fad0" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -1781,7 +1781,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1798,7 +1798,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1815,7 +1815,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1832,7 +1832,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1850,7 +1850,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1918,9 +1918,9 @@ requires-dist = [
     { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
     { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1956,7 +1956,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1984,7 +1984,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -2013,7 +2013,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2064,9 +2064,9 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=muphys_rmcopies_staging" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
