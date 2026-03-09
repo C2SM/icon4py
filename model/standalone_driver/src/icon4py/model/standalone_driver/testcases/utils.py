@@ -194,7 +194,7 @@ def init_w(
     )
     horizontal_end_c = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.INTERIOR))
 
-    z_wsfc_e = array_ns.zeros((horizontal_end_e, 1))
+    z_wsfc_e = array_ns.zeros((horizontal_end_e,))
 
     nlevp1 = nlev + 1
     # z_slope_e[horizontal_start_e:horizontal_end_e, :] = (z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[
@@ -202,7 +202,7 @@ def init_w(
     # ] * inv_dual_edge_length[horizontal_start_e:horizontal_end_e, array_ns.newaxis]
 
     for je in range(horizontal_start_e, horizontal_end_e):
-        z_wsfc_e[je, 0] = vn[je, nlev - 1] * ((z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[je, :] * inv_dual_edge_length[je])[nlevp1 - 1]
+        z_wsfc_e[je] = vn[je, nlev - 1] * ((z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[je, :] * inv_dual_edge_length[je])[nlevp1 - 1]
 
     e_inn_c = array_ns.zeros((horizontal_end_c, 3))  # or 1
     for jc in range(horizontal_end_c):
@@ -213,8 +213,7 @@ def init_w(
                 * primal_edge_length[c2e[jc, je]]
                 / cell_area[jc]
             )
-
-    z_wsfc_c = array_ns.sum(z_wsfc_e[c2e] * e_inn_c[:, :, array_ns.newaxis], axis=1)
+    z_wsfc_c = array_ns.sum(z_wsfc_e[c2e] * e_inn_c, axis=1)
 
     w = array_ns.zeros((horizontal_end_c, nlevp1))
     for jc in range(horizontal_start_c, horizontal_end_c):
