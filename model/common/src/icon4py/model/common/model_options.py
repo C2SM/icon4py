@@ -84,11 +84,18 @@ def get_options(program_name: str, **backend_descriptor: Any) -> model_backends.
 
 def customize_backend(
     program: gtx_typing.Program | gtx.typing.FieldOperator | None,
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend: model_backends.BackendLike,
 ) -> gtx_typing.Backend | None:
+    """
+    Customizes the backend according to the provided 'BackendLike' and program name.
+
+    In case a certain option is already provided in the 'BackendDesriptor', the customization
+    should not override it. Any option that doesn't apply to the backend factory should be ignored.
+
+    Note: The current customization mechanism is an adhoc solution that needs better design,
+    e.g. program specific options should not be gathered in this general module.
+    """
+
     program_name = program.__name__ if program is not None else ""
     if backend is None or isinstance(backend, gtx_backend.Backend):
         backend_name = backend.name if backend is not None else "embedded"
@@ -114,10 +121,7 @@ def customize_backend(
 
 def setup_program(
     program: gtx_typing.Program,
-    backend: gtx_typing.Backend
-    | model_backends.DeviceType
-    | model_backends.BackendDescriptor
-    | None,
+    backend: model_backends.BackendLike,
     constant_args: dict[str, gtx.Field | gtx_typing.Scalar] | None = None,
     variants: dict[str, list[gtx_typing.Scalar]] | None = None,
     horizontal_sizes: dict[str, gtx.int32] | None = None,
@@ -127,7 +131,8 @@ def setup_program(
     """
     This function processes arguments to the GT4Py program. It
     - binds arguments that don't change during model run ('constant_args', 'horizontal_sizes', "vertical_sizes');
-    - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile').
+    - inlines scalar arguments into the GT4Py program at compile-time (via GT4Py's 'compile');
+    - instantiates a concrete backend according to the provided 'BackendLike'.
     Args:
         - backend: GT4Py backend,
         - program: GT4Py program,
