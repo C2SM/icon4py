@@ -13,7 +13,7 @@ from typing import Annotated
 import numpy as np
 import typer
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
 
@@ -63,6 +63,8 @@ def main(
     log.info("Generating the initial condition")
     ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
         grid=icon4py_driver.grid,
+        c2e=icon4py_driver.grid.get_connectivity(dims.C2E).ndarray,
+        e2c=icon4py_driver.grid.get_connectivity(dims.E2C).ndarray,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,

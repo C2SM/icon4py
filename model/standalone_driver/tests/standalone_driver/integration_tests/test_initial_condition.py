@@ -48,6 +48,8 @@ def test_standalone_driver_initial_condition(
 
     ds = initial_condition.jablonowski_williamson(
         grid=icon4py_driver.grid,
+        c2e=icon4py_driver.grid.get_connectivity(dims.C2E).ndarray,
+        e2c=icon4py_driver.grid.get_connectivity(dims.E2C).ndarray,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
