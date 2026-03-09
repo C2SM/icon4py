@@ -1427,8 +1427,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.6.post14+96ccd1d8"
-source = { git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if#96ccd1d8e35ffdfda0a5d733397d6d3e0d86e9a4" }
+version = "1.1.6.post14+4c54704b"
+source = { git = "https://github.com/GridTools/gt4py?branch=enhance_move_dataflow_into_if#4c54704bfce6ef629fe57dd5965172ba699b2fd7" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
