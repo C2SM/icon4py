@@ -226,6 +226,6 @@ def init_w(
 
     for jk in reversed(range(1, nlev)):
         for jc in range(horizontal_start_c, horizontal_end_c):
-            w[jc, jk] = z_wsfc_c[jc, 0] * vct_b[jk]
+            w[jc, jk] = z_wsfc_c[jc] * vct_b[jk]
 
     return w
