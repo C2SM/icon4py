@@ -55,6 +55,8 @@ jobs:
 
       - name: download grids
         if: steps.grid-cache.outputs.cache-hit != 'true'
+        env:
+          ICON4PY_ENABLE_GRID_DOWNLOAD: true
         run: |
           .github/validation_grid_utils.py download
 
