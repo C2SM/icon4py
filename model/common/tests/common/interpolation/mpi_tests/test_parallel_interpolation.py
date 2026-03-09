@@ -232,9 +232,10 @@ def test_distributed_interpolation_lsq_pseudoinv(
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = interpolation_factory_from_savepoint
-    field_ref_1 = interpolation_savepoint.__getattribute__("lsq_pseudoinv_1")().asnumpy()
-    field_ref_2 = interpolation_savepoint.__getattribute__("lsq_pseudoinv_2")().asnumpy()
-    field_1 = factory.get(attrs.LSQ_PSEUDOINV)[:, 0, :]
-    field_2 = factory.get(attrs.LSQ_PSEUDOINV)[:, 1, :]
-    assert test_utils.dallclose(field_1, field_ref_1, atol=1e-15)  # type: ignore[arg-type] # mypy does not recognize sliced array as still an array
-    assert test_utils.dallclose(field_2, field_ref_2, atol=1e-15)  # type: ignore[arg-type] # mypy does not recognize sliced array as still an array
+    field_ref_1 = interpolation_savepoint.lsq_pseudoinv_1().asnumpy()
+    field_ref_2 = interpolation_savepoint.lsq_pseudoinv_2().asnumpy()
+    field = factory.get(attrs.LSQ_PSEUDOINV).asnumpy()
+    field_1 = field[:, 0, :]
+    field_2 = field[:, 1, :]
+    assert test_utils.dallclose(field_1, field_ref_1, atol=1e-15)
+    assert test_utils.dallclose(field_2, field_ref_2, atol=1e-15)

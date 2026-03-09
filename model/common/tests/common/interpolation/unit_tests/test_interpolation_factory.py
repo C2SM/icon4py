@@ -374,3 +374,20 @@ def test_rbf_interpolation_coeffs_vertex(
         field_v2[horizontal_start:],
         atol=RBF_TOLERANCES[dims.VertexDim][experiment.name],
     )
+
+
+@pytest.mark.level("integration")
+@pytest.mark.datatest
+def test_lsq_pseudoinv(
+    interpolation_savepoint: serialbox.InterpolationSavepoint,
+    experiment: definitions.Experiment,
+    backend: gtx_typing.Backend | None,
+) -> None:
+    field_ref_1 = interpolation_savepoint.lsq_pseudoinv_1().asnumpy()
+    field_ref_2 = interpolation_savepoint.lsq_pseudoinv_2().asnumpy()
+    factory = _get_interpolation_factory(backend, experiment)
+    field = factory.get(attrs.LSQ_PSEUDOINV).asnumpy()
+    field_1 = field[:, 0, :]
+    field_2 = field[:, 1, :]
+    assert test_helpers.dallclose(field_ref_1, field_1, atol=1e-15)
+    assert test_helpers.dallclose(field_ref_2, field_2, atol=1e-15)
