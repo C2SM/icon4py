@@ -30,9 +30,7 @@ g_ct = FrozenNamespace(
     lvc=wpfloat(
         3135383.2031928
     ),  # invariant part of vaporization enthalpy => alv - (cpv - clw) * tmelt
-    lsc=wpfloat(
-        2899657.201
-    ),  # invariant part of vaporization enthalpy => als - (cpv - ci) * tmelt
+    lsc=wpfloat(2899657.201),  # invariant part of vaporization enthalpy => als - (cpv - ci) * tmelt
 )
 
 t_d = FrozenNamespace(
