@@ -24,7 +24,6 @@ from icon4py.model.testing.fixtures.datatest import (
 )
 
 
-@pytest.mark.cpu_only
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment, rank", [(definitions.Experiments.JW, 0)])
 @pytest.mark.datatest
