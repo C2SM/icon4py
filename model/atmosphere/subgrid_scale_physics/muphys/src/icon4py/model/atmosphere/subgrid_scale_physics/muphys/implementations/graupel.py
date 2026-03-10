@@ -581,7 +581,7 @@ def graupel_run(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
     enable_masking: bool,
-):
+) -> None:
     graupel(
         last_level=vertical_end - 1,
         dz=dz,

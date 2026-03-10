@@ -12,8 +12,8 @@ from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import utils as muphys_utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
-from icon4py.model.common import dimension as dims, model_options
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, icon4py_export
+from icon4py.model.common import dimension as dims, model_backends, model_options
+from icon4py.tools.py2fgen.wrappers import icon4py_export
 
 
 graupel_program = None
@@ -43,14 +43,18 @@ def graupel_run(
     prg_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    wait_for_completion: bool,
 ):
     global graupel_program  # noqa: PLW0603 [global-statement]
     if graupel_program is None:
         on_gpu = t.array_ns != np
-        backend = wrapper_common.select_backend(wrapper_common.BackendIntEnum.DACE, on_gpu=on_gpu)
         with muphys_utils.recursion_limit(10**4):
             graupel_program = model_options.setup_program(
-                backend=backend,
+                backend={
+                    "backend_factory": model_backends.make_custom_dace_backend,
+                    "device": model_backends.GPU if on_gpu else model_backends.CPU,
+                    "async_sdfg_call": not wait_for_completion,
+                },
                 program=graupel.graupel_run,
                 constant_args={"dt": dt, "qnc": qnc, "enable_masking": True},
                 horizontal_sizes={

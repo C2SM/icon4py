@@ -38,7 +38,7 @@ def apply_vertical_density_increment(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_vertical_density_increment(
         rhodz_ast,
         p_mflx_contra_v,

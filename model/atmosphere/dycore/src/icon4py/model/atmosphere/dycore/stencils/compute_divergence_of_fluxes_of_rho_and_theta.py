@@ -36,7 +36,7 @@ def compute_divergence_of_fluxes_of_rho_and_theta(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_divergence_of_fluxes_of_rho_and_theta(
         geofac_div,
         mass_fl_e,
