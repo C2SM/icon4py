@@ -14,6 +14,7 @@ import numpy as np
 import typer
 
 from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
 
@@ -22,7 +23,7 @@ log = logging.getLogger(__name__)
 
 
 def main(
-    grid_file_path: pathlib.Path | Annotated[str, typer.Option(help="Grid file path.")],
+    grid_file_path: Annotated[str, typer.Option(help="Grid file path.")],
     # it may be better to split device from backend,
     # or only asking for cpu or gpu and the best backend for perfornamce is handled inside icon4py,
     # whether to automatically use gpu if cupy is installed can be discussed further
@@ -41,7 +42,6 @@ def main(
             help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
-    array_ns: ModuleType = np,
 ) -> driver_states.DriverStates:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
@@ -61,6 +61,7 @@ def main(
     )
 
     log.info("Generating the initial condition")
+    array_ns = data_alloc.import_array_ns(icon4py_driver._allocator)
     ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
         grid=icon4py_driver.grid,
         c2e=icon4py_driver.grid.get_connectivity(dims.C2E).ndarray,
