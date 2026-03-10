@@ -518,7 +518,6 @@ def test_metrics_fields_compare_single_multi_rank(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    # TODO(msimberg): Dummy vct_a? Taken from test_io.py.
     xp = data_alloc.import_array_ns(backend)
     allocator = model_backends.get_allocator(backend)
     vertical_grid = v_grid.VerticalGrid(
@@ -558,7 +557,6 @@ def test_metrics_fields_compare_single_multi_rank(
         vertical_grid=vertical_grid,
         decomposition_info=single_rank_grid_manager.decomposition_info,
         geometry_source=single_rank_geometry,
-        # TODO(msimberg): Valid dummy topography?
         topography=(
             gtx.as_field(
                 (dims.CellDim,),
@@ -622,7 +620,6 @@ def test_metrics_fields_compare_single_multi_rank(
         vertical_grid=vertical_grid,
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         geometry_source=multi_rank_geometry,
-        # TODO(msimberg): Valid dummy topography?
         topography=(
             gtx.as_field(
                 (dims.CellDim,),
@@ -697,7 +694,6 @@ def test_metrics_mask_prog_halo_c(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    # TODO(msimberg): Dummy vct_a? Taken from test_io.py.
     xp = data_alloc.import_array_ns(backend)
     allocator = model_backends.get_allocator(backend)
     vertical_grid = v_grid.VerticalGrid(
@@ -757,7 +753,6 @@ def test_metrics_mask_prog_halo_c(
         vertical_grid=vertical_grid,
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         geometry_source=multi_rank_geometry,
-        # TODO(msimberg): Valid dummy topography?
         topography=(
             gtx.as_field(
                 (dims.CellDim,),
