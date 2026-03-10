@@ -347,18 +347,18 @@ def _snow_number(
     N0S7 = wpfloat(1.0e9)
 
     # TODO(): see if these can be incorporated into WHERE statement
-    tc = maximum(minimum(t, TMAX), TMIN) - t_d.tmelt
+    tc = maximum(minimum(t, TMAX), TMIN) - wpfloat(t_d.tmelt)
     alf = power(wpfloat(10.0), (XA1 + tc * (XA2 + tc * XA3)))
     bet = XB1 + tc * (XB2 + tc * XB3)
     n0s = (
         N0S3
-        * power(((qs + QSMIN) * rho / g_ct.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
+        * power(((qs + QSMIN) * rho / wpfloat(g_ct.ams)), (wpfloat(4.0) - wpfloat(3.0) * bet))
         / (alf * alf * alf)
     )
     y = exp(N0S2 * tc)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
-    return where(qs > g_ct.qmin, minimum(n0smx, maximum(n0smn, n0s)), N0S0)
+    return where(qs > wpfloat(g_ct.qmin), minimum(n0smx, maximum(n0smn, n0s)), N0S0)
 
 
 @gtx.field_operator
@@ -377,8 +377,8 @@ def _snow_number_scalar(
 
     Result:           Snow number
     """
-    TMIN = t_d.tmelt - wpfloat(40.0)
-    TMAX = t_d.tmelt
+    TMIN = wpfloat(t_d.tmelt) - wpfloat(40.0)
+    TMAX = wpfloat(t_d.tmelt)
     QSMIN = wpfloat(2.0e-6)
     XA1 = wpfloat(-1.65e0)
     XA2 = wpfloat(5.45e-2)
@@ -396,18 +396,18 @@ def _snow_number_scalar(
     N0S7 = wpfloat(1.0e9)
 
     # TODO(): see if these can be incorporated into WHERE statement
-    tc = maximum(minimum(t, TMAX), TMIN) - t_d.tmelt
+    tc = maximum(minimum(t, TMAX), TMIN) - wpfloat(t_d.tmelt)
     alf = power(wpfloat(10.0), (XA1 + tc * (XA2 + tc * XA3)))
     bet = XB1 + tc * (XB2 + tc * XB3)
     n0s = (
         N0S3
-        * power(((qs + QSMIN) * rho / g_ct.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
+        * power(((qs + QSMIN) * rho / wpfloat(g_ct.ams)), (wpfloat(4.0) - wpfloat(3.0) * bet))
         / (alf * alf * alf)
     )
     y = exp(N0S2 * tc)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
-    return minimum(n0smx, maximum(n0smn, n0s)) if qs > g_ct.qmin else N0S0
+    return minimum(n0smx, maximum(n0smn, n0s)) if qs > wpfloat(g_ct.qmin) else N0S0
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -432,7 +432,7 @@ def _vel_scale_factor_ice(
 
     Result:                velocity scaling factor of ice
     """
-    B_I = 0.66666666666666667
+    B_I = wpfloat(0.66666666666666667)
     return power(xrho, B_I)
 
 
@@ -448,7 +448,7 @@ def _vel_scale_factor_ice_scalar(
 
     Result:                velocity scaling factor of ice
     """
-    B_I = 0.66666666666666667
+    B_I = wpfloat(0.66666666666666667)
     return power(xrho, B_I)
 
 
@@ -470,7 +470,7 @@ def _vel_scale_factor_snow(
 
     Result:                Velocity scaling factor of snow
     """
-    B_S = -0.16666666666666667
+    B_S = wpfloat(-0.16666666666666667)
     return xrho * power(_snow_number(t, rho, qs), B_S)
 
 
@@ -492,7 +492,7 @@ def _vel_scale_factor_snow_scalar(
 
     Result:                Velocity scaling factor of snow
     """
-    B_S = -0.16666666666666667
+    B_S = wpfloat(-0.16666666666666667)
     return xrho * power(_snow_number_scalar(t, rho, qs), B_S)
 
 

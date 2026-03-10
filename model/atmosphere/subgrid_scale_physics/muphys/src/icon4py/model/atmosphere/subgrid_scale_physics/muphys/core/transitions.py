@@ -30,12 +30,12 @@ def _cloud_to_graupel(
 
     Return:                 Conversion rate
     """
-    A_RIM = 4.43
-    B_RIM = 0.94878
+    A_RIM = wpfloat(4.43)
+    B_RIM = wpfloat(0.94878)
     return where(
-        (minimum(qc, qg) > g_ct.qmin) & (t > g_ct.tfrz_hom),
+        (minimum(qc, qg) > wpfloat(g_ct.qmin)) & (t > wpfloat(g_ct.tfrz_hom)),
         A_RIM * qc * power(qg * rho, B_RIM),
-        0.0,
+        wpfloat(0.0),
     )
 
 
@@ -68,25 +68,25 @@ def _cloud_to_rain(
 
     Return:                 Conversion rate
     """
-    QMIN_AC = 1.0e-6  # threshold for auto conversion
-    TAU_MAX = 0.90e0  # maximum allowed value of tau
-    TAU_MIN = 1.0e-30  # minimum allowed value of tau
-    A_PHI = 6.0e2  # constant in phi-function for autoconversion
-    B_PHI = 0.68e0  # exponent in phi-function for autoconversion
-    C_PHI = 5.0e-5  # exponent in phi-function for accretion
-    AC_KERNEL = 5.25e0  # kernel coeff for SB2001 accretion
-    X3 = 2.0e0  # gamma exponent for cloud distribution
-    X2 = 2.6e-10  # separating mass between cloud and rain
-    X1 = 9.44e9  # kernel coeff for SB2001 autoconversion
-    AU_KERNEL = X1 / (20.0 * X2) * (X3 + 2.0) * (X3 + 4.0) / ((X3 + 1.0) * (X3 + 1.0))
+    QMIN_AC = wpfloat(1.0e-6)  # threshold for auto conversion
+    TAU_MAX = wpfloat(0.90e0)  # maximum allowed value of tau
+    TAU_MIN = wpfloat(1.0e-30)  # minimum allowed value of tau
+    A_PHI = wpfloat(6.0e2)  # constant in phi-function for autoconversion
+    B_PHI = wpfloat(0.68e0)  # exponent in phi-function for autoconversion
+    C_PHI = wpfloat(5.0e-5)  # exponent in phi-function for accretion
+    AC_KERNEL = wpfloat(5.25e0)  # kernel coeff for SB2001 accretion
+    X3 = wpfloat(2.0e0)  # gamma exponent for cloud distribution
+    X2 = wpfloat(2.6e-10)  # separating mass between cloud and rain
+    X1 = wpfloat(9.44e9)  # kernel coeff for SB2001 autoconversion
+    AU_KERNEL = X1 / (wpfloat(20.0) * X2) * (X3 + wpfloat(2.0)) * (X3 + wpfloat(4.0)) / ((X3 + wpfloat(1.0)) * (X3 + wpfloat(1.0)))
 
     # TO-DO: put as much of this into the WHERE statement as possible
-    tau = maximum(TAU_MIN, minimum(1.0 - qc / (qc + qr), TAU_MAX))  # temporary cannot go in where
+    tau = maximum(TAU_MIN, minimum(wpfloat(1.0) - qc / (qc + qr), TAU_MAX))  # temporary cannot go in where
     phi = power(tau, B_PHI)
-    phi = A_PHI * phi * power(1.0 - phi, 3.0)
-    xau = AU_KERNEL * power(qc * qc / nc, 2.0) * (1.0 + phi / power(1.0 - tau, 2.0))
-    xac = AC_KERNEL * qc * qr * power(tau / (tau + C_PHI), 4.0)
-    return where((qc > QMIN_AC) & (t > g_ct.tfrz_hom), xau + xac, 0.0)
+    phi = A_PHI * phi * power(wpfloat(1.0) - phi, wpfloat(3.0))
+    xau = AU_KERNEL * power(qc * qc / nc, wpfloat(2.0)) * (wpfloat(1.0) + phi / power(wpfloat(1.0) - tau, wpfloat(2.0)))
+    xac = AC_KERNEL * qc * qr * power(tau / (tau + C_PHI), wpfloat(4.0))
+    return where((qc > QMIN_AC) & (t > g_ct.tfrz_hom), xau + xac, wpfloat(0.0))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -120,13 +120,13 @@ def _cloud_to_snow(
 
     Return:                 Conversion rate
     """
-    ECS = 0.9
-    B_RIM = -(g_ct.v1s + 3.0)
-    C_RIM = 2.61 * ECS * g_ct.v0s  # (with pi*gam(v1s+3)/4 = 2.610)
+    ECS = wpfloat(0.9)
+    B_RIM = -(wpfloat(g_ct.v1s) + wpfloat(3.0))
+    C_RIM = wpfloat(2.61) * ECS * wpfloat(g_ct.v0s)  # (with pi*gam(v1s+3)/4 = 2.610)
     return where(
-        (minimum(qc, qs) > g_ct.qmin) & (t > g_ct.tfrz_hom),
+        (minimum(qc, qs) > wpfloat(g_ct.qmin)) & (t > wpfloat(g_ct.tfrz_hom)),
         C_RIM * ns * qc * power(lam, B_RIM),
-        0.0,
+        wpfloat(0.0),
     )
 
 
@@ -160,8 +160,8 @@ def _cloud_x_ice(
 
     Return:                 Freezing rate
     """
-    result = where((qc > g_ct.qmin) & (t < g_ct.tfrz_hom), qc / dt, 0.0)
-    result = where((qi > g_ct.qmin) & (t > t_d.tmelt), -qi / dt, result)
+    result = where((qc > wpfloat(g_ct.qmin)) & (t < wpfloat(g_ct.tfrz_hom)), qc / dt, wpfloat(0.0))
+    result = where((qi > wpfloat(g_ct.qmin)) & (t > wpfloat(t_d.tmelt)), -qi / dt, result)
     return result
 
 
@@ -196,14 +196,14 @@ def _graupel_to_rain(
 
     Return:                 Conversion rate
     """
-    A_MELT = g_ct.tx - 389.5  # melting prefactor
-    B_MELT = 0.6  # melting exponent
-    C1_MELT = 12.31698  # Constants in melting formula
-    C2_MELT = 7.39441e-05  # Constants in melting formula
+    A_MELT = wpfloat(g_ct.tx) - wpfloat(389.5)  # melting prefactor
+    B_MELT = wpfloat(0.6)  # melting exponent
+    C1_MELT = wpfloat(12.31698)  # Constants in melting formula
+    C2_MELT = wpfloat(7.39441e-05)  # Constants in melting formula
     return where(
-        (t > maximum(t_d.tmelt, t_d.tmelt - g_ct.tx * dvsw0)) & (qg > g_ct.qmin),
-        (C1_MELT / p + C2_MELT) * (t - t_d.tmelt + A_MELT * dvsw0) * power(qg * rho, B_MELT),
-        0.0,
+        (t > maximum(wpfloat(t_d.tmelt), wpfloat(t_d.tmelt) - wpfloat(g_ct.tx) * dvsw0)) & (qg > wpfloat(g_ct.qmin)),
+        (C1_MELT / p + C2_MELT) * (t - wpfloat(t_d.tmelt) + A_MELT * dvsw0) * power(qg * rho, B_MELT),
+        wpfloat(0.0),
     )
 
 
@@ -239,14 +239,14 @@ def _ice_to_graupel(
 
     Return:                 Conversion rate
     """
-    A_CT = 1.72  # (15/32)*(PI**0.5)*(EIR/RHOW)*V0R*AR**(1/8)
-    B_CT = 0.875  # Exponent = 7/8
-    C_AGG_CT = 2.46
-    B_AGG_CT = 0.94878  # Exponent
+    A_CT = wpfloat(1.72)  # (15/32)*(PI**0.5)*(EIR/RHOW)*V0R*AR**(1/8)
+    B_CT = wpfloat(0.875)  # Exponent = 7/8
+    C_AGG_CT = wpfloat(2.46)
+    B_AGG_CT = wpfloat(0.94878)  # Exponent
     result = where(
-        (qi > g_ct.qmin) & (qg > g_ct.qmin),
+        (qi > wpfloat(g_ct.qmin)) & (qg > wpfloat(g_ct.qmin)),
         sticking_eff * qi * C_AGG_CT * power(rho * qg, B_AGG_CT),
-        0.0,
+        wpfloat(0.0),
     )
     result = where(
         (qi > g_ct.qmin) & (qr > g_ct.qmin), result + A_CT * qi * power(rho * qr, B_CT), result
