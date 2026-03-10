@@ -50,6 +50,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
+from icon4py.model.common.type_alias import wpfloat
 
 
 class PrecipStateQx(NamedTuple):
@@ -90,23 +91,23 @@ def precip_qx_level_update(
 ) -> PrecipStateQx:
     current_level_activated = previous_level_q.activated | mask
     rho_x = q * rho
-    flx_eff = (rho_x / zeta) + 2.0 * previous_level_q.p
+    flx_eff = (rho_x / zeta) + wpfloat(2.0) * previous_level_q.p
     # Inlined calculation using _fall_speed_scalar
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x + offset), exponent), flx_eff)
 
-    rhox_prev = (previous_level_q.x + q) * 0.5 * previous_level_rho
+    rhox_prev = (previous_level_q.x + q) * wpfloat(0.5) * previous_level_rho
 
     if current_level_activated:
         vt = (
             previous_level_q.vc * prefactor * power((rhox_prev + offset), exponent)
             if previous_level_q.activated
-            else 0.0
+            else wpfloat(0.0)
         )
-        x = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)  # q update
-        p = (x * rho * vt + flx_partial) * 0.5  # flux
+        x = (zeta * (flx_eff - flx_partial)) / ((wpfloat(1.0) + zeta * vt) * rho)  # q update
+        p = (x * rho * vt + flx_partial) * wpfloat(0.5)  # flux
     else:
         x = q
-        p = 0.0
+        p = wpfloat(0.0)
 
     return PrecipStateQx(
         x=x,
@@ -149,7 +150,7 @@ def _temperature_update(
         #  in order to avoid scan_operator -> field_operator
         qtot = qliq + qice + q.v  # total water specific mass
         cv = (
-            (t_d.cvd * (1.0 - qtot) + t_d.cvv * q.v + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
+            (t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * q.v + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
         )  # Moist isometric specific heat
         t = (e_int + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
     else:
@@ -184,7 +185,7 @@ def _precip_and_t(
     dt: ta.wpfloat,
     dz: ta.wpfloat,
 ) -> IntegrationState:
-    zeta = dt / (2.0 * dz)
+    zeta = dt / (wpfloat(2.0) * dz)
     xrho = sqrt(g_ct.rho_00 / rho)
 
     vc_r = _vel_scale_factor_default_scalar(xrho)
@@ -268,10 +269,10 @@ def _precip_and_t(
             mask=any_mask,
         )
     else:
-        r_update = PrecipStateQx(x=q.r, p=0.0, vc=vc_r, activated=False)
-        s_update = PrecipStateQx(x=q.s, p=0.0, vc=vc_s, activated=False)
-        i_update = PrecipStateQx(x=q.i, p=0.0, vc=vc_i, activated=False)
-        g_update = PrecipStateQx(x=q.g, p=0.0, vc=vc_g, activated=False)
+        r_update = PrecipStateQx(x=q.r, p=wpfloat(0.0), vc=vc_r, activated=False)
+        s_update = PrecipStateQx(x=q.s, p=wpfloat(0.0), vc=vc_s, activated=False)
+        i_update = PrecipStateQx(x=q.i, p=wpfloat(0.0), vc=vc_i, activated=False)
+        g_update = PrecipStateQx(x=q.g, p=wpfloat(0.0), vc=vc_g, activated=False)
         t_update = TempState(t=t, eflx=previous_level.t_state.eflx, activated=False)
 
     return IntegrationState(
@@ -289,7 +290,7 @@ def _precip_and_t(
 def symmetric(
     transition: fa.CellKField[ta.wpfloat],
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
-    return maximum(transition, 0.0), -minimum(transition, 0.0)
+    return maximum(transition, wpfloat(0.0)), -minimum(transition, wpfloat(0.0))
 
 
 @gtx.field_operator
@@ -297,7 +298,7 @@ def cond_symmetric(
     condition: fa.CellKField[bool],
     transition: fa.CellKField[ta.wpfloat],
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
-    return where(condition, symmetric(transition), (0.0, 0.0))
+    return where(condition, symmetric(transition), (wpfloat(0.0), wpfloat(0.0)))
 
 
 # TODO(havogt): this is an example for expandable parameters + reduce over the expandable parameters
@@ -313,7 +314,7 @@ def sink_saturation(
     dt: ta.wpfloat,
     where_: fa.CellKField[bool],
 ):
-    sink = where(where_, t[0] + t[1] + t[2] + t[3], 0.0)
+    sink = where(where_, t[0] + t[1] + t[2] + t[3], wpfloat(0.0))
     stot = x / dt
     sink_saturated = (sink > stot) & (x > g_ct.qmin)
     t0 = where(sink_saturated, t[0] * stot / sink, t[0])
@@ -365,34 +366,34 @@ def _q_t_update(  # noqa: PLR0915
     c2g = _cloud_to_graupel(t, rho, q.c, q.g)
 
     c2r = where(t_at_least_tmelt, c2r + c2s + c2g, c2r)
-    c2s = where(t_at_least_tmelt, 0.0, c2s)
-    c2g = where(t_at_least_tmelt, 0.0, c2g)
+    c2s = where(t_at_least_tmelt, wpfloat(0.0), c2s)
+    c2g = where(t_at_least_tmelt, wpfloat(0.0), c2g)
 
     n_ice = _ice_number(t, rho)
     m_ice = _ice_mass(q.i, n_ice)
     x_ice = _ice_sticking(t)
 
-    eta = where(t_below_tmelt, _deposition_factor(t, qvsi), 0.0)
+    eta = where(t_below_tmelt, _deposition_factor(t, qvsi), wpfloat(0.0))
     v2i, i2v = cond_symmetric(
         t_below_tmelt & is_sig_present, _vapor_x_ice(q.i, m_ice, eta, dvsi, rho, dt)
     )
     v2i = where(
-        t_below_tmelt, v2i + _ice_deposition_nucleation(t, q.c, q.i, n_ice, dvsi, dt), 0.0
+        t_below_tmelt, v2i + _ice_deposition_nucleation(t, q.c, q.i, n_ice, dvsi, dt), wpfloat(0.0)
     )  # 0.0 or v2i both OK
 
-    ice_dep = where(t_below_tmelt, minimum(v2i, dvsi / dt), 0.0)
+    ice_dep = where(t_below_tmelt, minimum(v2i, dvsi / dt), wpfloat(0.0))
     # TODO(): _deposition_auto_conversion yields roundoff differences in i2s
     i2s = where(
         t_below_tmelt & is_sig_present,
         _deposition_auto_conversion(q.i, m_ice, ice_dep) + _ice_to_snow(q.i, n_snow, l_snow, x_ice),
-        0.0,
+        wpfloat(0.0),
     )
-    i2g = where(t_below_tmelt & is_sig_present, _ice_to_graupel(rho, q.r, q.g, q.i, x_ice), 0.0)
-    s2g = where(t_below_tmelt & is_sig_present, _snow_to_graupel(t, rho, q.c, q.s), 0.0)
+    i2g = where(t_below_tmelt & is_sig_present, _ice_to_graupel(rho, q.r, q.g, q.i, x_ice), wpfloat(0.0))
+    s2g = where(t_below_tmelt & is_sig_present, _snow_to_graupel(t, rho, q.c, q.s), wpfloat(0.0))
     r2g = where(
         t_below_tmelt & is_sig_present,
         _rain_to_graupel(t, rho, q.c, q.r, q.i, q.s, m_ice, dvsw, dt),
-        0.0,
+        wpfloat(0.0),
     )
 
     dvsw0 = q.v - _qsat_rho_tmelt(rho)
@@ -405,8 +406,8 @@ def _q_t_update(  # noqa: PLR0915
         is_sig_present, _vapor_x_graupel(t, p, rho, q.g, dvsw, dvsi, dvsw0, dt)
     )
 
-    s2r = where(is_sig_present, _snow_to_rain(t, p, rho, dvsw0, q.s), 0.0)
-    g2r = where(is_sig_present, _graupel_to_rain(t, p, rho, dvsw0, q.g), 0.0)
+    s2r = where(is_sig_present, _snow_to_rain(t, p, rho, dvsw0, q.s), wpfloat(0.0))
+    g2r = where(is_sig_present, _graupel_to_rain(t, p, rho, dvsw0, q.g), wpfloat(0.0))
 
     # The following transitions are not physically meaningful, would be 0.0 in other implementation
     # here they are simply never used:
@@ -415,7 +416,7 @@ def _q_t_update(  # noqa: PLR0915
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
     # SINK calculation
 
-    UNUSED = broadcast(0.0, (dims.CellDim, dims.KDim))
+    UNUSED = broadcast(wpfloat(0.0), (dims.CellDim, dims.KDim))
     EVERYWHERE = broadcast(True, (dims.CellDim, dims.KDim))
     sink_v, v2s, v2i, v2g, _ = sink_saturation((v2s, v2i, v2g, UNUSED), q.v, dt, where_=EVERYWHERE)
     sink_c, c2r, c2s, c2i, c2g = sink_saturation((c2r, c2s, c2i, c2g), q.c, dt, where_=EVERYWHERE)
@@ -435,17 +436,17 @@ def _q_t_update(  # noqa: PLR0915
     # water content updates:
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
     dqdt_v = r2v + s2v + i2v + g2v - sink_v  # Missing: c2v
-    qv = where(mask, maximum(0.0, q.v + dqdt_v * dt), q.v)
+    qv = where(mask, maximum(wpfloat(0.0), q.v + dqdt_v * dt), q.v)
     dqdt_c = i2c - sink_c  # Missing: v2c, r2c, s2c, g2c
-    qc = where(mask, maximum(0.0, q.c + dqdt_c * dt), q.c)
+    qc = where(mask, maximum(wpfloat(0.0), q.c + dqdt_c * dt), q.c)
     dqdt_r = c2r + s2r + g2r - sink_r  # Missing: v2r + i2r
-    qr = where(mask, maximum(0.0, q.r + dqdt_r * dt), q.r)
+    qr = where(mask, maximum(wpfloat(0.0), q.r + dqdt_r * dt), q.r)
     dqdt_s = v2s + c2s + i2s - sink_s  # Missing: r2s + g2s
-    qs = where(mask, maximum(0.0, q.s + dqdt_s * dt), q.s)
+    qs = where(mask, maximum(wpfloat(0.0), q.s + dqdt_s * dt), q.s)
     dqdt_i = v2i + c2i - sink_i  # Missing: r2i + s2i + g2i
-    qi = where(mask, maximum(0.0, q.i + dqdt_i * dt), q.i)
+    qi = where(mask, maximum(wpfloat(0.0), q.i + dqdt_i * dt), q.i)
     dqdt_g = v2g + c2g + r2g + s2g + i2g - sink_g
-    qg = where(mask, maximum(0.0, q.g + dqdt_g * dt), q.g)
+    qg = where(mask, maximum(wpfloat(0.0), q.g + dqdt_g * dt), q.g)
 
     qice = qs + qi + qg
     qliq = qc + qr

@@ -80,7 +80,11 @@ def _cloud_to_rain(
     X3 = wpfloat(2.0e0)  # gamma exponent for cloud distribution
     X2 = wpfloat(2.6e-10)  # separating mass between cloud and rain
     X1 = wpfloat(9.44e9)  # kernel coeff for SB2001 autoconversion
-    ZERO, ONE, TWO, THREE, FOUR = (wpfloat(x) for x in [0.0, 1.0, 2.0, 3.0, 4.0])
+    ZERO = wpfloat(0.0)
+    ONE = wpfloat(1.0)
+    TWO = wpfloat(2.0)
+    THREE = wpfloat(3.0)
+    FOUR = wpfloat(4.0)
     AU_KERNEL = X1 / (wpfloat(20.0) * X2) * (X3 + TWO) * (X3 + FOUR) / ((X3 + ONE) * (X3 + ONE))
 
     # TO-DO: put as much of this into the WHERE statement as possible
@@ -124,7 +128,7 @@ def _cloud_to_snow(
     Return:                 Conversion rate
     """
     ECS = wpfloat(0.9)
-    B_RIM = -(wpfloat(g_ct.v1s) + 3.0)
+    B_RIM = -(wpfloat(g_ct.v1s) + wpfloat(3.0))
     C_RIM = wpfloat(2.61) * ECS * g_ct.v0s  # (with pi*gam(v1s+3)/4 = 2.610)
     ZERO = wpfloat(0.0)
     return where(
@@ -291,10 +295,10 @@ def _ice_to_snow(
 
     Return:                 Conversion rate
     """
-    QI0 = 0.0  # Critical ice required for autoconversion
-    C_IAU = 1.0e-3  # Coefficient of auto conversion
-    C_AGG = 2.61 * g_ct.v0s  # Coeff of aggregation (2.610 = pi*gam(v1s+3)/4)
-    B_AGG = -(g_ct.v1s + 3.0)  # Aggregation exponent
+    QI0 = wpfloat(0.0)  # Critical ice required for autoconversion
+    C_IAU = wpfloat(1.0e-3)  # Coefficient of auto conversion
+    C_AGG = wpfloat(2.61) * g_ct.v0s  # Coeff of aggregation (2.610 = pi*gam(v1s+3)/4)
+    B_AGG = -(g_ct.v1s + wpfloat(3.0))  # Aggregation exponent
     ZERO = wpfloat(0.0)
 
     return where(
