@@ -29,7 +29,6 @@ from icon4py.model.testing.fixtures.datatest import (
 @pytest.mark.datatest
 def test_standalone_driver_initial_condition(
     backend_like: model_backends.BackendLike,
-    backend: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     experiment: definitions.Experiments,
     data_provider: serialbox.IconSerialDataProvider,

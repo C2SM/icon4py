@@ -23,7 +23,7 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical, vertical as v_grid
+from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
@@ -49,7 +49,7 @@ class Icon4pyDriver:
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
-        vertical_grid_config: vertical.VerticalGridConfig,
+        vertical_grid_config: v_grid.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
     ):
         self.config = config
