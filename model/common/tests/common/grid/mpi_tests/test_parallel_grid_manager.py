@@ -57,7 +57,7 @@ def test_grid_manager_validate_decomposer(
     processor_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
@@ -353,7 +353,7 @@ def test_interpolation_fields_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
@@ -491,7 +491,7 @@ def test_metrics_fields_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
@@ -670,7 +670,7 @@ def test_metrics_mask_prog_halo_c(
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
@@ -801,7 +801,7 @@ def test_validate_skip_values_in_distributed_connectivities(
     processor_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
