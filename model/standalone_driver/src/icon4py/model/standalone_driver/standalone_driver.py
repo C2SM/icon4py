@@ -46,6 +46,7 @@ class Icon4pyDriver:
         config: driver_config.DriverConfig,
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
+        decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
@@ -55,6 +56,7 @@ class Icon4pyDriver:
         self.config = config
         self.backend = backend
         self.grid = grid
+        self.decomposition_info = decomposition_info
         self.static_field_factories = static_field_factories
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
@@ -554,6 +556,7 @@ def initialize_driver(
     grid_file_path: pathlib.Path | str,
     log_level: str,
     backend_name: str | model_backends.BackendLike | None,
+    force_serial_run: bool = False,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -573,7 +576,7 @@ def initialize_driver(
         Driver: driver object
     """
 
-    with_mpi = mpi_decomp.mpi4py is not None
+    with_mpi = (mpi_decomp.mpi4py is not None) and not force_serial_run
     parallel_props = decomposition_defs.get_processor_properties(
         decomposition_defs.get_runtype(with_mpi=with_mpi)
     )
@@ -668,6 +671,7 @@ def initialize_driver(
         config=driver_config,
         backend=backend,
         grid=grid_manager.grid,
+        decomposition_info=decomposition_info,
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,

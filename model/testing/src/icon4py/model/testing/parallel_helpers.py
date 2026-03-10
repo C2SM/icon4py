@@ -12,16 +12,13 @@ import operator
 import numpy as np
 import pytest
 from gt4py import next as gtx
-from model.common.tests.common.grid.mpi_tests.test_parallel_grid_manager import (
-    _log,
-    definitions as decomp_defs,
-)
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions, definitions as decomp_defs
 
 
 log = logging.getLogger(__file__)
+_log = log
 
 
 def check_comm_size(

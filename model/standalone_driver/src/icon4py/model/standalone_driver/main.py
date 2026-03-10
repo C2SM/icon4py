@@ -14,6 +14,7 @@ import numpy as np
 import typer
 
 from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
 
@@ -41,8 +42,14 @@ def main(
             help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
+    force_serial_run: Annotated[
+        bool,
+        typer.Option(
+            help="Force a single-node run even if MPI is available. Useful to build serial reference output within MPI test sessions.",
+        ),
+    ] = False,
     array_ns: ModuleType = np,
-) -> driver_states.DriverStates:
+) -> tuple[driver_states.DriverStates, decomp_defs.DecompositionInfo]:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
     condition from the Jablonowski Williamson test case
@@ -58,6 +65,7 @@ def main(
         grid_file_path=grid_file_path,
         log_level=log_level,
         backend_name=icon4py_backend,
+        force_serial_run=force_serial_run,
     )
 
     log.info("Generating the initial condition")
@@ -85,7 +93,7 @@ def main(
     )
 
     log.info("time loop:  DONE")
-    return ds
+    return ds, icon4py_driver.decomposition_info
 
 
 if __name__ == "__main__":

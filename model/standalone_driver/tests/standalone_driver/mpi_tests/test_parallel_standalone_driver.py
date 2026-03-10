@@ -11,13 +11,13 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import model_backends, model_options
+from icon4py.model.common import dimension as dims, model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_utils, main
 from icon4py.model.testing import definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures.datatest import backend_like, experiment, processor_props
-
+from icon4py.model.testing.parallel_helpers import check_local_global_field
 
 
 if mpi_decomposition.mpi4py is None:
@@ -34,6 +34,8 @@ _log = logging.getLogger(__file__)
         test_defs.Experiments.JW,
     ],
 )
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_standalone_driver_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     tmp_path: pathlib.Path,
@@ -54,27 +56,42 @@ def test_standalone_driver_compare_single_multi_rank(
     )
     array_ns = data_alloc.import_array_ns(backend)  # type: ignore[arg-type] # backend type is correct
 
-    grid_file_path = grid_utils._download_grid_file(test_defs.Grids.R02B04_GLOBAL)
-    output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
-    single_rank_ds = main.main(
+    grid_file_path = grid_utils._download_grid_file(experiment.grid)
+
+    fields = ["vn", "w", "exner", "theta_v", "rho"]
+    serial_reference_fields: dict[str, object] = {}
+    if processor_props.rank == 0:
+        single_rank_ds, _ = main.main(
+            grid_file_path=grid_file_path,
+            icon4py_backend=backend_name,
+            output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}_serial_rank0",
+            array_ns=array_ns,
+            force_serial_run=True,
+        )
+        serial_reference_fields = {
+            field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
+            for field_name in fields
+        }
+
+    multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_name,
-        output_path=output_path,
+        output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}_mpi_rank_{processor_props.rank}",
         array_ns=array_ns,
     )
 
-    breakpoint()
-
-    # fields = ["vn", "w", "exner", "theta_v", "rho"]
-    # for field_name in fields:
-    #     field_ref = getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
-    #     field     = getattr(multi_rank_ds.prognostics.current, field_name).asnumpy()
-    #     dim = field_ref.domain.dims[0]
-    #     check_local_global_field(
-    #         decomposition_info=multi_rank_grid_manager.decomposition_info,
-    #         processor_props=processor_props,
-    #         dim=dim,
-    #         global_reference_field=field_ref.asnumpy(),
-    #         local_field=field.asnumpy(),
-    #         check_halos=True,
-    #     )
+    for field_name in fields:
+        global_reference_field = processor_props.comm.bcast(
+            serial_reference_fields.get(field_name),
+            root=0,
+        )
+        local_field = getattr(multi_rank_ds.prognostics.current, field_name)
+        dim = local_field.domain.dims[0]
+        check_local_global_field(
+            decomposition_info=decomposition_info,
+            processor_props=processor_props,
+            dim=dim,
+            global_reference_field=global_reference_field,
+            local_field=local_field.asnumpy(),
+            check_halos=True,
+        )
