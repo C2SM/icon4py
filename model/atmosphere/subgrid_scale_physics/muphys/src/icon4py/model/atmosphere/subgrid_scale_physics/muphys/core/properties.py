@@ -328,8 +328,8 @@ def _snow_number(
 
     Result:           Snow number
     """
-    TMIN = t_d.tmelt - wpfloat(40.0)
-    TMAX = t_d.tmelt
+    TMIN = wpfloat(t_d.tmelt) - wpfloat(40.0)
+    TMAX = wpfloat(t_d.tmelt)
     QSMIN = wpfloat(2.0e-6)
     XA1 = wpfloat(-1.65e0)
     XA2 = wpfloat(5.45e-2)
