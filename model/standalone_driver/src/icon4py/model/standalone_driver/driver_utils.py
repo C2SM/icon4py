@@ -29,6 +29,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import (
+    decomposer as decomp,
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
@@ -64,36 +65,28 @@ def create_grid_manager(
     grid_file_path: str | pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.Allocator,
+    parallel_props: decomposition_defs.ProcessProperties,
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
 ) -> gm.GridManager:
+    decomposer = (
+        decomp.MetisDecomposer()
+        if not parallel_props.is_single_rank()
+        else decomp.SingleNodeDecomposer()
+    )
     grid_manager = gm.GridManager(
         grid_file=grid_file_path,
         config=vertical_grid_config,
         offset_transformation=gridfile.ToZeroBasedIndexTransformation(),
         global_reductions=global_reductions,
     )
-    grid_manager(allocator=allocator, keep_skip_values=True)
+    grid_manager(
+        allocator=allocator,
+        keep_skip_values=True,
+        run_properties=parallel_props,
+        decomposer=decomposer,
+    )
 
     return grid_manager
-
-
-def create_decomposition_info(
-    grid_manager: gm.GridManager,
-    allocator: gtx_typing.Allocator,
-) -> decomposition_defs.DecompositionInfo:
-    decomposition_info = decomposition_defs.DecompositionInfo()
-    xp = data_alloc.import_array_ns(allocator)
-
-    def _add_dimension(dim: gtx.Dimension) -> None:
-        indices = data_alloc.index_field(grid_manager.grid, dim, allocator=allocator)
-        owner_mask = xp.ones((grid_manager.grid.size[dim],), dtype=bool)
-        decomposition_info.set_dimension(dim, indices.ndarray, owner_mask, None)
-
-    _add_dimension(dims.EdgeDim)
-    _add_dimension(dims.VertexDim)
-    _add_dimension(dims.CellDim)
-
-    return decomposition_info
 
 
 def create_vertical_grid(
@@ -118,6 +111,8 @@ def create_static_field_factories(
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
+    exchange: decomposition_defs.ExchangeRuntime = decomposition_defs.single_node_default,
+    global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
 ) -> driver_states.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
@@ -126,6 +121,8 @@ def create_static_field_factories(
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
+        exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
@@ -134,6 +131,7 @@ def create_static_field_factories(
         geometry_source=geometry_field_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
+        exchange=exchange,
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
@@ -151,6 +149,8 @@ def create_static_field_factories(
         vwind_offctr=0.15,
         thslp_zdiffu=0.025,
         thhgtd_zdiffu=200.0,
+        exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     return driver_states.StaticFieldFactories(

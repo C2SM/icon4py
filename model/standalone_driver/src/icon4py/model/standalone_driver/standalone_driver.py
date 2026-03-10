@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.decomposition import definitions as decomposition_defs, mpi_decomposition as mpi_decomp
 from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
@@ -573,8 +573,9 @@ def initialize_driver(
         Driver: driver object
     """
 
+    with_mpi = mpi_decomp.mpi4py is not None
     parallel_props = decomposition_defs.get_processor_properties(
-        decomposition_defs.get_runtype(with_mpi=False)
+        decomposition_defs.get_runtype(with_mpi=with_mpi)
     )
     driver_utils.configure_logging(
         logging_level=log_level,
@@ -611,15 +612,12 @@ def initialize_driver(
         grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
         allocator=allocator,
+        parallel_props=parallel_props,
         global_reductions=global_reductions,
     )
 
     log.info("creating the decomposition info")
-
-    decomposition_info = driver_utils.create_decomposition_info(
-        grid_manager=grid_manager,
-        allocator=allocator,
-    )
+    decomposition_info = grid_manager.decomposition_info
     exchange = decomposition_defs.create_exchange(parallel_props, decomposition_info)
 
     log.info("initializing the vertical grid")
@@ -642,6 +640,8 @@ def initialize_driver(
         vertical_grid=vertical_grid,
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
+        exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     log.info("initializing granules")
