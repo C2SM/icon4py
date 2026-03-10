@@ -150,7 +150,9 @@ def _temperature_update(
         #  in order to avoid scan_operator -> field_operator
         qtot = qliq + qice + q.v  # total water specific mass
         cv = (
-            (t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * q.v + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
+            (t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * q.v + t_d.clw * qliq + g_ct.ci * qice)
+            * rho
+            * dz
         )  # Moist isometric specific heat
         t = (e_int + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
     else:
@@ -388,7 +390,9 @@ def _q_t_update(  # noqa: PLR0915
         _deposition_auto_conversion(q.i, m_ice, ice_dep) + _ice_to_snow(q.i, n_snow, l_snow, x_ice),
         wpfloat(0.0),
     )
-    i2g = where(t_below_tmelt & is_sig_present, _ice_to_graupel(rho, q.r, q.g, q.i, x_ice), wpfloat(0.0))
+    i2g = where(
+        t_below_tmelt & is_sig_present, _ice_to_graupel(rho, q.r, q.g, q.i, x_ice), wpfloat(0.0)
+    )
     s2g = where(t_below_tmelt & is_sig_present, _snow_to_graupel(t, rho, q.c, q.s), wpfloat(0.0))
     r2g = where(
         t_below_tmelt & is_sig_present,
