@@ -404,7 +404,7 @@ url = 'https://gridtools.github.io/pypi/'
 [tool.uv.sources]
 dace = {index = "gridtools"}
 ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
-gt4py = {git = "https://github.com/GridTools/gt4py", branch = "muphys_rmcopies_staging"}
+gt4py = {git = "https://github.com/GridTools/gt4py", branch = "allow_more_conditionals_fusion"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
