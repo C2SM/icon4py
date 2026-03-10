@@ -9,9 +9,9 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import main
+from icon4py.model.standalone_driver import driver_utils, main
 from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
 
@@ -42,7 +42,6 @@ def test_standalone_driver(
     timeloop_diffusion_linit_init: bool,
     *,
     backend_like: model_backends.BackendLike,
-    backend: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     substep_exit: int,
@@ -54,7 +53,10 @@ def test_standalone_driver(
             backend_name = k
 
     grid_file_path = grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL)
-    array_ns = data_alloc.import_array_ns(backend)  # type: ignore[arg-type] # backend type is correct
+    backend = model_options.customize_backend(
+        program=None, backend=driver_utils.get_backend_from_name(backend_name)
+    )
+    array_ns = data_alloc.import_array_ns(backend)
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
     ds, _ = main.main(
         grid_file_path=grid_file_path,

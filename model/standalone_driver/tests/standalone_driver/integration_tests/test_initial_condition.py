@@ -9,7 +9,7 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common import dimension as dims, model_backends, model_options
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
@@ -29,7 +29,6 @@ from icon4py.model.testing.fixtures.datatest import (
 @pytest.mark.datatest
 def test_standalone_driver_initial_condition(
     backend_like: model_backends.BackendLike,
-    backend: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     experiment: definitions.Experiments,
     data_provider: serialbox.IconSerialDataProvider,
@@ -45,6 +44,9 @@ def test_standalone_driver_initial_condition(
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
         backend_name=backend_name,
     )
+    backend = model_options.customize_backend(
+        program=None, backend=driver_utils.get_backend_from_name(backend_name)
+    )
 
     ds = initial_condition.jablonowski_williamson(
         grid=icon4py_driver.grid,
@@ -58,7 +60,7 @@ def test_standalone_driver_initial_condition(
         model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
-        array_ns=data_alloc.import_array_ns(backend),  # type: ignore[arg-type] # backend type is correct
+        array_ns=data_alloc.import_array_ns(backend),
     )
     jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
 

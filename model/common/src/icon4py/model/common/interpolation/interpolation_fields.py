@@ -1247,10 +1247,10 @@ def compute_lsq_coeffs(
 
             z_dist_g *= grid_sphere_radius
             min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
-
             for jc in range(start_idx, min_rlcell_int):
                 if cell_owner_mask[jc]:
                     z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
+
         case base_grid.GeometryType.TORUS:
             for jc in range(start_idx, min_rlcell_int):
                 ilc_s = c2e2c[jc, :lsq_dim_stencil]
