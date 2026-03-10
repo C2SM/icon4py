@@ -1427,8 +1427,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.6.post1834+d48e3079"
-source = { git = "https://github.com/DropD/gt4py?branch=explicit-fbuiltins-imports#d48e307995eeba56369208f9c2d53cd7e8e4c296" }
+version = "1.1.6.post1845+5428507e"
+source = { git = "https://github.com/DropD/gt4py?branch=explicit-fbuiltins-imports#5428507e599a8bbf69f1dc5134a599374b225bf6" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },

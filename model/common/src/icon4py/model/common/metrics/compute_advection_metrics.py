@@ -30,7 +30,7 @@ def _compute_advection_deepatmo_fields(
     - deepatmo_divzL
     - deepatmo_divzU
     """
-    height = gtx.float64(0.5) * (height_l + height_u)
+    height = 0.5 * (height_l + height_u)
     radial_distance = height + grid_sphere_radius
     radial_distance_l = grid_sphere_radius + height_l
     radial_distance_u = grid_sphere_radius + height_u
