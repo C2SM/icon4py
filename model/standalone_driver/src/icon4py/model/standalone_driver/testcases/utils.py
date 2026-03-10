@@ -210,6 +210,6 @@ def init_w(
 
     w = array_ns.zeros((ub_c, nlev + 1))
     w[lb_c:, nlev] = z_wsfc_c[lb_c:ub_c]
-    w[lb_c:, 1:] = z_wsfc_c[lb_c:ub_c] * vct_b[1:]
+    w[lb_c:, 1:] = z_wsfc_c[lb_c:ub_c, array_ns.newaxis] * vct_b[array_ns.newaxis, 1:]
 
     return w
