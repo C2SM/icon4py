@@ -36,7 +36,6 @@ from icon4py.model.common.interpolation.stencils import (
 )
 from icon4py.model.common.math.stencils import generic_math_operations as gt4py_math_op
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.common.model_options import customize_backend
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
