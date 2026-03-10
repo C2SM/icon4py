@@ -191,12 +191,11 @@ def init_w(
     ub_c = grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.INTERIOR))
 
     z_wsfc_e = array_ns.zeros((ub_e,))
-    z_wsfc_e[lb_e:] = (
-        vn[lb_e:ub_e, nlev - 1]
-        * ((z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[lb_e:ub_e, :] * inv_dual_edge_length[lb_e:ub_e])[
-            nlev
-        ]
-    )
+    for je in range(lb_e, ub_e):
+        z_wsfc_e[je] = (
+            vn[je, nlev - 1]
+            * ((z_ifc[e2c[:, 1]] - z_ifc[e2c[:, 0]])[je, :] * inv_dual_edge_length[je])[nlev]
+        )
 
     e_inn_c = array_ns.zeros((ub_c, 3))  # or 1
     for jc in range(ub_c):
