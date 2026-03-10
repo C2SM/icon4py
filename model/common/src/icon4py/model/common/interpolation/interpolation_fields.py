@@ -1237,7 +1237,11 @@ def compute_lsq_coeffs(
             for js in range(lsq_dim_stencil):
                 z_dist_g[:, js, :] = array_ns.asarray(
                     gnomonic_proj(
-                        cell_lon, cell_lat, cell_lon[c2e2c[:, js]], cell_lat[c2e2c[:, js]]
+                        cell_lon[:],
+                        cell_lat[:],
+                        cell_lon[c2e2c[:, js]],
+                        cell_lat[c2e2c[:, js]],
+                        array_ns,
                     )
                 ).T
 
@@ -1252,15 +1256,17 @@ def compute_lsq_coeffs(
                 ilc_s = c2e2c[jc, :lsq_dim_stencil]
                 cc_cell = array_ns.zeros((lsq_dim_stencil, 2))
 
-                cc_cv = (cell_center_x[jc], cell_center_y[jc])
+                cc_cv = array_ns.asarray((cell_center_x[jc], cell_center_y[jc]))
                 for js in range(lsq_dim_stencil):
-                    cc_cell[js, :] = diff_on_edges_torus_numpy(
-                        cell_center_x[jc],
-                        cell_center_y[jc],
-                        cell_center_x[ilc_s][js],
-                        cell_center_y[ilc_s][js],
-                        domain_length,
-                        domain_height,
+                    cc_cell[js, :] = array_ns.asarray(
+                        diff_on_edges_torus_numpy(
+                            cell_center_x[jc],
+                            cell_center_y[jc],
+                            cell_center_x[ilc_s][js],
+                            cell_center_y[ilc_s][js],
+                            domain_length,
+                            domain_height,
+                        )
                     )
                 z_dist_g[jc, :, :] = cc_cell - cc_cv
 
