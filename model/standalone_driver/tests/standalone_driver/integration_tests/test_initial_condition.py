@@ -9,7 +9,7 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common import dimension as dims, model_backends, model_options
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
@@ -43,6 +43,9 @@ def test_standalone_driver_initial_condition(
         grid_file_path=grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
         backend_name=backend_name,
+    )
+    backend = model_options.customize_backend(
+        program=None, backend=driver_utils.get_backend_from_name(backend_name)
     )
 
     ds = initial_condition.jablonowski_williamson(
