@@ -267,7 +267,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    backend = customize_backend(None, model_backends.CPU)
+
     _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
