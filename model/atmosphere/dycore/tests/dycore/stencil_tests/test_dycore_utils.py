@@ -150,8 +150,8 @@ def test_calculate_divdamp_fields(backend: gtx_typing.Backend) -> None:
         ),
         offset_provider={},
     )
-    test_utils.dallclose(fourth_order_divdamp_scaling_coeff.asnumpy(), scaled_ref)
-    test_utils.dallclose(
+    assert test_utils.dallclose(fourth_order_divdamp_scaling_coeff.asnumpy(), scaled_ref)
+    assert test_utils.dallclose(
         reduced_fourth_order_divdamp_coeff_at_nest_boundary.asnumpy(),
         reduced_fourth_order_divdamp_coeff_at_nest_boundary_ref,
     )

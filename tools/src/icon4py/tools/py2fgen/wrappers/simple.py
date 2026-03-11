@@ -44,5 +44,5 @@ def square_from_function(
 def square_error(
     inp: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
     result: gtx.Field[[dims.CellDim, dims.KDim], gtx.float64],
-):
+) -> None:
     raise Exception("Exception foo occurred")

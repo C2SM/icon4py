@@ -40,7 +40,7 @@ def compute_positive_definite_horizontal_multiplicative_flux_factor(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_positive_definite_horizontal_multiplicative_flux_factor(
         geofac_div,
         p_cc,

@@ -52,7 +52,7 @@ def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
         wgtfac_c,
         rho,

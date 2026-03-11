@@ -54,8 +54,8 @@ def test_diffusion_benchmark(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
-        type_t_diffu=2,
-        type_vn_diffu=1,
+        type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+        type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
         hdiff_efdt_ratio=24.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
@@ -133,12 +133,11 @@ def test_diffusion_benchmark(
     )
 
     metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
         theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
         wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF_DSL),
-        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
-        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
+        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF),
+        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET),
+        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF),
     )
     # initialization of the diagnostic and prognostic state
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
