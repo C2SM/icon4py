@@ -59,8 +59,8 @@ build_image_aarch64:
     - cd /icon4py
     - ls "${ICON4PY_TEST_DATA_PATH}"
   variables:
-    SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
+    SLURM_JOB_NUM_NODES: 1
     SLURM_GPUS_PER_NODE: 1
     SLURM_PARTITION: "shared"
     SLURM_TIMELIMIT: '01:30:00'
