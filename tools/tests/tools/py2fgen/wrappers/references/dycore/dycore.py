@@ -1170,10 +1170,6 @@ def solve_nh_run_wrapper(
 
 @ffi.def_extern()
 def solve_nh_init_wrapper(
-    vct_a,
-    vct_a_size_0,
-    vct_b,
-    vct_b_size_0,
     c_lin_e,
     c_lin_e_size_0,
     c_lin_e_size_1,
@@ -1221,8 +1217,6 @@ def solve_nh_init_wrapper(
     geofac_grg_y_size_1,
     nudgecoeff_e,
     nudgecoeff_e_size_0,
-    bdy_halo_c,
-    bdy_halo_c_size_0,
     mask_prog_halo_c,
     mask_prog_halo_c_size_0,
     rayleigh_w,
@@ -1282,12 +1276,12 @@ def solve_nh_init_wrapper(
     vertoffset_gradp_size_0,
     vertoffset_gradp_size_1,
     vertoffset_gradp_size_2,
-    ipeidx_dsl,
-    ipeidx_dsl_size_0,
-    ipeidx_dsl_size_1,
+    pg_edgeidx,
+    pg_edgeidx_size_0,
+    pg_vertidx,
+    pg_vertidx_size_0,
     pg_exdist,
     pg_exdist_size_0,
-    pg_exdist_size_1,
     ddqz_z_full_e,
     ddqz_z_full_e_size_0,
     ddqz_z_full_e_size_1,
@@ -1317,7 +1311,6 @@ def solve_nh_init_wrapper(
     coeff_gradekin_size_1,
     c_owner_mask,
     c_owner_mask_size_0,
-    rayleigh_damping_height,
     itime_scheme,
     iadv_rhotheta,
     igradp_method,
@@ -1330,6 +1323,7 @@ def solve_nh_init_wrapper(
     divdamp_trans_start,
     divdamp_trans_end,
     l_vert_nested,
+    ldeepatmo,
     rhotheta_offctr,
     veladv_offctr,
     nudge_max_coeff,
@@ -1341,11 +1335,7 @@ def solve_nh_init_wrapper(
     divdamp_z2,
     divdamp_z3,
     divdamp_z4,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
     nflat_gradp,
-    num_levels,
     backend,
     on_gpu,
 ):
@@ -1359,10 +1349,6 @@ def solve_nh_init_wrapper(
                     unpack_start_time = _runtime.perf_counter()
 
             # ArrayInfos
-
-            vct_a = (vct_a, (vct_a_size_0,), on_gpu, False)
-
-            vct_b = (vct_b, (vct_b_size_0,), on_gpu, False)
 
             c_lin_e = (
                 c_lin_e,
@@ -1515,8 +1501,6 @@ def solve_nh_init_wrapper(
             )
 
             nudgecoeff_e = (nudgecoeff_e, (nudgecoeff_e_size_0,), on_gpu, False)
-
-            bdy_halo_c = (bdy_halo_c, (bdy_halo_c_size_0,), on_gpu, False)
 
             mask_prog_halo_c = (mask_prog_halo_c, (mask_prog_halo_c_size_0,), on_gpu, False)
 
@@ -1696,25 +1680,11 @@ def solve_nh_init_wrapper(
                 False,
             )
 
-            ipeidx_dsl = (
-                ipeidx_dsl,
-                (
-                    ipeidx_dsl_size_0,
-                    ipeidx_dsl_size_1,
-                ),
-                on_gpu,
-                False,
-            )
+            pg_edgeidx = (pg_edgeidx, (pg_edgeidx_size_0,), on_gpu, True)
 
-            pg_exdist = (
-                pg_exdist,
-                (
-                    pg_exdist_size_0,
-                    pg_exdist_size_1,
-                ),
-                on_gpu,
-                False,
-            )
+            pg_vertidx = (pg_vertidx, (pg_vertidx_size_0,), on_gpu, True)
+
+            pg_exdist = (pg_exdist, (pg_exdist_size_0,), on_gpu, True)
 
             ddqz_z_full_e = (
                 ddqz_z_full_e,
@@ -1811,8 +1781,6 @@ def solve_nh_init_wrapper(
             solve_nh_init(
                 ffi=ffi,
                 perf_counters=perf_counters,
-                vct_a=vct_a,
-                vct_b=vct_b,
                 c_lin_e=c_lin_e,
                 c_intp=c_intp,
                 e_flx_avg=e_flx_avg,
@@ -1829,7 +1797,6 @@ def solve_nh_init_wrapper(
                 geofac_grg_x=geofac_grg_x,
                 geofac_grg_y=geofac_grg_y,
                 nudgecoeff_e=nudgecoeff_e,
-                bdy_halo_c=bdy_halo_c,
                 mask_prog_halo_c=mask_prog_halo_c,
                 rayleigh_w=rayleigh_w,
                 exner_exfac=exner_exfac,
@@ -1850,7 +1817,8 @@ def solve_nh_init_wrapper(
                 ddxn_z_full=ddxn_z_full,
                 zdiff_gradp=zdiff_gradp,
                 vertoffset_gradp=vertoffset_gradp,
-                ipeidx_dsl=ipeidx_dsl,
+                pg_edgeidx=pg_edgeidx,
+                pg_vertidx=pg_vertidx,
                 pg_exdist=pg_exdist,
                 ddqz_z_full_e=ddqz_z_full_e,
                 ddxt_z_full=ddxt_z_full,
@@ -1863,7 +1831,6 @@ def solve_nh_init_wrapper(
                 coeff2_dwdz=coeff2_dwdz,
                 coeff_gradekin=coeff_gradekin,
                 c_owner_mask=c_owner_mask,
-                rayleigh_damping_height=rayleigh_damping_height,
                 itime_scheme=itime_scheme,
                 iadv_rhotheta=iadv_rhotheta,
                 igradp_method=igradp_method,
@@ -1876,6 +1843,7 @@ def solve_nh_init_wrapper(
                 divdamp_trans_start=divdamp_trans_start,
                 divdamp_trans_end=divdamp_trans_end,
                 l_vert_nested=l_vert_nested,
+                ldeepatmo=ldeepatmo,
                 rhotheta_offctr=rhotheta_offctr,
                 veladv_offctr=veladv_offctr,
                 nudge_max_coeff=nudge_max_coeff,
@@ -1887,11 +1855,7 @@ def solve_nh_init_wrapper(
                 divdamp_z2=divdamp_z2,
                 divdamp_z3=divdamp_z3,
                 divdamp_z4=divdamp_z4,
-                lowest_layer_thickness=lowest_layer_thickness,
-                model_top_height=model_top_height,
-                stretch_factor=stretch_factor,
                 nflat_gradp=nflat_gradp,
-                num_levels=num_levels,
                 backend=backend,
             )
 
@@ -1910,38 +1874,6 @@ def solve_nh_init_wrapper(
 
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
-
-                    vct_a_arr = (
-                        _conversion.as_array(ffi, vct_a, _definitions.FLOAT64)
-                        if vct_a is not None
-                        else None
-                    )
-                    msg = "shape of vct_a after computation = %s" % str(
-                        vct_a_arr.shape if vct_a is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "vct_a after computation: %s" % str(vct_a_arr)
-                        if vct_a is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    vct_b_arr = (
-                        _conversion.as_array(ffi, vct_b, _definitions.FLOAT64)
-                        if vct_b is not None
-                        else None
-                    )
-                    msg = "shape of vct_b after computation = %s" % str(
-                        vct_b_arr.shape if vct_b is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "vct_b after computation: %s" % str(vct_b_arr)
-                        if vct_b is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
 
                     c_lin_e_arr = (
                         _conversion.as_array(ffi, c_lin_e, _definitions.FLOAT64)
@@ -2195,22 +2127,6 @@ def solve_nh_init_wrapper(
                     msg = (
                         "nudgecoeff_e after computation: %s" % str(nudgecoeff_e_arr)
                         if nudgecoeff_e is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    bdy_halo_c_arr = (
-                        _conversion.as_array(ffi, bdy_halo_c, _definitions.BOOL)
-                        if bdy_halo_c is not None
-                        else None
-                    )
-                    msg = "shape of bdy_halo_c after computation = %s" % str(
-                        bdy_halo_c_arr.shape if bdy_halo_c is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "bdy_halo_c after computation: %s" % str(bdy_halo_c_arr)
-                        if bdy_halo_c is not None
                         else "None"
                     )
                     logger.debug(msg)
@@ -2535,18 +2451,34 @@ def solve_nh_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    ipeidx_dsl_arr = (
-                        _conversion.as_array(ffi, ipeidx_dsl, _definitions.BOOL)
-                        if ipeidx_dsl is not None
+                    pg_edgeidx_arr = (
+                        _conversion.as_array(ffi, pg_edgeidx, _definitions.INT32)
+                        if pg_edgeidx is not None
                         else None
                     )
-                    msg = "shape of ipeidx_dsl after computation = %s" % str(
-                        ipeidx_dsl_arr.shape if ipeidx_dsl is not None else "None"
+                    msg = "shape of pg_edgeidx after computation = %s" % str(
+                        pg_edgeidx_arr.shape if pg_edgeidx is not None else "None"
                     )
                     logger.debug(msg)
                     msg = (
-                        "ipeidx_dsl after computation: %s" % str(ipeidx_dsl_arr)
-                        if ipeidx_dsl is not None
+                        "pg_edgeidx after computation: %s" % str(pg_edgeidx_arr)
+                        if pg_edgeidx is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    pg_vertidx_arr = (
+                        _conversion.as_array(ffi, pg_vertidx, _definitions.INT32)
+                        if pg_vertidx is not None
+                        else None
+                    )
+                    msg = "shape of pg_vertidx after computation = %s" % str(
+                        pg_vertidx_arr.shape if pg_vertidx is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "pg_vertidx after computation: %s" % str(pg_vertidx_arr)
+                        if pg_vertidx is not None
                         else "None"
                     )
                     logger.debug(msg)

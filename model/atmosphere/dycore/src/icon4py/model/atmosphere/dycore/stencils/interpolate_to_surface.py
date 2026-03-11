@@ -35,7 +35,7 @@ def interpolate_to_surface(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _interpolate_to_surface(
         wgtfacq_c,
         interpolant,

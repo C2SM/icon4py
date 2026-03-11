@@ -107,6 +107,13 @@ module grid
                                  primal_normal_x_size_0, &
                                  primal_normal_y, &
                                  primal_normal_y_size_0, &
+                                 vct_a, &
+                                 vct_a_size_0, &
+                                 lowest_layer_thickness, &
+                                 model_top_height, &
+                                 stretch_factor, &
+                                 flat_height, &
+                                 rayleigh_damping_height, &
                                  mean_cell_area, &
                                  comm_id, &
                                  num_vertices, &
@@ -321,6 +328,20 @@ module grid
 
          integer(c_int), value :: primal_normal_y_size_0
 
+         type(c_ptr), value, target :: vct_a
+
+         integer(c_int), value :: vct_a_size_0
+
+         real(c_double), value, target :: lowest_layer_thickness
+
+         real(c_double), value, target :: model_top_height
+
+         real(c_double), value, target :: stretch_factor
+
+         real(c_double), value, target :: flat_height
+
+         real(c_double), value, target :: rayleigh_damping_height
+
          real(c_double), value, target :: mean_cell_area
 
          integer(c_int), value, target :: comm_id
@@ -387,6 +408,12 @@ contains
                         edge_center_lon, &
                         primal_normal_x, &
                         primal_normal_y, &
+                        vct_a, &
+                        lowest_layer_thickness, &
+                        model_top_height, &
+                        stretch_factor, &
+                        flat_height, &
+                        rayleigh_damping_height, &
                         mean_cell_area, &
                         comm_id, &
                         num_vertices, &
@@ -481,6 +508,18 @@ contains
       real(c_double), dimension(:), target :: primal_normal_x
 
       real(c_double), dimension(:), target :: primal_normal_y
+
+      real(c_double), dimension(:), target :: vct_a
+
+      real(c_double), value, target :: lowest_layer_thickness
+
+      real(c_double), value, target :: model_top_height
+
+      real(c_double), value, target :: stretch_factor
+
+      real(c_double), value, target :: flat_height
+
+      real(c_double), value, target :: rayleigh_damping_height
 
       real(c_double), value, target :: mean_cell_area
 
@@ -618,6 +657,8 @@ contains
 
       integer(c_int) :: primal_normal_y_size_0
 
+      integer(c_int) :: vct_a_size_0
+
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
@@ -651,6 +692,7 @@ contains
       !$acc host_data use_device(edge_center_lon)
       !$acc host_data use_device(primal_normal_x)
       !$acc host_data use_device(primal_normal_y)
+      !$acc host_data use_device(vct_a)
 
 #ifdef _OPENACC
       on_gpu = .True.
@@ -759,6 +801,8 @@ contains
 
       primal_normal_y_size_0 = SIZE(primal_normal_y, 1)
 
+      vct_a_size_0 = SIZE(vct_a, 1)
+
       rc = grid_init_wrapper(cell_starts=c_loc(cell_starts), &
                              cell_starts_size_0=cell_starts_size_0, &
                              cell_ends=c_loc(cell_ends), &
@@ -860,6 +904,13 @@ contains
                              primal_normal_x_size_0=primal_normal_x_size_0, &
                              primal_normal_y=c_loc(primal_normal_y), &
                              primal_normal_y_size_0=primal_normal_y_size_0, &
+                             vct_a=c_loc(vct_a), &
+                             vct_a_size_0=vct_a_size_0, &
+                             lowest_layer_thickness=lowest_layer_thickness, &
+                             model_top_height=model_top_height, &
+                             stretch_factor=stretch_factor, &
+                             flat_height=flat_height, &
+                             rayleigh_damping_height=rayleigh_damping_height, &
                              mean_cell_area=mean_cell_area, &
                              comm_id=comm_id, &
                              num_vertices=num_vertices, &
@@ -869,6 +920,7 @@ contains
                              limited_area=limited_area, &
                              backend=backend, &
                              on_gpu=on_gpu)
+      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data

@@ -31,6 +31,10 @@ RBF_VEC_COEFF_C2: Final[str] = "rbf_interpolation_coefficient_cell_2"
 RBF_VEC_COEFF_E: Final[str] = "rbf_interpolation_coefficient_edge"
 RBF_VEC_COEFF_V1: Final[str] = "rbf_interpolation_coefficient_vertex_1"
 RBF_VEC_COEFF_V2: Final[str] = "rbf_interpolation_coefficient_vertex_2"
+RBF_SCALE_CELL: Final[str] = "rbf_scale_cell"
+RBF_SCALE_EDGE: Final[str] = "rbf_scale_edge"
+RBF_SCALE_VERTEX: Final[str] = "rbf_scale_vertex"
+LSQ_PSEUDOINV: Final[str] = "lsq_interpolation_coefficient"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
@@ -46,15 +50,15 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name="nudging_coefficients_for_edges",
         units="",  # TODO(yiluchen1066): : need to check unit
         dims=(dims.EdgeDim,),
-        icon_var_name="nudgecoeffs_e",
+        icon_var_name="nudgecoeff_e",
         dtype=ta.wpfloat,
     ),
     C_BLN_AVG: dict(
         standard_name=C_BLN_AVG,
         long_name="mass conserving bilinear cell average weight",
         units="",  # TODO(halungge): check or confirm
-        dims=(dims.EdgeDim, dims.E2CDim),
-        icon_var_name="c_lin_e",
+        dims=(dims.EdgeDim, dims.C2E2CODim),
+        icon_var_name="c_bln_avg",
         dtype=ta.wpfloat,
     ),
     E_BLN_C_S: dict(
@@ -183,6 +187,38 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",
         dims=(dims.VertexDim, dims.V2EDim),
         icon_var_name="rbf_vec_coeff_v2",
+        dtype=ta.wpfloat,
+    ),
+    RBF_SCALE_CELL: dict(
+        standard_name=RBF_SCALE_CELL,
+        long_name="rbf_scale_cell",
+        units="",
+        dims=(),
+        icon_var_name="rbf_vec_scale_c",
+        dtype=ta.wpfloat,
+    ),
+    RBF_SCALE_EDGE: dict(
+        standard_name=RBF_SCALE_EDGE,
+        long_name="rbf_scale_edge",
+        units="",
+        dims=(),
+        icon_var_name="rbf_vec_scale_e",
+        dtype=ta.wpfloat,
+    ),
+    RBF_SCALE_VERTEX: dict(
+        standard_name=RBF_SCALE_VERTEX,
+        long_name="rbf_scale_vertex",
+        units="",
+        dims=(),
+        icon_var_name="rbf_vec_scale_v",
+        dtype=ta.wpfloat,
+    ),
+    LSQ_PSEUDOINV: dict(
+        standard_name=LSQ_PSEUDOINV,
+        long_name="pseudo (or Moore-Penrose) inverse of least squares matrix A",
+        units="",
+        dims=(dims.CellDim, dims.C2E2CDim),
+        icon_var_name="ptr_int_lsq%lsq_pseudoinv",
         dtype=ta.wpfloat,
     ),
 }

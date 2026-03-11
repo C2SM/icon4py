@@ -124,6 +124,13 @@ def grid_init_wrapper(
     primal_normal_x_size_0,
     primal_normal_y,
     primal_normal_y_size_0,
+    vct_a,
+    vct_a_size_0,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    flat_height,
+    rayleigh_damping_height,
     mean_cell_area,
     comm_id,
     num_vertices,
@@ -385,6 +392,8 @@ def grid_init_wrapper(
 
             primal_normal_y = (primal_normal_y, (primal_normal_y_size_0,), on_gpu, False)
 
+            vct_a = (vct_a, (vct_a_size_0,), on_gpu, False)
+
             if __debug__:
                 if runtime_config.PROFILING:
                     allocate_end_time = _runtime.perf_counter()
@@ -444,6 +453,12 @@ def grid_init_wrapper(
                 edge_center_lon=edge_center_lon,
                 primal_normal_x=primal_normal_x,
                 primal_normal_y=primal_normal_y,
+                vct_a=vct_a,
+                lowest_layer_thickness=lowest_layer_thickness,
+                model_top_height=model_top_height,
+                stretch_factor=stretch_factor,
+                flat_height=flat_height,
+                rayleigh_damping_height=rayleigh_damping_height,
                 mean_cell_area=mean_cell_area,
                 comm_id=comm_id,
                 num_vertices=num_vertices,
@@ -1125,6 +1140,22 @@ def grid_init_wrapper(
                     msg = (
                         "primal_normal_y after computation: %s" % str(primal_normal_y_arr)
                         if primal_normal_y is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    vct_a_arr = (
+                        _conversion.as_array(ffi, vct_a, _definitions.FLOAT64)
+                        if vct_a is not None
+                        else None
+                    )
+                    msg = "shape of vct_a after computation = %s" % str(
+                        vct_a_arr.shape if vct_a is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "vct_a after computation: %s" % str(vct_a_arr)
+                        if vct_a is not None
                         else "None"
                     )
                     logger.debug(msg)

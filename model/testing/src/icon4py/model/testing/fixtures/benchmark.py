@@ -21,11 +21,10 @@ from icon4py.model.common.grid import (
     grid_manager as gm,
     vertical as v_grid,
 )
-from icon4py.model.common.initialization import jablonowski_williamson_topography as topology
+from icon4py.model.common.initialization import topography
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import grid_utils
 
 
 @pytest.fixture(
@@ -39,9 +38,8 @@ def geometry_field_source(
         pytest.skip("Incomplete grid Information for test, are you running with `simple_grid`?")
     mesh = grid_manager.grid
 
-    allocator = model_backends.get_allocator(backend_like)
     generic_concrete_backend = model_options.customize_backend(None, backend_like)
-    decomposition_info = grid_utils.construct_decomposition_info(mesh, allocator)
+    decomposition_info = grid_manager.decomposition_info
 
     geometry_field_source = grid_geometry.GridGeometry(
         grid=mesh,
@@ -64,9 +62,8 @@ def interpolation_field_source(
 ) -> Generator[interpolation_factory.InterpolationFieldsFactory, None, None]:
     mesh = grid_manager.grid
 
-    allocator = model_backends.get_allocator(backend_like)
     generic_concrete_backend = model_options.customize_backend(None, backend_like)
-    decomposition_info = grid_utils.construct_decomposition_info(mesh, allocator)
+    decomposition_info = grid_manager.decomposition_info
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
         grid=mesh,
@@ -91,7 +88,7 @@ def metrics_field_source(
 
     allocator = model_backends.get_allocator(backend_like)
     generic_concrete_backend = model_options.customize_backend(None, backend_like)
-    decomposition_info = grid_utils.construct_decomposition_info(mesh, allocator)
+    decomposition_info = grid_manager.decomposition_info
 
     vertical_config = v_grid.VerticalGridConfig(
         mesh.num_levels,
@@ -108,7 +105,7 @@ def metrics_field_source(
         vct_b=vct_b,
     )
 
-    topo_c = topology.jablonowski_williamson_topography(
+    topo_c = topography.jablonowski_williamson(
         cell_lat=geometry_field_source.get(geometry_meta.CELL_LAT).ndarray,
         u0=35.0,
         array_ns=data_alloc.import_array_ns(allocator),
@@ -127,5 +124,7 @@ def metrics_field_source(
         rayleigh_coeff=5.0,
         exner_expol=0.333,
         vwind_offctr=0.2,
+        thslp_zdiffu=0.02,
+        thhgtd_zdiffu=125.0,
     )
     yield metrics_field_source

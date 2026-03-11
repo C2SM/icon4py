@@ -17,7 +17,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.metrics.metric_fields import compute_flat_max_idx
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions
+from icon4py.model.testing import definitions, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -28,9 +28,9 @@ from icon4py.model.testing.fixtures.datatest import (
     interpolation_savepoint,
     metrics_savepoint,
     processor_props,
-    ranked_data_path,
 )
-from icon4py.model.testing.test_utils import dallclose
+
+from ... import utils
 
 
 if TYPE_CHECKING:
@@ -69,6 +69,7 @@ def test_compute_zdiff_gradp_dsl(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k_lev.ndarray,
+        exchange=utils.dummy_exchange,
         array_ns=xp,
     )
 
@@ -82,17 +83,18 @@ def test_compute_zdiff_gradp_dsl(
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
+        exchange=utils.dummy_exchange,
         array_ns=xp,
     )
 
-    assert dallclose(
+    assert test_utils.dallclose(
         data_alloc.as_numpy(zdiff_gradp_full_field),
         zdiff_gradp_ref.asnumpy(),
         atol=1e-10,
         rtol=1.0e-9,
     )
 
-    assert dallclose(
+    assert test_utils.dallclose(
         data_alloc.as_numpy(vertoffset_gradp_full_field),
         vertoffset_gradp_ref.asnumpy(),
         atol=1e-10,

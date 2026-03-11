@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 
 
 def _env_flag_to_bool(name: str, default: bool) -> bool:
@@ -27,6 +28,19 @@ def _env_flag_to_bool(name: str, default: bool) -> bool:
             )
 
 
+def _env_path(name: str, default: pathlib.Path) -> pathlib.Path:
+    value = os.environ.get(name)
+    return pathlib.Path(value) if value is not None else default
+
+
+def _project_root() -> pathlib.Path:
+    for path in [pathlib.Path(__file__).resolve(), *pathlib.Path(__file__).resolve().parents]:
+        if (path / ".git").exists():
+            return path
+    # fallback to hardcoded relative path
+    return pathlib.Path(__file__).parents[6]
+
+
 ENABLE_GRID_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_GRID_DOWNLOAD", True)
 ENABLE_TESTDATA_DOWNLOAD: bool = _env_flag_to_bool("ICON4PY_ENABLE_TESTDATA_DOWNLOAD", True)
-TEST_DATA_PATH: str | None = os.environ.get("ICON4PY_TEST_DATA_PATH", None)
+TEST_DATA_PATH: pathlib.Path = _env_path("ICON4PY_TEST_DATA_PATH", _project_root() / "testdata")

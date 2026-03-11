@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import ap
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -26,9 +26,26 @@ from .test_calculate_nabla4 import calculate_nabla4_numpy
 
 
 @pytest.mark.uses_concat_where
+@pytest.mark.continuous_benchmarking
 class TestApplyDiffusionToVn(StencilTest):
     PROGRAM = apply_diffusion_to_vn
     OUTPUTS = ("vn",)
+    STATIC_PARAMS = {
+        StandardStaticVariants.NONE: (),
+        StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "horizontal_start",
+            "horizontal_end",
+            "start_2nd_nudge_line_idx_e",
+            "vertical_start",
+            "vertical_end",
+            "limited_area",
+        ),
+        StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "vertical_start",
+            "vertical_end",
+            "limited_area",
+        ),
+    }
 
     @staticmethod
     def reference(

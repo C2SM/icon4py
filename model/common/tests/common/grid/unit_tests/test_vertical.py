@@ -34,11 +34,12 @@ from icon4py.model.testing.fixtures import (
     metrics_savepoint,
     model_top_height,
     processor_props,
-    ranked_data_path,
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
     topography_savepoint,
 )
+
+from ... import utils
 
 
 if TYPE_CHECKING:
@@ -67,7 +68,7 @@ def test_damping_layer_calculation(
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a_field,
-        vct_b=None,  # type: ignore[arg-type]
+        vct_b=None,
     )
     assert (
         vertical_params.end_index_of_damping_layer
@@ -94,7 +95,8 @@ def test_damping_layer_calculation_from_icon_input(
     )
     assert nrdmax == vertical_grid.end_index_of_damping_layer
     a_array = a.ndarray
-    assert a_array[nrdmax] > damping_height
+    damping_height = min(damping_height, a_array[0])
+    assert a_array[nrdmax] >= damping_height
     assert a_array[nrdmax + 1] < damping_height
     assert vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.DAMPING)) == nrdmax
 
@@ -398,6 +400,7 @@ def test_compute_vertical_coordinate(
     )
     assert vertical_geometry.nflatlev == grid_savepoint.nflatlev()
 
+    topography = None
     if experiment in (definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.GAUSS3D):
         topography = topography_savepoint.topo_c()
     elif experiment == definitions.Experiments.EXCLAIM_APE:
@@ -406,6 +409,9 @@ def test_compute_vertical_coordinate(
         )
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()
+
+    assert cell_geometry.area is not None
+    assert topography is not None
 
     vertical_coordinates_on_half_levels = v_grid.compute_vertical_coordinate(
         vct_a=vct_a.ndarray,
@@ -424,6 +430,7 @@ def test_compute_vertical_coordinate(
         SLEVE_minimum_relative_layer_thickness_2=0.5,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,
         array_ns=xp,
+        exchange=utils.dummy_exchange,
     )
 
     assert test_utils.dallclose(

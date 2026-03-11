@@ -22,6 +22,7 @@ from collections.abc import Callable
 import gt4py.next as gtx
 import numpy as np
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -34,7 +35,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, model_backends
-from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.tools.common.logger import setup_logger
@@ -55,8 +55,6 @@ granule: DiffusionGranule | None = None
 
 @icon4py_export.export
 def diffusion_init(
-    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
-    vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     theta_ref_mc: fa.CellKField[wpfloat],
     wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
@@ -67,15 +65,15 @@ def diffusion_init(
     nudgecoeff_e: fa.EdgeField[wpfloat],
     rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
     rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    mask_hdiff: fa.CellKField[bool] | None,
-    zd_diffcoef: fa.CellKField[wpfloat] | None,
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32] | None,
-    zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.float64] | None,
+    zd_cellidx: wrapper_common.OptionalInt32Array2D,
+    zd_vertidx: wrapper_common.OptionalInt32Array2D,
+    zd_intcoef: wrapper_common.OptionalFloat64Array2D,
+    zd_diffcoef: wrapper_common.OptionalFloat64Array1D,
     ndyn_substeps: gtx.int32,
-    rayleigh_damping_height: gtx.float64,
     diffusion_type: gtx.int32,
     hdiff_w: bool,
     hdiff_vn: bool,
+    hdiff_smag_w: bool,
     zdiffu_t: bool,
     type_t_diffu: gtx.int32,
     type_vn_diffu: gtx.int32,
@@ -88,9 +86,6 @@ def diffusion_init(
     nudge_max_coeff: float,  # note: this is the scaled ICON value, i.e. not the namelist value
     itype_sher: gtx.int32,
     ltkeshs: bool,
-    lowest_layer_thickness: gtx.float64,
-    model_top_height: gtx.float64,
-    stretch_factor: gtx.float64,
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
@@ -98,7 +93,7 @@ def diffusion_init(
             "Need to initialise grid using 'grid_init' before running 'diffusion_init'."
         )
 
-    on_gpu = vct_a.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = theta_ref_mc.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -110,6 +105,7 @@ def diffusion_init(
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
         hdiff_vn=hdiff_vn,
+        hdiff_smag_w=hdiff_smag_w,
         zdiffu_t=zdiffu_t,
         type_t_diffu=type_t_diffu,
         type_vn_diffu=type_vn_diffu,
@@ -127,42 +123,70 @@ def diffusion_init(
 
     diffusion_params = DiffusionParams(config)
 
-    # Vertical grid config
-    vertical_config = VerticalGridConfig(
-        num_levels=grid_wrapper.grid_state.grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=rayleigh_damping_height,
-    )
-
-    # Vertical parameters
-    vertical_params = VerticalGrid(
-        config=vertical_config,
-        vct_a=vct_a,
-        vct_b=vct_b,
-    )
-
     nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
-    cell_k_domain = {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
+    cell_k_domain = gtx.domain(
+        {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
+    )
     c2e2c_size = geofac_grg_x.domain[dims.C2E2CODim].unit_range.stop - 1
-    cell_c2e2c_k_domain = {
-        dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
-        dims.C2E2CDim: c2e2c_size,
-        dims.KDim: nlev,
-    }
+    cell_c2e2c_k_domain = gtx.domain(
+        {
+            dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
+            dims.C2E2CDim: c2e2c_size,
+            dims.KDim: nlev,
+        }
+    )
     xp = wgtfac_c.array_ns
-    if mask_hdiff is None:
-        mask_hdiff = gtx.zeros(cell_k_domain, dtype=xp.bool_)
-    if zd_diffcoef is None:
+
+    if zd_cellidx is None:
+        # then l_zdiffu_t = .false. and these are all not initialized
         zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype)
-    if zd_intcoef is None:
         zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
-    if zd_vertoffset is None:
         zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
+    else:
+        # transform lists to fields
+        #
+        # only the first row is needed, the others are for C2E2C neighbors, but slicing in fortran causes issues
+        zd_cellidx = zd_cellidx[0, :]
+        # these are the three k offsets for the C2E2C neighbors
+        zd_vertoffset = zd_vertidx[1:, :] - zd_vertidx[0, :]
+        # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
+        zd_vertidx = zd_vertidx[0, :]
+
+        zd_diffcoef = data_alloc.list2field(
+            domain=cell_k_domain,
+            values=zd_diffcoef,
+            indices=(
+                data_alloc.adjust_fortran_indices(zd_cellidx),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+        zd_intcoef = data_alloc.list2field(
+            domain=cell_c2e2c_k_domain,
+            values=zd_intcoef.T,
+            indices=(
+                data_alloc.adjust_fortran_indices(zd_cellidx),
+                slice(None),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+        zd_vertoffset = data_alloc.list2field(
+            domain=cell_c2e2c_k_domain,
+            values=zd_vertoffset.T,
+            indices=(
+                data_alloc.adjust_fortran_indices(zd_cellidx),
+                slice(None),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.int32(0),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+
     # Metric state
     metric_state = DiffusionMetricState(
-        mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
         zd_intcoef=zd_intcoef,
@@ -189,7 +213,7 @@ def diffusion_init(
             grid=grid_wrapper.grid_state.grid,
             config=config,
             params=diffusion_params,
-            vertical_grid=vertical_params,
+            vertical_grid=grid_wrapper.grid_state.vertical_grid,
             metric_state=metric_state,
             interpolation_state=interpolation_state,
             edge_params=grid_wrapper.grid_state.edge_geometry,

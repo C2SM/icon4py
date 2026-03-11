@@ -39,7 +39,7 @@ def update_theta_and_exner(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _update_theta_and_exner(
         z_temp,
         area,

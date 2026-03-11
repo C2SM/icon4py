@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -44,3 +45,27 @@ def gnomonic_proj(
     y = zk * (np.cos(lat_c) * np.sin(lat) - np.sin(lat_c) * np.cos(lat) * np.cos(lon - lon_c))
 
     return x, y
+
+
+def diff_on_edges_torus_numpy(
+    cc_cv_x: float,
+    cc_cv_y: float,
+    cc_cell_x: float,
+    cc_cell_y: float,
+    domain_length: float,
+    domain_height: float,
+) -> tuple[float, float]:
+    if abs(cc_cell_x - cc_cv_x) <= 0.5 * domain_length:
+        x1 = cc_cell_x
+    elif cc_cv_x > cc_cell_x:
+        x1 = cc_cell_x + domain_length
+    else:
+        x1 = cc_cell_x - domain_length
+
+    if abs(cc_cell_y - cc_cv_y) <= 0.5 * domain_height:
+        y1 = cc_cell_y
+    elif cc_cv_y > cc_cell_y:
+        y1 = cc_cell_y + domain_height
+    else:
+        y1 = cc_cell_y - domain_height
+    return x1, y1

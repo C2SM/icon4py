@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Callable
 from types import ModuleType
 
 import gt4py.next as gtx
@@ -18,11 +19,13 @@ def compute_max_nbhgt_array_ns(
     c2e2c: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
     nlev: int,
+    exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     z_mc_nlev = z_mc[:, nlev - 1]
     max_nbhgt_0_1 = array_ns.maximum(z_mc_nlev[c2e2c[:, 0]], z_mc_nlev[c2e2c[:, 1]])
     max_nbhgt = array_ns.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[:, 2]])
+    exchange(max_nbhgt)
     return max_nbhgt
 
 
@@ -117,8 +120,7 @@ def compute_diffusion_mask_and_coef(
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     n_cells = c2e2c.shape[0]
-    mask_hdiff = array_ns.zeros(shape=(n_cells, nlev), dtype=bool)
-    zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
+    zd_diffcoef = array_ns.zeros(shape=(n_cells, nlev))
     k_start, k_end, _ = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
@@ -138,9 +140,7 @@ def compute_diffusion_mask_and_coef(
         if kend > kstart:
             k_range = range(kstart, kend)
 
-            mask_hdiff[jc, k_range] = True
-
-            zd_diffcoef_dsl_var = array_ns.maximum(
+            zd_diffcoef_var = array_ns.maximum(
                 0.0,
                 array_ns.maximum(
                     array_ns.sqrt(array_ns.maximum(0.0, maxslp_avg[jc, k_range] - thslp_zdiffu))
@@ -151,9 +151,9 @@ def compute_diffusion_mask_and_coef(
                     ),
                 ),
             )
-            zd_diffcoef_dsl[jc, k_range] = array_ns.minimum(0.002, zd_diffcoef_dsl_var)
+            zd_diffcoef[jc, k_range] = array_ns.minimum(0.002, zd_diffcoef_var)
 
-    return mask_hdiff, zd_diffcoef_dsl
+    return zd_diffcoef
 
 
 def compute_diffusion_intcoef_and_vertoffset(
@@ -175,8 +175,8 @@ def compute_diffusion_intcoef_and_vertoffset(
     nbidx = array_ns.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
 
     z_vintcoeff = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
-    zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev), dtype=gtx.int32)
-    zd_intcoef_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_vertoffset = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev), dtype=gtx.int32)
+    zd_intcoef = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
 
     k_start, k_end, _ = _compute_k_start_end(
         z_mc=z_mc,
@@ -201,10 +201,10 @@ def compute_diffusion_intcoef_and_vertoffset(
                 k_range, z_mc, z_mc_off, z_vintcoeff, jc, nlev
             )
 
-            zd_intcoef_dsl[jc, :, k_range] = z_vintcoeff[jc, :, k_range]
+            zd_intcoef[jc, :, k_range] = z_vintcoeff[jc, :, k_range]
 
-            zd_vertoffset_dsl[jc, :, k_range] = (
+            zd_vertoffset[jc, :, k_range] = (
                 nbidx[jc, :, k_range] - array_ns.tile(array_ns.array(k_range), (3, 1)).T
             )
 
-    return zd_intcoef_dsl, zd_vertoffset_dsl
+    return zd_intcoef, zd_vertoffset

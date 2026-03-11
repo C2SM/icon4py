@@ -46,10 +46,6 @@ def test_diffusion_wrapper_granule_inputs(
     grid_init,  # initializes the grid as side-effect
     icon_grid,
     experiment,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     ndyn_substeps,
 ):
     # --- Define Diffusion Configuration ---
@@ -57,9 +53,10 @@ def test_diffusion_wrapper_granule_inputs(
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
+    hdiff_smag_w = False
     ltkeshs = True
-    type_t_diffu = 2
-    type_vn_diffu = 1
+    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
+    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
     hdiff_efdt_ratio = 24.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
@@ -72,27 +69,25 @@ def test_diffusion_wrapper_granule_inputs(
     )
 
     # --- Extract Metric State Parameters ---
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
-    zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
 
-    # TODO(): special handling, determine if this is necessary for Fortran arrays too
-    zd_vertoffset = np.squeeze(
-        metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
+    # The wrapper expects [cellidx, c2e2c_ids] and then extracts `zd_cellidx[0,:]` because it only needs the cellidxs
+    # (this is because slicing causes issue in the bindings, but not for serialization)
+    zd_cellidx = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_cellidx", metrics_savepoint.savepoint))[
+            np.newaxis, :
+        ]
     )
-    zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
-        zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
+    zd_vertidx = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_vertidx", metrics_savepoint.savepoint))
     )
-    zd_vertoffset = test_utils.array_to_array_info(zd_vertoffset)
-
-    zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
-    zd_intcoef = metrics_savepoint._reduce_to_dim_size(
-        zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
+    zd_intcoef = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_intcoef", metrics_savepoint.savepoint))
     )
-    zd_intcoef = test_utils.array_to_array_info(zd_intcoef)
+    zd_diffcoef = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_diffcoef", metrics_savepoint.savepoint))
+    )
 
     # --- Extract Interpolation State Parameters ---
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
@@ -133,7 +128,6 @@ def test_diffusion_wrapper_granule_inputs(
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
     expected_metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         zd_intcoef=metrics_savepoint.zd_intcoef(),
@@ -147,18 +141,6 @@ def test_diffusion_wrapper_granule_inputs(
         dwdy=savepoint_diffusion_init.dwdy(),
     )
     expected_prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    expected_vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    expected_vertical_params = v_grid.VerticalGrid(
-        config=expected_vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-    )
     expected_config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
@@ -169,8 +151,6 @@ def test_diffusion_wrapper_granule_inputs(
         diffusion_wrapper.diffusion_init(
             ffi=cffi.FFI(),
             perf_counters=None,
-            vct_a=vct_a,
-            vct_b=vct_b,
             theta_ref_mc=theta_ref_mc,
             wgtfac_c=wgtfac_c,
             e_bln_c_s=e_bln_c_s,
@@ -181,15 +161,15 @@ def test_diffusion_wrapper_granule_inputs(
             nudgecoeff_e=nudgecoeff_e,
             rbf_coeff_1=rbf_coeff_1,
             rbf_coeff_2=rbf_coeff_2,
-            mask_hdiff=mask_hdiff,
-            zd_diffcoef=zd_diffcoef,
-            zd_vertoffset=zd_vertoffset,
+            zd_cellidx=zd_cellidx,
+            zd_vertidx=zd_vertidx,
             zd_intcoef=zd_intcoef,
+            zd_diffcoef=zd_diffcoef,
             ndyn_substeps=ndyn_substeps,
-            rayleigh_damping_height=damping_height,
             diffusion_type=diffusion_type,
             hdiff_w=hdiff_w,
             hdiff_vn=hdiff_vn,
+            hdiff_smag_w=hdiff_smag_w,
             zdiffu_t=zdiffu_t,
             type_t_diffu=type_t_diffu,
             type_vn_diffu=type_vn_diffu,
@@ -202,9 +182,6 @@ def test_diffusion_wrapper_granule_inputs(
             nudge_max_coeff=max_nudging_coefficient,
             itype_sher=itype_sher.value,
             ltkeshs=ltkeshs,
-            lowest_layer_thickness=lowest_layer_thickness,
-            model_top_height=model_top_height,
-            stretch_factor=stretch_factor,
             backend=wrapper_common.BackendIntEnum.DEFAULT,
         )
 
@@ -231,11 +208,6 @@ def test_diffusion_wrapper_granule_inputs(
             captured_kwargs["params"], expected_additional_parameters
         )
         assert result, f"Params comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
-            captured_kwargs["vertical_grid"], expected_vertical_params
-        )
-        assert result, f"Vertical Grid comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
             captured_kwargs["metric_state"], expected_metric_state
@@ -303,10 +275,6 @@ def test_diffusion_wrapper_single_step(
     grid_savepoint,
     grid_init,  # initializes the grid as side-effect
     experiment,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
     ndyn_substeps,
     step_date_init,
     step_date_exit,
@@ -316,9 +284,10 @@ def test_diffusion_wrapper_single_step(
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
+    hdiff_smag_w = False
     ltkeshs = True
-    type_t_diffu = 2
-    type_vn_diffu = 1
+    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
+    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
     hdiff_efdt_ratio = 24.0
     smagorinski_scaling_factor = 0.025
     zdiffu_t = True
@@ -331,27 +300,25 @@ def test_diffusion_wrapper_single_step(
     )
 
     # Metric state parameters
-    vct_a = test_utils.array_to_array_info(grid_savepoint.vct_a().ndarray)
-    vct_b = test_utils.array_to_array_info(grid_savepoint.vct_b().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    mask_hdiff = test_utils.array_to_array_info(metrics_savepoint.mask_hdiff().ndarray)
-    zd_diffcoef = test_utils.array_to_array_info(metrics_savepoint.zd_diffcoef().ndarray)
 
-    # TODO(): special handling, determine if this is necessary for Fortran arrays too
-    zd_vertoffset = np.squeeze(
-        metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
+    # The wrapper expects [cellidx, c2e2c_ids] and then extracts `zd_cellidx[0,:]` because it only needs the cellidxs
+    # (this is because slicing causes issue in the bindings, but not for serialization)
+    zd_cellidx = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_cellidx", metrics_savepoint.savepoint))[
+            np.newaxis, :
+        ]
     )
-    zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
-        zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
+    zd_vertidx = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_vertidx", metrics_savepoint.savepoint))
     )
-    zd_vertoffset = test_utils.array_to_array_info(zd_vertoffset)
-
-    zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
-    zd_intcoef = metrics_savepoint._reduce_to_dim_size(
-        zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
+    zd_intcoef = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_intcoef", metrics_savepoint.savepoint))
     )
-    zd_intcoef = test_utils.array_to_array_info(zd_intcoef)
+    zd_diffcoef = test_utils.array_to_array_info(
+        np.squeeze(metrics_savepoint.serializer.read("zd_diffcoef", metrics_savepoint.savepoint))
+    )
 
     # Interpolation state parameters
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
@@ -383,8 +350,6 @@ def test_diffusion_wrapper_single_step(
     diffusion_wrapper.diffusion_init(
         ffi=ffi,
         perf_counters=None,
-        vct_a=vct_a,
-        vct_b=vct_b,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
         e_bln_c_s=e_bln_c_s,
@@ -395,15 +360,15 @@ def test_diffusion_wrapper_single_step(
         nudgecoeff_e=nudgecoeff_e,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        mask_hdiff=mask_hdiff,
-        zd_diffcoef=zd_diffcoef,
-        zd_vertoffset=zd_vertoffset,
+        zd_cellidx=zd_cellidx,
+        zd_vertidx=zd_vertidx,
         zd_intcoef=zd_intcoef,
+        zd_diffcoef=zd_diffcoef,
         ndyn_substeps=ndyn_substeps,
-        rayleigh_damping_height=damping_height,
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
         hdiff_vn=hdiff_vn,
+        hdiff_smag_w=hdiff_smag_w,
         zdiffu_t=zdiffu_t,
         type_t_diffu=type_t_diffu,
         type_vn_diffu=type_vn_diffu,
@@ -416,9 +381,6 @@ def test_diffusion_wrapper_single_step(
         nudge_max_coeff=max_nudging_coefficient,
         itype_sher=itype_sher.value,
         ltkeshs=ltkeshs,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
         backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 

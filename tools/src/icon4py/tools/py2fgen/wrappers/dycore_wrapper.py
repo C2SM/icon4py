@@ -22,12 +22,12 @@ from typing import Annotated, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import config as gtx_config, metrics as gtx_metrics
+from gt4py.next import config as gtx_config
+from gt4py.next.instrumentation import metrics as gtx_metrics
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
-from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools import py2fgen
@@ -49,8 +49,6 @@ granule: SolveNonhydroGranule | None  # TODO(havogt): remove module global state
 
 @icon4py_export.export
 def solve_nh_init(
-    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
-    vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.float64],
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], gtx.float64],
@@ -67,7 +65,6 @@ def solve_nh_init(
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
     nudgecoeff_e: gtx.Field[gtx.Dims[dims.EdgeDim], gtx.float64],
-    bdy_halo_c: gtx.Field[gtx.Dims[dims.CellDim], bool],
     mask_prog_halo_c: gtx.Field[gtx.Dims[dims.CellDim], bool],
     rayleigh_w: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     exner_exfac: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
@@ -88,8 +85,9 @@ def solve_nh_init(
     ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.float64],
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
-    ipeidx_dsl: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], bool],
-    pg_exdist: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    pg_edgeidx: wrapper_common.OptionalInt32Array1D,
+    pg_vertidx: wrapper_common.OptionalInt32Array1D,
+    pg_exdist: wrapper_common.OptionalFloat64Array1D,
     ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddxt_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     wgtfac_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
@@ -101,7 +99,6 @@ def solve_nh_init(
     coeff2_dwdz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
     c_owner_mask: gtx.Field[gtx.Dims[dims.CellDim], bool],
-    rayleigh_damping_height: gtx.float64,
     itime_scheme: gtx.int32,
     iadv_rhotheta: gtx.int32,
     igradp_method: gtx.int32,
@@ -114,6 +111,7 @@ def solve_nh_init(
     divdamp_trans_start: gtx.float64,
     divdamp_trans_end: gtx.float64,
     l_vert_nested: bool,
+    ldeepatmo: bool,
     rhotheta_offctr: gtx.float64,
     veladv_offctr: gtx.float64,
     nudge_max_coeff: gtx.float64,  # note: this is the scaled ICON value, i.e. not the namelist value
@@ -125,22 +123,40 @@ def solve_nh_init(
     divdamp_z2: gtx.float64,
     divdamp_z3: gtx.float64,
     divdamp_z4: gtx.float64,
-    lowest_layer_thickness: gtx.float64,
-    model_top_height: gtx.float64,
-    stretch_factor: gtx.float64,
     nflat_gradp: gtx.int32,
-    num_levels: gtx.int32,
     backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    on_gpu = vct_a.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    on_gpu = c_lin_e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
+
+    xp = rho_ref_me.array_ns
+    domain = rho_ref_me.domain
+    default_value = gtx.float64(0.0)
+    if (pg_edgeidx is None) or (pg_vertidx is None) or (pg_exdist is None):
+        # if any of the fields is missing, return a zero field with the correct shape
+        pg_exdist_dsl = gtx.as_field(
+            domain,
+            xp.full(domain.shape, fill_value=default_value, dtype=gtx.float64),
+            allocator=model_backends.get_allocator(actual_backend),
+        )
+    else:
+        pg_exdist_dsl = data_alloc.list2field(
+            domain=domain,
+            values=pg_exdist,
+            indices=(
+                data_alloc.adjust_fortran_indices(pg_edgeidx),
+                data_alloc.adjust_fortran_indices(pg_vertidx),
+            ),
+            default_value=default_value,
+            allocator=model_backends.get_allocator(actual_backend),
+        )
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
@@ -155,6 +171,7 @@ def solve_nh_init(
         divdamp_trans_start=divdamp_trans_start,
         divdamp_trans_end=divdamp_trans_end,
         l_vert_nested=l_vert_nested,
+        deepatmos_mode=ldeepatmo,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
         max_nudging_coefficient=nudge_max_coeff,
@@ -188,8 +205,33 @@ def solve_nh_init(
         nudgecoeff_e=nudgecoeff_e,
     )
 
+    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
+    k = wgtfacq_c.ndarray.shape[1]
+    cell_kflip_domain = gtx.domain(
+        {
+            dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
+            dims.KDim: (nlev - k, nlev),
+        }
+    )
+    k = wgtfacq_e.ndarray.shape[1]
+    edge_kflip_domain = gtx.domain(
+        {
+            dims.EdgeDim: wgtfac_e.domain[dims.EdgeDim].unit_range,
+            dims.KDim: (nlev - k, nlev),
+        }
+    )
+    wgtfacq_c = data_alloc.kflip_wgtfacq(
+        arr=wgtfacq_c.ndarray,
+        domain=cell_kflip_domain,
+        allocator=model_backends.get_allocator(actual_backend),
+    )
+    wgtfacq_e = data_alloc.kflip_wgtfacq(
+        arr=wgtfacq_e.ndarray,
+        domain=edge_kflip_domain,
+        allocator=model_backends.get_allocator(actual_backend),
+    )
+
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
-        bdy_halo_c=bdy_halo_c,
         mask_prog_halo_c=mask_prog_halo_c,
         rayleigh_w=rayleigh_w,
         time_extrapolation_parameter_for_exner=exner_exfac,
@@ -211,8 +253,7 @@ def solve_nh_init(
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
         nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
-        pg_edgeidx_dsl=ipeidx_dsl,
-        pg_exdist=pg_exdist,
+        pg_exdist=pg_exdist_dsl,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
         wgtfac_e=wgtfac_e,
@@ -225,18 +266,6 @@ def solve_nh_init(
         coeff_gradekin=coeff_gradekin,
     )
 
-    # datatest config
-    vertical_config = VerticalGridConfig(
-        num_levels=num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=rayleigh_damping_height,
-    )
-
-    # datatest config, vertical parameters
-    vertical_params = VerticalGrid(config=vertical_config, vct_a=vct_a, vct_b=vct_b)
-
     global granule  # noqa: PLW0603 [global-statement]
     granule = SolveNonhydroGranule(
         solve_nh=solve_nonhydro.SolveNonhydro(
@@ -245,7 +274,7 @@ def solve_nh_init(
             params=nonhydro_params,
             metric_state_nonhydro=metric_state_nonhydro,
             interpolation_state=interpolation_state,
-            vertical_params=vertical_params,
+            vertical_params=grid_wrapper.grid_state.vertical_grid,
             edge_geometry=grid_wrapper.grid_state.edge_geometry,
             cell_geometry=grid_wrapper.grid_state.cell_geometry,
             owner_mask=c_owner_mask,

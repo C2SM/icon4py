@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import click
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
@@ -42,7 +41,7 @@ if TYPE_CHECKING:
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
+    "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
     [
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -56,7 +55,6 @@ if TYPE_CHECKING:
             "2021-06-20T12:00:10.000",
             True,
             False,
-            False,
         ),
         (
             definitions.Experiments.MCH_CH_R04B09,
@@ -70,7 +68,6 @@ if TYPE_CHECKING:
             "2021-06-20T12:00:20.000",
             False,
             False,
-            True,
         ),
         (
             definitions.Experiments.GAUSS3D,
@@ -84,7 +81,6 @@ if TYPE_CHECKING:
             "2001-01-01T00:00:04.000",
             False,
             False,
-            False,
         ),
     ],
 )
@@ -93,7 +89,6 @@ def test_run_timeloop_single_step(
     timeloop_date_init: str,
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,
-    vn_only: bool,  # TODO unused?
     *,
     grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
@@ -149,7 +144,6 @@ def test_run_timeloop_single_step(
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_savepoint.mask_hdiff(),
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
         zd_intcoef=metrics_savepoint.zd_intcoef(),
@@ -210,7 +204,6 @@ def test_run_timeloop_single_step(
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
     nonhydro_metric_state = dycore_states.MetricStateNonHydro(
-        bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
         time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
@@ -232,12 +225,11 @@ def test_run_timeloop_single_step(
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
         nflat_gradp=grid_savepoint.nflat_gradp(),
-        pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-        pg_exdist=metrics_savepoint.pg_exdist(),
+        pg_exdist=metrics_savepoint.pg_exdist_dsl(),
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(),
         exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
@@ -393,9 +385,9 @@ def test_run_timeloop_single_step(
 def test_driver(
     experiment,
     experiment_type,
+    processor_props,
     *,
     data_provider,
-    ranked_data_path,
     backend_like,
 ):
     """
@@ -404,7 +396,7 @@ def test_driver(
     TODO(anyone): Remove or modify this test when it is ready to run the driver from the grid file without having to initialize static fields from serialized data.
     """
     data_path = dt_utils.get_datapath_for_experiment(
-        ranked_base_path=ranked_data_path,
+        processor_props=processor_props,
         experiment=experiment,
     )
     gm = grid_utils.get_grid_manager_from_experiment(

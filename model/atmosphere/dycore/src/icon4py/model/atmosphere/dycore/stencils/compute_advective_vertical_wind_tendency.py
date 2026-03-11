@@ -43,7 +43,7 @@ def compute_advective_vertical_wind_tendency(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_advective_vertical_wind_tendency(
         z_w_con_c,
         w,

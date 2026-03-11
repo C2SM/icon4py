@@ -342,10 +342,6 @@ def diffusion_run_wrapper(
 
 @ffi.def_extern()
 def diffusion_init_wrapper(
-    vct_a,
-    vct_a_size_0,
-    vct_b,
-    vct_b_size_0,
     theta_ref_mc,
     theta_ref_mc_size_0,
     theta_ref_mc_size_1,
@@ -375,25 +371,22 @@ def diffusion_init_wrapper(
     rbf_coeff_2,
     rbf_coeff_2_size_0,
     rbf_coeff_2_size_1,
-    mask_hdiff,
-    mask_hdiff_size_0,
-    mask_hdiff_size_1,
-    zd_diffcoef,
-    zd_diffcoef_size_0,
-    zd_diffcoef_size_1,
-    zd_vertoffset,
-    zd_vertoffset_size_0,
-    zd_vertoffset_size_1,
-    zd_vertoffset_size_2,
+    zd_cellidx,
+    zd_cellidx_size_0,
+    zd_cellidx_size_1,
+    zd_vertidx,
+    zd_vertidx_size_0,
+    zd_vertidx_size_1,
     zd_intcoef,
     zd_intcoef_size_0,
     zd_intcoef_size_1,
-    zd_intcoef_size_2,
+    zd_diffcoef,
+    zd_diffcoef_size_0,
     ndyn_substeps,
-    rayleigh_damping_height,
     diffusion_type,
     hdiff_w,
     hdiff_vn,
+    hdiff_smag_w,
     zdiffu_t,
     type_t_diffu,
     type_vn_diffu,
@@ -406,9 +399,6 @@ def diffusion_init_wrapper(
     nudge_max_coeff,
     itype_sher,
     ltkeshs,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
     backend,
     on_gpu,
 ):
@@ -422,10 +412,6 @@ def diffusion_init_wrapper(
                     unpack_start_time = _runtime.perf_counter()
 
             # ArrayInfos
-
-            vct_a = (vct_a, (vct_a_size_0,), on_gpu, False)
-
-            vct_b = (vct_b, (vct_b_size_0,), on_gpu, False)
 
             theta_ref_mc = (
                 theta_ref_mc,
@@ -519,32 +505,21 @@ def diffusion_init_wrapper(
                 False,
             )
 
-            mask_hdiff = (
-                mask_hdiff,
+            zd_cellidx = (
+                zd_cellidx,
                 (
-                    mask_hdiff_size_0,
-                    mask_hdiff_size_1,
+                    zd_cellidx_size_0,
+                    zd_cellidx_size_1,
                 ),
                 on_gpu,
                 True,
             )
 
-            zd_diffcoef = (
-                zd_diffcoef,
+            zd_vertidx = (
+                zd_vertidx,
                 (
-                    zd_diffcoef_size_0,
-                    zd_diffcoef_size_1,
-                ),
-                on_gpu,
-                True,
-            )
-
-            zd_vertoffset = (
-                zd_vertoffset,
-                (
-                    zd_vertoffset_size_0,
-                    zd_vertoffset_size_1,
-                    zd_vertoffset_size_2,
+                    zd_vertidx_size_0,
+                    zd_vertidx_size_1,
                 ),
                 on_gpu,
                 True,
@@ -555,11 +530,12 @@ def diffusion_init_wrapper(
                 (
                     zd_intcoef_size_0,
                     zd_intcoef_size_1,
-                    zd_intcoef_size_2,
                 ),
                 on_gpu,
                 True,
             )
+
+            zd_diffcoef = (zd_diffcoef, (zd_diffcoef_size_0,), on_gpu, True)
 
             if __debug__:
                 if runtime_config.PROFILING:
@@ -578,8 +554,6 @@ def diffusion_init_wrapper(
             diffusion_init(
                 ffi=ffi,
                 perf_counters=perf_counters,
-                vct_a=vct_a,
-                vct_b=vct_b,
                 theta_ref_mc=theta_ref_mc,
                 wgtfac_c=wgtfac_c,
                 e_bln_c_s=e_bln_c_s,
@@ -590,15 +564,15 @@ def diffusion_init_wrapper(
                 nudgecoeff_e=nudgecoeff_e,
                 rbf_coeff_1=rbf_coeff_1,
                 rbf_coeff_2=rbf_coeff_2,
-                mask_hdiff=mask_hdiff,
-                zd_diffcoef=zd_diffcoef,
-                zd_vertoffset=zd_vertoffset,
+                zd_cellidx=zd_cellidx,
+                zd_vertidx=zd_vertidx,
                 zd_intcoef=zd_intcoef,
+                zd_diffcoef=zd_diffcoef,
                 ndyn_substeps=ndyn_substeps,
-                rayleigh_damping_height=rayleigh_damping_height,
                 diffusion_type=diffusion_type,
                 hdiff_w=hdiff_w,
                 hdiff_vn=hdiff_vn,
+                hdiff_smag_w=hdiff_smag_w,
                 zdiffu_t=zdiffu_t,
                 type_t_diffu=type_t_diffu,
                 type_vn_diffu=type_vn_diffu,
@@ -611,9 +585,6 @@ def diffusion_init_wrapper(
                 nudge_max_coeff=nudge_max_coeff,
                 itype_sher=itype_sher,
                 ltkeshs=ltkeshs,
-                lowest_layer_thickness=lowest_layer_thickness,
-                model_top_height=model_top_height,
-                stretch_factor=stretch_factor,
                 backend=backend,
             )
 
@@ -632,38 +603,6 @@ def diffusion_init_wrapper(
 
             if __debug__:
                 if logger.isEnabledFor(logging.DEBUG):
-
-                    vct_a_arr = (
-                        _conversion.as_array(ffi, vct_a, _definitions.FLOAT64)
-                        if vct_a is not None
-                        else None
-                    )
-                    msg = "shape of vct_a after computation = %s" % str(
-                        vct_a_arr.shape if vct_a is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "vct_a after computation: %s" % str(vct_a_arr)
-                        if vct_a is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    vct_b_arr = (
-                        _conversion.as_array(ffi, vct_b, _definitions.FLOAT64)
-                        if vct_b is not None
-                        else None
-                    )
-                    msg = "shape of vct_b after computation = %s" % str(
-                        vct_b_arr.shape if vct_b is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "vct_b after computation: %s" % str(vct_b_arr)
-                        if vct_b is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
 
                     theta_ref_mc_arr = (
                         _conversion.as_array(ffi, theta_ref_mc, _definitions.FLOAT64)
@@ -825,50 +764,34 @@ def diffusion_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    mask_hdiff_arr = (
-                        _conversion.as_array(ffi, mask_hdiff, _definitions.BOOL)
-                        if mask_hdiff is not None
+                    zd_cellidx_arr = (
+                        _conversion.as_array(ffi, zd_cellidx, _definitions.INT32)
+                        if zd_cellidx is not None
                         else None
                     )
-                    msg = "shape of mask_hdiff after computation = %s" % str(
-                        mask_hdiff_arr.shape if mask_hdiff is not None else "None"
+                    msg = "shape of zd_cellidx after computation = %s" % str(
+                        zd_cellidx_arr.shape if zd_cellidx is not None else "None"
                     )
                     logger.debug(msg)
                     msg = (
-                        "mask_hdiff after computation: %s" % str(mask_hdiff_arr)
-                        if mask_hdiff is not None
+                        "zd_cellidx after computation: %s" % str(zd_cellidx_arr)
+                        if zd_cellidx is not None
                         else "None"
                     )
                     logger.debug(msg)
 
-                    zd_diffcoef_arr = (
-                        _conversion.as_array(ffi, zd_diffcoef, _definitions.FLOAT64)
-                        if zd_diffcoef is not None
+                    zd_vertidx_arr = (
+                        _conversion.as_array(ffi, zd_vertidx, _definitions.INT32)
+                        if zd_vertidx is not None
                         else None
                     )
-                    msg = "shape of zd_diffcoef after computation = %s" % str(
-                        zd_diffcoef_arr.shape if zd_diffcoef is not None else "None"
+                    msg = "shape of zd_vertidx after computation = %s" % str(
+                        zd_vertidx_arr.shape if zd_vertidx is not None else "None"
                     )
                     logger.debug(msg)
                     msg = (
-                        "zd_diffcoef after computation: %s" % str(zd_diffcoef_arr)
-                        if zd_diffcoef is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    zd_vertoffset_arr = (
-                        _conversion.as_array(ffi, zd_vertoffset, _definitions.INT32)
-                        if zd_vertoffset is not None
-                        else None
-                    )
-                    msg = "shape of zd_vertoffset after computation = %s" % str(
-                        zd_vertoffset_arr.shape if zd_vertoffset is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "zd_vertoffset after computation: %s" % str(zd_vertoffset_arr)
-                        if zd_vertoffset is not None
+                        "zd_vertidx after computation: %s" % str(zd_vertidx_arr)
+                        if zd_vertidx is not None
                         else "None"
                     )
                     logger.debug(msg)
@@ -885,6 +808,22 @@ def diffusion_init_wrapper(
                     msg = (
                         "zd_intcoef after computation: %s" % str(zd_intcoef_arr)
                         if zd_intcoef is not None
+                        else "None"
+                    )
+                    logger.debug(msg)
+
+                    zd_diffcoef_arr = (
+                        _conversion.as_array(ffi, zd_diffcoef, _definitions.FLOAT64)
+                        if zd_diffcoef is not None
+                        else None
+                    )
+                    msg = "shape of zd_diffcoef after computation = %s" % str(
+                        zd_diffcoef_arr.shape if zd_diffcoef is not None else "None"
+                    )
+                    logger.debug(msg)
+                    msg = (
+                        "zd_diffcoef after computation: %s" % str(zd_diffcoef_arr)
+                        if zd_diffcoef is not None
                         else "None"
                     )
                     logger.debug(msg)

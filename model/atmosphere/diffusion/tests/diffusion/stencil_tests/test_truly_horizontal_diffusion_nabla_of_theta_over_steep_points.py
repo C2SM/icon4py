@@ -14,13 +14,12 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field, random_mask, zero_field
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.stencil_tests import StencilTest
 
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     connectivities: dict[gtx.Dimension, np.ndarray],
-    mask: np.ndarray,
     zd_vertoffset: np.ndarray,
     zd_diffcoef: np.ndarray,
     geofac_n2s_c: np.ndarray,
@@ -53,12 +52,11 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     )
 
     geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)  # add KDim
-    z_temp = np.where(mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over), z_temp)
+    z_temp = z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over)
     return z_temp
 
 
 @pytest.mark.uses_as_offset
-@pytest.mark.skip_value_error
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
     OUTPUTS = ("z_temp",)
@@ -66,7 +64,6 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        mask: np.ndarray,
         zd_vertoffset: np.ndarray,
         zd_diffcoef: np.ndarray,
         geofac_n2s_c: np.ndarray,
@@ -78,7 +75,6 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     ) -> dict:
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
             connectivities,
-            mask,
             zd_vertoffset,
             zd_diffcoef,
             geofac_n2s_c,
@@ -91,8 +87,6 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        mask = random_mask(grid, dims.CellDim, dims.KDim)
-
         zd_vertoffset = zero_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
@@ -111,7 +105,6 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
-            mask=mask,
             zd_vertoffset=zd_vertoffset,
             zd_diffcoef=zd_diffcoef,
             geofac_n2s_c=geofac_n2s_c,

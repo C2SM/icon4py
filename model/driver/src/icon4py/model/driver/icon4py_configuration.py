@@ -10,7 +10,7 @@ import datetime
 import functools
 import logging
 
-from gt4py.next import metrics as gtx_metrics
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
@@ -75,8 +75,8 @@ def read_config(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
-            type_t_diffu=2,
-            type_vn_diffu=1,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
             hdiff_efdt_ratio=24.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
@@ -110,8 +110,8 @@ def read_config(
             hdiff_vn=True,
             hdiff_temp=False,
             n_substeps=n_substeps,
-            type_t_diffu=2,
-            type_vn_diffu=1,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
             hdiff_efdt_ratio=10.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
@@ -141,7 +141,7 @@ def read_config(
             _mch_ch_r04b09_nonhydro_config(),
         )
 
-    def _jablownoski_Williamson_config():
+    def _jablonowski_williamson_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
             end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
@@ -200,7 +200,7 @@ def read_config(
             vertical_grid_config,
             diffusion_config,
             nonhydro_config,
-        ) = _jablownoski_Williamson_config()
+        ) = _jablonowski_williamson_config()
     elif experiment_type == driver_init.ExperimentType.GAUSS3D:
         (
             model_run_config,

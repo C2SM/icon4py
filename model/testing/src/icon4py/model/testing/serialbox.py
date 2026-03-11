@@ -17,8 +17,8 @@ import serialbox
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
-from icon4py.model.common import dimension as dims, type_alias
-from icon4py.model.common.grid import base, horizontal as h_grid, icon
+from icon4py.model.common import dimension as dims, model_backends, type_alias
+from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -146,14 +146,12 @@ class IconGridSavepoint(IconSavepoint):
         ser: serialbox.Serializer,
         grid_id: str,
         size: dict,
-        grid_shape: icon.GridShape,
+        global_grid_params: icon.GlobalGridParams,
         backend: gtx_typing.Backend | None,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
-        self.global_grid_params = icon.GlobalGridParams(
-            mean_cell_area=self.mean_cell_area(), grid_shape=grid_shape
-        )
+        self.global_grid_params = global_grid_params
 
     def verts_vertex_lat(self):
         """vertex latituted"""
@@ -162,6 +160,18 @@ class IconGridSavepoint(IconSavepoint):
     def verts_vertex_lon(self):
         """vertex longitude"""
         return self._get_field("verts_vertex_lon", dims.VertexDim)
+
+    def verts_vertex_cart_x(self):
+        """vertex cartesian x coordinate"""
+        return self._get_field("verts_vertex_cart_x", dims.VertexDim)
+
+    def verts_vertex_cart_y(self):
+        """vertex cartesian y coordinate"""
+        return self._get_field("verts_vertex_cart_y", dims.VertexDim)
+
+    def verts_vertex_cart_z(self):
+        """vertex cartesian z coordinate"""
+        return self._get_field("verts_vertex_cart_z", dims.VertexDim)
 
     def primal_normal_v1(self):
         return self._get_field("primal_normal_v1", dims.EdgeDim)
@@ -182,6 +192,18 @@ class IconGridSavepoint(IconSavepoint):
     def edges_center_lon(self):
         """edge center longitude"""
         return self._get_field("edges_center_lon", dims.EdgeDim)
+
+    def edges_center_cart_x(self):
+        """edge center cartesian x coordinate"""
+        return self._get_field("edges_center_cart_x", dims.EdgeDim)
+
+    def edges_center_cart_y(self):
+        """edge center cartesian y coordinate"""
+        return self._get_field("edges_center_cart_y", dims.EdgeDim)
+
+    def edges_center_cart_z(self):
+        """edge center cartesian z coordinate"""
+        return self._get_field("edges_center_cart_z", dims.EdgeDim)
 
     def edge_vert_length(self):
         """length of edge midpoint to vertex"""
@@ -281,11 +303,43 @@ class IconGridSavepoint(IconSavepoint):
             case _:
                 raise ValueError
 
+    def coordinates(self):
+        coords = {
+            dims.CellDim: {"lat": self.cell_center_lat(), "lon": self.cell_center_lon()},
+            dims.EdgeDim: {"lat": self.edges_center_lat(), "lon": self.edges_center_lon()},
+            dims.VertexDim: {"lat": self.verts_vertex_lat(), "lon": self.verts_vertex_lon()},
+        }
+
+        if self.global_grid_params.geometry_type == base.GeometryType.TORUS:
+            coords[dims.CellDim]["x"] = self.cell_center_cart_x()
+            coords[dims.CellDim]["y"] = self.cell_center_cart_y()
+            coords[dims.CellDim]["z"] = self.cell_center_cart_z()
+            coords[dims.EdgeDim]["x"] = self.edges_center_cart_x()
+            coords[dims.EdgeDim]["y"] = self.edges_center_cart_y()
+            coords[dims.EdgeDim]["z"] = self.edges_center_cart_z()
+            coords[dims.VertexDim]["x"] = self.verts_vertex_cart_x()
+            coords[dims.VertexDim]["y"] = self.verts_vertex_cart_y()
+            coords[dims.VertexDim]["z"] = self.verts_vertex_cart_z()
+
+        return coords
+
     def cell_center_lat(self):
         return self._get_field("cell_center_lat", dims.CellDim)
 
     def cell_center_lon(self):
         return self._get_field("cell_center_lon", dims.CellDim)
+
+    def cell_center_cart_x(self):
+        """cell center cartesian x coordinate"""
+        return self._get_field("cell_center_cart_x", dims.CellDim)
+
+    def cell_center_cart_y(self):
+        """cell center cartesian y coordinate"""
+        return self._get_field("cell_center_cart_y", dims.CellDim)
+
+    def cell_center_cart_z(self):
+        """cell center cartesian z coordinate"""
+        return self._get_field("cell_center_cart_z", dims.CellDim)
 
     def edge_center_lat(self):
         return self._get_field("edges_center_lat", dims.EdgeDim)
@@ -447,37 +501,33 @@ class IconGridSavepoint(IconSavepoint):
                 )
 
     def owner_mask(self, dim: gtx.Dimension):
-        field_name = "owner_mask"
-        mask = self._read_field_for_dim(field_name, self._read_bool, dim)
-        return mask
+        return np.squeeze(self._read_field_for_dim("owner_mask", self._read_bool, dim))
 
     def global_index(self, dim: gtx.Dimension):
-        field_name = "glb_index"
-        return self._read_field_for_dim(field_name, self._read_int32_shift1, dim)
+        return self._read_field_for_dim("glb_index", self._read_int32_shift1, dim)
 
     def decomp_domain(self, dim):
-        field_name = "decomp_domain"
-        return self._read_field_for_dim(field_name, self._read_int32, dim)
+        return self._read_field_for_dim("decomp_domain", self._read_int32, dim)
 
-    def construct_decomposition_info(self):
+    def construct_decomposition_info(self) -> decomposition.DecompositionInfo:
         return (
-            decomposition.DecompositionInfo(
-                num_cells=self.num(dims.CellDim),
-                num_edges=self.num(dims.EdgeDim),
-                num_vertices=self.num(dims.VertexDim),
-            )
-            .with_dimension(*self._get_decomp_fields(dims.CellDim))
-            .with_dimension(*self._get_decomp_fields(dims.EdgeDim))
-            .with_dimension(*self._get_decomp_fields(dims.VertexDim))
+            decomposition.DecompositionInfo()
+            .set_dimension(*self._get_decomposition_fields(dims.CellDim))
+            .set_dimension(*self._get_decomposition_fields(dims.EdgeDim))
+            .set_dimension(*self._get_decomposition_fields(dims.VertexDim))
         )
 
-    def _get_decomp_fields(self, dim: gtx.Dimension):
+    def _get_decomposition_fields(self, dim: gtx.Dimension):
         global_index = self.global_index(dim)
         mask = self.owner_mask(dim)[0 : self.num(dim)]
-        return dim, global_index, mask
+        halo_levels = self.decomp_domain(dim)[0 : self.num(dim)]
+        return dim, global_index, mask, halo_levels
 
     def construct_icon_grid(
-        self, backend: gtx_typing.Backend | None = None, keep_skip_values: bool = True
+        self,
+        backend: gtx_typing.Backend | None = None,
+        keep_skip_values: bool = True,
+        with_repeated_index: bool = True,
     ) -> icon.IconGrid:
         config = base.GridConfig(
             horizontal_config=base.HorizontalGridSize(
@@ -487,10 +537,22 @@ class IconGridSavepoint(IconSavepoint):
             ),
             vertical_size=self.num(dims.KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
+            distributed=self.construct_decomposition_info().is_distributed(),
             keep_skip_values=keep_skip_values,
         )
+
+        if with_repeated_index:
+
+            def potentially_revert_icon_index_transformation(ar):
+                return ar
+        else:
+            potentially_revert_icon_index_transformation = functools.partial(
+                grid_utils.revert_repeated_index_to_invalid,
+                array_ns=data_alloc.import_array_ns(backend),
+            )
+
         c2e2c = self.c2e2c()
-        e2c2e = self.e2c2e()
+        e2c2e = potentially_revert_icon_index_transformation(self.e2c2e())
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
 
@@ -499,17 +561,20 @@ class IconGridSavepoint(IconSavepoint):
             start_indices=self.start_index(),
             end_indices=self.end_index(),
         )
+        c2e2c2e = potentially_revert_icon_index_transformation(self.c2e2c2e())
+        v2e = potentially_revert_icon_index_transformation(self.v2e())
+
         start_index, end_index = icon.get_start_and_end_index(constructor)
         neighbor_tables = {
             dims.C2E: self.c2e(),
             dims.E2C: self.e2c(),
             dims.C2E2C: c2e2c,
             dims.C2E2CO: c2e2c0,
-            dims.C2E2C2E: self.c2e2c2e(),
+            dims.C2E2C2E: c2e2c2e,
             dims.E2C2E: e2c2e,
             dims.E2C2EO: e2c2e0,
             dims.E2V: self.e2v(),
-            dims.V2E: self.v2e(),
+            dims.V2E: v2e,
             dims.V2C: self.v2c(),
             dims.E2C2V: self.e2c2v(),
             dims.C2V: self.c2v(),
@@ -523,6 +588,11 @@ class IconGridSavepoint(IconSavepoint):
             global_properties=self.global_grid_params,
             start_index=start_index,
             end_index=end_index,
+            refinement_control={
+                dims.CellDim: self.refin_ctrl(dims.CellDim),
+                dims.EdgeDim: self.refin_ctrl(dims.EdgeDim),
+                dims.VertexDim: self.refin_ctrl(dims.VertexDim),
+            },
         )
 
     def construct_edge_geometry(self) -> grid_states.EdgeParams:
@@ -552,6 +622,7 @@ class IconGridSavepoint(IconSavepoint):
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
+            mean_cell_area=self.mean_cell_area(),
         )
 
 
@@ -585,10 +656,6 @@ class InterpolationSavepoint(IconSavepoint):
         ), gtx.as_field(
             (dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 1], allocator=self.backend
         )
-
-    @IconSavepoint.optionally_registered()
-    def zd_intcoef(self):
-        return self._get_field("vcoef", dims.CellDim, dims.C2E2CDim, dims.KDim)
 
     def geofac_n2s(self):
         return self._get_field("geofac_n2s", dims.CellDim, dims.C2E2CODim)
@@ -643,9 +710,6 @@ class InterpolationSavepoint(IconSavepoint):
 
 
 class MetricSavepoint(IconSavepoint):
-    def bdy_halo_c(self):
-        return self._get_field("bdy_halo_c", dims.CellDim, dtype=bool)
-
     def d2dexdz2_fac1_mc(self):
         return self._get_field("d2dexdz2_fac1_mc", dims.CellDim, dims.KDim)
 
@@ -674,11 +738,42 @@ class MetricSavepoint(IconSavepoint):
     def mask_prog_halo_c(self):
         return self._get_field("mask_prog_halo_c", dims.CellDim, dtype=bool)
 
-    def pg_exdist(self):
-        return self._get_field("pg_exdist_dsl", dims.EdgeDim, dims.KDim)
+    @IconSavepoint.optionally_registered()
+    def pg_edgeidx(self):
+        return np.squeeze(self.serializer.read("pg_edgeidx", self.savepoint))
 
-    def pg_edgeidx_dsl(self):
-        return self._get_field("pg_edgeidx_dsl", dims.EdgeDim, dims.KDim, dtype=bool)
+    @IconSavepoint.optionally_registered()
+    def pg_vertidx(self):
+        return np.squeeze(self.serializer.read("pg_vertidx", self.savepoint))
+
+    @IconSavepoint.optionally_registered()
+    def pg_exdist(self):
+        return np.squeeze(self.serializer.read("pg_exdist", self.savepoint))
+
+    def pg_exdist_dsl(self):
+        pg_edgeidx = self.pg_edgeidx()
+        pg_vertidx = self.pg_vertidx()
+        pg_exdist = self.pg_exdist()
+        domain = self.rho_ref_me().domain
+        default_value = gtx.float64(0.0)
+        if (pg_edgeidx is None) or (pg_vertidx is None) or (pg_exdist is None):
+            # if any of the fields is missing, return a zero field with the correct shape
+            return gtx.as_field(
+                domain,
+                self.xp.full(domain.shape, fill_value=default_value, dtype=gtx.float64),
+                allocator=model_backends.get_allocator(self.backend),
+            )
+        else:
+            return data_alloc.list2field(
+                domain=domain,
+                values=pg_exdist,
+                indices=(
+                    data_alloc.adjust_fortran_indices(pg_edgeidx),
+                    data_alloc.adjust_fortran_indices(pg_vertidx),
+                ),
+                default_value=default_value,
+                allocator=model_backends.get_allocator(self.backend),
+            )
 
     def rayleigh_w(self):
         return self._get_field("rayleigh_w", dims.KDim)
@@ -710,8 +805,27 @@ class MetricSavepoint(IconSavepoint):
     def vwind_impl_wgt(self):
         return self._get_field("vwind_impl_wgt", dims.CellDim)
 
+    def wgtfacq_c(self):
+        return self._get_field("wgtfacq_c", dims.CellDim, dims.KDim)
+
     def wgtfacq_c_dsl(self):
-        return self._get_field("wgtfacq_c_dsl", dims.CellDim, dims.KDim)
+        ar = self.wgtfacq_c().ndarray
+        k = ar.shape[1]
+        wgtfac_c = self.wgtfac_c()
+        cell_range = wgtfac_c.domain[dims.CellDim].unit_range
+        nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
+        k_range = (nlev - k, nlev)
+        cell_kflip_domain = gtx.domain(
+            {
+                dims.CellDim: cell_range,
+                dims.KDim: k_range,
+            }
+        )
+        return data_alloc.kflip_wgtfacq(
+            arr=ar,
+            domain=cell_kflip_domain,
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
     def zdiff_gradp(self):
         return self._get_field("zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim)
@@ -742,10 +856,6 @@ class MetricSavepoint(IconSavepoint):
     def ddxt_z_full(self):
         return self._get_field("ddxt_z_full", dims.EdgeDim, dims.KDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim, dtype=gtx.bool)
-    def mask_hdiff(self):
-        return self._get_field("mask_hdiff", dims.CellDim, dims.KDim, dtype=bool)
-
     def theta_ref_mc(self):
         return self._get_field("theta_ref_mc", dims.CellDim, dims.KDim)
 
@@ -755,42 +865,106 @@ class MetricSavepoint(IconSavepoint):
     def wgtfac_e(self):
         return self._get_field("wgtfac_e", dims.EdgeDim, dims.KDim)
 
-    def wgtfacq_e_dsl(self, k_level):
-        ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
-        k = k_level - 3
-        ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
-        return self._get_field_from_ndarray(ar, dims.EdgeDim, dims.KDim)
+    def wgtfacq_e(self):
+        return self._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim)
 
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
-    def zd_diffcoef(self):
-        return self._get_field("zd_diffcoef", dims.CellDim, dims.KDim)
-
-    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim)
-    def zd_intcoef(self):
-        return self._read_and_reorder_sparse_field("vcoef")
+    def wgtfacq_e_dsl(self):
+        ar = self.wgtfacq_e().ndarray
+        k = ar.shape[1]
+        wgtfac_e = self.wgtfac_e()
+        edge_range = wgtfac_e.domain[dims.EdgeDim].unit_range
+        nlev = wgtfac_e.domain[dims.KDim].unit_range.stop - 1
+        k_range = (nlev - k, nlev)
+        edge_kflip_domain = gtx.domain(
+            {
+                dims.EdgeDim: edge_range,
+                dims.KDim: k_range,
+            }
+        )
+        return data_alloc.kflip_wgtfacq(
+            arr=ar,
+            domain=edge_kflip_domain,
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
     def geopot(self):
         return self._get_field("geopot", dims.CellDim, dims.KDim)
 
-    def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
-        ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
-        ser_input = self._reduce_to_dim_size(ser_input, (dims.CellDim, dims.C2E2CDim, dims.KDim))
-        if ser_input.shape[1] != sparse_size:
-            ser_input = np.moveaxis(ser_input, 1, -1)
+    @IconSavepoint.optionally_registered()
+    def zd_cellidx(self):
+        return np.squeeze(self.serializer.read("zd_cellidx", self.savepoint))
 
-        return gtx.as_field(
-            (dims.CellDim, dims.C2E2CDim, dims.KDim), ser_input, allocator=self.backend
-        )
+    @IconSavepoint.optionally_registered()
+    def zd_vertidx(self):
+        # this is the k list (with fortran 1-based indexing) for the central point of the C2E2C stencil
+        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[0, :]
 
     @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
     def zd_vertoffset(self):
-        return self._read_and_reorder_sparse_field("zd_vertoffset")
+        zd_cellidx = self.zd_cellidx()
+        zd_vertidx = self.zd_vertidx()
+        # these are the three k offsets for the C2E2C neighbors
+        zd_vertoffset = (
+            np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))[1:, :] - zd_vertidx
+        )
+        cell_c2e2c_k_domain = gtx.domain(
+            {
+                dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
+                dims.C2E2CDim: 3,
+                dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
+            }
+        )
+        return data_alloc.list2field(
+            domain=cell_c2e2c_k_domain,
+            values=zd_vertoffset.T,
+            indices=(
+                data_alloc.adjust_fortran_indices(zd_cellidx),
+                slice(None),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.int32(0),
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
-    def zd_vertidx(self):
-        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.C2E2CDim, dims.KDim)
+    def zd_intcoef(self):
+        zd_cellidx = self.zd_cellidx()
+        zd_vertidx = self.zd_vertidx()
+        zd_intcoef = np.squeeze(self.serializer.read("zd_intcoef", self.savepoint))
+        cell_c2e2c_k_domain = gtx.domain(
+            {
+                dims.CellDim: self.theta_ref_mc().domain[dims.CellDim].unit_range,
+                dims.C2E2CDim: 3,
+                dims.KDim: self.theta_ref_mc().domain[dims.KDim].unit_range,
+            }
+        )
+        return data_alloc.list2field(
+            domain=cell_c2e2c_k_domain,
+            values=zd_intcoef.T,
+            indices=(
+                data_alloc.adjust_fortran_indices(zd_cellidx),
+                slice(None),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
-    def zd_indlist(self):
-        return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
+    def zd_diffcoef(self):
+        zd_cellidx = self.zd_cellidx()
+        zd_vertidx = self.zd_vertidx()
+        zd_diffcoef = np.squeeze(self.serializer.read("zd_diffcoef", self.savepoint))
+        return data_alloc.list2field(
+            domain=self.geopot().domain,
+            values=zd_diffcoef,
+            indices=(
+                data_alloc.adjust_fortran_indices(zd_cellidx),
+                data_alloc.adjust_fortran_indices(zd_vertidx),
+            ),
+            default_value=gtx.float64(0.0),
+            allocator=model_backends.get_allocator(self.backend),
+        )
 
 
 class AdvectionInitSavepoint(IconSavepoint):
@@ -1828,14 +2002,16 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(self, grid_id: str, grid_shape: icon.GridShape) -> IconGridSavepoint:
+    def from_savepoint_grid(
+        self, grid_id: str, global_grid_params: icon.GlobalGridParams
+    ) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
             savepoint,
             self.serializer,
             grid_id=grid_id,
             size=self.grid_size,
-            grid_shape=grid_shape,
+            global_grid_params=global_grid_params,
             backend=self.backend,
         )
 
@@ -2051,15 +2227,13 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelSavepoint:
-        # TODO (Chia Rui): fix typo microphy[s]ics
-        savepoint = self.serializer.savepoint["microphyics-init"].date[date].as_savepoint()
+        savepoint = self.serializer.savepoint["microphysics-init"].date[date].as_savepoint()
         return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelSavepoint:
-        # TODO (Chia Rui): fix typo microphy[s]ics
-        savepoint = self.serializer.savepoint["microphyics-exit"].date[date].as_savepoint()
+        savepoint = self.serializer.savepoint["microphysics-exit"].date[date].as_savepoint()
         return IconGraupelSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )

@@ -54,6 +54,7 @@ from .test_solve_tridiagonal_matrix_for_w_forward_sweep import (
 
 
 @pytest.mark.uses_concat_where
+@pytest.mark.continuous_benchmarking
 class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
     PROGRAM = vertically_implicit_solver_at_predictor_step
     OUTPUTS = (
@@ -64,6 +65,35 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         "dwdz_at_cells_on_model_levels",
         "exner_dynamical_increment",
     )
+    STATIC_PARAMS = {
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+            "start_cell_index_nudging",
+            "end_cell_index_local",
+            "start_cell_index_lateral_lvl3",
+            "end_cell_index_halo_lvl1",
+            "end_index_of_damping_layer",
+            "kstart_moist",
+            "flat_level_index_plus1",
+            "vertical_start_index_model_top",
+            "vertical_end_index_model_surface",
+            "divdamp_type",
+            "rayleigh_type",
+            "is_iau_active",
+            "at_first_substep",
+        ),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+            "end_index_of_damping_layer",
+            "kstart_moist",
+            "flat_level_index_plus1",
+            "vertical_start_index_model_top",
+            "vertical_end_index_model_surface",
+            "divdamp_type",
+            "rayleigh_type",
+            "is_iau_active",
+            "at_first_substep",
+        ),
+    }
 
     @staticmethod
     def reference(
@@ -79,7 +109,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         mass_flux_at_edges_on_model_levels: np.ndarray,
         theta_v_flux_at_edges_on_model_levels: np.ndarray,
         predictor_vertical_wind_advective_tendency: np.ndarray,
-        pressure_buoyancy_acceleration_at_cells_on_half_levels: np.ndarray,
+        nonhydro_buoy_at_cells_on_half_levels: np.ndarray,
         rho_at_cells_on_half_levels: np.ndarray,
         contravariant_correction_at_edges_on_model_levels: np.ndarray,
         exner_w_explicit_weight_parameter: np.ndarray,
@@ -182,7 +212,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
                 connectivities=connectivities,
                 w_nnow=current_w[:, :n_lev],
                 ddt_w_adv_ntl1=predictor_vertical_wind_advective_tendency[:, :n_lev],
-                z_th_ddz_exner_c=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+                z_th_ddz_exner_c=nonhydro_buoy_at_cells_on_half_levels,
                 rho_ic=rho_at_cells_on_half_levels[:, :n_lev],
                 w_concorr_c=contravariant_correction_at_cells_on_half_levels[:, :n_lev],
                 vwind_expl_wgt=exner_w_explicit_weight_parameter,
@@ -366,8 +396,22 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             exner_dynamical_increment=exner_dynamical_increment,
         )
 
-    @pytest.fixture
-    def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
+    @pytest.fixture(
+        params=[
+            {"at_first_substep": afs, "is_iau_active": ia, "divdamp_type": dvdmpt}
+            for afs, ia, dvdmpt in [
+                (True, True, 3),  # For testing the whole functionality of the stencil
+                (True, False, 32),  # For benchmarking against MCH experiments
+                (False, False, 32),  # For benchmarking against MCH experiments
+            ]
+        ],
+        ids=lambda param: (
+            f"at_first_substep[{param['at_first_substep']}]__is_iau_active[{param['is_iau_active']}]__divdamp_type[{param['divdamp_type']}]"
+        ),
+    )
+    def input_data(
+        self, request: pytest.FixtureRequest, grid: base.Grid
+    ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         mass_flux_at_edges_on_model_levels = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         theta_v_flux_at_edges_on_model_levels = data_alloc.random_field(
@@ -376,7 +420,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         predictor_vertical_wind_advective_tendency = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        pressure_buoyancy_acceleration_at_cells_on_half_levels = data_alloc.random_field(
+        nonhydro_buoy_at_cells_on_half_levels = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )
         rho_at_cells_on_half_levels = data_alloc.random_field(
@@ -422,13 +466,13 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
         dwdz_at_cells_on_model_levels = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         exner_dynamical_increment = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
-        is_iau_active = True
-        at_first_substep = True
+        is_iau_active = request.param["is_iau_active"]
+        at_first_substep = request.param["at_first_substep"]
         rayleigh_type = 2
-        divdamp_type = 3
-        end_index_of_damping_layer = 3
-        kstart_moist = 1
-        flat_level_index_plus1 = 3
+        divdamp_type = request.param["divdamp_type"]
+        end_index_of_damping_layer = 12  # value is set to reflect the MCH ch1 experiment. Changing this value will change the expected runtime
+        kstart_moist = 0
+        flat_level_index_plus1 = 6
         dtime = 0.001
         iau_wgt_dyn = 1.0
 
@@ -452,7 +496,7 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             mass_flux_at_edges_on_model_levels=mass_flux_at_edges_on_model_levels,
             theta_v_flux_at_edges_on_model_levels=theta_v_flux_at_edges_on_model_levels,
             predictor_vertical_wind_advective_tendency=predictor_vertical_wind_advective_tendency,
-            pressure_buoyancy_acceleration_at_cells_on_half_levels=pressure_buoyancy_acceleration_at_cells_on_half_levels,
+            nonhydro_buoy_at_cells_on_half_levels=nonhydro_buoy_at_cells_on_half_levels,
             rho_at_cells_on_half_levels=rho_at_cells_on_half_levels,
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
             exner_w_explicit_weight_parameter=exner_w_explicit_weight_parameter,

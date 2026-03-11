@@ -103,11 +103,7 @@ module diffusion
 
       end function diffusion_run_wrapper
 
-      function diffusion_init_wrapper(vct_a, &
-                                      vct_a_size_0, &
-                                      vct_b, &
-                                      vct_b_size_0, &
-                                      theta_ref_mc, &
+      function diffusion_init_wrapper(theta_ref_mc, &
                                       theta_ref_mc_size_0, &
                                       theta_ref_mc_size_1, &
                                       wgtfac_c, &
@@ -136,25 +132,22 @@ module diffusion
                                       rbf_coeff_2, &
                                       rbf_coeff_2_size_0, &
                                       rbf_coeff_2_size_1, &
-                                      mask_hdiff, &
-                                      mask_hdiff_size_0, &
-                                      mask_hdiff_size_1, &
-                                      zd_diffcoef, &
-                                      zd_diffcoef_size_0, &
-                                      zd_diffcoef_size_1, &
-                                      zd_vertoffset, &
-                                      zd_vertoffset_size_0, &
-                                      zd_vertoffset_size_1, &
-                                      zd_vertoffset_size_2, &
+                                      zd_cellidx, &
+                                      zd_cellidx_size_0, &
+                                      zd_cellidx_size_1, &
+                                      zd_vertidx, &
+                                      zd_vertidx_size_0, &
+                                      zd_vertidx_size_1, &
                                       zd_intcoef, &
                                       zd_intcoef_size_0, &
                                       zd_intcoef_size_1, &
-                                      zd_intcoef_size_2, &
+                                      zd_diffcoef, &
+                                      zd_diffcoef_size_0, &
                                       ndyn_substeps, &
-                                      rayleigh_damping_height, &
                                       diffusion_type, &
                                       hdiff_w, &
                                       hdiff_vn, &
+                                      hdiff_smag_w, &
                                       zdiffu_t, &
                                       type_t_diffu, &
                                       type_vn_diffu, &
@@ -167,21 +160,10 @@ module diffusion
                                       nudge_max_coeff, &
                                       itype_sher, &
                                       ltkeshs, &
-                                      lowest_layer_thickness, &
-                                      model_top_height, &
-                                      stretch_factor, &
                                       backend, &
                                       on_gpu) bind(c, name="diffusion_init_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
          integer(c_int) :: rc  ! Stores the return code
-
-         type(c_ptr), value, target :: vct_a
-
-         integer(c_int), value :: vct_a_size_0
-
-         type(c_ptr), value, target :: vct_b
-
-         integer(c_int), value :: vct_b_size_0
 
          type(c_ptr), value, target :: theta_ref_mc
 
@@ -241,25 +223,17 @@ module diffusion
 
          integer(c_int), value :: rbf_coeff_2_size_1
 
-         type(c_ptr), value, target :: mask_hdiff
+         type(c_ptr), value, target :: zd_cellidx
 
-         integer(c_int), value :: mask_hdiff_size_0
+         integer(c_int), value :: zd_cellidx_size_0
 
-         integer(c_int), value :: mask_hdiff_size_1
+         integer(c_int), value :: zd_cellidx_size_1
 
-         type(c_ptr), value, target :: zd_diffcoef
+         type(c_ptr), value, target :: zd_vertidx
 
-         integer(c_int), value :: zd_diffcoef_size_0
+         integer(c_int), value :: zd_vertidx_size_0
 
-         integer(c_int), value :: zd_diffcoef_size_1
-
-         type(c_ptr), value, target :: zd_vertoffset
-
-         integer(c_int), value :: zd_vertoffset_size_0
-
-         integer(c_int), value :: zd_vertoffset_size_1
-
-         integer(c_int), value :: zd_vertoffset_size_2
+         integer(c_int), value :: zd_vertidx_size_1
 
          type(c_ptr), value, target :: zd_intcoef
 
@@ -267,17 +241,19 @@ module diffusion
 
          integer(c_int), value :: zd_intcoef_size_1
 
-         integer(c_int), value :: zd_intcoef_size_2
+         type(c_ptr), value, target :: zd_diffcoef
+
+         integer(c_int), value :: zd_diffcoef_size_0
 
          integer(c_int), value, target :: ndyn_substeps
-
-         real(c_double), value, target :: rayleigh_damping_height
 
          integer(c_int), value, target :: diffusion_type
 
          logical(c_int), value, target :: hdiff_w
 
          logical(c_int), value, target :: hdiff_vn
+
+         logical(c_int), value, target :: hdiff_smag_w
 
          logical(c_int), value, target :: zdiffu_t
 
@@ -302,12 +278,6 @@ module diffusion
          integer(c_int), value, target :: itype_sher
 
          logical(c_int), value, target :: ltkeshs
-
-         real(c_double), value, target :: lowest_layer_thickness
-
-         real(c_double), value, target :: model_top_height
-
-         real(c_double), value, target :: stretch_factor
 
          integer(c_int), value, target :: backend
 
@@ -508,9 +478,7 @@ contains
       !$acc end host_data
    end subroutine diffusion_run
 
-   subroutine diffusion_init(vct_a, &
-                             vct_b, &
-                             theta_ref_mc, &
+   subroutine diffusion_init(theta_ref_mc, &
                              wgtfac_c, &
                              e_bln_c_s, &
                              geofac_div, &
@@ -520,15 +488,15 @@ contains
                              nudgecoeff_e, &
                              rbf_coeff_1, &
                              rbf_coeff_2, &
-                             mask_hdiff, &
-                             zd_diffcoef, &
-                             zd_vertoffset, &
+                             zd_cellidx, &
+                             zd_vertidx, &
                              zd_intcoef, &
+                             zd_diffcoef, &
                              ndyn_substeps, &
-                             rayleigh_damping_height, &
                              diffusion_type, &
                              hdiff_w, &
                              hdiff_vn, &
+                             hdiff_smag_w, &
                              zdiffu_t, &
                              type_t_diffu, &
                              type_vn_diffu, &
@@ -541,16 +509,9 @@ contains
                              nudge_max_coeff, &
                              itype_sher, &
                              ltkeshs, &
-                             lowest_layer_thickness, &
-                             model_top_height, &
-                             stretch_factor, &
                              backend, &
                              rc)
       use, intrinsic :: iso_c_binding
-
-      real(c_double), dimension(:), target :: vct_a
-
-      real(c_double), dimension(:), target :: vct_b
 
       real(c_double), dimension(:, :), target :: theta_ref_mc
 
@@ -572,23 +533,23 @@ contains
 
       real(c_double), dimension(:, :), target :: rbf_coeff_2
 
-      logical(c_int), dimension(:, :), pointer :: mask_hdiff
+      integer(c_int), dimension(:, :), pointer :: zd_cellidx
 
-      real(c_double), dimension(:, :), pointer :: zd_diffcoef
+      integer(c_int), dimension(:, :), pointer :: zd_vertidx
 
-      integer(c_int), dimension(:, :, :), pointer :: zd_vertoffset
+      real(c_double), dimension(:, :), pointer :: zd_intcoef
 
-      real(c_double), dimension(:, :, :), pointer :: zd_intcoef
+      real(c_double), dimension(:), pointer :: zd_diffcoef
 
       integer(c_int), value, target :: ndyn_substeps
-
-      real(c_double), value, target :: rayleigh_damping_height
 
       integer(c_int), value, target :: diffusion_type
 
       logical(c_int), value, target :: hdiff_w
 
       logical(c_int), value, target :: hdiff_vn
+
+      logical(c_int), value, target :: hdiff_smag_w
 
       logical(c_int), value, target :: zdiffu_t
 
@@ -614,19 +575,9 @@ contains
 
       logical(c_int), value, target :: ltkeshs
 
-      real(c_double), value, target :: lowest_layer_thickness
-
-      real(c_double), value, target :: model_top_height
-
-      real(c_double), value, target :: stretch_factor
-
       integer(c_int), value, target :: backend
 
       logical(c_int) :: on_gpu
-
-      integer(c_int) :: vct_a_size_0
-
-      integer(c_int) :: vct_b_size_0
 
       integer(c_int) :: theta_ref_mc_size_0
 
@@ -666,47 +617,39 @@ contains
 
       integer(c_int) :: rbf_coeff_2_size_1
 
-      integer(c_int) :: mask_hdiff_size_0
+      integer(c_int) :: zd_cellidx_size_0
 
-      integer(c_int) :: mask_hdiff_size_1
+      integer(c_int) :: zd_cellidx_size_1
 
-      integer(c_int) :: zd_diffcoef_size_0
+      integer(c_int) :: zd_vertidx_size_0
 
-      integer(c_int) :: zd_diffcoef_size_1
-
-      integer(c_int) :: zd_vertoffset_size_0
-
-      integer(c_int) :: zd_vertoffset_size_1
-
-      integer(c_int) :: zd_vertoffset_size_2
+      integer(c_int) :: zd_vertidx_size_1
 
       integer(c_int) :: zd_intcoef_size_0
 
       integer(c_int) :: zd_intcoef_size_1
 
-      integer(c_int) :: zd_intcoef_size_2
+      integer(c_int) :: zd_diffcoef_size_0
 
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
-      type(c_ptr) :: mask_hdiff_ptr
+      type(c_ptr) :: zd_cellidx_ptr
 
-      type(c_ptr) :: zd_diffcoef_ptr
-
-      type(c_ptr) :: zd_vertoffset_ptr
+      type(c_ptr) :: zd_vertidx_ptr
 
       type(c_ptr) :: zd_intcoef_ptr
 
-      mask_hdiff_ptr = c_null_ptr
+      type(c_ptr) :: zd_diffcoef_ptr
 
-      zd_diffcoef_ptr = c_null_ptr
+      zd_cellidx_ptr = c_null_ptr
 
-      zd_vertoffset_ptr = c_null_ptr
+      zd_vertidx_ptr = c_null_ptr
 
       zd_intcoef_ptr = c_null_ptr
 
-      !$acc host_data use_device(vct_a)
-      !$acc host_data use_device(vct_b)
+      zd_diffcoef_ptr = c_null_ptr
+
       !$acc host_data use_device(theta_ref_mc)
       !$acc host_data use_device(wgtfac_c)
       !$acc host_data use_device(e_bln_c_s)
@@ -717,20 +660,16 @@ contains
       !$acc host_data use_device(nudgecoeff_e)
       !$acc host_data use_device(rbf_coeff_1)
       !$acc host_data use_device(rbf_coeff_2)
-      !$acc host_data use_device(mask_hdiff) if(associated(mask_hdiff))
-      !$acc host_data use_device(zd_diffcoef) if(associated(zd_diffcoef))
-      !$acc host_data use_device(zd_vertoffset) if(associated(zd_vertoffset))
+      !$acc host_data use_device(zd_cellidx) if(associated(zd_cellidx))
+      !$acc host_data use_device(zd_vertidx) if(associated(zd_vertidx))
       !$acc host_data use_device(zd_intcoef) if(associated(zd_intcoef))
+      !$acc host_data use_device(zd_diffcoef) if(associated(zd_diffcoef))
 
 #ifdef _OPENACC
       on_gpu = .True.
 #else
       on_gpu = .False.
 #endif
-
-      vct_a_size_0 = SIZE(vct_a, 1)
-
-      vct_b_size_0 = SIZE(vct_b, 1)
 
       theta_ref_mc_size_0 = SIZE(theta_ref_mc, 1)
       theta_ref_mc_size_1 = SIZE(theta_ref_mc, 2)
@@ -761,37 +700,30 @@ contains
       rbf_coeff_2_size_0 = SIZE(rbf_coeff_2, 1)
       rbf_coeff_2_size_1 = SIZE(rbf_coeff_2, 2)
 
-      if (associated(mask_hdiff)) then
-         mask_hdiff_ptr = c_loc(mask_hdiff)
-         mask_hdiff_size_0 = SIZE(mask_hdiff, 1)
-         mask_hdiff_size_1 = SIZE(mask_hdiff, 2)
+      if (associated(zd_cellidx)) then
+         zd_cellidx_ptr = c_loc(zd_cellidx)
+         zd_cellidx_size_0 = SIZE(zd_cellidx, 1)
+         zd_cellidx_size_1 = SIZE(zd_cellidx, 2)
       end if
 
-      if (associated(zd_diffcoef)) then
-         zd_diffcoef_ptr = c_loc(zd_diffcoef)
-         zd_diffcoef_size_0 = SIZE(zd_diffcoef, 1)
-         zd_diffcoef_size_1 = SIZE(zd_diffcoef, 2)
-      end if
-
-      if (associated(zd_vertoffset)) then
-         zd_vertoffset_ptr = c_loc(zd_vertoffset)
-         zd_vertoffset_size_0 = SIZE(zd_vertoffset, 1)
-         zd_vertoffset_size_1 = SIZE(zd_vertoffset, 2)
-         zd_vertoffset_size_2 = SIZE(zd_vertoffset, 3)
+      if (associated(zd_vertidx)) then
+         zd_vertidx_ptr = c_loc(zd_vertidx)
+         zd_vertidx_size_0 = SIZE(zd_vertidx, 1)
+         zd_vertidx_size_1 = SIZE(zd_vertidx, 2)
       end if
 
       if (associated(zd_intcoef)) then
          zd_intcoef_ptr = c_loc(zd_intcoef)
          zd_intcoef_size_0 = SIZE(zd_intcoef, 1)
          zd_intcoef_size_1 = SIZE(zd_intcoef, 2)
-         zd_intcoef_size_2 = SIZE(zd_intcoef, 3)
       end if
 
-      rc = diffusion_init_wrapper(vct_a=c_loc(vct_a), &
-                                  vct_a_size_0=vct_a_size_0, &
-                                  vct_b=c_loc(vct_b), &
-                                  vct_b_size_0=vct_b_size_0, &
-                                  theta_ref_mc=c_loc(theta_ref_mc), &
+      if (associated(zd_diffcoef)) then
+         zd_diffcoef_ptr = c_loc(zd_diffcoef)
+         zd_diffcoef_size_0 = SIZE(zd_diffcoef, 1)
+      end if
+
+      rc = diffusion_init_wrapper(theta_ref_mc=c_loc(theta_ref_mc), &
                                   theta_ref_mc_size_0=theta_ref_mc_size_0, &
                                   theta_ref_mc_size_1=theta_ref_mc_size_1, &
                                   wgtfac_c=c_loc(wgtfac_c), &
@@ -820,25 +752,22 @@ contains
                                   rbf_coeff_2=c_loc(rbf_coeff_2), &
                                   rbf_coeff_2_size_0=rbf_coeff_2_size_0, &
                                   rbf_coeff_2_size_1=rbf_coeff_2_size_1, &
-                                  mask_hdiff=mask_hdiff_ptr, &
-                                  mask_hdiff_size_0=mask_hdiff_size_0, &
-                                  mask_hdiff_size_1=mask_hdiff_size_1, &
-                                  zd_diffcoef=zd_diffcoef_ptr, &
-                                  zd_diffcoef_size_0=zd_diffcoef_size_0, &
-                                  zd_diffcoef_size_1=zd_diffcoef_size_1, &
-                                  zd_vertoffset=zd_vertoffset_ptr, &
-                                  zd_vertoffset_size_0=zd_vertoffset_size_0, &
-                                  zd_vertoffset_size_1=zd_vertoffset_size_1, &
-                                  zd_vertoffset_size_2=zd_vertoffset_size_2, &
+                                  zd_cellidx=zd_cellidx_ptr, &
+                                  zd_cellidx_size_0=zd_cellidx_size_0, &
+                                  zd_cellidx_size_1=zd_cellidx_size_1, &
+                                  zd_vertidx=zd_vertidx_ptr, &
+                                  zd_vertidx_size_0=zd_vertidx_size_0, &
+                                  zd_vertidx_size_1=zd_vertidx_size_1, &
                                   zd_intcoef=zd_intcoef_ptr, &
                                   zd_intcoef_size_0=zd_intcoef_size_0, &
                                   zd_intcoef_size_1=zd_intcoef_size_1, &
-                                  zd_intcoef_size_2=zd_intcoef_size_2, &
+                                  zd_diffcoef=zd_diffcoef_ptr, &
+                                  zd_diffcoef_size_0=zd_diffcoef_size_0, &
                                   ndyn_substeps=ndyn_substeps, &
-                                  rayleigh_damping_height=rayleigh_damping_height, &
                                   diffusion_type=diffusion_type, &
                                   hdiff_w=hdiff_w, &
                                   hdiff_vn=hdiff_vn, &
+                                  hdiff_smag_w=hdiff_smag_w, &
                                   zdiffu_t=zdiffu_t, &
                                   type_t_diffu=type_t_diffu, &
                                   type_vn_diffu=type_vn_diffu, &
@@ -851,13 +780,8 @@ contains
                                   nudge_max_coeff=nudge_max_coeff, &
                                   itype_sher=itype_sher, &
                                   ltkeshs=ltkeshs, &
-                                  lowest_layer_thickness=lowest_layer_thickness, &
-                                  model_top_height=model_top_height, &
-                                  stretch_factor=stretch_factor, &
                                   backend=backend, &
                                   on_gpu=on_gpu)
-      !$acc end host_data
-      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data

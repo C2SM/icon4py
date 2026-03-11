@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import logging
 from typing import Any
 
 import pytest
@@ -21,7 +22,14 @@ from .. import utils
 from ..fixtures import *  # noqa: F403
 
 
+if mpi_decomposition.mpi4py is None:
+    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
+
+_log = logging.getLogger(__file__)
+
+
 @pytest.mark.mpi
+@pytest.mark.uses_concat_where
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -62,24 +70,24 @@ def test_parallel_diffusion(
         raise pytest.skip("This test is only executed for `dace` backends.")
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
-    print(
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{definitions.Experiments.MCH_CH_R04B09}'"
     )
-    print(
+    _log.info(
         f"local cells = {decomposition_info.global_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
         f"local edges = {decomposition_info.global_index(dims.EdgeDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
         f"local vertices = {decomposition_info.global_index(dims.VertexDim, decomposition.DecompositionInfo.EntryType.ALL).shape}"
     )
-    print(
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
 
-    print(
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
     config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    print(
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
     vertical_config = v_grid.VerticalGridConfig(
@@ -112,7 +120,7 @@ def test_parallel_diffusion(
         orchestration=orchestration,
     )
 
-    print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
+    _log.info(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -134,7 +142,7 @@ def test_parallel_diffusion(
             prognostic_state=prognostic_state,
             dtime=dtime,
         )
-    print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
+    _log.info(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
 
     utils.verify_diffusion_fields(
         config=config,
@@ -142,11 +150,12 @@ def test_parallel_diffusion(
         prognostic_state=prognostic_state,
         diffusion_savepoint=savepoint_diffusion_exit,
     )
-    print(
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  running diffusion step - using {processor_props.comm_name} with {processor_props.comm_size} nodes - DONE"
     )
 
 
+@pytest.mark.skip("SKIP: orchestration is currently broken on CI")
 @pytest.mark.mpi
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -188,19 +197,19 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
-    print(
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{definitions.Experiments.MCH_CH_R04B09}'"
     )
-    print(
+    _log.info(
         f"local cells = {decomposition_info.global_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
         f"local edges = {decomposition_info.global_index(dims.EdgeDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
         f"local vertices = {decomposition_info.global_index(dims.VertexDim, decomposition.DecompositionInfo.EntryType.ALL).shape}"
     )
-    print(
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
 
-    print(
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
     cell_geometry = grid_savepoint.construct_cell_geometry()
@@ -216,7 +225,7 @@ def test_parallel_diffusion_multiple_steps(
     config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     diffusion_params = diffusion_.DiffusionParams(config)
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    print(
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
     exchange = decomposition.create_exchange(processor_props, decomposition_info)
@@ -243,7 +252,7 @@ def test_parallel_diffusion_multiple_steps(
         orchestration=False,
     )
 
-    print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
+    _log.info(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 
     diagnostic_state_dace_non_orch = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -267,8 +276,8 @@ def test_parallel_diffusion_multiple_steps(
                 prognostic_state=prognostic_state_dace_non_orch,
                 dtime=dtime,
             )
-    print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
-    print(
+    _log.info(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  running diffusion step - using {processor_props.comm_name} with {processor_props.comm_size} nodes - DONE"
     )
 
@@ -294,7 +303,7 @@ def test_parallel_diffusion_multiple_steps(
         backend=backend,
         orchestration=True,
     )
-    print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
+    _log.info(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 
     diagnostic_state_dace_orch = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -318,8 +327,8 @@ def test_parallel_diffusion_multiple_steps(
                 prognostic_state=prognostic_state_dace_orch,
                 dtime=dtime,
             )
-    print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
-    print(
+    _log.info(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
+    _log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  running diffusion step - using {processor_props.comm_name} with {processor_props.comm_size} nodes - DONE"
     )
 

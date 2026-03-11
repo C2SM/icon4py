@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Callable
 from types import ModuleType
 
 import numpy as np
@@ -27,22 +28,12 @@ def compute_nabla2_on_cell(
     return nabla2_psi_c
 
 
-def update_smoothed_topography(
-    smoothed_topography: np.ndarray,
-    nabla2_topo: np.ndarray,
-    cell_areas: np.ndarray,
-) -> data_alloc.NDArray:
-    """
-    Updates the smoothed topography field inside the loop. (Numpy version)
-    """
-    return smoothed_topography + 0.125 * nabla2_topo * cell_areas
-
-
 def smooth_topography(
     topography: data_alloc.NDArray,
     cell_areas: data_alloc.NDArray,
     geofac_n2s: data_alloc.NDArray,
     c2e2co: data_alloc.NDArray,
+    exchange: Callable[[data_alloc.NDArray], None],
     num_iterations: int = 25,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
@@ -50,13 +41,14 @@ def smooth_topography(
     Computes the smoothed (laplacian-filtered) topography needed by the SLEVE
     coordinate.
     """
-
-    smoothed_topography = topography.copy()
+    smooth_topo = topography.copy()
+    # TODO(@halungge): if the input topopgraphy is properly exchanged, which it should this is not needed here.
+    exchange(smooth_topo)
 
     for _ in range(num_iterations):
-        nabla2_topo = compute_nabla2_on_cell(smoothed_topography, geofac_n2s, c2e2co, array_ns)
-        smoothed_topography = update_smoothed_topography(
-            smoothed_topography, nabla2_topo, cell_areas
-        )
+        nabla2_topo = compute_nabla2_on_cell(smooth_topo, geofac_n2s, c2e2co, array_ns)
+        array_ns.add(smooth_topo, 0.125 * nabla2_topo * cell_areas, out=smooth_topo)
 
-    return smoothed_topography
+        exchange(smooth_topo)
+
+    return smooth_topo
