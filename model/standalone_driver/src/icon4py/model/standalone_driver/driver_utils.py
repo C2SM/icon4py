@@ -29,6 +29,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import (
+    decomposer as decomp,
     definitions as decomposition_defs,
     mpi_decomposition as mpi_decomp,
 )
@@ -61,39 +62,31 @@ _LOGGING_LEVELS: dict[str, int] = {
 
 
 def create_grid_manager(
-    grid_file_path: pathlib.Path,
+    grid_file_path: str | pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.Allocator,
+    parallel_props: decomposition_defs.ProcessProperties,
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
 ) -> gm.GridManager:
+    decomposer = (
+        decomp.MetisDecomposer()
+        if not parallel_props.is_single_rank()
+        else decomp.SingleNodeDecomposer()
+    )
     grid_manager = gm.GridManager(
         grid_file=grid_file_path,
         config=vertical_grid_config,
         offset_transformation=gridfile.ToZeroBasedIndexTransformation(),
         global_reductions=global_reductions,
     )
-    grid_manager(allocator=allocator, keep_skip_values=True)
+    grid_manager(
+        allocator=allocator,
+        keep_skip_values=True,
+        run_properties=parallel_props,
+        decomposer=decomposer,
+    )
 
     return grid_manager
-
-
-def create_decomposition_info(
-    grid_manager: gm.GridManager,
-    allocator: gtx_typing.Allocator,
-) -> decomposition_defs.DecompositionInfo:
-    decomposition_info = decomposition_defs.DecompositionInfo()
-    xp = data_alloc.import_array_ns(allocator)
-
-    def _add_dimension(dim: gtx.Dimension) -> None:
-        indices = data_alloc.index_field(grid_manager.grid, dim, allocator=allocator)
-        owner_mask = xp.ones((grid_manager.grid.size[dim],), dtype=bool)
-        decomposition_info.set_dimension(dim, indices.ndarray, owner_mask, None)
-
-    _add_dimension(dims.EdgeDim)
-    _add_dimension(dims.VertexDim)
-    _add_dimension(dims.CellDim)
-
-    return decomposition_info
 
 
 def create_vertical_grid(
@@ -118,6 +111,8 @@ def create_static_field_factories(
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
+    exchange: decomposition_defs.ExchangeRuntime,
+    global_reductions: decomposition_defs.Reductions,
 ) -> driver_states.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
@@ -126,6 +121,8 @@ def create_static_field_factories(
         coordinates=grid_manager.coordinates,
         extra_fields=grid_manager.geometry_fields,
         metadata=geometry_meta.attrs,
+        exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     interpolation_field_source = interpolation_factory.InterpolationFieldsFactory(
@@ -134,6 +131,7 @@ def create_static_field_factories(
         geometry_source=geometry_field_source,
         backend=backend,
         metadata=interpolation_attributes.attrs,
+        exchange=exchange,
     )
 
     metrics_field_source = metrics_factory.MetricsFieldsFactory(
@@ -147,10 +145,12 @@ def create_static_field_factories(
         metadata=metrics_attributes.attrs,
         rayleigh_type=constants.RayleighType.KLEMP,
         rayleigh_coeff=0.1,
-        exner_expol=0.333,
-        vwind_offctr=0.2,
-        thslp_zdiffu=0.02,
-        thhgtd_zdiffu=125.0,
+        exner_expol=1.0 / 3.0,
+        vwind_offctr=0.15,
+        thslp_zdiffu=0.025,
+        thhgtd_zdiffu=200.0,
+        exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     return driver_states.StaticFieldFactories(
@@ -168,7 +168,7 @@ def initialize_granules(
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
-) -> tuple[diffusion.Diffusion, solve_nh.SolveNonhydro, advection.Advection]:
+) -> tuple[diffusion.Diffusion, solve_nh.SolveNonhydro, advection.Advection | None]:
     geometry_field_source = static_field_factories.geometry_field_source
     interpolation_field_source = static_field_factories.interpolation_field_source
     metrics_field_source = static_field_factories.metrics_field_source
@@ -344,42 +344,44 @@ def initialize_granules(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=owner_mask,
-    )
-
-    advection_granule = advection.convert_config_to_advection(
-        grid=grid,
-        backend=backend,
-        config=advection_config,
-        interpolation_state=advection_states.AdvectionInterpolationState(
-            geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-            rbf_vec_coeff_e=interpolation_field_source.get(
-                interpolation_attributes.RBF_VEC_COEFF_E
-            ),
-            pos_on_tplane_e_1=interpolation_field_source.get(
-                interpolation_attributes.POS_ON_TPLANE_E_X
-            ),
-            pos_on_tplane_e_2=interpolation_field_source.get(
-                interpolation_attributes.POS_ON_TPLANE_E_Y
-            ),
-        ),
-        least_squares_state=advection_states.AdvectionLeastSquaresState(
-            lsq_pseudoinv_1=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
-                :, 0, :
-            ],
-            lsq_pseudoinv_2=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
-                :, 1, :
-            ],
-        ),
-        metric_state=advection_states.AdvectionMetricState(
-            deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
-            deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
-            deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
-            ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
-        ),
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
         exchange=exchange,
     )
+
+    # advection_granule = advection.convert_config_to_advection(
+    #     grid=grid,
+    #     backend=backend,
+    #     config=advection_config,
+    #     interpolation_state=advection_states.AdvectionInterpolationState(
+    #         geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
+    #         rbf_vec_coeff_e=interpolation_field_source.get(
+    #             interpolation_attributes.RBF_VEC_COEFF_E
+    #         ),
+    #         pos_on_tplane_e_1=interpolation_field_source.get(
+    #             interpolation_attributes.POS_ON_TPLANE_E_X
+    #         ),
+    #         pos_on_tplane_e_2=interpolation_field_source.get(
+    #             interpolation_attributes.POS_ON_TPLANE_E_Y
+    #         ),
+    #     ),
+    #     least_squares_state=advection_states.AdvectionLeastSquaresState(
+    #         lsq_pseudoinv_1=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
+    #             :, 0, :
+    #         ],
+    #         lsq_pseudoinv_2=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
+    #             :, 1, :
+    #         ],
+    #     ),
+    #     metric_state=advection_states.AdvectionMetricState(
+    #         deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
+    #         deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
+    #         deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
+    #         ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
+    #     ),
+    #     edge_params=edge_geometry,
+    #     cell_params=cell_geometry,
+    #     exchange=exchange,
+    # )
+    advection_granule = None
 
     return diffusion_granule, solve_nonhydro_granule, advection_granule
 
@@ -579,12 +581,15 @@ def configure_logging(
     display_icon4py_logo_in_log_file()
 
 
-def get_backend_from_name(backend_name: str) -> model_backends.BackendLike:
+def get_backend_from_name(
+    backend_name: str | model_backends.BackendLike | None,
+) -> model_backends.BackendLike:
     if backend_name not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {backend_name}. \n"
             f"Available backends are {', '.join([*model_backends.BACKENDS.keys()])}"
         )
+    assert isinstance(backend_name, str)
     backend = model_backends.BACKENDS[backend_name]
     log.info(f"Backend name used for the model: {backend_name}")
     log.info(f"BackendLike derived from the backend name: {backend}")

@@ -5,9 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
 import logging
 import math
+from types import ModuleType
 
 from gt4py import next as gtx
 
@@ -21,11 +21,13 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
     horizontal as h_grid,
     icon as icon_grid,
+    vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import (
@@ -48,10 +50,17 @@ log = logging.getLogger(__name__)
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
+    c2e: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx.typing.Backend | None,
+    lowest_layer_thickness: float,
+    model_top_height: float,
+    stretch_factor: float,
+    damping_height: float,
+    exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
@@ -235,11 +244,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
+    exchange(eta_v_at_edge, dim=dims.EdgeDim)
     log.info("Cell-to-edge eta_v computation completed.")
 
-    prognostic_state_now.vn.ndarray[:, :] = functools.partial(
-        testcases_utils.zonalwind_2_normalwind_ndarray, array_ns=xp
-    )(
+    prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid=grid,
         jw_u0=jw_u0,
         jw_baroclinic_amplitude=jw_baroclinic_amplitude,
@@ -249,11 +257,37 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         edge_lon=edge_lon,
         primal_normal_x=primal_normal_x,
         eta_v_at_edge=eta_v_at_edge.ndarray,
+        array_ns=xp,
+    )
+    vertical_config = v_grid.VerticalGridConfig(
+        grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
     )
 
+    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+
+    # prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+    #     grid,
+    #     c2e=c2e,
+    #     e2c=e2c,
+    #     z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
+    #     inv_dual_edge_length=geometry_field_source.get(
+    #         f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+    #     ).ndarray,
+    #     edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
+    #     primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
+    #     cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
+    #     vn=prognostic_state_now.vn.ndarray,
+    #     vct_b=vct_b.ndarray,
+    #     nlev=num_levels,
+    #     array_ns=xp,
+    # )
     log.info("U2vn computation completed.")
 
-    functools.partial(testcases_utils.apply_hydrostatic_adjustment_ndarray, array_ns=xp)(
+    testcases_utils.apply_hydrostatic_adjustment_ndarray(
         rho=rho_ndarray,
         exner=exner_ndarray,
         theta_v=theta_v_ndarray,
@@ -264,9 +298,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         wgtfac_c=wgtfac_c,
         ddqz_z_half=ddqz_z_half,
         num_levels=num_levels,
+        array_ns=xp,
     )
     log.info("Hydrostatic adjustment computation completed.")
-
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
         w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),
@@ -288,6 +322,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
+    exchange(rbf_vec_coeff_c1, dim=dims.CellDim)
+    exchange(rbf_vec_coeff_c2, dim=dims.CellDim)
 
     log.info("U, V computation completed.")
 

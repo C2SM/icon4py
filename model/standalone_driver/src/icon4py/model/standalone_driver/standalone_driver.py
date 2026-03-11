@@ -22,7 +22,10 @@ from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition_defs
+from icon4py.model.common.decomposition import (
+    definitions as decomposition_defs,
+    mpi_decomposition as mpi_decomp,
+)
 from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
@@ -46,22 +49,28 @@ class Icon4pyDriver:
         config: driver_config.DriverConfig,
         backend: gtx.typing.Backend | None,
         grid: IconGrid,
+        decomposition_info: decomposition_defs.DecompositionInfo,
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
+        vertical_grid_config: v_grid.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
+        exchange: decomposition_defs.ExchangeRuntime,
     ):
         self.config = config
         self.backend = backend
         self.grid = grid
+        self.decomposition_info = decomposition_info
         self.static_field_factories = static_field_factories
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
+        self.vertical_grid_config = vertical_grid_config
         self.model_time_variables = driver_states.ModelTimeVariables(config=config)
         self.tracer_advection = tracer_advection_granule
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
+        self.exchange = exchange
 
         driver_utils.display_driver_setup_in_log_file(
             self.model_time_variables.n_time_steps,
@@ -521,7 +530,7 @@ def _read_config(
     )
 
     nonhydro_config = solve_nh.NonHydrostaticConfig(
-        fourth_order_divdamp_factor=0.0025,
+        fourth_order_divdamp_factor=0.0025, rayleigh_coeff=0.1
     )
 
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
@@ -530,10 +539,10 @@ def _read_config(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
         dtime=datetime.timedelta(seconds=300.0),
-        end_date=datetime.datetime(1, 1, 1, 1, 0, 0),
+        end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
-        vertical_cfl_threshold=ta.wpfloat("0.85"),
+        vertical_cfl_threshold=ta.wpfloat("1.05"),
         enable_statistics_output=True,
         profiling_stats=profiling_stats,
     )
@@ -548,11 +557,11 @@ def _read_config(
 
 
 def initialize_driver(
-    configuration_file_path: pathlib.Path,
     output_path: pathlib.Path,
-    grid_file_path: pathlib.Path,
+    grid_file_path: pathlib.Path | str,
     log_level: str,
-    backend_name: str,
+    backend_name: str | model_backends.BackendLike | None,
+    force_serial_run: bool = False,
 ) -> Icon4pyDriver:
     """
     Initialize the driver:
@@ -572,8 +581,9 @@ def initialize_driver(
         Driver: driver object
     """
 
+    with_mpi = (mpi_decomp.mpi4py is not None) and not force_serial_run
     parallel_props = decomposition_defs.get_processor_properties(
-        decomposition_defs.get_runtype(with_mpi=False)
+        decomposition_defs.get_runtype(with_mpi=with_mpi)
     )
     driver_utils.configure_logging(
         logging_level=log_level,
@@ -610,15 +620,12 @@ def initialize_driver(
         grid_file_path=grid_file_path,
         vertical_grid_config=vertical_grid_config,
         allocator=allocator,
+        parallel_props=parallel_props,
         global_reductions=global_reductions,
     )
 
     log.info("creating the decomposition info")
-
-    decomposition_info = driver_utils.create_decomposition_info(
-        grid_manager=grid_manager,
-        allocator=allocator,
-    )
+    decomposition_info = grid_manager.decomposition_info
     exchange = decomposition_defs.create_exchange(parallel_props, decomposition_info)
 
     log.info("initializing the vertical grid")
@@ -641,6 +648,8 @@ def initialize_driver(
         vertical_grid=vertical_grid,
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
+        exchange=exchange,
+        global_reductions=global_reductions,
     )
 
     log.info("initializing granules")
@@ -667,10 +676,13 @@ def initialize_driver(
         config=driver_config,
         backend=backend,
         grid=grid_manager.grid,
+        decomposition_info=decomposition_info,
         static_field_factories=static_field_factories,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
+        vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
+        exchange=exchange,
     )
 
     return icon4py_driver

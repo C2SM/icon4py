@@ -1387,7 +1387,7 @@ wheels = [
 [[package]]
 name = "ghex"
 version = "0.4.1"
-source = { git = "https://github.com/msimberg/GHEX.git?branch=async-mpi#6d896166994cedbcfc50da1873239a5edb212e3f" }
+source = { git = "https://github.com/philip-paul-mueller/GHEX.git?branch=phimuell__async-mpi-2#80c0650fdae40bdd40e0435e5687267bada4cdd2" }
 dependencies = [
     { name = "mpi4py" },
     { name = "numpy" },
@@ -1427,8 +1427,8 @@ wheels = [
 
 [[package]]
 name = "gt4py"
-version = "1.1.6"
-source = { registry = "https://pypi.org/simple" }
+version = "1.1.6.post10+8f3567da"
+source = { git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching#8f3567da4fba75ad9ec68c29409f785d9ea95333" }
 dependencies = [
     { name = "array-api-compat" },
     { name = "attrs" },
@@ -1458,10 +1458,6 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "versioningit" },
     { name = "xxhash" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/2a/af0c70f00adaa8c01330798bba25ee51cd9a537e2f14b3f54807950955d8/gt4py-1.1.6.tar.gz", hash = "sha256:f206874fe5e5c087e670cc31cd18bb4cfafcc462f89f407e4f5dd2072b23553e", size = 811160, upload-time = "2026-02-27T11:09:21.91Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/bd/b6ab2fdc5bc997c824c89df8ee7a1bb83e98815e2e0db096664c49fe2799/gt4py-1.1.6-py3-none-any.whl", hash = "sha256:b095bc1ac6591ce8da14f6e6e1da66383d49f94482379f4ed471d0a65893b561", size = 1022175, upload-time = "2026-02-27T11:09:19.695Z" },
 ]
 
 [package.optional-dependencies]
@@ -1789,7 +1785,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1806,7 +1802,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1823,7 +1819,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1840,7 +1836,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "packaging", specifier = ">=20.0" },
 ]
@@ -1858,7 +1854,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -1927,10 +1923,10 @@ requires-dist = [
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "dace", specifier = "==43!2026.2.12", index = "https://gridtools.github.io/pypi/" },
     { name = "datashader", marker = "extra == 'io'", specifier = ">=0.16.1" },
-    { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/msimberg/GHEX.git?branch=async-mpi" },
-    { name = "gt4py", specifier = "==1.1.6" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "ghex", marker = "extra == 'distributed'", git = "https://github.com/philip-paul-mueller/GHEX.git?branch=phimuell__async-mpi-2" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
     { name = "holoviews", marker = "extra == 'io'", specifier = ">=1.16.0" },
     { name = "icon4py-common", extras = ["distributed", "io"], marker = "extra == 'all'", editable = "model/common" },
     { name = "mpi4py", marker = "extra == 'distributed'", specifier = ">=3.1.5" },
@@ -1967,7 +1963,7 @@ dependencies = [
 requires-dist = [
     { name = "click", specifier = ">=8.0.1" },
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
@@ -1989,19 +1985,21 @@ dependencies = [
     { name = "icon4py-testing" },
     { name = "numpy" },
     { name = "packaging" },
+    { name = "pytest" },
     { name = "typer" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "devtools", specifier = ">=0.12" },
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
     { name = "icon4py-testing", editable = "model/testing" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
+    { name = "pytest" },
     { name = "typer", specifier = ">=0.20.0" },
 ]
 
@@ -2024,7 +2022,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "filelock", specifier = ">=3.18.0" },
-    { name = "gt4py", specifier = "==1.1.6" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
     { name = "icon4py-common", extras = ["io"], editable = "model/common" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
@@ -2049,6 +2047,7 @@ dependencies = [
     { name = "icon4py-atmosphere-diffusion" },
     { name = "icon4py-atmosphere-dycore" },
     { name = "icon4py-common" },
+    { name = "icon4py-standalone-driver" },
     { name = "numpy" },
     { name = "packaging" },
 ]
@@ -2075,13 +2074,14 @@ requires-dist = [
     { name = "cupy-cuda11x", marker = "extra == 'cuda11'", specifier = ">=13.0" },
     { name = "cupy-cuda12x", marker = "extra == 'cuda12'", specifier = ">=13.0" },
     { name = "fprettify", specifier = ">=0.3.7" },
-    { name = "gt4py", specifier = "==1.1.6" },
-    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'" },
-    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'" },
+    { name = "gt4py", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", extras = ["cuda11"], marker = "extra == 'cuda11'", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
+    { name = "gt4py", extras = ["cuda12"], marker = "extra == 'cuda12'", git = "https://github.com/GridTools/gt4py?branch=workaround_caching_issue_with_embedded_inverse_image_caching" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
     { name = "icon4py-common", editable = "model/common" },
+    { name = "icon4py-standalone-driver", editable = "model/standalone_driver" },
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
     { name = "viztracer", marker = "extra == 'profiling'", specifier = ">=1.1.0" },

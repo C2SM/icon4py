@@ -11,10 +11,11 @@ from __future__ import annotations
 import dataclasses
 import functools
 import logging
+import warnings
 from collections.abc import Sequence
 from enum import Enum
 from types import ModuleType
-from typing import Any, Literal, Protocol, overload, runtime_checkable
+from typing import Any, ClassVar, Literal, Protocol, overload, runtime_checkable
 
 import dace  # type: ignore[import-untyped]
 import gt4py.next as gtx
@@ -190,15 +191,28 @@ class ExchangeRuntime(Protocol):
 
 @dataclasses.dataclass
 class SingleNodeExchange:
+    _warning_emitted: ClassVar[bool] = False
+
+    @classmethod
+    def _warn_if_used(cls, *, stacklevel: int = 3) -> None:
+        if not cls._warning_emitted:
+            warnings.warn(
+                "***** SingleNodeExchange is in use; HALO EXCHANGE IS RUNNING IN SINGLE-NODE *****",
+                RuntimeWarning,
+                stacklevel=stacklevel,
+            )
+            cls._warning_emitted = True
+
     def exchange(
         self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
     ) -> ExchangeResult:
+        self._warn_if_used()
         return SingleNodeResult()
 
     def exchange_and_wait(
         self, dim: gtx.Dimension, *fields: gtx.Field | data_alloc.NDArray
     ) -> None:
-        return None
+        self._warn_if_used()
 
     def my_rank(self) -> int:
         return 0
@@ -217,6 +231,7 @@ class SingleNodeExchange:
             wait: If True, the operation will block until the exchange is completed (default: True).
         """
 
+        self._warn_if_used()
         res = self.exchange(dim, *args)
         if wait:
             res.wait()

@@ -5,9 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
 import logging
-import operator
 
 import numpy as np
 import pytest
@@ -41,6 +39,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     topography_savepoint,
 )
+from icon4py.model.testing.parallel_helpers import check_local_global_field
 
 from . import utils
 
@@ -57,7 +56,7 @@ def test_grid_manager_validate_decomposer(
     processor_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
@@ -83,101 +82,6 @@ def _get_neighbor_tables(grid: base.Grid) -> dict:
         for k, v in grid.connectivities.items()
         if gtx_common.is_neighbor_connectivity(v)
     }
-
-
-def gather_field(field: np.ndarray, props: decomp_defs.ProcessProperties) -> tuple:
-    constant_dims = tuple(field.shape[1:])
-    _log.info(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
-    constant_length = functools.reduce(operator.mul, constant_dims, 1)
-    local_sizes = np.array(props.comm.gather(field.size, root=0))
-    if props.rank == 0:
-        recv_buffer = np.empty(np.sum(local_sizes), dtype=field.dtype)
-        _log.info(
-            f"gather_field on rank = {props.rank} - setup receive buffer with size {sum(local_sizes)} on rank 0"
-        )
-    else:
-        recv_buffer = None
-
-    props.comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
-    if props.rank == 0:
-        local_first_dim = tuple(sz // constant_length for sz in local_sizes)
-        _log.info(
-            f" gather_field on rank = 0: computed local dims {local_first_dim} - constant dims {constant_dims}"
-        )
-        gathered_field = recv_buffer.reshape((-1, *constant_dims))  # type: ignore [union-attr]
-    else:
-        gathered_field = None
-        local_first_dim = field.shape
-    return local_first_dim, gathered_field
-
-
-def check_local_global_field(
-    decomposition_info: decomp_defs.DecompositionInfo,
-    processor_props: decomp_defs.ProcessProperties,  # F811 # fixture
-    dim: gtx.Dimension,
-    global_reference_field: np.ndarray,
-    local_field: np.ndarray,
-    check_halos: bool,
-) -> None:
-    if dim == dims.KDim:
-        np.testing.assert_allclose(global_reference_field, local_field)
-        return
-
-    _log.info(
-        f" rank= {processor_props.rank}/{processor_props.comm_size}----exchanging field of main dim {dim}"
-    )
-    assert (
-        local_field.shape[0]
-        == decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.ALL).shape[
-            0
-        ]
-    )
-
-    # Compare halo against global reference field
-    if check_halos:
-        np.testing.assert_allclose(
-            global_reference_field[
-                decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
-            ],
-            local_field[
-                decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
-            ],
-            atol=1e-9,
-            verbose=True,
-        )
-
-    # Compare owned local field, excluding halos, against global reference
-    # field, by gathering owned entries to the first rank. This ensures that in
-    # total we have the full global field distributed on all ranks.
-    owned_entries = local_field[
-        decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
-    ]
-    gathered_sizes, gathered_field = gather_field(owned_entries, processor_props)
-
-    global_index_sizes, gathered_global_indices = gather_field(
-        decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED),
-        processor_props,
-    )
-
-    if processor_props.rank == 0:
-        _log.info(f"rank = {processor_props.rank}: asserting gathered fields: ")
-
-        assert np.all(
-            gathered_sizes == global_index_sizes
-        ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
-        _log.info(
-            f"rank = {processor_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
-        )
-        _log.info(
-            f"rank = {processor_props.rank}:                      --- gathered field has size {gathered_sizes}"
-        )
-        sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)  # type: ignore [attr-defined]
-        sorted_[gathered_global_indices] = gathered_field
-        _log.info(
-            f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
-        )
-
-        np.testing.assert_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
 
 
 # These fields can't be computed with the embedded backend for one reason or
@@ -316,6 +220,7 @@ def test_geometry_fields_compare_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
+        atol=0.0,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -353,7 +258,7 @@ def test_interpolation_fields_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
@@ -429,6 +334,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
+        atol=1e-9 if attrs_name.startswith("rbf") else 0.0,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -491,7 +397,7 @@ def test_metrics_fields_compare_single_multi_rank(
     experiment: test_defs.Experiment,
     attrs_name: str,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
@@ -655,6 +561,7 @@ def test_metrics_fields_compare_single_multi_rank(
             global_reference_field=field_ref.asnumpy(),
             local_field=field.asnumpy(),
             check_halos=(attrs_name != metrics_attributes.WGTFAC_E),
+            atol=0.0,
         )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -670,7 +577,7 @@ def test_metrics_mask_prog_halo_c(
     backend: gtx_typing.Backend | None,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
@@ -801,7 +708,7 @@ def test_validate_skip_values_in_distributed_connectivities(
     processor_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
 ) -> None:
-    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+    if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
 
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
