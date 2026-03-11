@@ -197,7 +197,7 @@ class SingleNodeExchange:
     def _warn_if_used(cls, *, stacklevel: int = 3) -> None:
         if not cls._warning_emitted:
             warnings.warn(
-                "SingleNodeExchange is in use; halo exchange is running in single-node no-op mode.",
+                "***** SingleNodeExchange is in use; HALO EXCHANGE IS RUNNING IN SINGLE-NODE *****",
                 RuntimeWarning,
                 stacklevel=stacklevel,
             )
