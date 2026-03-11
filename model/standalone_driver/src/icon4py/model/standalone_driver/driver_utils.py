@@ -168,7 +168,7 @@ def initialize_granules(
     exchange: decomposition_defs.ExchangeRuntime,
     owner_mask: fa.CellField[bool],
     backend: gtx_typing.Backend | None,
-) -> tuple[diffusion.Diffusion, solve_nh.SolveNonhydro, advection.Advection]:
+) -> tuple[diffusion.Diffusion, solve_nh.SolveNonhydro, advection.Advection | None]:
     geometry_field_source = static_field_factories.geometry_field_source
     interpolation_field_source = static_field_factories.interpolation_field_source
     metrics_field_source = static_field_factories.metrics_field_source
@@ -346,40 +346,41 @@ def initialize_granules(
         owner_mask=owner_mask,
     )
 
-    advection_granule = advection.convert_config_to_advection(
-        grid=grid,
-        backend=backend,
-        config=advection_config,
-        interpolation_state=advection_states.AdvectionInterpolationState(
-            geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
-            rbf_vec_coeff_e=interpolation_field_source.get(
-                interpolation_attributes.RBF_VEC_COEFF_E
-            ),
-            pos_on_tplane_e_1=interpolation_field_source.get(
-                interpolation_attributes.POS_ON_TPLANE_E_X
-            ),
-            pos_on_tplane_e_2=interpolation_field_source.get(
-                interpolation_attributes.POS_ON_TPLANE_E_Y
-            ),
-        ),
-        least_squares_state=advection_states.AdvectionLeastSquaresState(
-            lsq_pseudoinv_1=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
-                :, 0, :
-            ],
-            lsq_pseudoinv_2=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
-                :, 1, :
-            ],
-        ),
-        metric_state=advection_states.AdvectionMetricState(
-            deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
-            deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
-            deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
-            ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
-        ),
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-        exchange=exchange,
-    )
+    # advection_granule = advection.convert_config_to_advection(
+    #     grid=grid,
+    #     backend=backend,
+    #     config=advection_config,
+    #     interpolation_state=advection_states.AdvectionInterpolationState(
+    #         geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
+    #         rbf_vec_coeff_e=interpolation_field_source.get(
+    #             interpolation_attributes.RBF_VEC_COEFF_E
+    #         ),
+    #         pos_on_tplane_e_1=interpolation_field_source.get(
+    #             interpolation_attributes.POS_ON_TPLANE_E_X
+    #         ),
+    #         pos_on_tplane_e_2=interpolation_field_source.get(
+    #             interpolation_attributes.POS_ON_TPLANE_E_Y
+    #         ),
+    #     ),
+    #     least_squares_state=advection_states.AdvectionLeastSquaresState(
+    #         lsq_pseudoinv_1=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
+    #             :, 0, :
+    #         ],
+    #         lsq_pseudoinv_2=interpolation_field_source.get(interpolation_attributes.LSQ_PSEUDOINV)[
+    #             :, 1, :
+    #         ],
+    #     ),
+    #     metric_state=advection_states.AdvectionMetricState(
+    #         deepatmo_divh=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVH),
+    #         deepatmo_divzl=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZL),
+    #         deepatmo_divzu=metrics_field_source.get(metrics_attributes.DEEPATMO_DIVZU),
+    #         ddqz_z_full=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL),
+    #     ),
+    #     edge_params=edge_geometry,
+    #     cell_params=cell_geometry,
+    #     exchange=exchange,
+    # )
+    advection_granule = None
 
     return diffusion_granule, solve_nonhydro_granule, advection_granule
 
