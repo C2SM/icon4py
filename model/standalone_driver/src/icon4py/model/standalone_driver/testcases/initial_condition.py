@@ -249,9 +249,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     geometry_field_source._exchange(eta_v_at_edge, dim=dims.EdgeDim)
     log.info("Cell-to-edge eta_v computation completed.")
 
-    prognostic_state_now.vn.ndarray[:, :] = functools.partial(
-        testcases_utils.zonalwind_2_normalwind_ndarray, array_ns=xp
-    )(
+    prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid=grid,
         jw_u0=jw_u0,
         jw_baroclinic_amplitude=jw_baroclinic_amplitude,
@@ -261,6 +259,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         edge_lon=edge_lon,
         primal_normal_x=primal_normal_x,
         eta_v_at_edge=eta_v_at_edge.ndarray,
+        array_ns=xp,
     )
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
@@ -290,7 +289,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     # )
     log.info("U2vn computation completed.")
 
-    functools.partial(testcases_utils.apply_hydrostatic_adjustment_ndarray, array_ns=xp)(
+    testcases_utils.apply_hydrostatic_adjustment_ndarray(
         rho=rho_ndarray,
         exner=exner_ndarray,
         theta_v=theta_v_ndarray,
@@ -301,6 +300,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         wgtfac_c=wgtfac_c,
         ddqz_z_half=ddqz_z_half,
         num_levels=num_levels,
+        array_ns=xp,
     )
     log.info("Hydrostatic adjustment computation completed.")
     prognostic_state_next = prognostics.PrognosticState(
