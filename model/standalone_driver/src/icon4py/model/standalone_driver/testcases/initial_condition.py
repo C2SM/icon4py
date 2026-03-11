@@ -60,7 +60,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     model_top_height: float,
     stretch_factor: float,
     damping_height: float,
-    array_ns: ModuleType,
     exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """
@@ -284,7 +283,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     #     vn=prognostic_state_now.vn.ndarray,
     #     vct_b=vct_b.ndarray,
     #     nlev=num_levels,
-    #     array_ns=array_ns,
+    #     array_ns=xp,
     # )
     log.info("U2vn computation completed.")
 

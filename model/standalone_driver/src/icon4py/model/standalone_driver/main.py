@@ -48,7 +48,6 @@ def main(
             help="Force a single-node run even if MPI is available. Useful to build serial reference output within MPI test sessions.",
         ),
     ] = False,
-    array_ns: ModuleType = np,
 ) -> tuple[driver_states.DriverStates, decomp_defs.DecompositionInfo]:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
@@ -81,7 +80,6 @@ def main(
         model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
-        array_ns=array_ns,
         exchange=icon4py_driver.exchange,
     )
 
