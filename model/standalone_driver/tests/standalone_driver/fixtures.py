@@ -8,7 +8,8 @@
 import pytest
 
 from icon4py.model.testing import serialbox
-from icon4py.model.testing.fixtures import (
+from icon4py.model.testing.fixtures.datatest import (
+    backend,
     damping_height,
     data_provider,
     download_ser_data,
