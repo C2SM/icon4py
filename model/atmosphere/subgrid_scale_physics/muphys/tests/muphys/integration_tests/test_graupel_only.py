@@ -40,11 +40,6 @@ class Experiments:
     )
 
 
-def set_default_precision():
-    """Reset the default floating point precision."""
-    type_alias.set_precision(type_alias.DEFAULT_PRECISION)
-
-
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -56,18 +51,14 @@ def set_default_precision():
     ],
     ids=lambda exp: exp.name,
 )
-@pytest.mark.parametrize(
-    "precision", ["double", "single"], ids=lambda p: f"{p}_precision"
+@pytest.skipif(
+    type_alias.precision != "double", reason="reference not available for single precision"
 )
 def test_graupel_only(
-    backend_like: model_backends.BackendLike,
-    experiment: utils.MuphysExperiment,
-    precision: str
+    backend_like: model_backends.BackendLike, experiment: utils.MuphysExperiment
 ) -> None:
-    if precision != type_alias.precision:
-        pytest.skip(f"The environment is configured with {precision} floating point precision.")
     assert experiment.type == utils.ExperimentType.GRAUPEL_ONLY
-    dtype = np.float32 if precision == "single" else "double"
+    dtype = np.float32 if type_alias.precision == "single" else "double"
     inp = common.GraupelInput.load(
         filename=experiment.input_file,
         allocator=model_backends.get_allocator(backend_like),
@@ -121,12 +112,8 @@ def test_graupel_only(
         dtype=dtype,
     )
 
-    if precision == "double":
-        rtol = 1e-14
-        atol = 1e-16
-    else:  # TODO(edopao): check thresholds for single precision
-        rtol = 1e-7
-        atol = 1e-8
+    rtol = 1e-14
+    atol = 1e-16
 
     np.testing.assert_allclose(ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol)
     np.testing.assert_allclose(ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol)

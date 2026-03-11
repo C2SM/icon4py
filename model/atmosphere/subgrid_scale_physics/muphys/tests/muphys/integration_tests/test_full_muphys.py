@@ -15,7 +15,7 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_full_muphys
-from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common import dimension as dims, model_backends, type_alias
 from icon4py.model.testing.fixtures.datatest import backend_like
 
 from . import utils
@@ -53,18 +53,24 @@ class Experiments:
     ids=lambda exp: exp.name,
 )
 @pytest.mark.parametrize("single_program", [True, False], ids=lambda sp: f"single_program={sp}")
+@pytest.skipif(
+    type_alias.precision != "double", reason="reference not available for single precision"
+)
 def test_full_muphys(
     backend_like: model_backends.BackendLike,
     experiment: utils.MuphysExperiment,
     single_program: bool,
 ) -> None:
     assert experiment.type == utils.ExperimentType.FULL_MUPHYS
+    dtype = np.float32 if type_alias.precision == "single" else "double"
 
     if single_program:
         pytest.xfail("Single program version currently fails verification. Needs investigation.")
 
     inp = common.GraupelInput.load(
-        filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
+        filename=experiment.input_file,
+        allocator=model_backends.get_allocator(backend_like),
+        dtype=dtype,
     )
 
     muphys_program = run_full_muphys.setup_muphys(
@@ -77,6 +83,7 @@ def test_full_muphys(
 
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
+        dtype=dtype,
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
     )
 
@@ -97,7 +104,9 @@ def test_full_muphys(
     )
 
     ref = common.GraupelOutput.load(
-        filename=experiment.reference_file, allocator=model_backends.get_allocator(backend_like)
+        filename=experiment.reference_file,
+        allocator=model_backends.get_allocator(backend_like),
+        dtype=dtype,
     )
 
     rtol = 1e-14
