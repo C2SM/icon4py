@@ -50,7 +50,6 @@ def timeloop_diffusion_savepoint_exit_standalone(
     date of the timestamp to be selected can be set seperately by overriding the 'timeloop_date'
     fixture, passing 'step_data=<iso_string>'
     """
-    sp = data_provider.from_savepoint_diffusion_exit(
+    return data_provider.from_savepoint_diffusion_exit(
         linit=timeloop_diffusion_linit_exit, date=step_date_exit
     )
-    return sp
