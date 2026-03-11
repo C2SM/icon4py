@@ -114,7 +114,7 @@ class GraupelInput:
             return cls(
                 ncells=ncells,
                 nlev=nlev,
-                dz=gtx.as_field((dims.CellDim, dims.KDim), np.transpose(dz), allocator=allocator),
+                dz=gtx.as_field((dims.CellDim, dims.KDim), np.transpose(dz), allocator=allocator, dtype=dtype),
                 t=field_from_nc("ta"),
                 p=field_from_nc("pfull"),
                 qs=field_from_nc("qs"),
