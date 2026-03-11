@@ -45,7 +45,7 @@ def timeloop_diffusion_savepoint_exit_standalone(
     timeloop_diffusion_linit_exit: bool,
 ) -> IconDiffusionExitSavepoint:
     """
-    Load data from ICON savepoint at exist of diffusion module.
+    Load data from ICON savepoint at exit of diffusion module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'timeloop_date'
     fixture, passing 'step_data=<iso_string>'
