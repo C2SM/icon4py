@@ -9,22 +9,27 @@ from __future__ import annotations
 
 import logging
 import typing
+from collections.abc import Iterator
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+import icon4py.model.common.grid.gridfile
+from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common.decomposition import decomposer as decomp, definitions as decomp_defs
 from icon4py.model.common.grid import (
     base as base_grid,
     grid_manager as gm,
     grid_refinement as refin,
     gridfile,
     horizontal as h_grid,
+    icon,
     vertical as v_grid,
 )
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import definitions, definitions as test_defs, grid_utils, test_utils
 
 
 if typing.TYPE_CHECKING:
@@ -40,6 +45,7 @@ except ImportError:
 
 from icon4py.model.testing.fixtures import (
     backend,
+    backend_like,
     cpu_allocator,
     data_provider,
     download_ser_data,
@@ -48,13 +54,11 @@ from icon4py.model.testing.fixtures import (
     processor_props,
 )
 
+from ...decomposition import utils as decomp_utils
 from .. import utils
 
 
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
-
-
-ZERO_BASE = gm.ToZeroBasedIndexTransformation()
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -344,7 +348,9 @@ def test_gridmanager_given_file_not_found_then_abort(
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:
         manager = gm.GridManager(
-            gm.NoTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
+            grid_file=fname,
+            config=v_grid.VerticalGridConfig(num_levels=80),
+            offset_transformation=icon4py.model.common.grid.gridfile.NoTransformation(),
         )
         manager(allocator=cpu_allocator, keep_skip_values=True)
         assert error.value == 1
@@ -353,7 +359,7 @@ def test_gridmanager_given_file_not_found_then_abort(
 @pytest.mark.parametrize("size", [100, 1500, 20000])
 @pytest.mark.with_netcdf
 def test_gt4py_transform_offset_by_1_where_valid(size: int) -> None:
-    trafo = gm.ToZeroBasedIndexTransformation()
+    trafo = gridfile.ToZeroBasedIndexTransformation()
     rng = np.random.default_rng()
     input_field = rng.integers(-1, size, size)
     offset = trafo(input_field)
@@ -554,3 +560,124 @@ def test_edge_vertex_distance(
 def test_limited_area_on_grid(grid_descriptor: definitions.GridDescription, expected: bool) -> None:
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=True, backend=None).grid
     assert expected == grid.limited_area
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("dim", utils.horizontal_dims())
+def test_decomposition_info_single_rank(
+    dim: gtx.Dimension,
+    experiment: definitions.Experiment,
+    grid_savepoint: serialbox.IconGridSavepoint,
+    backend: gtx_typing.Backend,
+) -> None:
+    expected = grid_savepoint.construct_decomposition_info()
+    grid_file = experiment.grid
+    gm = utils.run_grid_manager(grid_file, keep_skip_values=True, backend=backend)
+    result = gm.decomposition_info
+    assert np.all(data_alloc.as_numpy(result.local_index(dim)) == expected.local_index(dim))
+    assert np.all(data_alloc.as_numpy(result.global_index(dim)) == expected.global_index(dim))
+    assert np.all(data_alloc.as_numpy(result.owner_mask(dim)) == expected.owner_mask(dim))
+    assert np.all(data_alloc.as_numpy(result.halo_levels(dim)) == expected.halo_levels(dim))
+
+
+@pytest.mark.parametrize("rank", (0, 1, 2, 3), ids=lambda rank: f"rank{rank}")
+@pytest.mark.parametrize(
+    "field_offset",
+    [
+        dims.C2V,
+        dims.E2V,
+        dims.V2C,
+        dims.E2C,
+        dims.C2E,
+        dims.V2E,
+        dims.C2E2C,
+        dims.V2E2V,
+        dims.C2E2CO,
+        dims.C2E2C2E,
+        dims.C2E2C2E2C,
+        dims.E2C2V,
+        dims.E2C2E,
+        dims.E2C2EO,
+    ],
+    ids=lambda offset: offset.value,
+)
+def test_local_connectivity(
+    rank: int,
+    caplog: Iterator,
+    field_offset: gtx.FieldOffset,
+    backend_like: model_backends.BackendLike,
+) -> None:
+    processor_props = decomp_utils.DummyProps(rank=rank)
+    caplog.set_level(logging.INFO)  # type: ignore [attr-defined]
+    partitioner = decomp.MetisDecomposer()
+    allocator = model_backends.get_allocator(backend_like)
+    file = grid_utils.resolve_full_grid_file_name(test_defs.Grids.R02B04_GLOBAL)
+    manager = gm.GridManager(config=v_grid.VerticalGridConfig(num_levels=10), grid_file=file)
+    manager(
+        decomposer=partitioner,
+        allocator=allocator,
+        keep_skip_values=True,
+        run_properties=processor_props,
+    )
+    grid = manager.grid
+
+    decomposition_info = manager.decomposition_info
+    connectivity = grid.get_connectivity(field_offset).asnumpy()
+
+    assert (
+        connectivity.shape[0]
+        == decomposition_info.global_index(
+            field_offset.target[0], decomp_defs.DecompositionInfo.EntryType.ALL
+        ).size
+    ), "connectivity shapes do not match"
+
+    # all neighbor indices are valid local indices
+    max_local_index = np.max(
+        decomposition_info.local_index(
+            field_offset.source, decomp_defs.DecompositionInfo.EntryType.ALL
+        )
+    )
+    assert (
+        np.max(connectivity) == max_local_index
+    ), f"max value in the connectivity is {np.max(connectivity)} is larger than the local patch size {max_local_index}"
+    # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
+    neighbor_dim = field_offset.target[1]  # type: ignore [misc]
+    dim = field_offset.target[0]
+    last_halo_level = (
+        decomp_defs.DecompositionFlag.THIRD_HALO_LEVEL
+        if dim == dims.EdgeDim
+        else decomp_defs.DecompositionFlag.SECOND_HALO_LEVEL
+    )
+    level_index = np.where(
+        data_alloc.as_numpy(decomposition_info.halo_levels(dim)) == last_halo_level.value
+    )
+    if (
+        neighbor_dim in icon.CONNECTIVITIES_ON_BOUNDARIES
+        or neighbor_dim in icon.CONNECTIVITIES_ON_PENTAGONS
+    ):
+        assert np.count_nonzero(
+            (connectivity[level_index] == gridfile.GridFile.INVALID_INDEX) > 0
+        ), f"missing invalid index in {dim} - offset {field_offset}"
+    else:
+        assert np.count_nonzero(
+            (connectivity[level_index] == gridfile.GridFile.INVALID_INDEX) == 0
+        ), f"have invalid index in {dim} - offset {field_offset} when none expected"
+
+
+@pytest.mark.parametrize("ranks", (2, 3, 4))
+def test_decomposition_size(
+    ranks: int,
+    experiment: test_defs.Experiment,
+) -> None:
+    if experiment == test_defs.Experiments.MCH_CH_R04B09:
+        pytest.xfail("Limited-area grids not yet supported")
+
+    decomposer = decomp.MetisDecomposer()
+    file = grid_utils.resolve_full_grid_file_name(experiment.grid)
+    with gridfile.GridFile(str(file), gridfile.ToZeroBasedIndexTransformation()) as parser:
+        partitions = decomposer(parser.int_variable(gridfile.ConnectivityName.C2E2C), ranks)
+        sizes = [np.count_nonzero(partitions == r) for r in range(ranks)]
+        # Verify that sizes are close to each other. This is not a hard
+        # requirement, but simply a sanity check to make sure that partitions
+        # are relatively balanced.
+        assert max(sizes) - min(sizes) <= 2

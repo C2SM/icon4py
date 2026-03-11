@@ -36,6 +36,7 @@ from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
     grid_manager as gm,
+    gridfile,
     icon as icon_grid,
     states as grid_states,
     vertical as v_grid,
@@ -66,7 +67,10 @@ def create_grid_manager(
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
 ) -> gm.GridManager:
     grid_manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(), grid_file_path, vertical_grid_config, global_reductions
+        grid_file=grid_file_path,
+        config=vertical_grid_config,
+        offset_transformation=gridfile.ToZeroBasedIndexTransformation(),
+        global_reductions=global_reductions,
     )
     grid_manager(allocator=allocator, keep_skip_values=True)
 
@@ -83,7 +87,7 @@ def create_decomposition_info(
     def _add_dimension(dim: gtx.Dimension) -> None:
         indices = data_alloc.index_field(grid_manager.grid, dim, allocator=allocator)
         owner_mask = xp.ones((grid_manager.grid.size[dim],), dtype=bool)
-        decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
+        decomposition_info.set_dimension(dim, indices.ndarray, owner_mask, None)
 
     _add_dimension(dims.EdgeDim)
     _add_dimension(dims.VertexDim)

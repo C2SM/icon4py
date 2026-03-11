@@ -23,6 +23,7 @@ exclude = [
     "dace",
     "mpi4py",
     "netcdf4",
+    "pymetis",
     "xarray",
     "uxarray",
     "cftime",
