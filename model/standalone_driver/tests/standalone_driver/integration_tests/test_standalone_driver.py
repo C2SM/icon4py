@@ -12,7 +12,7 @@ import pytest
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_utils, main
-from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
 
 from ..fixtures import *  # noqa: F403
@@ -24,7 +24,7 @@ from ..fixtures import *  # noqa: F403
     "experiment, istep_exit, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
     [
         (
-            definitions.Experiments.JW,
+            test_defs.Experiments.JW,
             2,
             5,
             "2008-09-01T00:00:00.000",
@@ -36,7 +36,7 @@ from ..fixtures import *  # noqa: F403
     ],
 )
 def test_standalone_driver(
-    experiment: definitions.Experiments,
+    experiment: test_defs.Experiment,
     timeloop_date_init: str,
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,
@@ -52,11 +52,7 @@ def test_standalone_driver(
         if backend_like == v:
             backend_name = k
 
-    grid_file_path = grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL)
-    backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(backend_name)
-    )
-    array_ns = data_alloc.import_array_ns(backend)
+    grid_file_path = grid_utils._download_grid_file(experiment.grid)
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
     ds, _ = main.main(
         grid_file_path=grid_file_path,

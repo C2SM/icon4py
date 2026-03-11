@@ -51,10 +51,6 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
     for k, v in model_backends.BACKENDS.items():
         if backend_like == v:
             backend_name = k
-    backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(backend_name)
-    )
-    array_ns = data_alloc.import_array_ns(backend)  # type: ignore[arg-type] # backend type is correct
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
@@ -80,7 +76,6 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
         model_top_height=single_rank_icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=single_rank_icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=single_rank_icon4py_driver.vertical_grid_config.rayleigh_damping_height,
-        array_ns=array_ns,
         exchange=single_rank_icon4py_driver.exchange,
     )
 
@@ -105,7 +100,6 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
         model_top_height=multi_rank_icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=multi_rank_icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=multi_rank_icon4py_driver.vertical_grid_config.rayleigh_damping_height,
-        array_ns=array_ns,
         exchange=multi_rank_icon4py_driver.exchange,
     )
 
@@ -185,6 +179,75 @@ def test_standalone_driver_compare_single_multi_rank(
         print(f"verifying field {field_name}")
         global_reference_field = processor_props.comm.bcast(
             serial_reference_fields.get(field_name),
+            root=0,
+        )
+        local_field = getattr(multi_rank_ds.prognostics.current, field_name)
+        dim = local_field.domain.dims[0]
+        parallel_helpers.check_local_global_field(
+            decomposition_info=decomposition_info,
+            processor_props=processor_props,
+            dim=dim,
+            global_reference_field=global_reference_field,
+            local_field=local_field.asnumpy(),
+            check_halos=True,
+        )
+
+
+@pytest.mark.datatest
+@pytest.mark.embedded_remap_error
+@pytest.mark.parametrize(
+    "experiment, istep_exit, substep_exit, step_date_exit",
+    [
+        (
+            test_defs.Experiments.JW,
+            2,
+            5,
+            "2008-09-01T00:05:00.000",
+        ),
+    ],
+)
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+def test_run_single_step_serialized_data(
+    experiment: test_defs.Experiment,
+    tmp_path: pathlib.Path,
+    processor_props: decomp_defs.ProcessProperties,
+    backend_like: model_backends.BackendLike,
+    savepoint_nonhydro_exit,
+    savepoint_diffusion_exit,
+) -> None:
+    if experiment.grid.params.limited_area:
+        pytest.xfail("Limited-area grids not yet supported")
+
+    _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
+
+    backend_name = "embedded"  # shut up pyright/mypy
+    for k, v in model_backends.BACKENDS.items():
+        if backend_like == v:
+            backend_name = k
+
+    grid_file_path = grid_utils._download_grid_file(experiment.grid)
+
+    multi_rank_ds, decomposition_info = main.main(
+        grid_file_path=grid_file_path,
+        icon4py_backend=backend_name,
+        output_path=tmp_path
+        / f"ci_driver_output_for_backend_{backend_name}_mpi_rank_{processor_props.rank}",
+    )
+
+    fields = ["vn", "w", "exner", "theta_v", "rho"]
+    serialized_reference_fields: dict[str, object] = {
+        "vn": savepoint_diffusion_exit.vn().asnumpy(),
+        "w": savepoint_diffusion_exit.w().asnumpy(),
+        "exner": savepoint_diffusion_exit.exner().asnumpy(),
+        "theta_v": savepoint_diffusion_exit.theta_v().asnumpy(),
+        "rho": savepoint_nonhydro_exit.rho_new().asnumpy(),
+    }
+
+    for field_name in fields:
+        print(f"verifying field {field_name}")
+        global_reference_field = processor_props.comm.bcast(
+            serialized_reference_fields.get(field_name),
             root=0,
         )
         local_field = getattr(multi_rank_ds.prognostics.current, field_name)
