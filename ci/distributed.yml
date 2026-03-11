@@ -59,6 +59,7 @@ build_distributed_cpu:
   extends: [.container-runner-santis-gh200, .build_distributed_cpu]
   needs: [build_distributed_cpu]
   variables:
+    SLURM_GPUS_PER_NODE: 4
     SLURM_JOB_NUM_NODES: 1
     SLURM_CPU_BIND: 'verbose'
     SLURM_NTASKS: 4
