@@ -15,6 +15,7 @@ import pathlib
 import time
 from collections.abc import Callable
 
+import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core import saturation_adjustment
@@ -117,7 +118,7 @@ def setup_muphys(
             muphys_program = model_options.setup_program(
                 backend=backend,
                 program=muphys.muphys_run,
-                constant_args={"dt": dt, "qnc": qnc},
+                constant_args={"dt": ta.wpfloat(dt), "qnc": ta.wpfloat(qnc)},
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(0),
                     "horizontal_end": inp.ncells,
@@ -172,10 +173,15 @@ def main():
 
     backend = model_backends.BACKENDS[args.backend]
     allocator = model_backends.get_allocator(backend)
+    dtype = np.float32 if ta.precision == "single" else "double"
 
-    inp = common.GraupelInput.load(filename=pathlib.Path(args.input_file), allocator=allocator)
+    inp = common.GraupelInput.load(
+        filename=pathlib.Path(args.input_file), allocator=allocator, dtype=dtype
+    )
     out = common.GraupelOutput.allocate(
-        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}), allocator=allocator
+        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+        allocator=allocator,
+        dtype=dtype,
     )
 
     # TODO(havogt): once we see single program being equally fast, remove the other implementation

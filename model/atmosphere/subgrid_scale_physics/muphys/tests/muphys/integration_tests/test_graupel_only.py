@@ -15,7 +15,7 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_graupel_only
-from icon4py.model.common import dimension as dims, model_backends, type_alias
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.testing.fixtures.datatest import backend_like
 
 from . import utils
@@ -51,18 +51,12 @@ class Experiments:
     ],
     ids=lambda exp: exp.name,
 )
-@pytest.skipif(
-    type_alias.precision != "double", reason="reference not available for single precision"
-)
 def test_graupel_only(
     backend_like: model_backends.BackendLike, experiment: utils.MuphysExperiment
 ) -> None:
     assert experiment.type == utils.ExperimentType.GRAUPEL_ONLY
-    dtype = np.float32 if type_alias.precision == "single" else "double"
     inp = common.GraupelInput.load(
-        filename=experiment.input_file,
-        allocator=model_backends.get_allocator(backend_like),
-        dtype=dtype,
+        filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
     )
 
     graupel_run_program = run_graupel_only.setup_graupel(
@@ -77,7 +71,6 @@ def test_graupel_only(
     # but save in this case as we are not reading the input with an offset.
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
-        dtype=dtype,
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
         references={
             "qv": inp.qv,
@@ -107,9 +100,7 @@ def test_graupel_only(
     )
 
     ref = common.GraupelOutput.load(
-        filename=experiment.reference_file,
-        allocator=model_backends.get_allocator(backend_like),
-        dtype=dtype,
+        filename=experiment.reference_file, allocator=model_backends.get_allocator(backend_like)
     )
 
     rtol = 1e-14
