@@ -95,7 +95,7 @@ def check_local_global_field(
 
     # Compare halo against global reference field
     if check_halos:
-        print("checking halos for dim", dim)
+        print("checking halos")
         #np.testing.assert_allclose(
         _non_blocking_allclose(
             global_reference_field[
@@ -139,6 +139,6 @@ def check_local_global_field(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
-        print("checking interior for dim", dim)
+        print("checking interior")
         #np.testing.assert_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
         _non_blocking_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
