@@ -35,7 +35,7 @@ def compute_edge_tangential(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_edge_tangential(
         p_vn_in,
         ptr_coeff,

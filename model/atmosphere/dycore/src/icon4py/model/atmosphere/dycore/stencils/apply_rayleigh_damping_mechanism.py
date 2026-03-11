@@ -33,7 +33,7 @@ def apply_rayleigh_damping_mechanism(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_rayleigh_damping_mechanism(
         z_raylfac,
         w_1,

@@ -64,7 +64,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         zd_vertoffset,
         zd_diffcoef,

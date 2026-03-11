@@ -790,7 +790,7 @@ def vertically_implicit_solver_at_corrector_step(
     end_cell_index_local: gtx.int32,
     vertical_start_index_model_top: gtx.int32,
     vertical_end_index_model_surface: gtx.int32,
-):
+) -> None:
     _set_surface_boundary_condition_for_computation_of_w(
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         out=next_w,

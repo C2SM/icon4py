@@ -19,7 +19,7 @@ def compute_nabla2_on_cell(
     nabla2_psi_c: fa.CellField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     _compute_nabla2_on_cell(
         psi_c,
         geofac_n2s,

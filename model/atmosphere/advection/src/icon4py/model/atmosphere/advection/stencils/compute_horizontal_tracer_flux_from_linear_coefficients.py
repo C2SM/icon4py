@@ -49,7 +49,7 @@ def compute_horizontal_tracer_flux_from_linear_coefficients(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_horizontal_tracer_flux_from_linear_coefficients(
         z_lsq_coeff_1,
         z_lsq_coeff_2,

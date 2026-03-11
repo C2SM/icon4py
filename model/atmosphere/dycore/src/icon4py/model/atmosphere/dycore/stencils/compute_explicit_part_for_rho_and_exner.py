@@ -66,7 +66,7 @@ def compute_explicit_part_for_rho_and_exner(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_explicit_part_for_rho_and_exner(
         rho_nnow,
         inv_ddqz_z_full,

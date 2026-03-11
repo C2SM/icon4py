@@ -38,7 +38,7 @@ def mo_intp_rbf_rbf_vec_interpol_vertex(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _mo_intp_rbf_rbf_vec_interpol_vertex(
         p_e_in,
         ptr_coeff_1,

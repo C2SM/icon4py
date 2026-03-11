@@ -35,7 +35,7 @@ def spatially_average_flux_or_velocity(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _spatially_average_flux_or_velocity(
         e_flx_avg,
         flux_or_velocity,

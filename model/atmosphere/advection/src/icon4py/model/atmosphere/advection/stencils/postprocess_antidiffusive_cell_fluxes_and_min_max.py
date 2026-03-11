@@ -60,7 +60,7 @@ def postprocess_antidiffusive_cell_fluxes_and_min_max(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _postprocess_antidiffusive_cell_fluxes_and_min_max(
         refin_ctrl,
         p_cc,

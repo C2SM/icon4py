@@ -36,7 +36,7 @@ def compute_exner_from_rhotheta(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_exner_from_rhotheta(
         rho,
         exner,
