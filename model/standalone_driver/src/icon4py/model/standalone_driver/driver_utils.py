@@ -111,8 +111,8 @@ def create_static_field_factories(
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
-    exchange: decomposition_defs.ExchangeRuntime = decomposition_defs.single_node_default,
-    global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
+    exchange: decomposition_defs.ExchangeRuntime,
+    global_reductions: decomposition_defs.Reductions,
 ) -> driver_states.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
@@ -344,6 +344,7 @@ def initialize_granules(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=owner_mask,
+        exchange=exchange,
     )
 
     # advection_granule = advection.convert_config_to_advection(

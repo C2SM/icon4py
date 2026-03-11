@@ -22,8 +22,10 @@ from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
-from icon4py.model.common.decomposition import definitions as decomposition_defs, mpi_decomposition as mpi_decomp
-from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
+from icon4py.model.common.decomposition import (
+    definitions as decomposition_defs,
+    mpi_decomposition as mpi_decomp,
+)
 from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
@@ -53,6 +55,7 @@ class Icon4pyDriver:
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
         vertical_grid_config: v_grid.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
+        exchange: decomposition_defs.ExchangeRuntime,
     ):
         self.config = config
         self.backend = backend
@@ -67,6 +70,7 @@ class Icon4pyDriver:
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
+        self.exchange = exchange
 
         driver_utils.display_driver_setup_in_log_file(
             self.model_time_variables.n_time_steps,
@@ -678,6 +682,7 @@ def initialize_driver(
         solve_nonhydro_granule=solve_nonhydro_granule,
         vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
+        exchange=exchange,
     )
 
     return icon4py_driver
