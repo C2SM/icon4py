@@ -1224,7 +1224,7 @@ def compute_lsq_coeffs(
     start_idx: int,
     min_rlcell_int: int,
     geometry_type: int,
-    exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     lsq_weights_c = array_ns.zeros((min_rlcell_int, lsq_dim_stencil))
