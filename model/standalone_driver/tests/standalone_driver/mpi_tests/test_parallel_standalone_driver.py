@@ -15,9 +15,8 @@ from icon4py.model.common import dimension as dims, model_backends, model_option
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_utils, main
-from icon4py.model.testing import definitions as test_defs, grid_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils, parallel_helpers
 from icon4py.model.testing.fixtures.datatest import backend_like, experiment, processor_props
-from icon4py.model.testing.parallel_helpers import check_local_global_field
 
 
 if mpi_decomposition.mpi4py is None:
@@ -59,19 +58,19 @@ def test_standalone_driver_compare_single_multi_rank(
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
+
     serial_reference_fields: dict[str, object] = {}
-    if processor_props.rank == 0:
-        single_rank_ds, _ = main.main(
-            grid_file_path=grid_file_path,
-            icon4py_backend=backend_name,
-            output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}_serial_rank0",
-            array_ns=array_ns,
-            force_serial_run=True,
-        )
-        serial_reference_fields = {
-            field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
-            for field_name in fields
-        }
+    single_rank_ds, _ = main.main(
+        grid_file_path=grid_file_path,
+        icon4py_backend=backend_name,
+        output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}_serial_rank0",
+        array_ns=array_ns,
+        force_serial_run=True,
+    )
+    serial_reference_fields = {
+        field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
+        for field_name in fields
+    }
 
     multi_rank_ds, decomposition_info = main.main(
         grid_file_path=grid_file_path,
@@ -81,13 +80,14 @@ def test_standalone_driver_compare_single_multi_rank(
     )
 
     for field_name in fields:
+        print(f"verifying field {field_name}")
         global_reference_field = processor_props.comm.bcast(
             serial_reference_fields.get(field_name),
             root=0,
         )
         local_field = getattr(multi_rank_ds.prognostics.current, field_name)
         dim = local_field.domain.dims[0]
-        check_local_global_field(
+        parallel_helpers.check_local_global_field(
             decomposition_info=decomposition_info,
             processor_props=processor_props,
             dim=dim,
