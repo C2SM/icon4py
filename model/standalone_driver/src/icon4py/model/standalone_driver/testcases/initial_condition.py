@@ -246,6 +246,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
+    geometry_field_source._exchange(eta_v_at_edge, dim=dims.EdgeDim)
     log.info("Cell-to-edge eta_v computation completed.")
 
     prognostic_state_now.vn.ndarray[:, :] = functools.partial(
@@ -323,6 +324,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
+    geometry_field_source._exchange(rbf_vec_coeff_c1, dim=dims.CellDim)
+    geometry_field_source._exchange(rbf_vec_coeff_c2, dim=dims.CellDim)
 
     log.info("U, V computation completed.")
 
