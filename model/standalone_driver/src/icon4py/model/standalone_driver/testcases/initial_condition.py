@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import functools
 import logging
 import math
 from types import ModuleType
@@ -246,7 +245,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
-    geometry_field_source._exchange(eta_v_at_edge, dim=dims.EdgeDim)
+    exchange(eta_v_at_edge, dim=dims.EdgeDim)
     log.info("Cell-to-edge eta_v computation completed.")
 
     prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
@@ -324,8 +323,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
-    geometry_field_source._exchange(rbf_vec_coeff_c1, dim=dims.CellDim)
-    geometry_field_source._exchange(rbf_vec_coeff_c2, dim=dims.CellDim)
+    exchange(rbf_vec_coeff_c1, dim=dims.CellDim)
+    exchange(rbf_vec_coeff_c2, dim=dims.CellDim)
 
     log.info("U, V computation completed.")
 
