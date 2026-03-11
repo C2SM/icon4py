@@ -56,7 +56,11 @@ def graupel_run(
                     "async_sdfg_call": not wait_for_completion,
                 },
                 program=graupel.graupel_run,
-                constant_args={"dt": dt, "qnc": qnc, "enable_masking": True},
+                constant_args={
+                    "dt": ta.wpfloat(dt),
+                    "qnc": ta.wpfloat(qnc),
+                    "enable_masking": True,
+                },
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(ivstart),
                     "horizontal_end": gtx.int32(ivend),
