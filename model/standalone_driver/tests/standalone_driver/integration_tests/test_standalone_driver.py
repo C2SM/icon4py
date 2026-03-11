@@ -62,7 +62,6 @@ def test_standalone_driver(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_name,
         output_path=output_path,
-        array_ns=array_ns,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()

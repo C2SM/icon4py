@@ -158,10 +158,6 @@ def test_standalone_driver_compare_single_multi_rank(
     for k, v in model_backends.BACKENDS.items():
         if backend_like == v:
             backend_name = k
-    backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(backend_name)
-    )
-    array_ns = data_alloc.import_array_ns(backend)  # type: ignore[arg-type] # backend type is correct
 
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
 
@@ -169,7 +165,6 @@ def test_standalone_driver_compare_single_multi_rank(
         grid_file_path=grid_file_path,
         icon4py_backend=backend_name,
         output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}_serial_rank0",
-        array_ns=array_ns,
         force_serial_run=True,
     )
 
@@ -178,7 +173,6 @@ def test_standalone_driver_compare_single_multi_rank(
         icon4py_backend=backend_name,
         output_path=tmp_path
         / f"ci_driver_output_for_backend_{backend_name}_mpi_rank_{processor_props.rank}",
-        array_ns=array_ns,
     )
 
     fields = ["vn", "w", "exner", "theta_v", "rho"]
