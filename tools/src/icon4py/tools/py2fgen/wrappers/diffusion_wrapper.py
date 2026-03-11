@@ -137,12 +137,7 @@ def diffusion_init(
     )
     xp = wgtfac_c.array_ns
 
-    if zd_cellidx is None:
-        # then l_zdiffu_t = .false. and these are all not initialized
-        zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype)
-        zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
-        zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
-    else:
+    if zdiffu_t:
         # transform lists to fields
         #
         # only the first row is needed, the others are for C2E2C neighbors, but slicing in fortran causes issues
@@ -184,6 +179,11 @@ def diffusion_init(
             default_value=gtx.int32(0),
             allocator=model_backends.get_allocator(actual_backend),
         )
+    else:
+        # l_zdiffu_t = .false. and these are all not initialized
+        zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype)
+        zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
+        zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
 
     # Metric state
     metric_state = DiffusionMetricState(

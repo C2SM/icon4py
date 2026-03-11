@@ -263,6 +263,11 @@ def test_diffusion_wrapper_granule_inputs(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
+        (
+            definitions.Experiments.EXCLAIM_APE,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -279,46 +284,47 @@ def test_diffusion_wrapper_single_step(
     step_date_init,
     step_date_exit,
 ):
-    # Hardcoded DiffusionConfig parameters
-    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
-    hdiff_w = True
-    hdiff_vn = True
-    hdiff_temp = True
-    hdiff_smag_w = False
-    ltkeshs = True
-    type_t_diffu = diffusion.TemperatureDiscretizationType.HETEROGENEOUS
-    type_vn_diffu = diffusion.SmagorinskyStencilType.DIAMOND_VERTICES
-    hdiff_efdt_ratio = 24.0
-    smagorinski_scaling_factor = 0.025
-    zdiffu_t = True
-    thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125.0
-    denom_diffu_v = 150.0
-    max_nudging_coefficient = 0.375
-    itype_sher = (
-        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
-    )
+    config = definitions.construct_diffusion_config(experiment, ndyn_substeps)
+    diffusion_type = config.diffusion_type
+    hdiff_w = config.apply_to_vertical_wind
+    hdiff_vn = config.apply_to_horizontal_wind
+    hdiff_temp = config.apply_to_temperature
+    hdiff_smag_w = config.apply_smag_diff_to_vertical_wind
+    ltkeshs = config.ltkeshs
+    type_t_diffu = config.type_t_diffu
+    type_vn_diffu = config.type_vn_diffu
+    hdiff_efdt_ratio = config.hdiff_efdt_ratio
+    smagorinski_scaling_factor = config.smagorinski_scaling_factor
+    zdiffu_t = config.apply_zdiffusion_t
+    thslp_zdiffu = config.thslp_zdiffu
+    thhgtd_zdiffu = config.thhgtd_zdiffu
+    denom_diffu_v = config.velocity_boundary_diffusion_denominator
+    max_nudging_coefficient = config.max_nudging_coefficient
+    itype_sher = config.shear_type
 
     # Metric state parameters
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
 
-    # The wrapper expects [cellidx, c2e2c_ids] and then extracts `zd_cellidx[0,:]` because it only needs the cellidxs
-    # (this is because slicing causes issue in the bindings, but not for serialization)
-    zd_cellidx = test_utils.array_to_array_info(
-        np.squeeze(metrics_savepoint.serializer.read("zd_cellidx", metrics_savepoint.savepoint))[
-            np.newaxis, :
-        ]
-    )
-    zd_vertidx = test_utils.array_to_array_info(
-        np.squeeze(metrics_savepoint.serializer.read("zd_vertidx", metrics_savepoint.savepoint))
-    )
-    zd_intcoef = test_utils.array_to_array_info(
-        np.squeeze(metrics_savepoint.serializer.read("zd_intcoef", metrics_savepoint.savepoint))
-    )
-    zd_diffcoef = test_utils.array_to_array_info(
-        np.squeeze(metrics_savepoint.serializer.read("zd_diffcoef", metrics_savepoint.savepoint))
-    )
+    if zdiffu_t:
+        # The wrapper expects [cellidx, c2e2c_ids] and then extracts `zd_cellidx[0,:]` because it only needs the cellidxs
+        # (this is because slicing causes issue in the bindings, but not for serialization)
+        zd_cellidx = test_utils.array_to_array_info(
+            np.squeeze(metrics_savepoint.serializer.read("zd_cellidx", metrics_savepoint.savepoint))[
+                np.newaxis, :
+            ]
+        )
+        zd_vertidx = test_utils.array_to_array_info(
+            np.squeeze(metrics_savepoint.serializer.read("zd_vertidx", metrics_savepoint.savepoint))
+        )
+        zd_intcoef = test_utils.array_to_array_info(
+            np.squeeze(metrics_savepoint.serializer.read("zd_intcoef", metrics_savepoint.savepoint))
+        )
+        zd_diffcoef = test_utils.array_to_array_info(
+            np.squeeze(metrics_savepoint.serializer.read("zd_diffcoef", metrics_savepoint.savepoint))
+        )
+    else:
+        zd_cellidx = zd_vertidx = zd_intcoef = zd_diffcoef = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)  # dummy values as they are not used when zdiffu_t is False
 
     # Interpolation state parameters
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
@@ -406,10 +412,12 @@ def test_diffusion_wrapper_single_step(
     vn_ = savepoint_diffusion_exit.vn()
     exner_ = savepoint_diffusion_exit.exner()
     theta_v_ = savepoint_diffusion_exit.theta_v()
-    hdef_ic_ = savepoint_diffusion_exit.hdef_ic()
-    div_ic_ = savepoint_diffusion_exit.div_ic()
-    dwdx_ = savepoint_diffusion_exit.dwdx()
-    dwdy_ = savepoint_diffusion_exit.dwdy()
+    if itype_sher > 0:
+        hdef_ic_ = savepoint_diffusion_exit.hdef_ic()
+        div_ic_ = savepoint_diffusion_exit.div_ic()
+    if itype_sher == diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND:
+        dwdx_ = savepoint_diffusion_exit.dwdx()
+        dwdy_ = savepoint_diffusion_exit.dwdy()
 
     assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, w, py2fgen.FLOAT64), w_.asnumpy(), atol=1e-12
@@ -423,15 +431,17 @@ def test_diffusion_wrapper_single_step(
     assert testing_test_utils.dallclose(
         py2fgen.as_array(ffi, theta_v, py2fgen.FLOAT64), theta_v_.asnumpy(), atol=1e-12
     )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, hdef_ic, py2fgen.FLOAT64), hdef_ic_.asnumpy(), atol=1e-12
-    )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, div_ic, py2fgen.FLOAT64), div_ic_.asnumpy(), atol=1e-12
-    )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, dwdx, py2fgen.FLOAT64), dwdx_.asnumpy(), atol=1e-12
-    )
-    assert testing_test_utils.dallclose(
-        py2fgen.as_array(ffi, dwdy, py2fgen.FLOAT64), dwdy_.asnumpy(), atol=1e-12
-    )
+    if itype_sher > 0:
+        assert testing_test_utils.dallclose(
+            py2fgen.as_array(ffi, hdef_ic, py2fgen.FLOAT64), hdef_ic_.asnumpy(), atol=1e-12
+        )
+        assert testing_test_utils.dallclose(
+            py2fgen.as_array(ffi, div_ic, py2fgen.FLOAT64), div_ic_.asnumpy(), atol=1e-12
+        )
+    if itype_sher == diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND:
+        assert testing_test_utils.dallclose(
+            py2fgen.as_array(ffi, dwdx, py2fgen.FLOAT64), dwdx_.asnumpy(), atol=1e-12
+        )
+        assert testing_test_utils.dallclose(
+            py2fgen.as_array(ffi, dwdy, py2fgen.FLOAT64), dwdy_.asnumpy(), atol=1e-12
+        )
