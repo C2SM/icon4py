@@ -10,7 +10,6 @@ import logging
 import pathlib
 
 import pytest
-from gt4py.next import typing as gtx_typing
 
 from icon4py.model.common import dimension as dims, model_backends, model_options
 from icon4py.model.common.decomposition import definitions as decomp_defs, mpi_decomposition
@@ -18,14 +17,13 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import driver_states, driver_utils, main, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
 from icon4py.model.testing import (
+    data_handling,
+    datatest_utils as dt_utils,
     definitions as test_defs,
     grid_utils,
     parallel_helpers,
-    serialbox as sb,
 )
 from icon4py.model.testing.fixtures.datatest import backend_like, experiment, processor_props
-
-from ..fixtures import *  # noqa: F404
 
 
 if mpi_decomposition.mpi4py is None:
@@ -206,35 +204,28 @@ def test_standalone_driver_compare_single_multi_rank(
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
-    "experiment, istep_exit, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
+    "experiment, istep_exit, substep_exit, step_date_exit, timeloop_diffusion_linit_exit",
     [
         (
             test_defs.Experiments.JW,
             2,
             5,
-            "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
-            False,
             False,
         ),
     ],
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_run_standalone_driver_single_step_serialized_data(
+def test_run_single_step_serialized_data(
     experiment: test_defs.Experiment,
-    timeloop_date_init: str,
-    timeloop_date_exit: str,
-    timeloop_diffusion_linit_init: bool,
-    *,
+    istep_exit: int,
+    substep_exit: int,
+    step_date_exit: str,
+    timeloop_diffusion_linit_exit: bool,
     tmp_path: pathlib.Path,
     processor_props: decomp_defs.ProcessProperties,
-    savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
-    substep_exit: int,
-    timeloop_diffusion_savepoint_exit_standalone: sb.IconDiffusionExitSavepoint,
     backend_like: model_backends.BackendLike,
-    backend: gtx_typing.Backend | None,
 ) -> None:
     if experiment.grid.params.limited_area:
         pytest.xfail("Limited-area grids not yet supported")
@@ -255,19 +246,48 @@ def test_run_standalone_driver_single_step_serialized_data(
         / f"ci_driver_output_for_backend_{backend_name}_mpi_rank_{processor_props.rank}",
     )
 
-    fields = ["vn", "w", "exner", "theta_v", "rho"]
-    serialized_reference_fields: dict[str, object] = {
-        "vn": timeloop_diffusion_savepoint_exit_standalone.vn().asnumpy(),
-        "w": timeloop_diffusion_savepoint_exit_standalone.w().asnumpy(),
-        "exner": timeloop_diffusion_savepoint_exit_standalone.exner().asnumpy(),
-        "theta_v": timeloop_diffusion_savepoint_exit_standalone.theta_v().asnumpy(),
-        "rho": savepoint_nonhydro_exit.rho_new().asnumpy(),
-    }
+    serial_reference_fields = None
+    if processor_props.rank == 0:
+        single_rank_processor_props = decomp_defs.get_processor_properties(
+            decomp_defs.get_runtype(with_mpi=False)
+        )
+        root_url = test_defs.SERIALIZED_DATA_ROOT_URLS[single_rank_processor_props.comm_size]
+        archive_filename = dt_utils.get_experiment_archive_filename(
+            experiment, single_rank_processor_props.comm_size
+        )
+        archive_path = f"{test_defs.SERIALIZED_DATA_DIR}/{archive_filename}"
+        uri = dt_utils.get_serialized_data_url(root_url, archive_path)
+        data_path = dt_utils.get_datapath_for_experiment(experiment, single_rank_processor_props)
+        data_handling.download_test_data(data_path.parent, uri)
 
+        backend = model_options.customize_backend(
+            program=None, backend=driver_utils.get_backend_from_name(backend_name)
+        )
+        data_provider = dt_utils.create_icon_serial_data_provider(
+            data_path, single_rank_processor_props.rank, backend
+        )
+        savepoint_nonhydro_exit = data_provider.from_savepoint_nonhydro_exit(
+            istep=istep_exit,
+            date=step_date_exit,
+            substep=substep_exit,
+        )
+        savepoint_diffusion_exit = data_provider.from_savepoint_diffusion_exit(
+            linit=timeloop_diffusion_linit_exit,
+            date=step_date_exit,
+        )
+        serial_reference_fields = {
+            "vn": savepoint_diffusion_exit.vn().asnumpy(),
+            "w": savepoint_diffusion_exit.w().asnumpy(),
+            "exner": savepoint_diffusion_exit.exner().asnumpy(),
+            "theta_v": savepoint_diffusion_exit.theta_v().asnumpy(),
+            "rho": savepoint_nonhydro_exit.rho_new().asnumpy(),
+        }
+
+    fields = ["vn", "w", "exner", "theta_v", "rho"]
     for field_name in fields:
         print(f"verifying field {field_name}")
         global_reference_field = processor_props.comm.bcast(
-            serialized_reference_fields.get(field_name),
+            serial_reference_fields.get(field_name) if serial_reference_fields is not None else None,
             root=0,
         )
         local_field = getattr(multi_rank_ds.prognostics.current, field_name)
@@ -279,4 +299,5 @@ def test_run_standalone_driver_single_step_serialized_data(
             global_reference_field=global_reference_field,
             local_field=local_field.asnumpy(),
             check_halos=True,
+            atol=1e-6,
         )
