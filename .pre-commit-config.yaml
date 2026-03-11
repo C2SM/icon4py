@@ -103,7 +103,7 @@ repos:
       - <<: *uv-managed-hook
         id: mypy
         name: mypy static type checker
-        entry: uv run --group dev --extra distributed --frozen --isolated mypy
+        entry: uv run --group dev-distributed --frozen --isolated mypy
         types_or: [python, pyi]
         pass_filenames: false
 
