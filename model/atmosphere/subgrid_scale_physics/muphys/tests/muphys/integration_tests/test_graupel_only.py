@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import atexit
 from typing import Final
 
 import numpy as np
@@ -58,22 +57,22 @@ def set_default_precision():
     ids=lambda exp: exp.name,
 )
 @pytest.mark.parametrize(
-    "dtype", [np.float64, np.float32], ids=["double_precision", "single_precision"]
+    "precision", ["double", "single"], ids=lambda p: f"{p}_precision"
 )
 def test_graupel_only(
     backend_like: model_backends.BackendLike,
     experiment: utils.MuphysExperiment,
-    dtype: np.float32 | np.float64,
+    precision: str
 ) -> None:
+    if precision != type_alias.precision:
+        pytest.skip(f"The environment is configured with {precision} floating point precision.")
     assert experiment.type == utils.ExperimentType.GRAUPEL_ONLY
+    dtype = np.float32 if precision == "single" else "double"
     inp = common.GraupelInput.load(
         filename=experiment.input_file,
         allocator=model_backends.get_allocator(backend_like),
         dtype=dtype,
     )
-    precision = "single" if dtype == np.float32 else "double"
-    type_alias.set_precision(precision)
-    atexit.register(set_default_precision)
 
     graupel_run_program = run_graupel_only.setup_graupel(
         inp,
