@@ -82,6 +82,7 @@ def main(
         stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
         array_ns=array_ns,
+        exchange=icon4py_driver.exchange,
     )
 
     log.info("driver setup: DONE")

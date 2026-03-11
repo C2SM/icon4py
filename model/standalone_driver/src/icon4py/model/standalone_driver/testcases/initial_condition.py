@@ -22,6 +22,7 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -61,6 +62,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     stretch_factor: float,
     damping_height: float,
     array_ns: ModuleType,
+    exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
