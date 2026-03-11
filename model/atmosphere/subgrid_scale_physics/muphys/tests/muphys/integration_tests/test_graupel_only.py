@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import atexit
 from typing import Final
 
 import numpy as np
@@ -15,7 +16,7 @@ import pytest
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, run_graupel_only
-from icon4py.model.common import dimension as dims, model_backends
+from icon4py.model.common import dimension as dims, model_backends, type_alias
 from icon4py.model.testing.fixtures.datatest import backend_like
 
 from . import utils
@@ -40,6 +41,11 @@ class Experiments:
     )
 
 
+def set_default_precision():
+    """Reset the default floating point precision."""
+    type_alias.set_precision(type_alias.DEFAULT_PRECISION)
+
+
 @pytest.mark.uses_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -51,13 +57,23 @@ class Experiments:
     ],
     ids=lambda exp: exp.name,
 )
+@pytest.mark.parametrize(
+    "dtype", [np.float64, np.float32], ids=["double_precision", "single_precision"]
+)
 def test_graupel_only(
-    backend_like: model_backends.BackendLike, experiment: utils.MuphysExperiment
+    backend_like: model_backends.BackendLike,
+    experiment: utils.MuphysExperiment,
+    dtype: np.float32 | np.float64,
 ) -> None:
     assert experiment.type == utils.ExperimentType.GRAUPEL_ONLY
     inp = common.GraupelInput.load(
-        filename=experiment.input_file, allocator=model_backends.get_allocator(backend_like)
+        filename=experiment.input_file,
+        allocator=model_backends.get_allocator(backend_like),
+        dtype=dtype,
     )
+    precision = "single" if dtype == np.float32 else "double"
+    type_alias.set_precision(precision)
+    atexit.register(set_default_precision)
 
     graupel_run_program = run_graupel_only.setup_graupel(
         inp,
@@ -71,6 +87,7 @@ def test_graupel_only(
     # but save in this case as we are not reading the input with an offset.
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
+        dtype=dtype,
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
         references={
             "qv": inp.qv,
@@ -100,11 +117,17 @@ def test_graupel_only(
     )
 
     ref = common.GraupelOutput.load(
-        filename=experiment.reference_file, allocator=model_backends.get_allocator(backend_like)
+        filename=experiment.reference_file,
+        allocator=model_backends.get_allocator(backend_like),
+        dtype=dtype,
     )
 
-    rtol = 1e-14
-    atol = 1e-16
+    if precision == "double":
+        rtol = 1e-14
+        atol = 1e-16
+    else:  # TODO(edopao): check thresholds for single precision
+        rtol = 1e-7
+        atol = 1e-8
 
     np.testing.assert_allclose(ref.qv.asnumpy(), out.qv.asnumpy(), atol=atol, rtol=rtol)
     np.testing.assert_allclose(ref.qc.asnumpy(), out.qc.asnumpy(), atol=atol, rtol=rtol)

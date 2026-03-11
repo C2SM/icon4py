@@ -150,6 +150,7 @@ class GraupelOutput:
     def allocate(
         cls,
         allocator: gtx_typing.Allocator,
+        dtype: np.core_defs.DTypeLike,
         domain: gtx.Domain,
         references: dict[str, gtx.Field] | None = None,
     ):
@@ -163,7 +164,7 @@ class GraupelOutput:
         if references is None:
             references = {}
 
-        zeros_full = functools.partial(gtx.zeros, domain=domain, allocator=allocator)
+        zeros_full = functools.partial(gtx.zeros, domain=domain, allocator=allocator, dtype=dtype)
         surface_domain = gtx.Domain(
             dims=domain.dims,
             ranges=(
@@ -171,7 +172,9 @@ class GraupelOutput:
                 gtx.unit_range((domain.ranges[1].stop - 1, domain.ranges[1].stop)),
             ),
         )
-        zeros_surface = functools.partial(gtx.zeros, domain=surface_domain, allocator=allocator)
+        zeros_surface = functools.partial(
+            gtx.zeros, domain=surface_domain, allocator=allocator, dtype=dtype
+        )
         return cls(
             **{
                 field.name: references[field.name]
@@ -184,9 +187,14 @@ class GraupelOutput:
         )
 
     @classmethod
-    def load(cls, filename: pathlib.Path | str, allocator: gtx_typing.Allocator):
+    def load(
+        cls,
+        filename: pathlib.Path | str,
+        allocator: gtx_typing.Allocator,
+        dtype: np.core_defs.DTypeLike,
+    ):
         with netCDF4.Dataset(filename, mode="r") as ncfile:
-            field_from_nc = functools.partial(_as_field_from_nc, ncfile, allocator)
+            field_from_nc = functools.partial(_as_field_from_nc, ncfile, allocator, dtype=dtype)
             return cls(
                 t=field_from_nc("ta"),
                 qv=field_from_nc("hus"),
