@@ -39,7 +39,7 @@ def test_standalone_driver_initial_condition(
     backend = model_options.customize_backend(program=None, backend=backend_like)
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}",
-        grid_file_path=grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL),
+        grid_file_path=grid_utils._download_grid_file(experiment.grid),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
         backend_name=backend_name,
     )
