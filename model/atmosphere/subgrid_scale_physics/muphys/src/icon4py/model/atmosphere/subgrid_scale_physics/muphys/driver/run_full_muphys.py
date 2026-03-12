@@ -174,8 +174,27 @@ def main():
     allocator = model_backends.get_allocator(backend)
 
     inp = common.GraupelInput.load(filename=pathlib.Path(args.input_file), allocator=allocator)
+
+    use_inout_buffers = True  # Set to True to reuse input buffers for output.
+    if use_inout_buffers:
+        # We are passing the same buffers for `Q` as input and output. This is not best GT4Py practice,
+        # but should be safe in this case as we are not reading the input with an offset.
+        references = {
+            "qv": inp.qv,
+            "qc": inp.qc,
+            "qi": inp.qi,
+            "qr": inp.qr,
+            "qs": inp.qs,
+            "qg": inp.qg,
+            "t": inp.t,
+        }
+    else:
+        references = None
+
     out = common.GraupelOutput.allocate(
-        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}), allocator=allocator
+        domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+        allocator=allocator,
+        references=references,
     )
 
     # TODO(havogt): once we see single program being equally fast, remove the other implementation
