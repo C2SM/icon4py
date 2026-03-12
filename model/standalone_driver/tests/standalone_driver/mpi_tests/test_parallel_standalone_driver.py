@@ -109,6 +109,7 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
         exchange=multi_rank_icon4py_driver.exchange,
     )
 
+    # TODO (jcanton/msimberg): unify the two checks below and remove code duplication
     fields = ["vn", "w", "exner", "theta_v", "rho"]
     serial_reference_fields: dict[str, object] = {
         field_name: getattr(single_rank_ds.prognostics.current, field_name).asnumpy()
@@ -122,6 +123,29 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
             root=0,
         )
         local_field = getattr(multi_rank_ds.prognostics.current, field_name)
+        dim = local_field.domain.dims[0]
+        parallel_helpers.check_local_global_field(
+            decomposition_info=multi_rank_icon4py_driver.decomposition_info,
+            processor_props=processor_props,
+            dim=dim,
+            global_reference_field=global_reference_field,
+            local_field=local_field.asnumpy(),
+            check_halos=True,
+            atol=0.0,
+        )
+
+    fields = ["u", "v"]
+    serial_reference_fields: dict[str, object] = {
+        field_name: getattr(single_rank_ds.diagnostic, field_name).asnumpy()
+        for field_name in fields
+    }
+    for field_name in fields:
+        print(f"verifying diagnostic field {field_name}")
+        global_reference_field = processor_props.comm.bcast(
+            serial_reference_fields.get(field_name),
+            root=0,
+        )
+        local_field = getattr(multi_rank_ds.diagnostic, field_name)
         dim = local_field.domain.dims[0]
         parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_icon4py_driver.decomposition_info,
