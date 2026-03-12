@@ -58,7 +58,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     model_top_height: float,
     stretch_factor: float,
     damping_height: float,
-    array_ns: ModuleType,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
