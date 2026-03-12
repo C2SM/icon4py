@@ -25,14 +25,13 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment, rank", [(definitions.Experiments.JW, 0)])
+@pytest.mark.parametrize("experiment", [(definitions.Experiments.JW)])
 @pytest.mark.datatest
 def test_standalone_driver_initial_condition(
     backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
     experiment: definitions.Experiments,
     data_provider: serialbox.IconSerialDataProvider,
-    rank: int,
 ) -> None:
     backend_name = None
     for k, v in model_backends.BACKENDS.items():
@@ -41,8 +40,8 @@ def test_standalone_driver_initial_condition(
     backend = model_options.customize_backend(
         program=None, backend=driver_utils.get_backend_from_name(backend_name)
     )
-    if backend is not None and "dace_gpu" in backend.name:
-        pytest.skip("dace_gpu backend time limit exceeds 45 minutes")
+    # if backend is not None and "dace_gpu" in backend.name:
+    #     pytest.skip("dace_gpu backend time limit exceeds 45 minutes")
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}",
         grid_file_path=grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL),

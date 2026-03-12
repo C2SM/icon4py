@@ -56,8 +56,8 @@ def test_standalone_driver(
     backend = model_options.customize_backend(
         program=None, backend=driver_utils.get_backend_from_name(backend_name)
     )
-    if backend is not None and "dace_gpu" in backend.name:
-        pytest.skip("dace_gpu backend time limit exceeds 45 minutes")
+    # if backend is not None and "dace_gpu" in backend.name:
+    #     pytest.skip("dace_gpu backend time limit exceeds 45 minutes")
     array_ns = data_alloc.import_array_ns(backend)
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
     ds = main.main(
@@ -68,14 +68,10 @@ def test_standalone_driver(
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = (
-        timeloop_diffusion_savepoint_exit_standalone.exner()
-    )  # savepoint_nonhydro_exit.exner_new() #
-    theta_sp = (
-        timeloop_diffusion_savepoint_exit_standalone.theta_v()
-    )  # savepoint_nonhydro_exit.theta_v_new() #
-    vn_sp = timeloop_diffusion_savepoint_exit_standalone.vn()  # savepoint_nonhydro_exit.vn_new() #
-    w_sp = timeloop_diffusion_savepoint_exit_standalone.w()  # savepoint_nonhydro_exit.w_new() #
+    exner_sp = timeloop_diffusion_savepoint_exit_standalone.exner()
+    theta_sp = timeloop_diffusion_savepoint_exit_standalone.theta_v()
+    vn_sp = timeloop_diffusion_savepoint_exit_standalone.vn()
+    w_sp = timeloop_diffusion_savepoint_exit_standalone.w()
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),
