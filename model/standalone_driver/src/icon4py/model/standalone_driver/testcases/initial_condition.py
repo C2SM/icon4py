@@ -50,8 +50,6 @@ log = logging.getLogger(__name__)
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
-    c2e: data_alloc.NDArray,
-    e2c: data_alloc.NDArray,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
@@ -271,8 +269,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid,
-        c2e=c2e,
-        e2c=e2c,
+        c2e=grid.get_connectivity(dims.C2E).ndarray,
+        e2c=grid.get_connectivity(dims.E2C).ndarray,
         z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
         inv_dual_edge_length=geometry_field_source.get(
             f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"

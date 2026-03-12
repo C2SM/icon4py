@@ -39,6 +39,8 @@ def test_standalone_driver_initial_condition(
     backend = model_options.customize_backend(
         program=None, backend=driver_utils.get_backend_from_name(backend_name)
     )
+    if backend is not None and "dace_gpu" in backend.name:
+        pytest.skip("dace_gpu backend time limit exceeds 45 minutes")
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}",
         grid_file_path=grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL),
@@ -48,8 +50,6 @@ def test_standalone_driver_initial_condition(
 
     ds = initial_condition.jablonowski_williamson(
         grid=icon4py_driver.grid,
-        c2e=icon4py_driver.grid.get_connectivity(dims.C2E).ndarray,
-        e2c=icon4py_driver.grid.get_connectivity(dims.E2C).ndarray,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
