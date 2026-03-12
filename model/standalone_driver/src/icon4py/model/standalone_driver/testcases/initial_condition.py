@@ -280,7 +280,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vn=prognostic_state_now.vn.ndarray,
         vct_b=vct_b.ndarray,
         nlev=num_levels,
-        array_ns=array_ns,
+        array_ns=xp,
     )
     log.info("U2vn computation completed.")
 
