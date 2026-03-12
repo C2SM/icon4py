@@ -39,6 +39,10 @@ test_tools_datatests_aarch64:
 .test_model_datatests:
   stage: test
   script:
+    - echo $CUDA_VISIBLE_DEVICES
+    - echo $CUDA_MPS_PIPE_DIRECTORY
+    - echo $CUDA_MPS_LOG_DIRECTORY
+    - nvidia-smi
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND --level=$LEVEL
   rules:
     - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'common'
