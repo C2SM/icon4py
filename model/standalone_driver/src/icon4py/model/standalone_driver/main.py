@@ -41,7 +41,6 @@ def main(
             help=f"Logging level of the model. Possible options are {' / '.join([*driver_utils._LOGGING_LEVELS.keys()])}",
         ),
     ] = next(iter(driver_utils._LOGGING_LEVELS.keys())),
-    array_ns: ModuleType = np,
 ) -> driver_states.DriverStates:
     """
     This is a function that runs the icon4py driver from a grid file with the initial
