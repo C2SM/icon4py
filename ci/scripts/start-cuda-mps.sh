@@ -25,6 +25,7 @@ mkdir -p "${CUDA_MPS_LOG_DIRECTORY}"
 nvidia-cuda-mps-control -d
 
 pid_file="${CUDA_MPS_PIPE_DIRECTORY}/nvidia-cuda-mps-control.pid"
+mps_pid_file_timeout=120
 if ! timeout ${mps_pid_file_timeout} bash -c "until [[ -f \"${pid_file}\" ]]; do sleep 1; done"; then
     echo "The MPS wrapper script timed out waiting for MPS pid file ${pid_file} on rank ${SLURM_PROCID}. MPS daemon likely did not start correctly or the rank starting the MPS daemons took too long to start."
     exit 1
