@@ -265,7 +265,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         rayleigh_damping_height=damping_height,
     )
 
-    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, model_backends.get_allocator(backend))
 
     prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
         grid,
