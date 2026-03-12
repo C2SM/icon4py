@@ -36,9 +36,7 @@ def test_standalone_driver_initial_condition(
     backend_name = next(
         (k for k, v in model_backends.BACKENDS.items() if backend_like == v), "embedded"
     )
-    backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(backend_name)
-    )
+    backend = model_options.customize_backend(program=None, backend=backend_like)
     if backend is not None and "dace_gpu" in backend.name:
         pytest.skip("dace_gpu backend time limit exceeds 45 minutes")
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
