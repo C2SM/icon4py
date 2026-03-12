@@ -7,10 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
 import pathlib
-from types import ModuleType
 from typing import Annotated
 
-import numpy as np
 import typer
 
 from icon4py.model.common import model_backends

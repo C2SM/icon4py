@@ -51,7 +51,6 @@ def test_standalone_driver(
         (k for k, v in model_backends.BACKENDS.items() if backend_like == v), "embedded"
     )
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
-    backend = model_options.customize_backend(program=None, backend=backend_like)
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
     ds = main.main(
         grid_file_path=grid_file_path,

@@ -8,7 +8,6 @@
 import functools
 import logging
 import math
-from types import ModuleType
 
 from gt4py import next as gtx
 
