@@ -61,7 +61,7 @@ _LOGGING_LEVELS: dict[str, int] = {
 
 
 def create_grid_manager(
-    grid_file_path: str | pathlib.Path,
+    grid_file_path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
     allocator: gtx_typing.Allocator,
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
@@ -580,7 +580,7 @@ def configure_logging(
 
 
 def get_backend_from_name(
-    backend_name: str | model_backends.BackendLike | None,
+    backend_name: str,
 ) -> model_backends.BackendLike:
     if backend_name not in model_backends.BACKENDS:
         raise ValueError(
