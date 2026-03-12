@@ -542,7 +542,7 @@ def test_metrics_fields_compare_single_multi_rank(
     )
 
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file, experiment.num_levels, allocator=allocator)
+    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file, allocator=allocator, num_levels=experiment.num_levels)
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
         grid=single_rank_grid_manager.grid,
@@ -590,8 +590,8 @@ def test_metrics_fields_compare_single_multi_rank(
         file=file,
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
-        num_levels=experiment.num_levels,
         allocator=allocator,
+        num_levels=experiment.num_levels,
     )
     _log.info(
         f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
