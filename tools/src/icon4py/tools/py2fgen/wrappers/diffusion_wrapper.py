@@ -225,6 +225,7 @@ def diffusion_init(
             model_backends.get_allocator(actual_backend)
         ),
     )
+    gtx.wait_for_compilation()
 
 
 @icon4py_export.export
