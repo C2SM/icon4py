@@ -31,4 +31,8 @@ if ! timeout ${mps_pid_file_timeout} bash -c "until [[ -f \"${pid_file}\" ]]; do
     exit 1
 fi
 
+# Once the daemon has been started, unset CUDA_VISIBLE_DEVICES as the
+# selection has already been made in the daemon.
+unset CUDA_VISIBLE_DEVICES
+
 echo "Started MPS server on rank ${SLURM_PROCID}, MPS pipe directory ${CUDA_MPS_PIPE_DIRECTORY}, MPS log directory ${CUDA_MPS_LOG_DIRECTORY}"
