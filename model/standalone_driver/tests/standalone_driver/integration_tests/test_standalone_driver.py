@@ -36,7 +36,7 @@ from ..fixtures import *  # noqa: F403
     ],
 )
 def test_standalone_driver(
-    experiment: definitions.Experiments,
+    experiment: definitions.Experiment,
     timeloop_date_init: str,
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,
