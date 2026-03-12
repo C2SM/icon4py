@@ -137,10 +137,10 @@ def check_local_global_field(
     if check_halos:
         np.testing.assert_allclose(
             global_reference_field[
-                decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
+                data_alloc.as_numpy(decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO))
             ],
             local_field[
-                decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
+                data_alloc.as_numpy(decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO))
             ],
             atol=1e-9,
             verbose=True,
@@ -150,7 +150,7 @@ def check_local_global_field(
     # field, by gathering owned entries to the first rank. This ensures that in
     # total we have the full global field distributed on all ranks.
     owned_entries = local_field[
-        decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
+        data_alloc.as_numpy(decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED))
     ]
     gathered_sizes, gathered_field = gather_field(owned_entries, processor_props)
 
@@ -262,11 +262,13 @@ def test_geometry_fields_compare_single_multi_rank(
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
         pytest.xfail(f"Field {attrs_name} can't be computed with the embedded backend")
 
+    allocator = model_backends.get_allocator(backend)
+
     # TODO(msimberg): Add fixtures for single/multi-rank
     # grid/geometry/interpolation/metrics factories.
     grid_file = grid_utils._download_grid_file(grid_description)
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(grid_file)
+    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(grid_file, allocator=allocator)
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
         grid=single_rank_grid_manager.grid,
@@ -283,6 +285,7 @@ def test_geometry_fields_compare_single_multi_rank(
         file=grid_file,
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
+        allocator=allocator,
     )
     _log.info(
         f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
@@ -359,9 +362,11 @@ def test_interpolation_fields_compare_single_multi_rank(
     if attrs_name in embedded_broken_fields and test_utils.is_embedded(backend):
         pytest.xfail(f"Field {attrs_name} can't be computed with the embedded backend")
 
+    allocator = model_backends.get_allocator(backend)
+
     file = grid_utils.resolve_full_grid_file_name(experiment.grid)
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file)
+    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file, allocator=allocator)
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
         grid=single_rank_grid_manager.grid,
@@ -386,6 +391,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         file=file,
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
+        allocator=allocator,
     )
     _log.info(
         f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
@@ -535,7 +541,7 @@ def test_metrics_fields_compare_single_multi_rank(
     )
 
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file, experiment.num_levels)
+    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file, experiment.num_levels, allocator=allocator)
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
         grid=single_rank_grid_manager.grid,
@@ -584,6 +590,7 @@ def test_metrics_fields_compare_single_multi_rank(
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
         num_levels=experiment.num_levels,
+        allocator=allocator,
     )
     _log.info(
         f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
