@@ -90,7 +90,7 @@ description = 'ICON model in Python.'
 license = {text = "BSD-3 License"}
 name = "icon4py"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 # managed by bump-my-version:
 version = "0.0.6"
 
@@ -98,6 +98,7 @@ version = "0.0.6"
 all = ["icon4py[distributed,fortran,io,testing,profiling]"]
 cuda11 = ["icon4py-common[cuda11]"]
 cuda12 = ["icon4py-common[cuda12]"]
+cuda13 = ["icon4py-common[cuda13]"]
 distributed = ["icon4py-common[distributed]"]
 fortran = ["icon4py-tools>=0.0.6"]
 io = ["icon4py-common[io]"]
@@ -389,7 +390,7 @@ packages = []
 
 # -- uv: packages & workspace --
 [tool.uv]
-conflicts = [[{extra = "cuda11"}, {extra = "cuda12"}]]
+conflicts = [[{extra = "cuda11"}, {extra = "cuda12"}, {extra = "cuda13"}]]
 
 [[tool.uv.index]]
 explicit = true
@@ -404,7 +405,7 @@ url = 'https://gridtools.github.io/pypi/'
 [tool.uv.sources]
 dace = {index = "gridtools"}
 ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
-gt4py = {git = "https://github.com/GridTools/gt4py", branch = "allow_more_conditionals_fusion"}
+gt4py = {git = "https://github.com/GridTools/gt4py", branch = "cupy-cuda13"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}
