@@ -52,8 +52,6 @@ def test_standalone_driver(
     )
     grid_file_path = grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL)
     backend = model_options.customize_backend(program=None, backend=backend_like)
-    if backend is not None and "dace_gpu" in backend.name:
-        pytest.skip("dace_gpu backend time limit exceeds 45 minutes")
     array_ns = data_alloc.import_array_ns(backend)
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
     ds = main.main(
