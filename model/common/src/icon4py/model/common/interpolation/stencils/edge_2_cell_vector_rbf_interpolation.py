@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim
+from icon4py.model.common.dimension import C2E2C2E
 
 
 @gtx.field_operator
@@ -33,8 +33,8 @@ def _edge_2_cell_vector_rbf_interpolation(
     Returns:
         RBF reconstructed vector at cell center.
     """
-    p_u_out = neighbor_sum(ptr_coeff_1 * p_e_in(C2E2C2E), axis=C2E2C2EDim)
-    p_v_out = neighbor_sum(ptr_coeff_2 * p_e_in(C2E2C2E), axis=C2E2C2EDim)
+    p_u_out = neighbor_sum(ptr_coeff_1 * p_e_in(C2E2C2E), axis=dims.C2E2C2EDim)
+    p_v_out = neighbor_sum(ptr_coeff_2 * p_e_in(C2E2C2E), axis=dims.C2E2C2EDim)
     return p_u_out, p_v_out
 
 
