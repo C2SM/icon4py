@@ -51,7 +51,7 @@ test_tools_datatests_aarch64:
       when: never  # run only in daily CI, to save compute resources
     - if: $BACKEND == 'gtfn_gpu' || $COMPONENT == 'common'
       variables:
-        NUM_PROCESSES: 2
+        NUM_PROCESSES: 8
         SLURM_TIMELIMIT: '00:40:00'
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
