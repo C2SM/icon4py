@@ -30,7 +30,7 @@ from icon4py.model.testing.fixtures.datatest import (
 def test_standalone_driver_initial_condition(
     backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
-    experiment: definitions.Experiments,
+    experiment: definitions.Experiment,
     data_provider: serialbox.IconSerialDataProvider,
 ) -> None:
     backend_name = next(
