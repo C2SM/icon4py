@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pathlib
+import sysconfig
 
 import click
 
@@ -74,13 +75,9 @@ def main(
         logger.info("%s %s.", label, "changed" if changed else "is up to date")
         any_changed |= changed
 
-    compilation_outputs_exist = (
-        (output_path / f"{plugin.library_name}.h").exists()
-        # Glob matches the shared library (.so on Linux, .dylib on macOS).
-        # Note: may also match other files like .c or .o if they
-        # happen to be prefixed with 'lib{plugin.library_name}'.
-        and any(output_path.glob(f"lib{plugin.library_name}.*"))
-    )
+    compilation_outputs_exist = (output_path / f"{plugin.library_name}.h").exists() and (
+        output_path / f"lib{plugin.library_name}{sysconfig.get_config_var('SHLIB_SUFFIX')}"
+    ).exists()
     if not compilation_outputs_exist:
         logger.info("Compilation outputs missing.")
 
