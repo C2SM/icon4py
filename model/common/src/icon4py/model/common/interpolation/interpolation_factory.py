@@ -243,7 +243,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         lsq_pseudoinv = factory.NumpyDataProvider(
             func=functools.partial(
                 interpolation_fields.compute_lsq_coeffs,
-                exchange=functools.partial(self._exchange.exchange_and_wait, dims.CellDim),
+                exchange=functools.partial(
+                    self._exchange.exchange, dims.CellDim, stream=decomposition.BLOCK
+                ),
                 array_ns=self._xp,
             ),
             fields=(attrs.LSQ_PSEUDOINV,),
