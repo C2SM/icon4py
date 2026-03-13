@@ -635,7 +635,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     k_lev: fa.KField[gtx.int32],
     horizontal_start_distance: int32,
     horizontal_end_distance: int32,
-) -> tuple[fa.EdgeKField[bool], fa.EdgeKField[wpfloat]]:
+) -> fa.EdgeKField[wpfloat]:
     """
     Compute an edge mask and extrapolation distance for grid points requiring downward extrapolation of the pressure gradient.
 
@@ -653,7 +653,6 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
         horizontal_end_distance: end index in edge fields until where extrapolation distance is computed
 
     Returns:
-        pg_edge_mask: edge index mask for points requiring downward extrapolation
         pg_exdist_dsl: extrapolation distance
 
     """
@@ -667,9 +666,6 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
         downward_distance,
         0.0,
     )
-    flatness_condition = (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask
-    pg_edgeidx, pg_vertidx = where(flatness_condition, (e_lev, k_lev), (0, 0))
-    pg_edge_mask = (pg_edgeidx > 0) & (pg_vertidx > 0)
 
     pg_exdist_dsl = where(
         (k_lev >= (flat_idx_max + 1)) & (z_me < extrapolation_distance) & e_owner_mask,
@@ -677,7 +673,7 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
         0.0,
     )
 
-    return pg_edge_mask, pg_exdist_dsl
+    return pg_exdist_dsl
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -689,7 +685,6 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(
     flat_idx_max: fa.EdgeField[gtx.int32],
     e_lev: fa.EdgeField[gtx.int32],
     k_lev: fa.KField[gtx.int32],
-    pg_edgeidx_dsl: fa.EdgeKField[bool],
     pg_exdist_dsl: fa.EdgeKField[wpfloat],
     horizontal_start_distance: int32,
     horizontal_end_distance: int32,
@@ -708,7 +703,7 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(
         k_lev=k_lev,
         horizontal_start_distance=horizontal_start_distance,
         horizontal_end_distance=horizontal_end_distance,
-        out=(pg_edgeidx_dsl, pg_exdist_dsl),
+        out=pg_exdist_dsl,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -718,13 +713,12 @@ def compute_pressure_gradient_downward_extrapolation_mask_distance(
 
 @gtx.field_operator
 def _compute_mask_prog_halo_c(
-    c_refin_ctrl: fa.CellField[gtx.int32], mask_prog_halo_c: fa.CellField[bool]
+    c_refin_ctrl: fa.CellField[gtx.int32],
 ) -> fa.CellField[bool]:
-    mask_prog_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), mask_prog_halo_c, True)
+    mask_prog_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), False, True)
     return mask_prog_halo_c
 
 
-# TODO(halungge): not registered in factory
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_mask_prog_halo_c(
     c_refin_ctrl: fa.CellField[gtx.int32],
@@ -745,77 +739,7 @@ def compute_mask_prog_halo_c(
     """
     _compute_mask_prog_halo_c(
         c_refin_ctrl,
-        mask_prog_halo_c,
         out=mask_prog_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-
-@gtx.field_operator
-def _compute_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[int32],
-) -> fa.CellField[bool]:
-    bdy_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), True, False)
-    return bdy_halo_c
-
-
-# TODO(halungge): not registered in factory
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[gtx.int32],
-    bdy_halo_c: fa.CellField[bool],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-):
-    """
-    Compute bdy_halo_c.
-
-    See mo_vertical_grid.f90. bdy_halo_c_dsl_low_refin in ICON
-
-    Args:
-        c_refin_ctrl: Cell field of refin_ctrl
-        bdy_halo_c: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-    """
-    _compute_bdy_halo_c(
-        c_refin_ctrl,
-        out=bdy_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_mask_bdy_halo_c(
-    c_refin_ctrl: fa.CellField[int32],
-    mask_prog_halo_c: fa.CellField[bool],
-    bdy_halo_c: fa.CellField[bool],
-    horizontal_start: int32,
-    horizontal_end: int32,
-):
-    """
-    Compute bdy_halo_c.
-    Compute mask_prog_halo_c.
-
-
-    See mo_vertical_grid.f90. bdy_halo_c_dsl_low_refin in ICON
-
-    Args:
-        c_refin_ctrl: Cell field of refin_ctrl
-        bdy_halo_c: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-    """
-    _compute_mask_prog_halo_c(
-        c_refin_ctrl,
-        mask_prog_halo_c,
-        out=mask_prog_halo_c,
-        domain={dims.CellDim: (horizontal_start, horizontal_end)},
-    )
-
-    _compute_bdy_halo_c(
-        c_refin_ctrl,
-        out=bdy_halo_c,
         domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
@@ -949,7 +873,7 @@ def compute_max_nbhgt(
     max_nbhgt: fa.CellField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     """
     Compute max_nbhgt.
 

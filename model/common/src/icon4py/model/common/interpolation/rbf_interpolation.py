@@ -323,13 +323,15 @@ def _compute_rbf_interpolation_coeffs(
     geometry_type: base_grid.GeometryType,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, ...]:
     rbf_offset_shape_full = rbf_offset.shape
-    rbf_offset = rbf_offset[horizontal_start:]
+    assert 0 <= horizontal_start <= horizontal_end <= rbf_offset_shape_full[0]
+    rbf_offset = rbf_offset[horizontal_start:horizontal_end]
     num_elements = rbf_offset.shape[0]
 
     # Pad edge normals and centers with a dummy zero for easier vectorized
@@ -364,9 +366,9 @@ def _compute_rbf_interpolation_coeffs(
     # Compute distances for right hand side(s) of linear system
     element_center = array_ns.stack(
         (
-            element_center_x[horizontal_start:],
-            element_center_y[horizontal_start:],
-            element_center_z[horizontal_start:],
+            element_center_x[horizontal_start:horizontal_end],
+            element_center_y[horizontal_start:horizontal_end],
+            element_center_z[horizontal_start:horizontal_end],
         ),
         axis=-1,
     )
@@ -393,10 +395,10 @@ def _compute_rbf_interpolation_coeffs(
     for i in range(num_zonal_meridional_components):
         z_nx_x, z_nx_y, z_nx_z = _cartesian_coordinates_from_zonal_and_meridional_components(
             geometry_type,
-            element_center_lat[horizontal_start:],
-            element_center_lon[horizontal_start:],
-            uv[i][0][horizontal_start:],
-            uv[i][1][horizontal_start:],
+            element_center_lat[horizontal_start:horizontal_end],
+            element_center_lon[horizontal_start:horizontal_end],
+            uv[i][0][horizontal_start:horizontal_end],
+            uv[i][1][horizontal_start:horizontal_end],
             array_ns=array_ns,
         )
         z_nx.append(array_ns.stack((z_nx_x, z_nx_y, z_nx_z), axis=-1))
@@ -458,8 +460,8 @@ def _compute_rbf_interpolation_coeffs(
 
     # Normalize coefficients
     for j in range(num_zonal_meridional_components):
-        rbf_vec_coeff[j][horizontal_start:] /= array_ns.sum(
-            nxnx[j] * rbf_vec_coeff[j][horizontal_start:], axis=1
+        rbf_vec_coeff[j][horizontal_start:horizontal_end] /= array_ns.sum(
+            nxnx[j] * rbf_vec_coeff[j][horizontal_start:horizontal_end], axis=1
         )[:, array_ns.newaxis]
     exchange(*rbf_vec_coeff, stream=decomposition.BLOCK)
     return rbf_vec_coeff
@@ -483,6 +485,7 @@ def compute_rbf_interpolation_coeffs_cell(
     geometry_type: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray], None],
@@ -509,6 +512,7 @@ def compute_rbf_interpolation_coeffs_cell(
         base_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
+        horizontal_end,
         domain_length,
         domain_height,
         exchange=exchange,
@@ -532,6 +536,7 @@ def compute_rbf_interpolation_coeffs_edge(
     geometry_type: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray], None],
@@ -555,6 +560,7 @@ def compute_rbf_interpolation_coeffs_edge(
         base_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
+        horizontal_end,
         domain_length,
         domain_height,
         exchange=exchange,
@@ -579,6 +585,7 @@ def compute_rbf_interpolation_coeffs_vertex(
     geometry_type: int,
     scale_factor: ta.wpfloat,
     horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
     exchange: Callable[[data_alloc.NDArray], None],
@@ -605,6 +612,7 @@ def compute_rbf_interpolation_coeffs_vertex(
         base_grid.GeometryType(geometry_type),
         scale_factor,
         horizontal_start,
+        horizontal_end,
         domain_length,
         domain_height,
         exchange=exchange,

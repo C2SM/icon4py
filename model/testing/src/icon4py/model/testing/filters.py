@@ -38,8 +38,8 @@ item_marker_filters: dict[str, ItemFilter] = {
         action=functools.partial(pytest.skip, "currently only runs on CPU"),
     ),
     pytest.mark.embedded_only.name: ItemFilter(
-        condition=lambda item: not test_utils.is_embedded(
-            test_utils.get_backend_fixture_value(item)
+        condition=lambda item: (
+            not test_utils.is_embedded(test_utils.get_backend_fixture_value(item))
         ),
         action=functools.partial(pytest.skip, "stencil runs only on embedded backend"),
     ),
@@ -70,8 +70,10 @@ item_marker_filters: dict[str, ItemFilter] = {
         action=functools.partial(pytest.skip, "GTFN compilation is too slow for this test."),
     ),
     pytest.mark.skip_value_error.name: ItemFilter(
-        condition=lambda item: (grid := test_utils.get_fixture_value("grid", item)).limited_area
-        or grid.geometry_type == base.GeometryType.ICOSAHEDRON,
+        condition=lambda item: (
+            (grid := test_utils.get_fixture_value("grid", item)).limited_area
+            or grid.geometry_type == base.GeometryType.ICOSAHEDRON
+        ),
         action=functools.partial(
             pytest.skip,
             "Stencil does not support domain containing skip values. Consider shrinking domain.",

@@ -32,7 +32,6 @@ from icon4py.model.common.interpolation import interpolation_attributes, interpo
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import grid_utils
 from icon4py.model.testing.fixtures.benchmark import (
     geometry_field_source,
     interpolation_field_source,
@@ -61,8 +60,6 @@ def solve_nonhydro(
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
-
-    decomposition_info = grid_utils.construct_decomposition_info(mesh, allocator)
 
     vertical_config = v_grid.VerticalGridConfig(
         mesh.num_levels,
@@ -136,7 +133,6 @@ def solve_nonhydro(
     )
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
-        bdy_halo_c=metrics_field_source.get(metrics_attributes.BDY_HALO_C),
         mask_prog_halo_c=metrics_field_source.get(metrics_attributes.MASK_PROG_HALO_C),
         rayleigh_w=metrics_field_source.get(metrics_attributes.RAYLEIGH_W),
         time_extrapolation_parameter_for_exner=metrics_field_source.get(
@@ -176,8 +172,7 @@ def solve_nonhydro(
         zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
         vertoffset_gradp=metrics_field_source.get(metrics_attributes.VERTOFFSET_GRADP),
         nflat_gradp=metrics_field_source.get(metrics_attributes.NFLAT_GRADP),
-        pg_edgeidx_dsl=metrics_field_source.get(metrics_attributes.PG_EDGEIDX_DSL),
-        pg_exdist=metrics_field_source.get(metrics_attributes.PG_EDGEDIST_DSL),
+        pg_exdist=metrics_field_source.get(metrics_attributes.PG_EXDIST_DSL),
         ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),
         ddxt_z_full=metrics_field_source.get(metrics_attributes.DDXT_Z_FULL),
         wgtfac_e=metrics_field_source.get(metrics_attributes.WGTFAC_E),
@@ -205,11 +200,7 @@ def solve_nonhydro(
         vertical_params=vertical_grid,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=gtx.as_field(
-            (dims.CellDim,),
-            decomposition_info.owner_mask(dims.CellDim),  # type: ignore[arg-type] # mypy not take the type of owner_mask
-            allocator=allocator,
-        ),
+        owner_mask=geometry_field_source.get("cell_owner_mask"),
         backend=backend_like,
     )
 

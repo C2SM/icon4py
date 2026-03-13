@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import math
 
 import numpy as np
 
@@ -48,20 +47,7 @@ def gnomonic_proj(
     return x, y
 
 
-def gnomonic_proj_single_val(
-    lon_c: float, lat_c: float, lon: float, lat: float
-) -> tuple[float, float]:
-    cosc = math.sin(lat_c) * math.sin(lat) + math.cos(lat_c) * math.cos(lat) * math.cos(lon - lon_c)
-    zk = 1.0 / cosc
-
-    x = zk * math.cos(lat) * math.sin(lon - lon_c)
-    y = zk * (
-        math.cos(lat_c) * math.sin(lat) - math.sin(lat_c) * math.cos(lat) * math.cos(lon - lon_c)
-    )
-    return x, y
-
-
-def plane_torus_closest_coordinates(
+def diff_on_edges_torus_numpy(
     cc_cv_x: float,
     cc_cv_y: float,
     cc_cell_x: float,

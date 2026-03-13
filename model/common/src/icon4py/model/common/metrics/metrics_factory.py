@@ -33,6 +33,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.metrics import (
+    compute_advection_metrics,
     compute_coeff_gradekin,
     compute_diffusion_metrics,
     compute_zdiff_gradp_dsl,
@@ -128,6 +129,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 {
                     "topography": topography,
                     "vct_a": self._vertical_grid.interface_physical_height,
+                    "height_u": self._vertical_grid.interface_physical_height[
+                        : self._grid.num_levels
+                    ],
+                    "height_l": self._vertical_grid.interface_physical_height[
+                        1 : self._grid.num_levels + 1
+                    ],
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
@@ -712,13 +719,13 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"pg_edgeidx_dsl": attrs.PG_EDGEIDX_DSL, "pg_exdist_dsl": attrs.PG_EDGEDIST_DSL},
+            fields={"pg_exdist_dsl": attrs.PG_EXDIST_DSL},
             do_exchange=False,
         )
         self.register_provider(pressure_gradient_fields)
 
-        compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
-            func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),
+        compute_mask_prog_halo_c = factory.ProgramFieldProvider(
+            func=mf.compute_mask_prog_halo_c.with_backend(self._backend),
             deps={
                 "c_refin_ctrl": "c_refin_ctrl",
             },
@@ -730,11 +737,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={
                 attrs.MASK_PROG_HALO_C: attrs.MASK_PROG_HALO_C,
-                attrs.BDY_HALO_C: attrs.BDY_HALO_C,
             },
             do_exchange=False,
         )
-        self.register_provider(compute_mask_bdy_halo_c)
+        self.register_provider(compute_mask_prog_halo_c)
 
         compute_horizontal_mask_for_3d_divdamp = factory.ProgramFieldProvider(
             func=mf.compute_horizontal_mask_for_3d_divdamp.with_backend(self._backend),
@@ -811,7 +817,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         compute_wgtfacq_c = factory.NumpyDataProvider(
             func=functools.partial(weight_factors.compute_wgtfacq_c_dsl, array_ns=self._xp),
-            domain=(dims.CellDim, dims.KDim),
+            domain=gtx.domain(
+                {
+                    dims.CellDim: (0, self._grid.num_cells),
+                    dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
+                }
+            ),
             fields=(attrs.WGTFACQ_C,),
             deps={"z_ifc": attrs.CELL_HEIGHT_ON_HALF_LEVEL},
             params={"nlev": self._grid.num_levels},
@@ -833,7 +844,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "wgtfacq_c_dsl": attrs.WGTFACQ_C,
             },
             connectivities={"e2c": dims.E2CDim},
-            domain=(dims.EdgeDim, dims.KDim),
+            domain=gtx.domain(
+                {
+                    dims.EdgeDim: (0, self._grid.num_edges),
+                    dims.KDim: (self._grid.num_levels - 3, self._grid.num_levels),
+                }
+            ),
             fields=(attrs.WGTFACQ_E,),
             params={"n_edges": self._grid.num_edges, "nlev": self._grid.num_levels},
         )
@@ -916,10 +932,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             connectivities={"c2e2c": dims.C2E2CDim},
             domain=(dims.CellDim, dims.KDim),
-            fields=(
-                attrs.MASK_HDIFF,
-                attrs.ZD_DIFFCOEF_DSL,
-            ),
+            fields=(attrs.ZD_DIFFCOEF,),
             params={
                 "thslp_zdiffu": self._config["thslp_zdiffu"],
                 "thhgtd_zdiffu": self._config["thhgtd_zdiffu"],
@@ -947,8 +960,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             connectivities={"c2e2c": dims.C2E2CDim},
             domain=(dims.CellDim, dims.C2E2CDim, dims.KDim),
             fields=(
-                attrs.ZD_INTCOEF_DSL,
-                attrs.ZD_VERTOFFSET_DSL,
+                attrs.ZD_INTCOEF,
+                attrs.ZD_VERTOFFSET,
             ),
             params={
                 "thslp_zdiffu": self._config["thslp_zdiffu"],
@@ -961,6 +974,29 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
 
         self.register_provider(compute_diffusion_intcoef_and_vertoffset)
+
+        compute_advection_deepatmo_fields = factory.ProgramFieldProvider(
+            func=compute_advection_metrics.compute_advection_deepatmo_fields,
+            domain={
+                dims.KDim: (
+                    vertical_domain(v_grid.Zone.TOP),
+                    vertical_domain(v_grid.Zone.BOTTOM),
+                ),
+            },
+            fields={
+                attrs.DEEPATMO_DIVH: attrs.DEEPATMO_DIVH,
+                attrs.DEEPATMO_DIVZL: attrs.DEEPATMO_DIVZL,
+                attrs.DEEPATMO_DIVZU: attrs.DEEPATMO_DIVZU,
+            },
+            deps={
+                "height_u": "height_u",
+                "height_l": "height_l",
+            },
+            params={"grid_sphere_radius": constants.EARTH_RADIUS},
+            do_exchange=False,
+        )
+
+        self.register_provider(compute_advection_deepatmo_fields)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:

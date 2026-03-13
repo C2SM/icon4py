@@ -402,8 +402,6 @@ module dycore
                                      geofac_grg_y_size_1, &
                                      nudgecoeff_e, &
                                      nudgecoeff_e_size_0, &
-                                     bdy_halo_c, &
-                                     bdy_halo_c_size_0, &
                                      mask_prog_halo_c, &
                                      mask_prog_halo_c_size_0, &
                                      rayleigh_w, &
@@ -463,12 +461,12 @@ module dycore
                                      vertoffset_gradp_size_0, &
                                      vertoffset_gradp_size_1, &
                                      vertoffset_gradp_size_2, &
-                                     ipeidx_dsl, &
-                                     ipeidx_dsl_size_0, &
-                                     ipeidx_dsl_size_1, &
+                                     pg_edgeidx, &
+                                     pg_edgeidx_size_0, &
+                                     pg_vertidx, &
+                                     pg_vertidx_size_0, &
                                      pg_exdist, &
                                      pg_exdist_size_0, &
-                                     pg_exdist_size_1, &
                                      ddqz_z_full_e, &
                                      ddqz_z_full_e_size_0, &
                                      ddqz_z_full_e_size_1, &
@@ -510,6 +508,7 @@ module dycore
                                      divdamp_trans_start, &
                                      divdamp_trans_end, &
                                      l_vert_nested, &
+                                     ldeepatmo, &
                                      rhotheta_offctr, &
                                      veladv_offctr, &
                                      nudge_max_coeff, &
@@ -620,10 +619,6 @@ module dycore
          type(c_ptr), value, target :: nudgecoeff_e
 
          integer(c_int), value :: nudgecoeff_e_size_0
-
-         type(c_ptr), value, target :: bdy_halo_c
-
-         integer(c_int), value :: bdy_halo_c_size_0
 
          type(c_ptr), value, target :: mask_prog_halo_c
 
@@ -743,17 +738,17 @@ module dycore
 
          integer(c_int), value :: vertoffset_gradp_size_2
 
-         type(c_ptr), value, target :: ipeidx_dsl
+         type(c_ptr), value, target :: pg_edgeidx
 
-         integer(c_int), value :: ipeidx_dsl_size_0
+         integer(c_int), value :: pg_edgeidx_size_0
 
-         integer(c_int), value :: ipeidx_dsl_size_1
+         type(c_ptr), value, target :: pg_vertidx
+
+         integer(c_int), value :: pg_vertidx_size_0
 
          type(c_ptr), value, target :: pg_exdist
 
          integer(c_int), value :: pg_exdist_size_0
-
-         integer(c_int), value :: pg_exdist_size_1
 
          type(c_ptr), value, target :: ddqz_z_full_e
 
@@ -836,6 +831,8 @@ module dycore
          real(c_double), value, target :: divdamp_trans_end
 
          logical(c_int), value, target :: l_vert_nested
+
+         logical(c_int), value, target :: ldeepatmo
 
          real(c_double), value, target :: rhotheta_offctr
 
@@ -1484,7 +1481,6 @@ contains
                             geofac_grg_x, &
                             geofac_grg_y, &
                             nudgecoeff_e, &
-                            bdy_halo_c, &
                             mask_prog_halo_c, &
                             rayleigh_w, &
                             exner_exfac, &
@@ -1505,7 +1501,8 @@ contains
                             ddxn_z_full, &
                             zdiff_gradp, &
                             vertoffset_gradp, &
-                            ipeidx_dsl, &
+                            pg_edgeidx, &
+                            pg_vertidx, &
                             pg_exdist, &
                             ddqz_z_full_e, &
                             ddxt_z_full, &
@@ -1530,6 +1527,7 @@ contains
                             divdamp_trans_start, &
                             divdamp_trans_end, &
                             l_vert_nested, &
+                            ldeepatmo, &
                             rhotheta_offctr, &
                             veladv_offctr, &
                             nudge_max_coeff, &
@@ -1578,8 +1576,6 @@ contains
 
       real(c_double), dimension(:), target :: nudgecoeff_e
 
-      logical(c_int), dimension(:), target :: bdy_halo_c
-
       logical(c_int), dimension(:), target :: mask_prog_halo_c
 
       real(c_double), dimension(:), target :: rayleigh_w
@@ -1620,9 +1616,11 @@ contains
 
       integer(c_int), dimension(:, :, :), target :: vertoffset_gradp
 
-      logical(c_int), dimension(:, :), target :: ipeidx_dsl
+      integer(c_int), dimension(:), pointer :: pg_edgeidx
 
-      real(c_double), dimension(:, :), target :: pg_exdist
+      integer(c_int), dimension(:), pointer :: pg_vertidx
+
+      real(c_double), dimension(:), pointer :: pg_exdist
 
       real(c_double), dimension(:, :), target :: ddqz_z_full_e
 
@@ -1669,6 +1667,8 @@ contains
       real(c_double), value, target :: divdamp_trans_end
 
       logical(c_int), value, target :: l_vert_nested
+
+      logical(c_int), value, target :: ldeepatmo
 
       real(c_double), value, target :: rhotheta_offctr
 
@@ -1760,8 +1760,6 @@ contains
 
       integer(c_int) :: nudgecoeff_e_size_0
 
-      integer(c_int) :: bdy_halo_c_size_0
-
       integer(c_int) :: mask_prog_halo_c_size_0
 
       integer(c_int) :: rayleigh_w_size_0
@@ -1840,13 +1838,11 @@ contains
 
       integer(c_int) :: vertoffset_gradp_size_2
 
-      integer(c_int) :: ipeidx_dsl_size_0
+      integer(c_int) :: pg_edgeidx_size_0
 
-      integer(c_int) :: ipeidx_dsl_size_1
+      integer(c_int) :: pg_vertidx_size_0
 
       integer(c_int) :: pg_exdist_size_0
-
-      integer(c_int) :: pg_exdist_size_1
 
       integer(c_int) :: ddqz_z_full_e_size_0
 
@@ -1887,6 +1883,18 @@ contains
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
+      type(c_ptr) :: pg_edgeidx_ptr
+
+      type(c_ptr) :: pg_vertidx_ptr
+
+      type(c_ptr) :: pg_exdist_ptr
+
+      pg_edgeidx_ptr = c_null_ptr
+
+      pg_vertidx_ptr = c_null_ptr
+
+      pg_exdist_ptr = c_null_ptr
+
       !$acc host_data use_device(c_lin_e)
       !$acc host_data use_device(c_intp)
       !$acc host_data use_device(e_flx_avg)
@@ -1903,7 +1911,6 @@ contains
       !$acc host_data use_device(geofac_grg_x)
       !$acc host_data use_device(geofac_grg_y)
       !$acc host_data use_device(nudgecoeff_e)
-      !$acc host_data use_device(bdy_halo_c)
       !$acc host_data use_device(mask_prog_halo_c)
       !$acc host_data use_device(rayleigh_w)
       !$acc host_data use_device(exner_exfac)
@@ -1924,8 +1931,6 @@ contains
       !$acc host_data use_device(ddxn_z_full)
       !$acc host_data use_device(zdiff_gradp)
       !$acc host_data use_device(vertoffset_gradp)
-      !$acc host_data use_device(ipeidx_dsl)
-      !$acc host_data use_device(pg_exdist)
       !$acc host_data use_device(ddqz_z_full_e)
       !$acc host_data use_device(ddxt_z_full)
       !$acc host_data use_device(wgtfac_e)
@@ -1937,6 +1942,9 @@ contains
       !$acc host_data use_device(coeff2_dwdz)
       !$acc host_data use_device(coeff_gradekin)
       !$acc host_data use_device(c_owner_mask)
+      !$acc host_data use_device(pg_edgeidx) if(associated(pg_edgeidx))
+      !$acc host_data use_device(pg_vertidx) if(associated(pg_vertidx))
+      !$acc host_data use_device(pg_exdist) if(associated(pg_exdist))
 
 #ifdef _OPENACC
       on_gpu = .True.
@@ -1990,8 +1998,6 @@ contains
       geofac_grg_y_size_1 = SIZE(geofac_grg_y, 2)
 
       nudgecoeff_e_size_0 = SIZE(nudgecoeff_e, 1)
-
-      bdy_halo_c_size_0 = SIZE(bdy_halo_c, 1)
 
       mask_prog_halo_c_size_0 = SIZE(mask_prog_halo_c, 1)
 
@@ -2052,12 +2058,6 @@ contains
       vertoffset_gradp_size_1 = SIZE(vertoffset_gradp, 2)
       vertoffset_gradp_size_2 = SIZE(vertoffset_gradp, 3)
 
-      ipeidx_dsl_size_0 = SIZE(ipeidx_dsl, 1)
-      ipeidx_dsl_size_1 = SIZE(ipeidx_dsl, 2)
-
-      pg_exdist_size_0 = SIZE(pg_exdist, 1)
-      pg_exdist_size_1 = SIZE(pg_exdist, 2)
-
       ddqz_z_full_e_size_0 = SIZE(ddqz_z_full_e, 1)
       ddqz_z_full_e_size_1 = SIZE(ddqz_z_full_e, 2)
 
@@ -2086,6 +2086,21 @@ contains
       coeff_gradekin_size_1 = SIZE(coeff_gradekin, 2)
 
       c_owner_mask_size_0 = SIZE(c_owner_mask, 1)
+
+      if (associated(pg_edgeidx)) then
+         pg_edgeidx_ptr = c_loc(pg_edgeidx)
+         pg_edgeidx_size_0 = SIZE(pg_edgeidx, 1)
+      end if
+
+      if (associated(pg_vertidx)) then
+         pg_vertidx_ptr = c_loc(pg_vertidx)
+         pg_vertidx_size_0 = SIZE(pg_vertidx, 1)
+      end if
+
+      if (associated(pg_exdist)) then
+         pg_exdist_ptr = c_loc(pg_exdist)
+         pg_exdist_size_0 = SIZE(pg_exdist, 1)
+      end if
 
       rc = solve_nh_init_wrapper(c_lin_e=c_loc(c_lin_e), &
                                  c_lin_e_size_0=c_lin_e_size_0, &
@@ -2134,8 +2149,6 @@ contains
                                  geofac_grg_y_size_1=geofac_grg_y_size_1, &
                                  nudgecoeff_e=c_loc(nudgecoeff_e), &
                                  nudgecoeff_e_size_0=nudgecoeff_e_size_0, &
-                                 bdy_halo_c=c_loc(bdy_halo_c), &
-                                 bdy_halo_c_size_0=bdy_halo_c_size_0, &
                                  mask_prog_halo_c=c_loc(mask_prog_halo_c), &
                                  mask_prog_halo_c_size_0=mask_prog_halo_c_size_0, &
                                  rayleigh_w=c_loc(rayleigh_w), &
@@ -2195,12 +2208,12 @@ contains
                                  vertoffset_gradp_size_0=vertoffset_gradp_size_0, &
                                  vertoffset_gradp_size_1=vertoffset_gradp_size_1, &
                                  vertoffset_gradp_size_2=vertoffset_gradp_size_2, &
-                                 ipeidx_dsl=c_loc(ipeidx_dsl), &
-                                 ipeidx_dsl_size_0=ipeidx_dsl_size_0, &
-                                 ipeidx_dsl_size_1=ipeidx_dsl_size_1, &
-                                 pg_exdist=c_loc(pg_exdist), &
+                                 pg_edgeidx=pg_edgeidx_ptr, &
+                                 pg_edgeidx_size_0=pg_edgeidx_size_0, &
+                                 pg_vertidx=pg_vertidx_ptr, &
+                                 pg_vertidx_size_0=pg_vertidx_size_0, &
+                                 pg_exdist=pg_exdist_ptr, &
                                  pg_exdist_size_0=pg_exdist_size_0, &
-                                 pg_exdist_size_1=pg_exdist_size_1, &
                                  ddqz_z_full_e=c_loc(ddqz_z_full_e), &
                                  ddqz_z_full_e_size_0=ddqz_z_full_e_size_0, &
                                  ddqz_z_full_e_size_1=ddqz_z_full_e_size_1, &
@@ -2242,6 +2255,7 @@ contains
                                  divdamp_trans_start=divdamp_trans_start, &
                                  divdamp_trans_end=divdamp_trans_end, &
                                  l_vert_nested=l_vert_nested, &
+                                 ldeepatmo=ldeepatmo, &
                                  rhotheta_offctr=rhotheta_offctr, &
                                  veladv_offctr=veladv_offctr, &
                                  nudge_max_coeff=nudge_max_coeff, &

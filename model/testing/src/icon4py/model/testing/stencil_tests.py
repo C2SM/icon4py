@@ -20,13 +20,13 @@ from gt4py import eve
 from gt4py.next import (
     config as gtx_config,
     constructors,
-    metrics as gtx_metrics,
     named_collections as gtx_named_collections,
     typing as gtx_typing,
 )
 
 # TODO(havogt): import will disappear after FieldOperators support `.compile`
 from gt4py.next.ffront.decorator import FieldOperator
+from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.grid import base
@@ -34,7 +34,7 @@ from icon4py.model.common.utils import device_utils
 
 
 def allocate_data(
-    allocator: gtx_typing.FieldBufferAllocationUtil | None,
+    allocator: gtx_typing.Allocator | None,
     input_data: dict[
         str, Any
     ],  # `Field`s or collection of `Field`s are re-allocated, the rest is passed through
@@ -198,7 +198,6 @@ class StencilTest:
             else:
                 program.compile(
                     offset_provider=grid.connectivities,
-                    enable_jit=False,
                     **static_args,  # type: ignore[arg-type]
                 )
 
