@@ -59,7 +59,7 @@ typing = [
 ]
 typing-distributed = [
   "mpi4py>=3.1.5",
-  "pymetis>=2022.1"
+  "pymetis>2022.1"
 ]
 
 # -- Standard project description options (PEP 621) --

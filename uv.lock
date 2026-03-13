@@ -1778,7 +1778,7 @@ typing = [
 ]
 typing-distributed = [
     { name = "mpi4py", specifier = ">=3.1.5" },
-    { name = "pymetis", specifier = ">=2022.1" },
+    { name = "pymetis", specifier = ">2022.1" },
 ]
 
 [[package]]
@@ -1908,7 +1908,6 @@ cuda12 = [
 distributed = [
     { name = "ghex" },
     { name = "mpi4py" },
-    { name = "pymetis" },
 ]
 io = [
     { name = "cartopy" },
@@ -1917,6 +1916,7 @@ io = [
     { name = "holoviews" },
     { name = "netcdf4" },
     { name = "numpy" },
+    { name = "pymetis" },
     { name = "scikit-learn" },
     { name = "uxarray" },
     { name = "xarray", extra = ["complete"] },
@@ -1942,7 +1942,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.23.3" },
     { name = "numpy", marker = "extra == 'io'", specifier = ">=1.23.3" },
     { name = "packaging", specifier = ">=20.0" },
-    { name = "pymetis", marker = "extra == 'distributed'", specifier = ">2022.1" },
+    { name = "pymetis", marker = "extra == 'io'", specifier = ">2022.1" },
     { name = "scikit-learn", marker = "extra == 'io'", specifier = ">=1.4.0" },
     { name = "scipy", specifier = ">=1.14.1" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
