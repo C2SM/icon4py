@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
-from icon4py.model.common import model_backends
+from icon4py.model.common import dace_hooks, model_backends
 
 
 log = logging.getLogger(__name__)
@@ -28,6 +28,7 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
 def get_dace_options(
     program_name: str, **backend_descriptor: Any
 ) -> model_backends.BackendDescriptor:
+    is_rocm_backend = backend_descriptor.get("device") == model_backends.DeviceType.ROCM
     optimization_args = backend_descriptor.get("optimization_args", {})
     optimization_hooks = optimization_args.get("optimization_hooks", {})
     if program_name in [
@@ -54,10 +55,14 @@ def get_dace_options(
         backend_descriptor["use_zero_origin"] = True
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
-        optimization_args["gpu_maxnreg"] = 80
-        optimization_args["gpu_block_size_2d"] = (64, 6)
+        if not is_rocm_backend:
+            optimization_args["gpu_maxnreg"] = 80
+            optimization_args["gpu_block_size_2d"] = (64, 6)
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
+        optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre] = (
+            dace_hooks.graupel_run_self_copy_removal_inside_scan
+        )
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:

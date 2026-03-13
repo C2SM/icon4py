@@ -117,7 +117,7 @@ def setup_muphys(
             muphys_program = model_options.setup_program(
                 backend=backend,
                 program=muphys.muphys_run,
-                constant_args={"dt": dt, "qnc": qnc},
+                constant_args={"dt": ta.wpfloat(dt), "qnc": ta.wpfloat(qnc)},
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(0),
                     "horizontal_end": inp.ncells,
@@ -172,8 +172,11 @@ def main():
 
     backend = model_backends.BACKENDS[args.backend]
     allocator = model_backends.get_allocator(backend)
+    dtype = gtx.float32 if ta.precision == "single" else gtx.float64
 
-    inp = common.GraupelInput.load(filename=pathlib.Path(args.input_file), allocator=allocator)
+    inp = common.GraupelInput.load(
+        filename=pathlib.Path(args.input_file), allocator=allocator, dtype=dtype
+    )
 
     use_inout_buffers = True  # Set to True to reuse input buffers for output.
     if use_inout_buffers:
@@ -194,6 +197,7 @@ def main():
     out = common.GraupelOutput.allocate(
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
         allocator=allocator,
+        dtype=dtype,
         references=references,
     )
 
