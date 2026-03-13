@@ -1605,7 +1605,6 @@ dev = [
     { name = "coverage", extra = ["toml"] },
     { name = "esbonio" },
     { name = "icon4py-testing" },
-    { name = "mpi4py" },
     { name = "mypy", extra = ["faster-cache"] },
     { name = "myst-parser" },
     { name = "nox" },
@@ -1667,11 +1666,14 @@ test = [
     { name = "pytest-xdist", extra = ["psutil"] },
 ]
 typing = [
-    { name = "mpi4py" },
     { name = "mypy", extra = ["faster-cache"] },
     { name = "scipy-stubs" },
     { name = "types-cffi" },
     { name = "typing-extensions" },
+]
+typing-distributed = [
+    { name = "mpi4py" },
+    { name = "pymetis" },
 ]
 
 [package.metadata]
@@ -1708,7 +1710,6 @@ dev = [
     { name = "coverage", extras = ["toml"], specifier = ">=7.5.0" },
     { name = "esbonio", specifier = ">=0.16.0" },
     { name = "icon4py-testing", editable = "model/testing" },
-    { name = "mpi4py", specifier = ">=4.0.0" },
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
     { name = "myst-parser", specifier = ">=4.0.0" },
     { name = "nox", git = "https://github.com/wntrblm/nox.git?rev=aa09595437608dfe21eb776d8a4bcc0bd5f9916b" },
@@ -1770,11 +1771,14 @@ test = [
     { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.5.0" },
 ]
 typing = [
-    { name = "mpi4py", specifier = ">=4.0.0" },
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
     { name = "scipy-stubs", specifier = ">=1.15.3.0" },
     { name = "types-cffi", specifier = ">=1.16.0" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
+]
+typing-distributed = [
+    { name = "mpi4py", specifier = ">=3.1.5" },
+    { name = "pymetis", specifier = ">2022.1" },
 ]
 
 [[package]]
