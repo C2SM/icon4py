@@ -171,7 +171,7 @@ def check_local_global_field(
         _log.info(
             f"rank = {processor_props.rank}:                      --- gathered field has size {gathered_sizes}"
         )
-        sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)  # type: ignore [attr-defined]
+        sorted_ = np.zeros(global_reference_field.shape, dtype=gtx.float64)
         sorted_[gathered_global_indices] = gathered_field
         _log.info(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"

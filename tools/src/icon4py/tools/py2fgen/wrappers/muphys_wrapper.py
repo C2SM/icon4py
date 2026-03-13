@@ -44,10 +44,10 @@ def graupel_run(
     pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     wait_for_completion: bool,
-):
+) -> None:
     global graupel_program  # noqa: PLW0603 [global-statement]
     if graupel_program is None:
-        on_gpu = t.array_ns != np
+        on_gpu = t.array_ns != np  # type: ignore[attr-defined]  # to be fixed in gt4py
         with muphys_utils.recursion_limit(10**4):
             graupel_program = model_options.setup_program(
                 backend={
@@ -94,7 +94,7 @@ def graupel_run(
 
 
 @icon4py_export.export
-def graupel_finalize():
+def graupel_finalize() -> None:
     # The atexit function is not called when embedding cpython into another application
     # with cffi, so we call it explicitly here to dump the metrics.
     gtx_metrics._dump_metrics_at_exit()

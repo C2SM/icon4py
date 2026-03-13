@@ -52,13 +52,13 @@ def _compute_ppm_slope(
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     elev: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
-    z_slope = concat_where(
+    z_slope = concat_where(  # type: ignore[call-overload] # mypy thinks _compute_ppm... results in "Any"
         dims.KDim == elev,
         _compute_ppm_slope_b(p_cc, p_cellhgt_mc_now),
         _compute_ppm_slope_a(p_cc, p_cellhgt_mc_now),
     )
 
-    return z_slope  # type: ignore[return-value] # concat_where leads to static type erasure
+    return z_slope
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
