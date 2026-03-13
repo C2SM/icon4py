@@ -45,6 +45,9 @@ test_tools_datatests_aarch64:
       when: never  # run only in daily CI, to save compute resources
     - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'driver'
       when: never  # run only in daily CI, to save compute resources
+    - if: $COMPONENT == 'standalone_driver'
+      variables:
+        SLURM_TIMELIMIT: '00:40:00'
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
         NUM_PROCESSES: 8
@@ -52,9 +55,6 @@ test_tools_datatests_aarch64:
     - if: $COMPONENT == 'driver' || $COMPONENT == 'dycore' || $COMPONENT == 'muphys'
       variables:
         SLURM_TIMELIMIT: '00:30:00'
-    - if: $COMPONENT == 'standalone_driver'
-      variables:
-        SLURM_TIMELIMIT: '00:40:00' # dace_gpu disabled here because CI takes just below 2 hours to complete
     - when: on_success
       variables:
         SLURM_TIMELIMIT: '00:15:00'
