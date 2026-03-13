@@ -579,9 +579,7 @@ def configure_logging(
     display_icon4py_logo_in_log_file()
 
 
-def get_backend_from_name(
-    backend_name: str,
-) -> model_backends.BackendLike:
+def get_backend_from_name(backend_name: str) -> model_backends.BackendLike:
     if backend_name not in model_backends.BACKENDS:
         raise ValueError(
             f"Invalid driver backend: {backend_name}. \n"
