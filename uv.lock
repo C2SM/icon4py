@@ -1671,6 +1671,10 @@ typing = [
     { name = "types-cffi" },
     { name = "typing-extensions" },
 ]
+typing-distributed = [
+    { name = "mpi4py" },
+    { name = "pymetis" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1771,6 +1775,10 @@ typing = [
     { name = "scipy-stubs", specifier = ">=1.15.3.0" },
     { name = "types-cffi", specifier = ">=1.16.0" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
+]
+typing-distributed = [
+    { name = "mpi4py", specifier = ">=3.1.5" },
+    { name = "pymetis", specifier = ">2022.1" },
 ]
 
 [[package]]
