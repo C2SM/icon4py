@@ -93,32 +93,29 @@ def test_and_benchmark(
     skip_stenciltest_verification = request.config.getoption(
         "skip_stenciltest_verification"
     )  # skip verification if `--skip-stenciltest-verification` CLI option is set
-    skip_stenciltest_benchmark = benchmark is not None and benchmark.enabled
+    skip_stenciltest_benchmark = benchmark is None or not benchmark.enabled
 
-    if not (skip_stenciltest_verification and skip_stenciltest_benchmark):
+    if not skip_stenciltest_benchmark:
         # Precompile and run the program once to get the metrics key
         METRICS_KEY_EXTRACTOR: Final = "metrics_id_extractor"
-        if gtx_metrics.is_any_level_enabled():
 
-            @contextlib.contextmanager
-            def _get_metrics_id_program_callback(
-                program: gtx_typing.Program,
-                args: tuple[Any, ...],
-                offset_provider: gtx.common.OffsetProvider,
-                enable_jit: bool,
-                kwargs: dict[str, Any],
-            ) -> Generator[None, None, None]:
-                yield  # run the program
-                nonlocal metrics_key
-                metrics_key = gtx_metrics.get_current_source_key()
+        @contextlib.contextmanager
+        def _get_metrics_id_program_callback(
+            program: gtx_typing.Program,
+            args: tuple[Any, ...],
+            offset_provider: gtx.common.OffsetProvider,
+            enable_jit: bool,
+            kwargs: dict[str, Any],
+        ) -> Generator[None, None, None]:
+            yield  # run the program
+            nonlocal metrics_key
+            metrics_key = gtx_metrics.get_current_source_key()
 
-            gtx_hooks.program_call_context.register(
-                _get_metrics_id_program_callback, name=METRICS_KEY_EXTRACTOR
-            )
-
+        gtx_hooks.program_call_context.register(
+            _get_metrics_id_program_callback, name=METRICS_KEY_EXTRACTOR
+        )
         _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
-        if gtx_metrics.is_any_level_enabled():
-            gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
+        gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
 
         assert metrics_key is not None or not gtx_metrics.is_any_level_enabled()
 
@@ -164,9 +161,13 @@ def test_and_benchmark(
             ), "Multiple compiled programs found, cannot extract metrics."
             metrics_data = gtx_metrics.sources
             compute_samples = metrics_data[metrics_key].metrics["compute"].samples
-            # exclude warmup iterations, one extra iteration for calibrating pytest-benchmark and one for validation (if executed)
+            # exclude:
+            #  - one warmup round to get the metrics key
+            #  - one for validation (if executed)
+            #  - one extra warmup round for calibrating pytest-benchmark
+            #  - warmup iterations
             initial_program_iterations_to_skip = warmup_rounds * iterations + (
-                1 if skip_stenciltest_verification else 2
+                2 if skip_stenciltest_verification else 3
             )
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:
