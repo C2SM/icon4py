@@ -1633,40 +1633,6 @@ dev = [
     { name = "wget" },
     { name = "wheel" },
 ]
-dev-distributed = [
-    { name = "bump-my-version" },
-    { name = "coverage", extra = ["toml"] },
-    { name = "esbonio" },
-    { name = "icon4py-testing" },
-    { name = "mpi4py" },
-    { name = "mypy", extra = ["faster-cache"] },
-    { name = "myst-parser" },
-    { name = "nox" },
-    { name = "pip" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-benchmark" },
-    { name = "pytest-cache" },
-    { name = "pytest-cov" },
-    { name = "pytest-factoryboy" },
-    { name = "pytest-mpi" },
-    { name = "pytest-unused-fixtures" },
-    { name = "pytest-xdist", extra = ["psutil"] },
-    { name = "ruff" },
-    { name = "scipy-stubs" },
-    { name = "setuptools" },
-    { name = "sphinx" },
-    { name = "sphinx-math-dollar" },
-    { name = "sphinx-rtd-theme" },
-    { name = "sphinx-toolbox" },
-    { name = "tach" },
-    { name = "texsoup" },
-    { name = "types-cffi" },
-    { name = "typing-extensions" },
-    { name = "validate-pyproject-schema-store", extra = ["all"] },
-    { name = "wget" },
-    { name = "wheel" },
-]
 docs = [
     { name = "esbonio" },
     { name = "myst-parser" },
@@ -1707,6 +1673,7 @@ typing = [
 ]
 typing-distributed = [
     { name = "mpi4py" },
+    { name = "pymetis" },
 ]
 
 [package.metadata]
@@ -1743,40 +1710,6 @@ dev = [
     { name = "coverage", extras = ["toml"], specifier = ">=7.5.0" },
     { name = "esbonio", specifier = ">=0.16.0" },
     { name = "icon4py-testing", editable = "model/testing" },
-    { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
-    { name = "myst-parser", specifier = ">=4.0.0" },
-    { name = "nox", git = "https://github.com/wntrblm/nox.git?rev=aa09595437608dfe21eb776d8a4bcc0bd5f9916b" },
-    { name = "pip", specifier = ">=22.1.1" },
-    { name = "pre-commit", specifier = ">=4.0.1" },
-    { name = "pytest", specifier = ">=8.0.1" },
-    { name = "pytest-benchmark", specifier = ">=5.0.0" },
-    { name = "pytest-cache", specifier = ">=1.0" },
-    { name = "pytest-cov", specifier = ">=5.0.0" },
-    { name = "pytest-factoryboy", specifier = ">=2.6.1" },
-    { name = "pytest-mpi", specifier = ">=0.6" },
-    { name = "pytest-unused-fixtures", specifier = ">=0.2.0" },
-    { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.5.0" },
-    { name = "ruff", specifier = ">=0.8.0" },
-    { name = "scipy-stubs", specifier = ">=1.15.3.0" },
-    { name = "setuptools", specifier = ">=70.1.1" },
-    { name = "sphinx", specifier = "==7.3.7" },
-    { name = "sphinx-math-dollar", specifier = ">=1.2.1" },
-    { name = "sphinx-rtd-theme", specifier = ">=3.0.1" },
-    { name = "sphinx-toolbox", specifier = ">=3.8.1" },
-    { name = "tach", specifier = ">=0.23.0" },
-    { name = "texsoup", specifier = ">=0.3.1" },
-    { name = "types-cffi", specifier = ">=1.16.0" },
-    { name = "typing-extensions", specifier = ">=4.11.0" },
-    { name = "validate-pyproject-schema-store", extras = ["all"], specifier = ">=2025.6.13" },
-    { name = "wget", specifier = ">=3.2" },
-    { name = "wheel", specifier = ">=0.45.0" },
-]
-dev-distributed = [
-    { name = "bump-my-version", specifier = ">=0.16.0" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.5.0" },
-    { name = "esbonio", specifier = ">=0.16.0" },
-    { name = "icon4py-testing", editable = "model/testing" },
-    { name = "mpi4py" },
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.13.0" },
     { name = "myst-parser", specifier = ">=4.0.0" },
     { name = "nox", git = "https://github.com/wntrblm/nox.git?rev=aa09595437608dfe21eb776d8a4bcc0bd5f9916b" },
@@ -1843,7 +1776,10 @@ typing = [
     { name = "types-cffi", specifier = ">=1.16.0" },
     { name = "typing-extensions", specifier = ">=4.11.0" },
 ]
-typing-distributed = [{ name = "mpi4py" }]
+typing-distributed = [
+    { name = "mpi4py", specifier = ">=3.1.5" },
+    { name = "pymetis", specifier = ">=2022.1" },
+]
 
 [[package]]
 name = "icon4py-atmosphere-advection"
