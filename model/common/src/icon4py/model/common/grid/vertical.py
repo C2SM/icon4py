@@ -529,7 +529,8 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
 
 
 def get_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, allocator: gtx_typing.Allocator
+    vertical_config: VerticalGridConfig,
+    allocator: gtx_typing.Allocator,
 ) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.
