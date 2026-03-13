@@ -11,6 +11,7 @@ from __future__ import annotations
 import pathlib
 import urllib.parse
 
+import f90nml
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -72,3 +73,15 @@ def create_icon_serial_data_provider(
         mpi_rank=rank,
         do_print=True,
     )
+
+
+def read_namelist(namelist_path: pathlib.Path) -> dict:
+    """Read namelist file and return a dictionary of parameters."""
+    namelist = f90nml.read(namelist_path)
+    # TODO (Chia Rui): This needs to be checked in the review whether we can just keep the first element of lists for all namelist parameters.
+    for namelist_name, namelist_content in namelist.items():
+        if isinstance(namelist_content, dict):
+            for variable_name, variable_value in namelist_content.items():
+                if isinstance(variable_value, list):
+                    namelist[namelist_name][variable_name] = variable_value[0]
+    return namelist

@@ -14,9 +14,10 @@ import gt4py.next.typing as gtx_typing
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
+from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import RayleighType
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.grid import base as base_grid, vertical as v_grid
 from icon4py.model.testing import data_handling, datatest_utils as dt_utils, definitions
 
 
@@ -162,6 +163,74 @@ def data_provider(
 ) -> serialbox.IconSerialDataProvider:
     data_path = dt_utils.get_datapath_for_experiment(experiment, processor_props)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props.rank, backend)
+
+
+@pytest.fixture
+def icon_namelist(
+    download_ser_data: None,  # downloads data as side-effect
+    experiment: definitions.Experiment,
+    processor_props: decomposition.ProcessProperties,
+) -> dict:
+    experiment_dir = dt_utils.get_ranked_experiment_name_with_version(
+        experiment,
+        processor_props.comm_size,
+    )
+    namelist_path = definitions.serialized_data_path().joinpath(
+        experiment_dir, definitions.NAMELIST_FILENAME
+    )
+    return dt_utils.read_namelist(namelist_path)
+
+
+@pytest.fixture
+def vertical_grid_config(
+    icon_namelist: dict,
+) -> v_grid.VerticalGridConfig:
+    return v_grid.VerticalGridConfig(
+        # TODO (Chia Rui): where should we put the config construction? And remove this hardcoded style in next commits
+        num_levels=icon_namelist["RUN_NML"]["NUM_LEV"],
+        maximal_layer_thickness=icon_namelist["SLEVE_NML"]["MAX_LAY_THCKN"],
+        top_height_limit_for_maximal_layer_thickness=icon_namelist["SLEVE_NML"]["HTOP_THCKNLIMIT"],
+        lowest_layer_thickness=icon_namelist["SLEVE_NML"]["MIN_LAY_THCKN"],
+        model_top_height=icon_namelist["SLEVE_NML"]["TOP_HEIGHT"],
+        flat_height=icon_namelist["SLEVE_NML"]["FLAT_HEIGHT"],
+        stretch_factor=icon_namelist["SLEVE_NML"]["STRETCH_FAC"],
+        rayleigh_damping_height=icon_namelist["NONHYDROSTATIC_NML"]["DAMP_HEIGHT"],
+        htop_moist_proc=icon_namelist["NONHYDROSTATIC_NML"]["HTOP_MOIST_PROC"],
+        SLEVE_decay_scale_1=icon_namelist["SLEVE_NML"]["DECAY_SCALE_1"],
+        SLEVE_decay_scale_2=icon_namelist["SLEVE_NML"]["DECAY_SCALE_2"],
+        SLEVE_decay_exponent=icon_namelist["SLEVE_NML"]["DECAY_EXP"],
+    )
+
+
+@pytest.fixture
+def solve_nonhydro_config(
+    icon_namelist: dict,
+) -> solve_nh.NonHydrostaticConfig:
+    return solve_nh.NonHydrostaticConfig(
+        itime_scheme=icon_namelist["NONHYDROSTATIC_NML"]["ITIME_SCHEME"],
+        iadv_rhotheta=icon_namelist["NONHYDROSTATIC_NML"]["IADV_RHOTHETA"],
+        igradp_method=icon_namelist["NONHYDROSTATIC_NML"]["IGRADP_METHOD"],
+        rayleigh_type=icon_namelist["NONHYDROSTATIC_NML"]["RAYLEIGH_TYPE"],
+        rayleigh_coeff=icon_namelist["NONHYDROSTATIC_NML"]["RAYLEIGH_COEFF"],
+        divdamp_order=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_ORDER"],
+        is_iau_active=False,  # TODO (Chia RUi): a bug to be fixed in https://github.com/C2SM/icon4py/pull/972
+        iau_wgt_dyn=0.0,  # TODO (Chia RUi): a bug to be fixed in https://github.com/C2SM/icon4py/pull/972
+        divdamp_type=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_TYPE"],
+        divdamp_trans_start=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_TRANS_START"],
+        divdamp_trans_end=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_TRANS_END"],
+        l_vert_nested=icon_namelist["RUN_NML"]["LVERT_NEST"],
+        rhotheta_offctr=icon_namelist["NONHYDROSTATIC_NML"]["RHOTHETA_OFFCTR"],
+        veladv_offctr=icon_namelist["NONHYDROSTATIC_NML"]["VELADV_OFFCTR"],
+        max_nudging_coefficient=icon_namelist["INTERPOL_NML"]["NUDGE_MAX_COEFF"],
+        fourth_order_divdamp_factor=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_FAC"],
+        fourth_order_divdamp_factor2=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_FAC2"],
+        fourth_order_divdamp_factor3=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_FAC3"],
+        fourth_order_divdamp_factor4=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_FAC4"],
+        fourth_order_divdamp_z=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_Z"],
+        fourth_order_divdamp_z2=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_Z2"],
+        fourth_order_divdamp_z3=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_Z3"],
+        fourth_order_divdamp_z4=icon_namelist["NONHYDROSTATIC_NML"]["DIVDAMP_Z4"],
+    )
 
 
 @pytest.fixture
