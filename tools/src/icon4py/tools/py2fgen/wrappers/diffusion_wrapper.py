@@ -130,13 +130,13 @@ def diffusion_init(
     }
     xp = wgtfac_c.array_ns
     if mask_hdiff is None:
-        mask_hdiff = gtx.zeros(cell_k_domain, dtype=xp.bool_)
+        mask_hdiff = gtx.zeros(cell_k_domain, dtype=xp.bool_, allocator=model_backends.get_allocator(actual_backend))
     if zd_diffcoef is None:
-        zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype)
+        zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype, allocator=model_backends.get_allocator(actual_backend))
     if zd_intcoef is None:
-        zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
+        zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype, allocator=model_backends.get_allocator(actual_backend))
     if zd_vertoffset is None:
-        zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
+        zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32, allocator=model_backends.get_allocator(actual_backend))
     # Metric state
     metric_state = DiffusionMetricState(
         mask_hdiff=mask_hdiff,
