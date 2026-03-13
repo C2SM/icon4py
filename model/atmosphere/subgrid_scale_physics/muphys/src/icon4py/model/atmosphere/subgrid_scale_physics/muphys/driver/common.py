@@ -153,7 +153,7 @@ class GraupelOutput:
         cls,
         allocator: gtx_typing.Allocator,
         domain: gtx.Domain,
-        dtype: np.float32 | np.float64 = np.float64,
+        dtype: gtx.float32 | gtx.float64 = gtx.float64,
         references: dict[str, gtx.Field] | None = None,
     ):
         """
@@ -193,7 +193,7 @@ class GraupelOutput:
         cls,
         filename: pathlib.Path | str,
         allocator: gtx_typing.Allocator,
-        dtype: np.float32 | np.float64 = np.float64,
+        dtype: gtx.float32 | gtx.float64 = gtx.float64,
     ):
         with netCDF4.Dataset(filename, mode="r") as ncfile:
             field_from_nc = functools.partial(_as_field_from_nc, ncfile, allocator, dtype=dtype)

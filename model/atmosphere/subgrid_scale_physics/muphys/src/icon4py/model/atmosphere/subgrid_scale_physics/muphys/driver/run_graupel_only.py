@@ -13,7 +13,6 @@ import argparse
 import pathlib
 import time
 
-import numpy as np
 from gt4py import next as gtx
 from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
@@ -87,7 +86,7 @@ def main():
 
     backend = model_backends.BACKENDS[args.backend]
     allocator = model_backends.get_allocator(backend)
-    dtype = np.float32 if ta.precision == "single" else "double"
+    dtype = gtx.float32 if ta.precision == "single" else gtx.float64
 
     inp = common.GraupelInput.load(
         filename=pathlib.Path(args.input_file), allocator=allocator, dtype=dtype

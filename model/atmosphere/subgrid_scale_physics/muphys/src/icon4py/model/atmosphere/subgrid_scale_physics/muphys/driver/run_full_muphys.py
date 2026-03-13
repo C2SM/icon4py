@@ -15,7 +15,6 @@ import pathlib
 import time
 from collections.abc import Callable
 
-import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core import saturation_adjustment
@@ -173,7 +172,7 @@ def main():
 
     backend = model_backends.BACKENDS[args.backend]
     allocator = model_backends.get_allocator(backend)
-    dtype = np.float32 if ta.precision == "single" else "double"
+    dtype = gtx.float32 if ta.precision == "single" else gtx.float64
 
     inp = common.GraupelInput.load(
         filename=pathlib.Path(args.input_file), allocator=allocator, dtype=dtype
