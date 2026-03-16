@@ -212,6 +212,8 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
 ) -> None:
     if dim == dims.V2E2VDim:
         pytest.skip("V2E2VDim is not supported in the current grid configuration.")
+    if dim in (dims.LsqCDim, dims.LsqUnkDim):
+        pytest.skip("LsqCDim and LsqUnkDim are not connectivities.")
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=False, backend=backend).grid
     connectivity = grid.get_connectivity(dim.value)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
