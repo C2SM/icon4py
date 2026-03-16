@@ -139,9 +139,10 @@ def test_and_benchmark(
                 enable_jit: bool,
                 kwargs: dict[str, Any],
             ) -> Generator[None, None, None]:
+                yield
+                # Collect the key after running the program to make sure it is set
                 nonlocal metrics_key
                 metrics_key = gtx_metrics.get_current_source_key()
-                yield
 
             gtx_hooks.program_call_context.register(
                 _get_metrics_id_program_callback, name=METRICS_KEY_EXTRACTOR
@@ -150,7 +151,10 @@ def test_and_benchmark(
                 **_properly_allocated_input_data, offset_provider=grid.connectivities
             )
             gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
-            assert metrics_key is not None, "Metrics key could not been recovered during run."
+            assert metrics_key is not None, "Metrics key could not be recovered during run."
+            assert metrics_key.startswith(
+                _configured_program.__name__
+            ), f"Metrics key ({metrics_key}) does not start with the program name ({_configured_program.__name__})"
 
             assert (
                 len(_configured_program._compiled_programs.compiled_programs) == 1
