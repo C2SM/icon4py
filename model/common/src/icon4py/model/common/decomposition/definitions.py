@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import abc
 import dataclasses
 import functools
 import logging
@@ -48,7 +49,7 @@ class CupyLikeStream(Protocol):
     def ptr(self) -> int: ...
 
 
-class CudaStreamProtocolLike(Protocol):
+class CudaStreamProtocol(Protocol):
     """The type follows the CUDA stream protocol.
 
     This means it provides a method called `__cuda_stream__()` returning a pair of
@@ -60,7 +61,7 @@ class CudaStreamProtocolLike(Protocol):
     def __cuda_stream__(self) -> tuple[int, int]: ...
 
 
-StreamLike: TypeAlias = CupyLikeStream | CudaStreamProtocolLike
+StreamLike: TypeAlias = CupyLikeStream | CudaStreamProtocol
 
 
 @dataclasses.dataclass(frozen=True)
@@ -81,7 +82,7 @@ DEFAULT_STREAM = Stream(0)
 """Default stream of the device.
 
 Its availability is not tied to a particular device, it is thus also present in a
-purely CPU setting, where it is save to use and usually represents fully blocking
+purely CPU setting, where it is safe to use and usually represents fully blocking
 semantic.
 """
 
@@ -92,9 +93,9 @@ class Block:
 
 BLOCK = Block()
 """
-Constant used by `ExchangeResult.finish()` to indicate that blocking semantic should
+Constant used by `ExchangeResult.finish()` to indicate that blocking semantics should
 be used, i.e. wait until the exchange has fully finished not until it has merely been
-scheduled on the device, should be used.
+scheduled on the device.
 """
 
 
@@ -245,7 +246,7 @@ class ExchangeResult(Protocol):
         In case `stream` is `BLOCK` the function will only return after the exchange
         has been completed.
 
-        For fields located on the host the only supported behaviour is `stream=BLOCK`.
+        For fields located on the host all values of `stream` are interpreted as `BLOCK`.
         """
         ...
 
@@ -265,7 +266,7 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
-        stream: StreamLike,
+        stream: StreamLike = DEFAULT_STREAM,
     ) -> ExchangeResult: ...
 
     @overload
@@ -273,6 +274,14 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field,
+        stream: StreamLike = DEFAULT_STREAM,
+    ) -> ExchangeResult: ...
+
+    @abc.abstractmethod
+    def start(
+        self,
+        dim: gtx.Dimension,
+        *fields: gtx.Field | data_alloc.NDArray,
         stream: StreamLike = DEFAULT_STREAM,
     ) -> ExchangeResult:
         """Initiate a halo exchanges.
@@ -282,9 +291,7 @@ class ExchangeRuntime(Protocol):
         `DEFAULT_STREAM`. To complete the exchange `finish()` must be called on the
         returned `ExchangeResult`. There is also the `exchange()` function which
         combines these two steps into one.
-
-        Once the function returns it is safe to reuse the memory of `fields` (is this
-        still true for NCCL).
+        If this function returns, `fields` might still be accessed.
 
         Note:
             For fields on the host the exchange will begin immediately, regardless
@@ -314,20 +321,20 @@ class ExchangeRuntime(Protocol):
         *fields: gtx.Field | data_alloc.NDArray,
         stream: StreamLike | Block = DEFAULT_STREAM,
     ) -> None:
-        """Perform a full hallo exchange.
+        """Perform a full halo exchange.
 
         The exchange will synchronize with `stream`, i.e. not start before tasks
         previously submitted to it are done. The function returns before the exchange
         has been completed, but it will synchronize with `stream`, i.e. work submitted
         to `stream` will not start before the exchange has finished.
 
-        It is possible to split the exchange into a send part, for which
-        `exchange_request = self.start()` can be used and a receive part for which
-        `exchange_request.finish()` can be used.
+        It is possible to perform the exchange in two steps. The first step is done
+        by calling `self.start()`. The second step is done by calling `finish()` on
+        the handle returned by `self.start()`.
 
-        In case `stream` is `BLOCK` then the function will only return once the exchange
-        has been completed entirely. In this case the send part of will be performed
-        as `DEFAULT_STREAM` was passed.
+        In case `stream` is `BLOCK` the function will only return once the exchange
+        has been completed entirely and the send part will be performed as if
+        `DEFAULT_STREAM` was passed.
 
         Note:
             The protocol supplies a default implementation.
@@ -438,15 +445,14 @@ class HaloExchangeWaitRuntime(Protocol):
         communication_handle: ExchangeResult,
         stream: StreamLike | Block = DEFAULT_STREAM,
     ) -> None:
-        """Calls `wait()` on the provided communication handle.
+        """Calls `finish()` on the provided communication handle.
 
         Args:
             stream: The stream forwarded to the `wait()` call, defaults to `DEFAULT_STREAM`.
-
-        Note:
-            - The protocol provides a default implementation.
         """
-        communication_handle.finish(stream=stream)
+        # NOTE: Refactor the code such that there should be a default implementation
+        #   of this function or such that it is no longer needed.
+        ...
 
     def __sdfg__(self, *args: Any, **kwargs: dict[str, Any]) -> dace.sdfg.sdfg.SDFG:
         """DaCe related: SDFGConvertible interface."""
@@ -482,6 +488,13 @@ class HaloExchangeWait(HaloExchangeWaitRuntime):
 
     def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
         return DummyNestedSDFG().__sdfg_signature__()
+
+    def __call__(
+        self,
+        communication_handle: ExchangeResult,
+        stream: StreamLike | Block = DEFAULT_STREAM,
+    ) -> None:
+        communication_handle.finish(stream=stream)
 
     __sdfg__ = dace__sdfg__  # type: ignore[assignment]
     __sdfg_closure__ = dace__sdfg_closure__

@@ -297,6 +297,8 @@ def wait(comm_handle: int | decomposition.ExchangeResult):
     if isinstance(comm_handle, int):
         pass
     else:
+        # There is no race condition here. On CPU it is synchronous and on GPU
+        #  we use the default stream.
         comm_handle.finish()
 
 

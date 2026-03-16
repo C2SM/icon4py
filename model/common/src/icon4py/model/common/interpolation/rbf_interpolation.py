@@ -326,7 +326,7 @@ def _compute_rbf_interpolation_coeffs(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, ...]:
     rbf_offset_shape_full = rbf_offset.shape
@@ -488,7 +488,7 @@ def compute_rbf_interpolation_coeffs_cell(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
@@ -539,7 +539,7 @@ def compute_rbf_interpolation_coeffs_edge(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     return _compute_rbf_interpolation_coeffs(
@@ -588,7 +588,7 @@ def compute_rbf_interpolation_coeffs_vertex(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)

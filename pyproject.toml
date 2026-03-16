@@ -407,7 +407,7 @@ url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
 dace = {index = "gridtools"}
-# ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
+# TODO(phimuell): Switch to ghex main once it is merged.
 ghex = {git = "https://github.com/philip-paul-mueller/GHEX/", branch = "phimuell__async-mpi-2"}
 # gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}

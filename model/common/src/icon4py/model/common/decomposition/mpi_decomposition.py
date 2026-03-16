@@ -371,6 +371,13 @@ class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
     def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
         return ([HaloExchangeWait.buffer_name], [])
 
+    def __call__(
+        self,
+        communication_handle: definitions.ExchangeResult,
+        stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
+    ) -> None:
+        communication_handle.finish(stream=stream)
+
     __sdfg__ = dace__sdfg__  # type: ignore[assignment]
     __sdfg_closure__ = dace__sdfg_closure__
     __sdfg_signature__ = dace__sdfg_signature__
@@ -394,12 +401,16 @@ class MultiNodeResult(definitions.ExchangeResult):
         if (not ghex.__config__["gpu"]) or stream is definitions.BLOCK:
             # No GPU support or blocking wait requested -> use normal `wait()`.
             self.handle.wait()
+
+            # NOTE: Before asynchronous exchange was supported `pattern_refs` was,
+            #   without further explanations, explicitly deleted. However, now we
+            #   only delete it in blocking mode.
+            # TODO(msimberg, phimuell, havogt): Find out what the implications are.
+            del self.pattern_refs
+
         else:
             # Stream given, perform a scheduled wait.
             self.handle.schedule_wait(stream)
-
-        # TODO(msimberg, phimuell, havogt): Is it safe to delete that here, even in the scheduled mode?
-        del self.pattern_refs
 
     def is_ready(self) -> bool:
         return self.handle.is_ready()
