@@ -88,8 +88,6 @@ def test_and_benchmark(
     _configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
-    metrics_key = None
-
     skip_stenciltest_verification = request.config.getoption(
         "skip_stenciltest_verification"
     )  # skip verification if `--skip-stenciltest-verification` CLI option is set
@@ -129,6 +127,7 @@ def test_and_benchmark(
 
         # Collect GT4Py runtime metrics if enabled
         if gtx_metrics.is_any_level_enabled():
+            metrics_key = None
             # Run the program one final time to get the metrics key
             METRICS_KEY_EXTRACTOR: Final = "metrics_id_extractor"
 
@@ -140,9 +139,9 @@ def test_and_benchmark(
                 enable_jit: bool,
                 kwargs: dict[str, Any],
             ) -> Generator[None, None, None]:
-                yield  # run the program
                 nonlocal metrics_key
                 metrics_key = gtx_metrics.get_current_source_key()
+                yield
 
             gtx_hooks.program_call_context.register(
                 _get_metrics_id_program_callback, name=METRICS_KEY_EXTRACTOR
@@ -151,13 +150,11 @@ def test_and_benchmark(
                 **_properly_allocated_input_data, offset_provider=grid.connectivities
             )
             gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
-            assert metrics_key is not None or not gtx_metrics.is_any_level_enabled(), (
-                "Metrics key could not been recovered during run."
-            )
+            assert metrics_key is not None, "Metrics key could not been recovered during run."
 
-            assert len(_configured_program._compiled_programs.compiled_programs) == 1, (
-                "Multiple compiled programs found, cannot extract metrics."
-            )
+            assert (
+                len(_configured_program._compiled_programs.compiled_programs) == 1
+            ), "Multiple compiled programs found, cannot extract metrics."
             metrics_data = gtx_metrics.sources
             compute_samples = metrics_data[metrics_key].metrics["compute"].samples
             # exclude:
