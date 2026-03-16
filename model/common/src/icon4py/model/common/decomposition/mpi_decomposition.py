@@ -390,7 +390,7 @@ class MultiNodeResult(definitions.ExchangeResult):
         self,
         stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
     ) -> None:
-        """Finish the initiated halo exchange any synchronize with `stream` or block if `stream` is `BLOCK`."""
+        """Finish the initiated halo exchange and either block or schedule completion on `stream`."""
         if (not ghex.__config__["gpu"]) or stream is definitions.BLOCK:
             # No GPU support or blocking wait requested -> use normal `wait()`.
             self.handle.wait()
