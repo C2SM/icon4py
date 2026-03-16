@@ -291,11 +291,12 @@ class ExchangeRuntime(Protocol):
         `DEFAULT_STREAM`. To complete the exchange `finish()` must be called on the
         returned `ExchangeResult`. There is also the `exchange()` function which
         combines these two steps into one.
-        If this function returns, `fields` might still be accessed.
 
         Note:
-            For fields on the host the exchange will begin immediately, regardless
-            which stream has been passed.
+            - For fields on the host the exchange will begin immediately, regardless
+                which stream has been passed.
+            - Depending on the backend the memory of `*fields` might still be accessed
+                even after this function returns.
         """
         ...
 
