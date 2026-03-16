@@ -50,10 +50,14 @@ def graupel_run(
     global graupel_program  # noqa: PLW0603 [global-statement]
     if graupel_program is None:
         on_gpu = t.array_ns != np
-        optimization_hooks = None if use_dace_hooks else {
-            hook: lambda x: x  # no change is applied to the SDFG
-            for hook in gtx_transformations.GT4PyAutoOptHook
-        }
+        optimization_hooks = (
+            None
+            if use_dace_hooks
+            else {
+                hook: lambda x: x  # no change is applied to the SDFG
+                for hook in gtx_transformations.GT4PyAutoOptHook
+            }
+        )
         with muphys_utils.recursion_limit(10**4):
             graupel_program = model_options.setup_program(
                 backend={
