@@ -95,30 +95,6 @@ def test_and_benchmark(
     )  # skip verification if `--skip-stenciltest-verification` CLI option is set
     skip_stenciltest_benchmark = benchmark is None or not benchmark.enabled
 
-    if not skip_stenciltest_benchmark:
-        # Precompile and run the program once to get the metrics key
-        METRICS_KEY_EXTRACTOR: Final = "metrics_id_extractor"
-
-        @contextlib.contextmanager
-        def _get_metrics_id_program_callback(
-            program: gtx_typing.Program,
-            args: tuple[Any, ...],
-            offset_provider: gtx.common.OffsetProvider,
-            enable_jit: bool,
-            kwargs: dict[str, Any],
-        ) -> Generator[None, None, None]:
-            yield  # run the program
-            nonlocal metrics_key
-            metrics_key = gtx_metrics.get_current_source_key()
-
-        gtx_hooks.program_call_context.register(
-            _get_metrics_id_program_callback, name=METRICS_KEY_EXTRACTOR
-        )
-        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
-        gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
-
-        assert metrics_key is not None or not gtx_metrics.is_any_level_enabled()
-
     if not skip_stenciltest_verification:
         reference_outputs = self.reference(
             _ConnectivityConceptFixer(
@@ -135,7 +111,7 @@ def test_and_benchmark(
             input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
         )
 
-    if benchmark is not None and benchmark.enabled:
+    if not skip_stenciltest_benchmark:
         warmup_rounds = int(os.getenv("ICON4PY_STENCIL_TEST_WARMUP_ROUNDS", "1"))
         iterations = int(os.getenv("ICON4PY_STENCIL_TEST_ITERATIONS", "10"))
 
@@ -153,19 +129,42 @@ def test_and_benchmark(
 
         # Collect GT4Py runtime metrics if enabled
         if gtx_metrics.is_any_level_enabled():
-            assert (
-                metrics_key is not None
-            ), "Metrics key should have been set during the warmup run."
-            assert (
-                len(_configured_program._compiled_programs.compiled_programs) == 1
-            ), "Multiple compiled programs found, cannot extract metrics."
+            # Run the program one final time to get the metrics key
+            METRICS_KEY_EXTRACTOR: Final = "metrics_id_extractor"
+
+            @contextlib.contextmanager
+            def _get_metrics_id_program_callback(
+                program: gtx_typing.Program,
+                args: tuple[Any, ...],
+                offset_provider: gtx.common.OffsetProvider,
+                enable_jit: bool,
+                kwargs: dict[str, Any],
+            ) -> Generator[None, None, None]:
+                yield  # run the program
+                nonlocal metrics_key
+                metrics_key = gtx_metrics.get_current_source_key()
+
+            gtx_hooks.program_call_context.register(
+                _get_metrics_id_program_callback, name=METRICS_KEY_EXTRACTOR
+            )
+            _configured_program(
+                **_properly_allocated_input_data, offset_provider=grid.connectivities
+            )
+            gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
+            assert metrics_key is not None or not gtx_metrics.is_any_level_enabled(), (
+                "Metrics key could not been recovered during run."
+            )
+
+            assert len(_configured_program._compiled_programs.compiled_programs) == 1, (
+                "Multiple compiled programs found, cannot extract metrics."
+            )
             metrics_data = gtx_metrics.sources
             compute_samples = metrics_data[metrics_key].metrics["compute"].samples
             # exclude:
-            #  - one warmup round to get the metrics key
             #  - one for validation (if executed)
             #  - one extra warmup round for calibrating pytest-benchmark
             #  - warmup iterations
+            #  - one last round to get the metrics key
             initial_program_iterations_to_skip = warmup_rounds * iterations + (
                 2 if skip_stenciltest_verification else 3
             )
