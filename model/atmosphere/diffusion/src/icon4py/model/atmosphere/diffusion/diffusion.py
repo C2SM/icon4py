@@ -304,11 +304,6 @@ class DiffusionConfig:
                 f"implemented"
             )
 
-        if self.compute_3d_smag_coeff:
-            raise NotImplementedError(
-                "3D Smagorinsky diffusion coefficient computation is not implemented yet."
-            )
-
     @functools.cached_property
     def substep_as_float(self):
         return float(self.ndyn_substeps)
