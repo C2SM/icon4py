@@ -8,6 +8,14 @@ on:
     branches:
       - main
     types: [opened, reopened, synchronize]
+
+env:
+  ICON4PY_TEST_DATA_PATH: "${{ github.workspace }}/testdata"
+  NUM_PROCESSES: auto
+  ICON4PY_ENABLE_GRID_DOWNLOAD: false
+  ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
+  PYTEST_ADDOPTS: "--durations=0"
+
 jobs:
   test-model:
     runs-on: ubuntu-latest
@@ -15,7 +23,7 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11"]
         backend: ["embedded", "dace_cpu", "gtfn_cpu"]
-        component: ["advection", "diffusion", "dycore", "microphysics", "muphys", "driver", "common"]
+        component: ["advection", "diffusion", "dycore", "microphysics", "muphys", "driver", "common", "standalone_driver"]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -47,25 +55,17 @@ jobs:
 
       - name: download grids
         if: steps.grid-cache.outputs.cache-hit != 'true'
+        env:
+          ICON4PY_ENABLE_GRID_DOWNLOAD: true
         run: |
           .github/validation_grid_utils.py download
 
       - name: run nox session - unit tests
         shell: bash
-        env:
-          NUM_PROCESSES: auto
-          ICON4PY_ENABLE_GRID_DOWNLOAD: false
-          ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
-          PYTEST_ADDOPTS: "--durations=0"
         run: |
           uvx nox -s "test_model-${{matrix.python-version}}(basic, ${{ matrix.component }})" -- --backend=${{ matrix.backend }}
 
       - name: run nox session - stencil tests
         shell: bash
-        env:
-          NUM_PROCESSES: auto
-          ICON4PY_ENABLE_GRID_DOWNLOAD: false
-          ICON4PY_ENABLE_TESTDATA_DOWNLOAD: false
-          PYTEST_ADDOPTS: "--durations=0"
         run: |
           uvx nox -s "test_model-${{matrix.python-version}}(stencils, ${{ matrix.component }})" -- --backend=${{ matrix.backend }} --grid=icon_regional

@@ -57,6 +57,10 @@ typing = [
   "types-cffi>=1.16.0",
   "scipy-stubs>=1.15.3.0"
 ]
+typing-distributed = [
+  "mpi4py>=3.1.5",
+  "pymetis>2022.1"
+]
 
 # -- Standard project description options (PEP 621) --
 [project]
