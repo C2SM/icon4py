@@ -322,8 +322,8 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
-    exchange(rbf_vec_coeff_c1, dim=dims.CellDim)
-    exchange(rbf_vec_coeff_c2, dim=dims.CellDim)
+    exchange(diagnostic_state.u, dim=dims.CellDim)
+    exchange(diagnostic_state.v, dim=dims.CellDim)
 
     log.info("U, V computation completed.")
 
