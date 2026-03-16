@@ -11,7 +11,7 @@ import logging
 import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.decomposition import (
     decomposer as decomp,
     definitions as decomposition,
@@ -123,6 +123,7 @@ def test_bounds_decomposition(
         file=file,
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
+        allocator=model_backends.get_allocator(backend),
     )
     _log.info(
         f"rank = {processor_props.rank} : {grid_manager.decomposition_info.get_horizontal_size()!r}"
