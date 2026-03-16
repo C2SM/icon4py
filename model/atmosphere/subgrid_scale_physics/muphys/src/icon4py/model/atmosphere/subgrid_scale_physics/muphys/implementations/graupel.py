@@ -325,7 +325,7 @@ def sink_saturation(
 
 
 @gtx.field_operator
-def _q_t_update(  # noqa: PLR0915
+def _q_t_update(
     t: fa.CellKField[ta.wpfloat],
     p: fa.CellKField[ta.wpfloat],
     rho: fa.CellKField[ta.wpfloat],
@@ -338,12 +338,8 @@ def _q_t_update(  # noqa: PLR0915
     fa.CellKField[ta.wpfloat],
 ]:
     if enable_masking:
-        mask = (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > g_ct.qmin) | (
-            (t < g_ct.tfrz_het2) & (q.v > _qsat_ice_rho(t, rho))
-        )
         is_sig_present = maximum(q.g, maximum(q.i, q.s)) > g_ct.qmin
     else:
-        mask = broadcast(True, (dims.CellDim, dims.KDim))
         is_sig_present = broadcast(True, (dims.CellDim, dims.KDim))
 
     dvsw = q.v - _qsat_rho(t, rho)
@@ -435,17 +431,17 @@ def _q_t_update(  # noqa: PLR0915
     # water content updates:
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
     dqdt_v = r2v + s2v + i2v + g2v - sink_v  # Missing: c2v
-    qv = where(mask, maximum(0.0, q.v + dqdt_v * dt), q.v)
+    qv = maximum(0.0, q.v + dqdt_v * dt)
     dqdt_c = i2c - sink_c  # Missing: v2c, r2c, s2c, g2c
-    qc = where(mask, maximum(0.0, q.c + dqdt_c * dt), q.c)
+    qc = maximum(0.0, q.c + dqdt_c * dt)
     dqdt_r = c2r + s2r + g2r - sink_r  # Missing: v2r + i2r
-    qr = where(mask, maximum(0.0, q.r + dqdt_r * dt), q.r)
+    qr = maximum(0.0, q.r + dqdt_r * dt)
     dqdt_s = v2s + c2s + i2s - sink_s  # Missing: r2s + g2s
-    qs = where(mask, maximum(0.0, q.s + dqdt_s * dt), q.s)
+    qs = maximum(0.0, q.s + dqdt_s * dt)
     dqdt_i = v2i + c2i - sink_i  # Missing: r2i + s2i + g2i
-    qi = where(mask, maximum(0.0, q.i + dqdt_i * dt), q.i)
+    qi = maximum(0.0, q.i + dqdt_i * dt)
     dqdt_g = v2g + c2g + r2g + s2g + i2g - sink_g
-    qg = where(mask, maximum(0.0, q.g + dqdt_g * dt), q.g)
+    qg = maximum(0.0, q.g + dqdt_g * dt)
 
     qice = qs + qi + qg
     qliq = qc + qr
@@ -457,16 +453,14 @@ def _q_t_update(  # noqa: PLR0915
         + (t_d.clw - t_d.cvv) * qliq
         + (g_ct.ci - t_d.cvv) * qice
     )
-    t = where(
-        mask,
+    t = (
         t
         + dt
         * (
             (dqdt_c + dqdt_r) * (g_ct.lvc - (t_d.clw - t_d.cvv) * t)
             + (dqdt_i + dqdt_s + dqdt_g) * (g_ct.lsc - (g_ct.ci - t_d.cvv) * t)
         )
-        / cv,
-        t,
+        / cv
     )
     return Q(v=qv, c=qc, r=qr, s=qs, i=qi, g=qg), t
 
@@ -552,7 +546,12 @@ def graupel(
     kmin_i = q.i > g_ct.qmin
     kmin_s = q.s > g_ct.qmin
     kmin_g = q.g > g_ct.qmin
-    q, t = _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking)
+    mask = (
+        (maximum(q.c, maximum(q.g, maximum(q.i, maximum(q.r, q.s)))) > g_ct.qmin)
+        | ((te < g_ct.tfrz_het2) & (q.v > _qsat_ice_rho(te, rho)))
+        | ~enable_masking
+    )
+    q, t = where(mask, _q_t_update(te, p, rho, q, dt, qnc, enable_masking=enable_masking), (q, te))
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = _precipitation_effects(
         last_level, kmin_r, kmin_i, kmin_s, kmin_g, q, t, rho, dz, dt
     )
@@ -582,7 +581,7 @@ def graupel_run(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
     enable_masking: bool,
-):
+) -> None:
     graupel(
         last_level=vertical_end - 1,
         dz=dz,
@@ -594,8 +593,68 @@ def graupel_run(
         qnc=qnc,
         enable_masking=enable_masking,
         out=(t_out, q_out, pflx, pr, ps, pi, pg, pre),
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+        domain=(
+            # t_out
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            # q_out
+            (
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+                {
+                    dims.CellDim: (horizontal_start, horizontal_end),
+                    dims.KDim: (vertical_start, vertical_end),
+                },
+            ),
+            # pflx
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_start, vertical_end),
+            },
+            # pr
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
+            },
+            # ps
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
+            },
+            # pi
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
+            },
+            # pg
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
+            },
+            # pre
+            {
+                dims.CellDim: (horizontal_start, horizontal_end),
+                dims.KDim: (vertical_end - 1, vertical_end),
+            },
+        ),
     )

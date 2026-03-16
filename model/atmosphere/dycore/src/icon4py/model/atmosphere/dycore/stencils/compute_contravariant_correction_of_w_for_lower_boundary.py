@@ -52,7 +52,7 @@ def compute_contravariant_correction_of_w_for_lower_boundary(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_contravariant_correction_of_w_for_lower_boundary(
         e_bln_c_s,
         z_w_concorr_me,

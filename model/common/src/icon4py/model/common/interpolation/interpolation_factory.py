@@ -100,7 +100,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     def _register_computed_fields(self) -> None:
         nudging_coefficients_for_edges = factory.ProgramFieldProvider(
-            func=nudgecoeffs.compute_nudgecoeffs.with_backend(None),
+            func=nudgecoeffs.compute_nudgecoeffs,
             domain={
                 dims.EdgeDim: (
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
@@ -538,6 +538,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start": self.grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
+                "horizontal_end": self.grid.end_index(cell_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.global_properties.domain_length
                 if self._grid.global_properties.domain_length
                 else -1.0,
@@ -576,6 +577,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start": self.grid.start_index(
                     edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
+                "horizontal_end": self.grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.global_properties.domain_length
                 if self._grid.global_properties.domain_length
                 else -1.0,
@@ -615,6 +617,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start": self.grid.start_index(
                     vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
+                "horizontal_end": self.grid.end_index(vertex_domain(h_grid.Zone.LOCAL)),
                 "domain_length": self._grid.global_properties.domain_length
                 if self._grid.global_properties.domain_length
                 else -1.0,

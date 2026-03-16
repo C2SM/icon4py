@@ -134,9 +134,9 @@ class VerticalGrid:
 
     config: VerticalGridConfig
     vct_a: dataclasses.InitVar[fa.KField[ta.wpfloat]]
-    vct_b: dataclasses.InitVar[fa.KField[ta.wpfloat]]
+    vct_b: dataclasses.InitVar[fa.KField[ta.wpfloat] | None]
     _vct_a: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
-    _vct_b: fa.KField[ta.wpfloat] = dataclasses.field(init=False)
+    _vct_b: fa.KField[ta.wpfloat] | None = dataclasses.field(init=False)
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
@@ -183,7 +183,7 @@ class VerticalGrid:
         array_value = [
             f"   0   {vct_a_array[0]:12.3f}             ",
             *(
-                f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}"
+                f"{k + 1:4d}   {vct_a_array[k + 1]:12.3f} {dvct[k]:12.3f}"
                 for k in range(vct_a_array.shape[0] - 1)
             ),
         ]
@@ -249,7 +249,7 @@ class VerticalGrid:
         return self._vct_a
 
     @property
-    def vct_b(self) -> fa.KField:
+    def vct_b(self) -> fa.KField | None:
         return self._vct_b
 
     def size(self, dim: gtx.Dimension) -> int:
@@ -294,7 +294,7 @@ class VerticalGrid:
 
 
 def _read_vct_a_and_vct_b_from_file(
-    file_path: pathlib.Path, num_levels: int, allocator: gtx_typing.FieldBufferAllocationUtil
+    file_path: pathlib.Path, num_levels: int, allocator: gtx_typing.Allocator
 ) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
@@ -340,7 +340,7 @@ def _read_vct_a_and_vct_b_from_file(
 
 
 def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
-    vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil
+    vertical_config: VerticalGridConfig, allocator: gtx_typing.Allocator
 ) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
@@ -529,7 +529,8 @@ def _compute_vct_a_and_vct_b(  # noqa: PLR0912 [too-many-branches]
 
 
 def get_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, allocator: gtx_typing.FieldBufferAllocationUtil
+    vertical_config: VerticalGridConfig,
+    allocator: gtx_typing.Allocator,
 ) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.
