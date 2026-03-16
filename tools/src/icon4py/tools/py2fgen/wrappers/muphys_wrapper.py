@@ -9,6 +9,7 @@
 import numpy as np
 from gt4py import next as gtx
 from gt4py.next.instrumentation import metrics as gtx_metrics
+from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import utils as muphys_utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
@@ -43,17 +44,25 @@ def graupel_run(
     prg_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    use_dace_hooks: bool,
     wait_for_completion: bool,
 ):
     global graupel_program  # noqa: PLW0603 [global-statement]
     if graupel_program is None:
         on_gpu = t.array_ns != np
+        optimization_hooks = None if use_dace_hooks else {
+            hook: lambda x: x  # no change is applied to the SDFG
+            for hook in gtx_transformations.GT4PyAutoOptHook
+        }
         with muphys_utils.recursion_limit(10**4):
             graupel_program = model_options.setup_program(
                 backend={
                     "backend_factory": model_backends.make_custom_dace_backend,
                     "device": model_backends.GPU if on_gpu else model_backends.CPU,
                     "async_sdfg_call": not wait_for_completion,
+                    "optimization_args": {
+                        "optimization_hooks": optimization_hooks,
+                    },
                 },
                 program=graupel.graupel_run,
                 constant_args={"dt": dt, "qnc": qnc, "enable_masking": True},
