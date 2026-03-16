@@ -55,7 +55,11 @@ def graupel_run(
             if use_dace_hooks
             else {
                 hook: lambda x: x  # no change is applied to the SDFG
-                for hook in gtx_transformations.GT4PyAutoOptHook
+                for hook in [
+                    gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre,
+                    gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep,
+                    gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPost,
+                ]
             }
         )
         with muphys_utils.recursion_limit(10**4):
