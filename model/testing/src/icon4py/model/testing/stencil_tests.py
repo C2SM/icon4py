@@ -169,6 +169,9 @@ def test_and_benchmark(
             initial_program_iterations_to_skip = warmup_rounds * iterations + (
                 2 if skip_stenciltest_verification else 3
             )
+            assert (
+                len(compute_samples) > initial_program_iterations_to_skip
+            ), "Not enough samples collected to compute metrics."
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:
             ]
