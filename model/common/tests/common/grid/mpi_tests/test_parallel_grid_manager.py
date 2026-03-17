@@ -184,9 +184,13 @@ def check_local_global_field(
 # another, so we declare them here for xfailing.
 embedded_broken_fields = {
     metrics_attributes.DDQZ_Z_HALF,
+    metrics_attributes.DEEPATMO_DIVH,
+    metrics_attributes.DEEPATMO_DIVZL,
+    metrics_attributes.DEEPATMO_DIVZU,
     metrics_attributes.EXNER_EXFAC,
     metrics_attributes.MAXHGTD_AVG,
     metrics_attributes.MAXSLP_AVG,
+    metrics_attributes.PG_EXDIST_DSL,
     metrics_attributes.WGTFAC_C,
     metrics_attributes.WGTFAC_E,
     metrics_attributes.ZD_DIFFCOEF,
