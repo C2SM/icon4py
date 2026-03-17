@@ -21,7 +21,7 @@ def compute_difference_on_cell_k(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_difference_on_cell_k(
         field_a,
         field_b,

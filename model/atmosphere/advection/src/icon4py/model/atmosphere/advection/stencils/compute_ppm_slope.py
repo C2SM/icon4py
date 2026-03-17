@@ -58,7 +58,7 @@ def _compute_ppm_slope(
         _compute_ppm_slope_a(p_cc, p_cellhgt_mc_now),
     )
 
-    return z_slope
+    return z_slope  # type: ignore[return-value] # concat_where leads to static type erasure
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -71,7 +71,7 @@ def compute_ppm_slope(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_ppm_slope(
         p_cc,
         p_cellhgt_mc_now,

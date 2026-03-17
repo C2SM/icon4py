@@ -430,18 +430,15 @@ def test_factory_pressure_gradient_fields(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    field_1_ref = metrics_savepoint.pg_exdist()
-    field_2_ref = metrics_savepoint.pg_edgeidx_dsl()
+    field_1_ref = metrics_savepoint.pg_exdist_dsl()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field_1 = factory.get(attrs.PG_EDGEDIST_DSL)
+    field_1 = factory.get(attrs.PG_EXDIST_DSL)
     assert test_helpers.dallclose(field_1_ref.asnumpy(), field_1.asnumpy(), atol=1.0e-5)
-    field_2 = factory.get(attrs.PG_EDGEIDX_DSL)
-    assert test_helpers.dallclose(field_2_ref.asnumpy(), field_2.asnumpy())
 
 
 @pytest.mark.datatest
@@ -548,8 +545,11 @@ def test_factory_wgtfacq_e(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.WGTFACQ_E)
-    field_ref = metrics_savepoint.wgtfacq_e_dsl(field.shape[1])
-    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
+    field_ref = metrics_savepoint.wgtfacq_e_dsl()
+    # TODO: upgrade the dallclose such that it verifies the domain ranges.
+    # This field is defined on k (nlev-3, nlev) an converting to numpy
+    # doesn't know if it's there or (whatever-3, whatever)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
 @pytest.mark.level("integration")
@@ -603,19 +603,16 @@ def test_factory_compute_diffusion_mask_and_coef(
     experiment: definitions.Experiment,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    field_ref_1 = metrics_savepoint.mask_hdiff()
-    field_ref_2 = metrics_savepoint.zd_diffcoef()
+    field_ref = metrics_savepoint.zd_diffcoef()
     factory = _get_metrics_factory(
         backend=backend,
         experiment=experiment,
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field_1 = factory.get(attrs.MASK_HDIFF)
-    field_2 = factory.get(attrs.ZD_DIFFCOEF_DSL)
+    field = factory.get(attrs.ZD_DIFFCOEF)
 
-    assert (field_ref_1.asnumpy() == field_1.asnumpy()).all()
-    assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy(), atol=1.0e-10)
+    assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), atol=1.0e-10)
 
 
 @pytest.mark.level("integration")
@@ -636,7 +633,7 @@ def test_factory_compute_diffusion_intcoeff_and_vertoffset(
         grid_savepoint=grid_savepoint,
         topography_savepoint=topography_savepoint,
     )
-    field_1 = factory.get(attrs.ZD_INTCOEF_DSL)
-    field_2 = factory.get(attrs.ZD_VERTOFFSET_DSL)
+    field_1 = factory.get(attrs.ZD_INTCOEF)
+    field_2 = factory.get(attrs.ZD_VERTOFFSET)
     assert test_helpers.dallclose(field_ref_1.asnumpy(), field_1.asnumpy(), atol=1.0e-8)
     assert test_helpers.dallclose(field_ref_2.asnumpy(), field_2.asnumpy())

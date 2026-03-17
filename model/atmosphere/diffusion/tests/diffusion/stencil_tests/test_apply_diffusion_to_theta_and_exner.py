@@ -16,7 +16,8 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils.data_allocation import random_field, random_mask, zero_field
+from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.stencil_tests import StencilTest
 
 from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
@@ -41,7 +42,6 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         inv_dual_edge_length: np.ndarray,
         theta_v_in: np.ndarray,
         geofac_div: np.ndarray,
-        mask: np.ndarray,
         zd_vertoffset: np.ndarray,
         zd_diffcoef: np.ndarray,
         geofac_n2s_c: np.ndarray,
@@ -50,6 +50,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         area: np.ndarray,
         exner: np.ndarray,
         rd_o_cvd: float,
+        apply_zdiffusion_t: bool,
         **kwargs: Any,
     ) -> dict:
         kwargs_2 = {k: v for k, v in kwargs.items() if k != "theta_v"}  # remove unused kwargs
@@ -60,32 +61,35 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         )
         z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
 
-        z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
-            connectivities,
-            mask,
-            zd_vertoffset,
-            zd_diffcoef,
-            geofac_n2s_c,
-            geofac_n2s_nbh,
-            vcoef,
-            theta_v_in,
-            z_temp,
-        )
+        if apply_zdiffusion_t:
+            z_temp = np.where(
+                zd_diffcoef != 0.0,
+                truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
+                    connectivities,
+                    zd_vertoffset,
+                    zd_diffcoef,
+                    geofac_n2s_c,
+                    geofac_n2s_nbh,
+                    vcoef,
+                    theta_v_in,
+                    z_temp,
+                ),
+                z_temp,
+            )
+
         theta_v, exner = update_theta_and_exner_numpy(z_temp, area, theta_v_in, exner, rd_o_cvd)
 
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
     def input_data(self, grid: base.Grid):
-        pytest.xfail(
-            "stencil segfaults with GTFN and it is not used in diffusion: it is missing an if condition"
+        kh_smag_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
+        theta_v_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
+        zd_vertoffset = data_alloc.zero_field(
+            grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32
         )
-        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        inv_dual_edge_length = random_field(grid, dims.EdgeDim)
-        theta_v_in = random_field(grid, dims.CellDim, dims.KDim)
-        geofac_div = random_field(grid, dims.CellDim, dims.C2EDim)
-        mask = random_mask(grid, dims.CellDim, dims.KDim)
-        zd_vertoffset = zero_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
@@ -94,26 +98,23 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
                 high=grid.num_levels - k - 1,
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
             )
-        zd_diffcoef = random_field(grid, dims.CellDim, dims.KDim)
-        geofac_n2s_c = random_field(grid, dims.CellDim)
-        geofac_n2s_nbh = random_field(grid, dims.CellDim, dims.C2E2CDim)
-        vcoef = random_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim)
-        area = random_field(grid, dims.CellDim)
-        theta_v = random_field(grid, dims.CellDim, dims.KDim)
-        exner = random_field(grid, dims.CellDim, dims.KDim)
-        rd_o_cvd = 5.0
+        zd_diffcoef = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        geofac_n2s_c = data_alloc.random_field(grid, dims.CellDim)
+        geofac_n2s_nbh = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CDim)
+        vcoef = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim)
+        area = data_alloc.random_field(grid, dims.CellDim)
+        theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        rd_o_cvd = vpfloat("5.0")
+        apply_zdiffusion_t = True
 
-        edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-
-        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        cell_domain = h_grid.domain(dims.CellDim)
 
         return dict(
             kh_smag_e=kh_smag_e,
             inv_dual_edge_length=inv_dual_edge_length,
             theta_v_in=theta_v_in,
             geofac_div=geofac_div,
-            mask=mask,
             zd_vertoffset=zd_vertoffset,
             zd_diffcoef=zd_diffcoef,
             geofac_n2s_c=geofac_n2s_c,
@@ -123,8 +124,9 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
             theta_v=theta_v,
             exner=exner,
             rd_o_cvd=rd_o_cvd,
-            horizontal_start=horizontal_start,
-            horizontal_end=horizontal_end,
+            apply_zdiffusion_t=apply_zdiffusion_t,
+            horizontal_start=grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )

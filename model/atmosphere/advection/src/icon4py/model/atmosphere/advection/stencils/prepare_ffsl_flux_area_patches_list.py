@@ -631,7 +631,7 @@ def prepare_ffsl_flux_area_patches_list(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _prepare_ffsl_flux_area_patches_list(
         famask_int,
         p_vn,

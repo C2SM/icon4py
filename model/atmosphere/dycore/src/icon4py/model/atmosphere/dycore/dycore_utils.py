@@ -120,5 +120,5 @@ def _compute_rayleigh_damping_factor(
 @gtx.program
 def compute_rayleigh_damping_factor(
     rayleigh_w: fa.KField[float], dtime: float, rayleigh_damping_factor: fa.KField[float]
-):
+) -> None:
     _compute_rayleigh_damping_factor(rayleigh_w, dtime, out=rayleigh_damping_factor)

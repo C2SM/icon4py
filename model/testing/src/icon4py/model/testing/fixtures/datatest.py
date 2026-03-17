@@ -81,6 +81,20 @@ def cpu_allocator() -> gtx_typing.Allocator:
 
 @pytest.fixture(
     params=[
+        definitions.Grids.R01B01_GLOBAL,
+        definitions.Grids.R02B04_GLOBAL,
+        definitions.Grids.MCH_CH_R04B09_DSL,
+        definitions.Grids.TORUS_50000x5000,
+    ],
+    ids=lambda r: r.name,
+)
+def grid_description(request: pytest.FixtureRequest) -> definitions.GridDescription:
+    """Default parametrization for grid."""
+    return request.param
+
+
+@pytest.fixture(
+    params=[
         definitions.Experiments.MCH_CH_R04B09,
         definitions.Experiments.EXCLAIM_APE,
         definitions.Experiments.GAUSS3D,
@@ -136,10 +150,6 @@ def download_ser_data(
     if "not datatest" in request.config.getoption("-k", ""):
         return
 
-    with_mpi = request.config.getoption("with_mpi", False)
-    if with_mpi and experiment == definitions.Experiments.GAUSS3D:
-        # TODO(msimberg): Fix? Need serialized data.
-        pytest.skip("GAUSS3D experiment does not support MPI tests")
     _download_ser_data(experiment, processor_props)
 
 
@@ -158,7 +168,7 @@ def data_provider(
 def grid_savepoint(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> serialbox.IconGridSavepoint:
-    return data_provider.from_savepoint_grid(experiment.name, experiment.grid.shape)
+    return data_provider.from_savepoint_grid(experiment.name, experiment.grid.params)
 
 
 @pytest.fixture
@@ -178,7 +188,7 @@ def decomposition_info(
     data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
 ) -> decomposition.DecompositionInfo:
     return data_provider.from_savepoint_grid(
-        grid_id=experiment.name, grid_shape=experiment.grid.shape
+        grid_id=experiment.name, global_grid_params=experiment.grid.params
     ).construct_decomposition_info()
 
 

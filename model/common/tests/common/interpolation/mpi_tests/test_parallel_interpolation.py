@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
@@ -40,6 +40,9 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.testing import serialbox as sb
+
+if mpi_decomposition.mpi4py is None:
+    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
 @pytest.mark.level("integration")
@@ -204,24 +207,16 @@ def test_distributed_interpolation_rbf(
     attrs_name: str,
     intrp_name: str,
 ) -> None:
-    # xfail inside function body, because we don't actually want to run the test
-    # since it hangs.
-    pytest.xfail("Tests hang in CI")
-
-    if attrs_name.startswith("rbf_vec_coeff_c"):
-        dim = dims.CellDim
-    elif attrs_name.startswith("rbf_vec_coeff_e"):
-        dim = dims.EdgeDim
-    else:
-        dim = dims.VertexDim
-
     parallel_helpers.check_comm_size(processor_props)
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = interpolation_factory_from_savepoint
-    field_ref = interpolation_savepoint.__getattribute__(intrp_name)().asnumpy()
-    field = factory.get(attrs_name).asnumpy()
-    test_utils.dallclose(field, field_ref, atol=RBF_TOLERANCES[dim][experiment.name])
+    field_ref = interpolation_savepoint.__getattribute__(intrp_name)()
+    field = factory.get(attrs_name)
+    dim = field.domain.dims[0]
+    assert test_utils.dallclose(
+        field.asnumpy(), field_ref.asnumpy(), atol=RBF_TOLERANCES[dim][experiment.name]
+    )
 
 
 @pytest.mark.datatest

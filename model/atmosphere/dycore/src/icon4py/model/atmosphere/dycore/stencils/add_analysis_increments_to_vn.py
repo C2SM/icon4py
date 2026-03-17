@@ -34,7 +34,7 @@ def add_analysis_increments_to_vn(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _add_analysis_increments_to_vn(
         vn_incr,
         vn,

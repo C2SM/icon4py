@@ -109,8 +109,6 @@ module grid
                                  primal_normal_y_size_0, &
                                  vct_a, &
                                  vct_a_size_0, &
-                                 vct_b, &
-                                 vct_b_size_0, &
                                  lowest_layer_thickness, &
                                  model_top_height, &
                                  stretch_factor, &
@@ -335,10 +333,6 @@ module grid
 
          integer(c_int), value :: vct_a_size_0
 
-         type(c_ptr), value, target :: vct_b
-
-         integer(c_int), value :: vct_b_size_0
-
          real(c_double), value, target :: lowest_layer_thickness
 
          real(c_double), value, target :: model_top_height
@@ -418,7 +412,6 @@ contains
                         primal_normal_x, &
                         primal_normal_y, &
                         vct_a, &
-                        vct_b, &
                         lowest_layer_thickness, &
                         model_top_height, &
                         stretch_factor, &
@@ -521,8 +514,6 @@ contains
       real(c_double), dimension(:), target :: primal_normal_y
 
       real(c_double), dimension(:), target :: vct_a
-
-      real(c_double), dimension(:), target :: vct_b
 
       real(c_double), value, target :: lowest_layer_thickness
 
@@ -674,8 +665,6 @@ contains
 
       integer(c_int) :: vct_a_size_0
 
-      integer(c_int) :: vct_b_size_0
-
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
@@ -710,7 +699,6 @@ contains
       !$acc host_data use_device(primal_normal_x)
       !$acc host_data use_device(primal_normal_y)
       !$acc host_data use_device(vct_a)
-      !$acc host_data use_device(vct_b)
 
 #ifdef _OPENACC
       on_gpu = .True.
@@ -821,8 +809,6 @@ contains
 
       vct_a_size_0 = SIZE(vct_a, 1)
 
-      vct_b_size_0 = SIZE(vct_b, 1)
-
       rc = grid_init_wrapper(cell_starts=c_loc(cell_starts), &
                              cell_starts_size_0=cell_starts_size_0, &
                              cell_ends=c_loc(cell_ends), &
@@ -926,8 +912,6 @@ contains
                              primal_normal_y_size_0=primal_normal_y_size_0, &
                              vct_a=c_loc(vct_a), &
                              vct_a_size_0=vct_a_size_0, &
-                             vct_b=c_loc(vct_b), &
-                             vct_b_size_0=vct_b_size_0, &
                              lowest_layer_thickness=lowest_layer_thickness, &
                              model_top_height=model_top_height, &
                              stretch_factor=stretch_factor, &
@@ -943,7 +927,6 @@ contains
                              iau_init=iau_init, &
                              backend=backend, &
                              on_gpu=on_gpu)
-      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
