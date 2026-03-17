@@ -25,6 +25,27 @@ def dict_values_to_list(d: dict[str, Any]) -> dict[str, list]:
     return {k: [v] for k, v in d.items()}
 
 
+def _get_cuda_architecture() -> str | None:
+    try:
+        import cupy as cp  # type: ignore[import-not-found]
+
+        if cp.cuda.runtime.getDeviceCount() == 0:
+            return None
+
+        device = cp.cuda.Device()
+        props = cp.cuda.runtime.getDeviceProperties(device.id)
+        device_name = props.get("name", "")
+        if isinstance(device_name, bytes):
+            device_name = device_name.decode()
+        if "nvidia" not in str(device_name).lower():
+            return None
+
+        major, minor = device.compute_capability
+        return f"sm_{major}{minor}"
+    except Exception:
+        return None
+
+
 def get_dace_options(
     program_name: str, **backend_descriptor: Any
 ) -> model_backends.BackendDescriptor:
@@ -54,8 +75,9 @@ def get_dace_options(
         backend_descriptor["use_zero_origin"] = True
     if program_name == "graupel_run":
         optimization_args["fuse_tasklets"] = True
-        optimization_args["gpu_maxnreg"] = 80
-        optimization_args["gpu_block_size_2d"] = (64, 6)
+        if _get_cuda_architecture() == "sm_90":
+            optimization_args["gpu_maxnreg"] = 80
+            optimization_args["gpu_block_size_2d"] = (64, 6)
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
     if optimization_hooks:
