@@ -1,30 +1,30 @@
 include:
   - local: 'ci/base.yml'
 
-# .test_model_stencils:
-#   stage: test
-#   script:
-#     - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
-#   rules:
-#     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
-#       variables:
-#         NUM_PROCESSES: 8
-#         SLURM_TIMELIMIT: '00:30:00'
-#     - if: $COMPONENT == 'dycore'
-#       variables:
-#         SLURM_TIMELIMIT: '00:15:00'
-#     - when: on_success
-#       variables:
-#         SLURM_TIMELIMIT: '00:05:00'
-#   parallel:
-#     matrix:
-#       - COMPONENT: [diffusion, dycore, microphysics, muphys, common, driver]
-#         BACKEND: [gtfn_gpu]
-#         GRID: [simple, icon_regional]
-# # test_model_stencils_x86_64:
-# #   extends: [.test_model_stencils, .test_template_x86_64]
-# test_model_stencils_aarch64:
-#   extends: [.test_model_stencils, .test_template_aarch64]
+.test_model_stencils:
+  stage: test
+  script:
+    - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
+  rules:
+    - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
+      variables:
+        NUM_PROCESSES: 8
+        SLURM_TIMELIMIT: '00:30:00'
+    - if: $COMPONENT == 'dycore'
+      variables:
+        SLURM_TIMELIMIT: '00:15:00'
+    - when: on_success
+      variables:
+        SLURM_TIMELIMIT: '00:05:00'
+  parallel:
+    matrix:
+      - COMPONENT: [diffusion, dycore, microphysics, muphys, common, driver]
+        BACKEND: [gtfn_gpu]
+        GRID: [simple, icon_regional]
+# test_model_stencils_x86_64:
+#   extends: [.test_model_stencils, .test_template_x86_64]
+test_model_stencils_aarch64:
+  extends: [.test_model_stencils, .test_template_aarch64]
 
 
 .test_tools_datatests:
@@ -60,10 +60,8 @@ test_tools_datatests_aarch64:
         SLURM_TIMELIMIT: '00:15:00'
   parallel:
     matrix:
-      # - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
-      - COMPONENT: [common]
-        # BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
-        BACKEND: [dace_gpu, gtfn_cpu, gtfn_gpu]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
+        BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
