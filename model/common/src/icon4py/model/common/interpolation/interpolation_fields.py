@@ -13,7 +13,6 @@ from types import ModuleType
 from typing import Final
 
 import numpy as np
-import scipy
 from gt4py import next as gtx
 from gt4py.next import where
 
@@ -1163,11 +1162,12 @@ def compute_lsq_pseudoinv(
     min_rlcell_int: int,
     lsq_dim_unk: int,
     lsq_dim_c: int,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     for jjb in range(lsq_dim_c):
         for jjk in range(lsq_dim_unk):
             for jc in range(start_idx, min_rlcell_int):
-                u, s, v_t, _ = scipy.linalg.lapack.dgesdd(z_lsq_mat_c[jc, :, :])
+                u, s, v_t = array_ns.linalg.svd(z_lsq_mat_c[jc, :, :])
                 if cell_owner_mask[jc]:
                     lsq_pseudoinv[jc, :lsq_dim_unk, jjb] = (
                         lsq_pseudoinv[jc, :lsq_dim_unk, jjb]
@@ -1181,11 +1181,12 @@ def compute_lsq_weights_c(
     lsq_weights_c_jc: data_alloc.NDArray,
     lsq_dim_stencil: int,
     lsq_wgt_exp: int,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     for js in range(lsq_dim_stencil):
-        z_norm = np.sqrt(np.dot(z_dist_g[js, :], z_dist_g[js, :]))
+        z_norm = array_ns.sqrt(array_ns.dot(z_dist_g[js, :], z_dist_g[js, :]))
         lsq_weights_c_jc[js] = 1.0 / (z_norm**lsq_wgt_exp)
-    return lsq_weights_c_jc / np.max(lsq_weights_c_jc)
+    return lsq_weights_c_jc / array_ns.max(lsq_weights_c_jc)
 
 
 def compute_z_lsq_mat_c(
@@ -1234,18 +1235,18 @@ def compute_lsq_coeffs(
     match base_grid.GeometryType(geometry_type):
         case base_grid.GeometryType.ICOSAHEDRON:
             for js in range(lsq_dim_stencil):
-                z_dist_g[:, js, :] = np.asarray(
+                z_dist_g[:, js, :] = array_ns.asarray(
                     gnomonic_proj(
-                        cell_lon[:], cell_lat[:], cell_lon[c2e2c[:, js]], cell_lat[c2e2c[:, js]]
+                        cell_lon, cell_lat, cell_lon[c2e2c[:, js]], cell_lat[c2e2c[:, js]]
                     )
                 ).T
 
             z_dist_g *= grid_sphere_radius
             min_lsq_bound = min(lsq_dim_unk, lsq_dim_c)
-
             for jc in range(start_idx, min_rlcell_int):
                 if cell_owner_mask[jc]:
                     z_lsq_mat_c[jc, :min_lsq_bound, :min_lsq_bound] = 1.0
+
         case base_grid.GeometryType.TORUS:
             for jc in range(start_idx, min_rlcell_int):
                 ilc_s = c2e2c[jc, :lsq_dim_stencil]
@@ -1265,7 +1266,7 @@ def compute_lsq_coeffs(
 
     for jc in range(start_idx, min_rlcell_int):
         lsq_weights_c[jc, :] = compute_lsq_weights_c(
-            z_dist_g[jc, :, :], lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp
+            z_dist_g[jc, :, :], lsq_weights_c[jc, :], lsq_dim_stencil, lsq_wgt_exp, array_ns
         )
         z_lsq_mat_c[jc, js, :lsq_dim_unk] = compute_z_lsq_mat_c(
             cell_owner_mask,
@@ -1288,6 +1289,7 @@ def compute_lsq_coeffs(
         min_rlcell_int,
         lsq_dim_unk,
         lsq_dim_c,
+        array_ns,
     )
     exchange(lsq_pseudoinv[:, 0, :])
     exchange(lsq_pseudoinv[:, 1, :])
