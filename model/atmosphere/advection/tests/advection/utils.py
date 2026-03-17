@@ -197,3 +197,7 @@ def verify_advection_fields(
         p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
         atol=1e-16,
     )
+
+
+def dummy_exchange(*field: data_alloc.NDArray) -> None:
+    return None
