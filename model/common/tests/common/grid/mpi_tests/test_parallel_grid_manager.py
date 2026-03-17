@@ -88,6 +88,9 @@ def _get_neighbor_tables(grid: base.Grid) -> dict:
 def gather_field(field: np.ndarray, props: decomp_defs.ProcessProperties) -> tuple:
     constant_dims = tuple(field.shape[1:])
     _log.info(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
+    # Because of sparse indexing the field may have a non-contigous layout,
+    # which Gatherv doesn't support. Make sure the field is contiguous.
+    field = np.ascontiguousarray(field)
     constant_length = functools.reduce(operator.mul, constant_dims, 1)
     local_sizes = np.array(props.comm.gather(field.size, root=0))
     if props.rank == 0:
@@ -337,6 +340,7 @@ def test_geometry_fields_compare_single_multi_rank(
         interpolation_attributes.GEOFAC_GRG_Y,
         interpolation_attributes.GEOFAC_N2S,
         interpolation_attributes.GEOFAC_ROT,
+        interpolation_attributes.LSQ_PSEUDOINV,
         interpolation_attributes.NUDGECOEFFS_E,
         interpolation_attributes.POS_ON_TPLANE_E_X,
         interpolation_attributes.POS_ON_TPLANE_E_Y,
