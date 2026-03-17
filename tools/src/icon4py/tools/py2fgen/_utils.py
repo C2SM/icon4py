@@ -43,6 +43,24 @@ def write_file(string: str, outdir: pathlib.Path, fname: str) -> None:
         f.write(string)
 
 
+def write_file_if_changed(
+    content: str, outdir: pathlib.Path, fname: str, *, force: bool = False
+) -> bool:
+    """Write file only if its content differs from what is already on disk.
+
+    Args:
+        force: If True, always write the file regardless of current content.
+
+    Returns True if the file was written (content changed, file was new, or force=True),
+    False if the existing file already has the same content.
+    """
+    path = outdir / fname
+    if not force and path.exists() and path.read_text() == content:
+        return False
+    write_file(content, outdir, fname)
+    return True
+
+
 def setup_logger(name: str, log_level: int = logging.INFO) -> logging.Logger:
     """Set up a logger with a given name and log level."""
     logger = logging.getLogger(name)

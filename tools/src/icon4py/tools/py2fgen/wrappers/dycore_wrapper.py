@@ -135,27 +135,22 @@ def solve_nh_init(
     )
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
+    allocator = model_backends.get_allocator(actual_backend)
 
-    xp = rho_ref_me.array_ns
-    domain = rho_ref_me.domain
-    default_value = gtx.float64(0.0)
-    if (pg_edgeidx is None) or (pg_vertidx is None) or (pg_exdist is None):
-        # if any of the fields is missing, return a zero field with the correct shape
-        pg_exdist_dsl = gtx.as_field(
-            domain,
-            xp.full(domain.shape, fill_value=default_value, dtype=gtx.float64),
-            allocator=model_backends.get_allocator(actual_backend),
-        )
+    pg_exdist_domain = rho_ref_me.domain
+    if any(field is None for field in [pg_edgeidx, pg_vertidx, pg_exdist]):
+        assert all(field is None for field in [pg_edgeidx, pg_vertidx, pg_exdist])
+        pg_exdist_dsl = gtx.zeros(pg_exdist_domain, dtype=gtx.float64, allocator=allocator)
     else:
         pg_exdist_dsl = data_alloc.list2field(
-            domain=domain,
+            domain=pg_exdist_domain,
             values=pg_exdist,
             indices=(
                 data_alloc.adjust_fortran_indices(pg_edgeidx),
                 data_alloc.adjust_fortran_indices(pg_vertidx),
             ),
-            default_value=default_value,
-            allocator=model_backends.get_allocator(actual_backend),
+            default_value=gtx.float64(0.0),
+            allocator=allocator,
         )
 
     config = solve_nonhydro.NonHydrostaticConfig(
@@ -221,14 +216,10 @@ def solve_nh_init(
         }
     )
     wgtfacq_c = data_alloc.kflip_wgtfacq(
-        arr=wgtfacq_c.ndarray,
-        domain=cell_kflip_domain,
-        allocator=model_backends.get_allocator(actual_backend),
+        arr=wgtfacq_c.ndarray, domain=cell_kflip_domain, allocator=allocator
     )
     wgtfacq_e = data_alloc.kflip_wgtfacq(
-        arr=wgtfacq_e.ndarray,
-        domain=edge_kflip_domain,
-        allocator=model_backends.get_allocator(actual_backend),
+        arr=wgtfacq_e.ndarray, domain=edge_kflip_domain, allocator=allocator
     )
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
@@ -281,9 +272,7 @@ def solve_nh_init(
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
-        dummy_field_factory=wrapper_common.cached_dummy_field_factory(
-            model_backends.get_allocator(actual_backend)
-        ),
+        dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
 
 
