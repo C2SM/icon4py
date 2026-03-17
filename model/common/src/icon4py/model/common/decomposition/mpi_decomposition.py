@@ -402,12 +402,6 @@ class MultiNodeResult(definitions.ExchangeResult):
             # No GPU support or blocking wait requested -> use normal `wait()`.
             self.handle.wait()
 
-            # NOTE: Before asynchronous exchange was supported `pattern_refs` was,
-            #   without further explanations, explicitly deleted. However, now we
-            #   only delete it in blocking mode.
-            # TODO(msimberg, phimuell, havogt): Find out what the implications are.
-            del self.pattern_refs
-
         else:
             # Stream given, perform a scheduled wait.
             self.handle.schedule_wait(stream)
