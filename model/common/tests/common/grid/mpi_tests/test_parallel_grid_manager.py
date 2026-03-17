@@ -809,6 +809,7 @@ def test_metrics_mask_prog_halo_c(
 def test_validate_skip_values_in_distributed_connectivities(
     processor_props: decomp_defs.ProcessProperties,
     experiment: test_defs.Experiment,
+    backend: gtx_typing.Backend | None,
 ) -> None:
     if experiment == test_defs.Experiments.MCH_CH_R04B09:
         pytest.xfail("Limited-area grids not yet supported")
@@ -818,6 +819,7 @@ def test_validate_skip_values_in_distributed_connectivities(
         file=file,
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
+        allocator=model_backends.get_allocator(backend),
     )
     distributed_grid = multi_rank_grid_manager.grid
     for k, c in distributed_grid.connectivities.items():
@@ -841,6 +843,7 @@ def test_validate_skip_values_in_distributed_connectivities(
 def test_limited_area_raises(
     processor_props: decomp_defs.ProcessProperties,
     grid: test_defs.GridDescription,
+    backend: gtx_typing.Backend | None,
 ) -> None:
     with pytest.raises(
         NotImplementedError, match="Limited-area grids are not supported in distributed runs"
@@ -849,4 +852,5 @@ def test_limited_area_raises(
             file=grid_utils.resolve_full_grid_file_name(grid),
             run_properties=processor_props,
             decomposer=decomp.MetisDecomposer(),
+            allocator=model_backends.get_allocator(backend),
         )
