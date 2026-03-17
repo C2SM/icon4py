@@ -49,29 +49,26 @@ def graupel_run(
 ):
     global graupel_program  # noqa: PLW0603 [global-statement]
     if graupel_program is None:
-        on_gpu = t.array_ns != np
-        optimization_hooks = (
-            None
-            if use_dace_hooks
-            else {
-                hook: lambda x: x  # no change is applied to the SDFG
-                for hook in [
-                    gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre,
-                    gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep,
-                    gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPost,
-                ]
+        backend_descriptor = {
+            "backend_factory": model_backends.make_custom_dace_backend,
+            "device": model_backends.CPU if t.array_ns == np else model_backends.GPU,
+            "async_sdfg_call": not wait_for_completion,
+        }
+        if not use_dace_hooks:
+            # set dummy hook functions that do not modify the SDFG
+            backend_descriptor["optimization_args"] = {
+                "optimization_hooks": {
+                    hook: lambda x: x  # no change is applied to the SDFG
+                    for hook in [
+                        gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre,
+                        gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowStep,
+                        gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPost,
+                    ]
+                },
             }
-        )
         with muphys_utils.recursion_limit(10**4):
             graupel_program = model_options.setup_program(
-                backend={
-                    "backend_factory": model_backends.make_custom_dace_backend,
-                    "device": model_backends.GPU if on_gpu else model_backends.CPU,
-                    "async_sdfg_call": not wait_for_completion,
-                    "optimization_args": {
-                        "optimization_hooks": optimization_hooks,
-                    },
-                },
+                backend=backend_descriptor,
                 program=graupel.graupel_run,
                 constant_args={"dt": dt, "qnc": qnc, "enable_masking": True},
                 horizontal_sizes={
