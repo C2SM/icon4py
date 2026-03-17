@@ -725,6 +725,7 @@ def test_metrics_mask_prog_halo_c(
         run_properties=processor_props,
         decomposer=decomp.MetisDecomposer(),
         num_levels=experiment.num_levels,
+        allocator=model_backends.get_allocator(backend),
     )
     _log.info(
         f"rank = {processor_props.rank} : {multi_rank_grid_manager.decomposition_info.get_horizontal_size()!r}"
