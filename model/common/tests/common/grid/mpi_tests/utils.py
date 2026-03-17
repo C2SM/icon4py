@@ -47,6 +47,9 @@ def run_grid_manager_for_multi_rank(
 ) -> gm.GridManager:
     manager = _grid_manager(file, num_levels)
     manager(
-        keep_skip_values=True, allocator=allocator, run_properties=run_properties, decomposer=decomposer
+        keep_skip_values=True,
+        allocator=allocator,
+        run_properties=run_properties,
+        decomposer=decomposer,
     )
     return manager

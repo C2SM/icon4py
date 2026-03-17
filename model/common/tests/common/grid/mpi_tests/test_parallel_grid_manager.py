@@ -137,10 +137,18 @@ def check_local_global_field(
     if check_halos:
         np.testing.assert_allclose(
             global_reference_field[
-                data_alloc.as_numpy(decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO))
+                data_alloc.as_numpy(
+                    decomposition_info.global_index(
+                        dim, decomp_defs.DecompositionInfo.EntryType.HALO
+                    )
+                )
             ],
             local_field[
-                data_alloc.as_numpy(decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO))
+                data_alloc.as_numpy(
+                    decomposition_info.local_index(
+                        dim, decomp_defs.DecompositionInfo.EntryType.HALO
+                    )
+                )
             ],
             atol=1e-9,
             verbose=True,
@@ -150,7 +158,9 @@ def check_local_global_field(
     # field, by gathering owned entries to the first rank. This ensures that in
     # total we have the full global field distributed on all ranks.
     owned_entries = local_field[
-        data_alloc.as_numpy(decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED))
+        data_alloc.as_numpy(
+            decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
+        )
     ]
     gathered_sizes, gathered_field = gather_field(owned_entries, processor_props)
 
@@ -269,7 +279,9 @@ def test_geometry_fields_compare_single_multi_rank(
     # grid/geometry/interpolation/metrics factories.
     grid_file = grid_utils._download_grid_file(grid_description)
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(grid_file, allocator=allocator)
+    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(
+        grid_file, allocator=allocator
+    )
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
         grid=single_rank_grid_manager.grid,
@@ -542,7 +554,9 @@ def test_metrics_fields_compare_single_multi_rank(
     )
 
     _log.info(f"running on {processor_props.comm} with {processor_props.comm_size} ranks")
-    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(file, allocator=allocator, num_levels=experiment.num_levels)
+    single_rank_grid_manager = utils.run_grid_manager_for_single_rank(
+        file, allocator=allocator, num_levels=experiment.num_levels
+    )
     single_rank_geometry = geometry.GridGeometry(
         backend=backend,
         grid=single_rank_grid_manager.grid,
