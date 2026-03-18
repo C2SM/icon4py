@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import pathlib
 import time
 
@@ -65,17 +66,19 @@ def setup_graupel(
     enable_dace_hooks: bool = True,
     wait_for_completion: bool = False,
 ):
+    assert model_backends.is_backend_descriptor(backend)
+    backend_descriptor = copy.deepcopy(backend)
     if enable_dace_hooks:
         # set dummy hook functions that do not modify the SDFG
-        backend["optimization_args"] = {
+        backend_descriptor["optimization_args"] = {
             "optimization_hooks": {
                 gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre: graupel_dace_hooks.remove_self_copy_inside_scan
             },
         }
-    backend["async_sdfg_call"] = not wait_for_completion
+    backend_descriptor["async_sdfg_call"] = not wait_for_completion
     with utils.recursion_limit(10**4):  # TODO(havogt): make an option in gt4py?
         graupel_run_program = model_options.setup_program(
-            backend=backend,
+            backend=backend_descriptor,
             program=graupel.graupel_run,
             constant_args={
                 "dt": ta.wpfloat(dt),
