@@ -24,7 +24,7 @@ class TestLimitVerticalParabolaSemiMonotonically(stencil_tests.StencilTest):
     PROGRAM = limit_vertical_parabola_semi_monotonically
     OUTPUTS = ("p_face_up", "p_face_low")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         l_limit: np.ndarray,
@@ -47,7 +47,7 @@ class TestLimitVerticalParabolaSemiMonotonically(stencil_tests.StencilTest):
         )
         return dict(p_face_up=q_face_up, p_face_low=q_face_low)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         l_limit = data_alloc.random_mask(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

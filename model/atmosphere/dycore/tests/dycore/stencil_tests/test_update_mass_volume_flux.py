@@ -16,7 +16,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def update_mass_volume_flux_numpy(
@@ -43,7 +43,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
         "vol_flx_ic",
     )
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_contr_w_fl_l: np.ndarray,
@@ -67,7 +67,7 @@ class TestUpdateMassVolumeFlux(StencilTest):
         )
         return dict(mass_flx_ic=mass_flx_ic, vol_flx_ic=vol_flx_ic)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_contr_w_fl_l = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         rho_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

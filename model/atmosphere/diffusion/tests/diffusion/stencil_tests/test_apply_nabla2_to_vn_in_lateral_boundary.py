@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def apply_nabla2_to_vn_in_lateral_boundary_numpy(
@@ -33,7 +33,7 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
     PROGRAM = apply_nabla2_to_vn_in_lateral_boundary
     OUTPUTS = ("vn",)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid):
         fac_bdydiff_v = wpfloat("5.0")
         z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
@@ -50,7 +50,7 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
             vertical_end=gtx.int32(grid.num_levels),
         )
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_nabla2_e: np.ndarray,

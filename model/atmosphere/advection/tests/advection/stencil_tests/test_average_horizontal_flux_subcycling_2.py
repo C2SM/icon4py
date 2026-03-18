@@ -24,7 +24,7 @@ class TestAverageHorizontalFluxSubcycling2(stencil_tests.StencilTest):
     PROGRAM = average_horizontal_flux_subcycling_2
     OUTPUTS = ("p_out_e",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_tracer_mflx_1_dsl: np.ndarray,
@@ -34,7 +34,7 @@ class TestAverageHorizontalFluxSubcycling2(stencil_tests.StencilTest):
         p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl) / float(2)
         return dict(p_out_e=p_out_e)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         z_tracer_mflx_1_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         z_tracer_mflx_2_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

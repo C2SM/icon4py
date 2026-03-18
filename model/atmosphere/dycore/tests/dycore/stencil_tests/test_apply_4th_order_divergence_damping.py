@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 from . import test_dycore_utils
 
@@ -38,7 +38,7 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
     PROGRAM = apply_4th_order_divergence_damping
     OUTPUTS = ("vn",)
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         interpolated_fourth_order_divdamp_factor: np.ndarray,
@@ -58,7 +58,7 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
         vn = apply_4th_order_divergence_damping_numpy(scal_divdamp, z_graddiv2_vn, vn)
         return dict(vn=vn)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolated_fourth_order_divdamp_factor = data_alloc.random_field(grid, dims.KDim)
         z_graddiv2_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

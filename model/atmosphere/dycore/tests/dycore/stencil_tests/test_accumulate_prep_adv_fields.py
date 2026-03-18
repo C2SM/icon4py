@@ -20,7 +20,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def accumulate_prep_adv_fields_numpy(
@@ -40,7 +40,7 @@ class TestAccumulatePrepAdvFields(StencilTest):
     PROGRAM = accumulate_prep_adv_fields
     OUTPUTS = ("vn_traj", "mass_flx_me")
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_vn_avg: np.ndarray,
@@ -60,7 +60,7 @@ class TestAccumulatePrepAdvFields(StencilTest):
 
         return dict(vn_traj=vn_traj, mass_flx_me=mass_flx_me)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         mass_fl_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         mass_flx_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

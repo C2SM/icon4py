@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def update_dynamical_exner_time_increment_numpy(
@@ -38,7 +38,7 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
     PROGRAM = update_dynamical_exner_time_increment
     OUTPUTS = ("exner_dyn_incr",)
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         exner: np.ndarray,
@@ -58,7 +58,7 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         )
         return dict(exner_dyn_incr=exner_dyn_incr)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ndyn_substeps_var, dtime = wpfloat("10.0"), wpfloat("12.0")
         exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

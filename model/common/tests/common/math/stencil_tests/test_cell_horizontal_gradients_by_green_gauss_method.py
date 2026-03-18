@@ -19,7 +19,7 @@ from icon4py.model.common.math.stencils.cell_horizontal_gradients_by_green_gauss
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def cell_horizontal_gradients_by_green_gauss_method_numpy(
@@ -48,7 +48,7 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
     PROGRAM = cell_horizontal_gradients_by_green_gauss_method
     OUTPUTS = ("out",)
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         scalar_field: np.ndarray,
@@ -66,7 +66,7 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
             out=(p_grad_1_u, p_grad_1_v),
         )
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         scalar_field = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)

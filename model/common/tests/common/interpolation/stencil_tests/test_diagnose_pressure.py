@@ -24,7 +24,7 @@ class TestDiagnosePressure(stencil_tests.StencilTest):
     PROGRAM = diagnose_pressure
     OUTPUTS = ("pressure", "pressure_ifc")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         surface_pressure: np.ndarray,
@@ -52,7 +52,7 @@ class TestDiagnosePressure(stencil_tests.StencilTest):
             pressure_ifc=pressure_ifc,
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         ddqz_z_full = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0, dtype=ta.wpfloat

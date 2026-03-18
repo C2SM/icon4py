@@ -24,7 +24,7 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
     PROGRAM = integrate_tracer_horizontally
     OUTPUTS = ("tracer_new_hor",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_mflx_tracer_h: np.ndarray,
@@ -45,7 +45,7 @@ class TestIntegrateTracerHorizontally(stencil_tests.StencilTest):
         ) / rhodz_new
         return dict(tracer_new_hor=tracer_new_hor)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         deepatmo_divh = data_alloc.random_field(grid, dims.KDim)

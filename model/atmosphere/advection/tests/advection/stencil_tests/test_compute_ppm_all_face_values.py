@@ -25,7 +25,7 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_all_face_values
     OUTPUTS = ("p_face",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_cc: np.ndarray,
@@ -49,7 +49,7 @@ class TestComputePpmAllFaceValues(stencil_tests.StencilTest):
         p_face[:, 1:] = np.where((k[1:] == elevp1), p_cc[:, :-1], p_face[:, 1:])
         return dict(p_face=p_face)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

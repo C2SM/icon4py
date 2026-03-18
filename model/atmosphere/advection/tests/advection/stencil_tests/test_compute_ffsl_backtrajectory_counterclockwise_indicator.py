@@ -24,7 +24,7 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(stencil_tests.Stenc
     PROGRAM = compute_ffsl_backtrajectory_counterclockwise_indicator
     OUTPUTS = ("lvn_sys_pos",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_vn: np.ndarray,
@@ -44,7 +44,7 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(stencil_tests.Stenc
 
         return dict(lvn_sys_pos=lvn_sys_pos)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)

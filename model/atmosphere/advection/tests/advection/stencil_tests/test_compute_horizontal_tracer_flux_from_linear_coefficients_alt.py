@@ -24,7 +24,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(stencil_tests.Ste
     PROGRAM = compute_horizontal_tracer_flux_from_linear_coefficients_alt
     OUTPUTS = ("p_out_e",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_lsq_coeff_1: np.ndarray,
@@ -57,7 +57,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(stencil_tests.Ste
 
         return dict(p_out_e=p_out_e)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         z_lsq_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_lsq_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

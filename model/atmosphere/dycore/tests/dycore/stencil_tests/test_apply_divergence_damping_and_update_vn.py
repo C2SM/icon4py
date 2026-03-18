@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.type_alias as ta
-import icon4py.model.testing.stencil_tests as test_helpers
 from icon4py.model.atmosphere.dycore.dycore_states import DivergenceDampingOrder
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycore_and_update_vn import (
     apply_divergence_damping_and_update_vn,
@@ -19,6 +18,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_dycor
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import stencil_tests
 
 from . import test_dycore_utils
 
@@ -28,12 +28,12 @@ divergence_damp_order = DivergenceDampingOrder()
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.continuous_benchmarking
-class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
+class TestApplyDivergenceDampingAndUpdateVn(stencil_tests.StencilTest):
     PROGRAM = apply_divergence_damping_and_update_vn
     OUTPUTS = ("next_vn",)
     STATIC_PARAMS = {
-        test_helpers.StandardStaticVariants.NONE: (),
-        test_helpers.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
+        stencil_tests.StandardStaticVariants.NONE: (),
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_DOMAIN: (
             "horizontal_start",
             "horizontal_end",
             "vertical_start",
@@ -41,7 +41,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
             "is_iau_active",
             "limited_area",
         ),
-        test_helpers.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
+        stencil_tests.StandardStaticVariants.COMPILE_TIME_VERTICAL: (
             "vertical_start",
             "vertical_end",
             "is_iau_active",
@@ -49,7 +49,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         horizontal_gradient_of_normal_wind_divergence: np.ndarray,
@@ -186,7 +186,7 @@ class TestApplyDivergenceDampingAndUpdateVn(test_helpers.StencilTest):
 
         return dict(next_vn=next_vn)
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"divdamp_order": do, "is_iau_active": ia, "second_order_divdamp_factor": sodf}
             for do, ia, sodf in [

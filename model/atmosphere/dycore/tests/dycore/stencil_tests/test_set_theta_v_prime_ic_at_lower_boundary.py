@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 from .test_interpolate_to_surface import interpolate_to_surface_numpy
 
@@ -44,7 +44,7 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
     PROGRAM = set_theta_v_prime_ic_at_lower_boundary
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic")
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         wgtfacq_c: np.ndarray,
@@ -63,7 +63,7 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
         )
         return dict(z_theta_v_pr_ic=z_theta_v_pr_ic, theta_v_ic=theta_v_ic)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

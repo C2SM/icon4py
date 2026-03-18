@@ -42,7 +42,7 @@ class TestAddInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
     PROGRAM = add_interpolated_horizontal_advection_of_w
     OUTPUTS = ("ddt_w_adv",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         e_bln_c_s: np.ndarray,
@@ -55,7 +55,7 @@ class TestAddInterpolatedHorizontalAdvectionOfW(stencil_tests.StencilTest):
         )
         return dict(ddt_w_adv=ddt_w_adv)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_v_grad_w = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)

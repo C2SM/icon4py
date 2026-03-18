@@ -22,7 +22,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
     PROGRAM = temporary_fields_for_turbulence_diagnostics
     OUTPUTS = ("div", "kh_c")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         kh_smag_ec: np.ndarray,
@@ -46,7 +46,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(stencil_tests.StencilTest):
 
         return dict(div=div, kh_c=kh_c)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid):
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)

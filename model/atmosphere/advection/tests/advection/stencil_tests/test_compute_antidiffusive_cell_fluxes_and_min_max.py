@@ -28,7 +28,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
         "z_tracer_min",
     )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_div: np.ndarray,
@@ -77,7 +77,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest):
             z_tracer_min=z_tracer_min,
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid) -> dict:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

@@ -12,14 +12,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 class TestIceToGraupel(StencilTest):
     PROGRAM = ice_to_graupel
     OUTPUTS = ("aggregation",)
 
-    @staticmethod
+    @static_reference
     def reference(
         grid,
         rho: np.ndarray,
@@ -31,7 +31,7 @@ class TestIceToGraupel(StencilTest):
     ) -> dict:
         return dict(aggregation=np.full(rho.shape, 7.1049436957697864e-19))
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid):
         return dict(
             rho=data_alloc.constant_field(grid, 1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),

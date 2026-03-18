@@ -56,7 +56,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         spatially_averaged_vn: np.ndarray,
@@ -154,7 +154,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
             substep_averaged_mass_flux=substep_averaged_mass_flux,
         )
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"prepare_advection": pa, "at_first_substep": afs}
             for pa, afs in [

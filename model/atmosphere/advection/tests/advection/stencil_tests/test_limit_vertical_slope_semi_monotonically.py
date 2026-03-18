@@ -24,7 +24,7 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
     PROGRAM = limit_vertical_slope_semi_monotonically
     OUTPUTS = (stencil_tests.Output("z_slope", gtslice=(slice(None), slice(1, -1))),)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_cc: np.ndarray,
@@ -39,7 +39,7 @@ class TestLimitVerticalSlopeSemiMonotonically(stencil_tests.StencilTest):
         slope = np.where(z_slope[:, 1:-1] >= 0.0, slope_l, -slope_l)
         return dict(z_slope=slope)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_slope = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

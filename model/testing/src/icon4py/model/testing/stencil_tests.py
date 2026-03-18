@@ -14,7 +14,7 @@ import inspect
 import os
 import types
 from collections.abc import Callable, Generator, Mapping, Sequence
-from typing import Any, ClassVar, Final, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias
 
 import gt4py.next as gtx
 import numpy as np
@@ -35,38 +35,43 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
 
 
-def static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
-    if not isinstance(func, (types.FunctionType, staticmethod)):
-        raise TypeError("The 'reference' function must be a regular function or staticmethod.")
-    if func.__name__ != "reference":
-        raise ValueError("The 'reference' method must be named 'reference'.")
-    if not isinstance(func, staticmethod):
-        func = staticmethod(func)
-
-    func.__stencil_test_reference__ = True
-
-    return func
-
-
-def input_data_fixture(
-    func: types.FunctionType | None = None, **kwargs
-) -> _pytest.fixtures.FixtureFunctionMarker:
-    if not isinstance(func, types.FunctionType):
-        raise TypeError("The 'input_data' method must be a regular function.")
-    if func.__name__ != "input_data":
-        raise ValueError("The 'input_data' method must be named 'input_data'.")
-    func_params = tuple(p.name for p in inspect.signature(func).parameters.items())
-    if func_params != ("self", "grid"):
-        raise ValueError("The 'input_data' method signature must be 'input_data(self, grid)'.")
-
-    kwargs.setdefault("scope", "class")
-
-    return pytest.fixture(**kwargs)(func)
-
+_STENCIL_REFERENCE_MARKER: Final = "__stencil_test_reference__"
+_INPUT_DATA_FIXTURE_MARKER: Final = "__stencil_test_input_fixture__"
 
 if TYPE_CHECKING:
-    static_reference: Final = staticmethod  # type: ignore[assignment]  # we override with a decorated function
-    input_data_fixture: Final = pytest.fixture  # type: ignore[assignment]  # we override with a decorated function
+    static_reference: TypeAlias = staticmethod
+    input_data_fixture: Final = pytest.fixture
+
+else:
+
+    def static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
+        if not isinstance(func, (types.FunctionType, staticmethod)):
+            raise TypeError("The 'reference' function must be a regular function or staticmethod.")
+        if func.__name__ != "reference":
+            raise ValueError("The 'reference' method must be named 'reference'.")
+        if not isinstance(func, staticmethod):
+            func = staticmethod(func)
+
+        setattr(func, _STENCIL_REFERENCE_MARKER, True)
+
+        return func
+
+    def input_data_fixture(
+        func: types.FunctionType | None = None, **kwargs
+    ) -> pytest.fixtures.FixtureFunctionMarker:  # type: ignore[return]
+        if not isinstance(func, types.FunctionType):
+            raise TypeError("The 'input_data' method must be a regular function.")
+        if func.__name__ != "input_data":
+            raise ValueError("The 'input_data' method must be named 'input_data'.")
+        func_params = tuple(inspect.signature(func).parameters.keys())
+        if func_params != ("self", "grid"):
+            raise ValueError("The 'input_data' method signature must be 'input_data(self, grid)'.")
+
+        kwargs.setdefault("scope", "class")
+        fixt = pytest.fixture(**kwargs)(func)
+        setattr(fixt, _INPUT_DATA_FIXTURE_MARKER, True)
+
+        return fixt
 
 
 def allocate_data(
@@ -336,6 +341,18 @@ class StencilTest:
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
+        if not hasattr(cls, "reference"):
+            raise TypeError("StencilTest subclasses must implement a 'reference' method.")
+        if not getattr(cls.__dict__["reference"], _STENCIL_REFERENCE_MARKER, False):
+            raise RuntimeError(
+                f"The 'reference' method of {cls.__name__} must be decorated with '@static_reference'."
+            )
+        if not hasattr(cls, "input_data"):
+            raise TypeError("StencilTest subclasses must implement an 'input_data' method.")
+        if not getattr(cls.__dict__["input_data"], _INPUT_DATA_FIXTURE_MARKER, False):
+            raise RuntimeError(
+                f"The 'input_data' method of {cls.__name__} must be decorated with '@input_data_fixture'."
+            )
 
         setattr(cls, f"test_{cls.__name__}", test_and_benchmark)
 

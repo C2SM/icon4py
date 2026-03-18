@@ -113,7 +113,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         spatially_averaged_vn: np.ndarray,
@@ -273,7 +273,7 @@ class TestComputeHorizontalVelocityQuantitiesAndFluxes(stencil_tests.StencilTest
             contravariant_correction_at_edges_on_model_levels=contravariant_correction_at_edges_on_model_levels,
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_gradient_of_normal_wind_divergence = data_alloc.zero_field(

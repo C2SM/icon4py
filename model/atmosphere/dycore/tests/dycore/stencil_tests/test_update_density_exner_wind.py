@@ -18,14 +18,14 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 class TestUpdateDensityExnerWind(StencilTest):
     PROGRAM = update_density_exner_wind
     OUTPUTS = ("rho_new", "exner_new", "w_new")
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         rho_now: np.ndarray,
@@ -42,7 +42,7 @@ class TestUpdateDensityExnerWind(StencilTest):
         w_new = w_now + dtime * grf_tend_w
         return dict(rho_new=rho_new, exner_new=exner_new, w_new=w_new)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho_now = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         grf_tend_rho = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def solve_tridiagonal_matrix_for_w_back_substitution_numpy(
@@ -42,7 +42,7 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
     PROGRAM = solve_tridiagonal_matrix_for_w_back_substitution
     OUTPUTS = ("w",)
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_q: np.ndarray,
@@ -52,7 +52,7 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
         w_new = solve_tridiagonal_matrix_for_w_back_substitution_numpy(connectivities, z_q=z_q, w=w)
         return dict(w=w_new)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

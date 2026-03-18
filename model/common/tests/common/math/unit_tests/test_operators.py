@@ -19,7 +19,7 @@ from icon4py.model.common.utils.data_allocation import constant_field, zero_fiel
 from icon4py.model.testing import reference_funcs
 from icon4py.model.testing.fixtures.datatest import backend_like
 from icon4py.model.testing.fixtures.stencil_tests import grid, grid_manager
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 @pytest.mark.embedded_remap_error
@@ -27,7 +27,7 @@ class TestNabla2OnCell(StencilTest):
     PROGRAM = compute_nabla2_on_cell
     OUTPUTS = ("nabla2_psi_c",)
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         psi_c: np.ndarray,
@@ -37,7 +37,7 @@ class TestNabla2OnCell(StencilTest):
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base_grid.Grid) -> dict:
         psi_c = constant_field(grid, 1.0, dims.CellDim)
         geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
@@ -56,7 +56,7 @@ class TestNabla2OnCellK(StencilTest):
     PROGRAM = compute_nabla2_on_cell_k
     OUTPUTS = ("nabla2_psi_c",)
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         psi_c: np.ndarray,
@@ -66,7 +66,7 @@ class TestNabla2OnCellK(StencilTest):
         nabla2_psi_c_np = reference_funcs.nabla2_on_cell_k_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         psi_c = constant_field(grid, 1.0, dims.CellDim, dims.KDim)
         geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)

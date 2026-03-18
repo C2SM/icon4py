@@ -22,7 +22,7 @@ class TestComputeTendency(stencil_tests.StencilTest):
     PROGRAM = compute_tendency
     OUTPUTS = ("opt_ddt_tracer_adv",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_tracer_now: np.ndarray,
@@ -34,7 +34,7 @@ class TestComputeTendency(stencil_tests.StencilTest):
 
         return dict(opt_ddt_tracer_adv=opt_ddt_tracer_adv)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_tracer_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

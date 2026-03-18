@@ -15,18 +15,18 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 class TestDepositionAutoConversion(StencilTest):
     PROGRAM = deposition_auto_conversion
     OUTPUTS = ("conversion_rate",)
 
-    @staticmethod
+    @static_reference
     def reference(grid, qi: np.ndarray, m_ice: np.ndarray, ice_dep: np.ndarray, **kwargs) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 6.6430804299795412e-08))
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid):
         return dict(
             qi=data_alloc.constant_field(

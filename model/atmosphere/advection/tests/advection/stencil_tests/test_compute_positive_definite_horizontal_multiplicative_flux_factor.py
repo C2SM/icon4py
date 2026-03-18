@@ -22,7 +22,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
     PROGRAM = compute_positive_definite_horizontal_multiplicative_flux_factor
     OUTPUTS = ("r_m",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_div: np.ndarray,
@@ -53,7 +53,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(stencil_test
 
         return dict(r_m=r_m)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid) -> dict:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

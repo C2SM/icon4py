@@ -24,7 +24,7 @@ class TestComputeVerticalParabolaLimiterCondition(stencil_tests.StencilTest):
     PROGRAM = compute_vertical_parabola_limiter_condition
     OUTPUTS = ("l_limit",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_face: np.ndarray,
@@ -36,7 +36,7 @@ class TestComputeVerticalParabolaLimiterCondition(stencil_tests.StencilTest):
         l_limit = np.where(np.abs(z_delta) < -1 * z_a6i, 1, 0)
         return dict(l_limit=l_limit)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})

@@ -19,7 +19,12 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import zero_field
-from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
+from icon4py.model.testing.stencil_tests import (
+    StandardStaticVariants,
+    StencilTest,
+    input_data_fixture,
+    static_reference,
+)
 
 
 @pytest.mark.continuous_benchmarking
@@ -40,7 +45,7 @@ class TestInitCellKdimFieldWithZeroWp(StencilTest):
         ),
     }
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         field_with_zero_wp: np.ndarray,
@@ -49,7 +54,7 @@ class TestInitCellKdimFieldWithZeroWp(StencilTest):
         field_with_zero_wp = np.zeros_like(field_with_zero_wp)
         return dict(field_with_zero_wp=field_with_zero_wp)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         field_with_zero_wp = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 

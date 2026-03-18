@@ -24,7 +24,7 @@ class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
     PROGRAM = compute_ppm4gpu_parabola_coefficients
     OUTPUTS = ("z_delta_q", "z_a1")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_face_up: np.ndarray,
@@ -36,7 +36,7 @@ class TestComputePpm4gpuParabolaCoefficients(stencil_tests.StencilTest):
         z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)
         return dict(z_delta_q=z_delta_q, z_a1=z_a1)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         z_face_up = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_face_low = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

@@ -12,14 +12,14 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import in
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 class TestInternalEnergy(StencilTest):
     PROGRAM = internal_energy
     OUTPUTS = ("energy",)
 
-    @staticmethod
+    @static_reference
     def reference(
         grid,
         t: np.ndarray,
@@ -32,7 +32,7 @@ class TestInternalEnergy(StencilTest):
     ) -> dict:
         return dict(energy=np.full(t.shape, 38265357.270336017))
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid):
         return dict(
             t=data_alloc.constant_field(grid, 255.756, dims.CellDim, dims.KDim, dtype=wpfloat),

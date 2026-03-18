@@ -19,7 +19,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
@@ -47,7 +47,7 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest)
     PROGRAM = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels
     OUTPUTS = ("vn_nnew",)
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         vn_nnow: np.ndarray,
@@ -76,7 +76,7 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest)
         )
         return dict(vn_nnew=vn_nnew)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vn_nnow = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         ddt_vn_apc_ntl1 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)

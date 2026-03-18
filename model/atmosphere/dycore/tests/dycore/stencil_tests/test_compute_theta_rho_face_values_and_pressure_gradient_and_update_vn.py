@@ -160,7 +160,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         rho_at_edges_on_model_levels: np.ndarray,
@@ -431,7 +431,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             next_vn=next_vn,
         )
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"is_iau_active": value} for value in [True, False]
         ],  # True for testing, False for benchmarking

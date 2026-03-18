@@ -18,7 +18,7 @@ from icon4py.model.common import constants, dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 dycore_consts: Final = constants.PhysicsConstants()
@@ -66,7 +66,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
     PROGRAM = compute_results_for_thermodynamic_variables
     OUTPUTS = ("rho_new", "exner_new", "theta_v_new")
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_rho_expl: np.ndarray,
@@ -102,7 +102,7 @@ class TestComputeResultsForThermodynamicVariables(StencilTest):
         )
         return dict(rho_new=rho_new, exner_new=exner_new, theta_v_new=theta_v_new)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         z_rho_expl = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)

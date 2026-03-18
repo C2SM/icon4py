@@ -24,7 +24,7 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
     PROGRAM = apply_interpolated_tracer_time_tendency
     OUTPUTS = ("p_tracer_new",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_tracer_now: np.ndarray,
@@ -37,7 +37,7 @@ class TestApplyInterpolatedTracerTimeTendency(stencil_tests.StencilTest):
 
         return dict(p_tracer_new=p_tracer_new)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_grf_tend_tracer = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

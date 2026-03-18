@@ -293,7 +293,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         vertical_wind_advective_tendency: np.ndarray,
@@ -409,7 +409,7 @@ class TestFusedVelocityAdvectionStencilVMomentum(stencil_tests.StencilTest):
             vertical_cfl=vertical_cfl_ret,
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         contravariant_corrected_w_at_cells_on_model_levels = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
@@ -497,7 +497,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
         stencil_tests.StandardStaticVariants.NONE: (),  # For now compile time variants triger error in gt4py
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         contravariant_correction_at_cells_on_half_levels: np.ndarray,
@@ -622,7 +622,7 @@ class TestFusedVelocityAdvectionStencilVMomentumAndContravariant(stencil_tests.S
             vertical_cfl=vertical_cfl_ret,
         )
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"skip_compute_predictor_vertical_advection": value} for value in [True, False]
         ],  # True for benchmarking, False for testing

@@ -41,7 +41,7 @@ class TestInterpolateToCellCenter(stencil_tests.StencilTest):
     PROGRAM = interpolate_to_cell_center
     OUTPUTS = ("interpolation",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         interpolant: np.ndarray,
@@ -51,7 +51,7 @@ class TestInterpolateToCellCenter(stencil_tests.StencilTest):
         interpolation = interpolate_to_cell_center_numpy(connectivities, interpolant, e_bln_c_s)
         return dict(interpolation=interpolation)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolant = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat)

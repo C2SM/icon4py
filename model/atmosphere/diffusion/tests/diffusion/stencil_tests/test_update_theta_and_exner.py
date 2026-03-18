@@ -16,7 +16,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def update_theta_and_exner_numpy(
@@ -37,7 +37,7 @@ class TestUpdateThetaAndExner(StencilTest):
     PROGRAM = update_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         z_temp: np.ndarray,
@@ -50,7 +50,7 @@ class TestUpdateThetaAndExner(StencilTest):
         theta_v, exner = update_theta_and_exner_numpy(z_temp, area, theta_v, exner, rd_o_cvd)
         return dict(theta_v=theta_v, exner=exner)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         area = random_field(grid, dims.CellDim, dtype=wpfloat)

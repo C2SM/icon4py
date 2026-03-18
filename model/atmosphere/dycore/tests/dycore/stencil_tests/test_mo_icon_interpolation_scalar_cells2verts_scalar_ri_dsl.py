@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
@@ -35,7 +35,7 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
     PROGRAM = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl
     OUTPUTS = ("p_vert_out",)
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_cell_in: np.ndarray,
@@ -49,7 +49,7 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
             p_vert_out=p_vert_out,
         )
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         p_cell_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         c_intp = random_field(grid, dims.VertexDim, dims.V2CDim, dtype=wpfloat)

@@ -34,7 +34,7 @@ class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
         "p_coords_dreg_v_4_lat_dsl",
     )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_vn: np.ndarray,
@@ -145,7 +145,7 @@ class TestComputeFfslBacktrajectory(stencil_tests.StencilTest):
             "p_coords_dreg_v_4_lat_dsl": p_coords_dreg_v_4_lat_dsl,
         }
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

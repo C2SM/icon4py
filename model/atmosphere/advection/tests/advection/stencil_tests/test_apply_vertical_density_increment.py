@@ -30,7 +30,7 @@ class TestApplyVerticalDensityIncrement(stencil_tests.StencilTest):
         ),
     )
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         rhodz_ast: np.ndarray,
@@ -47,7 +47,7 @@ class TestApplyVerticalDensityIncrement(stencil_tests.StencilTest):
 
         return dict(rhodz_ast2=rhodz_ast2)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         rhodz_ast = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(

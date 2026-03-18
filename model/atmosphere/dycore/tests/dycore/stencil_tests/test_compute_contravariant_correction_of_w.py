@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_contravariant_correction_of_w_numpy(
@@ -43,7 +43,7 @@ class TestComputeContravariantCorrectionOfW(StencilTest):
     PROGRAM = compute_contravariant_correction_of_w
     OUTPUTS = ("w_concorr_c",)
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         e_bln_c_s: np.ndarray,
@@ -56,7 +56,7 @@ class TestComputeContravariantCorrectionOfW(StencilTest):
         )
         return dict(w_concorr_c=w_concorr_c)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
         z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

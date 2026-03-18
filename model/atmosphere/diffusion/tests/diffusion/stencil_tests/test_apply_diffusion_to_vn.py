@@ -15,7 +15,12 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import ap
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
+from icon4py.model.testing.stencil_tests import (
+    StandardStaticVariants,
+    StencilTest,
+    input_data_fixture,
+    static_reference,
+)
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -47,7 +52,7 @@ class TestApplyDiffusionToVn(StencilTest):
         ),
     }
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         u_vert: np.ndarray,
@@ -115,7 +120,7 @@ class TestApplyDiffusionToVn(StencilTest):
 
         return dict(vn=vn)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)

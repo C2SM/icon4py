@@ -24,7 +24,7 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
     PROGRAM = integrate_tracer_vertically
     OUTPUTS = ("tracer_new",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         tracer_now: np.ndarray,
@@ -58,7 +58,7 @@ class TestIntegrateTracerVertically(stencil_tests.StencilTest):
 
         return dict(tracer_new=tracer_new)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

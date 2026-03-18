@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils.data_allocation import random_field, random_mask, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
@@ -47,7 +47,7 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
     PROGRAM = compute_maximum_cfl_and_clip_contravariant_vertical_velocity
     OUTPUTS = ("cfl_clipping", "vcfl", "z_w_con_c")
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         ddqz_z_half: np.ndarray,
@@ -70,7 +70,7 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
             z_w_con_c=z_w_con_c,
         )
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

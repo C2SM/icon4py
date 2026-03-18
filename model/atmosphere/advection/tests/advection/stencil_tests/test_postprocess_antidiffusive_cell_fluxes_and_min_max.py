@@ -24,7 +24,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
     PROGRAM = postprocess_antidiffusive_cell_fluxes_and_min_max
     OUTPUTS = ("z_tracer_new_low", "z_tracer_max", "z_tracer_min")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         refin_ctrl: np.ndarray,
@@ -54,7 +54,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(stencil_tests.StencilTest)
             z_tracer_min=z_tracer_min_out,
         )
 
-    @pytest.fixture()
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         hi_bound, lo_bound = 3, 1
         refin_ctrl = data_alloc.constant_field(grid, 2, dims.CellDim, dtype=gtx.int32)

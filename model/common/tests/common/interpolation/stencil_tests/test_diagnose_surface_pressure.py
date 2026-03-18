@@ -24,7 +24,7 @@ class TestDiagnoseSurfacePressure(stencil_tests.StencilTest):
     PROGRAM = diagnose_surface_pressure
     OUTPUTS = ("surface_pressure",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         exner: np.ndarray,
@@ -47,7 +47,7 @@ class TestDiagnoseSurfacePressure(stencil_tests.StencilTest):
             surface_pressure=surface_pressure,
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         low = 1.0e-2
         exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)

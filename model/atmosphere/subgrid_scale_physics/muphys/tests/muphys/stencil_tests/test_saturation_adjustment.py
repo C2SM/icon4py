@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.saturation_adjus
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ class TestSaturationAdjustment(StencilTest):
     PROGRAM = saturation_adjustment
     OUTPUTS = ("te_out", "qve_out", "qce_out")
 
-    @staticmethod
+    @static_reference
     def reference(
         grid: base_grid.Grid,
         te: np.ndarray,
@@ -42,7 +42,7 @@ class TestSaturationAdjustment(StencilTest):
             qce_out=np.full(te.shape, 9.5724552280369163e-007),
         )
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base_grid.Grid) -> dict:
         return dict(
             te=data_alloc.constant_field(

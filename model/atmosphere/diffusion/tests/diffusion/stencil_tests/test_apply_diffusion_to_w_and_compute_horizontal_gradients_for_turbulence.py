@@ -17,7 +17,12 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing import definitions
-from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
+from icon4py.model.testing.stencil_tests import (
+    StandardStaticVariants,
+    StencilTest,
+    input_data_fixture,
+    static_reference,
+)
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
 from .test_apply_nabla2_to_w_in_upper_damping_layer import (
@@ -54,7 +59,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         ),
     }
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         area,
@@ -118,7 +123,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         out_dwdy[subset] = dwdy[subset]
         return dict(w=out_w, dwdx=out_dwdx, dwdy=out_dwdy)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         nrdmax = 13
         cell_domain = h_grid.domain(dims.CellDim)

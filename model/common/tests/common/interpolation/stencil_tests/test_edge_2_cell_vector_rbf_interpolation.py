@@ -25,7 +25,7 @@ class TestEdge2CellVectorRBFInterpolation(stencil_tests.StencilTest):
     PROGRAM = edge_2_cell_vector_rbf_interpolation
     OUTPUTS = ("p_u_out", "p_v_out")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_e_in: np.ndarray,
@@ -41,7 +41,7 @@ class TestEdge2CellVectorRBFInterpolation(stencil_tests.StencilTest):
 
         return dict(p_v_out=p_v_out, p_u_out=p_u_out)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         ptr_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)

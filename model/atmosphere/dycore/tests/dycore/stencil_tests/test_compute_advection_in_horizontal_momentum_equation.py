@@ -157,7 +157,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         ),
     }
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         normal_wind_advective_tendency: np.ndarray,
@@ -245,7 +245,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
 
         return dict(normal_wind_advective_tendency=normal_wind_advective_tendency)
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"apply_extra_diffusion_on_vn": value} for value in [True, False]
         ],  # True for testing, False for benchmarking

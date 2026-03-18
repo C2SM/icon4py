@@ -24,7 +24,7 @@ class TestComputePpmQuarticFaceValues(stencil_tests.StencilTest):
     PROGRAM = compute_ppm_quartic_face_values
     OUTPUTS = (stencil_tests.Output("p_face", gtslice=(slice(None), slice(2, None))),)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_cc: np.ndarray,
@@ -68,7 +68,7 @@ class TestComputePpmQuarticFaceValues(stencil_tests.StencilTest):
         )
         return dict(p_face=p_face)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = data_alloc.random_field(

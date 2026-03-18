@@ -17,14 +17,14 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 class TestComputeAirmass(StencilTest):
     PROGRAM = compute_airmass
     OUTPUTS = ("airmass_out",)
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         rho_in: np.ndarray,
@@ -35,7 +35,7 @@ class TestComputeAirmass(StencilTest):
         airmass_out = rho_in * ddqz_z_full_in * deepatmo_t1mc_in
         return dict(airmass_out=airmass_out)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         rho_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddqz_z_full_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

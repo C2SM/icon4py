@@ -38,7 +38,7 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
     PROGRAM = interpolate_cell_field_to_half_levels_vp
     OUTPUTS = ("interpolation_to_half_levels_vp",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         wgtfac_c: np.ndarray,
@@ -50,7 +50,7 @@ class TestInterpolateToHalfLevelsVp(stencil_tests.StencilTest):
         )
         return dict(interpolation_to_half_levels_vp=interpolation_to_half_levels_vp)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         interpolant = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

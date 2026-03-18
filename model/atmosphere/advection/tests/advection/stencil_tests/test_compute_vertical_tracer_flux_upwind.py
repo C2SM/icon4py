@@ -27,7 +27,7 @@ class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
     PROGRAM = compute_vertical_tracer_flux_upwind
     OUTPUTS = (stencil_tests.Output("p_upflux", refslice=outslice, gtslice=outslice),)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_cc: np.ndarray,
@@ -41,7 +41,7 @@ class TestComputeVerticalTracerFluxUpwind(stencil_tests.StencilTest):
         )
         return dict(p_upflux=p_upflux)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(

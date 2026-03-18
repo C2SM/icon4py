@@ -22,7 +22,7 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
     PROGRAM = compute_ffsl_backtrajectory_length_indicator
     OUTPUTS = ("opt_famask_dsl",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_vn: np.ndarray,
@@ -46,7 +46,7 @@ class TestComputeFfslBacktrajectoryLengthIndicator(stencil_tests.StencilTest):
 
         return dict(opt_famask_dsl=opt_famask_dsl)
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

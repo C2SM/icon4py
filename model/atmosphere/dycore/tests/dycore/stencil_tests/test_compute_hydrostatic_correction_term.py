@@ -18,7 +18,12 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
+from icon4py.model.testing.stencil_tests import (
+    StandardStaticVariants,
+    StencilTest,
+    input_data_fixture,
+    static_reference,
+)
 
 
 def compute_hydrostatic_correction_term_numpy(
@@ -106,7 +111,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         ),
     }
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         theta_v: np.ndarray,
@@ -130,7 +135,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
         )
         return dict(z_hydro_corr=z_hydro_corr)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         ikoffset = data_alloc.zero_field(
             grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32

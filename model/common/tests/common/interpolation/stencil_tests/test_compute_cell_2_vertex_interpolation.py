@@ -26,7 +26,7 @@ class TestComputeCells2VertsInterpolation(stencil_tests.StencilTest):
     PROGRAM = compute_cell_2_vertex_interpolation
     OUTPUTS = ("vert_out",)
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         cell_in: np.ndarray,
@@ -41,7 +41,7 @@ class TestComputeCells2VertsInterpolation(stencil_tests.StencilTest):
             vert_out=out_field,
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid: base.Grid) -> dict:
         cell_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=types.wpfloat)
         c_int = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim, dtype=types.wpfloat)

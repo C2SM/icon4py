@@ -18,7 +18,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
@@ -61,7 +61,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
     PROGRAM = solve_tridiagonal_matrix_for_w_forward_sweep
     OUTPUTS = ("w", "z_q")
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         vwind_impl_wgt: np.ndarray,
@@ -92,7 +92,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         )
         return dict(z_q=z_q_ref, w=w_ref)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base_grid.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         vwind_impl_wgt = data_alloc.random_field(grid, dims.CellDim, dtype=ta.wpfloat)
         theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)

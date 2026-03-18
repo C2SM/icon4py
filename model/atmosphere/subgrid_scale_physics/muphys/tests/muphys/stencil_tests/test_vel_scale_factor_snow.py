@@ -14,20 +14,20 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties impor
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 class TestVelScaleFactorSnow(StencilTest):
     PROGRAM = vel_scale_factor_snow
     OUTPUTS = ("scale_factor",)
 
-    @staticmethod
+    @static_reference
     def reference(
         grid, xrho: np.ndarray, rho: np.ndarray, t: np.ndarray, qs: np.ndarray, **kwargs
     ) -> dict:
         return dict(scale_factor=np.full(xrho.shape, 0.06633230453931642))
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid):
         return dict(
             xrho=data_alloc.constant_field(grid, 1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),

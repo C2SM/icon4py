@@ -19,7 +19,12 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
-from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
+from icon4py.model.testing.stencil_tests import (
+    StandardStaticVariants,
+    StencilTest,
+    input_data_fixture,
+    static_reference,
+)
 
 
 @pytest.mark.continuous_benchmarking
@@ -40,7 +45,7 @@ class TestUpdateMassFluxWeighted(StencilTest):
         ),
     }
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         rho_ic: np.ndarray,
@@ -60,7 +65,7 @@ class TestUpdateMassFluxWeighted(StencilTest):
         )
         return dict(mass_flx_ic=mass_flx_ic)
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         r_nsubsteps = wpfloat("10.0")
         rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

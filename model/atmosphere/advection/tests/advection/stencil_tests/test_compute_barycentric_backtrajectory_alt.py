@@ -22,7 +22,7 @@ class TestComputeBarycentricBacktrajectoryAlt(stencil_tests.StencilTest):
     PROGRAM = compute_barycentric_backtrajectory_alt
     OUTPUTS = ("p_distv_bary_1", "p_distv_bary_2")
 
-    @staticmethod
+    @stencil_tests.static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         p_vn: np.ndarray,
@@ -72,7 +72,7 @@ class TestComputeBarycentricBacktrajectoryAlt(stencil_tests.StencilTest):
             p_distv_bary_2=p_distv_bary_2,
         )
 
-    @pytest.fixture
+    @stencil_tests.input_data_fixture
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

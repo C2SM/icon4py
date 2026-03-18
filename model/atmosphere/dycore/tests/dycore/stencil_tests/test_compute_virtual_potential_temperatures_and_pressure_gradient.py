@@ -19,7 +19,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing.stencil_tests import StencilTest
+from icon4py.model.testing.stencil_tests import StencilTest, input_data_fixture, static_reference
 
 
 def compute_virtual_potential_temperatures_and_pressure_gradient_numpy(
@@ -59,7 +59,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
     PROGRAM = compute_virtual_potential_temperatures_and_pressure_gradient
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
 
-    @staticmethod
+    @static_reference
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         wgtfac_c: np.ndarray,
@@ -92,7 +92,7 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
             z_th_ddz_exner_c=z_th_ddz_exner_c,
         )
 
-    @pytest.fixture
+    @input_data_fixture
     def input_data(self, grid: base.Grid) -> dict[str, gtx.Field | state_utils.ScalarType]:
         wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
