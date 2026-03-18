@@ -15,7 +15,7 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.initialization import topography
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -28,9 +28,9 @@ if TYPE_CHECKING:
 
 @pytest.mark.datatest
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.JW])
 def test_jablonowski_williamson_topography(
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
     backend: gtx_typing.Backend | None,
     grid_savepoint: sb.IconGridSavepoint,
     topography_savepoint: sb.TopographySavepoint,

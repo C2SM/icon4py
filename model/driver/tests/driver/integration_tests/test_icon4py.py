@@ -24,7 +24,12 @@ from icon4py.model.driver import (
     icon4py_driver,
     initialization_utils as driver_init,
 )
-from icon4py.model.testing import datatest_utils as dt_utils, definitions, grid_utils, test_utils
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+    grid_utils,
+    test_utils,
+)
 from icon4py.model.testing.fixtures.datatest import backend, backend_like
 
 from ..fixtures import *  # noqa: F403
@@ -44,7 +49,7 @@ if TYPE_CHECKING:
     "experiment, istep_init, istep_exit, substep_init, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             1,
             2,
             1,
@@ -57,7 +62,7 @@ if TYPE_CHECKING:
             False,
         ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             1,
             2,
             1,
@@ -70,7 +75,7 @@ if TYPE_CHECKING:
             False,
         ),
         (
-            definitions.Experiments.GAUSS3D,
+            test_defs.Experiments.GAUSS3D,
             1,
             2,
             1,
@@ -98,7 +103,7 @@ if TYPE_CHECKING:
     ],
 )
 def test_run_timeloop_single_step(
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
     timeloop_date_init: str,
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,
@@ -119,10 +124,10 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_exit: sb.IconNonHydroExitSavepoint,
     backend: gtx_typing.Backend,
 ):
-    if experiment in (definitions.Experiments.GAUSS3D, definitions.Experiments.JW):
+    if experiment in (test_defs.Experiments.GAUSS3D, test_defs.Experiments.JW):
         experiment_type = (
             driver_init.ExperimentType.GAUSS3D
-            if experiment == definitions.Experiments.GAUSS3D
+            if experiment == test_defs.Experiments.GAUSS3D
             else driver_init.ExperimentType.JABW
         )
         config = icon4py_configuration.read_config(
@@ -134,10 +139,10 @@ def test_run_timeloop_single_step(
         icon4pyrun_config = config.run_config
 
     else:
-        diffusion_config = definitions.construct_diffusion_config(
+        diffusion_config = test_defs.construct_diffusion_config(
             experiment, ndyn_substeps=ndyn_substeps
         )
-        nonhydro_config = definitions.construct_nonhydrostatic_config(experiment)
+        nonhydro_config = test_defs.construct_nonhydrostatic_config(experiment)
         icon4pyrun_config = construct_icon4pyrun_config(
             experiment,
             timeloop_date_init,
@@ -395,7 +400,7 @@ def test_run_timeloop_single_step(
     "experiment, experiment_type",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             driver_init.ExperimentType.ANY.value,
         ),
     ],

@@ -19,7 +19,7 @@ import pytest
 from icon4py.model.common import constants, dimension as dims, model_backends
 from icon4py.model.common.grid import base, gridfile, horizontal as h_grid, icon
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, grid_utils as gridtest_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
     cpu_allocator,
@@ -42,15 +42,15 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture(scope="module")
-def experiment() -> definitions.Experiment:
+def experiment() -> test_defs.ExperimentDescription:
     """The module uses hard-coded references for the MCH_CH_R04B09 experiment."""
-    return definitions.Experiments.MCH_CH_R04B09
+    return test_defs.Experiments.MCH_CH_R04B09
 
 
 @functools.cache
 def grid_from_limited_area_grid_file() -> icon.IconGrid:
     return gridtest_utils.get_grid_manager_from_experiment(
-        definitions.Experiments.MCH_CH_R04B09,
+        test_defs.Experiments.MCH_CH_R04B09,
         keep_skip_values=True,
         allocator=model_backends.get_allocator(None),
     ).grid
@@ -180,11 +180,11 @@ def test_grid_size(icon_grid: base_grid.Grid) -> None:
 
 @pytest.mark.parametrize(
     "grid_descriptor",
-    (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL),
+    (test_defs.Grids.MCH_CH_R04B09_DSL, test_defs.Grids.R02B04_GLOBAL),
 )
 @pytest.mark.parametrize("offset", (utils.horizontal_offsets()), ids=lambda x: x.value)
 def test_when_keep_skip_value_then_neighbor_table_matches_config(
-    grid_descriptor: definitions.GridDescription,
+    grid_descriptor: test_defs.GridDescription,
     offset: gtx.FieldOffset,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -204,11 +204,11 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(
 
 @pytest.mark.parametrize(
     "grid_descriptor",
-    (definitions.Grids.MCH_CH_R04B09_DSL, definitions.Grids.R02B04_GLOBAL),
+    (test_defs.Grids.MCH_CH_R04B09_DSL, test_defs.Grids.R02B04_GLOBAL),
 )
 @pytest.mark.parametrize("dim", (utils.local_dims()))
 def test_when_replace_skip_values_then_only_pentagon_points_remain(
-    grid_descriptor: definitions.GridDescription,
+    grid_descriptor: test_defs.GridDescription,
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -351,7 +351,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
     "grid_descriptor, geometry_type, subdivision, radius, domain_length, domain_height, global_num_cells, num_cells, characteristic_length",
     [
         (
-            definitions.Grids.R02B04_GLOBAL,
+            test_defs.Grids.R02B04_GLOBAL,
             base.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=2, level=4),
             constants.EARTH_RADIUS,
@@ -362,7 +362,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             157817.27689721118,
         ),
         (
-            definitions.Grids.R02B07_GLOBAL,
+            test_defs.Grids.R02B07_GLOBAL,
             base.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=2, level=7),
             constants.EARTH_RADIUS,
@@ -373,7 +373,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             19727.55141796687,
         ),
         (
-            definitions.Grids.R19_B07_MCH_LOCAL,
+            test_defs.Grids.R19_B07_MCH_LOCAL,
             base.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=19, level=7),
             constants.EARTH_RADIUS,
@@ -384,7 +384,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             2029.555708750239,
         ),
         (
-            definitions.Grids.MCH_OPR_R04B07_DOMAIN01,
+            test_defs.Grids.MCH_OPR_R04B07_DOMAIN01,
             base.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=4, level=7),
             constants.EARTH_RADIUS,
@@ -395,7 +395,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             9379.079256436624,
         ),
         (
-            definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
+            test_defs.Grids.MCH_OPR_R19B08_DOMAIN01,
             base.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=19, level=8),
             constants.EARTH_RADIUS,
@@ -406,7 +406,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             1014.8736406119558,
         ),
         (
-            definitions.Grids.MCH_CH_R04B09_DSL,
+            test_defs.Grids.MCH_CH_R04B09_DSL,
             base.GeometryType.ICOSAHEDRON,
             icon.GridSubdivision(root=4, level=9),
             constants.EARTH_RADIUS,
@@ -417,7 +417,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             2501.209495453326,
         ),
         (
-            definitions.Grids.TORUS_100X116_1000M,
+            test_defs.Grids.TORUS_100X116_1000M,
             base.GeometryType.TORUS,
             None,
             None,
@@ -428,7 +428,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             658.0370064762462,
         ),
         (
-            definitions.Grids.TORUS_50000x5000,
+            test_defs.Grids.TORUS_50000x5000,
             base.GeometryType.TORUS,
             None,
             None,
@@ -441,7 +441,7 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
     ],
 )
 def test_global_grid_params_from_grid_manager(
-    grid_descriptor: definitions.GridDescription,
+    grid_descriptor: test_defs.GridDescription,
     backend: gtx_typing.Backend,
     geometry_type: base.GeometryType,
     subdivision: icon.GridSubdivision,

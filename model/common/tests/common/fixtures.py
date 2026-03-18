@@ -12,19 +12,18 @@ from collections.abc import Generator
 import gt4py.next.typing as gtx_typing
 import pytest
 
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import geometry, geometry_attributes, gridfile, vertical
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
-from icon4py.model.testing import serialbox
+from icon4py.model.testing import definitions as test_defs, serialbox
 from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
     damping_height,
     data_provider,
-    decomposition,
     decomposition_info,
-    definitions,
     download_ser_data,
     experiment,
     flat_height,
@@ -128,7 +127,7 @@ def metrics_factory_from_savepoint(
     backend: gtx_typing.Backend,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
     geometry_from_savepoint: geometry.GridGeometry,

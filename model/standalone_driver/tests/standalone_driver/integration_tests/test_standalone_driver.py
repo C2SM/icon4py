@@ -9,11 +9,10 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import model_backends, model_options
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import driver_utils, main
-from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
-from icon4py.model.testing.fixtures.datatest import backend, backend_like
+from icon4py.model.common import model_backends
+from icon4py.model.standalone_driver import main
+from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
+from icon4py.model.testing.fixtures.datatest import backend_like
 
 from ..fixtures import *  # noqa: F403
 
@@ -24,7 +23,7 @@ from ..fixtures import *  # noqa: F403
     "experiment, istep_exit, substep_exit, timeloop_date_init, timeloop_date_exit, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit",
     [
         (
-            definitions.Experiments.JW,
+            test_defs.Experiments.JW,
             2,
             5,
             "2008-09-01T00:00:00.000",
@@ -36,7 +35,7 @@ from ..fixtures import *  # noqa: F403
     ],
 )
 def test_standalone_driver(
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
     timeloop_date_init: str,
     timeloop_date_exit: str,
     timeloop_diffusion_linit_init: bool,

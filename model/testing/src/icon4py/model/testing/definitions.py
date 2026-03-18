@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 SERIALIZED_DATA_DIR: Final = "ser_icondata"
 SERIALIZED_DATA_SUBDIR: Final = "ser_data"
 GRID_DATA_DIR: Final = "grids"
+NAMELIST_ICON_FNAME: Final = "NAMELIST_ICON_output_atm"
 
 
 def serialized_data_path() -> pathlib.Path:
@@ -221,7 +222,7 @@ SERIALIZED_DATA_ROOT_URLS: Final = {
 
 
 @dataclasses.dataclass
-class Experiment:
+class ExperimentDescription:
     name: str
     description: str
     grid: GridDescription
@@ -230,31 +231,31 @@ class Experiment:
 
 
 class Experiments:
-    EXCLAIM_APE: Final = Experiment(
+    EXCLAIM_APE: Final = ExperimentDescription(
         name="exclaim_ape_R02B04",
         description="EXCLAIM Aquaplanet experiment",
         grid=Grids.R02B04_GLOBAL,
         num_levels=60,
     )
-    MCH_CH_R04B09: Final = Experiment(
+    MCH_CH_R04B09: Final = ExperimentDescription(
         name="exclaim_ch_r04b09_dsl",
         description="Regional setup used by EXCLAIM to validate the icon-exclaim.",
         grid=Grids.MCH_CH_R04B09_DSL,
         num_levels=65,
     )
-    JW: Final = Experiment(
+    JW: Final = ExperimentDescription(
         name="exclaim_nh35_tri_jws",
         description="Jablonowski Williamson atmospheric test case",
         grid=Grids.R02B04_GLOBAL,
         num_levels=35,
     )
-    GAUSS3D: Final = Experiment(
+    GAUSS3D: Final = ExperimentDescription(
         name="exclaim_gauss3d",
         description="Gauss 3d test case",
         grid=Grids.TORUS_50000x5000,
         num_levels=35,
     )
-    WEISMAN_KLEMP_TORUS: Final = Experiment(
+    WEISMAN_KLEMP_TORUS: Final = ExperimentDescription(
         name="exclaim_nh_weisman_klemp",
         description="Weisman-Klemp experiment on Torus Grid",
         grid=Grids.TORUS_50000x5000,
@@ -264,7 +265,7 @@ class Experiments:
 
 # TODO(havogt): the following configs should be part of the serialized experiment
 def construct_diffusion_config(
-    experiment: Experiment, ndyn_substeps: int = 5
+    experiment: ExperimentDescription, ndyn_substeps: int = 5
 ) -> diffusion.DiffusionConfig:
     from icon4py.model.atmosphere.diffusion import diffusion
 
@@ -307,7 +308,7 @@ def construct_diffusion_config(
         )
 
 
-def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydrostaticConfig:
+def construct_nonhydrostatic_config(experiment: ExperimentDescription) -> solve_nh.NonHydrostaticConfig:
     from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 
     if experiment == Experiments.MCH_CH_R04B09:
@@ -332,7 +333,7 @@ def construct_nonhydrostatic_config(experiment: Experiment) -> solve_nh.NonHydro
         )
 
 
-def construct_metrics_config(experiment: Experiment) -> tuple:
+def construct_metrics_config(experiment: ExperimentDescription) -> tuple:
     match experiment:
         case Experiments.MCH_CH_R04B09:
             lowest_layer_thickness = 20.0

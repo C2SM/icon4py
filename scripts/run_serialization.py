@@ -14,6 +14,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -22,7 +23,7 @@ from pathlib import Path
 
 import typer
 
-from icon4py.model.testing import datatest_utils as dt_utils, definitions
+from icon4py.model.testing import datatest_utils as dt_utils, definitions as test_defs
 
 
 cli = typer.Typer(no_args_is_help=True, help=__doc__)
@@ -34,11 +35,11 @@ cli = typer.Typer(no_args_is_help=True, help=__doc__)
 COMM_SIZES: list[int] = [1, 2, 4]
 
 EXPERIMENTS = [
-    definitions.Experiments.MCH_CH_R04B09,
-    definitions.Experiments.JW,
-    definitions.Experiments.EXCLAIM_APE,
-    definitions.Experiments.GAUSS3D,
-    definitions.Experiments.WEISMAN_KLEMP_TORUS,
+    test_defs.Experiments.MCH_CH_R04B09,
+    test_defs.Experiments.JW,
+    test_defs.Experiments.EXCLAIM_APE,
+    test_defs.Experiments.GAUSS3D,
+    test_defs.Experiments.WEISMAN_KLEMP_TORUS,
 ]
 
 # Slurm settings
@@ -60,7 +61,7 @@ RUNSCRIPTS_DIR = BUILD_DIR / "run"
 EXPERIMENTS_DIR = BUILD_DIR / "experiments"
 
 # Output location for copied ser_data and tarballs
-OUTPUT_ROOT = EXPERIMENTS_DIR / definitions.SERIALIZED_DATA_DIR
+OUTPUT_ROOT = EXPERIMENTS_DIR / test_defs.SERIALIZED_DATA_DIR
 
 # Maximum concurrent threads for running experiments
 MAX_THREADS: int = 5
@@ -70,33 +71,33 @@ MAX_THREADS: int = 5
 # ======================================
 
 
-def get_f90exp_name(experiment: definitions.Experiment) -> str:
+def get_f90exp_name(experiment: test_defs.ExperimentDescription) -> str:
     return f"{experiment.name}_sb"
 
 
-def get_f90exp_dir(experiment: definitions.Experiment) -> Path:
+def get_f90exp_dir(experiment: test_defs.ExperimentDescription) -> Path:
     return EXPERIMENTS_DIR / get_f90exp_name(experiment)
 
 
-def get_nmlfile_name(experiment: definitions.Experiment) -> str:
+def get_nmlfile_name(experiment: test_defs.ExperimentDescription) -> str:
     return f"exp.{get_f90exp_name(experiment)}"
 
 
-def get_slurmscript_name(experiment: definitions.Experiment) -> str:
+def get_slurmscript_name(experiment: test_defs.ExperimentDescription) -> str:
     return f"{get_nmlfile_name(experiment)}.run"
 
 
-def get_serdata_dst_dir(experiment: definitions.Experiment, comm_size: int) -> Path:
+def get_serdata_dst_dir(experiment: test_defs.ExperimentDescription, comm_size: int) -> Path:
     """Get the destination directory for serialized data."""
     return OUTPUT_ROOT / dt_utils.get_ranked_experiment_name_with_version(experiment, comm_size)
 
 
-def get_tar_path(experiment: definitions.Experiment, comm_size: int) -> Path:
+def get_tar_path(experiment: test_defs.ExperimentDescription, comm_size: int) -> Path:
     """Get the path to the tar archive for the experiment."""
     return OUTPUT_ROOT / dt_utils.get_experiment_archive_filename(experiment, comm_size)
 
 
-def cleanup_exp_output(experiment: definitions.Experiment, comm_size: int) -> None:
+def cleanup_exp_output(experiment: test_defs.ExperimentDescription, comm_size: int) -> None:
     """Clean up experiment output directories and archives.
 
     Deletes:
@@ -351,13 +352,21 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path
 
     dest_dir.mkdir(parents=True, exist_ok=True)
     # Copy ser_data folder
-    shutil.copytree(src_dir, dest_dir / definitions.SERIALIZED_DATA_SUBDIR)
+    shutil.copytree(src_dir, dest_dir / test_defs.SERIALIZED_DATA_SUBDIR)
 
     # Copy NAMELIST files
     namelist_files = sorted(exp_dir.glob("NAMELIST_*"))
     for src_file in namelist_files:
         if src_file.is_file():
             shutil.copy2(src_file, dest_dir / src_file.name)
+
+    # Translate to json and copy NAMELIST_ICON_output_atm
+    cmd = [
+        "f90nml",
+        str(exp_dir / test_defs.NAMELIST_ICON_FNAME),
+        str(dest_dir / (test_defs.NAMELIST_ICON_FNAME + ".json")),
+    ]
+    _ = run_command(cmd)
 
     # Copy LOG file if available
     if job_id is not None:
@@ -368,7 +377,7 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path
     return dest_dir
 
 
-def tar_folder(folder: Path, experiment: definitions.Experiment, comm_size: int) -> Path:
+def tar_folder(folder: Path, experiment: test_defs.ExperimentDescription, comm_size: int) -> Path:
     tar_path = get_tar_path(experiment, comm_size)
 
     with tarfile.open(tar_path, "w:gz") as tar:
@@ -379,7 +388,7 @@ def tar_folder(folder: Path, experiment: definitions.Experiment, comm_size: int)
     return tar_path
 
 
-def generate_update_script(experiment: definitions.Experiment) -> None:
+def generate_update_script(experiment: test_defs.ExperimentDescription) -> None:
     # copy namelist file from repo to build_dir
     shutil.copy2(
         ICONF90_DIR / "run" / get_nmlfile_name(experiment),
@@ -391,7 +400,7 @@ def generate_update_script(experiment: definitions.Experiment) -> None:
     _ = run_command(cmd, cwd=BUILD_DIR)
 
 
-def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
+def run_experiment(experiment: test_defs.ExperimentDescription, comm_size: int) -> None:
     """Execute a single experiment with the given communicator size."""
     try:
         # Clean up previous experiment output
@@ -431,9 +440,18 @@ def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
         raise
 
 
+def require_cli(command_name):
+    if shutil.which(command_name) is None:
+        print(f"Error: '{command_name}' is not installed or not on PATH.")
+        sys.exit(1)
+
+
 @cli.command()
 def run_experiment_series() -> None:
     """Run the serialization experiment series."""
+
+    require_cli("f90nml")
+
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
     total_tasks = len(EXPERIMENTS) * len(COMM_SIZES)

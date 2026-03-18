@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
     damping_height,
@@ -103,7 +103,7 @@ def test_damping_layer_calculation_from_icon_input(
 
 @pytest.mark.datatest
 def test_grid_size(
-    experiment: definitions.Experiment, grid_savepoint: sb.IconGridSavepoint
+    experiment: test_defs.ExperimentDescription, grid_savepoint: sb.IconGridSavepoint
 ) -> None:
     config = v_grid.VerticalGridConfig(num_levels=grid_savepoint.num(dims.KDim))
     vertical_grid = v_grid.VerticalGrid(
@@ -154,7 +154,7 @@ def configure_vertical_grid(
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, expected_moist_level",
-    [(definitions.Experiments.MCH_CH_R04B09, 0), (definitions.Experiments.EXCLAIM_APE, 25)],
+    [(test_defs.Experiments.MCH_CH_R04B09, 0), (test_defs.Experiments.EXCLAIM_APE, 25)],
 )
 def test_moist_level_calculation(
     grid_savepoint: sb.IconGridSavepoint, expected_moist_level: int
@@ -210,7 +210,7 @@ def test_grid_index_top(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_damping(
@@ -227,7 +227,7 @@ def test_grid_index_damping(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_moist(
@@ -244,7 +244,7 @@ def test_grid_index_moist(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_flat(
@@ -263,13 +263,13 @@ def test_grid_index_flat(
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment",
-    [definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.EXCLAIM_APE],
+    [test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.EXCLAIM_APE],
 )
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_bottom(
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
     dim: gtx.Dimension,
     offset: int,
 ) -> None:
@@ -281,13 +281,13 @@ def test_grid_index_bottom(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_above_num_levels(
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
     zone: v_grid.Zone,
     dim: gtx.Dimension,
     offset: int,
@@ -301,13 +301,13 @@ def test_grid_index_raises_if_index_above_num_levels(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.EXCLAIM_APE])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.EXCLAIM_APE])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_below_zero(
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
     zone: v_grid.Zone,
     dim: gtx.Dimension,
     offset: int,
@@ -355,9 +355,9 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 @pytest.mark.parametrize(
     "experiment",
     [
-        definitions.Experiments.MCH_CH_R04B09,
-        definitions.Experiments.GAUSS3D,
-        definitions.Experiments.EXCLAIM_APE,
+        test_defs.Experiments.MCH_CH_R04B09,
+        test_defs.Experiments.GAUSS3D,
+        test_defs.Experiments.EXCLAIM_APE,
     ],
 )
 def test_compute_vertical_coordinate(
@@ -366,7 +366,7 @@ def test_compute_vertical_coordinate(
     topography_savepoint: sb.TopographySavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
     model_top_height: float,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -377,7 +377,7 @@ def test_compute_vertical_coordinate(
 
     specific_values = (
         {"rayleigh_damping_height": 12500.0, "stretch_factor": 0.65, "lowest_layer_thickness": 20.0}
-        if experiment == definitions.Experiments.MCH_CH_R04B09
+        if experiment == test_defs.Experiments.MCH_CH_R04B09
         else {
             "rayleigh_damping_height": 45000.0,
             "stretch_factor": 1.0,
@@ -401,9 +401,9 @@ def test_compute_vertical_coordinate(
     assert vertical_geometry.nflatlev == grid_savepoint.nflatlev()
 
     topography = None
-    if experiment in (definitions.Experiments.MCH_CH_R04B09, definitions.Experiments.GAUSS3D):
+    if experiment in (test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.GAUSS3D):
         topography = topography_savepoint.topo_c()
-    elif experiment == definitions.Experiments.EXCLAIM_APE:
+    elif experiment == test_defs.Experiments.EXCLAIM_APE:
         topography = data_alloc.zero_field(
             icon_grid, dims.CellDim, allocator=backend, dtype=ta.wpfloat
         )

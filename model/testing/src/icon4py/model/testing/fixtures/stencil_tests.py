@@ -14,7 +14,7 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, grid_manager as gm, simple as simple_grid
-from icon4py.model.testing import definitions, grid_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils
 
 
 BENCHMARK_DEFAULT_LEVELS: Final[int] = 80
@@ -41,28 +41,28 @@ def _get_grid_manager_from_preset(
     match grid_preset:
         case "icon_regional":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.MCH_CH_R04B09_DSL,
+                test_defs.Grids.MCH_CH_R04B09_DSL,
                 num_levels=num_levels,
                 keep_skip_values=False,
                 allocator=allocator,
             )
         case "icon_global":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.R02B04_GLOBAL,
+                test_defs.Grids.R02B04_GLOBAL,
                 num_levels=num_levels,
                 keep_skip_values=False,
                 allocator=allocator,
             )
         case "icon_benchmark_regional":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.MCH_OPR_R19B08_DOMAIN01,
+                test_defs.Grids.MCH_OPR_R19B08_DOMAIN01,
                 num_levels=BENCHMARK_DEFAULT_LEVELS,
                 keep_skip_values=False,
                 allocator=allocator,
             )
         case "icon_benchmark_global":
             return grid_utils.get_grid_manager_from_identifier(
-                definitions.Grids.R02B06_GLOBAL,
+                test_defs.Grids.R02B06_GLOBAL,
                 num_levels=BENCHMARK_DEFAULT_LEVELS,
                 keep_skip_values=False,
                 allocator=allocator,

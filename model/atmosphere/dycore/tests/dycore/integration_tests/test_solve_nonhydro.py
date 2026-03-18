@@ -26,7 +26,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.MCH_CH_R04B09])
 def test_validate_divdamp_fields_against_savepoint_values(
     grid_savepoint: sb.IconGridSavepoint,
     savepoint_nonhydro_init: sb.IconNonHydroInitSavepoint,
@@ -107,7 +107,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, step_date_init, substep_init, at_initial_timestep",
     [
@@ -144,12 +144,12 @@ def test_time_step_flags(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -178,7 +178,7 @@ def test_nonhydro_predictor_step(
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = test_defs.construct_nonhydrostatic_config(experiment)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -472,12 +472,12 @@ def test_nonhydro_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -508,7 +508,7 @@ def test_nonhydro_corrector_step(
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = test_defs.construct_nonhydrostatic_config(experiment)
     init_savepoint = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
@@ -669,12 +669,12 @@ def test_nonhydro_corrector_step(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -706,7 +706,7 @@ def test_run_solve_nonhydro_single_step(
     backend,
 ):
     caplog.set_level(logging.WARN)
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = test_defs.construct_nonhydrostatic_config(experiment)
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
@@ -803,7 +803,7 @@ def test_run_solve_nonhydro_single_step(
 # why is this not run for APE?
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, at_initial_timestep",
     [
@@ -835,7 +835,7 @@ def test_run_solve_nonhydro_multi_step(
     ndyn_substeps,
     backend,
 ):
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = test_defs.construct_nonhydrostatic_config(experiment)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -978,7 +978,7 @@ def test_run_solve_nonhydro_multi_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.MCH_CH_R04B09])
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
     config = solve_nh.NonHydrostaticConfig()
     params = solve_nh.NonHydrostaticParams(config)
@@ -996,12 +996,12 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1074,7 +1074,7 @@ def test_compute_perturbed_quantities_and_interpolation(
         icon_grid, dims.CellDim, dims.KDim, allocator=backend
     )
 
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = test_defs.construct_nonhydrostatic_config(experiment)
     igradp_method = config.igradp_method
 
     nflatlev = vertical_params.nflatlev
@@ -1209,12 +1209,12 @@ def test_compute_perturbed_quantities_and_interpolation(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1354,12 +1354,12 @@ def test_compute_interpolation_and_nonhydro_buoy(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1438,7 +1438,7 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     grf_tend_vn = sp_nh_init.grf_tend_vn()
     rho_at_edges_on_model_levels = sp_stencil_init.z_rho_e()
     theta_v_at_edges_on_model_levels = sp_stencil_init.z_theta_v_e()
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = test_defs.construct_nonhydrostatic_config(experiment)
     primal_normal_cell_1 = grid_savepoint.primal_normal_cell_x()
     primal_normal_cell_2 = grid_savepoint.primal_normal_cell_y()
     dual_normal_cell_1 = grid_savepoint.dual_normal_cell_x()
@@ -1565,12 +1565,12 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1619,7 +1619,7 @@ def test_apply_divergence_damping_and_update_vn(
     current_vn = sp_stencil_init.vn()
     next_vn = savepoint_nonhydro_init.vn_new()
     horizontal_gradient_of_normal_wind_divergence = sp_nh_init.z_graddiv_vn()
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = test_defs.construct_nonhydrostatic_config(experiment)
     mean_cell_area = grid_savepoint.mean_cell_area()
 
     # TODO: Use serialized data ('enh_divdamp_fac' in icon) instead of computing 'interpolated_fourth_order_divdamp_factor'
@@ -1720,12 +1720,12 @@ def test_apply_divergence_damping_and_update_vn(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -1900,12 +1900,12 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -2017,12 +2017,12 @@ def test_compute_averaged_vn_and_fluxes(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -2054,7 +2054,7 @@ def test_vertically_implicit_solver_at_predictor_step(
 ):
     sp_nh_exit = savepoint_nonhydro_exit
     sp_stencil_init = savepoint_vertically_implicit_dycore_solver_init
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = test_defs.construct_nonhydrostatic_config(experiment)
     xp = data_alloc.import_array_ns(backend)
 
     vertical_config = v_grid.VerticalGridConfig(
@@ -2219,12 +2219,12 @@ def test_vertically_implicit_solver_at_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.EXCLAIM_APE,
+            test_defs.Experiments.EXCLAIM_APE,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
         ),
@@ -2267,7 +2267,7 @@ def test_vertically_implicit_solver_at_corrector_step(
 
     at_first_substep = substep_init == 0
     at_last_substep = substep_exit == 0
-    config = definitions.construct_nonhydrostatic_config(experiment)
+    config = test_defs.construct_nonhydrostatic_config(experiment)
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
 

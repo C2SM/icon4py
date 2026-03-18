@@ -21,7 +21,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon, simple, vertic
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, serialbox
+from icon4py.model.testing import definitions as test_defs, serialbox
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -132,7 +132,7 @@ def cell_coordinate_source(
 def height_coordinate_source(
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> Generator[SimpleFieldSource, None, None]:
     grid = grid_savepoint.construct_icon_grid(backend=backend)

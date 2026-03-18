@@ -20,7 +20,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation.interpolation_fields import compute_lsq_coeffs
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    definitions,
+    definitions as test_defs,
     grid_utils,
     grid_utils as gridtest_utils,
     serialbox as sb,
@@ -66,7 +66,7 @@ from ..utils import (
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.MCH_CH_R04B09])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.MCH_CH_R04B09])
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [
@@ -125,7 +125,7 @@ def test_advection_run_single_step(
     backend,
     advection_init_savepoint,
     advection_exit_savepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
 ):
     # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
     if (
@@ -223,7 +223,7 @@ def test_compute_lsq_coeffs(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: test_defs.ExperimentDescription,
 ) -> None:
     gm = grid_utils.get_grid_manager_from_identifier(
         experiment.grid,
