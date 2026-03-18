@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+from types import ModuleType
 
 import numpy as np
 
@@ -17,6 +17,7 @@ def gnomonic_proj(
     lat_c: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     lat: data_alloc.NDArray,
+    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Compute gnomonic projection.
@@ -38,11 +39,16 @@ def gnomonic_proj(
     TODO:
         replace this with a suitable library call
     """
-    cosc = np.sin(lat_c) * np.sin(lat) + np.cos(lat_c) * np.cos(lat) * np.cos(lon - lon_c)
+    cosc = array_ns.sin(lat_c) * array_ns.sin(lat) + array_ns.cos(lat_c) * array_ns.cos(
+        lat
+    ) * array_ns.cos(lon - lon_c)
     zk = 1.0 / cosc
 
-    x = zk * np.cos(lat) * np.sin(lon - lon_c)
-    y = zk * (np.cos(lat_c) * np.sin(lat) - np.sin(lat_c) * np.cos(lat) * np.cos(lon - lon_c))
+    x = zk * array_ns.cos(lat) * array_ns.sin(lon - lon_c)
+    y = zk * (
+        array_ns.cos(lat_c) * array_ns.sin(lat)
+        - array_ns.sin(lat_c) * array_ns.cos(lat) * array_ns.cos(lon - lon_c)
+    )
 
     return x, y
 

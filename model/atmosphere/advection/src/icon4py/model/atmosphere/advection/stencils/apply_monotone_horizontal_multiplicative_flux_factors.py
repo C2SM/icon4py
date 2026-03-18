@@ -42,7 +42,7 @@ def apply_monotone_horizontal_multiplicative_flux_factors(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_monotone_horizontal_multiplicative_flux_factors(
         z_anti,
         r_m,

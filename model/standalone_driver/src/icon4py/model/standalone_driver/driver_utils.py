@@ -36,6 +36,7 @@ from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
     grid_manager as gm,
+    gridfile,
     icon as icon_grid,
     states as grid_states,
     vertical as v_grid,
@@ -66,7 +67,10 @@ def create_grid_manager(
     global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
 ) -> gm.GridManager:
     grid_manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(), grid_file_path, vertical_grid_config, global_reductions
+        grid_file=grid_file_path,
+        config=vertical_grid_config,
+        offset_transformation=gridfile.ToZeroBasedIndexTransformation(),
+        global_reductions=global_reductions,
     )
     grid_manager(allocator=allocator, keep_skip_values=True)
 
@@ -83,7 +87,7 @@ def create_decomposition_info(
     def _add_dimension(dim: gtx.Dimension) -> None:
         indices = data_alloc.index_field(grid_manager.grid, dim, allocator=allocator)
         owner_mask = xp.ones((grid_manager.grid.size[dim],), dtype=bool)
-        decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
+        decomposition_info.set_dimension(dim, indices.ndarray, owner_mask, None)
 
     _add_dimension(dims.EdgeDim)
     _add_dimension(dims.VertexDim)
@@ -143,10 +147,10 @@ def create_static_field_factories(
         metadata=metrics_attributes.attrs,
         rayleigh_type=constants.RayleighType.KLEMP,
         rayleigh_coeff=0.1,
-        exner_expol=0.333,
-        vwind_offctr=0.2,
-        thslp_zdiffu=0.02,
-        thhgtd_zdiffu=125.0,
+        exner_expol=1.0 / 3.0,
+        vwind_offctr=0.15,
+        thslp_zdiffu=0.025,
+        thhgtd_zdiffu=200.0,
     )
 
     return driver_states.StaticFieldFactories(
@@ -221,12 +225,11 @@ def initialize_granules(
 
     log.info("creating diffusion metric state")
     diffusion_metric_state = diffusion_states.DiffusionMetricState(
-        mask_hdiff=metrics_field_source.get(metrics_attributes.MASK_HDIFF),
         theta_ref_mc=metrics_field_source.get(metrics_attributes.THETA_REF_MC),
         wgtfac_c=metrics_field_source.get(metrics_attributes.WGTFAC_C),
-        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF_DSL),
-        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET_DSL),
-        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF_DSL),
+        zd_intcoef=metrics_field_source.get(metrics_attributes.ZD_INTCOEF),
+        zd_vertoffset=metrics_field_source.get(metrics_attributes.ZD_VERTOFFSET),
+        zd_diffcoef=metrics_field_source.get(metrics_attributes.ZD_DIFFCOEF),
     )
 
     log.info("creating solve nonhydro interpolation state")
@@ -294,8 +297,7 @@ def initialize_granules(
         zdiff_gradp=metrics_field_source.get(metrics_attributes.ZDIFF_GRADP),
         vertoffset_gradp=metrics_field_source.get(metrics_attributes.VERTOFFSET_GRADP),
         nflat_gradp=metrics_field_source.get(metrics_attributes.NFLAT_GRADP),
-        pg_edgeidx_dsl=metrics_field_source.get(metrics_attributes.PG_EDGEIDX_DSL),
-        pg_exdist=metrics_field_source.get(metrics_attributes.PG_EDGEDIST_DSL),
+        pg_exdist=metrics_field_source.get(metrics_attributes.PG_EXDIST_DSL),
         ddqz_z_full_e=metrics_field_source.get(metrics_attributes.DDQZ_Z_FULL_E),
         ddxt_z_full=metrics_field_source.get(metrics_attributes.DDXT_Z_FULL),
         wgtfac_e=metrics_field_source.get(metrics_attributes.WGTFAC_E),

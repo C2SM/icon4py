@@ -328,7 +328,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
             next_w[:, :n_lev],
         )
 
-        w_1 = next_w[:, 0]
         if rayleigh_type == constants.RayleighType.KLEMP:
             next_w[:, :n_lev] = np.where(
                 (start_cell_index_nudging <= horz_idx)
@@ -338,7 +337,6 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
                 apply_rayleigh_damping_mechanism_numpy(
                     connectivities=connectivities,
                     z_raylfac=rayleigh_damping_factor,
-                    w_1=w_1,
                     w=next_w[:, :n_lev],
                 ),
                 next_w[:, :n_lev],
@@ -405,7 +403,9 @@ class TestVerticallyImplicitSolverAtPredictorStep(stencil_tests.StencilTest):
                 (False, False, 32),  # For benchmarking against MCH experiments
             ]
         ],
-        ids=lambda param: f"at_first_substep[{param['at_first_substep']}]__is_iau_active[{param['is_iau_active']}]__divdamp_type[{param['divdamp_type']}]",
+        ids=lambda param: (
+            f"at_first_substep[{param['at_first_substep']}]__is_iau_active[{param['is_iau_active']}]__divdamp_type[{param['divdamp_type']}]"
+        ),
     )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid
