@@ -13,7 +13,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import gridfile
-from icon4py.model.testing import definitions, grid_utils as gridtest_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils as gridtest_utils
 from icon4py.model.testing.fixtures import (
     backend,
     data_provider,
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.with_netcdf
 def test_grid_file_dimension() -> None:
-    grid_descriptor = definitions.Grids.R02B04_GLOBAL
+    grid_descriptor = test_defs.Grids.R02B04_GLOBAL
     global_grid_file = str(gridtest_utils.resolve_full_grid_file_name(grid_descriptor))
     parser = gridfile.GridFile(global_grid_file)
     try:
@@ -54,7 +54,7 @@ def test_grid_file_dimension() -> None:
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 def test_grid_file_vertex_cell_edge_dimensions(
-    experiment: definitions.ExperimentDescription, grid_savepoint: serialbox.IconGridSavepoint
+    experiment: test_defs.ExperimentDescription, grid_savepoint: serialbox.IconGridSavepoint
 ) -> None:
     file = gridtest_utils.resolve_full_grid_file_name(experiment.grid)
     parser = gridfile.GridFile(str(file))

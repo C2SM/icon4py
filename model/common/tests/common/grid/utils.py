@@ -16,7 +16,7 @@ import gt4py.next.typing as gtx_typing
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, grid_utils as gridtest_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils as gridtest_utils
 
 
 managers: dict[str, gm.GridManager] = {}
@@ -74,7 +74,7 @@ def _domain(dim: gtx.Dimension, zones: Iterator[h_grid.Zone]) -> Iterator[h_grid
 
 
 def run_grid_manager(
-    grid: definitions.GridDescription,
+    grid: test_defs.GridDescription,
     keep_skip_values: bool,
     backend: gtx_typing.Backend | None,
 ) -> gm.GridManager:
@@ -95,19 +95,19 @@ def run_grid_manager(
 
 
 GRID_REFERENCE_VALUES = {
-    definitions.Experiments.EXCLAIM_APE.name: {
+    test_defs.Experiments.EXCLAIM_APE.name: {
         "mean_edge_length": 240221.1036647776,
         "mean_dual_edge_length": 138710.63736114913,
         "mean_cell_area": 24906292887.251026,
         "mean_dual_area": 49802858653.68937,
     },
-    definitions.Experiments.MCH_CH_R04B09.name: {
+    test_defs.Experiments.MCH_CH_R04B09.name: {
         "mean_edge_length": 3803.019140934253,
         "mean_dual_edge_length": 2180.911493355989,
         "mean_cell_area": 6256048.940145881,
         "mean_dual_area": 12259814.063180268,
     },
-    definitions.Experiments.GAUSS3D.name: {
+    test_defs.Experiments.GAUSS3D.name: {
         "mean_edge_length": 757.5757575757576,
         "mean_dual_edge_length": 437.3865675678984,
         "mean_cell_area": 248515.09520903317,

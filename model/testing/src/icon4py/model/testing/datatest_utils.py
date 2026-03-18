@@ -16,7 +16,7 @@ import urllib.parse
 import gt4py.next.typing as gtx_typing
 
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.testing import definitions, serialbox
+from icon4py.model.testing import definitions as test_defs, serialbox
 
 
 def get_processor_properties_for_run(
@@ -25,19 +25,19 @@ def get_processor_properties_for_run(
     return decomposition.get_processor_properties(run_instance)
 
 
-def get_experiment_name_with_version(experiment: definitions.ExperimentDescription) -> str:
+def get_experiment_name_with_version(experiment: test_defs.ExperimentDescription) -> str:
     """Generate experiment name with version suffix."""
     return f"{experiment.name}_v{experiment.version:02d}"
 
 
 def get_ranked_experiment_name_with_version(
-    experiment: definitions.ExperimentDescription, comm_size: int
+    experiment: test_defs.ExperimentDescription, comm_size: int
 ) -> str:
     """Generate ranked experiment name with version suffix."""
     return f"mpitask{comm_size}_{get_experiment_name_with_version(experiment)}"
 
 
-def get_experiment_archive_filename(experiment: definitions.ExperimentDescription, comm_size: int) -> str:
+def get_experiment_archive_filename(experiment: test_defs.ExperimentDescription, comm_size: int) -> str:
     """Generate ranked archive filename for an experiment."""
     return f"{get_ranked_experiment_name_with_version(experiment, comm_size)}.tar.gz"
 
@@ -48,7 +48,7 @@ def get_serialized_data_url(root_url: str, filepath: str) -> str:
 
 
 def get_datapath_for_experiment(
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
 ) -> pathlib.Path:
     """Get the path to serialized data for an experiment."""
@@ -57,8 +57,8 @@ def get_datapath_for_experiment(
         experiment,
         processor_props.comm_size,
     )
-    return definitions.serialized_data_path().joinpath(
-        experiment_dir, definitions.SERIALIZED_DATA_SUBDIR
+    return test_defs.serialized_data_path().joinpath(
+        experiment_dir, test_defs.SERIALIZED_DATA_SUBDIR
     )
 
 
@@ -92,7 +92,7 @@ def _read_namelist_json(json_file_path: pathlib.Path) -> dict:
 
 
 def create_experiment_configuration(
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
 ) -> tuple:
     """
@@ -125,9 +125,9 @@ def create_experiment_configuration(
         processor_props.comm_size,
     )
     json_file_path = (
-        definitions.serialized_data_path()
+        test_defs.serialized_data_path()
         / experiment_dir
-        / f"{definitions.NAMELIST_ICON_FNAME}.json"
+        / f"{test_defs.NAMELIST_ICON_FNAME}.json"
     )
 
     nml_data = _read_namelist_json(json_file_path)

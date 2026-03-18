@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusio
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import icon, vertical as v_grid
-from icon4py.model.testing import definitions, parallel_helpers, serialbox, test_utils
+from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -27,18 +27,18 @@ from ..fixtures import *  # noqa: F403
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("orchestration", [False])
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_parallel_diffusion(
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
     step_date_init: str,
     step_date_exit: str,
     linit: bool,
@@ -64,7 +64,7 @@ def test_parallel_diffusion(
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{definitions.Experiments.MCH_CH_R04B09}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{experiment}'"
     )
     print(
         f"local cells = {decomposition_info.global_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
@@ -78,7 +78,7 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = test_defs.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
@@ -154,17 +154,17 @@ def test_parallel_diffusion(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_parallel_diffusion_multiple_steps(
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
     step_date_init: str,
     step_date_exit: str,
     linit: bool,
@@ -191,7 +191,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{definitions.Experiments.MCH_CH_R04B09}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{experiment}'"
     )
     print(
         f"local cells = {decomposition_info.global_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL).shape} "
@@ -215,7 +215,7 @@ def test_parallel_diffusion_multiple_steps(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    config = definitions.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = test_defs.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     diffusion_params = diffusion_.DiffusionParams(config)
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     print(

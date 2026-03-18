@@ -11,7 +11,7 @@ import pytest
 
 from icon4py.model.common import model_backends
 from icon4py.model.standalone_driver import main
-from icon4py.model.testing import definitions, grid_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils
 from icon4py.model.testing.fixtures.datatest import backend_like
 
 
@@ -30,7 +30,7 @@ def test_standalone_driver(
         if backend_like == v:
             backend_name = k
 
-    grid_file_path = grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL)
+    grid_file_path = grid_utils._download_grid_file(test_defs.Grids.R02B04_GLOBAL)
 
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
     main.main(

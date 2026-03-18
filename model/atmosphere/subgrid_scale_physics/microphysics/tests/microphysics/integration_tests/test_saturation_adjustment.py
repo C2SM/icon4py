@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 
 from ..fixtures import *  # noqa: F403
 
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, model_top_height",
-    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0)],
+    [(test_defs.Experiments.WEISMAN_KLEMP_TORUS, 30000.0)],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]

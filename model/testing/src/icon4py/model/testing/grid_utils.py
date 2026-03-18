@@ -20,14 +20,14 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import config, data_handling, definitions
+from icon4py.model.testing import config, data_handling, definitions as test_defs
 
 
 grid_geometries: dict[str, geometry.GridGeometry] = {}
 
 
 def get_grid_manager_from_experiment(
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
     keep_skip_values: bool,
     allocator: gtx_typing.Allocator,
 ) -> gm.GridManager:
@@ -40,7 +40,7 @@ def get_grid_manager_from_experiment(
 
 
 def get_grid_manager_from_identifier(
-    grid: definitions.GridDescription,
+    grid: test_defs.GridDescription,
     num_levels: int,
     keep_skip_values: bool,
     allocator: gtx_typing.Allocator,
@@ -75,11 +75,11 @@ def get_grid_manager(
     return manager
 
 
-def resolve_full_grid_file_name(grid: definitions.GridDescription) -> pathlib.Path:
-    return definitions.grids_path().joinpath(grid.name, grid.file_name)
+def resolve_full_grid_file_name(grid: test_defs.GridDescription) -> pathlib.Path:
+    return test_defs.grids_path().joinpath(grid.name, grid.file_name)
 
 
-def _download_grid_file(grid: definitions.GridDescription) -> pathlib.Path:
+def _download_grid_file(grid: test_defs.GridDescription) -> pathlib.Path:
     full_name = resolve_full_grid_file_name(grid)
     grid_directory = full_name.parent
     grid_directory.mkdir(parents=True, exist_ok=True)
@@ -120,7 +120,7 @@ def construct_decomposition_info(
 
 
 def get_grid_geometry(
-    backend: gtx_typing.Backend | None, experiment: definitions.ExperimentDescription
+    backend: gtx_typing.Backend | None, experiment: test_defs.ExperimentDescription
 ) -> geometry.GridGeometry:
     register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
 

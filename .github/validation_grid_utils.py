@@ -24,14 +24,14 @@ import sys
 
 import typer
 
-from icon4py.model.testing import definitions, grid_utils
+from icon4py.model.testing import definitions as test_defs, grid_utils
 
 
 VALIDATION_GRIDS = (
-    definitions.Grids.R02B04_GLOBAL,
-    definitions.Grids.MCH_CH_R04B09_DSL,
-    definitions.Grids.MCH_OPR_R04B07_DOMAIN01,
-    definitions.Grids.TORUS_50000x5000,
+    test_defs.Grids.R02B04_GLOBAL,
+    test_defs.Grids.MCH_CH_R04B09_DSL,
+    test_defs.Grids.MCH_OPR_R04B07_DOMAIN01,
+    test_defs.Grids.TORUS_50000x5000,
 )  # change to MCH_OPR_R04B07_DOMAIN01
 app = typer.Typer()
 

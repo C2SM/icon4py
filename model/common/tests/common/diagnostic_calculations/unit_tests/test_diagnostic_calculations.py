@@ -24,7 +24,7 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation.stencils import edge_2_cell_vector_rbf_interpolation as rbf
 from icon4py.model.common.states import diagnostic_state as diagnostics, tracer_state as tracers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions as test_defs, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     data_provider,
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.JW])
 def test_diagnose_temperature(
     data_provider: sb.IconSerialDataProvider, icon_grid: base_grid.Grid, backend: gtx_typing.Backend
 ) -> None:
@@ -100,7 +100,7 @@ def test_diagnose_temperature(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.JW])
 def test_diagnose_meridional_and_zonal_winds(
     data_provider: sb.IconSerialDataProvider,
     interpolation_savepoint: sb.InterpolationSavepoint,
@@ -153,7 +153,7 @@ def test_diagnose_meridional_and_zonal_winds(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.JW])
 def test_diagnose_surface_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
@@ -192,7 +192,7 @@ def test_diagnose_surface_pressure(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
+@pytest.mark.parametrize("experiment", [test_defs.Experiments.JW])
 def test_diagnose_pressure(
     data_provider: sb.IconSerialDataProvider,
     icon_grid: base_grid.Grid,
@@ -242,7 +242,7 @@ def test_diagnose_pressure(
 
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor",
-    [(definitions.Experiments.WEISMAN_KLEMP_TORUS, 30000.0, 8000.0, 0.85)],
+    [(test_defs.Experiments.WEISMAN_KLEMP_TORUS, 30000.0, 8000.0, 0.85)],
 )
 @pytest.mark.parametrize(
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]

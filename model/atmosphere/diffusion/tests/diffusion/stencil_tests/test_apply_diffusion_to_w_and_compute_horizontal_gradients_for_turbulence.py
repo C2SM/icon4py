@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
-from icon4py.model.testing import definitions
 from icon4py.model.testing.stencil_tests import StandardStaticVariants, StencilTest
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy

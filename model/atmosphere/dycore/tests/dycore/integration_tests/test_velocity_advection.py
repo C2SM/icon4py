@@ -32,7 +32,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, serialbox, test_utils
+from icon4py.model.testing import definitions as test_defs, serialbox, test_utils
 
 from .. import utils
 from ..fixtures import *  # noqa: F403
@@ -72,8 +72,8 @@ def create_vertical_params(
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
-        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_savepoint(
@@ -86,7 +86,7 @@ def test_verify_velocity_init_against_savepoint(
     model_top_height: ta.wpfloat,
     stretch_factor: ta.wpfloat,
     damping_height: ta.wpfloat,
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
     backend: gtx_typing.Backend | None,
 ) -> None:
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
@@ -119,8 +119,8 @@ def test_verify_velocity_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
-        (definitions.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.MCH_CH_R04B09, "2021-06-20T12:00:10.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000"),
     ],
 )
 def test_scale_factors_by_dtime(
@@ -169,16 +169,16 @@ def test_scale_factors_by_dtime(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -324,16 +324,16 @@ def test_velocity_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -457,11 +457,11 @@ def test_velocity_corrector_step(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_compute_diagnostics_from_normal_wind(
@@ -588,16 +588,16 @@ def test_compute_diagnostics_from_normal_wind(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
@@ -738,16 +738,16 @@ def test_compute_advection_in_predictor_vertical_momentum(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:20.000",
             "2021-06-20T12:00:20.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
@@ -883,11 +883,11 @@ def test_compute_advection_in_corrector_vertical_momentum(
     "experiment, step_date_init, step_date_exit",
     [
         (
-            definitions.Experiments.MCH_CH_R04B09,
+            test_defs.Experiments.MCH_CH_R04B09,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (definitions.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (test_defs.Experiments.EXCLAIM_APE, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1), (2, 2)])
