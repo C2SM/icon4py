@@ -1149,8 +1149,11 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn' and local field 'rho_at_edges_on_model_levels'")
-        self._exchange.exchange_and_wait(
-            dims.EdgeDim, prognostic_states.next.vn, z_fields.rho_at_edges_on_model_levels
+        self._exchange.exchange(
+            dims.EdgeDim,
+            prognostic_states.next.vn,
+            z_fields.rho_at_edges_on_model_levels,
+            stream=decomposition.DEFAULT_STREAM,
         )
 
         self._compute_horizontal_velocity_quantities_and_fluxes(
@@ -1223,12 +1226,19 @@ class SolveNonhydro:
             log.debug(
                 "exchanging prognostic field 'w' and local field 'dwdz_at_cells_on_model_levels'"
             )
-            self._exchange.exchange_and_wait(
-                dims.CellDim, prognostic_states.next.w, z_fields.dwdz_at_cells_on_model_levels
+            self._exchange.exchange(
+                dims.CellDim,
+                prognostic_states.next.w,
+                z_fields.dwdz_at_cells_on_model_levels,
+                stream=decomposition.DEFAULT_STREAM,
             )
         else:
             log.debug("exchanging prognostic field 'w'")
-            self._exchange.exchange_and_wait(dims.CellDim, prognostic_states.next.w)
+            self._exchange.exchange(
+                dims.CellDim,
+                prognostic_states.next.w,
+                stream=decomposition.DEFAULT_STREAM,
+            )
 
     def run_corrector_step(
         self,
@@ -1323,7 +1333,11 @@ class SolveNonhydro:
         )
 
         log.debug("exchanging prognostic field 'vn'")
-        self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
+        self._exchange.exchange(
+            dims.EdgeDim,
+            prognostic_states.next.vn,
+            stream=decomposition.DEFAULT_STREAM,
+        )
 
         self._compute_averaged_vn_and_fluxes(
             spatially_averaged_vn=self.z_vn_avg,
@@ -1395,9 +1409,10 @@ class SolveNonhydro:
                 )
 
         log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
-        self._exchange.exchange_and_wait(
+        self._exchange.exchange(
             dims.CellDim,
             prognostic_states.next.rho,
             prognostic_states.next.exner,
             prognostic_states.next.w,
+            stream=decomposition.DEFAULT_STREAM,
         )
