@@ -27,7 +27,7 @@ grid_geometries: dict[str, geometry.GridGeometry] = {}
 
 
 def get_grid_manager_from_experiment(
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     keep_skip_values: bool,
     allocator: gtx_typing.Allocator,
 ) -> gm.GridManager:
@@ -120,7 +120,7 @@ def construct_decomposition_info(
 
 
 def get_grid_geometry(
-    backend: gtx_typing.Backend | None, experiment: definitions.Experiment
+    backend: gtx_typing.Backend | None, experiment: definitions.ExperimentDescription
 ) -> geometry.GridGeometry:
     register_name = "_".join((experiment.name, data_alloc.backend_name(backend)))
 

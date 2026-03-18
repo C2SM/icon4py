@@ -86,7 +86,7 @@ def test_verify_velocity_init_against_savepoint(
     model_top_height: ta.wpfloat,
     stretch_factor: ta.wpfloat,
     damping_height: ta.wpfloat,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend | None,
 ) -> None:
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)

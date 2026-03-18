@@ -38,7 +38,7 @@ from ..fixtures import *  # noqa: F403
 @pytest.mark.parametrize("orchestration", [False])
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_parallel_diffusion(
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     step_date_init: str,
     step_date_exit: str,
     linit: bool,
@@ -164,7 +164,7 @@ def test_parallel_diffusion(
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_parallel_diffusion_multiple_steps(
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     step_date_init: str,
     step_date_exit: str,
     linit: bool,

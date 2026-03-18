@@ -103,7 +103,7 @@ def test_damping_layer_calculation_from_icon_input(
 
 @pytest.mark.datatest
 def test_grid_size(
-    experiment: definitions.Experiment, grid_savepoint: sb.IconGridSavepoint
+    experiment: definitions.ExperimentDescription, grid_savepoint: sb.IconGridSavepoint
 ) -> None:
     config = v_grid.VerticalGridConfig(num_levels=grid_savepoint.num(dims.KDim))
     vertical_grid = v_grid.VerticalGrid(
@@ -269,7 +269,7 @@ def test_grid_index_flat(
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_bottom(
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     dim: gtx.Dimension,
     offset: int,
 ) -> None:
@@ -287,7 +287,7 @@ def test_grid_index_bottom(
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_above_num_levels(
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     zone: v_grid.Zone,
     dim: gtx.Dimension,
     offset: int,
@@ -307,7 +307,7 @@ def test_grid_index_raises_if_index_above_num_levels(
 @pytest.mark.parametrize("offset", offsets())
 def test_grid_index_raises_if_index_below_zero(
     grid_savepoint: sb.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     zone: v_grid.Zone,
     dim: gtx.Dimension,
     offset: int,
@@ -366,7 +366,7 @@ def test_compute_vertical_coordinate(
     topography_savepoint: sb.TopographySavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     model_top_height: float,
     backend: gtx_typing.Backend,
 ) -> None:

@@ -45,7 +45,7 @@ def test_run_solve_nonhydro_single_step(
     step_date_init: str,
     step_date_exit: str,
     substep_init: int,
-    experiment: test_defs.Experiment,
+    experiment: test_defs.ExperimentDescription,
     ndyn_substeps: int,
     icon_grid: icon.IconGrid,
     savepoint_nonhydro_init: serialbox.IconNonHydroInitSavepoint,

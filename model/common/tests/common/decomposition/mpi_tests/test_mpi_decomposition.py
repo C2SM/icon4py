@@ -76,7 +76,7 @@ def test_decomposition_info_masked(
     download_ser_data: Any,
     decomposition_info: definitions.DecompositionInfo,
     processor_props: definitions.ProcessProperties,
-    experiment: test_defs.Experiment,
+    experiment: test_defs.ExperimentDescription,
 ) -> None:
     check_comm_size(processor_props, sizes=(2,))
     my_rank = processor_props.rank
@@ -131,7 +131,7 @@ def test_decomposition_info_local_index(
     caplog: Any,
     decomposition_info: definitions.DecompositionInfo,
     processor_props: definitions.ProcessProperties,
-    experiment: test_defs.Experiment,
+    experiment: test_defs.ExperimentDescription,
 ):
     check_comm_size(processor_props, sizes=(2,))
     my_rank = processor_props.rank
@@ -282,7 +282,7 @@ def test_exchange_on_dummy_data(
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
 def test_halo_exchange_for_sparse_field(
     interpolation_savepoint: serialbox.InterpolationSavepoint,
-    experiment: test_defs.Experiment,
+    experiment: test_defs.ExperimentDescription,
     processor_props: definitions.ProcessProperties,
     grid_savepoint: serialbox.IconGridSavepoint,
     icon_grid: icon.IconGrid,

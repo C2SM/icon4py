@@ -38,23 +38,23 @@ from ..utils import (
 grid_functionality = collections.defaultdict(dict)
 
 
-def get_grid_for_experiment(experiment: definitions.Experiment, backend: gtx_typing.Backend):
+def get_grid_for_experiment(experiment: definitions.ExperimentDescription, backend: gtx_typing.Backend):
     return _get_or_initialize(experiment, backend, "grid")
 
 
 def get_edge_geometry_for_experiment(
-    experiment: definitions.Experiment, backend: gtx_typing.Backend
+    experiment: definitions.ExperimentDescription, backend: gtx_typing.Backend
 ):
     return _get_or_initialize(experiment, backend, "edge_geometry")
 
 
 def get_cell_geometry_for_experiment(
-    experiment: definitions.Experiment, backend: gtx_typing.Backend
+    experiment: definitions.ExperimentDescription, backend: gtx_typing.Backend
 ):
     return _get_or_initialize(experiment, backend, "cell_geometry")
 
 
-def _get_or_initialize(experiment: definitions.Experiment, backend: gtx_typing.Backend, name: str):
+def _get_or_initialize(experiment: definitions.ExperimentDescription, backend: gtx_typing.Backend, name: str):
     if not grid_functionality[experiment.name].get(name):
         geometry_ = grid_utils.get_grid_geometry(backend, experiment)
         grid = geometry_.grid

@@ -128,7 +128,7 @@ def metrics_factory_from_savepoint(
     backend: gtx_typing.Backend,
     grid_savepoint: serialbox.IconGridSavepoint,
     topography_savepoint: serialbox.TopographySavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     decomposition_info: decomposition.DecompositionInfo,
     processor_props: decomposition.ProcessProperties,
     geometry_from_savepoint: geometry.GridGeometry,

@@ -87,7 +87,7 @@ def cpu_allocator() -> gtx_typing.Allocator:
     ],
     ids=lambda r: r.name,
 )
-def experiment(request: pytest.FixtureRequest) -> definitions.Experiment:
+def experiment(request: pytest.FixtureRequest) -> definitions.ExperimentDescription:
     """Default parametrization for experiments.
 
     The default parametrization is often overwritten for specific tests."""
@@ -102,7 +102,7 @@ def processor_props(request: pytest.FixtureRequest) -> decomposition.ProcessProp
 
 
 def _download_ser_data(
-    _experiment: definitions.Experiment,
+    _experiment: definitions.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
 ) -> None:
     # not a fixture to be able to use this function outside of pytest
@@ -124,7 +124,7 @@ def _download_ser_data(
 def download_ser_data(
     request: pytest.FixtureRequest,
     processor_props: decomposition.ProcessProperties,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     pytestconfig: pytest.Config,
 ) -> None:
     """
@@ -142,7 +142,7 @@ def download_ser_data(
 @pytest.fixture
 def data_provider(
     download_ser_data: None,  # downloads data as side-effect
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     processor_props: decomposition.ProcessProperties,
     backend: gtx_typing.Backend,
 ) -> serialbox.IconSerialDataProvider:
@@ -152,7 +152,7 @@ def data_provider(
 
 @pytest.fixture
 def grid_savepoint(
-    data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
+    data_provider: serialbox.IconSerialDataProvider, experiment: definitions.ExperimentDescription
 ) -> serialbox.IconGridSavepoint:
     return data_provider.from_savepoint_grid(experiment.name, experiment.grid.params)
 
@@ -171,7 +171,7 @@ def icon_grid(
 
 @pytest.fixture
 def decomposition_info(
-    data_provider: serialbox.IconSerialDataProvider, experiment: definitions.Experiment
+    data_provider: serialbox.IconSerialDataProvider, experiment: definitions.ExperimentDescription
 ) -> decomposition.DecompositionInfo:
     return data_provider.from_savepoint_grid(
         grid_id=experiment.name, global_grid_params=experiment.grid.params
@@ -179,7 +179,7 @@ def decomposition_info(
 
 
 @pytest.fixture
-def ndyn_substeps(experiment: definitions.Experiment) -> int:
+def ndyn_substeps(experiment: definitions.ExperimentDescription) -> int:
     """
     Return number of dynamical substeps.
 
@@ -500,7 +500,7 @@ def istep_exit() -> int:
 
 
 @pytest.fixture
-def lowest_layer_thickness(experiment: definitions.Experiment) -> float:
+def lowest_layer_thickness(experiment: definitions.ExperimentDescription) -> float:
     if experiment == definitions.Experiments.MCH_CH_R04B09:
         return 20.0
     else:
@@ -508,7 +508,7 @@ def lowest_layer_thickness(experiment: definitions.Experiment) -> float:
 
 
 @pytest.fixture
-def model_top_height(experiment: definitions.Experiment) -> float:
+def model_top_height(experiment: definitions.ExperimentDescription) -> float:
     if experiment == definitions.Experiments.MCH_CH_R04B09:
         return 23000.0
     elif experiment == definitions.Experiments.EXCLAIM_APE:
@@ -523,7 +523,7 @@ def flat_height() -> float:
 
 
 @pytest.fixture
-def stretch_factor(experiment: definitions.Experiment) -> float:
+def stretch_factor(experiment: definitions.ExperimentDescription) -> float:
     if experiment == definitions.Experiments.MCH_CH_R04B09:
         return 0.65
     elif experiment == definitions.Experiments.EXCLAIM_APE:
@@ -533,7 +533,7 @@ def stretch_factor(experiment: definitions.Experiment) -> float:
 
 
 @pytest.fixture
-def damping_height(experiment: definitions.Experiment) -> float:
+def damping_height(experiment: definitions.ExperimentDescription) -> float:
     if experiment == definitions.Experiments.MCH_CH_R04B09:
         return 12500.0
     elif experiment == definitions.Experiments.EXCLAIM_APE:
@@ -553,7 +553,7 @@ def maximal_layer_thickness() -> float:
 
 
 @pytest.fixture
-def rayleigh_coeff(experiment: definitions.Experiment) -> float:
+def rayleigh_coeff(experiment: definitions.ExperimentDescription) -> float:
     if experiment == definitions.Experiments.EXCLAIM_APE:
         return 0.1
     else:
@@ -561,7 +561,7 @@ def rayleigh_coeff(experiment: definitions.Experiment) -> float:
 
 
 @pytest.fixture
-def exner_expol(experiment: definitions.Experiment) -> float:
+def exner_expol(experiment: definitions.ExperimentDescription) -> float:
     if experiment == definitions.Experiments.EXCLAIM_APE:
         return 0.3333333333333
     else:
@@ -569,7 +569,7 @@ def exner_expol(experiment: definitions.Experiment) -> float:
 
 
 @pytest.fixture
-def vwind_offctr(experiment: definitions.Experiment) -> float:
+def vwind_offctr(experiment: definitions.ExperimentDescription) -> float:
     if experiment == definitions.Experiments.EXCLAIM_APE:
         return 0.15
     else:

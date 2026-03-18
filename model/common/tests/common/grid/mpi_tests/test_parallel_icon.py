@@ -85,7 +85,7 @@ def test_distributed_local(
     processor_props: decomp_defs.ProcessProperties,
     dim: gtx.Dimension,
     icon_grid: base_grid.Grid,
-    experiment: test_defs.Experiment,
+    experiment: test_defs.ExperimentDescription,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
@@ -157,7 +157,7 @@ def test_distributed_halo(
     dim: gtx.Dimension,
     zone: h_grid.Zone,
     icon_grid: base_grid.Grid,
-    experiment: test_defs.Experiment,
+    experiment: test_defs.ExperimentDescription,
     level: int,
 ) -> None:
     parallel_helpers.check_comm_size(processor_props)

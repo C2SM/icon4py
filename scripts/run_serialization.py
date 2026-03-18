@@ -71,33 +71,33 @@ MAX_THREADS: int = 5
 # ======================================
 
 
-def get_f90exp_name(experiment: definitions.Experiment) -> str:
+def get_f90exp_name(experiment: definitions.ExperimentDescription) -> str:
     return f"{experiment.name}_sb"
 
 
-def get_f90exp_dir(experiment: definitions.Experiment) -> Path:
+def get_f90exp_dir(experiment: definitions.ExperimentDescription) -> Path:
     return EXPERIMENTS_DIR / get_f90exp_name(experiment)
 
 
-def get_nmlfile_name(experiment: definitions.Experiment) -> str:
+def get_nmlfile_name(experiment: definitions.ExperimentDescription) -> str:
     return f"exp.{get_f90exp_name(experiment)}"
 
 
-def get_slurmscript_name(experiment: definitions.Experiment) -> str:
+def get_slurmscript_name(experiment: definitions.ExperimentDescription) -> str:
     return f"{get_nmlfile_name(experiment)}.run"
 
 
-def get_serdata_dst_dir(experiment: definitions.Experiment, comm_size: int) -> Path:
+def get_serdata_dst_dir(experiment: definitions.ExperimentDescription, comm_size: int) -> Path:
     """Get the destination directory for serialized data."""
     return OUTPUT_ROOT / dt_utils.get_ranked_experiment_name_with_version(experiment, comm_size)
 
 
-def get_tar_path(experiment: definitions.Experiment, comm_size: int) -> Path:
+def get_tar_path(experiment: definitions.ExperimentDescription, comm_size: int) -> Path:
     """Get the path to the tar archive for the experiment."""
     return OUTPUT_ROOT / dt_utils.get_experiment_archive_filename(experiment, comm_size)
 
 
-def cleanup_exp_output(experiment: definitions.Experiment, comm_size: int) -> None:
+def cleanup_exp_output(experiment: definitions.ExperimentDescription, comm_size: int) -> None:
     """Clean up experiment output directories and archives.
 
     Deletes:
@@ -377,7 +377,7 @@ def copy_ser_data(experiment, comm_size: int, job_id: str | None = None) -> Path
     return dest_dir
 
 
-def tar_folder(folder: Path, experiment: definitions.Experiment, comm_size: int) -> Path:
+def tar_folder(folder: Path, experiment: definitions.ExperimentDescription, comm_size: int) -> Path:
     tar_path = get_tar_path(experiment, comm_size)
 
     with tarfile.open(tar_path, "w:gz") as tar:
@@ -388,7 +388,7 @@ def tar_folder(folder: Path, experiment: definitions.Experiment, comm_size: int)
     return tar_path
 
 
-def generate_update_script(experiment: definitions.Experiment) -> None:
+def generate_update_script(experiment: definitions.ExperimentDescription) -> None:
     # copy namelist file from repo to build_dir
     shutil.copy2(
         ICONF90_DIR / "run" / get_nmlfile_name(experiment),
@@ -400,7 +400,7 @@ def generate_update_script(experiment: definitions.Experiment) -> None:
     _ = run_command(cmd, cwd=BUILD_DIR)
 
 
-def run_experiment(experiment: definitions.Experiment, comm_size: int) -> None:
+def run_experiment(experiment: definitions.ExperimentDescription, comm_size: int) -> None:
     """Execute a single experiment with the given communicator size."""
     try:
         # Clean up previous experiment output

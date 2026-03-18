@@ -50,7 +50,7 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 def test_compute_diffusion_mask_and_coeff(
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,
@@ -134,7 +134,7 @@ def test_compute_diffusion_mask_and_coeff(
 @pytest.mark.datatest
 def test_compute_diffusion_intcoef_and_vertoffset(
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     interpolation_savepoint: sb.InterpolationSavepoint,
     icon_grid: base_grid.Grid,
     grid_savepoint: sb.IconGridSavepoint,

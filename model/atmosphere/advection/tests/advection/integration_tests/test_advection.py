@@ -124,7 +124,7 @@ def test_advection_run_single_step(
     backend,
     advection_init_savepoint,
     advection_exit_savepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
 ):
     # TODO(OngChia): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
     if (
@@ -221,7 +221,7 @@ def test_compute_lsq_coeffs(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
 ) -> None:
     gm = grid_utils.get_grid_manager_from_identifier(
         experiment.grid,

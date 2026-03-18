@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 @pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment", [definitions.Experiments.JW])
 def test_jablonowski_williamson_topography(
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend | None,
     grid_savepoint: sb.IconGridSavepoint,
     topography_savepoint: sb.TopographySavepoint,

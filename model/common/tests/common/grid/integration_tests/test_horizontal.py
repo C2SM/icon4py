@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_map_icon_start_end_index(
-    experiment: definitions.Experiment, dim: gtx.Dimension, grid_savepoint: sb.IconGridSavepoint
+    experiment: definitions.ExperimentDescription, dim: gtx.Dimension, grid_savepoint: sb.IconGridSavepoint
 ) -> None:
     end_indices = grid_savepoint.end_index()
     start_indices = grid_savepoint.start_index()

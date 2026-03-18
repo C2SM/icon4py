@@ -66,7 +66,7 @@ ZERO_BASE = gm.ToZeroBasedIndexTransformation()
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_v2e(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -93,7 +93,7 @@ def test_grid_manager_eval_v2e(
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 def test_grid_manager_refin_ctrl(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -112,7 +112,7 @@ def test_grid_manager_refin_ctrl(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_v2c(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -167,7 +167,7 @@ def _reset_invalid_index(index_array: np.ndarray) -> None:
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_e2v(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -190,7 +190,7 @@ def has_invalid_index(ar: np.ndarray) -> np.bool_:
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_e2c(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -207,7 +207,7 @@ def test_grid_manager_eval_e2c(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_c2e(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -227,7 +227,7 @@ def test_grid_manager_eval_c2e(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_c2e2c(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -241,7 +241,7 @@ def test_grid_manager_eval_c2e2c(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_c2e2cO(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -257,7 +257,7 @@ def test_grid_manager_eval_c2e2cO(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_e2c2e(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -282,7 +282,7 @@ def test_grid_manager_eval_e2c2e(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_e2c2v(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -302,7 +302,7 @@ def test_grid_manager_eval_e2c2v(
 @pytest.mark.with_netcdf
 def test_grid_manager_eval_c2v(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -387,7 +387,7 @@ def test_grid_manager_grid_level_and_root(
 )
 def test_grid_manager_eval_c2e2c2e(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     grid = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend).grid
@@ -405,7 +405,7 @@ def test_grid_manager_eval_c2e2c2e(
 @pytest.mark.parametrize("dim", utils.main_horizontal_dims())
 def test_grid_manager_start_end_index_compare_with_serialized_data(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -429,7 +429,7 @@ def test_grid_manager_start_end_index_compare_with_serialized_data(
 @pytest.mark.datatest
 def test_read_geometry_fields(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     manager = utils.run_grid_manager(experiment.grid, keep_skip_values=True, backend=backend)
@@ -446,7 +446,7 @@ def test_read_geometry_fields(
 @pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_coordinates(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     dim: gtx.Dimension,
     backend: gtx_typing.Backend,
 ) -> None:
@@ -460,7 +460,7 @@ def test_coordinates(
 @pytest.mark.datatest
 def test_tangent_orientation(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = grid_savepoint.tangent_orientation()
@@ -474,7 +474,7 @@ def test_tangent_orientation(
 @pytest.mark.datatest
 def test_edge_orientation_on_vertex(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = grid_savepoint.vertex_edge_orientation()
@@ -488,7 +488,7 @@ def test_edge_orientation_on_vertex(
 @pytest.mark.datatest
 def test_dual_area(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = grid_savepoint.vertex_dual_area()
@@ -501,7 +501,7 @@ def test_dual_area(
 @pytest.mark.datatest
 def test_edge_cell_distance(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = grid_savepoint.edge_cell_length()
@@ -517,7 +517,7 @@ def test_edge_cell_distance(
 @pytest.mark.datatest
 def test_cell_normal_orientation(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = grid_savepoint.edge_orientation()
@@ -531,7 +531,7 @@ def test_cell_normal_orientation(
 @pytest.mark.datatest
 def test_edge_vertex_distance(
     grid_savepoint: serialbox.IconGridSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     expected = grid_savepoint.edge_vert_length()

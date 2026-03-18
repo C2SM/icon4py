@@ -137,7 +137,7 @@ def test_compute_scaling_factor_for_3d_divdamp(
 @pytest.mark.datatest
 def test_compute_rayleigh_w(
     icon_grid: base_grid.Grid,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     metrics_savepoint: sb.MetricSavepoint,
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
@@ -238,7 +238,7 @@ def test_compute_exner_exfac(
     grid_savepoint: sb.IconGridSavepoint,
     icon_grid: base_grid.Grid,
     metrics_savepoint: sb.MetricSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
@@ -288,7 +288,7 @@ def test_compute_exner_w_implicit_weight_parameter(
     grid_savepoint: sb.IconGridSavepoint,
     metrics_savepoint: sb.MetricSavepoint,
     interpolation_savepoint: sb.InterpolationSavepoint,
-    experiment: definitions.Experiment,
+    experiment: definitions.ExperimentDescription,
     backend: gtx_typing.Backend,
 ) -> None:
     z_ifc = metrics_savepoint.z_ifc()
