@@ -249,7 +249,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 array_ns=self._xp,
             ),
             fields=(attrs.LSQ_PSEUDOINV,),
-            domain=(),
+            domain=(dims.CellDim, dims.LsqUnkDim, dims.LsqCDim),
             deps={
                 "cell_center_x": geometry_attrs.CELL_CENTER_X,
                 "cell_center_y": geometry_attrs.CELL_CENTER_Y,
