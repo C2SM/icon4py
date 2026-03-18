@@ -284,15 +284,13 @@ def create_experiment_configuration(
         smagorinski_scaling_factor=diffusion_nml["hdiff_smag_fac"],
         n_substeps=ndyn_substeps,
         zdiffu_t=nonhydrostatic_nml["l_zdiffu_t"],
-        thslp_zdiffu=nonhydrostatic_nml["thslp_zdiffu"],
-        thhgtd_zdiffu=nonhydrostatic_nml["thhgtd_zdiffu"],
     )
 
     # Create DriverConfig (using defaults for now, as these are not in the JSON)
     # TODO(jcanton): Extract these from the JSON when available
     import datetime
 
-    driver_cfg = driver_config.DriverConfig(
+    driver_config = driver_config.DriverConfig(
         experiment_name=experiment.name,
         output_path=pathlib.Path(),  # Placeholder
         profiling_stats=None,
@@ -305,4 +303,4 @@ def create_experiment_configuration(
         enable_statistics_output=False,
     )
 
-    return driver_cfg, vertical_config, nonhydro_config, diffusion_config
+    return driver_config, vertical_config, nonhydro_config, diffusion_config
