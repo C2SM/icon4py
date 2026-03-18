@@ -15,6 +15,7 @@ from gt4py import next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions, definitions as decomp_defs
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__file__)
@@ -88,20 +89,28 @@ def check_local_global_field(
             0
         ]
     )
+
     def _non_blocking_allclose(a: np.ndarray, b: np.ndarray, atol: float, verbose: bool) -> None:
         print("max diff", np.max(np.abs(a - b)))
-
 
     # Compare halo against global reference field
     if check_halos:
         print("checking halos")
-        #np.testing.assert_allclose(
+        # np.testing.assert_allclose(
         _non_blocking_allclose(
             global_reference_field[
-                decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
+                data_alloc.as_numpy(
+                    decomposition_info.global_index(
+                        dim, decomp_defs.DecompositionInfo.EntryType.HALO
+                    )
+                )
             ],
             local_field[
-                decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
+                data_alloc.as_numpy(
+                    decomposition_info.local_index(
+                        dim, decomp_defs.DecompositionInfo.EntryType.HALO
+                    )
+                )
             ],
             atol=atol,
             verbose=True,
@@ -111,7 +120,9 @@ def check_local_global_field(
     # field, by gathering owned entries to the first rank. This ensures that in
     # total we have the full global field distributed on all ranks.
     owned_entries = local_field[
-        decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
+        data_alloc.as_numpy(
+            decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
+        )
     ]
     gathered_sizes, gathered_field = gather_field(owned_entries, processor_props)
 
@@ -123,9 +134,9 @@ def check_local_global_field(
     if processor_props.rank == 0:
         _log.info(f"rank = {processor_props.rank}: asserting gathered fields: ")
 
-        assert np.all(
-            gathered_sizes == global_index_sizes
-        ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        assert np.all(gathered_sizes == global_index_sizes), (
+            f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
+        )
         _log.info(
             f"rank = {processor_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
@@ -139,5 +150,5 @@ def check_local_global_field(
         )
 
         print("checking interior")
-        #np.testing.assert_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
+        # np.testing.assert_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
         _non_blocking_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
