@@ -424,7 +424,7 @@ def _graupel_run_self_copy_removal_inside_if_stmt(  # noqa: PLR0912, PLR0915
         if_region.remove_branch(else_br)
 
 
-def graupel_run_self_copy_removal_inside_scan(sdfg: dace.SDFG) -> None:
+def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
     assert len(sdfg.states()) == 1
     st = sdfg.states()[0]
     assert (

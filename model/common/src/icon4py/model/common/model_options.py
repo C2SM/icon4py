@@ -15,7 +15,7 @@ import gt4py.next.typing as gtx_typing
 from gt4py.next import backend as gtx_backend
 from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
-from icon4py.model.common import dace_hooks, model_backends
+from icon4py.model.common import model_backends
 
 
 log = logging.getLogger(__name__)
@@ -58,10 +58,6 @@ def get_dace_options(
         optimization_args["gpu_block_size_2d"] = (64, 6)
         optimization_args["gpu_memory_pool"] = False
         optimization_args["make_persistent"] = True
-        if gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre not in optimization_hooks:
-            optimization_hooks[gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre] = (
-                dace_hooks.graupel_run_self_copy_removal_inside_scan
-            )
     if optimization_hooks:
         optimization_args["optimization_hooks"] = optimization_hooks
     if optimization_args:

@@ -18,8 +18,12 @@ from collections.abc import Callable
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core import saturation_adjustment
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, utils
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel, muphys
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import (
+    common,
+    run_graupel_only,
+    utils,
+)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import muphys
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
@@ -131,21 +135,15 @@ def setup_muphys(
             gtx.wait_for_compilation()
             return muphys_program
     else:
+        graupel_run_program = run_graupel_only.setup_graupel(
+            dt=dt,
+            qnc=qnc,
+            backend=backend,
+            hrange=(0, inp.ncells),
+            vrange=(0, inp.nlev),
+            enable_masking=True,
+        )
         with utils.recursion_limit(10**5):  # TODO(havogt): make an option in gt4py?
-            graupel_run_program = model_options.setup_program(
-                backend=backend,
-                program=graupel.graupel_run,
-                constant_args={"dt": dt, "qnc": qnc, "enable_masking": True},
-                horizontal_sizes={
-                    "horizontal_start": gtx.int32(0),
-                    "horizontal_end": inp.ncells,
-                },
-                vertical_sizes={
-                    "vertical_start": gtx.int32(0),
-                    "vertical_end": gtx.int32(inp.nlev),
-                },
-                offset_provider={"Koff": dims.KDim},
-            )
             saturation_adjustment_program = model_options.setup_program(
                 backend=backend,
                 program=saturation_adjustment.saturation_adjustment,
@@ -160,11 +158,11 @@ def setup_muphys(
             )
             gtx.wait_for_compilation()
 
-            return functools.partial(
-                _muphys_step_separate,
-                graupel_program=graupel_run_program,
-                saturation_adjustment_program=saturation_adjustment_program,
-            )
+        return functools.partial(
+            _muphys_step_separate,
+            graupel_program=graupel_run_program,
+            saturation_adjustment_program=saturation_adjustment_program,
+        )
 
 
 def main():
