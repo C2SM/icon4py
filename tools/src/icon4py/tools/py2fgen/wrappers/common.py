@@ -98,6 +98,16 @@ Float64Array2D: TypeAlias = Annotated[
     ),
 ]
 
+Float64Array3D: TypeAlias = Annotated[
+    data_alloc.NDArray,
+    py2fgen.ArrayParamDescriptor(
+        rank=3,
+        dtype=ts.ScalarKind.FLOAT64,
+        memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
+        is_optional=False,
+    ),
+]
+
 OptionalFloat64Array1D: TypeAlias = Annotated[
     data_alloc.NDArray | None,
     py2fgen.ArrayParamDescriptor(

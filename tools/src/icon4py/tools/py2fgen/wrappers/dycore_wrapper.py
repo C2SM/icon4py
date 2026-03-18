@@ -59,10 +59,9 @@ def solve_nh_init(
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: wrapper_common.Float64Array2D,
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
-    rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
+    rbf_vec_coeff_v: wrapper_common.Float64Array3D,
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
@@ -132,7 +131,8 @@ def solve_nh_init(
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")
 
-    on_gpu = c_lin_e.array_ns != np  # TODO(havogt): expose `on_gpu` from py2fgen
+    xp = c_lin_e.array_ns
+    on_gpu = xp != np  # TODO(havogt): expose `on_gpu` from py2fgen
     actual_backend = wrapper_common.select_backend(
         wrapper_common.BackendIntEnum(backend), on_gpu=on_gpu
     )
@@ -184,6 +184,19 @@ def solve_nh_init(
     )
     nonhydro_params = solve_nonhydro.NonHydrostaticParams(config)
 
+    # Create separate fields for the two components of the RBF vector coefficients.
+    # TODO(havogt): we could use GT4Py's named collections.
+    rbf_coeff_1 = gtx.as_field(
+        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 0, :]), allocator=allocator
+    )
+    rbf_coeff_2 = gtx.as_field(
+        [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 1, :]), allocator=allocator
+    )
+
+    # Swap indices in rbf_vec_coeff_e. TODO(havogt): Should eventually be done on the Fortran side.
+    rbf_vec_coeff_e_transposed = gtx.as_field(
+        [dims.EdgeDim, dims.E2C2EDim], xp.transpose(rbf_vec_coeff_e), allocator=allocator
+    )
     interpolation_state = dycore_states.InterpolationState(
         c_lin_e=c_lin_e,
         c_intp=c_intp,
@@ -192,7 +205,7 @@ def solve_nh_init(
         geofac_rot=geofac_rot,
         pos_on_tplane_e_1=pos_on_tplane_e_1[:, 0:2],
         pos_on_tplane_e_2=pos_on_tplane_e_2[:, 0:2],
-        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        rbf_vec_coeff_e=rbf_vec_coeff_e_transposed,
         e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
