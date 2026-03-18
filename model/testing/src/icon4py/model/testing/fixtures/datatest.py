@@ -17,7 +17,11 @@ import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import model_backends, model_options
 from icon4py.model.common.constants import RayleighType
 from icon4py.model.common.grid import base as base_grid
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils, definitions as test_defs
+from icon4py.model.testing import (
+    data_handling,
+    datatest_utils as dt_utils,
+    definitions as test_defs,
+)
 
 
 if TYPE_CHECKING:
@@ -77,6 +81,20 @@ def backend(request: pytest.FixtureRequest) -> gtx_typing.Backend | None:
 @pytest.fixture
 def cpu_allocator() -> gtx_typing.Allocator:
     return model_backends.get_allocator(None)
+
+
+@pytest.fixture(
+    params=[
+        test_defs.Grids.R01B01_GLOBAL,
+        test_defs.Grids.R02B04_GLOBAL,
+        test_defs.Grids.MCH_CH_R04B09_DSL,
+        test_defs.Grids.TORUS_50000x5000,
+    ],
+    ids=lambda r: r.name,
+)
+def grid_description(request: pytest.FixtureRequest) -> test_defs.GridDescription:
+    """Default parametrization for grid."""
+    return request.param
 
 
 @pytest.fixture(

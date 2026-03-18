@@ -12,7 +12,7 @@ import functools
 import logging
 import math
 import sys
-from typing import Final, Literal
+from typing import Final
 
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
@@ -105,7 +105,7 @@ class TemperatureDiscretizationType(int, enum.Enum):
     """
 
     HOMOGENEOUS = 1  #: K Lap(T)
-    HETEROGENOUS = 2  #: Div (K Grad(T))
+    HETEROGENEOUS = 2  #: Div (K Grad(T))
 
 
 class TurbulenceShearForcingType(int, enum.Enum):
@@ -125,27 +125,6 @@ class TurbulenceShearForcingType(int, enum.Enum):
     VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
 
 
-ValidDiffusionType = Literal[
-    DiffusionType.NO_DIFFUSION,
-    DiffusionType.LINEAR_2ND_ORDER,
-    DiffusionType.SMAGORINSKY_NO_BACKGROUND,
-    DiffusionType.LINEAR_4TH_ORDER,
-    DiffusionType.SMAGORINSKY_4TH_ORDER,
-]
-ValidSmagorinskyStencilType = Literal[
-    SmagorinskyStencilType.DIAMOND_VERTICES, SmagorinskyStencilType.CELLS_AND_VERTICES
-]
-ValidTemperatureDiscretizationType = Literal[
-    TemperatureDiscretizationType.HOMOGENEOUS, TemperatureDiscretizationType.HETEROGENOUS
-]
-ValidTurbulenceShearForcingType = Literal[
-    TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
-    TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND,
-    TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
-    TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH,
-]
-
-
 class DiffusionConfig:
     """
     Contains necessary parameter to configure a diffusion run.
@@ -160,27 +139,25 @@ class DiffusionConfig:
 
     def __init__(
         self,
-        diffusion_type: ValidDiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
+        diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w: bool = True,
         hdiff_vn: bool = True,
         hdiff_temp: bool = True,
         hdiff_smag_w: bool = False,
-        type_vn_diffu: ValidSmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
+        type_vn_diffu: SmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
         smag_3d: bool = False,
-        type_t_diffu: ValidTemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENOUS,
+        type_t_diffu: TemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENEOUS,
         hdiff_efdt_ratio: float = 36.0,
         hdiff_w_efdt_ratio: float = 15.0,
         smagorinski_scaling_factor: float = 0.015,
         n_substeps: int = 5,
         zdiffu_t: bool = True,
-        thslp_zdiffu: float = 0.025,
-        thhgtd_zdiffu: float = 200.0,
         velocity_boundary_diffusion_denom: float = 200.0,
         temperature_boundary_diffusion_denom: float = 135.0,
         _nudge_max_coeff: float | None = None,  # default is set in __init__
         max_nudging_coefficient: float | None = None,  # default is set in __init__
         nudging_decay_rate: float = 2.0,
-        shear_type: ValidTurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+        shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         ltkeshs: bool = True,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
@@ -231,11 +208,6 @@ class DiffusionConfig:
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
-
-        #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f90
-        self.thslp_zdiffu = thslp_zdiffu
-        #: threshold [m] for height difference between adjacent grid points, defaults to 200m (temperature diffusion)
-        self.thhgtd_zdiffu = thhgtd_zdiffu
 
         # from other namelists:
         # from parent namelist mo_nonhydrostatic_nml
@@ -309,7 +281,7 @@ class DiffusionConfig:
                 "Only type_vn_diffu 1 = `Smagorinsky diffusion with diamond stencil on vertices` is implemented"
             )
 
-        if self.type_t_diffu != TemperatureDiscretizationType.HETEROGENOUS:
+        if self.type_t_diffu != TemperatureDiscretizationType.HETEROGENEOUS:
             raise NotImplementedError(
                 "Only type_t_diffu 2 = `Smagorinsky diffusion with heterogeneous discretization` is implemented"
             )
@@ -395,9 +367,6 @@ class DiffusionParams:
                 smagorinski_height = None
             case _:
                 raise NotImplementedError("Only implemented for diffusion type 4 and 5")
-                smagorinski_factor = None
-                smagorinski_height = None
-                pass
         return smagorinski_factor, smagorinski_height
 
 
@@ -448,7 +417,7 @@ class Diffusion:
         self._cell_params = cell_params
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
-            self._exchange
+            self._exchange,
         )  # wait on a communication handle
         self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
             constants.CPD - constants.GAS_CONSTANT_DRY_AIR
@@ -592,7 +561,6 @@ class Diffusion:
             program=apply_diffusion_to_theta_and_exner,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
-                "mask": self._metric_state.mask_hdiff,
                 "zd_vertoffset": self._metric_state.zd_vertoffset,
                 "zd_diffcoef": self._metric_state.zd_diffcoef,
                 "vcoef": self._metric_state.zd_intcoef,
@@ -793,11 +761,12 @@ class Diffusion:
         IF ( linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         """
         log.debug("communication of prognostic cell fields: theta, w, exner - start")
-        self._exchange.exchange_and_wait(
+        self._exchange.exchange(
             dims.CellDim,
             prognostic_state.w,
             prognostic_state.theta_v,
             prognostic_state.exner,
+            stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
@@ -834,12 +803,17 @@ class Diffusion:
         log.debug("rbf interpolation 1: end")
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
+        # TODO(phimuell, muellch): Is asynchronous mode okay here.
+        # NOTE: We do not specify a stream here but rely on the default argument.
+        #   We do this to ensure that the orchestrator works, but it is not aware
+        #   of the streams.
         log.debug("communication rbf extrapolation of vn - start")
         self._exchange(
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
-            wait=True,
+            full_exchange=True,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )
         log.debug("communication rbf extrapolation of vn - end")
 
@@ -882,12 +856,14 @@ class Diffusion:
         log.debug("2nd rbf interpolation: end")
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
+        # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of z_nable2_e - start")
         self._exchange(
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
-            wait=True,
+            full_exchange=True,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
@@ -903,7 +879,12 @@ class Diffusion:
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
         log.debug("communication of prognistic.vn : start")
-        handle_edge_comm = self._exchange(prognostic_state.vn, dim=dims.EdgeDim, wait=False)
+        handle_edge_comm = self._exchange(
+            prognostic_state.vn,
+            dim=dims.EdgeDim,
+            full_exchange=False,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
+        )
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
@@ -949,7 +930,8 @@ class Diffusion:
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
 
         self.halo_exchange_wait(
-            handle_edge_comm
+            handle_edge_comm,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
 

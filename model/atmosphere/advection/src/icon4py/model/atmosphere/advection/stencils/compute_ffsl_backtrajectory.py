@@ -160,7 +160,7 @@ def compute_ffsl_backtrajectory(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_ffsl_backtrajectory(
         p_vn,
         p_vt,

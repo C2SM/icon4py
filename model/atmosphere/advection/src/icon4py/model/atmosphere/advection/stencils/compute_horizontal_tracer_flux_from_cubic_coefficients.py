@@ -33,7 +33,7 @@ def compute_horizontal_tracer_flux_from_cubic_coefficients(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_horizontal_tracer_flux_from_cubic_coefficients(
         p_out_e_hybrid_2,
         p_mass_flx_e,

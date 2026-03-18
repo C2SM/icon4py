@@ -58,7 +58,7 @@ def apply_weighted_2nd_and_4th_order_divergence_damping(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _apply_weighted_2nd_and_4th_order_divergence_damping(
         interpolated_fourth_order_divdamp_factor,
         nudgecoeff_e,

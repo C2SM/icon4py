@@ -75,14 +75,12 @@ def read_config(
             diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
-            type_t_diffu=2,
-            type_vn_diffu=1,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
             hdiff_efdt_ratio=24.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
-            thslp_zdiffu=0.02,
-            thhgtd_zdiffu=125.0,
             velocity_boundary_diffusion_denom=150.0,
             max_nudging_coefficient=0.375,
             n_substeps=n_substeps_reduced,
@@ -110,12 +108,12 @@ def read_config(
             hdiff_vn=True,
             hdiff_temp=False,
             n_substeps=n_substeps,
-            type_t_diffu=2,
-            type_vn_diffu=1,
+            type_t_diffu=diffusion.TemperatureDiscretizationType.HETEROGENEOUS,
+            type_vn_diffu=diffusion.SmagorinskyStencilType.DIAMOND_VERTICES,
             hdiff_efdt_ratio=10.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
-            zdiffu_t=True,
+            zdiffu_t=False,
             velocity_boundary_diffusion_denom=200.0,
         )
 
@@ -124,6 +122,7 @@ def read_config(
             # original igradp_method is 2
             # original divdamp_order is 4
             fourth_order_divdamp_factor=0.0025,
+            rayleigh_coeff=0.1,
         )
 
     def _mch_ch_r04b09_config():
@@ -144,7 +143,7 @@ def read_config(
     def _jablonowski_williamson_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
-            end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
+            end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend=backend,

@@ -195,9 +195,11 @@ def test_when_keep_skip_value_then_neighbor_table_matches_config(
         np.any(connectivity.asnumpy() == gridfile.GridFile.INVALID_INDEX).item()
     ) == icon._has_skip_values(offset, grid.config.limited_area)
     if not icon._has_skip_values(offset, grid.config.limited_area):
-        assert connectivity.skip_value is None
+        assert connectivity.skip_value is None, f"skip value for offset {offset} should be None"
     else:
-        assert connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
+        assert (
+            connectivity.skip_value == gridfile.GridFile.INVALID_INDEX
+        ), f"skip for offset {offset} value should be {gridfile.GridFile.INVALID_INDEX}"
 
 
 @pytest.mark.parametrize(
@@ -212,6 +214,8 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
 ) -> None:
     if dim == dims.V2E2VDim:
         pytest.skip("V2E2VDim is not supported in the current grid configuration.")
+    if dim in (dims.LsqCDim, dims.LsqUnkDim):
+        pytest.skip("LsqCDim and LsqUnkDim are not offset dimensions.")
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=False, backend=backend).grid
     connectivity = grid.get_connectivity(dim.value)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:

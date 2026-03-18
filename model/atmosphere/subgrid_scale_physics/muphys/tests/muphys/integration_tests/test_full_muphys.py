@@ -25,7 +25,6 @@ from .utils import download_test_data
 class Experiments:
     # TODO(havogt): the following references need to be checked (and moved to the shared directory),
     # currently they are not verifying
-    # https://polybox.ethz.ch/index.php/s/F8bK2C8tkpf8Xy2/download?files=mini.tar.gz
     # https://polybox.ethz.ch/index.php/s/5oNtcQFDcCaNxHH/download/r2b04.tar.gz
     # https://polybox.ethz.ch/index.php/s/mBeAWAQQHSKTkF7/download/r2b04_maxfrac.tar.gz
     # https://polybox.ethz.ch/index.php/s/mBrpE3iBoeek5wc/download/r2b05.tar.gz
@@ -33,7 +32,11 @@ class Experiments:
     # as it is not sensitive to saturation adjustment
     # TODO(havogt): double-check that all other experiments actually are sensitive,
     # i.e. reference of full_muphys and graupel_only differ significantly.
-    ...
+    MINI: Final = utils.MuphysExperiment(
+        name="mini",
+        type=utils.ExperimentType.FULL_MUPHYS,
+        uri="https://polybox.ethz.ch/index.php/s/F8bK2C8tkpf8Xy2/download?files=mini.tar.gz",
+    )
 
 
 @pytest.mark.uses_concat_where
@@ -41,8 +44,8 @@ class Experiments:
 @pytest.mark.parametrize(
     "experiment",
     [
+        Experiments.MINI,
         # TODO(havogt): references need to be checked, currently they are not verifying
-        # Experiments.MINI,
         # Experiments.R2B04,
         # Experiments.R2B04_MAXFRAC,
         # Experiments.R2B05,
@@ -72,9 +75,20 @@ def test_full_muphys(
         single_program=single_program,
     )
 
+    # We are passing the same buffers for `Q` as input and output. This is not best GT4Py practice,
+    # but save in this case as we are not reading the input with an offset.
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
+        references={
+            "qv": inp.qv,
+            "qc": inp.qc,
+            "qi": inp.qi,
+            "qr": inp.qr,
+            "qs": inp.qs,
+            "qg": inp.qg,
+            "t": inp.t,
+        },
     )
 
     muphys_program(

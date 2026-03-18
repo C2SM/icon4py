@@ -62,7 +62,7 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
         ddqz_z_half,
         z_w_con_c,

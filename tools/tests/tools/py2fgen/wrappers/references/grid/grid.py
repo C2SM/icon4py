@@ -126,8 +126,6 @@ def grid_init_wrapper(
     primal_normal_y_size_0,
     vct_a,
     vct_a_size_0,
-    vct_b,
-    vct_b_size_0,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -396,8 +394,6 @@ def grid_init_wrapper(
 
             vct_a = (vct_a, (vct_a_size_0,), on_gpu, False)
 
-            vct_b = (vct_b, (vct_b_size_0,), on_gpu, False)
-
             if __debug__:
                 if runtime_config.PROFILING:
                     allocate_end_time = _runtime.perf_counter()
@@ -458,7 +454,6 @@ def grid_init_wrapper(
                 primal_normal_x=primal_normal_x,
                 primal_normal_y=primal_normal_y,
                 vct_a=vct_a,
-                vct_b=vct_b,
                 lowest_layer_thickness=lowest_layer_thickness,
                 model_top_height=model_top_height,
                 stretch_factor=stretch_factor,
@@ -1161,22 +1156,6 @@ def grid_init_wrapper(
                     msg = (
                         "vct_a after computation: %s" % str(vct_a_arr)
                         if vct_a is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    vct_b_arr = (
-                        _conversion.as_array(ffi, vct_b, _definitions.FLOAT64)
-                        if vct_b is not None
-                        else None
-                    )
-                    msg = "shape of vct_b after computation = %s" % str(
-                        vct_b_arr.shape if vct_b is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "vct_b after computation: %s" % str(vct_b_arr)
-                        if vct_b is not None
                         else "None"
                     )
                     logger.debug(msg)

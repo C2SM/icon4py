@@ -68,7 +68,7 @@ def test_damping_layer_calculation(
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a_field,
-        vct_b=None,  # type: ignore[arg-type]
+        vct_b=None,
     )
     assert (
         vertical_params.end_index_of_damping_layer
@@ -400,6 +400,7 @@ def test_compute_vertical_coordinate(
     )
     assert vertical_geometry.nflatlev == grid_savepoint.nflatlev()
 
+    topography = None
     if experiment in (test_defs.Experiments.MCH_CH_R04B09, test_defs.Experiments.GAUSS3D):
         topography = topography_savepoint.topo_c()
     elif experiment == test_defs.Experiments.EXCLAIM_APE:
@@ -408,6 +409,9 @@ def test_compute_vertical_coordinate(
         )
 
     geofac_n2s = interpolation_savepoint.geofac_n2s()
+
+    assert cell_geometry.area is not None
+    assert topography is not None
 
     vertical_coordinates_on_half_levels = v_grid.compute_vertical_coordinate(
         vct_a=vct_a.ndarray,
