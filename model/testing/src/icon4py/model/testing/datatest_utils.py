@@ -290,7 +290,7 @@ def create_experiment_configuration(
     # TODO(jcanton): Extract these from the JSON when available
     import datetime
 
-    driver_config = driver_config.DriverConfig(
+    driver_cfg = driver_config.DriverConfig(
         experiment_name=experiment.name,
         output_path=pathlib.Path(),  # Placeholder
         profiling_stats=None,
@@ -303,4 +303,4 @@ def create_experiment_configuration(
         enable_statistics_output=False,
     )
 
-    return driver_config, vertical_config, nonhydro_config, diffusion_config
+    return driver_cfg, vertical_config, nonhydro_config, diffusion_config
