@@ -382,12 +382,10 @@ module dycore
                                      e_bln_c_s, &
                                      e_bln_c_s_size_0, &
                                      e_bln_c_s_size_1, &
-                                     rbf_coeff_1, &
-                                     rbf_coeff_1_size_0, &
-                                     rbf_coeff_1_size_1, &
-                                     rbf_coeff_2, &
-                                     rbf_coeff_2_size_0, &
-                                     rbf_coeff_2_size_1, &
+                                     rbf_vec_coeff_v, &
+                                     rbf_vec_coeff_v_size_0, &
+                                     rbf_vec_coeff_v_size_1, &
+                                     rbf_vec_coeff_v_size_2, &
                                      geofac_div, &
                                      geofac_div_size_0, &
                                      geofac_div_size_1, &
@@ -580,17 +578,13 @@ module dycore
 
          integer(c_int), value :: e_bln_c_s_size_1
 
-         type(c_ptr), value, target :: rbf_coeff_1
+         type(c_ptr), value, target :: rbf_vec_coeff_v
 
-         integer(c_int), value :: rbf_coeff_1_size_0
+         integer(c_int), value :: rbf_vec_coeff_v_size_0
 
-         integer(c_int), value :: rbf_coeff_1_size_1
+         integer(c_int), value :: rbf_vec_coeff_v_size_1
 
-         type(c_ptr), value, target :: rbf_coeff_2
-
-         integer(c_int), value :: rbf_coeff_2_size_0
-
-         integer(c_int), value :: rbf_coeff_2_size_1
+         integer(c_int), value :: rbf_vec_coeff_v_size_2
 
          type(c_ptr), value, target :: geofac_div
 
@@ -1474,8 +1468,7 @@ contains
                             pos_on_tplane_e_2, &
                             rbf_vec_coeff_e, &
                             e_bln_c_s, &
-                            rbf_coeff_1, &
-                            rbf_coeff_2, &
+                            rbf_vec_coeff_v, &
                             geofac_div, &
                             geofac_n2s, &
                             geofac_grg_x, &
@@ -1562,9 +1555,7 @@ contains
 
       real(c_double), dimension(:, :), target :: e_bln_c_s
 
-      real(c_double), dimension(:, :), target :: rbf_coeff_1
-
-      real(c_double), dimension(:, :), target :: rbf_coeff_2
+      real(c_double), dimension(:, :, :), target :: rbf_vec_coeff_v
 
       real(c_double), dimension(:, :), target :: geofac_div
 
@@ -1734,13 +1725,11 @@ contains
 
       integer(c_int) :: e_bln_c_s_size_1
 
-      integer(c_int) :: rbf_coeff_1_size_0
+      integer(c_int) :: rbf_vec_coeff_v_size_0
 
-      integer(c_int) :: rbf_coeff_1_size_1
+      integer(c_int) :: rbf_vec_coeff_v_size_1
 
-      integer(c_int) :: rbf_coeff_2_size_0
-
-      integer(c_int) :: rbf_coeff_2_size_1
+      integer(c_int) :: rbf_vec_coeff_v_size_2
 
       integer(c_int) :: geofac_div_size_0
 
@@ -1904,8 +1893,7 @@ contains
       !$acc host_data use_device(pos_on_tplane_e_2)
       !$acc host_data use_device(rbf_vec_coeff_e)
       !$acc host_data use_device(e_bln_c_s)
-      !$acc host_data use_device(rbf_coeff_1)
-      !$acc host_data use_device(rbf_coeff_2)
+      !$acc host_data use_device(rbf_vec_coeff_v)
       !$acc host_data use_device(geofac_div)
       !$acc host_data use_device(geofac_n2s)
       !$acc host_data use_device(geofac_grg_x)
@@ -1979,11 +1967,9 @@ contains
       e_bln_c_s_size_0 = SIZE(e_bln_c_s, 1)
       e_bln_c_s_size_1 = SIZE(e_bln_c_s, 2)
 
-      rbf_coeff_1_size_0 = SIZE(rbf_coeff_1, 1)
-      rbf_coeff_1_size_1 = SIZE(rbf_coeff_1, 2)
-
-      rbf_coeff_2_size_0 = SIZE(rbf_coeff_2, 1)
-      rbf_coeff_2_size_1 = SIZE(rbf_coeff_2, 2)
+      rbf_vec_coeff_v_size_0 = SIZE(rbf_vec_coeff_v, 1)
+      rbf_vec_coeff_v_size_1 = SIZE(rbf_vec_coeff_v, 2)
+      rbf_vec_coeff_v_size_2 = SIZE(rbf_vec_coeff_v, 3)
 
       geofac_div_size_0 = SIZE(geofac_div, 1)
       geofac_div_size_1 = SIZE(geofac_div, 2)
@@ -2129,12 +2115,10 @@ contains
                                  e_bln_c_s=c_loc(e_bln_c_s), &
                                  e_bln_c_s_size_0=e_bln_c_s_size_0, &
                                  e_bln_c_s_size_1=e_bln_c_s_size_1, &
-                                 rbf_coeff_1=c_loc(rbf_coeff_1), &
-                                 rbf_coeff_1_size_0=rbf_coeff_1_size_0, &
-                                 rbf_coeff_1_size_1=rbf_coeff_1_size_1, &
-                                 rbf_coeff_2=c_loc(rbf_coeff_2), &
-                                 rbf_coeff_2_size_0=rbf_coeff_2_size_0, &
-                                 rbf_coeff_2_size_1=rbf_coeff_2_size_1, &
+                                 rbf_vec_coeff_v=c_loc(rbf_vec_coeff_v), &
+                                 rbf_vec_coeff_v_size_0=rbf_vec_coeff_v_size_0, &
+                                 rbf_vec_coeff_v_size_1=rbf_vec_coeff_v_size_1, &
+                                 rbf_vec_coeff_v_size_2=rbf_vec_coeff_v_size_2, &
                                  geofac_div=c_loc(geofac_div), &
                                  geofac_div_size_0=geofac_div_size_0, &
                                  geofac_div_size_1=geofac_div_size_1, &
@@ -2270,7 +2254,6 @@ contains
                                  nflat_gradp=nflat_gradp, &
                                  backend=backend, &
                                  on_gpu=on_gpu)
-      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
