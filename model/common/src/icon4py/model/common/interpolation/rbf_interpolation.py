@@ -17,6 +17,7 @@ import scipy.linalg as sla
 from gt4py.next import astype
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -325,7 +326,7 @@ def _compute_rbf_interpolation_coeffs(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, ...]:
     rbf_offset_shape_full = rbf_offset.shape
@@ -462,7 +463,7 @@ def _compute_rbf_interpolation_coeffs(
         rbf_vec_coeff[j][horizontal_start:horizontal_end] /= array_ns.sum(
             nxnx[j] * rbf_vec_coeff[j][horizontal_start:horizontal_end], axis=1
         )[:, array_ns.newaxis]
-    exchange(*rbf_vec_coeff)
+    exchange(*rbf_vec_coeff, stream=decomposition.BLOCK)
     return rbf_vec_coeff
 
 
@@ -487,7 +488,7 @@ def compute_rbf_interpolation_coeffs_cell(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
@@ -538,7 +539,7 @@ def compute_rbf_interpolation_coeffs_edge(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     return _compute_rbf_interpolation_coeffs(
@@ -587,7 +588,7 @@ def compute_rbf_interpolation_coeffs_vertex(
     horizontal_end: gtx.int32,
     domain_length: ta.wpfloat,
     domain_height: ta.wpfloat,
-    exchange: Callable[[data_alloc.NDArray], None],
+    exchange: Callable[[data_alloc.NDArray, decomposition.StreamLike], None],
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     zeros = array_ns.zeros(rbf_offset.shape[0], dtype=ta.wpfloat)
