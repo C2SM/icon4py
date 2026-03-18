@@ -193,7 +193,7 @@ def diffusion_init(
         zd_diffcoef=zd_diffcoef,
     )
 
-    # Create separate fields for the two components of the RBF vector coefficients.
+    # Create separate fields for the two components of the RBF vector coefficients and swap.
     # TODO(havogt): we could use GT4Py's named collections.
     rbf_coeff_1 = gtx.as_field(
         [dims.VertexDim, dims.V2EDim], xp.transpose(rbf_vec_coeff_v[:, 0, :]), allocator=allocator
