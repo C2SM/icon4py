@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+import inspect
 import os
+import types
 from collections.abc import Callable, Generator, Mapping, Sequence
-from typing import Any, ClassVar, Final
+from typing import Any, ClassVar, Final, TYPE_CHECKING
 
 import gt4py.next as gtx
 import numpy as np
@@ -33,6 +35,40 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.utils import device_utils
 
 
+def static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
+    if not isinstance(func, (types.FunctionType, staticmethod)):
+        raise TypeError("The 'reference' function must be a regular function or staticmethod.")
+    if func.__name__ != "reference":
+        raise ValueError("The 'reference' method must be named 'reference'.")
+    if not isinstance(func, staticmethod):
+        func = staticmethod(func)
+
+    func.__stencil_test_reference__ = True
+
+    return func
+
+
+def input_data_fixture(
+    func: types.FunctionType | None = None, **kwargs
+) -> _pytest.fixtures.FixtureFunctionMarker:
+    if not isinstance(func, types.FunctionType):
+        raise TypeError("The 'input_data' method must be a regular function.")
+    if func.__name__ != "input_data":
+        raise ValueError("The 'input_data' method must be named 'input_data'.")
+    func_params = tuple(p.name for p in inspect.signature(func).parameters.items())
+    if func_params != ("self", "grid"):
+        raise ValueError("The 'input_data' method signature must be 'input_data(self, grid)'.")
+
+    kwargs.setdefault("scope", "class")
+
+    return pytest.fixture(**kwargs)(func)
+
+
+if TYPE_CHECKING:
+    static_reference: Final = staticmethod  # type: ignore[assignment]  # we override with a decorated function
+    input_data_fixture: Final = pytest.fixture  # type: ignore[assignment]  # we override with a decorated function
+
+
 def allocate_data(
     allocator: gtx_typing.Allocator | None,
     input_data: dict[
@@ -42,13 +78,14 @@ def allocate_data(
     def _allocate_field(f: gtx.Field) -> gtx.Field:
         return constructors.as_field(domain=f.domain, data=f.ndarray, allocator=allocator)
 
-    input_data = {
+    device_input_data = {
         k: gtx_named_collections.tree_map_named_collection(_allocate_field)(v)
         if not gtx.is_scalar_type(v) and k != "domain"
         else v
         for k, v in input_data.items()
     }
-    return input_data
+
+    return device_input_data
 
 
 @dataclasses.dataclass(frozen=True)
@@ -84,8 +121,8 @@ def test_and_benchmark(
     self: StencilTest,
     benchmark: Any,  # should be `pytest_benchmark.fixture.BenchmarkFixture` but pytest_benchmark is not typed
     grid: base.Grid,
-    _properly_allocated_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
-    _configured_program: Callable[..., None],
+    device_input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
+    configured_program: Callable[..., None],
     request: pytest.FixtureRequest,
 ) -> None:
     skip_stenciltest_verification = request.config.getoption(
@@ -100,14 +137,12 @@ def test_and_benchmark(
             ),
             **{
                 k: v.asnumpy() if isinstance(v, gtx.Field) else v
-                for k, v in _properly_allocated_input_data.items()
+                for k, v in device_input_data.items()
             },
         )
 
-        _configured_program(**_properly_allocated_input_data, offset_provider=grid.connectivities)
-        self._verify_stencil_test(
-            input_data=_properly_allocated_input_data, reference_outputs=reference_outputs
-        )
+        configured_program(**device_input_data, offset_provider=grid.connectivities)
+        self._verify_stencil_test(input_data=device_input_data, reference_outputs=reference_outputs)
 
     if not skip_stenciltest_benchmark:
         warmup_rounds = int(os.getenv("ICON4PY_STENCIL_TEST_WARMUP_ROUNDS", "1"))
@@ -115,9 +150,9 @@ def test_and_benchmark(
 
         # Use of `pedantic` to explicitly control warmup rounds and iterations
         benchmark.pedantic(
-            _configured_program,
+            configured_program,
             args=(),
-            kwargs=dict(**_properly_allocated_input_data, offset_provider=grid.connectivities),
+            kwargs=dict(**device_input_data, offset_provider=grid.connectivities),
             rounds=int(
                 os.getenv("ICON4PY_STENCIL_TEST_BENCHMARK_ROUNDS", "3")
             ),  # 30 iterations in total should be stable enough
@@ -147,18 +182,18 @@ def test_and_benchmark(
             gtx_hooks.program_call_context.register(
                 _get_metrics_id_program_callback, name=METRICS_KEY_EXTRACTOR
             )
-            _configured_program(
-                **_properly_allocated_input_data, offset_provider=grid.connectivities
-            )
+            configured_program(**device_input_data, offset_provider=grid.connectivities)
             gtx_hooks.program_call_context.remove(METRICS_KEY_EXTRACTOR)
-            assert metrics_key is not None, "Metrics key could not be recovered during run."
-            assert metrics_key.startswith(
-                _configured_program.__name__
-            ), f"Metrics key ({metrics_key}) does not start with the program name ({_configured_program.__name__})"
 
-            assert (
-                len(_configured_program._compiled_programs.compiled_programs) == 1
-            ), "Multiple compiled programs found, cannot extract metrics."
+            if metrics_key is None:
+                raise RuntimeError("Metrics key could not be recovered during run.")
+            if not metrics_key.startswith(configured_program.__name__):
+                raise RuntimeError(
+                    f"Metrics key ({metrics_key}) does not start with the program name ({configured_program.__name__})"
+                )
+            if len(configured_program._compiled_programs.compiled_programs) != 1:
+                raise RuntimeError("Multiple compiled programs found, cannot extract metrics.")
+
             metrics_data = gtx_metrics.sources
             compute_samples = metrics_data[metrics_key].metrics["compute"].samples
             # exclude:
@@ -169,9 +204,10 @@ def test_and_benchmark(
             initial_program_iterations_to_skip = warmup_rounds * iterations + (
                 2 if skip_stenciltest_verification else 3
             )
-            assert (
-                len(compute_samples) > initial_program_iterations_to_skip
-            ), "Not enough samples collected to compute metrics."
+
+            if len(compute_samples) <= initial_program_iterations_to_skip:
+                raise RuntimeError("Not enough samples collected to compute metrics.")
+
             benchmark.extra_info["gtx_metrics"] = compute_samples[
                 initial_program_iterations_to_skip:
             ]
@@ -204,7 +240,7 @@ class StencilTest:
     reference: ClassVar[Callable[..., Mapping[str, np.ndarray | tuple[np.ndarray, ...]]]]
 
     @pytest.fixture
-    def _configured_program(
+    def configured_program(
         self,
         backend_like: model_backends.BackendLike,
         static_variant: Sequence[str],
@@ -234,17 +270,20 @@ class StencilTest:
         test_func = device_utils.synchronized_function(program, allocator=backend)
         return test_func
 
-    @pytest.fixture
-    def _properly_allocated_input_data(
+    @pytest.fixture(scope="class")
+    def device_input_data(
         self,
         input_data: dict[str, gtx.Field | tuple[gtx.Field, ...]],
         backend_like: model_backends.BackendLike,
-    ) -> dict[str, Any]:
-        # TODO(havogt): this is a workaround,
-        # because in the `input_data` fixture provided by the user
-        # it does not allocate for the correct device.
+    ) -> Generator[dict[str, gtx.Field | tuple[gtx.Field, ...]]]:
+        # This is partially a workaround, because in the `input_data` fixture,
+        # provided by the user it does not allocate for the correct device,
+        # but it is also convenient for the verification step, where we need
+        # the data on the host as numpy arrays.
         allocator = model_backends.get_allocator(backend_like)
-        return allocate_data(allocator=allocator, input_data=input_data)
+        device_data = allocate_data(allocator=allocator, input_data=input_data)
+        yield device_data
+        device_data.clear()  # free memory after test
 
     def _verify_stencil_test(
         self,
