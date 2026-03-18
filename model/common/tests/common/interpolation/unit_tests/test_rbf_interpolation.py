@@ -19,7 +19,7 @@ from icon4py.model.common.grid.gridfile import GridFile
 from icon4py.model.common.interpolation import rbf_interpolation as rbf
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
-    definitions,
+    definitions as test_defs,
     grid_utils as gridtest_utils,
     test_utils as test_helpers,
 )
@@ -44,19 +44,19 @@ if TYPE_CHECKING:
 
 RBF_TOLERANCES = {
     dims.CellDim: {
-        definitions.Experiments.EXCLAIM_APE.name: 3.1e-9,
-        definitions.Experiments.MCH_CH_R04B09.name: 4e-2,
-        definitions.Experiments.GAUSS3D.name: 1e-14,
+        test_defs.Experiments.EXCLAIM_APE.name: 3.1e-9,
+        test_defs.Experiments.MCH_CH_R04B09.name: 4e-2,
+        test_defs.Experiments.GAUSS3D.name: 1e-14,
     },
     dims.EdgeDim: {
-        definitions.Experiments.EXCLAIM_APE.name: 8e-14,
-        definitions.Experiments.MCH_CH_R04B09.name: 2e-9,
-        definitions.Experiments.GAUSS3D.name: 0,
+        test_defs.Experiments.EXCLAIM_APE.name: 8e-14,
+        test_defs.Experiments.MCH_CH_R04B09.name: 2e-9,
+        test_defs.Experiments.GAUSS3D.name: 0,
     },
     dims.VertexDim: {
-        definitions.Experiments.EXCLAIM_APE.name: 3e-10,
-        definitions.Experiments.MCH_CH_R04B09.name: 3e-3,
-        definitions.Experiments.GAUSS3D.name: 1e-15,
+        test_defs.Experiments.EXCLAIM_APE.name: 3e-10,
+        test_defs.Experiments.MCH_CH_R04B09.name: 3e-3,
+        test_defs.Experiments.GAUSS3D.name: 1e-15,
     },
 }
 
@@ -64,7 +64,7 @@ RBF_TOLERANCES = {
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_construct_rbf_matrix_offsets_tables_for_cells(
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
@@ -96,7 +96,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_construct_rbf_matrix_offsets_tables_for_edges(
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
@@ -126,7 +126,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
 @pytest.mark.level("unit")
 @pytest.mark.datatest
 def test_construct_rbf_matrix_offsets_tables_for_vertices(
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
     grid_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
@@ -163,7 +163,7 @@ def test_rbf_interpolation_coeffs_cell(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
@@ -240,7 +240,7 @@ def test_rbf_interpolation_coeffs_vertex(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
@@ -317,7 +317,7 @@ def test_rbf_interpolation_coeffs_edge(
     grid_savepoint: serialbox.IconGridSavepoint,
     interpolation_savepoint: serialbox.IconGridSavepoint,
     backend: gtx_typing.Backend | None,
-    experiment: definitions.ExperimentDescription,
+    experiment: test_defs.ExperimentDescription,
 ) -> None:
     geometry = gridtest_utils.get_grid_geometry(backend, experiment)
     grid = geometry.grid
