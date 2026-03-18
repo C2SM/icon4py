@@ -798,22 +798,22 @@ def test_metrics_mask_prog_halo_c(
     )
 
     attrs_name = metrics_attributes.MASK_PROG_HALO_C
-    field = multi_rank_metrics.get(attrs_name).asnumpy()
-    c_refin_ctrl = multi_rank_metrics.get("c_refin_ctrl").asnumpy()
-    assert not np.any(
+    field = multi_rank_metrics.get(attrs_name).ndarray
+    c_refin_ctrl = multi_rank_metrics.get("c_refin_ctrl").ndarray
+    assert not (
         field[
             multi_rank_grid_manager.decomposition_info.local_index(
                 dims.CellDim, decomp_defs.DecompositionInfo.EntryType.OWNED
             )
         ]
-    ), f"rank={processor_props.rank} - found nonzero in owned entries of {attrs_name}"
+    ).any(), f"rank={processor_props.rank} - found nonzero in owned entries of {attrs_name}"
     halo_indices = multi_rank_grid_manager.decomposition_info.local_index(
         dims.CellDim, decomp_defs.DecompositionInfo.EntryType.HALO
     )
-    assert np.all(
+    assert (
         field[halo_indices]
         == ~((c_refin_ctrl[halo_indices] >= 1) & (c_refin_ctrl[halo_indices] <= 4))
-    ), f"rank={processor_props.rank} - halo for MASK_PROG_HALO_C is incorrect"
+    ).all(), f"rank={processor_props.rank} - halo for MASK_PROG_HALO_C is incorrect"
 
     _log.info(f"rank = {processor_props.rank} - DONE")
 

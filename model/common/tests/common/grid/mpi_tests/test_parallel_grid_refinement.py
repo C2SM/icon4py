@@ -18,6 +18,7 @@ from icon4py.model.common.decomposition import (
     mpi_decomposition,
 )
 from icon4py.model.common.grid import grid_refinement, horizontal as h_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions, grid_utils, serialbox, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -65,6 +66,7 @@ def test_compute_domain_bounds(
     experiment: definitions.Experiment,
     grid_savepoint: serialbox.IconGridSavepoint,
     processor_props: decomposition.ProcessProperties,
+    backend: gtx.typing.Backend | None,
 ) -> None:
     if (
         processor_props.is_single_rank()
@@ -75,11 +77,11 @@ def test_compute_domain_bounds(
             "end index data for single node APE are all 0 - re- serialization should fix that (patch%cells%end_index vs patch%cells%end_idx)"
         )
 
-    ref_grid = grid_savepoint.construct_icon_grid(backend=None, keep_skip_values=True)
+    ref_grid = grid_savepoint.construct_icon_grid(backend=backend, keep_skip_values=True)
     decomposition_info = grid_savepoint.construct_decomposition_info()
     refin_ctrl = {dim: grid_savepoint.refin_ctrl(dim) for dim in utils.main_horizontal_dims()}
     start_indices, end_indices = grid_refinement.compute_domain_bounds(
-        dim, refin_ctrl, decomposition_info
+        dim, refin_ctrl, decomposition_info, array_ns=data_alloc.import_array_ns(backend),
     )
     if (
         experiment == definitions.Experiments.GAUSS3D
