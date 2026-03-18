@@ -12,7 +12,7 @@ from gt4py.next.instrumentation import metrics as gtx_metrics
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import utils as muphys_utils
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
-from icon4py.model.common import dimension as dims, model_backends, model_options
+from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.tools.py2fgen.wrappers import icon4py_export
 
 
@@ -25,24 +25,24 @@ def graupel_run(
     ivstart: gtx.int32,
     ivend: gtx.int32,
     kstart: gtx.int32,
-    dt: gtx.float64,
-    dz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    t: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    rho: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    p: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    qv: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    qc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    qi: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    qr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    qs: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    qg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    qnc: gtx.float64,
-    prr_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    pri_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    prs_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    prg_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
-    pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    dt: ta.wpfloat,
+    dz: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    t: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    rho: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    p: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    qv: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    qc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    qi: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    qr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    qs: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    qg: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    qnc: ta.wpfloat,
+    prr_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    pri_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    prs_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    prg_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
+    pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     wait_for_completion: bool,
 ):
     global graupel_program  # noqa: PLW0603 [global-statement]
@@ -56,7 +56,11 @@ def graupel_run(
                     "async_sdfg_call": not wait_for_completion,
                 },
                 program=graupel.graupel_run,
-                constant_args={"dt": dt, "qnc": qnc, "enable_masking": True},
+                constant_args={
+                    "dt": ta.wpfloat(dt),
+                    "qnc": ta.wpfloat(qnc),
+                    "enable_masking": True,
+                },
                 horizontal_sizes={
                     "horizontal_start": gtx.int32(ivstart),
                     "horizontal_end": gtx.int32(ivend),
