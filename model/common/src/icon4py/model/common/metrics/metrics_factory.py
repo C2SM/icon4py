@@ -799,7 +799,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(
                 compute_coeff_gradekin.compute_coeff_gradekin,
                 array_ns=self._xp,
-                exchange=functools.partial(self._exchange.exchange, dims.EdgeDim),
+                exchange=functools.partial(self._exchange.exchange, dims.EdgeDim, stream=decomposition.BLOCK),
             ),
             domain=(dims.EdgeDim, dims.E2CDim),
             fields=(attrs.COEFF_GRADEKIN,),
