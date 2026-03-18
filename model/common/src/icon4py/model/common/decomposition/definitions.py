@@ -87,11 +87,16 @@ semantic.
 """
 
 
-class Block:
-    pass
+class BlockType:
+    _instance = None
+
+    def __new__(cls) -> BlockType:
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
 
-BLOCK = Block()
+BLOCK = BlockType()
 """
 Constant used by `ExchangeResult.finish()` to indicate that blocking semantics should
 be used, i.e. wait until the exchange has fully finished not until it has merely been
@@ -232,7 +237,7 @@ class DecompositionInfo:
 class ExchangeResult(Protocol):
     def finish(
         self,
-        stream: StreamLike | Block = DEFAULT_STREAM,
+        stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None:
         """Wait on the halo exchange.
 
@@ -305,7 +310,7 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *buffers: data_alloc.NDArray,
-        stream: StreamLike | Block = DEFAULT_STREAM,
+        stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None: ...
 
     @overload
@@ -313,14 +318,14 @@ class ExchangeRuntime(Protocol):
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field,
-        stream: StreamLike | Block = DEFAULT_STREAM,
+        stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None: ...
 
     def exchange(
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: StreamLike | Block = DEFAULT_STREAM,
+        stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None:
         """Perform a full halo exchange.
 
@@ -353,7 +358,7 @@ class ExchangeRuntime(Protocol):
         *fields: gtx.Field | data_alloc.NDArray,
         dim: gtx.Dimension,
         full_exchange: Literal[True],
-        stream: StreamLike | Block = DEFAULT_STREAM,
+        stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None: ...
 
     @overload
@@ -370,7 +375,7 @@ class ExchangeRuntime(Protocol):
         *fields: gtx.Field | data_alloc.NDArray,
         dim: gtx.Dimension,
         full_exchange: bool = True,
-        stream: StreamLike | Block = DEFAULT_STREAM,
+        stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None | ExchangeResult:
         """Performs either a full exchange or a partial exchange.
 
@@ -444,7 +449,7 @@ class HaloExchangeWaitRuntime(Protocol):
     def __call__(
         self,
         communication_handle: ExchangeResult,
-        stream: StreamLike | Block = DEFAULT_STREAM,
+        stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None:
         """Calls `finish()` on the provided communication handle.
 
@@ -478,7 +483,7 @@ class HaloExchangeWait(HaloExchangeWaitRuntime):
         *args: Any,
         dim: gtx.Dimension,
         full_exchange: bool = True,
-        stream: StreamLike | Block = DEFAULT_STREAM,
+        stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> dace.sdfg.sdfg.SDFG:
         sdfg = DummyNestedSDFG().__sdfg__()
         sdfg.name = "_halo_exchange_wait_"
@@ -493,7 +498,7 @@ class HaloExchangeWait(HaloExchangeWaitRuntime):
     def __call__(
         self,
         communication_handle: ExchangeResult,
-        stream: StreamLike | Block = DEFAULT_STREAM,
+        stream: StreamLike | BlockType = DEFAULT_STREAM,
     ) -> None:
         communication_handle.finish(stream=stream)
 
@@ -513,7 +518,7 @@ def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloEx
 
 
 class SingleNodeResult(ExchangeResult):
-    def finish(self, stream: StreamLike | Block = DEFAULT_STREAM) -> None:
+    def finish(self, stream: StreamLike | BlockType = DEFAULT_STREAM) -> None:
         pass
 
     def is_ready(self) -> bool:

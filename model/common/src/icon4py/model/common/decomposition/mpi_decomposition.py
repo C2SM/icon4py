@@ -269,7 +269,7 @@ class GHexMultiNodeExchange(definitions.ExchangeRuntime):
         self,
         dim: gtx.Dimension,
         *fields: gtx.Field | data_alloc.NDArray,
-        stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
+        stream: definitions.StreamLike | definitions.BlockType = definitions.DEFAULT_STREAM,
     ) -> None:
         # Fall back to the default implementation provided by the protocol.
         super().exchange(dim, *fields, stream=stream)
@@ -374,7 +374,7 @@ class HaloExchangeWait(definitions.HaloExchangeWaitRuntime):
     def __call__(
         self,
         communication_handle: definitions.ExchangeResult,
-        stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
+        stream: definitions.StreamLike | definitions.BlockType = definitions.DEFAULT_STREAM,
     ) -> None:
         communication_handle.finish(stream=stream)
 
@@ -395,7 +395,7 @@ class MultiNodeResult(definitions.ExchangeResult):
 
     def finish(
         self,
-        stream: definitions.StreamLike | definitions.Block = definitions.DEFAULT_STREAM,
+        stream: definitions.StreamLike | definitions.BlockType = definitions.DEFAULT_STREAM,
     ) -> None:
         """Finish the initiated halo exchange and either block or schedule completion on `stream`."""
         if (not ghex.__config__["gpu"]) or stream is definitions.BLOCK:
