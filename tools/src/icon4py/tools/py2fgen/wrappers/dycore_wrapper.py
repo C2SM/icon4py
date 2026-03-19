@@ -29,7 +29,7 @@ from gt4py.next.type_system import type_specifications as ts
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
@@ -201,26 +201,19 @@ def solve_nh_init(
     )
 
     nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
-    k = wgtfacq_c.ndarray.shape[1]
-    cell_kflip_domain = gtx.domain(
-        {
-            dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
-            dims.KDim: (nlev - k, nlev),
-        }
-    )
-    k = wgtfacq_e.ndarray.shape[1]
-    edge_kflip_domain = gtx.domain(
-        {
-            dims.EdgeDim: wgtfac_e.domain[dims.EdgeDim].unit_range,
-            dims.KDim: (nlev - k, nlev),
-        }
-    )
-    wgtfacq_c = data_alloc.kflip_wgtfacq(
-        arr=wgtfacq_c.ndarray, domain=cell_kflip_domain, allocator=allocator
-    )
-    wgtfacq_e = data_alloc.kflip_wgtfacq(
-        arr=wgtfacq_e.ndarray, domain=edge_kflip_domain, allocator=allocator
-    )
+    if not len(wgtfacq_c.domain[dims.KDim]) == 3:
+        raise ValueError(
+            f"Expected wgtfacq_c to have a vertical dimension of size 3, but got {len(wgtfacq_c.domain[dims.KDim])}."
+        )
+    # uses GT4Py's embedded shift to move the domain to surface levels
+    wgtfacq_c = field_utils.flip(wgtfacq_c(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)
+
+    if not len(wgtfacq_e.domain[dims.KDim]) == 3:
+        raise ValueError(
+            f"Expected wgtfacq_e to have a vertical dimension of size 3, but got {len(wgtfacq_e.domain[dims.KDim])}."
+        )
+    # uses GT4Py's embedded shift to move the domain to surface levels
+    wgtfacq_e = field_utils.flip(wgtfacq_e(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
         mask_prog_halo_c=mask_prog_halo_c,
@@ -242,7 +235,7 @@ def solve_nh_init(
         reference_theta_at_edges_on_model_levels=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
-        vertoffset_gradp=data_alloc.index2offset(
+        vertoffset_gradp=field_utils.index2offset(
             data_alloc.adjust_fortran_indices(vertidx_gradp), dims.KDim, allocator
         ),
         nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing

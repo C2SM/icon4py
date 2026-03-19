@@ -79,8 +79,8 @@ def test_compute_wgtfacq_e_dsl(
     icon_grid: base_grid.Grid,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    wgtfacq_e_dsl_ref = metrics_savepoint.wgtfacq_e_dsl()
-    wgtfacq_c_dsl_ref = metrics_savepoint.wgtfacq_c_dsl()
+    wgtfacq_e_dsl_ref = metrics_savepoint.wgtfacq_e()
+    wgtfacq_c_dsl_ref = metrics_savepoint.wgtfacq_c()
 
     xp = data_alloc.import_array_ns(backend)
     wgtfacq_e_dsl = weight_factors.compute_wgtfacq_e_dsl(
@@ -103,7 +103,7 @@ def test_compute_wgtfacq_c_dsl(
     metrics_savepoint: sb.MetricSavepoint,
     backend: gtx_typing.Backend | None,
 ) -> None:
-    wgtfacq_c_dsl_ref = metrics_savepoint.wgtfacq_c_dsl()
+    wgtfacq_c_dsl_ref = metrics_savepoint.wgtfacq_c()
 
     xp = data_alloc.import_array_ns(backend)
     wgtfacq_c_dsl = weight_factors.compute_wgtfacq_c_dsl(

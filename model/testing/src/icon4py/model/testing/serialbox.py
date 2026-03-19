@@ -20,7 +20,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.common import dimension as dims, model_backends, type_alias
 from icon4py.model.common.grid import base, horizontal as h_grid, icon, utils as grid_utils
 from icon4py.model.common.states import prognostic_state
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 
 
 log = logging.getLogger(__name__)
@@ -806,24 +806,13 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("vwind_impl_wgt", dims.CellDim)
 
     def wgtfacq_c(self):
-        return self._get_field("wgtfacq_c", dims.CellDim, dims.KDim)
-
-    def wgtfacq_c_dsl(self):
-        ar = self.wgtfacq_c().ndarray
-        k = ar.shape[1]
-        wgtfac_c = self.wgtfac_c()
-        cell_range = wgtfac_c.domain[dims.CellDim].unit_range
-        nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
-        k_range = (nlev - k, nlev)
-        cell_kflip_domain = gtx.domain(
-            {
-                dims.CellDim: cell_range,
-                dims.KDim: k_range,
-            }
-        )
-        return data_alloc.kflip_wgtfacq(
-            arr=ar,
-            domain=cell_kflip_domain,
+        # The Fortran array stores the surface levels in reversed order.
+        wgtfacq_c_fortran = self._get_field("wgtfacq_c", dims.CellDim, dims.KDim)
+        assert len(wgtfacq_c_fortran.domain[dims.KDim]) == 3
+        nlev = self.sizes[dims.KDim]
+        return field_utils.flip(
+            wgtfacq_c_fortran(dims.KDim - (nlev - 3)),  # GT4Py embedded shift
+            dims.KDim,
             allocator=model_backends.get_allocator(self.backend),
         )
 
@@ -834,7 +823,7 @@ class MetricSavepoint(IconSavepoint):
         vertidx_gradp = data_alloc.adjust_fortran_indices(
             self._get_field("vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         )
-        return data_alloc.index2offset(vertidx_gradp, dims.KDim, self.backend)
+        return field_utils.index2offset(vertidx_gradp, dims.KDim, self.backend)
 
     def coeff1_dwdz(self):
         return self._get_field("coeff1_dwdz", dims.CellDim, dims.KDim)
@@ -867,24 +856,13 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("wgtfac_e", dims.EdgeDim, dims.KDim)
 
     def wgtfacq_e(self):
-        return self._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim)
-
-    def wgtfacq_e_dsl(self):
-        ar = self.wgtfacq_e().ndarray
-        k = ar.shape[1]
-        wgtfac_e = self.wgtfac_e()
-        edge_range = wgtfac_e.domain[dims.EdgeDim].unit_range
-        nlev = wgtfac_e.domain[dims.KDim].unit_range.stop - 1
-        k_range = (nlev - k, nlev)
-        edge_kflip_domain = gtx.domain(
-            {
-                dims.EdgeDim: edge_range,
-                dims.KDim: k_range,
-            }
-        )
-        return data_alloc.kflip_wgtfacq(
-            arr=ar,
-            domain=edge_kflip_domain,
+        # The Fortran array stores the surface levels in reversed order.
+        wgtfacq_e_fortran = self._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim)
+        assert len(wgtfacq_e_fortran.domain[dims.KDim]) == 3
+        nlev = self.sizes[dims.KDim]
+        return field_utils.flip(
+            wgtfacq_e_fortran(dims.KDim - (nlev - 3)),  # GT4Py embedded shift
+            dims.KDim,
             allocator=model_backends.get_allocator(self.backend),
         )
 

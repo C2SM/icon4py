@@ -545,7 +545,7 @@ def test_factory_wgtfacq_e(
         topography_savepoint=topography_savepoint,
     )
     field = factory.get(attrs.WGTFACQ_E)
-    field_ref = metrics_savepoint.wgtfacq_e_dsl()
+    field_ref = metrics_savepoint.wgtfacq_e()
     # TODO: upgrade the dallclose such that it verifies the domain ranges.
     # This field is defined on k (nlev-3, nlev) an converting to numpy
     # doesn't know if it's there or (whatever-3, whatever)
