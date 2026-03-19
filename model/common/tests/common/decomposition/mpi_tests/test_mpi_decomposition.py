@@ -290,9 +290,10 @@ def test_exchange_on_dummy_data(
     decomposition_info: definitions.DecompositionInfo,
     grid_savepoint: serialbox.IconGridSavepoint,
     dimension: gtx.Dimension,
+    backend: gtx.typing.Backend | None,
 ) -> None:
     exchange = definitions.create_exchange(processor_props, decomposition_info)
-    grid = grid_savepoint.construct_icon_grid()
+    grid = grid_savepoint.construct_icon_grid(backend=backend)
 
     number = processor_props.rank + 10
     input_field = data_alloc.constant_field(
@@ -300,15 +301,16 @@ def test_exchange_on_dummy_data(
         number,
         dimension,
         dims.KDim,
+        allocator=backend,
     )
 
-    halo_points = decomposition_info.local_index(
+    halo_points = data_alloc.as_numpy(decomposition_info.local_index(
         dimension, definitions.DecompositionInfo.EntryType.HALO
-    )
-    local_points = decomposition_info.local_index(
+    ))
+    local_points = data_alloc.as_numpy(decomposition_info.local_index(
         dimension, definitions.DecompositionInfo.EntryType.OWNED
-    )
-    assert np.all(input_field.asnumpy() == number)
+    ))
+    assert (input_field.ndarray == number).all()
     exchange.exchange(dimension, input_field, stream=definitions.BLOCK)
     result = input_field.asnumpy()
     _log.info(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
@@ -319,8 +321,8 @@ def test_exchange_on_dummy_data(
     changed_points = np.argwhere(result[:, 2] != number)
     _log.info(f"rank={processor_props.rank} - num changed points {changed_points.shape} ")
 
-    assert np.all(result[local_points, :] == number)
-    assert np.all(result[halo_points, :] != number)
+    assert (result[local_points, :] == number).all()
+    assert (result[halo_points, :] != number).all()
 
 
 @pytest.mark.mpi

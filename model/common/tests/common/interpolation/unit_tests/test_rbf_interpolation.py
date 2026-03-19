@@ -79,7 +79,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(
     )
     assert np.max(offset_table) == grid.num_edges - 1
 
-    offset_table_savepoint = grid_savepoint.c2e2c2e()
+    offset_table_savepoint = data_alloc.as_numpy(grid_savepoint.c2e2c2e())
     assert offset_table.shape == offset_table_savepoint.shape
 
     # Savepoint neighbors before start index may not be populated correctly,
@@ -111,7 +111,7 @@ def test_construct_rbf_matrix_offsets_tables_for_edges(
     )
     assert np.max(offset_table) == grid.num_edges - 1
 
-    offset_table_savepoint = grid_savepoint.e2c2e()
+    offset_table_savepoint = data_alloc.as_numpy(grid_savepoint.e2c2e())
     assert offset_table.shape == offset_table_savepoint.shape
 
     start_index = grid.start_index(
@@ -141,7 +141,7 @@ def test_construct_rbf_matrix_offsets_tables_for_vertices(
     )
     assert np.max(offset_table) == grid.num_edges - 1
 
-    offset_table_savepoint = grid_savepoint.v2e()
+    offset_table_savepoint = data_alloc.as_numpy(grid_savepoint.v2e())
     assert offset_table.shape == offset_table_savepoint.shape
 
     start_index = grid.start_index(
