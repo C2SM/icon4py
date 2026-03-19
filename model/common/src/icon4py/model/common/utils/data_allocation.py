@@ -231,6 +231,26 @@ def kflip_wgtfacq(
     return gtx.as_field(domain, arr[:, ::-1], allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, dtype[Any] | Any"; expected "NDArrayObject"
 
 
+def index2offset(
+    index_field: gtx.Field, dim: gtx.Dimension, allocator: gtx_typing.Allocator
+) -> gtx.Field:
+    """Convert an index field to an offset field.
+
+    Args:
+        index_field: Index field in Python indexing (0-based).
+        dim: The dimension along which to convert indices to offsets.
+        allocator: Allocator to use for the output field.
+    """
+    # Note: `allocator` needs to be passed explicitly since GT4Py fields currently don't persist how they were allocated.
+    xp = index_field.array_ns  # type: ignore[attr-defined] # possibly we should expose `NDArrayField` from GT4Py.
+    offset_array = index_field.ndarray - xp.arange(
+        index_field.domain[dim].unit_range.start,
+        index_field.domain[dim].unit_range.stop,
+        dtype=index_field.ndarray.dtype,
+    )
+    return gtx.as_field(index_field.domain, offset_array, allocator=allocator)
+
+
 def adjust_fortran_indices(inp: NDArray) -> NDArray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
     return inp - 1

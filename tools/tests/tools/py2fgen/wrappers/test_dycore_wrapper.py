@@ -90,15 +90,8 @@ def solve_nh_init(
     theta_ref_me = test_utils.array_to_array_info(metrics_savepoint.theta_ref_me().ndarray)
     ddxn_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxn_z_full().ndarray)
 
-    zdiff_gradp_field = metrics_savepoint._get_field(
-        "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
-    )
-    zdiff_gradp = test_utils.array_to_array_info(zdiff_gradp_field.ndarray)
-
-    vertoffset_gradp_field = metrics_savepoint._get_field(
-        "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
-    )
-    vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
+    zdiff_gradp = test_utils.array_to_array_info(metrics_savepoint.zdiff_gradp().ndarray)
+    vertoffset_gradp = test_utils.array_to_array_info(metrics_savepoint.vertoffset_gradp().ndarray)
 
     pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
     pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
@@ -330,15 +323,8 @@ def test_dycore_wrapper_granule_inputs(
     theta_ref_me = test_utils.array_to_array_info(metrics_savepoint.theta_ref_me().ndarray)
     ddxn_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxn_z_full().ndarray)
 
-    zdiff_gradp_field = metrics_savepoint._get_field(
-        "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
-    )
-    zdiff_gradp = test_utils.array_to_array_info(zdiff_gradp_field.ndarray)
-
-    vertoffset_gradp_field = metrics_savepoint._get_field(
-        "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
-    )
-    vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
+    zdiff_gradp = test_utils.array_to_array_info(metrics_savepoint.zdiff_gradp().ndarray)
+    vertoffset_gradp = test_utils.array_to_array_info(metrics_savepoint.vertoffset_gradp().ndarray)
 
     pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
     pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())

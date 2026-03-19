@@ -84,7 +84,7 @@ def solve_nh_init(
     theta_ref_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     zdiff_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.float64],
-    vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
+    vertidx_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     pg_edgeidx: wrapper_common.OptionalInt32Array1D,
     pg_vertidx: wrapper_common.OptionalInt32Array1D,
     pg_exdist: wrapper_common.OptionalFloat64Array1D,
@@ -242,7 +242,9 @@ def solve_nh_init(
         reference_theta_at_edges_on_model_levels=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
-        vertoffset_gradp=vertoffset_gradp,
+        vertoffset_gradp=data_alloc.index2offset(
+            data_alloc.adjust_fortran_indices(vertidx_gradp), dims.KDim, allocator
+        ),
         nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
         pg_exdist=pg_exdist_dsl,
         ddqz_z_full_e=ddqz_z_full_e,

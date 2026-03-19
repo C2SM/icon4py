@@ -828,12 +828,13 @@ class MetricSavepoint(IconSavepoint):
         )
 
     def zdiff_gradp(self):
-        return self._get_field("zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim)
+        return self._get_field("zdiff_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim)
 
     def vertoffset_gradp(self):
-        return self._get_field(
-            "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+        vertidx_gradp = data_alloc.adjust_fortran_indices(
+            self._get_field("vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         )
+        return data_alloc.index2offset(vertidx_gradp, dims.KDim, self.backend)
 
     def coeff1_dwdz(self):
         return self._get_field("coeff1_dwdz", dims.CellDim, dims.KDim)
