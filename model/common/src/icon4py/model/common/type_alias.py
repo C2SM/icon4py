@@ -14,6 +14,7 @@ import gt4py.next as gtx
 
 DEFAULT_PRECISION = "double"
 
+# wp: working precision, vp: variable precision
 wpfloat: TypeAlias = gtx.float64
 vpfloat: type[gtx.float32] | type[gtx.float64] = wpfloat
 anyfloat: TypeAlias = gtx.float32 | gtx.float64
@@ -21,9 +22,10 @@ anyfloat: TypeAlias = gtx.float32 | gtx.float64
 precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 
 
-def set_precision(new_precision: Literal["double", "mixed"]) -> None:
+def set_precision(new_precision: Literal["double", "mixed", "single"]) -> None:
     global precision  # noqa: PLW0603 [global-statement]
     global vpfloat  # noqa: PLW0603 [global-statement]
+    global wpfloat  # noqa: PLW0603 [global-statement]
 
     precision = new_precision.lower()
     match precision:
@@ -31,8 +33,11 @@ def set_precision(new_precision: Literal["double", "mixed"]) -> None:
             vpfloat = wpfloat
         case "mixed":
             vpfloat = gtx.float32
+        case "single":
+            vpfloat = gtx.float32
+            wpfloat = gtx.float32
         case _:
-            raise ValueError("Only 'double' and 'mixed' precision are supported.")
+            raise ValueError("Only 'double', 'mixed' and 'single' precision are supported.")
 
 
 set_precision(precision)

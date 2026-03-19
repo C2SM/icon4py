@@ -10,6 +10,7 @@ from gt4py.next import exp
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, t_d
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -36,7 +37,9 @@ def _T_from_internal_energy(
     """
     qtot = qliq + qice + qv  # total water specific mass
     cv = (
-        (t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
+        (t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice)
+        * rho
+        * dz
     )  # Moist isometric specific heat
 
     return (u + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
@@ -79,7 +82,9 @@ def _T_from_internal_energy_scalar(
     """
     qtot = qliq + qice + qv  # total water specific mass
     cv = (
-        (t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice) * rho * dz
+        (t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice)
+        * rho
+        * dz
     )  # Moist isometric specific heat
 
     return (u + rho * dz * (qliq * g_ct.lvc + qice * g_ct.lsc)) / cv
@@ -121,7 +126,7 @@ def _internal_energy(
     Result:                Internal energy
     """
     qtot = qliq + qice + qv
-    cv = t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice
+    cv = t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice
 
     return rho * dz * (cv * t - qliq * g_ct.lvc - qice * g_ct.lsc)
 
@@ -149,7 +154,7 @@ def _internal_energy_scalar(
     Result:                Internal energy
     """
     qtot = qliq + qice + qv
-    cv = t_d.cvd * (1.0 - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice
+    cv = t_d.cvd * (wpfloat(1.0) - qtot) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice
 
     return rho * dz * (cv * t - qliq * g_ct.lvc - qice * g_ct.lsc)
 
@@ -181,9 +186,9 @@ def _qsat_ice_rho(
 
     Result:                 Pressure
     """
-    C1ES = 610.78
-    C3IES = 21.875
-    C4IES = 7.66
+    C1ES = wpfloat(610.78)
+    C3IES = wpfloat(21.875)
+    C4IES = wpfloat(7.66)
 
     return (C1ES * exp(C3IES * (t - t_d.tmelt) / (t - C4IES))) / (rho * t_d.rv * t)
 
@@ -211,9 +216,9 @@ def _qsat_rho(
 
     Result:                 Pressure
     """
-    C1ES = 610.78
-    C3LES = 17.269
-    C4LES = 35.86
+    C1ES = wpfloat(610.78)
+    C3LES = wpfloat(17.269)
+    C4LES = wpfloat(35.86)
 
     return (C1ES * exp(C3LES * (t - t_d.tmelt) / (t - C4LES))) / (rho * t_d.rv * t)
 
@@ -239,7 +244,7 @@ def _qsat_rho_tmelt(
 
     Result:                 Pressure
     """
-    C1ES = 610.78
+    C1ES = wpfloat(610.78)
 
     return C1ES / (rho * t_d.rv * t_d.tmelt)
 
@@ -266,11 +271,11 @@ def _dqsatdT_rho(
 
     Result:                 Derivative d(qsat_rho)/dT
     """
-    C3LES = 17.269
-    C4LES = 35.86
+    C3LES = wpfloat(17.269)
+    C4LES = wpfloat(35.86)
     C5LES = C3LES * (t_d.tmelt - C4LES)
 
-    return qs * (C5LES / ((t - C4LES) * (t - C4LES)) - 1.0 / t)
+    return qs * (C5LES / ((t - C4LES) * (t - C4LES)) - wpfloat(1.0) / t)
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -294,9 +299,9 @@ def _sat_pres_ice(
 
     Result:                   Saturation pressure
     """
-    C1ES = 610.78
-    C3IES = 21.875
-    C4IES = 7.66
+    C1ES = wpfloat(610.78)
+    C3IES = wpfloat(21.875)
+    C4IES = wpfloat(7.66)
 
     return C1ES * exp(C3IES * (t - t_d.tmelt) / (t - C4IES))
 
@@ -321,9 +326,9 @@ def _sat_pres_water(
 
     Result:                   Saturation pressure
     """
-    C1ES = 610.78
-    C3LES = 17.269
-    C4LES = 35.86
+    C1ES = wpfloat(610.78)
+    C3LES = wpfloat(17.269)
+    C4LES = wpfloat(35.86)
 
     return C1ES * exp(C3LES * (t - t_d.tmelt) / (t - C4LES))
 

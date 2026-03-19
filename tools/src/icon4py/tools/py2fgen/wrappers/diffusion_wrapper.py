@@ -78,10 +78,9 @@ def diffusion_init(
     type_t_diffu: gtx.int32,
     type_vn_diffu: gtx.int32,
     hdiff_efdt_ratio: gtx.float64,
+    hdiff_w_efdt_ratio: gtx.float64,
     smagorinski_scaling_factor: gtx.float64,
     hdiff_temp: bool,
-    thslp_zdiffu: float,
-    thhgtd_zdiffu: float,
     denom_diffu_v: float,
     nudge_max_coeff: float,  # note: this is the scaled ICON value, i.e. not the namelist value
     itype_sher: gtx.int32,
@@ -99,6 +98,7 @@ def diffusion_init(
     )
     backend_name = actual_backend.name if hasattr(actual_backend, "name") else actual_backend
     logger.info(f"Using Backend {backend_name} with on_gpu={on_gpu}")
+    allocator = model_backends.get_allocator(actual_backend)
 
     # Diffusion parameters
     config = DiffusionConfig(
@@ -110,11 +110,10 @@ def diffusion_init(
         type_t_diffu=type_t_diffu,
         type_vn_diffu=type_vn_diffu,
         hdiff_efdt_ratio=hdiff_efdt_ratio,
+        hdiff_w_efdt_ratio=hdiff_w_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
         n_substeps=ndyn_substeps,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
         velocity_boundary_diffusion_denom=denom_diffu_v,
         max_nudging_coefficient=nudge_max_coeff,
         shear_type=TurbulenceShearForcingType(itype_sher),
@@ -138,13 +137,14 @@ def diffusion_init(
     xp = wgtfac_c.array_ns
 
     if zd_cellidx is None:
-        # then l_zdiffu_t = .false. and these are all not initialized
-        zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype)
-        zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
-        zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
+        # then zdiffu_t is False or the list on that rank is empty, then all of the following are not initialized
+        assert zd_vertidx is None and zd_intcoef is None and zd_diffcoef is None
+        zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype, allocator=allocator)
+        zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype, allocator=allocator)
+        zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32, allocator=allocator)
     else:
         # transform lists to fields
-        #
+
         # only the first row is needed, the others are for C2E2C neighbors, but slicing in fortran causes issues
         zd_cellidx = zd_cellidx[0, :]
         # these are the three k offsets for the C2E2C neighbors
@@ -160,7 +160,7 @@ def diffusion_init(
                 data_alloc.adjust_fortran_indices(zd_vertidx),
             ),
             default_value=gtx.float64(0.0),
-            allocator=model_backends.get_allocator(actual_backend),
+            allocator=allocator,
         )
         zd_intcoef = data_alloc.list2field(
             domain=cell_c2e2c_k_domain,
@@ -171,7 +171,7 @@ def diffusion_init(
                 data_alloc.adjust_fortran_indices(zd_vertidx),
             ),
             default_value=gtx.float64(0.0),
-            allocator=model_backends.get_allocator(actual_backend),
+            allocator=allocator,
         )
         zd_vertoffset = data_alloc.list2field(
             domain=cell_c2e2c_k_domain,
@@ -182,7 +182,7 @@ def diffusion_init(
                 data_alloc.adjust_fortran_indices(zd_vertidx),
             ),
             default_value=gtx.int32(0),
-            allocator=model_backends.get_allocator(actual_backend),
+            allocator=allocator,
         )
 
     # Metric state
@@ -221,9 +221,7 @@ def diffusion_init(
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
         ),
-        dummy_field_factory=wrapper_common.cached_dummy_field_factory(
-            model_backends.get_allocator(actual_backend)
-        ),
+        dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
 
 
