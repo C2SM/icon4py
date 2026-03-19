@@ -457,10 +457,10 @@ module dycore
                                      zdiff_gradp_size_0, &
                                      zdiff_gradp_size_1, &
                                      zdiff_gradp_size_2, &
-                                     vertoffset_gradp, &
-                                     vertoffset_gradp_size_0, &
-                                     vertoffset_gradp_size_1, &
-                                     vertoffset_gradp_size_2, &
+                                     vertidx_gradp, &
+                                     vertidx_gradp_size_0, &
+                                     vertidx_gradp_size_1, &
+                                     vertidx_gradp_size_2, &
                                      pg_edgeidx, &
                                      pg_edgeidx_size_0, &
                                      pg_vertidx, &
@@ -730,13 +730,13 @@ module dycore
 
          integer(c_int), value :: zdiff_gradp_size_2
 
-         type(c_ptr), value, target :: vertoffset_gradp
+         type(c_ptr), value, target :: vertidx_gradp
 
-         integer(c_int), value :: vertoffset_gradp_size_0
+         integer(c_int), value :: vertidx_gradp_size_0
 
-         integer(c_int), value :: vertoffset_gradp_size_1
+         integer(c_int), value :: vertidx_gradp_size_1
 
-         integer(c_int), value :: vertoffset_gradp_size_2
+         integer(c_int), value :: vertidx_gradp_size_2
 
          type(c_ptr), value, target :: pg_edgeidx
 
@@ -1500,7 +1500,7 @@ contains
                             theta_ref_me, &
                             ddxn_z_full, &
                             zdiff_gradp, &
-                            vertoffset_gradp, &
+                            vertidx_gradp, &
                             pg_edgeidx, &
                             pg_vertidx, &
                             pg_exdist, &
@@ -1614,7 +1614,7 @@ contains
 
       real(c_double), dimension(:, :, :), target :: zdiff_gradp
 
-      integer(c_int), dimension(:, :, :), target :: vertoffset_gradp
+      integer(c_int), dimension(:, :, :), target :: vertidx_gradp
 
       integer(c_int), dimension(:), pointer :: pg_edgeidx
 
@@ -1832,11 +1832,11 @@ contains
 
       integer(c_int) :: zdiff_gradp_size_2
 
-      integer(c_int) :: vertoffset_gradp_size_0
+      integer(c_int) :: vertidx_gradp_size_0
 
-      integer(c_int) :: vertoffset_gradp_size_1
+      integer(c_int) :: vertidx_gradp_size_1
 
-      integer(c_int) :: vertoffset_gradp_size_2
+      integer(c_int) :: vertidx_gradp_size_2
 
       integer(c_int) :: pg_edgeidx_size_0
 
@@ -1930,7 +1930,7 @@ contains
       !$acc host_data use_device(theta_ref_me)
       !$acc host_data use_device(ddxn_z_full)
       !$acc host_data use_device(zdiff_gradp)
-      !$acc host_data use_device(vertoffset_gradp)
+      !$acc host_data use_device(vertidx_gradp)
       !$acc host_data use_device(ddqz_z_full_e)
       !$acc host_data use_device(ddxt_z_full)
       !$acc host_data use_device(wgtfac_e)
@@ -2054,9 +2054,9 @@ contains
       zdiff_gradp_size_1 = SIZE(zdiff_gradp, 2)
       zdiff_gradp_size_2 = SIZE(zdiff_gradp, 3)
 
-      vertoffset_gradp_size_0 = SIZE(vertoffset_gradp, 1)
-      vertoffset_gradp_size_1 = SIZE(vertoffset_gradp, 2)
-      vertoffset_gradp_size_2 = SIZE(vertoffset_gradp, 3)
+      vertidx_gradp_size_0 = SIZE(vertidx_gradp, 1)
+      vertidx_gradp_size_1 = SIZE(vertidx_gradp, 2)
+      vertidx_gradp_size_2 = SIZE(vertidx_gradp, 3)
 
       ddqz_z_full_e_size_0 = SIZE(ddqz_z_full_e, 1)
       ddqz_z_full_e_size_1 = SIZE(ddqz_z_full_e, 2)
@@ -2204,10 +2204,10 @@ contains
                                  zdiff_gradp_size_0=zdiff_gradp_size_0, &
                                  zdiff_gradp_size_1=zdiff_gradp_size_1, &
                                  zdiff_gradp_size_2=zdiff_gradp_size_2, &
-                                 vertoffset_gradp=c_loc(vertoffset_gradp), &
-                                 vertoffset_gradp_size_0=vertoffset_gradp_size_0, &
-                                 vertoffset_gradp_size_1=vertoffset_gradp_size_1, &
-                                 vertoffset_gradp_size_2=vertoffset_gradp_size_2, &
+                                 vertidx_gradp=c_loc(vertidx_gradp), &
+                                 vertidx_gradp_size_0=vertidx_gradp_size_0, &
+                                 vertidx_gradp_size_1=vertidx_gradp_size_1, &
+                                 vertidx_gradp_size_2=vertidx_gradp_size_2, &
                                  pg_edgeidx=pg_edgeidx_ptr, &
                                  pg_edgeidx_size_0=pg_edgeidx_size_0, &
                                  pg_vertidx=pg_vertidx_ptr, &
