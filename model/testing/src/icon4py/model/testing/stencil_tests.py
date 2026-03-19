@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+import functools
 import inspect
 import os
 import types
@@ -38,40 +39,47 @@ from icon4py.model.common.utils import device_utils
 _STENCIL_REFERENCE_MARKER: Final = "__stencil_test_reference__"
 _INPUT_DATA_FIXTURE_MARKER: Final = "__stencil_test_input_fixture__"
 
+
+def _static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
+    if not isinstance(func, (types.FunctionType, staticmethod)):
+        raise TypeError("The 'reference' function must be a regular function or staticmethod.")
+    if func.__name__ != "reference":
+        raise ValueError("The 'reference' method must be named 'reference'.")
+    if not isinstance(func, staticmethod):
+        func = staticmethod(func)
+
+    setattr(func, _STENCIL_REFERENCE_MARKER, True)
+
+    return func
+
+
+def _input_data_fixture(
+    func: types.FunctionType | None = None, **kwargs: Any
+) -> pytest.fixtures.FixtureFunctionMarker:
+    if func is None:
+        return functools.partial(input_data_fixture, **kwargs)
+
+    if not isinstance(func, types.FunctionType):
+        raise TypeError("The 'input_data' method must be a regular function.")
+    if func.__name__ != "input_data":
+        raise ValueError("The 'input_data' method must be named 'input_data'.")
+    func_params = tuple(inspect.signature(func).parameters.keys())
+    if func_params != ("self", "grid"):
+        raise ValueError("The 'input_data' method signature must be 'input_data(self, grid)'.")
+
+    kwargs.setdefault("scope", "class")
+    fixt = pytest.fixture(**kwargs)(func)
+    setattr(fixt, _INPUT_DATA_FIXTURE_MARKER, True)
+
+    return fixt
+
+
 if TYPE_CHECKING:
     static_reference: TypeAlias = staticmethod
     input_data_fixture: Final = pytest.fixture
-
 else:
-
-    def static_reference(func: types.FunctionType | staticmethod) -> staticmethod:
-        if not isinstance(func, (types.FunctionType, staticmethod)):
-            raise TypeError("The 'reference' function must be a regular function or staticmethod.")
-        if func.__name__ != "reference":
-            raise ValueError("The 'reference' method must be named 'reference'.")
-        if not isinstance(func, staticmethod):
-            func = staticmethod(func)
-
-        setattr(func, _STENCIL_REFERENCE_MARKER, True)
-
-        return func
-
-    def input_data_fixture(
-        func: types.FunctionType | None = None, **kwargs
-    ) -> pytest.fixtures.FixtureFunctionMarker:  # type: ignore[return]
-        if not isinstance(func, types.FunctionType):
-            raise TypeError("The 'input_data' method must be a regular function.")
-        if func.__name__ != "input_data":
-            raise ValueError("The 'input_data' method must be named 'input_data'.")
-        func_params = tuple(inspect.signature(func).parameters.keys())
-        if func_params != ("self", "grid"):
-            raise ValueError("The 'input_data' method signature must be 'input_data(self, grid)'.")
-
-        kwargs.setdefault("scope", "class")
-        fixt = pytest.fixture(**kwargs)(func)
-        setattr(fixt, _INPUT_DATA_FIXTURE_MARKER, True)
-
-        return fixt
+    static_reference = _static_reference
+    input_data_fixture = _input_data_fixture
 
 
 def allocate_data(
