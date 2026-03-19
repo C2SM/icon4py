@@ -84,7 +84,10 @@ build_distributed:
     - source ${UV_PROJECT_ENVIRONMENT}/bin/activate
     - echo "running with $(python --version)"
   script:
-    - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
+    # TODO
+    # - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
+    - uv pip install pytest-instafail
+    - pytest --instafail -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
       - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
