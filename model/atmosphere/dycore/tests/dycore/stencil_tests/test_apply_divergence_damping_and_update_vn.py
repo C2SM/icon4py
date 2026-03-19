@@ -206,7 +206,7 @@ class TestApplyDivergenceDampingAndUpdateVn(stencil_tests.StencilTest):
             f"divdamp_order[{param['divdamp_order']}]__is_iau_active[{param['is_iau_active']}]__second_order_divdamp_factor[{param['second_order_divdamp_factor']}]"
         ),
     )
-    def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
+    def input_data(self, grid: base.Grid, request: pytest.FixtureRequest) -> dict:
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         horizontal_mask_for_3d_divdamp = data_alloc.random_field(grid, dims.EdgeDim)
         scaling_factor_for_3d_divdamp = data_alloc.random_field(grid, dims.KDim)

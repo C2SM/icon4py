@@ -167,7 +167,7 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
         ),
     )
     def input_data(
-        self, request: pytest.FixtureRequest, grid: base.Grid
+        self, grid: base.Grid, request: pytest.FixtureRequest
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         spatially_averaged_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         mass_fl_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)

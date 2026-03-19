@@ -64,8 +64,8 @@ def _input_data_fixture(
     if func.__name__ != "input_data":
         raise ValueError("The 'input_data' method must be named 'input_data'.")
     func_params = tuple(inspect.signature(func).parameters.keys())
-    if func_params != ("self", "grid"):
-        raise ValueError("The 'input_data' method signature must be 'input_data(self, grid)'.")
+    if func_params[:2] != ("self", "grid"):
+        raise ValueError("The 'input_data' method signature must be 'input_data(self, grid, ...)'.")
 
     kwargs.setdefault("scope", "class")
     fixt = pytest.fixture(**kwargs)(func)

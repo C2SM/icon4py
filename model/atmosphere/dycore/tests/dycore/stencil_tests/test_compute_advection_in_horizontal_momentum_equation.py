@@ -252,7 +252,7 @@ class TestFusedVelocityAdvectionStencilsHMomentum(stencil_tests.StencilTest):
         ids=lambda param: f"apply_extra_diffusion_on_vn[{param['apply_extra_diffusion_on_vn']}]",
     )
     def input_data(
-        self, request: pytest.FixtureRequest, grid: base.Grid
+        self, grid: base.Grid, request: pytest.FixtureRequest
     ) -> dict[str, gtx.Field | state_utils.ScalarType]:
         normal_wind_advective_tendency = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

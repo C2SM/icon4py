@@ -438,7 +438,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         ids=lambda param: f"is_iau_active[{param['is_iau_active']}]",
         scope="class",
     )
-    def input_data(self, request: pytest.FixtureRequest, grid: base.Grid) -> dict:
+    def input_data(self, grid: base.Grid, request: pytest.FixtureRequest) -> dict:
         geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
         geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
         current_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
