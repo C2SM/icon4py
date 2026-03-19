@@ -124,7 +124,9 @@ def check_local_global_field(
     gathered_sizes, gathered_field = gather_field(owned_entries, processor_props)
 
     global_index_sizes, gathered_global_indices = gather_field(
-        data_alloc.as_numpy(decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.OWNED)),
+        data_alloc.as_numpy(
+            decomposition_info.global_index(dim, definitions.DecompositionInfo.EntryType.OWNED)
+        ),
         processor_props,
     )
 

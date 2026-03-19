@@ -304,12 +304,12 @@ def test_exchange_on_dummy_data(
         allocator=backend,
     )
 
-    halo_points = data_alloc.as_numpy(decomposition_info.local_index(
-        dimension, definitions.DecompositionInfo.EntryType.HALO
-    ))
-    local_points = data_alloc.as_numpy(decomposition_info.local_index(
-        dimension, definitions.DecompositionInfo.EntryType.OWNED
-    ))
+    halo_points = data_alloc.as_numpy(
+        decomposition_info.local_index(dimension, definitions.DecompositionInfo.EntryType.HALO)
+    )
+    local_points = data_alloc.as_numpy(
+        decomposition_info.local_index(dimension, definitions.DecompositionInfo.EntryType.OWNED)
+    )
     assert (input_field.ndarray == number).all()
     exchange.exchange(dimension, input_field, stream=definitions.BLOCK)
     result = input_field.asnumpy()

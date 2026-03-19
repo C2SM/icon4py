@@ -346,7 +346,11 @@ def test_interpolation_fields_compare_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=3e-9 if attrs_name.startswith("rbf") else 1e-10 if attrs_name.startswith("pos_on_tplane") else 1e-15,
+        atol=3e-9
+        if attrs_name.startswith("rbf")
+        else 1e-10
+        if attrs_name.startswith("pos_on_tplane")
+        else 1e-15,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -716,7 +720,7 @@ def test_metrics_mask_prog_halo_c(
     )
     assert (
         field[halo_indices]
-        == ~((c_refin_ctrl[halo_indices] >= 1) & (c_refin_ctrl[halo_indices] <= 4))
+        == xp.invert((c_refin_ctrl[halo_indices] >= 1) & (c_refin_ctrl[halo_indices] <= 4))
     ).all(), f"rank={processor_props.rank} - halo for MASK_PROG_HALO_C is incorrect"
 
     _log.info(f"rank = {processor_props.rank} - DONE")

@@ -34,7 +34,9 @@ def test_halo_constructor_owned_cells(rank, simple_neighbor_tables, backend_like
         allocator=allocator,
     )
     xp = data_alloc.import_array_ns(allocator)
-    my_owned_cells = data_alloc.as_numpy(halo_generator.owned_cells(xp.asarray(utils.SIMPLE_DISTRIBUTION)))
+    my_owned_cells = data_alloc.as_numpy(
+        halo_generator.owned_cells(xp.asarray(utils.SIMPLE_DISTRIBUTION))
+    )
 
     print(f"rank {processor_props.rank} owns {my_owned_cells} ")
     assert my_owned_cells.size == len(utils._CELL_OWN[processor_props.rank])

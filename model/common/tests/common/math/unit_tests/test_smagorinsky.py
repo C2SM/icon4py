@@ -24,8 +24,8 @@ def test_init_enh_smag_fac(backend_like: model_backends.BackendLike, grid: base_
     a_vec = data_alloc.random_field(
         grid, dims.KDim, low=1.0, high=10.0, extend={dims.KDim: 1}, allocator=backend
     )
-    fac = np.asarray([0.67, 0.5, 1.3, 0.8])
-    z = np.asarray([0.1, 0.2, 0.3, 0.4])
+    fac = (0.67, 0.5, 1.3, 0.8)
+    z = (0.1, 0.2, 0.3, 0.4)
 
     enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, a_vec.asnumpy())
     en_smag_fac_for_zero_nshift.with_backend(backend)(

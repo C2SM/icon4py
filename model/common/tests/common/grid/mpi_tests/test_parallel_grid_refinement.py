@@ -81,7 +81,10 @@ def test_compute_domain_bounds(
     decomposition_info = grid_savepoint.construct_decomposition_info()
     refin_ctrl = {dim: grid_savepoint.refin_ctrl(dim) for dim in utils.main_horizontal_dims()}
     start_indices, end_indices = grid_refinement.compute_domain_bounds(
-        dim, refin_ctrl, decomposition_info, array_ns=data_alloc.import_array_ns(backend),
+        dim,
+        refin_ctrl,
+        decomposition_info,
+        array_ns=data_alloc.import_array_ns(backend),
     )
     if (
         experiment == definitions.Experiments.GAUSS3D

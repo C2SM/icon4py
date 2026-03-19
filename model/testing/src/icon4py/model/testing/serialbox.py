@@ -135,7 +135,9 @@ class IconSavepoint:
         return self._read(name, offset=0, dtype=bool)
 
     def _read(self, name: str, offset=0, dtype=int):
-        return self.xp.asarray(self.xp.squeeze(self.serializer.read(name, self.savepoint) - offset).astype(dtype))
+        return self.xp.asarray(
+            self.xp.squeeze(self.serializer.read(name, self.savepoint) - offset).astype(dtype)
+        )
 
 
 class IconGridSavepoint(IconSavepoint):
