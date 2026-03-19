@@ -143,6 +143,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
     qs: ta.wpfloat,
     qg: ta.wpfloat,
     qnc: ta.wpfloat,
+    do_warm_cloud: bool,
 ):
     """
     This is the ICON graupel scheme. The structure of the code can be split into several steps as follow:
@@ -537,7 +538,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
 
     cloud_freezing_rate_c2i, rain_freezing_rate_r2g_in_clouds = freezing_in_clouds(
         temperature, qc, qr, cscmax, csrmax, celn7o4qrk, cloud_exists, rain_exists
-    )
+    ) if not do_warm_cloud else (wpfloat("0.0"), wpfloat("0.0"))
 
     (
         snow_riming_rate_c2s,
@@ -554,7 +555,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         snow2graupel_riming_coeff,
         cloud_exists,
         snow_exists,
-    )
+    ) if not do_warm_cloud else (wpfloat("0.0"), wpfloat("0.0"), wpfloat("0.0"), wpfloat("0.0"))
 
     dist_cldtop, reduce_dep = reduced_deposition_in_clouds(
         temperature,
@@ -569,7 +570,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         k_lev,
         is_surface,
         cloud_exists,
-    )
+    ) if not do_warm_cloud else (wpfloat("0.0"), wpfloat("1.0"))
 
     (
         snow_ice_collision_rate_i2s,
@@ -600,6 +601,16 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         celn7o8qrk,
         celn13o8qrk,
         ice_exists,
+    ) if not do_warm_cloud else (
+        wpfloat("0.0"),  # snow_ice_collision_rate_i2s
+        wpfloat("0.0"),  # graupel_ice_collision_rate_i2g
+        wpfloat("0.0"),  # ice_autoconverson_rate_i2s
+        wpfloat("0.0"),  # ice_deposition_rate_v2i
+        wpfloat("0.0"),  # rain_ice_2graupel_ice_loss_rate_i2g
+        wpfloat("0.0"),  # rain_ice_2graupel_rain_loss_rate_r2g
+        wpfloat("0.0"),  # ice_dep_autoconversion_rate_i2s
+        wpfloat("0.0"),  # ice_net_deposition_rate_v2i
+        wpfloat("0.0"),  # ice_net_sublimation_rate_v2i
     )
 
     (
@@ -621,7 +632,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         ice_exists,
         snow_exists,
         graupel_exists,
-    )
+    ) if not do_warm_cloud else (wpfloat("0.0"), wpfloat("0.0"))
 
     (
         ice_melting_rate_i2c,
@@ -645,6 +656,13 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         ice_exists,
         snow_exists,
         graupel_exists,
+    ) if not do_warm_cloud else (
+        wpfloat("0.0"),  # ice_melting_rate_i2c
+        wpfloat("0.0"),  # snow_melting_rate_s2r
+        wpfloat("0.0"),  # graupel_melting_rate_g2r
+        wpfloat("0.0"),  # snow_deposition_rate_v2s_in_melting_condition
+        wpfloat("0.0"),  # graupel_deposition_rate_v2g_in_melting_condition
+        wpfloat("0.0"),  # rain_deposition_rate_v2r
     )
 
     (
@@ -665,7 +683,7 @@ def _icon_graupel_scan(  # noqa: PLR0912, PLR0915
         precomputed_evaporation_beta_coeff,
         celn7o4qrk,
         rain_exists,
-    )
+    ) if not do_warm_cloud else (wpfloat("0.0"), wpfloat("0.0"))
 
     # ------------------------------------------------------------------------------
     #  Section 5: Check for negative mass
@@ -891,6 +909,7 @@ def _icon_graupel(
     qs: fa.CellKField[ta.wpfloat],
     qg: fa.CellKField[ta.wpfloat],
     qnc: fa.CellField[ta.wpfloat],
+    do_warm_cloud: bool,
 ) -> tuple[
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
@@ -971,6 +990,7 @@ def _icon_graupel(
         qs,
         qg,
         qnc,
+        do_warm_cloud,
     )
 
     return (
@@ -1027,6 +1047,7 @@ def icon_graupel(
     qs: fa.CellKField[ta.wpfloat],
     qg: fa.CellKField[ta.wpfloat],
     qnc: fa.CellField[ta.wpfloat],
+    do_warm_cloud: bool,
     temperature_tendency: fa.CellKField[ta.wpfloat],
     qv_tendency: fa.CellKField[ta.wpfloat],
     qc_tendency: fa.CellKField[ta.wpfloat],
@@ -1081,6 +1102,7 @@ def icon_graupel(
         qs,
         qg,
         qnc,
+        do_warm_cloud,
         out=(
             temperature_tendency,
             qv_tendency,

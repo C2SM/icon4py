@@ -54,7 +54,6 @@ def test_standalone_driver(
             backend_name = k
 
     grid_file_path = grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL)
-    array_ns = data_alloc.import_array_ns(backend)  # type: ignore[arg-type] # backend type is correct
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
     ds = main.main(
         grid_file_path=str(grid_file_path),

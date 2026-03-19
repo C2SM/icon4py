@@ -211,11 +211,17 @@ def initialize_granules(
         primal_normal_y=geometry_field_source.get(geometry_meta.EDGE_NORMAL_V),
     )
 
+    edge_normal_x = geometry_field_source.get(geometry_meta.EDGE_NORMAL_X).ndarray
     log.info("creating diffusion interpolation state")
+    log.info(f"mean_characteristic_length: {geometry_field_source.get(geometry_meta.CHARACTERISTIC_LENGTH)}")
+    log.info(f"mean_dual_edge_length: {geometry_field_source.get(geometry_meta.MEAN_DUAL_EDGE_LENGTH)}")
+    log.info(f"max edge normal x: {edge_normal_x.max()} {edge_normal_x.min()}")
     diffusion_interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=interpolation_field_source.get(interpolation_attributes.E_BLN_C_S),
         rbf_coeff_1=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V1),
         rbf_coeff_2=interpolation_field_source.get(interpolation_attributes.RBF_VEC_COEFF_V2),
+        # rbf_coeff_1=None,
+        # rbf_coeff_2=None,
         geofac_div=interpolation_field_source.get(interpolation_attributes.GEOFAC_DIV),
         geofac_n2s=interpolation_field_source.get(interpolation_attributes.GEOFAC_N2S),
         geofac_grg_x=interpolation_field_source.get(interpolation_attributes.GEOFAC_GRG_X),

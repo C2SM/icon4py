@@ -261,7 +261,11 @@ class SingleMomentSixClassIconGraupel:
     def _determine_horizontal_domains(self):
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        self._end_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.END))
+        self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.END))
+        print()
+        print("DEBUG: start_cell_nudging, end_cell_local", self._start_cell_nudging, self._end_cell_local)
+        print("DEBUG: grid num level", self._grid.num_levels)
+        print("DEBUG: KSTART MOIST: ", self.vertical_params.kstart_moist)
 
     def _initialize_gt4py_programs(self):
         self._icon_graupel = model_options.setup_program(
@@ -354,6 +358,7 @@ class SingleMomentSixClassIconGraupel:
         qi_tendency: fa.CellKField[ta.wpfloat],
         qs_tendency: fa.CellKField[ta.wpfloat],
         qg_tendency: fa.CellKField[ta.wpfloat],
+        do_warm_cloud: bool=False,
     ):
         """
         Run the ICON single-moment graupel (nwp) microphysics. Precipitation flux is also computed.
@@ -390,6 +395,7 @@ class SingleMomentSixClassIconGraupel:
             qs=qs,
             qg=qg,
             qnc=qnc,
+            do_warm_cloud=do_warm_cloud,
             temperature_tendency=temperature_tendency,
             qv_tendency=qv_tendency,
             qc_tendency=qc_tendency,

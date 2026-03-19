@@ -24,7 +24,7 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.decomposition import definitions as decomposition_defs
-from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical, vertical as v_grid, horizontal as h_grid
+from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid, horizontal as h_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
 from icon4py.model.common.metrics import metrics_attributes as metrics_attr
@@ -56,7 +56,7 @@ class Icon4pyDriver:
         static_field_factories: driver_states.StaticFieldFactories,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
-        vertical_grid_config: vertical.VerticalGridConfig,
+        vertical_grid_config: v_grid.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
     ):
         self.config = config
@@ -158,6 +158,7 @@ class Icon4pyDriver:
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self.grid.num_levels),
             },
+            offset_provider=self.grid.connectivities,
         )
 
         self._diagnose_sfc_pressure = setup_program(
@@ -174,6 +175,7 @@ class Icon4pyDriver:
                 "vertical_start": gtx.int32(self.grid.num_levels),
                 "vertical_end": gtx.int32(self.grid.num_levels+1),
             },
+            offset_provider=self.grid.connectivities,
         )
         
         self._diagnose_uv = setup_program(
@@ -191,6 +193,7 @@ class Icon4pyDriver:
                 "vertical_start": gtx.int32(0),
                 "vertical_end": gtx.int32(self.grid.num_levels),
             },
+            offset_provider=self.grid.connectivities,
         )
 
     def compute_model_data(
@@ -221,7 +224,7 @@ class Icon4pyDriver:
         self._diagnose_sfc_pressure(
             exner=prognostic_state.exner,
             virtual_temperature=diagnostic_state.virtual_temperature,
-            surface_pressure=diagnostic_state.surface_pressure,
+            surface_pressure=diagnostic_state.pressure_ifc,
         )
 
         self._diagnose_uv(
@@ -235,14 +238,16 @@ class Icon4pyDriver:
         diagnostic_state: diagnostics.DiagnosticState,
     ) -> dict:
         model_data = {
-            "cell_lat": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LAT).ndarray,
-            "cell_lon": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LON).ndarray,
-            "z_mc": self.static_field_factories.metrics_field_source.get(metrics_attr.Z_MC).ndarray,
-            "temperature": diagnostic_state.temperature.ndarray,
-            "pressure": diagnostic_state.temperature.ndarray,
-            "sfc_pressure": diagnostic_state.surface_pressure.ndarray,
-            "u": diagnostic_state.u.ndarray,
-            "v": diagnostic_state.v.ndarray,
+            "cell_lat": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LAT).asnumpy(),
+            "cell_lon": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_LON).asnumpy(),
+            "cell_area": self.static_field_factories.geometry_field_source.get(geom_attr.CELL_AREA).asnumpy(),
+            "dz": self.static_field_factories.metrics_field_source.get(metrics_attr.DDQZ_Z_FULL).asnumpy(),
+            "z_mc": self.static_field_factories.metrics_field_source.get(metrics_attr.Z_MC).asnumpy(),
+            "temperature": diagnostic_state.temperature.asnumpy(),
+            "pressure": diagnostic_state.pressure.asnumpy(),
+            "sfc_pressure": diagnostic_state.surface_pressure.asnumpy(),
+            "u": diagnostic_state.u.asnumpy(),
+            "v": diagnostic_state.v.asnumpy(),
         }
         return model_data
 
@@ -722,7 +727,7 @@ def _read_config(
     icon4py_driver_config = driver_config.DriverConfig(
         experiment_name="Jablonowski_Williamson",
         output_path=output_path,
-        dtime=datetime.timedelta(seconds=300.0),
+        dtime=datetime.timedelta(seconds=75.0),
         end_date=datetime.datetime(1, 1, 15, 0, 0, 0),
         apply_extra_second_order_divdamp=False,
         ndyn_substeps=5,
