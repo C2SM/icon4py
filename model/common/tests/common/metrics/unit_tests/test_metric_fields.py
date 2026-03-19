@@ -406,8 +406,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    pg_exdist_ref = metrics_savepoint.pg_exdist()
-    pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
+    pg_exdist_ref = metrics_savepoint.pg_exdist_dsl()
 
     nlev = icon_grid.num_levels
     z_mc = metrics_savepoint.z_mc()
@@ -418,9 +417,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, allocator=backend)
     edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, allocator=backend)
 
-    edge_mask = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, allocator=backend
-    )
     ex_distance = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, allocator=backend)
 
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
@@ -446,7 +442,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         flat_idx_max=flat_idx,
         e_lev=edges,
         k_lev=k,
-        pg_edgeidx_dsl=edge_mask,
         pg_exdist_dsl=ex_distance,
         horizontal_start_distance=start_edge_nudging,
         horizontal_end_distance=icon_grid.num_edges,
@@ -461,7 +456,6 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     )
 
     assert testing_helpers.dallclose(pg_exdist_ref.asnumpy(), ex_distance.asnumpy(), rtol=1.0e-9)
-    assert testing_helpers.dallclose(pg_edgeidx_dsl_ref.asnumpy(), edge_mask.asnumpy())
 
 
 @pytest.mark.datatest
@@ -471,47 +465,19 @@ def test_compute_mask_prog_halo_c(
     grid_savepoint: sb.IconGridSavepoint,
     backend: gtx_typing.Backend,
 ) -> None:
-    mask_prog_halo_c_full = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dtype=bool, allocator=backend
-    )
+    mask_prog_halo_c = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, allocator=backend)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
     horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
     mf.compute_mask_prog_halo_c.with_backend(backend)(
         c_refin_ctrl=c_refin_ctrl,
-        mask_prog_halo_c=mask_prog_halo_c_full,
+        mask_prog_halo_c=mask_prog_halo_c,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
         offset_provider={},
     )
-    assert testing_helpers.dallclose(
-        mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy()
-    )
-
-
-@pytest.mark.datatest
-def test_compute_bdy_halo_c(
-    metrics_savepoint: sb.MetricSavepoint,
-    icon_grid: base_grid.Grid,
-    grid_savepoint: sb.IconGridSavepoint,
-    backend: gtx_typing.Backend,
-) -> None:
-    bdy_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool, allocator=backend)
-    c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
-    bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
-    horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
-    horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
-
-    mf.compute_bdy_halo_c.with_backend(backend)(
-        c_refin_ctrl=c_refin_ctrl,
-        bdy_halo_c=bdy_halo_c_full,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        offset_provider={},
-    )
-
-    assert testing_helpers.dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
+    assert testing_helpers.dallclose(mask_prog_halo_c.asnumpy(), mask_prog_halo_c_ref.asnumpy())
 
 
 @pytest.mark.level("unit")

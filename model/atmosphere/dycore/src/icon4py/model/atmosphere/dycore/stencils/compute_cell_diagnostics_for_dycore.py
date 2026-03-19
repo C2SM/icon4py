@@ -608,7 +608,7 @@ def compute_interpolation_and_nonhydro_buoy(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     """
     Formerly known as fused_solve_nonhydro_stencil_1_to_13_corrector.
 

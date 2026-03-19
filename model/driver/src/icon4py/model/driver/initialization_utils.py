@@ -391,7 +391,7 @@ def _grid_savepoint(
     global_grid_params, grid_uuid = _create_grid_global_params(grid_file)
     sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
         grid_uuid,
-        global_grid_params.grid_shape,
+        global_grid_params,
     )
     return sp
 
@@ -459,7 +459,6 @@ def read_static_fields(
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
         diffusion_metric_state = diffusion_states.DiffusionMetricState(
-            mask_hdiff=metrics_savepoint.mask_hdiff(),
             theta_ref_mc=metrics_savepoint.theta_ref_mc(),
             wgtfac_c=metrics_savepoint.wgtfac_c(),
             zd_intcoef=metrics_savepoint.zd_intcoef(),
@@ -487,7 +486,6 @@ def read_static_fields(
         metrics_savepoint = data_provider.from_metrics_savepoint()
         grid_savepoint = _grid_savepoint(backend, path, grid_file, rank)
         solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
-            bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
             rayleigh_w=metrics_savepoint.rayleigh_w(),
             time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
@@ -509,12 +507,11 @@ def read_static_fields(
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
             nflat_gradp=grid_savepoint.nflat_gradp(),
-            pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-            pg_exdist=metrics_savepoint.pg_exdist(),
+            pg_exdist=metrics_savepoint.pg_exdist_dsl(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
             wgtfac_e=metrics_savepoint.wgtfac_e(),
-            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid_savepoint.num(dims.KDim)),
+            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(),
             exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
             horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
             scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
@@ -609,11 +606,25 @@ def _create_grid_global_params(
             "Global attribute grid_geometry is not found in the grid. Icosahedral grid is assumed."
         )
         grid_geometry_type = base.GeometryType.ICOSAHEDRON
+
+    match grid_geometry_type:
+        case base.GeometryType.ICOSAHEDRON:
+            global_grid_params = icon_grid.GlobalGridParams(
+                grid_shape=icon_grid.GridShape(
+                    geometry_type=grid_geometry_type,
+                    subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
+                ),
+            )
+    match grid_geometry_type:
+        case base.GeometryType.TORUS:
+            global_grid_params = icon_grid.GlobalGridParams(
+                grid_shape=icon_grid.GridShape(
+                    geometry_type=grid_geometry_type,
+                ),
+                domain_length=grid.getncattr("domain_length"),
+                domain_height=grid.getncattr("domain_height"),
+            )
+
     grid.close()
-    global_grid_params = icon_grid.GlobalGridParams(
-        grid_shape=icon_grid.GridShape(
-            geometry_type=grid_geometry_type,
-            subdivision=icon_grid.GridSubdivision(root=grid_root, level=grid_level),
-        ),
-    )
+
     return global_grid_params, grid_uuid

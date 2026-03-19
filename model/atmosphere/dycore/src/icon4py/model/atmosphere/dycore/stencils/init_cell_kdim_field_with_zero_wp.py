@@ -31,7 +31,7 @@ def init_cell_kdim_field_with_zero_wp(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _init_cell_kdim_field_with_zero_wp(
         out=field_with_zero_wp,
         domain={

@@ -167,7 +167,9 @@ class TestComputeAveragedVnAndFluxesAndPrepareTracerAdvection(stencil_tests.Sten
                 (True, False),
             ]
         ],
-        ids=lambda p: f"prepare_advection[{p['prepare_advection']}]__at_first_substep[{p['at_first_substep']}]",
+        ids=lambda p: (
+            f"prepare_advection[{p['prepare_advection']}]__at_first_substep[{p['at_first_substep']}]"
+        ),
     )
     def input_data(
         self, request: pytest.FixtureRequest, grid: base.Grid

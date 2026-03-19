@@ -338,13 +338,11 @@ def _vertically_implicit_solver_at_predictor_step(
         cpd=dycore_consts.cpd,
     )
 
-    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
     if rayleigh_type == rayleigh_damping_options.KLEMP:
         next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
-                w_1=w_1,
                 w=next_w,
             ),
             next_w,
@@ -653,14 +651,11 @@ def _vertically_implicit_solver_at_corrector_step(
         cpd=dycore_consts.cpd,
     )
 
-    w_1 = broadcast(wpfloat("0.0"), (dims.CellDim,))
-
     if rayleigh_type == rayleigh_damping_options.KLEMP:
         next_w = concat_where(
             (dims.KDim > 0) & (dims.KDim < end_index_of_damping_layer + 1),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=rayleigh_damping_factor,
-                w_1=w_1,
                 w=next_w,
             ),
             next_w,
@@ -785,7 +780,7 @@ def vertically_implicit_solver_at_corrector_step(
     end_cell_index_local: gtx.int32,
     vertical_start_index_model_top: gtx.int32,
     vertical_end_index_model_surface: gtx.int32,
-):
+) -> None:
     _set_surface_boundary_condition_for_computation_of_w(
         contravariant_correction_at_cells_on_half_levels=contravariant_correction_at_cells_on_half_levels,
         out=next_w,

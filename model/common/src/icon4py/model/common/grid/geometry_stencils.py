@@ -812,7 +812,7 @@ def compute_coriolis_parameter_on_edges(
     coriolis_parameter: fa.EdgeField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
-):
+) -> None:
     coriolis_parameter_on_edges(
         edge_center_lat,
         angular_velocity,

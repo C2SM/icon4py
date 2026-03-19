@@ -57,6 +57,10 @@ def dassert_allclose(
             warnings.warn("allclose failed for single precision: " + str(e), UserWarning)
 
 
+def is_sorted(array: np.ndarray) -> bool:
+    return bool((array[:-1] <= array[1:]).all())
+
+
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
     return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]  # type: ignore[arg-type]
 

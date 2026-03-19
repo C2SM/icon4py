@@ -67,10 +67,20 @@ def test_graupel_only(
         enable_masking=True,  # `False` would require different reference data (or relaxing thresholds)
     )
 
+    # We are passing the same buffers for `Q` as input and output. This is not best GT4Py practice,
+    # but save in this case as we are not reading the input with an offset.
     out = common.GraupelOutput.allocate(
         allocator=model_backends.get_allocator(backend_like),
         domain=gtx.domain({dims.CellDim: inp.ncells, dims.KDim: inp.nlev}),
-        # TODO(havogt): see comment in `run_graupel_only.py` about inout buffers. Currently, we use separate input and output buffers.
+        references={
+            "qv": inp.qv,
+            "qc": inp.qc,
+            "qi": inp.qi,
+            "qr": inp.qr,
+            "qs": inp.qs,
+            "qg": inp.qg,
+            "t": inp.t,
+        },
     )
 
     graupel_run_program(

@@ -64,7 +64,7 @@ def compute_virtual_potential_temperatures_and_pressure_gradient(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_virtual_potential_temperatures_and_pressure_gradient(
         wgtfac_c,
         z_rth_pr_2,

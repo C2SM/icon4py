@@ -348,7 +348,7 @@ def prepare_numerical_quadrature_for_cubic_reconstruction(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _prepare_numerical_quadrature_for_cubic_reconstruction(
         p_coords_dreg_v_1_x,
         p_coords_dreg_v_2_x,

@@ -197,7 +197,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
         c_lin_e: np.ndarray,
         ikoffset: np.ndarray,
         zdiff_gradp: np.ndarray,
-        ipeidx_dsl: np.ndarray,
         pg_exdist: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         dtime: wpfloat,
@@ -399,10 +398,8 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
             horizontal_pressure_gradient.shape[1],
             axis=1,
         )
-        horizontal_pressure_gradient = np.where(
-            ipeidx_dsl,
-            horizontal_pressure_gradient + hydrostatic_correction * pg_exdist,
-            horizontal_pressure_gradient,
+        horizontal_pressure_gradient = (
+            horizontal_pressure_gradient + hydrostatic_correction * pg_exdist
         )
 
         next_vn = np.where(
@@ -470,7 +467,7 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
                 "d2dz2_of_temporal_extrapolation_of_perturbed_exner_on_model_levels",
                 "hydrostatic_correction_on_lowest_level",
                 "zdiff_gradp",
-                "pg_exdist",
+                "pg_exdist",  # TODO(havogt): should be allocated with a sparse pattern
                 "inv_dual_edge_length",
                 "predictor_normal_wind_advective_tendency",
                 "normal_wind_tendency_due_to_slow_physics_process",
@@ -496,7 +493,6 @@ class TestComputeThetaRhoPressureGradientAndUpdateVn(stencil_tests.StencilTest):
                 temporal_extrapolation_of_perturbed_exner=data_alloc.random_field(
                     grid, dims.CellDim, dims.KDim
                 ),
-                ipeidx_dsl=data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim),
                 ikoffset=data_alloc.random_ikoffset(grid, dims.EdgeDim, dims.E2CDim, dims.KDim),
                 dtime=wpfloat(0.9),
                 iau_wgt_dyn=wpfloat(1.0),

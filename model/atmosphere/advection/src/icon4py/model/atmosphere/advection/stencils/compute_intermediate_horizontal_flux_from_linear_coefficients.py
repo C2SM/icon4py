@@ -64,7 +64,7 @@ def compute_intermediate_horizontal_flux_from_linear_coefficients(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_intermediate_horizontal_flux_from_linear_coefficients(
         z_lsq_coeff_1_dsl,
         z_lsq_coeff_2_dsl,
