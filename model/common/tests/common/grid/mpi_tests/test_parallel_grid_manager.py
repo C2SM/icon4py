@@ -39,7 +39,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
     topography_savepoint,
 )
-from icon4py.model.testing.parallel_helpers import check_local_global_field
+from icon4py.model.testing import parallel_helpers
 
 from . import utils
 
@@ -88,9 +88,13 @@ def _get_neighbor_tables(grid: base.Grid) -> dict:
 # another, so we declare them here for xfailing.
 embedded_broken_fields = {
     metrics_attributes.DDQZ_Z_HALF,
+    metrics_attributes.DEEPATMO_DIVH,
+    metrics_attributes.DEEPATMO_DIVZL,
+    metrics_attributes.DEEPATMO_DIVZU,
     metrics_attributes.EXNER_EXFAC,
     metrics_attributes.MAXHGTD_AVG,
     metrics_attributes.MAXSLP_AVG,
+    metrics_attributes.PG_EXDIST_DSL,
     metrics_attributes.WGTFAC_C,
     metrics_attributes.WGTFAC_E,
     metrics_attributes.ZD_DIFFCOEF,
@@ -213,14 +217,13 @@ def test_geometry_fields_compare_single_multi_rank(
     field = multi_rank_geometry.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
-    check_local_global_field(
+    parallel_helpers.check_local_global_field(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         processor_props=processor_props,
         dim=dim,
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=0.0,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -242,6 +245,7 @@ def test_geometry_fields_compare_single_multi_rank(
         interpolation_attributes.GEOFAC_GRG_Y,
         interpolation_attributes.GEOFAC_N2S,
         interpolation_attributes.GEOFAC_ROT,
+        interpolation_attributes.LSQ_PSEUDOINV,
         interpolation_attributes.NUDGECOEFFS_E,
         interpolation_attributes.POS_ON_TPLANE_E_X,
         interpolation_attributes.POS_ON_TPLANE_E_Y,
@@ -327,14 +331,13 @@ def test_interpolation_fields_compare_single_multi_rank(
     field = multi_rank_interpolation.get(attrs_name)
     dim = field_ref.domain.dims[0]
 
-    check_local_global_field(
+    parallel_helpers.check_local_global_field(
         decomposition_info=multi_rank_grid_manager.decomposition_info,
         processor_props=processor_props,
         dim=dim,
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=1e-9 if attrs_name.startswith("rbf") else 0.0,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -372,10 +375,14 @@ def test_interpolation_fields_compare_single_multi_rank(
         metrics_attributes.MAXSLP_AVG,
         metrics_attributes.MAX_NBHGT,
         metrics_attributes.NFLAT_GRADP,
+        metrics_attributes.PG_EXDIST_DSL,
         metrics_attributes.RAYLEIGH_W,
         metrics_attributes.RHO_REF_MC,
         metrics_attributes.RHO_REF_ME,
         metrics_attributes.SCALING_FACTOR_FOR_3D_DIVDAMP,
+        metrics_attributes.DEEPATMO_DIVH,
+        metrics_attributes.DEEPATMO_DIVZL,
+        metrics_attributes.DEEPATMO_DIVZU,
         metrics_attributes.THETA_REF_IC,
         metrics_attributes.THETA_REF_MC,
         metrics_attributes.THETA_REF_ME,
@@ -554,14 +561,13 @@ def test_metrics_fields_compare_single_multi_rank(
         assert isinstance(field, state_utils.ScalarType)
         assert pytest.approx(field) == field_ref
     else:
-        check_local_global_field(
+        parallel_helpers.check_local_global_field(
             decomposition_info=multi_rank_grid_manager.decomposition_info,
             processor_props=processor_props,
             dim=field_ref.domain.dims[0],
             global_reference_field=field_ref.asnumpy(),
             local_field=field.asnumpy(),
             check_halos=(attrs_name != metrics_attributes.WGTFAC_E),
-            atol=0.0,
         )
 
     _log.info(f"rank = {processor_props.rank} - DONE")

@@ -9,11 +9,10 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import dimension as dims, model_backends, model_options
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import driver_states, driver_utils, standalone_driver
+from icon4py.model.common import model_backends
+from icon4py.model.standalone_driver import driver_utils, standalone_driver
 from icon4py.model.standalone_driver.testcases import initial_condition
-from icon4py.model.testing import definitions, grid_utils, serialbox, serialbox as sb, test_utils
+from icon4py.model.testing import definitions, grid_utils, serialbox as sb, test_utils
 from icon4py.model.testing.fixtures.datatest import (
     backend,
     backend_like,
@@ -25,33 +24,26 @@ from icon4py.model.testing.fixtures.datatest import (
 
 
 @pytest.mark.embedded_remap_error
-@pytest.mark.parametrize("experiment, rank", [(definitions.Experiments.JW, 0)])
+@pytest.mark.parametrize("experiment", [(definitions.Experiments.JW)])
 @pytest.mark.datatest
 def test_standalone_driver_initial_condition(
     backend_like: model_backends.BackendLike,
     tmp_path: pathlib.Path,
-    experiment: definitions.Experiments,
-    data_provider: serialbox.IconSerialDataProvider,
-    rank: int,
+    experiment: definitions.Experiment,
+    data_provider: sb.IconSerialDataProvider,
 ) -> None:
-    backend_name = None
-    for k, v in model_backends.BACKENDS.items():
-        if backend_like == v:
-            backend_name = k
+    backend_name = next(
+        (k for k, v in model_backends.BACKENDS.items() if backend_like == v), "embedded"
+    )
     icon4py_driver: standalone_driver.Icon4pyDriver = standalone_driver.initialize_driver(
         output_path=tmp_path / f"ci_driver_output_for_backend_{backend_name}",
-        grid_file_path=grid_utils._download_grid_file(definitions.Grids.R02B04_GLOBAL),
+        grid_file_path=grid_utils._download_grid_file(experiment.grid),
         log_level=next(iter(driver_utils._LOGGING_LEVELS.keys())),
         backend_name=backend_name,
-    )
-    backend = model_options.customize_backend(
-        program=None, backend=driver_utils.get_backend_from_name(backend_name)
     )
 
     ds = initial_condition.jablonowski_williamson(
         grid=icon4py_driver.grid,
-        c2e=icon4py_driver.grid.get_connectivity(dims.C2E).ndarray,
-        e2c=icon4py_driver.grid.get_connectivity(dims.E2C).ndarray,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
@@ -60,7 +52,6 @@ def test_standalone_driver_initial_condition(
         model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
-        array_ns=data_alloc.import_array_ns(backend),
     )
     jabw_exit_savepoint = data_provider.from_savepoint_jabw_exit()
 

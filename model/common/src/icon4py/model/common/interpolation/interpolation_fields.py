@@ -1167,8 +1167,8 @@ def compute_lsq_pseudoinv(
     for jjb in range(lsq_dim_c):
         for jjk in range(lsq_dim_unk):
             for jc in range(start_idx, min_rlcell_int):
-                u, s, v_t = array_ns.linalg.svd(z_lsq_mat_c[jc, :, :])
                 if cell_owner_mask[jc]:
+                    u, s, v_t = array_ns.linalg.svd(z_lsq_mat_c[jc, :, :])
                     lsq_pseudoinv[jc, :lsq_dim_unk, jjb] = (
                         lsq_pseudoinv[jc, :lsq_dim_unk, jjb]
                         + v_t[jjk, :lsq_dim_unk] / s[jjk] * u[jjb, jjk] * lsq_weights_c[jc, jjb]
@@ -1225,7 +1225,7 @@ def compute_lsq_coeffs(
     start_idx: int,
     min_rlcell_int: int,
     geometry_type: int,
-    exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+    exchange: Callable[[data_alloc.NDArray], None] = decomposition.single_node_default,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     lsq_weights_c = array_ns.zeros((min_rlcell_int, lsq_dim_stencil))
@@ -1237,8 +1237,8 @@ def compute_lsq_coeffs(
             for js in range(lsq_dim_stencil):
                 z_dist_g[:, js, :] = array_ns.asarray(
                     gnomonic_proj(
-                        cell_lon[:],
-                        cell_lat[:],
+                        cell_lon,
+                        cell_lat,
                         cell_lon[c2e2c[:, js]],
                         cell_lat[c2e2c[:, js]],
                         array_ns,
@@ -1284,8 +1284,7 @@ def compute_lsq_coeffs(
             lsq_dim_c,
         )
 
-    if exchange != decomposition.single_node_default:
-        exchange(lsq_weights_c)
+    exchange(lsq_weights_c)
 
     lsq_pseudoinv = compute_lsq_pseudoinv(
         cell_owner_mask,
@@ -1298,8 +1297,7 @@ def compute_lsq_coeffs(
         lsq_dim_c,
         array_ns,
     )
-    if exchange != decomposition.single_node_default:
-        exchange(lsq_pseudoinv[:, 0, :])
-        exchange(lsq_pseudoinv[:, 1, :])
+    exchange(lsq_pseudoinv[:, 0, :])
+    exchange(lsq_pseudoinv[:, 1, :])
 
     return lsq_pseudoinv

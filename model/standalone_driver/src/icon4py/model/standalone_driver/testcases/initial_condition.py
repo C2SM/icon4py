@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import logging
 import math
-from types import ModuleType
 
 from gt4py import next as gtx
 
@@ -21,7 +20,6 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
-from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -50,8 +48,6 @@ log = logging.getLogger(__name__)
 
 def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     grid: icon_grid.IconGrid,
-    c2e: data_alloc.NDArray,
-    e2c: data_alloc.NDArray,
     geometry_field_source: grid_geometry.GridGeometry,
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
@@ -60,7 +56,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     model_top_height: float,
     stretch_factor: float,
     damping_height: float,
-    exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
@@ -244,7 +239,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
-    exchange(eta_v_at_edge, dim=dims.EdgeDim)
     log.info("Cell-to-edge eta_v computation completed.")
 
     prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
@@ -266,25 +260,32 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
+    vertical_config = v_grid.VerticalGridConfig(
+        grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
 
-    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
+    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, model_backends.get_allocator(backend))
 
-    # prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
-    #     grid,
-    #     c2e=c2e,
-    #     e2c=e2c,
-    #     z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
-    #     inv_dual_edge_length=geometry_field_source.get(
-    #         f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
-    #     ).ndarray,
-    #     edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
-    #     primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
-    #     cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
-    #     vn=prognostic_state_now.vn.ndarray,
-    #     vct_b=vct_b.ndarray,
-    #     nlev=num_levels,
-    #     array_ns=xp,
-    # )
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+        grid,
+        c2e=grid.get_connectivity(dims.C2E).ndarray,
+        e2c=grid.get_connectivity(dims.E2C).ndarray,
+        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
+        inv_dual_edge_length=geometry_field_source.get(
+            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+        ).ndarray,
+        edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
+        primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
+        cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
+        vn=prognostic_state_now.vn.ndarray,
+        vct_b=vct_b.ndarray,
+        nlev=num_levels,
+        array_ns=xp,
+    )
     log.info("U2vn computation completed.")
 
     testcases_utils.apply_hydrostatic_adjustment_ndarray(
@@ -322,9 +323,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
-    exchange(diagnostic_state.u, dim=dims.CellDim)
-    exchange(diagnostic_state.v, dim=dims.CellDim)
-
     log.info("U, V computation completed.")
 
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)

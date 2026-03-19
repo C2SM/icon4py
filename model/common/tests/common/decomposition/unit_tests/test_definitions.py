@@ -106,7 +106,7 @@ def test_single_node_exchange_warns_on_first_use(monkeypatch):
     exchange = SingleNodeExchange()
 
     with pytest.warns(RuntimeWarning, match="SingleNodeExchange"):
-        exchange.exchange(dims.CellDim)
+        exchange.start(dims.CellDim)
 
 
 def test_single_node_exchange_does_not_warn_on_construction_or_repeat_use(monkeypatch):
@@ -119,11 +119,11 @@ def test_single_node_exchange_does_not_warn_on_construction_or_repeat_use(monkey
     assert len(recorded_warnings) == 0
 
     with pytest.warns(RuntimeWarning, match="SingleNodeExchange"):
-        exchange.exchange_and_wait(dims.CellDim)
+        exchange.exchange(dims.CellDim)
 
     with warnings.catch_warnings(record=True) as repeated_warnings:
         warnings.simplefilter("always")
-        exchange.exchange(dims.CellDim)
+        exchange.start(dims.CellDim)
 
     assert len(repeated_warnings) == 0
 
@@ -144,10 +144,7 @@ def test_single_node_exchange_warning_points_to_call_site(monkeypatch):
     exchange = SingleNodeExchange()
 
     exchange_line = sys._getframe().f_lineno + 1
-    _assert_warning_points_to_call_site(monkeypatch, lambda: exchange.exchange(dims.CellDim), exchange_line)
+    _assert_warning_points_to_call_site(monkeypatch, lambda: exchange.start(dims.CellDim), exchange_line)
 
     wait_line = sys._getframe().f_lineno + 1
-    _assert_warning_points_to_call_site(monkeypatch, lambda: exchange.exchange_and_wait(dims.CellDim), wait_line)
-
-    call_line = sys._getframe().f_lineno + 1
-    _assert_warning_points_to_call_site(monkeypatch, lambda: exchange(object(), dim=dims.CellDim), call_line)
+    _assert_warning_points_to_call_site(monkeypatch, lambda: exchange.exchange(dims.CellDim), wait_line)

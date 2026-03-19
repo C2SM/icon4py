@@ -44,6 +44,9 @@ def log_local_field_size(decomposition_info: definitions.DecompositionInfo) -> N
 def gather_field(field: np.ndarray, props: decomp_defs.ProcessProperties) -> tuple:
     constant_dims = tuple(field.shape[1:])
     _log.info(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
+    # Because of sparse indexing the field may have a non-contigous layout,
+    # which Gatherv doesn't support. Make sure the field is contiguous.
+    field = np.ascontiguousarray(field)
     constant_length = functools.reduce(operator.mul, constant_dims, 1)
     local_sizes = np.array(props.comm.gather(field.size, root=0))
     if props.rank == 0:
@@ -74,7 +77,6 @@ def check_local_global_field(
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
     check_halos: bool,
-    atol: float,
 ) -> None:
     if dim == dims.KDim:
         np.testing.assert_allclose(global_reference_field, local_field)
@@ -96,23 +98,15 @@ def check_local_global_field(
     # Compare halo against global reference field
     if check_halos:
         print("checking halos")
-        # np.testing.assert_allclose(
         _non_blocking_allclose(
+        #np.testing.assert_allclose(
             global_reference_field[
-                data_alloc.as_numpy(
-                    decomposition_info.global_index(
-                        dim, decomp_defs.DecompositionInfo.EntryType.HALO
-                    )
-                )
+                decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
             ],
             local_field[
-                data_alloc.as_numpy(
-                    decomposition_info.local_index(
-                        dim, decomp_defs.DecompositionInfo.EntryType.HALO
-                    )
-                )
+                decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
             ],
-            atol=atol,
+            atol=1e-9,
             verbose=True,
         )
 
@@ -120,9 +114,7 @@ def check_local_global_field(
     # field, by gathering owned entries to the first rank. This ensures that in
     # total we have the full global field distributed on all ranks.
     owned_entries = local_field[
-        data_alloc.as_numpy(
-            decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
-        )
+        decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
     ]
     gathered_sizes, gathered_field = gather_field(owned_entries, processor_props)
 
@@ -134,9 +126,9 @@ def check_local_global_field(
     if processor_props.rank == 0:
         _log.info(f"rank = {processor_props.rank}: asserting gathered fields: ")
 
-        assert np.all(gathered_sizes == global_index_sizes), (
-            f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
-        )
+        assert np.all(
+            gathered_sizes == global_index_sizes
+        ), f"gathered field sizes do not match:  {dim} {gathered_sizes} - {global_index_sizes}"
         _log.info(
             f"rank = {processor_props.rank}: Checking field size on dim ={dim}: --- gathered sizes {gathered_sizes} = {sum(gathered_sizes)}"
         )
@@ -149,6 +141,5 @@ def check_local_global_field(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
-        print("checking interior")
-        # np.testing.assert_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
+        #np.testing.assert_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
         _non_blocking_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)

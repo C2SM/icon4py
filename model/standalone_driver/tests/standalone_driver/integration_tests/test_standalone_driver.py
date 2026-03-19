@@ -9,11 +9,10 @@ import pathlib
 
 import pytest
 
-from icon4py.model.common import model_backends, model_options
-from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import driver_utils, main
+from icon4py.model.common import model_backends
+from icon4py.model.standalone_driver import main
 from icon4py.model.testing import definitions as test_defs, grid_utils, serialbox as sb, test_utils
-from icon4py.model.testing.fixtures.datatest import backend, backend_like
+from icon4py.model.testing.fixtures.datatest import backend_like
 
 from ..fixtures import *  # noqa: F403
 
@@ -47,11 +46,9 @@ def test_standalone_driver(
     substep_exit: int,
     timeloop_diffusion_savepoint_exit_standalone: sb.IconDiffusionExitSavepoint,
 ) -> None:
-    backend_name = "embedded"
-    for k, v in model_backends.BACKENDS.items():
-        if backend_like == v:
-            backend_name = k
-
+    backend_name = next(
+        (k for k, v in model_backends.BACKENDS.items() if backend_like == v), "embedded"
+    )
     grid_file_path = grid_utils._download_grid_file(experiment.grid)
     output_path = tmp_path / f"ci_driver_output_for_backend_{backend_name}"
     ds, _ = main.main(
@@ -61,14 +58,10 @@ def test_standalone_driver(
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
-    exner_sp = (
-        timeloop_diffusion_savepoint_exit_standalone.exner()
-    )  # savepoint_nonhydro_exit.exner_new() #
-    theta_sp = (
-        timeloop_diffusion_savepoint_exit_standalone.theta_v()
-    )  # savepoint_nonhydro_exit.theta_v_new() #
-    vn_sp = timeloop_diffusion_savepoint_exit_standalone.vn()  # savepoint_nonhydro_exit.vn_new() #
-    w_sp = timeloop_diffusion_savepoint_exit_standalone.w()  # savepoint_nonhydro_exit.w_new() #
+    exner_sp = timeloop_diffusion_savepoint_exit_standalone.exner()
+    theta_sp = timeloop_diffusion_savepoint_exit_standalone.theta_v()
+    vn_sp = timeloop_diffusion_savepoint_exit_standalone.vn()
+    w_sp = timeloop_diffusion_savepoint_exit_standalone.w()
     assert test_utils.dallclose(
         ds.prognostics.current.vn.asnumpy(),
         vn_sp.asnumpy(),

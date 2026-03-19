@@ -70,8 +70,6 @@ def main(
     log.info("Generating the initial condition")
     ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
         grid=icon4py_driver.grid,
-        c2e=icon4py_driver.grid.get_connectivity(dims.C2E).ndarray,
-        e2c=icon4py_driver.grid.get_connectivity(dims.E2C).ndarray,
         geometry_field_source=icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=icon4py_driver.static_field_factories.metrics_field_source,
@@ -80,7 +78,6 @@ def main(
         model_top_height=icon4py_driver.vertical_grid_config.model_top_height,
         stretch_factor=icon4py_driver.vertical_grid_config.stretch_factor,
         damping_height=icon4py_driver.vertical_grid_config.rayleigh_damping_height,
-        exchange=icon4py_driver.exchange,
     )
 
     log.info("driver setup: DONE")

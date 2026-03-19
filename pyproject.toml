@@ -55,8 +55,11 @@ typing = [
   "mypy[faster-cache]>=1.13.0",
   "typing-extensions>=4.11.0",
   "types-cffi>=1.16.0",
-  "mpi4py>=4.0.0",
   "scipy-stubs>=1.15.3.0"
+]
+typing-distributed = [
+  "mpi4py>=3.1.5",
+  "pymetis>2022.1"
 ]
 
 # -- Standard project description options (PEP 621) --
@@ -406,6 +409,7 @@ url = 'https://gridtools.github.io/pypi/'
 dace = {index = "gridtools"}
 ghex = {git = "https://github.com/philip-paul-mueller/GHEX.git", branch = "phimuell__async-mpi-2"}
 gt4py = {git = "https://github.com/GridTools/gt4py", branch = "workaround_caching_issue_with_embedded_inverse_image_caching"}
+# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}

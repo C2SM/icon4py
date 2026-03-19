@@ -18,12 +18,11 @@ from typing import Any, Literal
 import gt4py.next as gtx
 import gt4py.next.typing as gtx_typing
 
-from icon4py.model.atmosphere.advection import advection, advection_states
+from icon4py.model.atmosphere.advection import advection
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import (
     constants,
-    dimension as dims,
     field_type_aliases as fa,
     model_backends,
     type_alias as ta,
@@ -45,7 +44,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import metrics_attributes, metrics_factory
 from icon4py.model.common.states import factory as states_factory
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.standalone_driver import config as driver_config, driver_states
 
 

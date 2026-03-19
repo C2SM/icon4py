@@ -8,8 +8,7 @@
 import pytest
 
 from icon4py.model.testing import serialbox
-from icon4py.model.testing.fixtures.datatest import (
-    backend,
+from icon4py.model.testing.fixtures import (
     damping_height,
     data_provider,
     download_ser_data,
@@ -41,17 +40,16 @@ from icon4py.model.testing.serialbox import IconDiffusionExitSavepoint
 
 @pytest.fixture
 def timeloop_diffusion_savepoint_exit_standalone(
-    data_provider: serialbox.IconSerialDataProvider,  # imported fixtures data_provider`
-    step_date_exit: str,  # imported fixtures step_date_exit`
+    data_provider: serialbox.IconSerialDataProvider,
+    step_date_exit: str,
     timeloop_diffusion_linit_exit: bool,
 ) -> IconDiffusionExitSavepoint:
     """
-    Load data from ICON savepoint at exist of diffusion module.
+    Load data from ICON savepoint at exit of diffusion module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'timeloop_date'
     fixture, passing 'step_data=<iso_string>'
     """
-    sp = data_provider.from_savepoint_diffusion_exit(
+    return data_provider.from_savepoint_diffusion_exit(
         linit=timeloop_diffusion_linit_exit, date=step_date_exit
     )
-    return sp
