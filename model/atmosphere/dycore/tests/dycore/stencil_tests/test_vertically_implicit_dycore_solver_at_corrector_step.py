@@ -396,7 +396,7 @@ class TestVerticallyImplicitSolverAtCorrectorStep(stencil_tests.StencilTest):
             exner_dynamical_increment=exner_dynamical_increment,
         )
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"at_first_substep": afs, "at_last_substep": als, "lprep_adv": la, "is_iau_active": ia}
             for afs, als, la, ia in [
