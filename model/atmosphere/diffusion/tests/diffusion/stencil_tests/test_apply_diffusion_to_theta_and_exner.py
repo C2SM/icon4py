@@ -63,7 +63,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
         if apply_zdiffusion_t:
             z_temp = np.where(
-                zd_diffcoef != 0.0,
+                zd_diffcoef != wpfloat(0.0),
                 truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
                     connectivities,
                     zd_vertoffset,
