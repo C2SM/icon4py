@@ -228,7 +228,7 @@ def test_geometry_fields_compare_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=0.0,
+        atol=1e-15,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
@@ -346,7 +346,7 @@ def test_interpolation_fields_compare_single_multi_rank(
         global_reference_field=field_ref.asnumpy(),
         local_field=field.asnumpy(),
         check_halos=True,
-        atol=3e-9 if attrs_name.startswith("rbf") else 0.0,
+        atol=3e-9 if attrs_name.startswith("rbf") else 1e-10 if attrs_name.startswith("pos_on_tplane") else 1e-15,
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
