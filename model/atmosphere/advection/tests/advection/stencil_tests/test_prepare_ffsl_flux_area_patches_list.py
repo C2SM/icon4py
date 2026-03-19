@@ -1018,11 +1018,13 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         )
 
         # ------------------------------------------------- Case 2a
-        mask_case2a = np.logical_and.reduce([
-            lintersect_line1,
-            np.logical_not(lintersect_line2),
-            famask_bool,
-        ])
+        mask_case2a = np.logical_and.reduce(
+            [
+                lintersect_line1,
+                np.logical_not(lintersect_line2),
+                famask_bool,
+            ]
+        )
         # Case 2a - patch 0
         result_tuple_patch0 = _apply_case2a_patch0(
             mask_case2a,
@@ -1096,11 +1098,13 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         dreg_patch2_4_lat_vmask = np.where(mask_case2a, 0.0, dreg_patch2_4_lat_vmask)
 
         # -------------------------------------------------- Case 2b
-        mask_case2b = np.logical_and.reduce([
-            lintersect_line2,
-            np.logical_not(lintersect_line1),
-            famask_bool,
-        ])
+        mask_case2b = np.logical_and.reduce(
+            [
+                lintersect_line2,
+                np.logical_not(lintersect_line1),
+                famask_bool,
+            ]
+        )
         # Case 2b - patch 0
         result_tuple_patch0_case2b = _apply_case2b_patch0(
             mask_case2b,
@@ -1389,18 +1393,22 @@ class TestPrepareFfslFluxAreaPatchesList(stencil_tests.StencilTest):
         # --------------------------------------------- Case 4
         # NB: Next line acts as the "ELSE IF", indices that already previously matched one of the above conditions
         # can't be overwritten by this new condition.
-        indices_previously_matched = np.logical_or.reduce([
-            mask_case3b,
-            mask_case3a,
-            mask_case2b,
-            mask_case2a,
-            mask_case1,
-        ])
+        indices_previously_matched = np.logical_or.reduce(
+            [
+                mask_case3b,
+                mask_case3a,
+                mask_case2b,
+                mask_case2a,
+                mask_case1,
+            ]
+        )
         #    mask_case4 = (abs(p_vn) < 0.1) & famask_bool & (not indices_previously_matched) we insert also the error indices
-        mask_case4 = np.logical_and.reduce([
-            famask_bool,
-            np.logical_not(indices_previously_matched),
-        ])
+        mask_case4 = np.logical_and.reduce(
+            [
+                famask_bool,
+                np.logical_not(indices_previously_matched),
+            ]
+        )
         # Case 4 - patch 0 - no change
         # Case 4 - patch 1
         dreg_patch1_1_lon_vmask = np.where(mask_case4, 0.0, dreg_patch1_1_lon_vmask)
