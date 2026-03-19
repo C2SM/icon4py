@@ -21,7 +21,7 @@ def flip(field: gtx.Field, dim: gtx.Dimension, allocator: gtx_typing.Allocator) 
     """
     # Note: `allocator` needs to be passed explicitly since GT4Py fields currently don't persist how they were allocated.
     xp = array_api_compat.array_namespace(field.ndarray)
-    flipped_array = xp.flip(field.ndarray, axis=field.domain.index(dim))
+    flipped_array = xp.flip(field.ndarray, axis=field.domain.dims.index(dim))
     return gtx.as_field(field.domain, flipped_array, allocator=allocator)
 
 
@@ -37,9 +37,16 @@ def index2offset(
     """
     # Note: `allocator` needs to be passed explicitly since GT4Py fields currently don't persist how they were allocated.
     xp = array_api_compat.array_namespace(index_field.ndarray)
-    offset_array = index_field.ndarray - xp.arange(
-        index_field.domain[dim].unit_range.start,
-        index_field.domain[dim].unit_range.stop,
-        dtype=index_field.ndarray.dtype,
+
+    current_index = gtx.as_field(
+        gtx.Domain(index_field.domain[dim]),
+        xp.arange(
+            index_field.domain[dim].unit_range.start,
+            index_field.domain[dim].unit_range.stop,
+            dtype=index_field.ndarray.dtype,
+        ),
+        allocator=allocator,
     )
-    return gtx.as_field(index_field.domain, offset_array, allocator=allocator)
+    offset_field = index_field - current_index  # use GT4Py's broadcasting and field arithmetic
+    # if GT4Py embedded would propagate the allocator, we could avoid this extra conversion.
+    return gtx.as_field(index_field.domain, offset_field.ndarray, allocator=allocator)
