@@ -20,6 +20,7 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
+from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import (
     geometry as grid_geometry,
     geometry_attributes as geometry_meta,
@@ -56,6 +57,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     model_top_height: float,
     stretch_factor: float,
     damping_height: float,
+    exchange: decomposition_defs.ExchangeRuntime,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
@@ -239,6 +241,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
+    exchange(eta_v_at_edge, dim=dims.EdgeDim)
     log.info("Cell-to-edge eta_v computation completed.")
 
     prognostic_state_now.vn.ndarray[:, :] = testcases_utils.zonalwind_2_normalwind_ndarray(
@@ -323,6 +326,9 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         vertical_end=num_levels,
         offset_provider=grid.connectivities,
     )
+    exchange(diagnostic_state.u, dim=dims.CellDim)
+    exchange(diagnostic_state.v, dim=dims.CellDim)
+
     log.info("U, V computation completed.")
 
     perturbed_exner = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, allocator=allocator)

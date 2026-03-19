@@ -72,8 +72,6 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     single_rank_ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
         grid=single_rank_icon4py_driver.grid,
-        c2e=single_rank_icon4py_driver.grid.get_connectivity(dims.C2E).ndarray,
-        e2c=single_rank_icon4py_driver.grid.get_connectivity(dims.E2C).ndarray,
         geometry_field_source=single_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=single_rank_icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=single_rank_icon4py_driver.static_field_factories.metrics_field_source,
@@ -96,8 +94,6 @@ def test_initial_condition_jablonowski_williamson_compare_single_multi_rank(
 
     multi_rank_ds: driver_states.DriverStates = initial_condition.jablonowski_williamson(
         grid=multi_rank_icon4py_driver.grid,
-        c2e=multi_rank_icon4py_driver.grid.get_connectivity(dims.C2E).ndarray,
-        e2c=multi_rank_icon4py_driver.grid.get_connectivity(dims.E2C).ndarray,
         geometry_field_source=multi_rank_icon4py_driver.static_field_factories.geometry_field_source,
         interpolation_field_source=multi_rank_icon4py_driver.static_field_factories.interpolation_field_source,
         metrics_field_source=multi_rank_icon4py_driver.static_field_factories.metrics_field_source,
