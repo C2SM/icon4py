@@ -808,7 +808,7 @@ class MetricSavepoint(IconSavepoint):
     def wgtfacq_c(self):
         # The Fortran array stores the surface levels in reversed order.
         wgtfacq_c_fortran = self._get_field("wgtfacq_c", dims.CellDim, dims.KDim)
-        assert len(wgtfacq_c_fortran.domain[dims.KDim]) == 3
+        assert len(wgtfacq_c_fortran.domain[dims.KDim].unit_range) == 3
         nlev = self.sizes[dims.KDim]
         return field_utils.flip(
             wgtfacq_c_fortran(dims.KDim - (nlev - 3)),  # GT4Py embedded shift
@@ -858,7 +858,7 @@ class MetricSavepoint(IconSavepoint):
     def wgtfacq_e(self):
         # The Fortran array stores the surface levels in reversed order.
         wgtfacq_e_fortran = self._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim)
-        assert len(wgtfacq_e_fortran.domain[dims.KDim]) == 3
+        assert len(wgtfacq_e_fortran.domain[dims.KDim].unit_range) == 3
         nlev = self.sizes[dims.KDim]
         return field_utils.flip(
             wgtfacq_e_fortran(dims.KDim - (nlev - 3)),  # GT4Py embedded shift

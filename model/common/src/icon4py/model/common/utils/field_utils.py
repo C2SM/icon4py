@@ -49,4 +49,4 @@ def index2offset(
     )
     offset_field = index_field - current_index  # use GT4Py's broadcasting and field arithmetic
     # if GT4Py embedded would propagate the allocator, we could avoid this extra conversion.
-    return gtx.as_field(index_field.domain, offset_field.ndarray, allocator=allocator)
+    return gtx.as_field(offset_field.domain, offset_field.ndarray, allocator=allocator)

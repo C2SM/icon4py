@@ -91,7 +91,11 @@ def solve_nh_init(
     ddxn_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxn_z_full().ndarray)
 
     zdiff_gradp = test_utils.array_to_array_info(metrics_savepoint.zdiff_gradp().ndarray)
-    vertoffset_gradp = test_utils.array_to_array_info(metrics_savepoint.vertoffset_gradp().ndarray)
+    vertidx_gradp = test_utils.array_to_array_info(
+        metrics_savepoint._get_field(
+            "vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+        ).ndarray
+    )
 
     pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
     pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
@@ -180,7 +184,7 @@ def solve_nh_init(
         theta_ref_me=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
-        vertoffset_gradp=vertoffset_gradp,
+        vertidx_gradp=vertidx_gradp,
         pg_edgeidx=pg_edgeidx,
         pg_vertidx=pg_vertidx,
         pg_exdist=pg_exdist,
@@ -459,7 +463,7 @@ def test_dycore_wrapper_granule_inputs(
         time_extrapolation_parameter_for_exner=metrics_savepoint.exner_exfac(),
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
-        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
         reference_rho_at_cells_on_model_levels=metrics_savepoint.rho_ref_mc(),
         reference_theta_at_cells_on_model_levels=metrics_savepoint.theta_ref_mc(),
@@ -479,7 +483,7 @@ def test_dycore_wrapper_granule_inputs(
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e(),
         exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),

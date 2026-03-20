@@ -1094,7 +1094,7 @@ def test_compute_perturbed_quantities_and_interpolation(
     reference_theta_at_cells_on_half_levels = metrics_savepoint.theta_ref_ic()
     d2dexdz2_fac1_mc = metrics_savepoint.d2dexdz2_fac1_mc()
     d2dexdz2_fac2_mc = metrics_savepoint.d2dexdz2_fac2_mc()
-    wgtfacq_c = metrics_savepoint.wgtfacq_c_dsl()
+    wgtfacq_c = metrics_savepoint.wgtfacq_c()
     wgtfac_c = metrics_savepoint.wgtfac_c()
     exner_w_explicit_weight_parameter = metrics_savepoint.vwind_expl_wgt()
     ddz_of_reference_exner_at_cells_on_half_levels = metrics_savepoint.d_exner_dz_ref_ic()
@@ -1768,7 +1768,7 @@ def test_compute_horizontal_velocity_quantities_and_fluxes(
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
     wgtfac_e = metrics_savepoint.wgtfac_e()
-    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl()
+    wgtfacq_e = metrics_savepoint.wgtfacq_e()
     rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
     nflatlev = vertical_params.nflatlev
@@ -2152,7 +2152,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         reference_exner_at_cells_on_model_levels=metrics_savepoint.exner_ref_mc(),
         e_bln_c_s=interpolation_savepoint.e_bln_c_s(),
         wgtfac_c=metrics_savepoint.wgtfac_c(),
-        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c(),
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         is_iau_active=is_iau_active,
