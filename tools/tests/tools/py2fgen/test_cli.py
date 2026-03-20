@@ -335,3 +335,91 @@ def test_py2fgen_regenerate_forces_recompilation(
         assert "Force regeneration requested" in regen_log
         assert "Compiling CFFI dynamic library" in regen_log
         assert "Skipping compilation" not in regen_log
+
+
+def test_py2fgen_no_compile_generates_c_and_header(
+    cli_runner, square_wrapper_module, test_temp_dir, caplog
+):
+    """Test that --no-compile generates .c, .h, .py, .f90 files but no shared library."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        with caplog.at_level(logging.INFO, logger="py2fgen"):
+            caplog.clear()
+            invoke_cli(
+                cli_runner,
+                square_wrapper_module,
+                "square_from_function",
+                "square_plugin",
+                extra_args=["--no-compile"],
+            )
+            log = caplog.text
+
+        assert "Generating C source and header files (--no-compile)" in log
+        assert "Compiling CFFI dynamic library" not in log
+
+        assert pathlib.Path("square_plugin.py").exists()
+        assert pathlib.Path("square_plugin.f90").exists()
+        assert pathlib.Path("square_plugin.h").exists()
+        assert pathlib.Path("square_plugin.c").exists()
+        assert not pathlib.Path("libsquare_plugin.so").exists()
+
+
+def test_py2fgen_no_compile_skips_when_up_to_date(
+    cli_runner, square_wrapper_module, test_temp_dir, caplog
+):
+    """Test that --no-compile skips regeneration when all files are up to date."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        # First run: generate files
+        invoke_cli(
+            cli_runner,
+            square_wrapper_module,
+            "square_from_function",
+            "square_plugin",
+            extra_args=["--no-compile"],
+        )
+
+        # Second run: should skip
+        with caplog.at_level(logging.INFO, logger="py2fgen"):
+            caplog.clear()
+            invoke_cli(
+                cli_runner,
+                square_wrapper_module,
+                "square_from_function",
+                "square_plugin",
+                extra_args=["--no-compile"],
+            )
+            second_log = caplog.text
+        assert "Skipping C code generation" in second_log
+        assert "Generating C source and header files" not in second_log
+
+
+def test_py2fgen_no_compile_regenerates_if_c_file_deleted(
+    cli_runner, square_wrapper_module, test_temp_dir, caplog
+):
+    """Test that --no-compile regenerates if .c file is missing."""
+    with cli_runner.isolated_filesystem(temp_dir=test_temp_dir):
+        # First run
+        invoke_cli(
+            cli_runner,
+            square_wrapper_module,
+            "square_from_function",
+            "square_plugin",
+            extra_args=["--no-compile"],
+        )
+        assert pathlib.Path("square_plugin.c").exists()
+
+        # Delete the .c file
+        pathlib.Path("square_plugin.c").unlink()
+
+        # Second run: should regenerate since .c is missing
+        with caplog.at_level(logging.INFO, logger="py2fgen"):
+            caplog.clear()
+            invoke_cli(
+                cli_runner,
+                square_wrapper_module,
+                "square_from_function",
+                "square_plugin",
+                extra_args=["--no-compile"],
+            )
+            regen_log = caplog.text
+        assert "Generating C source and header files (--no-compile)" in regen_log
+        assert pathlib.Path("square_plugin.c").exists()
