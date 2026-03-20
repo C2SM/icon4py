@@ -299,6 +299,8 @@ class TimeLoop:
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
+                is_iau_active=False,
+                iau_wgt_dyn=0.0,
             )
 
             if not self._is_last_substep(dyn_substep):
