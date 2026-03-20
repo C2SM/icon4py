@@ -134,13 +134,17 @@ def solve_nh_init(
     pos_on_tplane_e_2 = test_utils.array_to_array_info(pos_on_tplane_e_2_field.ndarray)
 
     rbf_vec_coeff_e = test_utils.array_to_array_info(
-        interpolation_savepoint.rbf_vec_coeff_e().ndarray
+        interpolation_savepoint._get_field("rbf_vec_coeff_e", dims.E2C2EDim, dims.EdgeDim).ndarray
     )
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
+
     rbf_vec_coeff_v_array = np.squeeze(
         interpolation_savepoint.serializer.read(
             "rbf_vec_coeff_v", interpolation_savepoint.savepoint
-        ).astype(float)[:, :, :]
+        ).astype(float)
+    )
+    rbf_vec_coeff_v_array = interpolation_savepoint._reduce_to_dim_size(
+        rbf_vec_coeff_v_array, [dims.V2EDim, dims.V2EDim, dims.VertexDim]
     )
     rbf_vec_coeff_v = test_utils.array_to_array_info(rbf_vec_coeff_v_array)
     geofac_div = test_utils.array_to_array_info(interpolation_savepoint.geofac_div().ndarray)
@@ -230,7 +234,7 @@ def solve_nh_init(
         divdamp_z3=divdamp_z3,
         divdamp_z4=divdamp_z4,
         nflat_gradp=nflat_gradp,
-        backend=wrapper_common.BackendIntEnum.DEFAULT,
+        backend=wrapper_common.BackendIntEnum.GTFN,
     )
 
 
@@ -377,11 +381,18 @@ def test_dycore_wrapper_granule_inputs(
     pos_on_tplane_e_2 = test_utils.array_to_array_info(pos_on_tplane_e_2_field.ndarray)
 
     rbf_vec_coeff_e = test_utils.array_to_array_info(
-        interpolation_savepoint.rbf_vec_coeff_e().ndarray
+        interpolation_savepoint._get_field("rbf_vec_coeff_e", dims.E2C2EDim, dims.EdgeDim).ndarray
     )
     e_bln_c_s = test_utils.array_to_array_info(interpolation_savepoint.e_bln_c_s().ndarray)
-    rbf_coeff_1 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v1().ndarray)
-    rbf_coeff_2 = test_utils.array_to_array_info(interpolation_savepoint.rbf_vec_coeff_v2().ndarray)
+    rbf_vec_coeff_v_array = np.squeeze(
+        interpolation_savepoint.serializer.read(
+            "rbf_vec_coeff_v", interpolation_savepoint.savepoint
+        ).astype(float)
+    )
+    rbf_vec_coeff_v_array = interpolation_savepoint._reduce_to_dim_size(
+        rbf_vec_coeff_v_array, [dims.V2EDim, dims.V2EDim, dims.VertexDim]
+    )
+    rbf_vec_coeff_v = test_utils.array_to_array_info(rbf_vec_coeff_v_array)
     geofac_div = test_utils.array_to_array_info(interpolation_savepoint.geofac_div().ndarray)
     geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
     geofac_grg_x = test_utils.array_to_array_info(interpolation_savepoint.geofac_grg()[0].ndarray)
@@ -585,8 +596,7 @@ def test_dycore_wrapper_granule_inputs(
             pos_on_tplane_e_2=pos_on_tplane_e_2,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             e_bln_c_s=e_bln_c_s,
-            rbf_coeff_1=rbf_coeff_1,
-            rbf_coeff_2=rbf_coeff_2,
+            rbf_vec_coeff_v=rbf_vec_coeff_v,
             geofac_div=geofac_div,
             geofac_n2s=geofac_n2s,
             geofac_grg_x=geofac_grg_x,
