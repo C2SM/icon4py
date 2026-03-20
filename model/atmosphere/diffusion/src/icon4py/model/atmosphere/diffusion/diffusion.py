@@ -402,7 +402,7 @@ class Diffusion:
         | model_backends.DeviceType
         | model_backends.BackendDescriptor
         | None,
-        exchange: decomposition.ExchangeRuntime,
+        exchange: decomposition.ExchangeRuntime | None = decomposition.single_node_default,
         orchestration: bool = False,
     ):
         self._allocator = model_backends.get_allocator(backend)
