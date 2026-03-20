@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 import logging
+from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias
 
 import gt4py.next as gtx
@@ -84,8 +85,10 @@ class IconSavepoint:
     def log_meta_info(self):
         self.log.info(self.savepoint.metainfo)
 
-    def _get_field(self, name, *dimensions, dtype=float):
+    def _get_field(self, name, *dimensions, dtype=float, transpose: None | Sequence[int] = None):
         buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        if transpose is not None:
+            buffer = np.transpose(buffer, axes=transpose)
         buffer = self._reduce_to_dim_size(buffer, dimensions)
 
         self.log.debug(f"{name} {buffer.shape}")
@@ -673,7 +676,7 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim)[:, 0:2]
 
     def rbf_vec_coeff_e(self):
-        return self._get_field("rbf_vec_coeff_e", dims.EdgeDim, dims.E2C2EDim)
+        return self._get_field("rbf_vec_coeff_e", dims.EdgeDim, dims.E2C2EDim, transpose=(1, 0))
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
@@ -694,10 +697,20 @@ class InterpolationSavepoint(IconSavepoint):
         return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     def rbf_vec_coeff_v1(self):
-        return self._get_field("rbf_vec_coeff_v1", dims.VertexDim, dims.V2EDim)
+        dimensions = (dims.VertexDim, dims.V2EDim)
+        buffer = np.squeeze(
+            self.serializer.read("rbf_vec_coeff_v", self.savepoint).astype(float)[:, 0, :]
+        ).transpose()
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     def rbf_vec_coeff_v2(self):
-        return self._get_field("rbf_vec_coeff_v2", dims.VertexDim, dims.V2EDim)
+        dimensions = (dims.VertexDim, dims.V2EDim)
+        buffer = np.squeeze(
+            self.serializer.read("rbf_vec_coeff_v", self.savepoint).astype(float)[:, 1, :]
+        ).transpose()
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer, allocator=self.backend)
 
     def rbf_vec_idx_v(self):
         return self._get_field("rbf_vec_idx_v", dims.VertexDim, dims.V2EDim)

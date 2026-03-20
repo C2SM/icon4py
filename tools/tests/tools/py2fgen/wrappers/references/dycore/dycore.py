@@ -1197,12 +1197,10 @@ def solve_nh_init_wrapper(
     e_bln_c_s,
     e_bln_c_s_size_0,
     e_bln_c_s_size_1,
-    rbf_coeff_1,
-    rbf_coeff_1_size_0,
-    rbf_coeff_1_size_1,
-    rbf_coeff_2,
-    rbf_coeff_2_size_0,
-    rbf_coeff_2_size_1,
+    rbf_vec_coeff_v,
+    rbf_vec_coeff_v_size_0,
+    rbf_vec_coeff_v_size_1,
+    rbf_vec_coeff_v_size_2,
     geofac_div,
     geofac_div_size_0,
     geofac_div_size_1,
@@ -1440,21 +1438,12 @@ def solve_nh_init_wrapper(
                 False,
             )
 
-            rbf_coeff_1 = (
-                rbf_coeff_1,
+            rbf_vec_coeff_v = (
+                rbf_vec_coeff_v,
                 (
-                    rbf_coeff_1_size_0,
-                    rbf_coeff_1_size_1,
-                ),
-                on_gpu,
-                False,
-            )
-
-            rbf_coeff_2 = (
-                rbf_coeff_2,
-                (
-                    rbf_coeff_2_size_0,
-                    rbf_coeff_2_size_1,
+                    rbf_vec_coeff_v_size_0,
+                    rbf_vec_coeff_v_size_1,
+                    rbf_vec_coeff_v_size_2,
                 ),
                 on_gpu,
                 False,
@@ -1790,8 +1779,7 @@ def solve_nh_init_wrapper(
                 pos_on_tplane_e_2=pos_on_tplane_e_2,
                 rbf_vec_coeff_e=rbf_vec_coeff_e,
                 e_bln_c_s=e_bln_c_s,
-                rbf_coeff_1=rbf_coeff_1,
-                rbf_coeff_2=rbf_coeff_2,
+                rbf_vec_coeff_v=rbf_vec_coeff_v,
                 geofac_div=geofac_div,
                 geofac_n2s=geofac_n2s,
                 geofac_grg_x=geofac_grg_x,
@@ -2019,34 +2007,18 @@ def solve_nh_init_wrapper(
                     )
                     logger.debug(msg)
 
-                    rbf_coeff_1_arr = (
-                        _conversion.as_array(ffi, rbf_coeff_1, _definitions.FLOAT64)
-                        if rbf_coeff_1 is not None
+                    rbf_vec_coeff_v_arr = (
+                        _conversion.as_array(ffi, rbf_vec_coeff_v, _definitions.FLOAT64)
+                        if rbf_vec_coeff_v is not None
                         else None
                     )
-                    msg = "shape of rbf_coeff_1 after computation = %s" % str(
-                        rbf_coeff_1_arr.shape if rbf_coeff_1 is not None else "None"
+                    msg = "shape of rbf_vec_coeff_v after computation = %s" % str(
+                        rbf_vec_coeff_v_arr.shape if rbf_vec_coeff_v is not None else "None"
                     )
                     logger.debug(msg)
                     msg = (
-                        "rbf_coeff_1 after computation: %s" % str(rbf_coeff_1_arr)
-                        if rbf_coeff_1 is not None
-                        else "None"
-                    )
-                    logger.debug(msg)
-
-                    rbf_coeff_2_arr = (
-                        _conversion.as_array(ffi, rbf_coeff_2, _definitions.FLOAT64)
-                        if rbf_coeff_2 is not None
-                        else None
-                    )
-                    msg = "shape of rbf_coeff_2 after computation = %s" % str(
-                        rbf_coeff_2_arr.shape if rbf_coeff_2 is not None else "None"
-                    )
-                    logger.debug(msg)
-                    msg = (
-                        "rbf_coeff_2 after computation: %s" % str(rbf_coeff_2_arr)
-                        if rbf_coeff_2 is not None
+                        "rbf_vec_coeff_v after computation: %s" % str(rbf_vec_coeff_v_arr)
+                        if rbf_vec_coeff_v is not None
                         else "None"
                     )
                     logger.debug(msg)
