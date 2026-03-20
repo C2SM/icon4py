@@ -371,29 +371,25 @@ def _graupel_run_self_copy_removal_inside_if_stmt(  # noqa: PLR0912, PLR0915
                 continue
             self_copy_edge_src_data = self_copy_edge.src.data
             map_entry_in_edge = next(
-                iter(state.in_edges_by_connector(scan_node, self_copy_edge_src_data))
+                state.in_edges_by_connector(scan_node, self_copy_edge_src_data)
             )
             # Means that there is no other computation before
             if not isinstance(map_entry_in_edge.src, dace_nodes.MapEntry):
                 continue
             outer_data_map_out_connector = map_entry_in_edge.src_conn
             outer_access_node = next(
-                iter(
-                    state.in_edges_by_connector(
-                        map_entry_in_edge.src, "IN_" + outer_data_map_out_connector[4:]
-                    )
+                state.in_edges_by_connector(
+                    map_entry_in_edge.src, "IN_" + outer_data_map_out_connector[4:]
                 )
             ).src
-            map_exit_in_edge = next(iter(state.out_edges_by_connector(scan_node, output_data_name)))
+            map_exit_in_edge = next(state.out_edges_by_connector(scan_node, output_data_name))
             # Means that there is no computation with this after the scan
             if not isinstance(map_exit_in_edge.dst, dace_nodes.MapExit):
                 continue
             outer_data_map_in_connector = map_exit_in_edge.dst_conn
             outer_dst_node = next(
-                iter(
-                    state.out_edges_by_connector(
-                        map_exit_in_edge.dst, "OUT_" + outer_data_map_in_connector[3:]
-                    )
+                state.out_edges_by_connector(
+                    map_exit_in_edge.dst, "OUT_" + outer_data_map_in_connector[3:]
                 )
             ).dst
             # We just output to the AccessNode
@@ -401,10 +397,8 @@ def _graupel_run_self_copy_removal_inside_if_stmt(  # noqa: PLR0912, PLR0915
                 continue
             new_in_access_node = state.add_access(outer_dst_node.data)
             map_exit_out_edge = next(
-                iter(
-                    state.out_edges_by_connector(
-                        map_exit_in_edge.dst, "OUT_" + map_exit_in_edge.dst_conn[3:]
-                    )
+                state.out_edges_by_connector(
+                    map_exit_in_edge.dst, "OUT_" + map_exit_in_edge.dst_conn[3:]
                 )
             )
             _replace_scan_input(
@@ -477,7 +471,7 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
             if isinstance(node, dace_nodes.MapEntry)
             and f"IN_{input_access_nodes}" in node.in_connectors
         ]
-        all_maps_with_accessnode_input_and_if_stmt = [
+        map_with_accessnode_input_and_if_stmt = next(
             map_with_if
             for map_with_if in all_maps_with_accessnode_input
             if any(
@@ -485,9 +479,6 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
                 and map_node.label.startswith("if_stmt_")
                 for map_node in st.scope_subgraph(map_with_if).nodes()
             )
-        ]
-        map_with_accessnode_input_and_if_stmt = next(
-            iter(all_maps_with_accessnode_input_and_if_stmt)
         )
         nsdfg_if_stmt_with_accessnode = next(
             node
@@ -505,7 +496,7 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
             )
         ]
         assert len(output_edges) == 1
-        output_edge = next(iter(output_edges))
+        output_edge = output_edges[0]
         intermediate_an = output_edge.dst
         assert isinstance(intermediate_an, dace_nodes.AccessNode)
         out_edge_of_inter_an = st.out_edges(intermediate_an)[0]
@@ -518,7 +509,7 @@ def remove_self_copy_inside_scan(sdfg: dace.SDFG) -> None:
             )
         ]
         assert len(out_edges_of_map_exit) == 1
-        out_edge_of_map_exit = next(iter(out_edges_of_map_exit))
+        out_edge_of_map_exit = out_edges_of_map_exit[0]
         dst_out_edge_of_map_exit = out_edge_of_map_exit.dst
         assert isinstance(dst_out_edge_of_map_exit, dace_nodes.AccessNode)
 
