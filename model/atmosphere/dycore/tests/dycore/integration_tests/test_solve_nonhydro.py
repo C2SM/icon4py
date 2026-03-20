@@ -229,6 +229,8 @@ def test_nonhydro_predictor_step(
         dtime=dtime,
         at_initial_timestep=at_initial_timestep,
         at_first_substep=at_first_substep,
+        is_iau_active=False,
+        iau_wgt_dyn=0.0,
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -583,6 +585,8 @@ def test_nonhydro_corrector_step(
         lprep_adv=lprep_adv,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
+        is_iau_active=False,
+        iau_wgt_dyn=0.0,
     )
 
     # stencil 10
@@ -765,6 +769,8 @@ def test_run_solve_nonhydro_single_step(
         lprep_adv=lprep_adv,
         at_first_substep=substep_init == 1,
         at_last_substep=substep_init == ndyn_substeps,
+        is_iau_active=False,
+        iau_wgt_dyn=0.0,
     )
     prognostic_state_nnew = prognostic_states.next
     assert test_utils.dallclose(
@@ -904,6 +910,8 @@ def test_run_solve_nonhydro_multi_step(
             lprep_adv=lprep_adv,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
+            is_iau_active=False,
+            iau_wgt_dyn=0.0,
         )
 
         if not at_last_substep:
