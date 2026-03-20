@@ -87,11 +87,12 @@ build_distributed:
     # TODO
     # - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
     - uv pip install pytest-instafail
-    - pytest --instafail -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
+    - pytest --instafail -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
     matrix:
       - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
         BACKEND: [embedded, gtfn_cpu, dace_cpu, dace_gpu, gtfn_gpu]
+        LEVEL: [integration]
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
