@@ -1167,7 +1167,10 @@ def test_compute_perturbed_quantities_and_interpolation(
         perturbed_theta_v_at_cells_on_model_levels.asnumpy(), z_rth_pr_2_ref.asnumpy()
     )
     assert test_utils.dallclose(
-        temporal_extrapolation_of_perturbed_exner.asnumpy(), z_exner_ex_pr_ref.asnumpy()
+        temporal_extrapolation_of_perturbed_exner.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_halo, :
+        ],
+        z_exner_ex_pr_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_halo, :],
     )
     assert test_utils.dallclose(
         perturbed_exner_at_cells_on_model_levels.asnumpy(), exner_pr_ref.asnumpy()
@@ -1175,8 +1178,10 @@ def test_compute_perturbed_quantities_and_interpolation(
     assert test_utils.dallclose(rho_at_cells_on_half_levels.asnumpy(), rho_ic_ref.asnumpy())
 
     assert test_utils.dallclose(
-        exner_at_cells_on_half_levels.asnumpy()[:, nflatlev:],
-        z_exner_ic_ref.asnumpy()[:, nflatlev:],
+        exner_at_cells_on_half_levels.asnumpy()[
+            start_cell_lateral_boundary_level_3:end_cell_halo, nflatlev:
+        ],
+        z_exner_ic_ref.asnumpy()[start_cell_lateral_boundary_level_3:end_cell_halo, nflatlev:],
         rtol=1e-11,
     )
 

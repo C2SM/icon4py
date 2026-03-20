@@ -74,7 +74,9 @@ def solve_nh_init(
     exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
     exner_ref_mc = test_utils.array_to_array_info(metrics_savepoint.exner_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c().ndarray)
+    wgtfacq_c = test_utils.array_to_array_info(
+        metrics_savepoint._get_field("wgtfacq_c", dims.CellDim, dims.KDim).ndarray
+    )
     inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
     rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -103,7 +105,9 @@ def solve_nh_init(
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
-    wgtfacq_e = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_e().ndarray)
+    wgtfacq_e = test_utils.array_to_array_info(
+        metrics_savepoint._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim).ndarray
+    )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
     scalfac_dd3d = test_utils.array_to_array_info(metrics_savepoint.scalfac_dd3d().ndarray)
@@ -311,7 +315,9 @@ def test_dycore_wrapper_granule_inputs(
     exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
     exner_ref_mc = test_utils.array_to_array_info(metrics_savepoint.exner_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c().ndarray)
+    wgtfacq_c = test_utils.array_to_array_info(
+        metrics_savepoint._get_field("wgtfacq_c", dims.CellDim, dims.KDim).ndarray
+    )
     inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
     rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -328,7 +334,11 @@ def test_dycore_wrapper_granule_inputs(
     ddxn_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxn_z_full().ndarray)
 
     zdiff_gradp = test_utils.array_to_array_info(metrics_savepoint.zdiff_gradp().ndarray)
-    vertoffset_gradp = test_utils.array_to_array_info(metrics_savepoint.vertoffset_gradp().ndarray)
+    vertidx_gradp = test_utils.array_to_array_info(
+        metrics_savepoint._get_field(
+            "vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+        ).ndarray
+    )
 
     pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
     pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
@@ -336,7 +346,9 @@ def test_dycore_wrapper_granule_inputs(
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
-    wgtfacq_e = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_e().ndarray)
+    wgtfacq_e = test_utils.array_to_array_info(
+        metrics_savepoint._get_field("wgtfacq_e", dims.EdgeDim, dims.KDim).ndarray
+    )
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
     scalfac_dd3d = test_utils.array_to_array_info(metrics_savepoint.scalfac_dd3d().ndarray)
@@ -598,7 +610,7 @@ def test_dycore_wrapper_granule_inputs(
             theta_ref_me=theta_ref_me,
             ddxn_z_full=ddxn_z_full,
             zdiff_gradp=zdiff_gradp,
-            vertoffset_gradp=vertoffset_gradp,
+            vertidx_gradp=vertidx_gradp,
             pg_edgeidx=pg_edgeidx,
             pg_vertidx=pg_vertidx,
             pg_exdist=pg_exdist,
