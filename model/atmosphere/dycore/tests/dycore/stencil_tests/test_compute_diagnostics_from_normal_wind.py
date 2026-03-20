@@ -178,9 +178,8 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
         ),
     }
 
-    @classmethod
+    @stencil_tests.static_reference
     def reference(
-        cls,
         connectivities: dict[gtx.Dimension, np.ndarray],
         tangential_wind: np.ndarray,
         tangential_wind_on_half_levels: np.ndarray,
@@ -290,7 +289,7 @@ class TestComputeDerivedHorizontalWindsAndKEAndHorizontalAdvectionofWAndContrava
             horizontal_advection_of_w_at_edges_on_half_levels=horizontal_advection_of_w_at_edges_on_half_levels,
         )
 
-    @pytest.fixture(
+    @stencil_tests.input_data_fixture(
         params=[
             {"skip_compute_predictor_vertical_advection": value} for value in [True, False]
         ],  # True for benchmarking, False for testing
