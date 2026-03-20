@@ -77,6 +77,7 @@ def check_local_global_field(
     global_reference_field: np.ndarray,
     local_field: np.ndarray,
     check_halos: bool,
+    atol: float,
 ) -> None:
     if dim == dims.KDim:
         np.testing.assert_allclose(global_reference_field, local_field)
@@ -106,7 +107,7 @@ def check_local_global_field(
             local_field[
                 decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
             ],
-            atol=1e-9,
+            atol=atol,
             verbose=True,
         )
 
@@ -141,5 +142,5 @@ def check_local_global_field(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
-        #np.testing.assert_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
-        _non_blocking_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
+        #np.testing.assert_allclose(sorted_, global_reference_field, atol=atol, verbose=True)
+        _non_blocking_allclose(sorted_, global_reference_field, atol=atol, verbose=True)
