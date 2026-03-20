@@ -11,6 +11,7 @@ from typing import Any
 
 import gt4py.next.typing as gtx_typing
 import numpy as np
+import numpy.testing as np_testing
 import numpy.typing as npt
 import pytest
 from typing_extensions import Buffer
@@ -26,6 +27,16 @@ def dallclose(
     equal_nan: bool = False,
 ) -> bool:
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+
+def assert_dallclose(
+    actual: npt.ArrayLike,
+    desired: npt.ArrayLike,
+    rtol: float = 1.0e-12,
+    atol: float = 0.0,
+    equal_nan: bool = False,
+) -> None:
+    np_testing.assert_allclose(actual, desired, rtol=rtol, atol=atol, equal_nan=equal_nan)  # type: ignore[arg-type]
 
 
 def is_sorted(array: np.ndarray) -> bool:

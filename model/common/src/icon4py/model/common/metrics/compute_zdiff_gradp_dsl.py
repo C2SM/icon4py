@@ -129,6 +129,5 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
                         break
 
     vertoffset_gradp = vertidx_gradp - vertoffset_gradp
-    vertoffset_gradp[:horizontal_start_1, :, :] = 0.0
 
     return zdiff_gradp, vertoffset_gradp
