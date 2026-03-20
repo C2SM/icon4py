@@ -71,8 +71,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         vwind_offctr: float,
         thslp_zdiffu: float,
         thhgtd_zdiffu: float,
-        exchange: decomposition.ExchangeRuntime,
-        global_reductions: decomposition.Reductions,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
+        global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
