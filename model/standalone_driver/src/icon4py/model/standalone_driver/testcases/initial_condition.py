@@ -26,6 +26,7 @@ from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     horizontal as h_grid,
     icon as icon_grid,
+    vertical as v_grid,
 )
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.interpolation.stencils import (
@@ -52,6 +53,10 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     interpolation_field_source: interpolation_factory.InterpolationFieldsFactory,
     metrics_field_source: metrics_factory.MetricsFieldsFactory,
     backend: gtx.typing.Backend | None,
+    lowest_layer_thickness: float,
+    model_top_height: float,
+    stretch_factor: float,
+    damping_height: float,
 ) -> driver_states.DriverStates:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_baroclinic_amplitude to values larger than 0.01 if
@@ -250,7 +255,32 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         primal_normal_x=primal_normal_x,
         eta_v_at_edge=eta_v_at_edge.ndarray,
     )
+    vertical_config = v_grid.VerticalGridConfig(
+        grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
 
+    _, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, model_backends.get_allocator(backend))
+
+    prognostic_state_now.w.ndarray[:, :] = testcases_utils.init_w(
+        grid,
+        c2e=grid.get_connectivity(dims.C2E).ndarray,
+        e2c=grid.get_connectivity(dims.E2C).ndarray,
+        z_ifc=metrics_field_source.get(metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL).ndarray,
+        inv_dual_edge_length=geometry_field_source.get(
+            f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"
+        ).ndarray,
+        edge_cell_length=geometry_field_source.get(geometry_meta.EDGE_CELL_DISTANCE).ndarray,
+        primal_edge_length=geometry_field_source.get(geometry_meta.EDGE_LENGTH).ndarray,
+        cell_area=geometry_field_source.get(geometry_meta.CELL_AREA).ndarray,
+        vn=prognostic_state_now.vn.ndarray,
+        vct_b=vct_b.ndarray,
+        nlev=num_levels,
+        array_ns=xp,
+    )
     log.info("U2vn computation completed.")
 
     functools.partial(testcases_utils.apply_hydrostatic_adjustment_ndarray, array_ns=xp)(
@@ -266,7 +296,6 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
         num_levels=num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
-
     prognostic_state_next = prognostics.PrognosticState(
         vn=data_alloc.as_field(prognostic_state_now.vn, allocator=allocator),
         w=data_alloc.as_field(prognostic_state_now.w, allocator=allocator),

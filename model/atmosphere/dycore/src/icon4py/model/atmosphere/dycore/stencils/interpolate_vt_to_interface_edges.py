@@ -35,7 +35,7 @@ def interpolate_vt_to_interface_edges(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _interpolate_vt_to_interface_edges(
         wgtfac_e,
         vt,

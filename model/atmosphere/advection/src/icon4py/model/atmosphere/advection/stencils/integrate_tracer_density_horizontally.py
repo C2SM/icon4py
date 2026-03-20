@@ -72,7 +72,7 @@ def integrate_tracer_density_horizontally(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _integrate_tracer_density_horizontally(
         p_mass_flx_e,
         geofac_div,

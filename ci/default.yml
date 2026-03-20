@@ -23,7 +23,7 @@ include:
         GRID: [simple, icon_regional]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
-.test_model_stencils_aarch64:
+test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
 
@@ -33,7 +33,7 @@ include:
     - nox -s 'test_tools-3.10(datatest)'
 # test_tools_x86_64:
 #   extends: [.test_tools_datatests, .test_template_x86_64]
-.test_tools_datatests_aarch64:
+test_tools_datatests_aarch64:
   extends: [.test_tools_datatests, .test_template_aarch64]
 
 .test_model_datatests:
@@ -45,6 +45,9 @@ include:
       when: never  # run only in daily CI, to save compute resources
     - if: $BACKEND == 'dace_gpu' && $COMPONENT == 'driver'
       when: never  # run only in daily CI, to save compute resources
+    - if: $COMPONENT == 'standalone_driver'
+      variables:
+        SLURM_TIMELIMIT: '00:50:00'
     - if: $BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu'
       variables:
         NUM_PROCESSES: 8
@@ -57,7 +60,7 @@ include:
         SLURM_TIMELIMIT: '00:15:00'
   parallel:
     matrix:
-      - COMPONENT: [muphys]
+      - COMPONENT: [advection, diffusion, dycore, microphysics, muphys, common, driver, standalone_driver]
         BACKEND: [embedded, dace_gpu, gtfn_cpu, gtfn_gpu]
         LEVEL: [integration]
 # test_model_datatests_x86_64:

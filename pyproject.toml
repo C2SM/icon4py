@@ -57,6 +57,10 @@ typing = [
   "types-cffi>=1.16.0",
   "scipy-stubs>=1.15.3.0"
 ]
+typing-distributed = [
+  "mpi4py>=3.1.5",
+  "pymetis>2022.1"
+]
 
 # -- Standard project description options (PEP 621) --
 [project]
@@ -403,8 +407,7 @@ url = 'https://gridtools.github.io/pypi/'
 
 [tool.uv.sources]
 dace = {index = "gridtools"}
-ghex = {git = "https://github.com/msimberg/GHEX.git", branch = "async-mpi"}
-gt4py = {git = "https://github.com/GridTools/gt4py", branch = "allow_more_conditionals_fusion"}
+# gt4py = {git = "https://github.com/GridTools/gt4py", branch = "main"}
 # gt4py = {index = "test.pypi"}
 icon4py-atmosphere-advection = {workspace = true}
 icon4py-atmosphere-diffusion = {workspace = true}

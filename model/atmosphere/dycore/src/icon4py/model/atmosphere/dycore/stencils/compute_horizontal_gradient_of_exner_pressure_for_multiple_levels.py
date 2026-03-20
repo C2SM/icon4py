@@ -65,7 +65,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
         inv_dual_edge_length,
         z_exner_ex_pr,

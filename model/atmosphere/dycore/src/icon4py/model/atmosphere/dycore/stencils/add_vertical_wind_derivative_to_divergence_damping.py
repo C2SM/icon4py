@@ -45,7 +45,7 @@ def add_vertical_wind_derivative_to_divergence_damping(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _add_vertical_wind_derivative_to_divergence_damping(
         hmask_dd3d,
         scalfac_dd3d,
