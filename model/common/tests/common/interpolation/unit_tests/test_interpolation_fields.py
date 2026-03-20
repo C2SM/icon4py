@@ -44,7 +44,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
 )
 
-from ... import utils
+from ... import utils_test
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -61,7 +61,7 @@ def test_compute_c_lin_e(
     backend: gtx_typing.Backend,
 ) -> None:
     xp = data_alloc.import_array_ns(backend)
-    func = functools.partial(compute_c_lin_e, array_ns=xp, exchange=utils.dummy_exchange)
+    func = functools.partial(compute_c_lin_e, array_ns=xp, exchange=utils_test.dummy_exchange)
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
     edge_owner_mask = grid_savepoint.e_owner_mask()
@@ -74,7 +74,7 @@ def test_compute_c_lin_e(
         inv_dual_edge_length.asnumpy(),
         edge_owner_mask.asnumpy(),
         horizontal_start,
-        exchange=utils.dummy_exchange,
+        exchange=utils_test.dummy_exchange,
         array_ns=xp,
     )
     assert test_helpers.dallclose(c_lin_e, c_lin_e_ref.asnumpy())
@@ -162,7 +162,9 @@ def test_compute_geofac_n2s(
     e2c = icon_grid.get_connectivity(dims.E2C).ndarray
     c2e2c = icon_grid.get_connectivity(dims.C2E2C).ndarray
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    geofac_n2s = functools.partial(compute_geofac_n2s, array_ns=xp, exchange=utils.dummy_exchange)(
+    geofac_n2s = functools.partial(
+        compute_geofac_n2s, array_ns=xp, exchange=utils_test.dummy_exchange
+    )(
         dual_edge_length.ndarray,
         geofac_div.ndarray,
         c2e,
@@ -194,7 +196,7 @@ def test_compute_geofac_grg(
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     geofac_grg_0, geofac_grg_1 = functools.partial(
-        compute_geofac_grg, array_ns=xp, exchange=utils.dummy_exchange
+        compute_geofac_grg, array_ns=xp, exchange=utils_test.dummy_exchange
     )(
         primal_normal_cell_x,
         primal_normal_cell_y,
@@ -238,7 +240,7 @@ def test_compute_geofac_grdiv(
     e2c2e = icon_grid.get_connectivity(dims.E2C2E).ndarray
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     geofac_grdiv = functools.partial(
-        compute_geofac_grdiv, array_ns=xp, exchange=utils.dummy_exchange
+        compute_geofac_grdiv, array_ns=xp, exchange=utils_test.dummy_exchange
     )(
         geofac_div.ndarray,
         inv_dual_edge_length.ndarray,
@@ -284,7 +286,7 @@ def test_compute_c_bln_avg(
                 divergence_averaging_central_cell_weight,
                 horizontal_start,
                 horizontal_start_p2,
-                exchange=utils.dummy_exchange,
+                exchange=utils_test.dummy_exchange,
                 array_ns=xp,
             )
         case base_grid.GeometryType.TORUS:
@@ -295,7 +297,7 @@ def test_compute_c_bln_avg(
                 divergence_averaging_central_cell_weight,
                 horizontal_start,
                 horizontal_start_p2,
-                exchange=utils.dummy_exchange,
+                exchange=utils_test.dummy_exchange,
                 array_ns=xp,
             )
 
@@ -325,7 +327,9 @@ def test_compute_e_flx_avg(
     horizontal_start_1 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
-    e_flx_avg = functools.partial(compute_e_flx_avg, array_ns=xp, exchange=utils.dummy_exchange)(
+    e_flx_avg = functools.partial(
+        compute_e_flx_avg, array_ns=xp, exchange=utils_test.dummy_exchange
+    )(
         c_bln_avg,
         geofac_div,
         owner_mask,
@@ -364,7 +368,7 @@ def test_compute_cells_aw_verts(
     )
 
     cells_aw_verts = functools.partial(
-        compute_cells_aw_verts, array_ns=xp, exchange=utils.dummy_exchange
+        compute_cells_aw_verts, array_ns=xp, exchange=utils_test.dummy_exchange
     )(
         dual_area=dual_area,
         edge_vert_length=edge_vert_length,
@@ -446,14 +450,14 @@ def test_compute_pos_on_tplane_e(
                 owner_mask,
                 e2c,
                 horizontal_start,
-                exchange=utils.dummy_exchange,
+                exchange=utils_test.dummy_exchange,
                 array_ns=xp,
             )
         case base_grid.GeometryType.TORUS:
             pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y_torus(
                 dual_edge_length,
                 e2c,
-                exchange=utils.dummy_exchange,
+                exchange=utils_test.dummy_exchange,
                 array_ns=xp,
             )
     assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-8, rtol=1e-9)

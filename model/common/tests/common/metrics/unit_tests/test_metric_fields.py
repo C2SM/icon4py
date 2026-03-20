@@ -31,7 +31,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
 )
 
-from ... import utils
+from ... import utils_test
 
 
 if TYPE_CHECKING:
@@ -429,7 +429,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        exchange=utils.dummy_exchange,
+        exchange=utils_test.dummy_exchange,
         array_ns=xp,
     )
     # TODO (nfarabullini): fix type ignore

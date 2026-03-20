@@ -26,7 +26,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
 )
 
-from ... import utils
+from ... import utils_test
 
 
 if TYPE_CHECKING:
@@ -52,6 +52,6 @@ def test_compute_coeff_gradekin(
         edge_cell_length,
         inv_dual_edge_length,
         horizontal_start,
-        exchange=utils.dummy_exchange,
+        exchange=utils_test.dummy_exchange,
     )
     assert test_utils.dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full)

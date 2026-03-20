@@ -27,7 +27,7 @@ from icon4py.model.testing.fixtures.datatest import (
     processor_props,
 )
 
-from ... import utils
+from ... import utils_test
 
 
 if TYPE_CHECKING:
@@ -90,7 +90,7 @@ def test_compute_wgtfacq_e_dsl(
         c_lin_e=interpolation_savepoint.c_lin_e().ndarray,
         n_edges=icon_grid.num_edges,
         nlev=icon_grid.num_levels,
-        exchange=utils.dummy_exchange,
+        exchange=utils_test.dummy_exchange,
         array_ns=xp,
     )
 
