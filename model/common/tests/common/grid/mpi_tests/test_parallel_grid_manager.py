@@ -102,62 +102,7 @@ embedded_broken_fields = {
 }
 
 
-@pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize(
-    "attrs_name",
-    [
-        geometry_attributes.CELL_AREA,
-        geometry_attributes.CELL_CENTER_X,
-        geometry_attributes.CELL_CENTER_Y,
-        geometry_attributes.CELL_CENTER_Z,
-        geometry_attributes.CELL_LAT,
-        geometry_attributes.CELL_LON,
-        geometry_attributes.CELL_NORMAL_ORIENTATION,
-        geometry_attributes.CORIOLIS_PARAMETER,
-        geometry_attributes.DUAL_AREA,
-        geometry_attributes.DUAL_EDGE_LENGTH,
-        f"inverse_of_{geometry_attributes.DUAL_EDGE_LENGTH}",
-        geometry_attributes.EDGE_AREA,
-        geometry_attributes.EDGE_CELL_DISTANCE,
-        geometry_attributes.EDGE_CENTER_X,
-        geometry_attributes.EDGE_CENTER_Y,
-        geometry_attributes.EDGE_CENTER_Z,
-        geometry_attributes.EDGE_DUAL_U,
-        geometry_attributes.EDGE_DUAL_V,
-        geometry_attributes.EDGE_LAT,
-        f"inverse_of_{geometry_attributes.EDGE_LENGTH}",
-        geometry_attributes.EDGE_LENGTH,
-        geometry_attributes.EDGE_LON,
-        geometry_attributes.EDGE_NORMAL_CELL_U,
-        geometry_attributes.EDGE_NORMAL_CELL_V,
-        geometry_attributes.EDGE_NORMAL_U,
-        geometry_attributes.EDGE_NORMAL_V,
-        geometry_attributes.EDGE_NORMAL_VERTEX_U,
-        geometry_attributes.EDGE_NORMAL_VERTEX_V,
-        geometry_attributes.EDGE_NORMAL_X,
-        geometry_attributes.EDGE_NORMAL_Y,
-        geometry_attributes.EDGE_NORMAL_Z,
-        geometry_attributes.EDGE_TANGENT_CELL_U,
-        geometry_attributes.EDGE_TANGENT_CELL_V,
-        geometry_attributes.EDGE_TANGENT_VERTEX_U,
-        geometry_attributes.EDGE_TANGENT_VERTEX_V,
-        geometry_attributes.EDGE_TANGENT_X,
-        geometry_attributes.EDGE_TANGENT_Y,
-        geometry_attributes.EDGE_TANGENT_Z,
-        geometry_attributes.EDGE_VERTEX_DISTANCE,
-        geometry_attributes.TANGENT_ORIENTATION,
-        geometry_attributes.VERTEX_EDGE_ORIENTATION,
-        geometry_attributes.VERTEX_LAT,
-        geometry_attributes.VERTEX_LON,
-        geometry_attributes.VERTEX_VERTEX_LENGTH,
-        f"inverse_of_{geometry_attributes.VERTEX_VERTEX_LENGTH}",
-        geometry_attributes.VERTEX_X,
-        geometry_attributes.VERTEX_Y,
-        geometry_attributes.VERTEX_Z,
-    ],
-)
-def test_geometry_fields_compare_single_multi_rank(
+def _compare_geometry_fields_single_multi_rank(
     processor_props: decomp_defs.ProcessProperties,
     backend: gtx_typing.Backend | None,
     grid_description: test_defs.GridDescription,
@@ -232,6 +177,92 @@ def test_geometry_fields_compare_single_multi_rank(
     )
 
     _log.info(f"rank = {processor_props.rank} - DONE")
+
+
+@pytest.mark.level("unit")
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "attrs_name",
+    [
+        geometry_attributes.CELL_CENTER_Y,
+        geometry_attributes.CELL_CENTER_Z,
+        geometry_attributes.CELL_LON,
+        geometry_attributes.DUAL_EDGE_LENGTH,
+        geometry_attributes.EDGE_CENTER_Y,
+        geometry_attributes.EDGE_CENTER_Z,
+        geometry_attributes.EDGE_DUAL_V,
+        geometry_attributes.EDGE_LENGTH,
+        geometry_attributes.EDGE_LON,
+        geometry_attributes.EDGE_NORMAL_CELL_V,
+        geometry_attributes.EDGE_NORMAL_V,
+        geometry_attributes.EDGE_NORMAL_VERTEX_V,
+        geometry_attributes.EDGE_NORMAL_Y,
+        geometry_attributes.EDGE_NORMAL_Z,
+        geometry_attributes.EDGE_TANGENT_CELL_V,
+        geometry_attributes.EDGE_TANGENT_VERTEX_V,
+        geometry_attributes.EDGE_TANGENT_Y,
+        geometry_attributes.EDGE_TANGENT_Z,
+        geometry_attributes.VERTEX_LON,
+        geometry_attributes.VERTEX_VERTEX_LENGTH,
+        geometry_attributes.VERTEX_Y,
+        geometry_attributes.VERTEX_Z,
+    ],
+)
+def test_geometry_fields_compare_single_multi_rank_unit(
+    processor_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
+    grid_description: test_defs.GridDescription,
+    attrs_name: str,
+) -> None:
+    _compare_geometry_fields_single_multi_rank(
+        processor_props, backend, grid_description, attrs_name
+    )
+
+
+@pytest.mark.level("integration")
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize(
+    "attrs_name",
+    [
+        geometry_attributes.CELL_AREA,
+        geometry_attributes.CELL_CENTER_X,
+        geometry_attributes.CELL_LAT,
+        geometry_attributes.CELL_NORMAL_ORIENTATION,
+        geometry_attributes.CORIOLIS_PARAMETER,
+        geometry_attributes.DUAL_AREA,
+        f"inverse_of_{geometry_attributes.DUAL_EDGE_LENGTH}",
+        geometry_attributes.EDGE_AREA,
+        geometry_attributes.EDGE_CELL_DISTANCE,
+        geometry_attributes.EDGE_CENTER_X,
+        geometry_attributes.EDGE_DUAL_U,
+        geometry_attributes.EDGE_LAT,
+        f"inverse_of_{geometry_attributes.EDGE_LENGTH}",
+        geometry_attributes.EDGE_NORMAL_CELL_U,
+        geometry_attributes.EDGE_NORMAL_U,
+        geometry_attributes.EDGE_NORMAL_VERTEX_U,
+        geometry_attributes.EDGE_NORMAL_X,
+        geometry_attributes.EDGE_TANGENT_CELL_U,
+        geometry_attributes.EDGE_TANGENT_VERTEX_U,
+        geometry_attributes.EDGE_TANGENT_X,
+        geometry_attributes.EDGE_VERTEX_DISTANCE,
+        geometry_attributes.TANGENT_ORIENTATION,
+        geometry_attributes.VERTEX_EDGE_ORIENTATION,
+        geometry_attributes.VERTEX_LAT,
+        f"inverse_of_{geometry_attributes.VERTEX_VERTEX_LENGTH}",
+        geometry_attributes.VERTEX_X,
+    ],
+)
+def test_geometry_fields_compare_single_multi_rank_integration(
+    processor_props: decomp_defs.ProcessProperties,
+    backend: gtx_typing.Backend | None,
+    grid_description: test_defs.GridDescription,
+    attrs_name: str,
+) -> None:
+    _compare_geometry_fields_single_multi_rank(
+        processor_props, backend, grid_description, attrs_name
+    )
 
 
 def _compare_interpolation_fields_single_multi_rank(
@@ -340,11 +371,14 @@ def _compare_interpolation_fields_single_multi_rank(
         interpolation_attributes.C_LIN_E,
         interpolation_attributes.E_BLN_C_S,
         interpolation_attributes.GEOFAC_DIV,
+        interpolation_attributes.GEOFAC_GRG_Y,
         interpolation_attributes.GEOFAC_ROT,
         interpolation_attributes.LSQ_PSEUDOINV,
         interpolation_attributes.NUDGECOEFFS_E,
         interpolation_attributes.POS_ON_TPLANE_E_X,
         interpolation_attributes.POS_ON_TPLANE_E_Y,
+        interpolation_attributes.RBF_VEC_COEFF_C2,
+        interpolation_attributes.RBF_VEC_COEFF_V2,
     ],
 )
 def test_interpolation_fields_compare_single_multi_rank_unit(
@@ -367,13 +401,10 @@ def test_interpolation_fields_compare_single_multi_rank_unit(
         interpolation_attributes.E_FLX_AVG,
         interpolation_attributes.GEOFAC_GRDIV,
         interpolation_attributes.GEOFAC_GRG_X,
-        interpolation_attributes.GEOFAC_GRG_Y,
         interpolation_attributes.GEOFAC_N2S,
         interpolation_attributes.RBF_VEC_COEFF_C1,
-        interpolation_attributes.RBF_VEC_COEFF_C2,
         interpolation_attributes.RBF_VEC_COEFF_E,
         interpolation_attributes.RBF_VEC_COEFF_V1,
-        interpolation_attributes.RBF_VEC_COEFF_V2,
     ],
 )
 def test_interpolation_fields_compare_single_multi_rank_integration(
@@ -573,10 +604,16 @@ def _compare_metrics_fields_single_multi_rank(
     "attrs_name",
     [
         metrics_attributes.CELL_HEIGHT_ON_HALF_LEVEL,
+        metrics_attributes.COEFF2_DWDZ,
         metrics_attributes.COEFF_GRADEKIN,
+        metrics_attributes.D2DEXDZ2_FAC2_MC,
         metrics_attributes.DDQZ_Z_FULL,
         metrics_attributes.DDXN_Z_HALF_E,
+        metrics_attributes.DDXT_Z_FULL,
         metrics_attributes.DDXT_Z_HALF_E,
+        metrics_attributes.DEEPATMO_DIVH,
+        metrics_attributes.DEEPATMO_DIVZL,
+        metrics_attributes.DEEPATMO_DIVZU,
         metrics_attributes.D_EXNER_DZ_REF_IC,
         metrics_attributes.EXNER_REF_MC,
         metrics_attributes.EXNER_W_IMPLICIT_WEIGHT_PARAMETER,
@@ -585,15 +622,13 @@ def _compare_metrics_fields_single_multi_rank(
         metrics_attributes.INV_DDQZ_Z_FULL,
         metrics_attributes.MAXHGTD,
         metrics_attributes.MAXSLP,
+        metrics_attributes.MAXSLP_AVG,
         metrics_attributes.MAX_NBHGT,
         metrics_attributes.PG_EXDIST_DSL,
         metrics_attributes.RAYLEIGH_W,
         metrics_attributes.RHO_REF_MC,
         metrics_attributes.RHO_REF_ME,
         metrics_attributes.SCALING_FACTOR_FOR_3D_DIVDAMP,
-        metrics_attributes.DEEPATMO_DIVH,
-        metrics_attributes.DEEPATMO_DIVZL,
-        metrics_attributes.DEEPATMO_DIVZU,
         metrics_attributes.THETA_REF_IC,
         metrics_attributes.THETA_REF_MC,
         metrics_attributes.THETA_REF_ME,
@@ -602,6 +637,7 @@ def _compare_metrics_fields_single_multi_rank(
         metrics_attributes.WGTFAC_C,
         metrics_attributes.ZDIFF_GRADP,
         metrics_attributes.ZD_DIFFCOEF,
+        metrics_attributes.ZD_VERTOFFSET,
         metrics_attributes.Z_MC,
     ],
 )
@@ -621,22 +657,17 @@ def test_metrics_fields_compare_single_multi_rank_unit(
     "attrs_name",
     [
         metrics_attributes.COEFF1_DWDZ,
-        metrics_attributes.COEFF2_DWDZ,
         metrics_attributes.D2DEXDZ2_FAC1_MC,
-        metrics_attributes.D2DEXDZ2_FAC2_MC,
         metrics_attributes.DDQZ_Z_FULL_E,
         metrics_attributes.DDQZ_Z_HALF,
         metrics_attributes.DDXN_Z_FULL,
-        metrics_attributes.DDXT_Z_FULL,
         metrics_attributes.EXNER_EXFAC,
         metrics_attributes.EXNER_W_EXPLICIT_WEIGHT_PARAMETER,
         metrics_attributes.MAXHGTD_AVG,
-        metrics_attributes.MAXSLP_AVG,
         metrics_attributes.NFLAT_GRADP,
         metrics_attributes.WGTFACQ_E,
         metrics_attributes.WGTFAC_E,
         metrics_attributes.ZD_INTCOEF,
-        metrics_attributes.ZD_VERTOFFSET,
     ],
 )
 def test_metrics_fields_compare_single_multi_rank_integration(
