@@ -10,15 +10,20 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import pathlib
 import time
 
 from gt4py import next as gtx
 from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
+from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, utils
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import (
+    graupel,
+    graupel_dace_hooks,
+)
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.utils import device_utils
 
@@ -52,15 +57,28 @@ def get_args():
 
 
 def setup_graupel(
-    inp: common.GraupelInput,
     dt: float,
     qnc: float,
-    backend: model_backends.BackendLike,
+    backend: model_backends.BackendDescriptor,
+    hrange: tuple[int, int],
+    vrange: tuple[int, int],
     enable_masking: bool = True,
+    enable_dace_hooks: bool = True,
+    wait_for_completion: bool = False,
 ):
+    assert model_backends.is_backend_descriptor(backend)
+    backend_descriptor = copy.deepcopy(backend)
+    if enable_dace_hooks and backend_descriptor["device"] == model_backends.GPU:
+        # TODO(edopao,iomaganaris): Fix field validation error for CPU target.
+        backend_descriptor["optimization_args"] = {
+            "optimization_hooks": {
+                gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre: graupel_dace_hooks.remove_self_copy_inside_scan
+            },
+        }
+    backend_descriptor["async_sdfg_call"] = not wait_for_completion
     with utils.recursion_limit(10**4):  # TODO(havogt): make an option in gt4py?
         graupel_run_program = model_options.setup_program(
-            backend=backend,
+            backend=backend_descriptor,
             program=graupel.graupel_run,
             constant_args={
                 "dt": ta.wpfloat(dt),
@@ -68,12 +86,12 @@ def setup_graupel(
                 "enable_masking": enable_masking,
             },
             horizontal_sizes={
-                "horizontal_start": gtx.int32(0),
-                "horizontal_end": inp.ncells,
+                "horizontal_start": gtx.int32(hrange[0]),
+                "horizontal_end": gtx.int32(hrange[1]),
             },
             vertical_sizes={
-                "vertical_start": gtx.int32(0),
-                "vertical_end": gtx.int32(inp.nlev),
+                "vertical_start": gtx.int32(vrange[0]),
+                "vertical_end": gtx.int32(vrange[1]),
             },
             offset_provider={"Koff": dims.KDim},
         )
@@ -116,7 +134,12 @@ def main():
     )
 
     graupel_run_program = setup_graupel(
-        inp, dt=args.dt, qnc=args.qnc, backend=backend, enable_masking=args.enable_masking
+        dt=args.dt,
+        qnc=args.qnc,
+        backend=backend,
+        hrange=(0, inp.ncells),
+        vrange=(0, inp.nlev),
+        enable_masking=args.enable_masking,
     )
 
     start_time = None
