@@ -102,10 +102,10 @@ def check_local_global_field(
         _non_blocking_allclose(
         #np.testing.assert_allclose(
             global_reference_field[
-                decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
+                data_alloc.as_numpy(decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO))
             ],
             local_field[
-                decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
+                data_alloc.as_numpy(decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO))
             ],
             atol=atol,
             verbose=True,
@@ -115,12 +115,12 @@ def check_local_global_field(
     # field, by gathering owned entries to the first rank. This ensures that in
     # total we have the full global field distributed on all ranks.
     owned_entries = local_field[
-        decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)
+        data_alloc.as_numpy(decomposition_info.local_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED))
     ]
     gathered_sizes, gathered_field = gather_field(owned_entries, processor_props)
 
     global_index_sizes, gathered_global_indices = gather_field(
-        decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED),
+        data_alloc.as_numpy(decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.OWNED)),
         processor_props,
     )
 
