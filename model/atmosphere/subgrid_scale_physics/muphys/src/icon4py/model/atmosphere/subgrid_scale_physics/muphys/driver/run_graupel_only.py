@@ -68,8 +68,7 @@ def setup_graupel(
 ):
     assert model_backends.is_backend_descriptor(backend)
     backend_descriptor = copy.deepcopy(backend)
-    if enable_dace_hooks and backend_descriptor["device"] == model_backends.GPU:
-        # TODO(edopao,iomaganaris): Fix field validation error for CPU target.
+    if enable_dace_hooks:
         backend_descriptor["optimization_args"] = {
             "optimization_hooks": {
                 gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre: graupel_dace_hooks.remove_self_copy_inside_scan
