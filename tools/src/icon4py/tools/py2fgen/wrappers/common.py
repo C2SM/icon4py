@@ -28,6 +28,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.utils.data_allocation import adjust_fortran_indices
 from icon4py.tools import py2fgen
 
+from icon4py.tools.py2fgen._definitions import WPFLOAT
 
 if TYPE_CHECKING:
     xp: Final = np
@@ -78,51 +79,51 @@ OptionalInt32Array2D: TypeAlias = Annotated[
     ),
 ]
 
-Float64Array1D: TypeAlias = Annotated[
+FloatArray1D: TypeAlias = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=1,
-        dtype=ts.ScalarKind.FLOAT64,
+        dtype=WPFLOAT,
         memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
         is_optional=False,
     ),
 ]
 
-Float64Array2D: TypeAlias = Annotated[
+FloatArray2D: TypeAlias = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=2,
-        dtype=ts.ScalarKind.FLOAT64,
+        dtype=WPFLOAT,
         memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
         is_optional=False,
     ),
 ]
 
-Float64Array3D: TypeAlias = Annotated[
+FloatArray3D: TypeAlias = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=3,
-        dtype=ts.ScalarKind.FLOAT64,
+        dtype=WPFLOAT,
         memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
         is_optional=False,
     ),
 ]
 
-OptionalFloat64Array1D: TypeAlias = Annotated[
+OptionalFloatArray1D: TypeAlias = Annotated[
     data_alloc.NDArray | None,
     py2fgen.ArrayParamDescriptor(
         rank=1,
-        dtype=ts.ScalarKind.FLOAT64,
+        dtype=WPFLOAT,
         memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
         is_optional=True,
     ),
 ]
 
-OptionalFloat64Array2D: TypeAlias = Annotated[
+OptionalFloatArray2D: TypeAlias = Annotated[
     data_alloc.NDArray,
     py2fgen.ArrayParamDescriptor(
         rank=2,
-        dtype=ts.ScalarKind.FLOAT64,
+        dtype=WPFLOAT,
         memory_space=py2fgen.MemorySpace.MAYBE_DEVICE,
         is_optional=True,
     ),

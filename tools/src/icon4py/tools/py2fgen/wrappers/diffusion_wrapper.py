@@ -63,11 +63,11 @@ def diffusion_init(
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     nudgecoeff_e: fa.EdgeField[wpfloat],
-    rbf_vec_coeff_v: wrapper_common.Float64Array3D,
+    rbf_vec_coeff_v: wrapper_common.FloatArray3D,
     zd_cellidx: wrapper_common.OptionalInt32Array2D,
     zd_vertidx: wrapper_common.OptionalInt32Array2D,
-    zd_intcoef: wrapper_common.OptionalFloat64Array2D,
-    zd_diffcoef: wrapper_common.OptionalFloat64Array1D,
+    zd_intcoef: wrapper_common.OptionalFloatArray2D,
+    zd_diffcoef: wrapper_common.OptionalFloatArray1D,
     ndyn_substeps: gtx.int32,
     diffusion_type: gtx.int32,
     hdiff_w: bool,
@@ -249,6 +249,8 @@ def diffusion_run(
 ):
     if granule is None:
         raise RuntimeError("Diffusion granule not initialized. Call 'diffusion_init' first.")
+
+    dtime = wpfloat(dtime)
 
     # prognostic and diagnostic variables
     prognostic_state = PrognosticState(

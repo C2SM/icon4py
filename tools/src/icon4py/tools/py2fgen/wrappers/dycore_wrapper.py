@@ -59,9 +59,9 @@ def solve_nh_init(
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    rbf_vec_coeff_e: wrapper_common.Float64Array2D,
+    rbf_vec_coeff_e: wrapper_common.FloatArray2D,
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
-    rbf_vec_coeff_v: wrapper_common.Float64Array3D,
+    rbf_vec_coeff_v: wrapper_common.FloatArray3D,
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
@@ -89,7 +89,7 @@ def solve_nh_init(
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim, dims.KDim], gtx.int32],
     pg_edgeidx: wrapper_common.OptionalInt32Array1D,
     pg_vertidx: wrapper_common.OptionalInt32Array1D,
-    pg_exdist: wrapper_common.OptionalFloat64Array1D,
+    pg_exdist: wrapper_common.OptionalFloatArray1D,
     ddqz_z_full_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], wpfloat],
     ddxt_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], wpfloat],
     wgtfac_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], wpfloat],
@@ -143,7 +143,7 @@ def solve_nh_init(
     pg_exdist_domain = rho_ref_me.domain
     if any(field is None for field in [pg_edgeidx, pg_vertidx, pg_exdist]):
         assert all(field is None for field in [pg_edgeidx, pg_vertidx, pg_exdist])
-        pg_exdist_dsl = gtx.zeros(pg_exdist_domain, dtype=gtx.float64, allocator=allocator)
+        pg_exdist_dsl = gtx.zeros(pg_exdist_domain, dtype=wpfloat, allocator=allocator)
     else:
         pg_exdist_dsl = data_alloc.list2field(
             domain=pg_exdist_domain,
@@ -152,7 +152,7 @@ def solve_nh_init(
                 data_alloc.adjust_fortran_indices(pg_edgeidx),
                 data_alloc.adjust_fortran_indices(pg_vertidx),
             ),
-            default_value=gtx.float64(0.0),
+            default_value=wpfloat(0.0),
             allocator=allocator,
         )
 
@@ -428,7 +428,7 @@ def solve_nh_run(
         prognostic_states=prognostic_states,
         prep_adv=prep_adv,
         second_order_divdamp_factor=divdamp_fac_o2,
-        dtime=dtime,
+        dtime=wpfloat(dtime),
         ndyn_substeps_var=ndyn_substeps_var,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
