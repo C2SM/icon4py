@@ -57,7 +57,7 @@ class PhysicsDriver:
         self.backend = backend
         self.allocator = model_backends.get_allocator(backend)
 
-    def _local_fields(self):
+    def _local_fields(self) -> None:
         self.temperature_tendency = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
         )
@@ -95,8 +95,10 @@ class PhysicsDriver:
         tracers: tracer_state.TracerState,
         perturbed_exner: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
-    ):
-        saved_exner = data_alloc.as_field(prognostics.current.exner, allocator=self.allocator)
+    ) -> None:
+        saved_exner = data_alloc.as_field(
+            prognostics.current.exner, allocator=self.allocator
+        )  # saved_exner, 1: min_rlcell
 
         compute_edge_2_cell_vector_interpolation.compute_edge_2_cell_vector_interpolation.with_backend(
             self.backend
@@ -131,7 +133,6 @@ class PhysicsDriver:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )  # from kmoist, grf_bdywidth_c+1: min_rlcell_int
-        # data_alloc.field(saved_exner)  # , 1: min_rlcell
 
         self.saturation_adjustment.run(
             temperature_tendency=self.temperature_tendency,
@@ -143,6 +144,7 @@ class PhysicsDriver:
             qc=tracers.qc,
             dtime=dtime,
         )  # from kmoist, grf_bdywidth_c+1: min_rlcell_int
+        # TODO (Chia Rui): update temperature, qv, qc
 
         diagnostic_stencils.diagnose_virtual_temperature_and_exner.with_backend(self.backend)(
             virtual_temperature=diagnostic.virtual_temperature,
@@ -165,7 +167,7 @@ class PhysicsDriver:
             horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
             horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
             vertical_start=self.grid.num_levels,
-            vertical_end=gtx.int32(self.grid.num_levels + 1),
+            vertical_end=self.grid.num_levels + 1,
             offset_provider={"Koff": dims.KDim},
         )
 
@@ -184,8 +186,9 @@ class PhysicsDriver:
             offset_provider={},
         )  # from kmoist, grf_bdywidth_c+1: min_rlcell_int
 
-        # simple_surface()  # only for qv_s, grf_bdywidth_c+1: min_rlcell_int
-        # turbulence() # grf_bdywidth_c+1: min_rlcell_int, NOT PORTED
+        # TODO (Chia Rui): simple_surface()  # only for qv_s, grf_bdywidth_c+1: min_rlcell_int
+        # TODO (Chia Rui): turbulence() # grf_bdywidth_c+1: min_rlcell_int, NOT PORTED
+
         self.microphysics.run(
             qv_tendency=self.tracer_tendency.qv_tendency,
             qc_tendency=self.tracer_tendency.qc_tendency,
@@ -200,13 +203,12 @@ class PhysicsDriver:
             qr=tracers.qr,
             qs=tracers.qs,
             qg=tracers.qg,
-            qnc=tracers.qnc,
             rho=prognostics.current.rho,
             temperature=diagnostic.temperature,
             pressure=diagnostic.pressure,
             dtime=dtime,
         )
-        # update qv, qc
+        # TODO (Chia Rui): update all output
 
         self.saturation_adjustment.run(
             temperature_tendency=self.temperature_tendency,
@@ -218,7 +220,7 @@ class PhysicsDriver:
             qc=tracers.qc,
             dtime=dtime,
         )
-        # update temperature, qv, qc
+        # TODO (Chia Rui): update temperature, qv, qc
 
         diagnostic_stencils.diagnose_exner_and_theta_v_from_virtual_temperature.with_backend(
             self.backend
@@ -228,7 +230,7 @@ class PhysicsDriver:
             perturbed_exner=perturbed_exner,
             theta_v=prognostics.current.theta_v,
             tracers=tracers,
-            temperature=diagnostic_state.temperature,
+            temperature=diagnostic.temperature,
             rho=prognostics.current.rho,
             previous_exner=saved_exner,
             horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
@@ -241,8 +243,23 @@ class PhysicsDriver:
         # TODO (Chia Rui): add diagnose_pressure() here when turbulence is ready # grf_bdywidth_c+1: min_rlcell_int
         # TODO (Chia Rui): surface_transfer() # grf_bdywidth_c+1: min_rlcell_int, NOT PORTED YET
 
-        # halo exchange, including ddt_u_turb and ddt_v_turb
-        diagnose_exner_and_theta_v()  # min_rlcell_int-1: min_rlcell_int
+        # TODO (Chia Rui): halo exchange tempv and exner_pr (and w if diffusion is applied to w)
+        # TODO (Chia Rui): halo exchange, including ddt_u_turb and ddt_v_turb
+        diagnostic_stencils.update_exner_and_theta_v_from_virtual_temperature_in_halo.with_backend(
+            self.backend
+        )(
+            exner=prognostics.current.exner,
+            theta_v=prognostics.current.theta_v,
+            rho=prognostics.current.rho,
+            virtual_temperature=diagnostic.virtual_temperature,
+            mask_prog_halo_c=self.static_field_factories.metrics_field_source.get(
+                metric_attrs.MASK_PROG_HALO_C
+            ),
+            horizontal_start=self.grid.cell_start_index[h_grid.Zone.HALO],
+            horizontal_end=self.grid.cell_end_index[h_grid.Zone.END],
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+        )  # min_rlcell_int-1: min_rlcell_int
         diagnostic_stencils.update_vn_from_u_v_tendencies.with_backend(self.backend)(
             vn=prognostics.current.vn,
             u_tendency=self.u_tendency,

@@ -8,7 +8,7 @@
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next import exp, log, neighbor_sum, sqrt
+from gt4py.next import exp, log, neighbor_sum, sqrt, where
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -358,6 +358,53 @@ def diagnose_virtual_temperature_and_exner(
         tracers,
         temperature,
         out=(virtual_temperature, exner),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
+def _update_exner_and_theta_v_from_virtual_temperature_in_halo(
+    exner: fa.CellKField[ta.wpfloat],
+    theta_v: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    mask_prog_halo_c: fa.CellField[bool],
+) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
+    exner = where(
+        mask_prog_halo_c,
+        _diagnose_exner_from_virtual_temperature_and_rho(virtual_temperature, rho),
+        exner,
+    )
+    theta_v = where(
+        mask_prog_halo_c,
+        _diagnose_theta_v(virtual_temperature=virtual_temperature, exner=exner),
+        theta_v,
+    )
+    return exner, theta_v
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def update_exner_and_theta_v_from_virtual_temperature_in_halo(
+    exner: fa.CellKField[ta.wpfloat],
+    theta_v: fa.CellKField[ta.wpfloat],
+    rho: fa.CellKField[ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    mask_prog_halo_c: fa.CellField[bool],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _update_exner_and_theta_v_from_virtual_temperature_in_halo(
+        exner,
+        theta_v,
+        rho,
+        virtual_temperature,
+        mask_prog_halo_c,
+        out=(exner, theta_v),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

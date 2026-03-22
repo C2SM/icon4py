@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     microphysics_options as mphys_options,
     single_moment_six_class_gscp_graupel as graupel,
 )
-from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common import dimension as dims, model_backends, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -99,6 +99,10 @@ def test_graupel(
         v=None,
     )
 
+    allocator = model_backends.get_allocator(backend)
+    xp = data_alloc.import_array_ns(allocator)
+    qnc = xp.mean(entry_savepoint.qnc())
+
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
         liquid_autoconversion_option=mphys_options.LiquidAutoConversionType.SEIFERT_BEHENG,
         ice_stickeff_min=0.01,
@@ -108,6 +112,7 @@ def test_graupel(
         rain_mu=0.0,
         rain_n0=1.0,
         snow2graupel_riming_coeff=0.5,
+        cloud_number_concentration=qnc,
     )
 
     graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(
@@ -117,8 +122,6 @@ def test_graupel(
         vertical_params=vertical_params,
         backend=backend,
     )
-
-    qnc = entry_savepoint.qnc()
 
     temperature_tendency = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=backend
@@ -153,7 +156,6 @@ def test_graupel(
         tracer_state.qi,
         tracer_state.qs,
         tracer_state.qg,
-        qnc,
         temperature_tendency,
         qv_tendency,
         qc_tendency,

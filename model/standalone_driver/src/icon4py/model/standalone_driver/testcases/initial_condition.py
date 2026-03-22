@@ -149,7 +149,7 @@ def jablonowski_williamson(  # noqa: PLR0915 [too-many-statements]
     eta_v_ndarray = eta_v.ndarray
 
     # set surface pressure
-    diagnostic_state.pressure_ifc.ndarray[:, -1] = p_sfc
+    diagnostic_state.pressure_at_half_levels.ndarray[:, -1] = p_sfc
 
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)

@@ -85,6 +85,8 @@ class SingleMomentSixClassIconGraupelConfig:
     rain_n0: ta.wpfloat = 1.0
     #: coefficient for snow-graupel conversion by riming. Originally defined as csg in mo_nwp_tuning_config.f90 in ICON.
     snow2graupel_riming_coeff: ta.wpfloat = 0.5
+    #: cloud number concentration [1/m3]
+    cloud_number_concentration: ta.wpfloat = 100.0e6
 
 
 @dataclasses.dataclass
@@ -218,6 +220,9 @@ class SingleMomentSixClassIconGraupel:
         )
 
     def _initialize_local_fields(self):
+        self.qnc = data_alloc.zero_field(
+            self._grid, dims.CellDim, dtype=ta.wpfloat, allocator=self._allocator
+        )
         self.rhoqrv_old_kup = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
@@ -346,7 +351,6 @@ class SingleMomentSixClassIconGraupel:
         qi: fa.CellKField[ta.wpfloat],
         qs: fa.CellKField[ta.wpfloat],
         qg: fa.CellKField[ta.wpfloat],
-        qnc: fa.CellField[ta.wpfloat],
         temperature_tendency: fa.CellKField[ta.wpfloat],
         qv_tendency: fa.CellKField[ta.wpfloat],
         qc_tendency: fa.CellKField[ta.wpfloat],
@@ -389,7 +393,7 @@ class SingleMomentSixClassIconGraupel:
             qr=qr,
             qs=qs,
             qg=qg,
-            qnc=qnc,
+            qnc=self.qnc,
             temperature_tendency=temperature_tendency,
             qv_tendency=qv_tendency,
             qc_tendency=qc_tendency,
