@@ -10,6 +10,7 @@ from gt4py.next import exp, maximum, minimum, power, where
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import g_ct, t_d
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator
@@ -28,14 +29,14 @@ def _deposition_auto_conversion(
 
     Result:       Conversion rate
     """
-    M0_S = 3.0e-9  # Initial mass of snow crystals
-    B_DEP = 0.666666666666666667  # Exponent
-    XCRIT = 1.0  # Critical threshold parameter
+    M0_S = wpfloat(3.0e-9)  # Initial mass of snow crystals
+    B_DEP = wpfloat(0.666666666666666667)  # Exponent
+    XCRIT = wpfloat(1.0)  # Critical threshold parameter
 
     return where(
-        (qi > g_ct.qmin),
-        maximum(0.0, ice_dep) * B_DEP / (power((M0_S / m_ice), B_DEP) - XCRIT),
-        0.0,
+        qi > g_ct.qmin,
+        maximum(wpfloat(0.0), ice_dep) * B_DEP / (power((M0_S / m_ice), B_DEP) - XCRIT),
+        wpfloat(0.0),
     )
 
 
@@ -64,13 +65,13 @@ def _deposition_factor(
     Result:      Deposition factor
     """
 
-    KAPPA = 2.40e-2  # Thermal conductivity of dry air
-    B = 1.94  # Exponent
+    KAPPA = wpfloat(2.40e-2)  # Thermal conductivity of dry air
+    B = wpfloat(1.94)  # Exponent
     A = t_d.als * t_d.als / (KAPPA * t_d.rv)  # TBD
-    CX = 2.22e-5 * power(t_d.tmelt, (-B)) * 101325.0  # TBD
+    CX = wpfloat(2.22e-5) * power(t_d.tmelt, (-B)) * wpfloat(101325.0)  # TBD
 
-    x = CX / t_d.rd * power(t, B - 1.0)
-    return (CX / t_d.rd * power(t, B - 1.0)) / (1.0 + A * x * qvsi / (t * t))
+    x = CX / t_d.rd * power(t, B - wpfloat(1.0))
+    return (CX / t_d.rd * power(t, B - wpfloat(1.0))) / (wpfloat(1.0) + A * x * qvsi / (t * t))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -168,12 +169,13 @@ def _ice_deposition_nucleation(
     Result:           Rate of vapor deposition for new ice
     """
     return where(
-        (
-            (qi <= g_ct.qmin)
-            & (((t < g_ct.tfrz_het2) & (dvsi > 0.0)) | ((t <= g_ct.tfrz_het1) & (qc > g_ct.qmin)))
+        (qi <= g_ct.qmin)
+        & (
+            ((t < g_ct.tfrz_het2) & (dvsi > wpfloat(0.0)))
+            | ((t <= g_ct.tfrz_het1) & (qc > g_ct.qmin))
         ),
-        minimum(g_ct.m0_ice * ni, maximum(0.0, dvsi)) / dt,
-        0.0,
+        minimum(g_ct.m0_ice * ni, maximum(wpfloat(0.0), dvsi)) / dt,
+        wpfloat(0.0),
     )
 
 
@@ -204,7 +206,7 @@ def _ice_mass(
 
     Result:         Ice mass
     """
-    MI_MAX = 1.0e-9
+    MI_MAX = wpfloat(1.0e-9)
     return maximum(g_ct.m0_ice, minimum(qi / ni, MI_MAX))
 
 
@@ -231,9 +233,9 @@ def _ice_number(
 
     Result:          Ice number
     """
-    A_COOP = 5.000  # Parameter in cooper fit
-    B_COOP = 0.304  # Parameter in cooper fit
-    NIMAX = 250.0e3  # Maximal number of ice crystals
+    A_COOP = wpfloat(5.000)  # Parameter in cooper fit
+    B_COOP = wpfloat(0.304)  # Parameter in cooper fit
+    NIMAX = wpfloat(250.0e3)  # Maximal number of ice crystals
     return minimum(NIMAX, A_COOP * exp(B_COOP * (t_d.tmelt - t))) / rho
 
 
@@ -258,11 +260,11 @@ def _ice_sticking(
 
     Result:           Ice sticking
     """
-    A_FREEZ = 0.09  # Scale factor for freezing depression
-    B_MAX_EXP = 1.00  # Maximum for exponential temperature factor
-    EFF_MIN = 0.075  # Minimum sticking efficiency
-    EFF_FAC = 3.5e-3  # Scaling factor [1/K] for cloud ice sticking efficiency
-    TCRIT = t_d.tmelt - 85.0  # Temperature at which cloud ice autoconversion starts
+    A_FREEZ = wpfloat(0.09)  # Scale factor for freezing depression
+    B_MAX_EXP = wpfloat(1.00)  # Maximum for exponential temperature factor
+    EFF_MIN = wpfloat(0.075)  # Minimum sticking efficiency
+    EFF_FAC = wpfloat(3.5e-3)  # Scaling factor [1/K] for cloud ice sticking efficiency
+    TCRIT = t_d.tmelt - wpfloat(85.0)  # Temperature at which cloud ice autoconversion starts
 
     return maximum(
         maximum(minimum(exp(A_FREEZ * (t - t_d.tmelt)), B_MAX_EXP), EFF_MIN), EFF_FAC * (t - TCRIT)
@@ -293,10 +295,10 @@ def _snow_lambda(
 
     Result:           Riming snow rate
     """
-    A2 = g_ct.ams * 2.0  # (with ams*gam(bms+1.0_wp) where gam(3) = 2)
-    LMD_0 = 1.0e10  # no snow value of lambda
-    BX = 1.0 / (g_ct.bms + 1.0)  # Exponent
-    QSMIN = 0.0e-6  # TODO(): Check with Georgiana that this value is correct
+    A2 = g_ct.ams * wpfloat(2.0)  # (with ams*gam(bms+1.0_wp) where gam(3) = 2)
+    LMD_0 = wpfloat(1.0e10)  # no snow value of lambda
+    BX = wpfloat(1.0) / (g_ct.bms + wpfloat(1.0))  # Exponent
+    QSMIN = wpfloat(0.0e-6)  # TODO(): Check with Georgiana that this value is correct
 
     return where(qs > g_ct.qmin, power((A2 * ns / ((qs + QSMIN) * rho)), BX), LMD_0)
 
@@ -327,29 +329,33 @@ def _snow_number(
 
     Result:           Snow number
     """
-    TMIN = t_d.tmelt - 40.0
+    TMIN = t_d.tmelt - wpfloat(40.0)
     TMAX = t_d.tmelt
-    QSMIN = 2.0e-6
-    XA1 = -1.65e0
-    XA2 = 5.45e-2
-    XA3 = 3.27e-4
-    XB1 = 1.42e0
-    XB2 = 1.19e-2
-    XB3 = 9.60e-5
-    N0S0 = 8.00e5
-    N0S1 = 13.5 * 5.65e05
-    N0S2 = -0.107
-    N0S3 = 13.5
-    N0S4 = 0.5 * N0S1
-    N0S5 = 1.0e6
-    N0S6 = 1.0e2 * N0S1
-    N0S7 = 1.0e9
+    QSMIN = wpfloat(2.0e-6)
+    XA1 = wpfloat(-1.65e0)
+    XA2 = wpfloat(5.45e-2)
+    XA3 = wpfloat(3.27e-4)
+    XB1 = wpfloat(1.42e0)
+    XB2 = wpfloat(1.19e-2)
+    XB3 = wpfloat(9.60e-5)
+    N0S0 = wpfloat(8.00e5)
+    N0S1 = wpfloat(13.5) * wpfloat(5.65e05)
+    N0S2 = wpfloat(-0.107)
+    N0S3 = wpfloat(13.5)
+    N0S4 = wpfloat(0.5) * N0S1
+    N0S5 = wpfloat(1.0e6)
+    N0S6 = wpfloat(1.0e2) * N0S1
+    N0S7 = wpfloat(1.0e9)
 
     # TODO(): see if these can be incorporated into WHERE statement
     tc = maximum(minimum(t, TMAX), TMIN) - t_d.tmelt
-    alf = power(10.0, (XA1 + tc * (XA2 + tc * XA3)))
+    alf = power(wpfloat(10.0), (XA1 + tc * (XA2 + tc * XA3)))
     bet = XB1 + tc * (XB2 + tc * XB3)
-    n0s = N0S3 * power(((qs + QSMIN) * rho / g_ct.ams), (4.0 - 3.0 * bet)) / (alf * alf * alf)
+    n0s = (
+        N0S3
+        * power(((qs + QSMIN) * rho / g_ct.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
+        / (alf * alf * alf)
+    )
     y = exp(N0S2 * tc)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
@@ -372,29 +378,33 @@ def _snow_number_scalar(
 
     Result:           Snow number
     """
-    TMIN = t_d.tmelt - 40.0
+    TMIN = t_d.tmelt - wpfloat(40.0)
     TMAX = t_d.tmelt
-    QSMIN = 2.0e-6
-    XA1 = -1.65e0
-    XA2 = 5.45e-2
-    XA3 = 3.27e-4
-    XB1 = 1.42e0
-    XB2 = 1.19e-2
-    XB3 = 9.60e-5
-    N0S0 = 8.00e5
-    N0S1 = 13.5 * 5.65e05
-    N0S2 = -0.107
-    N0S3 = 13.5
-    N0S4 = 0.5 * N0S1
-    N0S5 = 1.0e6
-    N0S6 = 1.0e2 * N0S1
-    N0S7 = 1.0e9
+    QSMIN = wpfloat(2.0e-6)
+    XA1 = wpfloat(-1.65e0)
+    XA2 = wpfloat(5.45e-2)
+    XA3 = wpfloat(3.27e-4)
+    XB1 = wpfloat(1.42e0)
+    XB2 = wpfloat(1.19e-2)
+    XB3 = wpfloat(9.60e-5)
+    N0S0 = wpfloat(8.00e5)
+    N0S1 = wpfloat(13.5) * wpfloat(5.65e05)
+    N0S2 = wpfloat(-0.107)
+    N0S3 = wpfloat(13.5)
+    N0S4 = wpfloat(0.5) * N0S1
+    N0S5 = wpfloat(1.0e6)
+    N0S6 = wpfloat(1.0e2) * N0S1
+    N0S7 = wpfloat(1.0e9)
 
     # TODO(): see if these can be incorporated into WHERE statement
     tc = maximum(minimum(t, TMAX), TMIN) - t_d.tmelt
-    alf = power(10.0, (XA1 + tc * (XA2 + tc * XA3)))
+    alf = power(wpfloat(10.0), (XA1 + tc * (XA2 + tc * XA3)))
     bet = XB1 + tc * (XB2 + tc * XB3)
-    n0s = N0S3 * power(((qs + QSMIN) * rho / g_ct.ams), (4.0 - 3.0 * bet)) / (alf * alf * alf)
+    n0s = (
+        N0S3
+        * power(((qs + QSMIN) * rho / g_ct.ams), (wpfloat(4.0) - wpfloat(3.0) * bet))
+        / (alf * alf * alf)
+    )
     y = exp(N0S2 * tc)
     n0smn = maximum(N0S4 * y, N0S5)
     n0smx = minimum(N0S6 * y, N0S7)
@@ -423,7 +433,7 @@ def _vel_scale_factor_ice(
 
     Result:                velocity scaling factor of ice
     """
-    B_I = 0.66666666666666667
+    B_I = wpfloat(0.66666666666666667)
     return power(xrho, B_I)
 
 
@@ -439,7 +449,7 @@ def _vel_scale_factor_ice_scalar(
 
     Result:                velocity scaling factor of ice
     """
-    B_I = 0.66666666666666667
+    B_I = wpfloat(0.66666666666666667)
     return power(xrho, B_I)
 
 
@@ -461,7 +471,7 @@ def _vel_scale_factor_snow(
 
     Result:                Velocity scaling factor of snow
     """
-    B_S = -0.16666666666666667
+    B_S = wpfloat(-0.16666666666666667)
     return xrho * power(_snow_number(t, rho, qs), B_S)
 
 
@@ -483,7 +493,7 @@ def _vel_scale_factor_snow_scalar(
 
     Result:                Velocity scaling factor of snow
     """
-    B_S = -0.16666666666666667
+    B_S = wpfloat(-0.16666666666666667)
     return xrho * power(_snow_number_scalar(t, rho, qs), B_S)
 
 
@@ -532,5 +542,5 @@ def vel_scale_factor_snow(
     t: fa.CellKField[ta.wpfloat],  # Temperature
     qs: fa.CellKField[ta.wpfloat],  # Specific mass
     scale_factor: fa.CellKField[ta.wpfloat],  # output
-):
+) -> None:
     _vel_scale_factor_snow(xrho, rho, t, qs, out=scale_factor)

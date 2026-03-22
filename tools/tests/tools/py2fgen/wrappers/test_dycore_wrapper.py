@@ -50,6 +50,7 @@ def solve_nh_init(
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     l_vert_nested = False
+    ldeepatmo = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
     max_nudging_coefficient = 0.375
@@ -63,7 +64,6 @@ def solve_nh_init(
     divdamp_z4 = 80000.0
 
     # vertical grid params
-    vertical_size = grid_savepoint.num(dims.KDim)
     nflat_gradp = gtx.int32(
         grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
@@ -74,7 +74,7 @@ def solve_nh_init(
     exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
     exner_ref_mc = test_utils.array_to_array_info(metrics_savepoint.exner_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c_dsl().ndarray)
+    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c().ndarray)
     inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
     rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -100,14 +100,13 @@ def solve_nh_init(
     )
     vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
 
-    pg_edgeidx_dsl = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx_dsl().ndarray)
-    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist().ndarray)
+    pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
+    pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
+    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist())
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
-    wgtfacq_e = test_utils.array_to_array_info(
-        metrics_savepoint.wgtfacq_e_dsl(vertical_size).ndarray
-    )
+    wgtfacq_e = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_e().ndarray)
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
     scalfac_dd3d = test_utils.array_to_array_info(metrics_savepoint.scalfac_dd3d().ndarray)
@@ -189,7 +188,8 @@ def solve_nh_init(
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
-        ipeidx_dsl=pg_edgeidx_dsl,
+        pg_edgeidx=pg_edgeidx,
+        pg_vertidx=pg_vertidx,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
@@ -214,6 +214,7 @@ def solve_nh_init(
         divdamp_trans_start=divdamp_trans_start,
         divdamp_trans_end=divdamp_trans_end,
         l_vert_nested=l_vert_nested,
+        ldeepatmo=ldeepatmo,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
         nudge_max_coeff=max_nudging_coefficient,
@@ -285,6 +286,7 @@ def test_dycore_wrapper_granule_inputs(
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     l_vert_nested = False
+    ldeepatmo = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
     max_nudging_coefficient = 0.375
@@ -298,7 +300,6 @@ def test_dycore_wrapper_granule_inputs(
     divdamp_z4 = 80000.0
 
     # vertical grid params
-    vertical_size = grid_savepoint.num(dims.KDim)
     nflat_gradp = gtx.int32(
         grid_savepoint.nflat_gradp() + 1
     )  # undo the -1 to go back to Fortran value
@@ -313,7 +314,7 @@ def test_dycore_wrapper_granule_inputs(
     exner_exfac = test_utils.array_to_array_info(metrics_savepoint.exner_exfac().ndarray)
     exner_ref_mc = test_utils.array_to_array_info(metrics_savepoint.exner_ref_mc().ndarray)
     wgtfac_c = test_utils.array_to_array_info(metrics_savepoint.wgtfac_c().ndarray)
-    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c_dsl().ndarray)
+    wgtfacq_c = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_c().ndarray)
     inv_ddqz_z_full = test_utils.array_to_array_info(metrics_savepoint.inv_ddqz_z_full().ndarray)
     rho_ref_mc = test_utils.array_to_array_info(metrics_savepoint.rho_ref_mc().ndarray)
     theta_ref_mc = test_utils.array_to_array_info(metrics_savepoint.theta_ref_mc().ndarray)
@@ -339,14 +340,13 @@ def test_dycore_wrapper_granule_inputs(
     )
     vertoffset_gradp = test_utils.array_to_array_info(vertoffset_gradp_field.ndarray)
 
-    pg_edgeidx_dsl = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx_dsl().ndarray)
-    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist().ndarray)
+    pg_edgeidx = test_utils.array_to_array_info(metrics_savepoint.pg_edgeidx())
+    pg_vertidx = test_utils.array_to_array_info(metrics_savepoint.pg_vertidx())
+    pg_exdist = test_utils.array_to_array_info(metrics_savepoint.pg_exdist())
     ddqz_z_full_e = test_utils.array_to_array_info(metrics_savepoint.ddqz_z_full_e().ndarray)
     ddxt_z_full = test_utils.array_to_array_info(metrics_savepoint.ddxt_z_full().ndarray)
     wgtfac_e = test_utils.array_to_array_info(metrics_savepoint.wgtfac_e().ndarray)
-    wgtfacq_e = test_utils.array_to_array_info(
-        metrics_savepoint.wgtfacq_e_dsl(vertical_size).ndarray
-    )
+    wgtfacq_e = test_utils.array_to_array_info(metrics_savepoint.wgtfacq_e().ndarray)
     vwind_impl_wgt = test_utils.array_to_array_info(metrics_savepoint.vwind_impl_wgt().ndarray)
     hmask_dd3d = test_utils.array_to_array_info(metrics_savepoint.hmask_dd3d().ndarray)
     scalfac_dd3d = test_utils.array_to_array_info(metrics_savepoint.scalfac_dd3d().ndarray)
@@ -489,12 +489,11 @@ def test_dycore_wrapper_granule_inputs(
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         nflat_gradp=grid_savepoint.nflat_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
-        pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
-        pg_exdist=metrics_savepoint.pg_exdist(),
+        pg_exdist=metrics_savepoint.pg_exdist_dsl(),
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(vertical_size),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(),
         exner_w_implicit_weight_parameter=metrics_savepoint.vwind_impl_wgt(),
         horizontal_mask_for_3d_divdamp=metrics_savepoint.hmask_dd3d(),
         scaling_factor_for_3d_divdamp=metrics_savepoint.scalfac_dd3d(),
@@ -610,7 +609,8 @@ def test_dycore_wrapper_granule_inputs(
             ddxn_z_full=ddxn_z_full,
             zdiff_gradp=zdiff_gradp,
             vertoffset_gradp=vertoffset_gradp,
-            ipeidx_dsl=pg_edgeidx_dsl,
+            pg_edgeidx=pg_edgeidx,
+            pg_vertidx=pg_vertidx,
             pg_exdist=pg_exdist,
             ddqz_z_full_e=ddqz_z_full_e,
             ddxt_z_full=ddxt_z_full,
@@ -635,6 +635,7 @@ def test_dycore_wrapper_granule_inputs(
             divdamp_trans_start=divdamp_trans_start,
             divdamp_trans_end=divdamp_trans_end,
             l_vert_nested=l_vert_nested,
+            ldeepatmo=ldeepatmo,
             rhotheta_offctr=rhotheta_offctr,
             veladv_offctr=veladv_offctr,
             nudge_max_coeff=max_nudging_coefficient,

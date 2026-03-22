@@ -82,6 +82,32 @@ class DiffusionType(int, enum.Enum):
     SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
 
 
+class SmagorinskyStencilType(int, enum.Enum):
+    """
+    Type of the reconstruction stencil for the Smagorinsky diffusion of normal wind (vn).
+
+    Note: Called `itype_vn_diffu` in `mo_diffusion_nml.f90`.
+    Note: We currently only support type 1 in combination with lsmag_3d=False.
+    """
+
+    DIAMOND_VERTICES = (
+        1  #: Smagorinsky diffusion of vn with diamond stencil on vertices (only for vn)
+    )
+    CELLS_AND_VERTICES = 2  #: Smagorinsky diffusion of vn with stencil on neighboring vertices (E2V) and cell centers (E2C)
+
+
+class TemperatureDiscretizationType(int, enum.Enum):
+    """
+    Type of the discretization of the Smagorinsky diffusion of temperature.
+
+    Note: Called `itype_t_diffu` in `mo_diffusion_nml.f90`.
+    Note: We currently only support type 2.
+    """
+
+    HOMOGENEOUS = 1  #: K Lap(T)
+    HETEROGENEOUS = 2  #: Div (K Grad(T))
+
+
 class TurbulenceShearForcingType(int, enum.Enum):
     """
     Type of shear forcing used in turbulance.
@@ -114,19 +140,18 @@ class DiffusionConfig:
     def __init__(
         self,
         diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        hdiff_temp=True,
-        type_vn_diffu: int = 1,
+        hdiff_w: bool = True,
+        hdiff_vn: bool = True,
+        hdiff_temp: bool = True,
+        hdiff_smag_w: bool = False,
+        type_vn_diffu: SmagorinskyStencilType = SmagorinskyStencilType.DIAMOND_VERTICES,
         smag_3d: bool = False,
-        type_t_diffu: int = 2,
+        type_t_diffu: TemperatureDiscretizationType = TemperatureDiscretizationType.HETEROGENEOUS,
         hdiff_efdt_ratio: float = 36.0,
         hdiff_w_efdt_ratio: float = 15.0,
         smagorinski_scaling_factor: float = 0.015,
         n_substeps: int = 5,
         zdiffu_t: bool = True,
-        thslp_zdiffu: float = 0.025,
-        thhgtd_zdiffu: float = 200.0,
         velocity_boundary_diffusion_denom: float = 200.0,
         temperature_boundary_diffusion_denom: float = 135.0,
         _nudge_max_coeff: float | None = None,  # default is set in __init__
@@ -151,6 +176,10 @@ class DiffusionConfig:
         #:  If True, apply horizontal diffusion to temperature field
         #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
         self.apply_to_temperature: bool = hdiff_temp
+
+        #: If True, compute Smagorinsky diffusion to vertical wind field
+        #: Called 'lhdiff_smag_w' in mo_diffusion_nml.f90
+        self.apply_smag_diff_to_vertical_wind: bool = hdiff_smag_w
 
         #: If True, compute 3D Smagorinsky diffusion coefficient
         #: Called 'lsmag_3d' in mo_diffusion_nml.f90
@@ -179,11 +208,6 @@ class DiffusionConfig:
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
-
-        #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f90
-        self.thslp_zdiffu = thslp_zdiffu
-        #: threshold [m] for height difference between adjacent grid points, defaults to 200m (temperature diffusion)
-        self.thhgtd_zdiffu = thhgtd_zdiffu
 
         # from other namelists:
         # from parent namelist mo_nonhydrostatic_nml
@@ -246,16 +270,27 @@ class DiffusionConfig:
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
-        if self.diffusion_type != 5:
+        if self.diffusion_type != DiffusionType.SMAGORINSKY_4TH_ORDER:
             raise NotImplementedError(
                 "Only diffusion type 5 = `Smagorinsky diffusion with fourth-order background "
                 "diffusion` is implemented"
             )
 
-        if self.diffusion_type < 0:
-            self.apply_to_temperature = False
-            self.apply_to_horizontal_wind = False
-            self.apply_to_vertical_wind = False
+        if self.type_vn_diffu != SmagorinskyStencilType.DIAMOND_VERTICES:
+            raise NotImplementedError(
+                "Only type_vn_diffu 1 = `Smagorinsky diffusion with diamond stencil on vertices` is implemented"
+            )
+
+        if self.type_t_diffu != TemperatureDiscretizationType.HETEROGENEOUS:
+            raise NotImplementedError(
+                "Only type_t_diffu 2 = `Smagorinsky diffusion with heterogeneous discretization` is implemented"
+            )
+
+        if self.apply_smag_diff_to_vertical_wind:
+            raise NotImplementedError("Smagorinsky diffusion for vertical wind is not implemented")
+
+        if self.compute_3d_smag_coeff:
+            raise NotImplementedError("3D Smagorinsky diffusion computation is not implemented")
 
         if self.shear_type not in (
             TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
@@ -332,9 +367,6 @@ class DiffusionParams:
                 smagorinski_height = None
             case _:
                 raise NotImplementedError("Only implemented for diffusion type 4 and 5")
-                smagorinski_factor = None
-                smagorinski_height = None
-                pass
         return smagorinski_factor, smagorinski_height
 
 
@@ -385,7 +417,7 @@ class Diffusion:
         self._cell_params = cell_params
 
         self.halo_exchange_wait = decomposition.create_halo_exchange_wait(
-            self._exchange
+            self._exchange,
         )  # wait on a communication handle
         self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
             constants.CPD - constants.GAS_CONSTANT_DRY_AIR
@@ -529,7 +561,6 @@ class Diffusion:
             program=apply_diffusion_to_theta_and_exner,
             constant_args={
                 "geofac_div": self._interpolation_state.geofac_div,
-                "mask": self._metric_state.mask_hdiff,
                 "zd_vertoffset": self._metric_state.zd_vertoffset,
                 "zd_diffcoef": self._metric_state.zd_diffcoef,
                 "vcoef": self._metric_state.zd_intcoef,
@@ -730,11 +761,12 @@ class Diffusion:
         IF ( linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         """
         log.debug("communication of prognostic cell fields: theta, w, exner - start")
-        self._exchange.exchange_and_wait(
+        self._exchange.exchange(
             dims.CellDim,
             prognostic_state.w,
             prognostic_state.theta_v,
             prognostic_state.exner,
+            stream=decomposition.DEFAULT_STREAM,
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
@@ -771,12 +803,17 @@ class Diffusion:
         log.debug("rbf interpolation 1: end")
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
+        # TODO(phimuell, muellch): Is asynchronous mode okay here.
+        # NOTE: We do not specify a stream here but rely on the default argument.
+        #   We do this to ensure that the orchestrator works, but it is not aware
+        #   of the streams.
         log.debug("communication rbf extrapolation of vn - start")
         self._exchange(
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
-            wait=True,
+            full_exchange=True,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )
         log.debug("communication rbf extrapolation of vn - end")
 
@@ -812,13 +849,6 @@ class Diffusion:
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
             )
 
-        # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
-        # TODO(halungge): move this up and do asynchronous exchange
-        if self.config.type_vn_diffu > 1:
-            log.debug("communication rbf extrapolation of z_nable2_e - start")
-            self._exchange(self.z_nabla2_e, dim=dims.EdgeDim, wait=True)
-            log.debug("communication rbf extrapolation of z_nable2_e - end")
-
         log.debug("2nd rbf interpolation: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=self.z_nabla2_e, p_u_out=self.u_vert, p_v_out=self.v_vert
@@ -826,12 +856,14 @@ class Diffusion:
         log.debug("2nd rbf interpolation: end")
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
+        # TODO(phimuell, muellch): Is asynchronous mode okay here.
         log.debug("communication rbf extrapolation of z_nable2_e - start")
         self._exchange(
             self.u_vert,
             self.v_vert,
             dim=dims.VertexDim,
-            wait=True,
+            full_exchange=True,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
@@ -847,7 +879,12 @@ class Diffusion:
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
         log.debug("communication of prognistic.vn : start")
-        handle_edge_comm = self._exchange(prognostic_state.vn, dim=dims.EdgeDim, wait=False)
+        handle_edge_comm = self._exchange(
+            prognostic_state.vn,
+            dim=dims.EdgeDim,
+            full_exchange=False,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
+        )
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
@@ -893,7 +930,8 @@ class Diffusion:
             log.debug("running stencil 13 to 16 apply_diffusion_to_theta_and_exner: end")
 
         self.halo_exchange_wait(
-            handle_edge_comm
+            handle_edge_comm,
+            # stream=decomposition.DEFAULT_STREAM,  # noqa: ERA001  # See NOTE above.
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
 

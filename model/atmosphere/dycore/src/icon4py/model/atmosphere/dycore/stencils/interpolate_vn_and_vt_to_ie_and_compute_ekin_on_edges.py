@@ -46,7 +46,7 @@ def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
-):
+) -> None:
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
         wgtfac_e,
         vn,

@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     "date", ["2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000"]
 )
 def test_graupel(
-    experiment: definitions.Experiments,
+    experiment: definitions.Experiment,
     model_top_height: ta.wpfloat,
     date: str,
     *,
@@ -88,11 +88,7 @@ def test_graupel(
         qg=entry_savepoint.qg(),
     )
     prognostic_state = prognostics.PrognosticState(
-        rho=entry_savepoint.rho(),
-        vn=None,
-        w=None,
-        exner=None,
-        theta_v=None,
+        rho=entry_savepoint.rho(), vn=None, w=None, exner=None, theta_v=None
     )
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=entry_savepoint.temperature(),
@@ -115,7 +111,7 @@ def test_graupel(
     )
 
     graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(
-        graupel_config=graupel_config,
+        config=graupel_config,
         grid=icon_grid,
         metric_state=metric_state,
         vertical_params=vertical_params,

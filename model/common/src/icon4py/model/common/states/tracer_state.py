@@ -8,8 +8,16 @@
 
 
 import dataclasses
+from typing import TYPE_CHECKING
 
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.utils import data_allocation as data_alloc
+
+
+if TYPE_CHECKING:
+    import gt4py.next.typing as gtx_typing
+
+    from icon4py.model.common.grid import icon as icon_grid
 
 
 @dataclasses.dataclass
@@ -32,8 +40,9 @@ class TracerState:
     #: specific graupel content [kg/kg] at cell center
     qg: fa.CellKField[ta.wpfloat]
 
-    #: number concentration of cloud droplets [/m3] at cell center
-    qnc: fa.CellKField[ta.wpfloat]
+    def __iter__(self):
+        for f in dataclasses.fields(self):
+            yield getattr(self, f.name)
 
 
 @dataclasses.dataclass
@@ -74,3 +83,54 @@ class TracerStateScalar:
     qs: ta.wpfloat
     #: specific graupel content [kg/kg]
     qg: ta.wpfloat
+
+
+def initialize_tracer_state(
+    grid: icon_grid.IconGrid,
+    allocator: gtx_typing.Allocator,
+) -> TracerState:
+    """Initialize the tracer state with zero fields."""
+    qv = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    qc = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    qr = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    qi = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    qs = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+    qg = data_alloc.zero_field(
+        grid,
+        dims.CellDim,
+        dims.KDim,
+        allocator=allocator,
+        dtype=ta.wpfloat,
+    )
+
+    return TracerState(qv=qv, qc=qc, qr=qr, qi=qi, qs=qs, qg=qg)

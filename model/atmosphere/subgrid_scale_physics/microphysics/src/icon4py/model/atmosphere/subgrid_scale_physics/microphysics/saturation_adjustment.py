@@ -111,7 +111,7 @@ class SaturationAdjustment:
         self._grid = grid
         self._vertical_params: v_grid.VerticalGrid = vertical_params
         self._metric_state: MetricStateSaturationAdjustment = metric_state
-        self._xp = data_alloc.import_array_ns(self._backend)
+        self._xp = data_alloc.import_array_ns(self._allocator)
 
         self._allocate_local_variables()
         self._determine_horizontal_domains()
@@ -207,7 +207,7 @@ class SaturationAdjustment:
     def _determine_horizontal_domains(self):
         cell_domain = h_grid.domain(dims.CellDim)
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        self._end_cell_local = self._grid.start_index(cell_domain(h_grid.Zone.LOCAL))
+        self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
     def _not_converged(self) -> bool:
         return self._xp.any(

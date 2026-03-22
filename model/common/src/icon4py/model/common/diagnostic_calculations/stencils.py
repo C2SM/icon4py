@@ -30,6 +30,18 @@ def _diagnose_surface_pressure(
     virtual_temperature: fa.CellKField[ta.wpfloat],
     ddqz_z_full: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
+    """
+        Diagnose surface pressure by assuming hydrostatic balance (dp/dz = -rho g = - p g / Rd / Tv).
+        Note that virtual temperature is used in the equation to include the moist effect.
+
+    Args:
+        exner: exner function
+        virtual_temperature): virtual temperature [K]
+        ddqz_z_full: vertical grid spacing at full levels [m]
+
+    Returns:
+        surface pressure: air pressure on the surface (model bottom boundary) [Pa]
+    """
     surface_pressure = physics_constants.p0ref * exp(
         physics_constants.cpd_o_rd * log(exner(Koff[-3]))
         + physics_constants.grav_o_rd
@@ -71,7 +83,22 @@ def _scan_pressure(
     ddqz_z_full: ta.wpfloat,
     virtual_temperature: ta.wpfloat,
     surface_pressure: ta.wpfloat,
-):
+) -> tuple[ta.wpfloat, ta.wpfloat, bool]:
+    """
+        Diagnose pressure at the model full and half levels by assuming hydrostatic balance (dp/dz = -rho g = - p g / Rd / Tv).
+        Note that virtual temperature is used in the equation to include the moist effect.
+        The hydrostatic balance is integrated from half levels k-1/2 to k+1/2, and we can obtain the pressure at k+1/2 half level given the pressure at k-1/2 half level.
+        The pressure at full level k is diagnosed by assuming the geometric mean of the pressure at two adjacent half levels.
+
+    Args:
+        state: a tuple of (pressure at full levels, pressure at half levels, switch), where switch is True when the current level is the bottommost model level (scan from bottom to top) [Pa]
+        ddqz_z_full: vertical grid spacing at full levels [m]
+        virtual_temperature: virtual temperature [K]
+        surface_pressure: air pressure on the surface (model bottom boundary) [Pa]
+
+    Returns:
+        pressure at full levels, pressure at half levels [Pa]
+    """
     pressure_interface = (
         surface_pressure * exp(-physics_constants.grav_o_rd * ddqz_z_full / virtual_temperature)
         if state[2]
@@ -92,15 +119,15 @@ def _diagnose_pressure(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     """
-    Update pressure by assuming hydrostatic balance (dp/dz = -rho g = p g / Rd / Tv).
+    Update pressure by assuming hydrostatic balance (dp/dz = -rho g = - p g / Rd / Tv).
     Note that virtual temperature is used in the equation.
 
     Args:
         ddqz_z_full: vertical grid spacing at full levels [m]
         virtual_temperature: air virtual temperature [K]
-        surface_pressure: surface air pressure [Pa]
+        surface_pressure: air pressure on the surface (model bottom boundary) [Pa]
     Returns:
-        pressure at full levels, pressure at half levels (excluding surface level)
+        pressure at full levels, pressure at half levels (excluding surface level) [Pa]
     """
     pressure, pressure_at_half_levels, _ = _scan_pressure(
         ddqz_z_full, virtual_temperature, surface_pressure
@@ -136,6 +163,14 @@ def diagnose_pressure(
 def _total_hydrometeors(
     tracers: tracer_state.TracerState,
 ) -> fa.CellKField[ta.wpfloat]:
+    """
+    Summation of all hydrometeor mixing ratios.
+
+    Args:
+        tracers: tracer state containing the mixing ratios of water vapor and all hydrometeors [kg kg-1]
+    Returns:
+        total hydrometeor mixing ratio [kg kg-1]
+    """
     qsum = tracers.qc + tracers.qi + tracers.qr + tracers.qs + tracers.qg
     return qsum
 
@@ -145,6 +180,14 @@ def _diagnose_temperature(
     tracers: tracer_state.TracerState,
     virtual_temperature: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
+    """
+    Diagnose temperature .
+
+    Args:
+        tracers: tracer state containing the mixing ratios of water vapor and all hydrometeors [kg kg-1]
+    Returns:
+        total hydrometeor mixing ratio [kg kg-1]
+    """
     temperature = virtual_temperature / (
         wpfloat("1.0")
         + physics_constants.rv_o_rd_minus_1 * tracers.qv

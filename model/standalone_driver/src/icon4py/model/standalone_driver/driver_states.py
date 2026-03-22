@@ -17,16 +17,14 @@ from typing import NamedTuple
 import devtools
 
 import icon4py.model.common.utils as common_utils
+from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.grid import geometry as grid_geometry
 from icon4py.model.common.interpolation import interpolation_factory
 from icon4py.model.common.metrics import metrics_factory
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import diagnostic_state, prognostic_state, tracer_state
 from icon4py.model.standalone_driver import config as driver_config
 
 
@@ -62,9 +60,12 @@ class DriverStates(NamedTuple):
 
     prep_advection_prognostic: dycore_states.PrepAdvection
     solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro
+    tracer_advection_diagnostic: advection_states.AdvectionDiagnosticState
+    prep_tracer_advection_prognostic: advection_states.AdvectionPrepAdvState
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
-    prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
-    diagnostic: diagnostics.DiagnosticState
+    prognostics: common_utils.TimeStepPair[prognostic_state.PrognosticState]
+    diagnostic: diagnostic_state.DiagnosticState
+    tracers: common_utils.TimeStepPair[tracer_state.TracerState]
 
 
 @dataclasses.dataclass
@@ -176,10 +177,5 @@ class TimerCollection:
                 )
             else:
                 log.info(
-                    f"|{timer_name:^30}|"
-                    f"{'not started':^23}|"
-                    f"{'':^23}|"
-                    f"{'':^23}|"
-                    f"{'':^23}|"
-                    f"{'':^23}|"
+                    f"|{timer_name:^30}|{'not started':^23}|{'':^23}|{'':^23}|{'':^23}|{'':^23}|"
                 )

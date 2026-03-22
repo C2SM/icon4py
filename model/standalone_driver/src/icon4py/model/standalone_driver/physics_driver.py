@@ -31,13 +31,9 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation import interpolation_attributes as interp_attrs
 from icon4py.model.common.interpolation.stencils import compute_edge_2_cell_vector_interpolation
 from icon4py.model.common.metrics import metrics_attributes as metric_attrs
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-    tracer_state,
-)
+from icon4py.model.common.states import diagnostic_state, prognostic_state, tracer_state
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.standalone_driver import config as driver_config, driver_states
+from icon4py.model.standalone_driver import driver_states
 
 
 log = logging.getLogger(__name__)
@@ -46,16 +42,14 @@ log = logging.getLogger(__name__)
 class PhysicsDriver:
     def __init__(
         self,
-        config: driver_config.DriverConfig,
-        static_field_factories: driver_states.StaticFieldFactories,
-        vertical_params: v_grid.VerticalGrid,
         grid: icon_grid.IconGrid,
+        vertical_grid: v_grid.VerticalGrid,
+        static_field_factories: driver_states.StaticFieldFactories,
         saturation_adjustment: satad.SaturationAdjustment,
         microphysics: graupel.SingleMomentSixClassIconGraupel,
         backend: model_backends.BackendLike,
     ):
-        self.config = config
-        self.vertical_params = vertical_params
+        self.vertical_grid = vertical_grid
         self.grid = grid
         self.static_field_factories = static_field_factories
         self.saturation_adjustment = saturation_adjustment
@@ -63,7 +57,7 @@ class PhysicsDriver:
         self.backend = backend
         self.allocator = model_backends.get_allocator(backend)
 
-    def _local_fields(self, grid: icon_grid.IconGrid):
+    def _local_fields(self):
         self.temperature_tendency = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
         )
@@ -96,35 +90,28 @@ class PhysicsDriver:
 
     def __call__(
         self,
-        diagnostic_state: diagnostics.DiagnosticState,
-        prognostic_state: common_utils.TimeStepPair[prognostics.PrognosticState],
+        prognostics: common_utils.TimeStepPair[prognostic_state.PrognosticState],
+        diagnostic: diagnostic_state.DiagnosticState,
         tracers: tracer_state.TracerState,
         perturbed_exner: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ):
-        cell_domain = h_grid.domain(dims.CellDim)
-        edge_domain = h_grid.domain(dims.EdgeDim)
-        start_cell_nudging_level = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-        start_edge_nudging_level = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING))
-        end_edge_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-
-        saved_exner = data_alloc.as_field(prognostic_state.current.exner, allocator=self.allocator)
+        saved_exner = data_alloc.as_field(prognostics.current.exner, allocator=self.allocator)
 
         compute_edge_2_cell_vector_interpolation.compute_edge_2_cell_vector_interpolation.with_backend(
             self.backend
         )(
-            p_e_in=prognostic_state.current.vn,
+            p_e_in=prognostics.current.vn,
             ptr_coeff_1=self.static_field_factories.interpolation_field_source.get(
                 interp_attrs.RBF_VEC_COEFF_C1
             ),
             ptr_coeff_2=self.static_field_factories.interpolation_field_source.get(
                 interp_attrs.RBF_VEC_COEFF_C2
             ),
-            p_u_out=diagnostic_state.u,
-            p_v_out=diagnostic_state.v,
+            p_u_out=diagnostic.u,
+            p_v_out=diagnostic.v,
             horizontal_start=1,
-            horizontal_end=end_cell_local,
+            horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.connectivities,
@@ -133,14 +120,14 @@ class PhysicsDriver:
         diagnostic_stencils.diagnose_virtual_temperature_and_temperature_from_exner.with_backend(
             self.backend
         )(
-            virtual_temperature=diagnostic_state.virtual_temperature,
-            temperature=diagnostic_state.temperature,
+            virtual_temperature=diagnostic.virtual_temperature,
+            temperature=diagnostic.temperature,
             tracers=tracers,
-            theta_v=prognostic_state.current.theta_v,
-            exner=prognostic_state.current.exner,
-            horizontal_start=start_cell_nudging_level,
-            horizontal_end=end_cell_local,
-            vertical_start=self.vertical_params.kstart_moist,
+            theta_v=prognostics.current.theta_v,
+            exner=prognostics.current.exner,
+            horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
+            horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
+            vertical_start=self.vertical_grid.kstart_moist,
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )  # from kmoist, grf_bdywidth_c+1: min_rlcell_int
@@ -150,49 +137,49 @@ class PhysicsDriver:
             temperature_tendency=self.temperature_tendency,
             qv_tendency=self.tracer_tendency.qv_tendency,
             qc_tendency=self.tracer_tendency.qc_tendency,
-            rho=prognostic_state.current.rho,
-            temperature=diagnostic_state.temperature,
+            rho=prognostics.current.rho,
+            temperature=diagnostic.temperature,
             qv=tracers.qv,
             qc=tracers.qc,
             dtime=dtime,
         )  # from kmoist, grf_bdywidth_c+1: min_rlcell_int
 
         diagnostic_stencils.diagnose_virtual_temperature_and_exner.with_backend(self.backend)(
-            virtual_temperature=diagnostic_state.virtual_temperature,
-            exner=prognostic_state.current.exner,
+            virtual_temperature=diagnostic.virtual_temperature,
+            exner=prognostics.current.exner,
             tracers=tracers,
-            temperature=diagnostic_state.temperature,
-            horizontal_start=start_cell_nudging_level,
-            horizontal_end=end_cell_local,
-            vertical_start=self.vertical_params.kstart_moist,
+            temperature=diagnostic.temperature,
+            horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
+            horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
+            vertical_start=self.vertical_grid.kstart_moist,
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )  # from kmoist, grf_bdywidth_c+1: min_rlcell_int
         diagnostic_stencils.diagnose_surface_pressure.with_backend(self.backend)(
-            surface_pressure=diagnostic_state.pressure_at_half_levels,
-            exner=prognostic_state.current.exner,
-            virtual_temperature=diagnostic_state.virtual_temperature,
+            surface_pressure=diagnostic.pressure_at_half_levels,
+            exner=prognostics.current.exner,
+            virtual_temperature=diagnostic.virtual_temperature,
             ddqz_z_full=self.static_field_factories.metrics_field_source.get(
                 metric_attrs.DDQZ_Z_FULL
             ),
-            horizontal_start=start_cell_nudging_level,
-            horizontal_end=end_cell_local,
+            horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
+            horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
             vertical_start=self.grid.num_levels,
             vertical_end=gtx.int32(self.grid.num_levels + 1),
             offset_provider={"Koff": dims.KDim},
         )
 
         diagnostic_stencils.diagnose_pressure.with_backend(self.backend)(
-            pressure=diagnostic_state.pressure,
-            pressure_at_half_levels=diagnostic_state.pressure_at_half_levels,
-            surface_pressure=diagnostic_state.surface_pressure,
-            virtual_temperature=diagnostic_state.virtual_temperature,
+            pressure=diagnostic.pressure,
+            pressure_at_half_levels=diagnostic.pressure_at_half_levels,
+            surface_pressure=diagnostic.surface_pressure,
+            virtual_temperature=diagnostic.virtual_temperature,
             ddqz_z_full=self.static_field_factories.metrics_field_source.get(
                 metric_attrs.DDQZ_Z_FULL
             ),
-            horizontal_start=start_cell_nudging_level,
-            horizontal_end=end_cell_local,
-            vertical_start=self.vertical_params.kstart_moist,
+            horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
+            horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
+            vertical_start=self.vertical_grid.kstart_moist,
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )  # from kmoist, grf_bdywidth_c+1: min_rlcell_int
@@ -214,36 +201,38 @@ class PhysicsDriver:
             qs=tracers.qs,
             qg=tracers.qg,
             qnc=tracers.qnc,
-            rho=prognostic_state.current.rho,
-            temperature=diagnostic_state.temperature,
-            pressure=diagnostic_state.pressure,
+            rho=prognostics.current.rho,
+            temperature=diagnostic.temperature,
+            pressure=diagnostic.pressure,
             dtime=dtime,
         )
+        # update qv, qc
 
         self.saturation_adjustment.run(
             temperature_tendency=self.temperature_tendency,
             qv_tendency=self.tracer_tendency.qv_tendency,
             qc_tendency=self.tracer_tendency.qc_tendency,
-            rho=prognostic_state.current.rho,
-            temperature=diagnostic_state.temperature,
+            rho=prognostics.current.rho,
+            temperature=diagnostic.temperature,
             qv=tracers.qv,
             qc=tracers.qc,
             dtime=dtime,
         )
+        # update temperature, qv, qc
 
         diagnostic_stencils.diagnose_exner_and_theta_v_from_virtual_temperature.with_backend(
             self.backend
         )(
-            virtual_temperature=diagnostic_state.virtual_temperature,
-            exner=prognostic_state.current.exner,
+            virtual_temperature=diagnostic.virtual_temperature,
+            exner=prognostics.current.exner,
             perturbed_exner=perturbed_exner,
-            theta_v=prognostic_state.current.theta_v,
+            theta_v=prognostics.current.theta_v,
             tracers=tracers,
             temperature=diagnostic_state.temperature,
-            rho=prognostic_state.current.rho,
+            rho=prognostics.current.rho,
             previous_exner=saved_exner,
-            horizontal_start=start_cell_nudging_level,
-            horizontal_end=end_cell_local,
+            horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
+            horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -255,7 +244,7 @@ class PhysicsDriver:
         # halo exchange, including ddt_u_turb and ddt_v_turb
         diagnose_exner_and_theta_v()  # min_rlcell_int-1: min_rlcell_int
         diagnostic_stencils.update_vn_from_u_v_tendencies.with_backend(self.backend)(
-            vn=prognostic_state.current.vn,
+            vn=prognostics.current.vn,
             u_tendency=self.u_tendency,
             v_tendency=self.v_tendency,
             dt=dtime,
@@ -268,9 +257,44 @@ class PhysicsDriver:
             primal_normal_cell_y=self.static_field_factories.geometry_field_source.get(
                 geo_attrs.EDGE_NORMAL_CELL_V
             ),
-            horizontal_start=start_edge_nudging_level,
-            horizontal_end=end_edge_local,
+            horizontal_start=self.grid.edge_start_index[h_grid.Zone.NUDGING],
+            horizontal_end=self.grid.edge_end_index[h_grid.Zone.LOCAL],
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.connectivities,
         )  # grf_bdywidth_e+1: min_rledge_int
+
+
+def initialize_physics_driver(
+    grid: icon_grid.IconGrid,
+    vertical_grid: v_grid.VerticalGrid,
+    static_field_factories: driver_states.StaticFieldFactories,
+    backend: model_backends.BackendLike,
+) -> PhysicsDriver:
+    saturation_adjustment = satad.SaturationAdjustment(
+        config=satad.SaturationAdjustmentConfig(),
+        grid=grid,
+        vertical_params=vertical_grid,
+        metric_state=satad.MetricStateSaturationAdjustment(
+            ddqz_z_full=static_field_factories.metrics_field_source.get(metric_attrs.DDQZ_Z_FULL)
+        ),
+        backend=backend,
+    )
+    microphysics = graupel.SingleMomentSixClassIconGraupel(
+        config=graupel.SingleMomentSixClassIconGraupelConfig(),
+        grid=grid,
+        vertical_params=vertical_grid,
+        metric_state=graupel.MetricStateIconGraupel(
+            ddqz_z_full=static_field_factories.metrics_field_source.get(metric_attrs.DDQZ_Z_FULL)
+        ),
+        backend=backend,
+    )
+    physics_driver = PhysicsDriver(
+        grid=grid,
+        vertical_grid=vertical_grid,
+        static_field_factories=static_field_factories,
+        saturation_adjustment=saturation_adjustment,
+        microphysics=microphysics,
+        backend=backend,
+    )
+    return physics_driver

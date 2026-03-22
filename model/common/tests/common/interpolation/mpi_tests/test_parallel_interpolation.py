@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.decomposition import definitions as decomposition, mpi_decomposition
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
@@ -40,6 +40,9 @@ if TYPE_CHECKING:
     import gt4py.next.typing as gtx_typing
 
     from icon4py.model.testing import serialbox as sb
+
+if mpi_decomposition.mpi4py is None:
+    pytest.skip("Skipping parallel tests on single node installation", allow_module_level=True)
 
 
 @pytest.mark.level("integration")
@@ -232,9 +235,8 @@ def test_distributed_interpolation_lsq_pseudoinv(
     parallel_helpers.log_process_properties(processor_props)
     parallel_helpers.log_local_field_size(decomposition_info)
     factory = interpolation_factory_from_savepoint
-    field_ref_1 = interpolation_savepoint.__getattribute__("lsq_pseudoinv_1")().asnumpy()
-    field_ref_2 = interpolation_savepoint.__getattribute__("lsq_pseudoinv_2")().asnumpy()
-    field_1 = factory.get(attrs.LSQ_PSEUDOINV)[:, 0, :]
-    field_2 = factory.get(attrs.LSQ_PSEUDOINV)[:, 1, :]
-    assert test_utils.dallclose(field_1, field_ref_1, atol=1e-15)  # type: ignore[arg-type] # mypy does not recognize sliced array as still an array
-    assert test_utils.dallclose(field_2, field_ref_2, atol=1e-15)  # type: ignore[arg-type] # mypy does not recognize sliced array as still an array
+    field_ref_1 = interpolation_savepoint.lsq_pseudoinv_1().asnumpy()
+    field_ref_2 = interpolation_savepoint.lsq_pseudoinv_2().asnumpy()
+    field = factory.get(attrs.LSQ_PSEUDOINV).asnumpy()
+    assert test_utils.dallclose(field[:, 0, :], field_ref_1, atol=1e-15)
+    assert test_utils.dallclose(field[:, 1, :], field_ref_2, atol=1e-15)

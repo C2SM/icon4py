@@ -213,7 +213,9 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
         allocator=allocator,
     )
 
-    compute_edge_2_cell_vector_interpolation.compute_edge_2_cell_vector_interpolation.with_backend(backend)(
+    compute_edge_2_cell_vector_interpolation.compute_edge_2_cell_vector_interpolation.with_backend(
+        backend
+    )(
         vn,
         rbf_vec_coeff_c1,
         rbf_vec_coeff_c2,
@@ -250,18 +252,10 @@ def model_initialization_gauss3d(  # noqa: PLR0915 [too-many-statements]
     )
 
     prognostic_state_now = prognostics.PrognosticState(
-        w=w,
-        vn=vn,
-        theta_v=theta_v,
-        rho=rho,
-        exner=exner,
+        w=w, vn=vn, theta_v=theta_v, rho=rho, exner=exner
     )
     prognostic_state_next = prognostics.PrognosticState(
-        w=w_next,
-        vn=vn_next,
-        theta_v=theta_v_next,
-        rho=rho_next,
-        exner=exner_next,
+        w=w_next, vn=vn_next, theta_v=theta_v_next, rho=rho_next, exner=exner_next
     )
 
     diffusion_diagnostic_state = diffusion_states.initialize_diffusion_diagnostic_state(

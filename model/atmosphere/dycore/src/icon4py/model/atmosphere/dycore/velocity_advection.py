@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-# ruff: noqa: ERA001
 
 from __future__ import annotations
 
@@ -301,6 +300,7 @@ class VelocityAdvection:
 
         # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
         # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
+        # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
         apply_extra_diffusion_on_vn = True
         self._compute_advection_in_horizontal_momentum(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
@@ -372,6 +372,7 @@ class VelocityAdvection:
 
         # Note, if we compute `apply_extra_diffusion_on_vn = max_vertical_cfl > cfl_w_limit * dtime` here,
         # we would have to synchronize with the device already here to get the value of `max_vertical_cfl`.
+        # TODO (Chia Rui): to decide whether make apply_extra_diffusion_on_vn a config parameter or remove it or always turn on extra diffusion
         apply_extra_diffusion_on_vn = True
         self._compute_advection_in_horizontal_momentum(
             normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
