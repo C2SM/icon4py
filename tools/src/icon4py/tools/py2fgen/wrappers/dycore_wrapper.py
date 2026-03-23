@@ -228,6 +228,15 @@ def solve_nh_init(
     # uses GT4Py's embedded shift to move the domain to surface levels
     wgtfacq_e = field_utils.flip(wgtfacq_e(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)
 
+    # In Fortran `vertidx_gradp` contains `0`s in areas where the array is not used.
+    # When we translate to offsets we just subtract the current index, therefore these values will be negative.
+    # Since in Fortran accessing index `0` would be out-of-bounds, we should be safe.
+    vertoffset_gradp = (
+        field_utils.index2offset(
+            data_alloc.adjust_fortran_indices(vertidx_gradp), dims.KDim, allocator
+        ),
+    )
+
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
         mask_prog_halo_c=mask_prog_halo_c,
         rayleigh_w=rayleigh_w,
@@ -248,9 +257,7 @@ def solve_nh_init(
         reference_theta_at_edges_on_model_levels=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
-        vertoffset_gradp=field_utils.index2offset(
-            data_alloc.adjust_fortran_indices(vertidx_gradp), dims.KDim, allocator
-        ),
+        vertoffset_gradp=vertoffset_gradp,
         nflat_gradp=gtx.int32(nflat_gradp - 1),  # Fortran vs Python indexing
         pg_exdist=pg_exdist_dsl,
         ddqz_z_full_e=ddqz_z_full_e,

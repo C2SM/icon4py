@@ -833,6 +833,9 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("zdiff_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim)
 
     def vertoffset_gradp(self):
+        # In Fortran `vertidx_gradp` contains `0`s in areas where the array is not used.
+        # When we translate to offsets we just subtract the current index, therefore these values will be negative.
+        # Since in Fortran accessing index `0` would be out-of-bounds, we should be safe.
         vertidx_gradp = data_alloc.adjust_fortran_indices(
             self._get_field("vertidx_gradp", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         )
