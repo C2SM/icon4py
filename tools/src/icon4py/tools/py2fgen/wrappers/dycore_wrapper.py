@@ -231,10 +231,8 @@ def solve_nh_init(
     # In Fortran `vertidx_gradp` contains `0`s in areas where the array is not used.
     # When we translate to offsets we just subtract the current index, therefore these values will be negative.
     # Since in Fortran accessing index `0` would be out-of-bounds, we should be safe.
-    vertoffset_gradp = (
-        field_utils.index2offset(
-            data_alloc.adjust_fortran_indices(vertidx_gradp), dims.KDim, allocator
-        ),
+    vertoffset_gradp = field_utils.index2offset(
+        data_alloc.adjust_fortran_indices(vertidx_gradp), dims.KDim, allocator
     )
 
     metric_state_nonhydro = dycore_states.MetricStateNonHydro(
