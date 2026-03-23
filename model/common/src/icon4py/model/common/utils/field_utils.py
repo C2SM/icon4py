@@ -8,7 +8,7 @@
 
 import array_api_compat
 from gt4py import next as gtx
-from gt4py.next import typing as gtx_typing
+from gt4py.next import typing as gtx_typing, where
 
 
 def flip(field: gtx.Field, dim: gtx.Dimension, allocator: gtx_typing.Allocator) -> gtx.Field:
@@ -47,6 +47,9 @@ def index2offset(
         ),
         allocator=allocator,
     )
-    offset_field = index_field - current_index  # use GT4Py's broadcasting and field arithmetic
+    # use GT4Py's broadcasting and field arithmetic
+    offset_field = where(
+        index_field >= 0, index_field - current_index, 0
+    )  # TODO: rename this function or undo this change...
     # if GT4Py embedded would propagate the allocator, we could avoid this extra conversion.
     return gtx.as_field(offset_field.domain, offset_field.ndarray, allocator=allocator)
