@@ -111,14 +111,14 @@ def test_distributed_metrics_attrs(
     field = factory.get(attrs_name).asnumpy()
     field_ref = metrics_savepoint.__getattribute__(metrics_name)().asnumpy()
     if horizontal_range is not None:
-        # We assume that the horizontal dimension exists and is the first one. If this turns out to not be the case, we can always add more logic here.
+        # We assume that the horizontal dimension exists and is the first one.
         slicer = _get_slice_tuple_from_horizontal_range(
             factory.grid, attrs.attrs[attrs_name]["dims"][0], horizontal_range
         )
         field = field[slicer]
         field_ref = field_ref[slicer]
 
-    assert test_utils.dallclose(field, field_ref, rtol=1e-8, atol=1.0e-8)
+    test_utils.assert_dallclose(field, field_ref, rtol=1e-8, atol=1.0e-8)
 
 
 @pytest.mark.datatest
