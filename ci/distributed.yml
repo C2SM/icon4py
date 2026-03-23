@@ -84,10 +84,8 @@ build_distributed_cpu:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT
   parallel:
     matrix:
-      # - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
-      - COMPONENT: [common]
-        # BACKEND: [embedded, gtfn_cpu, dace_cpu]
-        BACKEND: [gtfn_cpu]
+      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
+        BACKEND: [embedded, gtfn_cpu, dace_cpu]
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'
       variables:
