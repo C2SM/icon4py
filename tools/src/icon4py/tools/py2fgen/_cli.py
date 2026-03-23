@@ -45,7 +45,7 @@ logger = _utils.setup_logger("py2fgen")
     help="Force regeneration of all files and recompilation, even if they are up to date.",
 )
 @click.option(
-    "--no-compile",
+    "--skip-compilation",
     is_flag=True,
     default=False,
     help="Generate source files (.py, .f90, .c, .h) without compiling the shared library.",
@@ -57,7 +57,7 @@ def main(
     output_path: pathlib.Path,
     rpath: str,
     regenerate: bool,
-    no_compile: bool,
+    skip_compilation: bool,
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
     output_path.mkdir(exist_ok=True, parents=True)
@@ -88,9 +88,9 @@ def main(
         output_path / f"lib{plugin.library_name}{sysconfig.get_config_var('SHLIB_SUFFIX')}"
     ).exists()
 
-    if no_compile:
+    if skip_compilation:
         if any_changed or not c_source_exists or not header_exists:
-            logger.info("Generating C source and header files (--no-compile)...")
+            logger.info("Generating C source and header files...")
             _generator.generate_cffi_source(
                 plugin.library_name, c_header, python_wrapper, output_path, rpath
             )
