@@ -15,3 +15,5 @@ include:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
+  variables:
+    SLURM_TIMELIMIT: '01:00:00'
