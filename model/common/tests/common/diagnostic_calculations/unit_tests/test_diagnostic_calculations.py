@@ -268,18 +268,12 @@ def test_diagnostic_update_after_saturation_adjustement(
     satad_init = data_provider.from_savepoint_satad_init(location=location, date=date)
     satad_exit = data_provider.from_savepoint_satad_exit(location=location, date=date)
 
-    dtime = 2.0
-
     vertical_config = v_grid.VerticalGridConfig(icon_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
     )
-    virtual_temperature_tendency = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, allocator=backend
-    )
-    exner_tendency = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, allocator=backend)
 
     tracers = tracer_state.TracerState(
         qv=satad_exit.qv(),
@@ -303,50 +297,22 @@ def test_diagnostic_update_after_saturation_adjustement(
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
     end_cell_local = icon_grid.start_index(cell_domain(h_grid.Zone.END))
-    diagnostic_stencils.calculate_virtual_temperature_tendency.with_backend(backend)(
-        virtual_temperature_tendency=virtual_temperature_tendency,
-        qv=tracers.qv,
-        qc=tracers.qc,
-        qi=tracers.qi,
-        qr=tracers.qr,
-        qs=tracers.qs,
-        qg=tracers.qg,
-        temperature=diagnostic_state.temperature,
+    diagnostic_stencils.diagnose_virtual_temperature_and_exner.with_backend(backend)(
         virtual_temperature=diagnostic_state.virtual_temperature,
-        dtime=dtime,
-        horizontal_start=start_cell_nudging,
-        horizontal_end=end_cell_local,
-        vertical_start=vertical_params.kstart_moist,
-        vertical_end=icon_grid.num_levels,
-        offset_provider={},
-    )
-
-    updated_virtual_temperature = (
-        diagnostic_state.virtual_temperature.asnumpy()
-        + virtual_temperature_tendency.asnumpy() * dtime
-    )
-
-    diagnostic_stencils.calculate_exner_tendency.with_backend(backend)(
-        dtime=dtime,
-        virtual_temperature=diagnostic_state.virtual_temperature,
-        virtual_temperature_tendency=virtual_temperature_tendency,
         exner=exner,
-        exner_tendency=exner_tendency,
+        tracers=tracers,
+        temperature=diagnostic_state.temperature,
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,
         vertical_start=vertical_params.kstart_moist,
         vertical_end=icon_grid.num_levels,
         offset_provider={},
     )
-
-    updated_exner = exner.asnumpy() + exner_tendency.asnumpy() * dtime
 
     diagnostic_stencils.diagnose_surface_pressure.with_backend(backend)(
         surface_pressure=diagnostic_state.pressure_at_half_levels,
-        exner=gtx.as_field((dims.CellDim, dims.KDim), updated_exner, allocator=backend),
-        virtual_temperature=gtx.as_field(
-            (dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend
-        ),
+        exner=exner,
+        virtual_temperature=diagnostic_state.virtual_temperature,
         ddqz_z_full=metrics_savepoint.ddqz_z_full(),
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,
@@ -359,9 +325,7 @@ def test_diagnostic_update_after_saturation_adjustement(
         pressure=diagnostic_state.pressure,
         pressure_at_half_levels=diagnostic_state.pressure_at_half_levels,
         surface_pressure=diagnostic_state.surface_pressure,
-        virtual_temperature=gtx.as_field(
-            (dims.CellDim, dims.KDim), updated_virtual_temperature, allocator=backend
-        ),
+        virtual_temperature=diagnostic_state.virtual_temperature,
         ddqz_z_full=metrics_savepoint.ddqz_z_full(),
         horizontal_start=start_cell_nudging,
         horizontal_end=end_cell_local,
@@ -371,12 +335,12 @@ def test_diagnostic_update_after_saturation_adjustement(
     )
 
     assert test_utils.dallclose(
-        updated_virtual_temperature,
+        diagnostic_state.virtual_temperature.asnumpy(),
         satad_exit.virtual_temperature().asnumpy(),
         atol=1.0e-13,
     )
     assert test_utils.dallclose(
-        updated_exner,
+        exner.asnumpy(),
         satad_exit.exner().asnumpy(),
         atol=1.0e-13,
     )

@@ -6,11 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import functools
 import logging
+import types
 
 import gt4py.next as gtx
 
-import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
     saturation_adjustment as satad,
     single_moment_six_class_gscp_graupel as graupel,
@@ -21,6 +22,7 @@ from icon4py.model.common import (
     model_backends,
     type_alias as ta,
 )
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.diagnostic_calculations import stencils as diagnostic_stencils
 from icon4py.model.common.grid import (
     geometry_attributes as geo_attrs,
@@ -48,62 +50,71 @@ class PhysicsDriver:
         saturation_adjustment: satad.SaturationAdjustment,
         microphysics: graupel.SingleMomentSixClassIconGraupel,
         backend: model_backends.BackendLike,
+        exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
     ):
         self.vertical_grid = vertical_grid
         self.grid = grid
         self.static_field_factories = static_field_factories
         self.saturation_adjustment = saturation_adjustment
         self.microphysics = microphysics
+        self._exchange = exchange
         self.backend = backend
-        self.allocator = model_backends.get_allocator(backend)
+
+    @functools.cached_property
+    def _allocator(self) -> gtx.typing.Backend:
+        return model_backends.get_allocator(self.backend)
+
+    @functools.cached_property
+    def _xp(self) -> types.ModuleType:
+        return data_alloc.import_array_ns(self._allocator)
 
     def _local_fields(self) -> None:
         self.temperature_tendency = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.u_tendency = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.v_tendency = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+            self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
         )
         self.tracer_tendency = tracer_state.TracerStateTendency(
             qv_tendency=data_alloc.zero_field(
-                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
             ),
             qc_tendency=data_alloc.zero_field(
-                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
             ),
             qi_tendency=data_alloc.zero_field(
-                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
             ),
             qr_tendency=data_alloc.zero_field(
-                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
             ),
             qs_tendency=data_alloc.zero_field(
-                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
             ),
             qg_tendency=data_alloc.zero_field(
-                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self.allocator
+                self.grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, allocator=self._allocator
             ),
         )
 
     def __call__(
         self,
-        prognostics: common_utils.TimeStepPair[prognostic_state.PrognosticState],
+        prognostic: prognostic_state.PrognosticState,
         diagnostic: diagnostic_state.DiagnosticState,
         tracers: tracer_state.TracerState,
         perturbed_exner: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ) -> None:
         saved_exner = data_alloc.as_field(
-            prognostics.current.exner, allocator=self.allocator
+            prognostic.exner, allocator=self._allocator
         )  # saved_exner, 1: min_rlcell
 
         compute_edge_2_cell_vector_interpolation.compute_edge_2_cell_vector_interpolation.with_backend(
             self.backend
         )(
-            p_e_in=prognostics.current.vn,
+            p_e_in=prognostic.vn,
             ptr_coeff_1=self.static_field_factories.interpolation_field_source.get(
                 interp_attrs.RBF_VEC_COEFF_C1
             ),
@@ -125,8 +136,8 @@ class PhysicsDriver:
             virtual_temperature=diagnostic.virtual_temperature,
             temperature=diagnostic.temperature,
             tracers=tracers,
-            theta_v=prognostics.current.theta_v,
-            exner=prognostics.current.exner,
+            theta_v=prognostic.theta_v,
+            exner=prognostic.exner,
             horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
             horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
             vertical_start=self.vertical_grid.kstart_moist,
@@ -138,17 +149,29 @@ class PhysicsDriver:
             temperature_tendency=self.temperature_tendency,
             qv_tendency=self.tracer_tendency.qv_tendency,
             qc_tendency=self.tracer_tendency.qc_tendency,
-            rho=prognostics.current.rho,
+            rho=prognostic.rho,
             temperature=diagnostic.temperature,
             qv=tracers.qv,
             qc=tracers.qc,
             dtime=dtime,
         )  # from kmoist, grf_bdywidth_c+1: min_rlcell_int
-        # TODO (Chia Rui): update temperature, qv, qc
+        diagnostic_stencils.update_satad_output_from_tendency.with_backend(self.backend)(
+            temperature=diagnostic.temperature,
+            qv=tracers.qv,
+            qc=tracers.qc,
+            temperature_tendency=self.temperature_tendency,
+            qv_tendency=self.tracer_tendency.qv_tendency,
+            qc_tendency=self.tracer_tendency.qc_tendency,
+            dtime=dtime,
+            horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
+            horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
+            vertical_start=self.vertical_grid.kstart_moist,
+            vertical_end=self.grid.num_levels,
+        )
 
         diagnostic_stencils.diagnose_virtual_temperature_and_exner.with_backend(self.backend)(
             virtual_temperature=diagnostic.virtual_temperature,
-            exner=prognostics.current.exner,
+            exner=prognostic.exner,
             tracers=tracers,
             temperature=diagnostic.temperature,
             horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
@@ -159,7 +182,7 @@ class PhysicsDriver:
         )  # from kmoist, grf_bdywidth_c+1: min_rlcell_int
         diagnostic_stencils.diagnose_surface_pressure.with_backend(self.backend)(
             surface_pressure=diagnostic.pressure_at_half_levels,
-            exner=prognostics.current.exner,
+            exner=prognostic.exner,
             virtual_temperature=diagnostic.virtual_temperature,
             ddqz_z_full=self.static_field_factories.metrics_field_source.get(
                 metric_attrs.DDQZ_Z_FULL
@@ -203,35 +226,57 @@ class PhysicsDriver:
             qr=tracers.qr,
             qs=tracers.qs,
             qg=tracers.qg,
-            rho=prognostics.current.rho,
+            rho=prognostic.rho,
             temperature=diagnostic.temperature,
             pressure=diagnostic.pressure,
             dtime=dtime,
         )
-        # TODO (Chia Rui): update all output
+        diagnostic_stencils.update_microphysics_output_from_tendency.with_backend(self.backend)(
+            temperature=diagnostic.temperature,
+            tracers=tracers,
+            temperature_tendency=self.temperature_tendency,
+            tracer_tendency=self.tracer_tendency,
+            dtime=dtime,
+            horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
+            horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
+            vertical_start=self.vertical_grid.kstart_moist,
+            vertical_end=self.grid.num_levels,
+        )
 
         self.saturation_adjustment.run(
             temperature_tendency=self.temperature_tendency,
             qv_tendency=self.tracer_tendency.qv_tendency,
             qc_tendency=self.tracer_tendency.qc_tendency,
-            rho=prognostics.current.rho,
+            rho=prognostic.rho,
             temperature=diagnostic.temperature,
             qv=tracers.qv,
             qc=tracers.qc,
             dtime=dtime,
         )
-        # TODO (Chia Rui): update temperature, qv, qc
+        diagnostic_stencils.update_satad_output_from_tendency.with_backend(self.backend)(
+            temperature=diagnostic.temperature,
+            qv=tracers.qv,
+            qc=tracers.qc,
+            temperature_tendency=self.temperature_tendency,
+            qv_tendency=self.tracer_tendency.qv_tendency,
+            qc_tendency=self.tracer_tendency.qc_tendency,
+            dtime=dtime,
+            horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
+            horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
+            vertical_start=self.vertical_grid.kstart_moist,
+            vertical_end=self.grid.num_levels,
+        )
 
         diagnostic_stencils.diagnose_exner_and_theta_v_from_virtual_temperature.with_backend(
             self.backend
         )(
             virtual_temperature=diagnostic.virtual_temperature,
-            exner=prognostics.current.exner,
+            exner=prognostic.exner,
             perturbed_exner=perturbed_exner,
-            theta_v=prognostics.current.theta_v,
+            theta_v=prognostic.theta_v,
             tracers=tracers,
             temperature=diagnostic.temperature,
-            rho=prognostics.current.rho,
+            rho=prognostic.rho,
             previous_exner=saved_exner,
             horizontal_start=self.grid.cell_start_index[h_grid.Zone.NUDGING],
             horizontal_end=self.grid.cell_end_index[h_grid.Zone.LOCAL],
@@ -243,14 +288,26 @@ class PhysicsDriver:
         # TODO (Chia Rui): add diagnose_pressure() here when turbulence is ready # grf_bdywidth_c+1: min_rlcell_int
         # TODO (Chia Rui): surface_transfer() # grf_bdywidth_c+1: min_rlcell_int, NOT PORTED YET
 
-        # TODO (Chia Rui): halo exchange tempv and exner_pr (and w if diffusion is applied to w)
+        # TODO (Chia Rui): (and w if diffusion is applied to w)
+        self._exchange.exchange(
+            dims.CellDim,
+            diagnostic.virtual_temperature,
+            perturbed_exner,
+            tracers.qv,
+            tracers.qc,
+            tracers.qr,
+            tracers.qi,
+            tracers.qs,
+            tracers.qg,
+            stream=decomposition.DEFAULT_STREAM,
+        )
         # TODO (Chia Rui): halo exchange, including ddt_u_turb and ddt_v_turb
         diagnostic_stencils.update_exner_and_theta_v_from_virtual_temperature_in_halo.with_backend(
             self.backend
         )(
-            exner=prognostics.current.exner,
-            theta_v=prognostics.current.theta_v,
-            rho=prognostics.current.rho,
+            exner=prognostic.exner,
+            theta_v=prognostic.theta_v,
+            rho=prognostic.rho,
             virtual_temperature=diagnostic.virtual_temperature,
             mask_prog_halo_c=self.static_field_factories.metrics_field_source.get(
                 metric_attrs.MASK_PROG_HALO_C
@@ -261,7 +318,7 @@ class PhysicsDriver:
             vertical_end=self.grid.num_levels,
         )  # min_rlcell_int-1: min_rlcell_int
         diagnostic_stencils.update_vn_from_u_v_tendencies.with_backend(self.backend)(
-            vn=prognostics.current.vn,
+            vn=prognostic.vn,
             u_tendency=self.u_tendency,
             v_tendency=self.v_tendency,
             dt=dtime,

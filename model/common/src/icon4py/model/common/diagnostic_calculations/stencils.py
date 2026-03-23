@@ -460,165 +460,124 @@ def update_vn_from_u_v_tendencies(
 
 
 @gtx.field_operator
-def _calculate_virtual_temperature_tendency(
+def _update_satad_output_from_tendency(
+    temperature: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
-    qi: fa.CellKField[ta.wpfloat],
-    qr: fa.CellKField[ta.wpfloat],
-    qs: fa.CellKField[ta.wpfloat],
-    qg: fa.CellKField[ta.wpfloat],
-    temperature: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
+    temperature_tendency: fa.CellKField[ta.wpfloat],
+    qv_tendency: fa.CellKField[ta.wpfloat],
+    qc_tendency: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
+) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     """
-    Update virtual temperature tendency.
+    Update temperature, qv, and qc from their tendency.
 
     Args:
-        dtime: time step [s]
+        temperature: air temperature [K]
         qv: specific humidity [kg kg-1]
         qc: specific cloud water content [kg kg-1]
-        qi: specific cloud ice content [kg kg-1]
-        qr: specific rain water content [kg kg-1]
-        qs: specific snow content [kg kg-1]
-        qg: specific graupel content [kg kg-1]
-        temperature: air temperature [K]
-        virtual_temperature: air virtual temperature [K]
+        temperature_tendency: temperature tendency [K s-1]
+        qv_tendency: specific humidity tendency [s-1]
+        qc_tendency: specific cloud water content tendency [s-1]
+        dtime: time step [s]
     Returns:
-        virtual temperature tendency [K s-1], exner tendency [s-1], new exner, new virtual temperature [K]
+        updated temperature, qv, qc
     """
-    qsum = qc + qi + qr + qs + qg
-
-    new_virtual_temperature = temperature * (
-        wpfloat("1.0") + physics_constants.rv_o_rd_minus_1 * qv - qsum
+    return (
+        temperature + temperature_tendency * dtime,
+        qv + qv_tendency * dtime,
+        qc + qc_tendency * dtime,
     )
-
-    return (new_virtual_temperature - virtual_temperature) / dtime
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_virtual_temperature_tendency(
-    virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
+def update_satad_output_from_tendency(
+    temperature: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
     qc: fa.CellKField[ta.wpfloat],
-    qi: fa.CellKField[ta.wpfloat],
-    qr: fa.CellKField[ta.wpfloat],
-    qs: fa.CellKField[ta.wpfloat],
-    qg: fa.CellKField[ta.wpfloat],
-    temperature: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
+    temperature_tendency: fa.CellKField[ta.wpfloat],
+    qv_tendency: fa.CellKField[ta.wpfloat],
+    qc_tendency: fa.CellKField[ta.wpfloat],
     dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _calculate_virtual_temperature_tendency(
+    _update_satad_output_from_tendency(
+        temperature,
         qv,
         qc,
-        qi,
-        qr,
-        qs,
-        qg,
+        temperature_tendency,
+        qv_tendency,
+        qc_tendency,
+        dtime,
+        out=(temperature, qv, qc),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
+def _update_microphysics_output_from_tendency(
+    temperature: fa.CellKField[ta.wpfloat],
+    tracers: tracer_state.TracerState,
+    temperature_tendency: fa.CellKField[ta.wpfloat],
+    tracer_tendency: tracer_state.TracerStateTendency,
+    dtime: ta.wpfloat,
+) -> tuple[
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+]:
+    """
+    Update temperature and all hydrometeros from their tendency.
+
+    Args:
+        temperature: air temperature [K]
+        tracers: hydrometeor mixing ratios [kg kg-1]
+        temperature_tendency: temperature tendency [K s-1],
+        tracer_tendency: tendency of hydrometeor mixing ratios [s-1]
+        dtime: time step [s]
+    Returns:
+        updated temperature, hydrometeor mixing ratios
+    """
+    return (
+        temperature + temperature_tendency * dtime,
+        tracers.qv + tracer_tendency.qv_tendency * dtime,
+        tracers.qc + tracer_tendency.qc_tendency * dtime,
+        tracers.qr + tracer_tendency.qr_tendency * dtime,
+        tracers.qi + tracer_tendency.qi_tendency * dtime,
+        tracers.qs + tracer_tendency.qs_tendency * dtime,
+        tracers.qg + tracer_tendency.qg_tendency * dtime,
+    )
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def update_microphysics_output_from_tendency(
+    temperature: fa.CellKField[ta.wpfloat],
+    tracers: tracer_state.TracerState,
+    temperature_tendency: fa.CellKField[ta.wpfloat],
+    tracer_tendency: tracer_state.TracerStateTendency,
+    dtime: ta.wpfloat,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _update_microphysics_output_from_tendency(
         temperature,
-        virtual_temperature,
+        tracers,
+        temperature_tendency,
+        tracer_tendency,
         dtime,
-        out=virtual_temperature_tendency,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _calculate_exner_tendency(
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
-    exner: fa.CellKField[ta.wpfloat],
-    dtime: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
-    """
-    Update exner tendency.
-
-    Args:
-        dtime: time step [s]
-        virtual_temperature: air virtual temperature [K]
-        virtual_temperature_tendency: air virtual temperature tendency [K s-1]
-        exner: exner function
-    Returns:
-        exner tendency [s-1]
-    """
-
-    new_exner = exner * (
-        wpfloat("1.0")
-        + physics_constants.rd_o_cpd * virtual_temperature_tendency / virtual_temperature * dtime
-    )
-
-    return (new_exner - exner) / dtime
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_exner_tendency(
-    exner_tendency: fa.CellKField[ta.wpfloat],
-    virtual_temperature: fa.CellKField[ta.wpfloat],
-    virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
-    exner: fa.CellKField[ta.wpfloat],
-    dtime: ta.wpfloat,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _calculate_exner_tendency(
-        virtual_temperature,
-        virtual_temperature_tendency,
-        exner,
-        dtime,
-        out=exner_tendency,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _calculate_cell_kdim_field_tendency(
-    old_field: fa.CellKField[ta.wpfloat],
-    new_field: fa.CellKField[ta.wpfloat],
-    dtime: ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
-    """
-    Update tendency of Cell-K Dim field.
-
-    Args:
-        dtime: time step [s]
-        old_field: any old Cell-K Dim field [unit]
-        new_field: any new Cell-K Dim field [unit]
-    Returns:
-        tendency [unit s-1]
-    """
-
-    return (new_field - old_field) / dtime
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def calculate_cell_kdim_field_tendency(
-    tendency: fa.CellKField[ta.wpfloat],
-    old_field: fa.CellKField[ta.wpfloat],
-    new_field: fa.CellKField[ta.wpfloat],
-    dtime: ta.wpfloat,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _calculate_cell_kdim_field_tendency(
-        old_field,
-        new_field,
-        dtime,
-        out=tendency,
+        out=(temperature, tracers.qv, tracers.qc, tracers.qr, tracers.qi, tracers.qs, tracers.qg),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

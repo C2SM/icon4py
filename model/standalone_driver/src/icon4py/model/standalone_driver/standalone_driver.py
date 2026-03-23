@@ -53,6 +53,8 @@ class Icon4pyDriver:
         physics: physics_driver.PhysicsDriver,
         vertical_grid_config: v_grid.VerticalGridConfig,
         tracer_advection_granule: advection.Advection,
+        global_reductions: decomposition_defs.Reductions = decomposition_defs.single_node_reductions,
+        exchange: decomposition_defs.ExchangeRuntime = decomposition_defs.single_node_default,
     ):
         self.config = config
         self.backend = backend
@@ -64,6 +66,8 @@ class Icon4pyDriver:
         self.vertical_grid_config = vertical_grid_config
         self.model_time_variables = driver_states.ModelTimeVariables(config=config)
         self.tracer_advection = tracer_advection_granule
+        self._global_reductions = global_reductions
+        self._exchange = exchange
         self.timer_collection = driver_states.TimerCollection(
             [timer.value for timer in driver_states.DriverTimers]
         )
@@ -168,7 +172,6 @@ class Icon4pyDriver:
                     ds.prognostics.next,
                     self.model_time_variables.dtime_in_seconds,
                 )
-            timer_diffusion.capture()
 
         # TODO(ricoh): [c34] optionally move the loop into the granule (for efficiency gains)
         # Precondition: passing data test with ntracer > 0
@@ -186,7 +189,7 @@ class Icon4pyDriver:
         ds.prognostics.swap()
 
         self.physics(
-            prognostics=ds.prognostics,
+            prognostic=ds.prognostics.current,
             diagnostic=ds.diagnostic,
             tracers=ds.tracers.current,
             perturbed_exner=ds.solve_nonhydro_diagnostic.perturbed_exner_at_cells_on_model_levels,
@@ -255,20 +258,19 @@ class Icon4pyDriver:
                 at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
             )
 
-            timer_solve_nh.start()
-            self.solve_nonhydro.time_step(
-                solve_nonhydro_diagnostic_state,
-                prognostic_states,
-                prep_adv=prep_adv,
-                second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
-                dtime=self.model_time_variables.substep_timestep,
-                ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
-                at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
-                lprep_adv=do_prep_adv,
-                at_first_substep=self._is_first_substep(dyn_substep),
-                at_last_substep=self._is_last_substep(dyn_substep),
-            )
-            timer_solve_nh.capture()
+            with timer_solve_nh:
+                self.solve_nonhydro.time_step(
+                    solve_nonhydro_diagnostic_state,
+                    prognostic_states,
+                    prep_adv=prep_adv,
+                    second_order_divdamp_factor=self._update_spinup_second_order_divergence_damping(),
+                    dtime=self.model_time_variables.substep_timestep,
+                    ndyn_substeps_var=self.model_time_variables.ndyn_substeps_var,
+                    at_initial_timestep=self.model_time_variables.is_first_step_in_simulation,
+                    lprep_adv=do_prep_adv,
+                    at_first_substep=self._is_first_substep(dyn_substep),
+                    at_last_substep=self._is_last_substep(dyn_substep),
+                )
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
@@ -284,6 +286,12 @@ class Icon4pyDriver:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
     ) -> None:
         # TODO (Chia Rui): perform a global max operation in multinode run
+        """
+        # global_max_vertical_cfl = self._global_reductions.max(
+        #     buffer=solve_nonhydro_diagnostic_state.max_vertical_cfl,
+        #     array_ns=self._xp,
+        # )
+        """
         global_max_vertical_cfl = solve_nonhydro_diagnostic_state.max_vertical_cfl[()]
 
         if (
@@ -676,6 +684,7 @@ def initialize_driver(
         physics=physics,
         vertical_grid_config=vertical_grid_config,
         tracer_advection_granule=tracer_advection_granule,
+        global_reductions=global_reductions,
     )
 
     return icon4py_driver
