@@ -88,6 +88,9 @@ def _get_neighbor_tables(grid: base.Grid) -> dict:
 def gather_field(field: np.ndarray, props: decomp_defs.ProcessProperties) -> tuple:
     constant_dims = tuple(field.shape[1:])
     _log.info(f"gather_field on rank={props.rank} - gathering field of local shape {field.shape}")
+    # Because of sparse indexing the field may have a non-contigous layout,
+    # which Gatherv doesn't support. Make sure the field is contiguous.
+    field = np.ascontiguousarray(field)
     constant_length = functools.reduce(operator.mul, constant_dims, 1)
     local_sizes = np.array(props.comm.gather(field.size, root=0))
     if props.rank == 0:
@@ -184,9 +187,13 @@ def check_local_global_field(
 # another, so we declare them here for xfailing.
 embedded_broken_fields = {
     metrics_attributes.DDQZ_Z_HALF,
+    metrics_attributes.DEEPATMO_DIVH,
+    metrics_attributes.DEEPATMO_DIVZL,
+    metrics_attributes.DEEPATMO_DIVZU,
     metrics_attributes.EXNER_EXFAC,
     metrics_attributes.MAXHGTD_AVG,
     metrics_attributes.MAXSLP_AVG,
+    metrics_attributes.PG_EXDIST_DSL,
     metrics_attributes.WGTFAC_C,
     metrics_attributes.WGTFAC_E,
     metrics_attributes.ZD_DIFFCOEF,
@@ -337,6 +344,7 @@ def test_geometry_fields_compare_single_multi_rank(
         interpolation_attributes.GEOFAC_GRG_Y,
         interpolation_attributes.GEOFAC_N2S,
         interpolation_attributes.GEOFAC_ROT,
+        interpolation_attributes.LSQ_PSEUDOINV,
         interpolation_attributes.NUDGECOEFFS_E,
         interpolation_attributes.POS_ON_TPLANE_E_X,
         interpolation_attributes.POS_ON_TPLANE_E_Y,
@@ -466,10 +474,14 @@ def test_interpolation_fields_compare_single_multi_rank(
         metrics_attributes.MAXSLP_AVG,
         metrics_attributes.MAX_NBHGT,
         metrics_attributes.NFLAT_GRADP,
+        metrics_attributes.PG_EXDIST_DSL,
         metrics_attributes.RAYLEIGH_W,
         metrics_attributes.RHO_REF_MC,
         metrics_attributes.RHO_REF_ME,
         metrics_attributes.SCALING_FACTOR_FOR_3D_DIVDAMP,
+        metrics_attributes.DEEPATMO_DIVH,
+        metrics_attributes.DEEPATMO_DIVZL,
+        metrics_attributes.DEEPATMO_DIVZU,
         metrics_attributes.THETA_REF_IC,
         metrics_attributes.THETA_REF_MC,
         metrics_attributes.THETA_REF_ME,

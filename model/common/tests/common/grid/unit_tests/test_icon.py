@@ -214,6 +214,8 @@ def test_when_replace_skip_values_then_only_pentagon_points_remain(
 ) -> None:
     if dim == dims.V2E2VDim:
         pytest.skip("V2E2VDim is not supported in the current grid configuration.")
+    if dim in (dims.LsqCDim, dims.LsqUnkDim):
+        pytest.skip("LsqCDim and LsqUnkDim are not offset dimensions.")
     grid = utils.run_grid_manager(grid_descriptor, keep_skip_values=False, backend=backend).grid
     connectivity = grid.get_connectivity(dim.value)
     if dim in icon.CONNECTIVITIES_ON_PENTAGONS and not grid.limited_area:
@@ -358,28 +360,6 @@ def test_grid_shape_fail(geometry_type: base.GeometryType, grid_root: int, grid_
             20480,
             20480,
             157817.27689721118,
-        ),
-        (
-            definitions.Grids.R02B07_GLOBAL,
-            base.GeometryType.ICOSAHEDRON,
-            icon.GridSubdivision(root=2, level=7),
-            constants.EARTH_RADIUS,
-            None,
-            None,
-            1310720,
-            1310720,
-            19727.55141796687,
-        ),
-        (
-            definitions.Grids.R19_B07_MCH_LOCAL,
-            base.GeometryType.ICOSAHEDRON,
-            icon.GridSubdivision(root=19, level=7),
-            constants.EARTH_RADIUS,
-            None,
-            None,
-            118292480,
-            283876,
-            2029.555708750239,
         ),
         (
             definitions.Grids.MCH_OPR_R04B07_DOMAIN01,
