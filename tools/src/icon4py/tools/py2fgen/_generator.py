@@ -36,7 +36,7 @@ def _get_function_descriptor(fun: Callable) -> _codegen.Func:
     return _codegen.Func(name=fun.__name__, args=fun.param_descriptors)
 
 
-def _prepare_cffi_builder(
+def configure_cffi_builder(
     library_name: str,
     c_header: str,
     python_wrapper: str,
@@ -80,7 +80,7 @@ def generate_and_compile_cffi_plugin(
         rpath: Runtime library search path to embed in the shared library.
     """
     try:
-        builder = _prepare_cffi_builder(library_name, c_header, python_wrapper, build_path, rpath)
+        builder = configure_cffi_builder(library_name, c_header, python_wrapper, build_path, rpath)
         builder.compile(tmpdir=str(build_path), target=f"lib{library_name}.*", verbose=True)
     except Exception as e:
         logging.error(f"Error generating and compiling CFFI plugin: {e}")
@@ -96,7 +96,7 @@ def generate_cffi_source(
 ) -> None:
     """Generate the C source file and header without compiling."""
     try:
-        builder = _prepare_cffi_builder(library_name, c_header, python_wrapper, build_path, rpath)
+        builder = configure_cffi_builder(library_name, c_header, python_wrapper, build_path, rpath)
         builder.emit_c_code(str(build_path / f"{library_name}.c"))
     except Exception as e:
         logging.error(f"Error generating CFFI C source: {e}")
