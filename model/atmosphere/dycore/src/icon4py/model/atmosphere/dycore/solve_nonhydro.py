@@ -996,8 +996,8 @@ class SolveNonhydro:
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
-        is_iau_active: bool,
-        iau_wgt_dyn: float,
+        is_iau_active: bool = False,
+        iau_wgt_dyn: float = 0.0,
     ):
         """
         Update prognostic variables (prognostic_states.next) after the dynamical process over one substep.
@@ -1012,6 +1012,8 @@ class SolveNonhydro:
             lprep_adv: Preparation for tracer advection
             at_first_substep: first substep
             at_last_substep: last substep
+            is_iau_active: Incremental analysis update active during dycore step
+            iau_wgt_dyn: weight scalar for the incremental analysis update
         """
         log.info(
             f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {lprep_adv}"
