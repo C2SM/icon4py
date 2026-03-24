@@ -130,8 +130,8 @@ def compute_zdiff_gradp_dsl(  # noqa: PLR0912 [too-many-branches]
 
     vertoffset_gradp = vertidx_gradp - vertoffset_gradp
 
-    # TODO: how do we handle these exchanges?
-    shape = zdiff_gradp.shape
-    exchange(zdiff_gradp.reshape(shape[0], -1))
+    # TODO(havogt): NumpyDataProvider needs to be extended to support implict exchange.
+    exchange(zdiff_gradp[:, 0, :])
+    exchange(zdiff_gradp[:, 1, :])
 
     return zdiff_gradp, vertoffset_gradp
