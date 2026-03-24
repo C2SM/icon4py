@@ -167,6 +167,8 @@ def test_nonhydro_predictor_step(
     model_top_height,
     stretch_factor,
     damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -221,10 +223,6 @@ def test_nonhydro_predictor_step(
         diagnostic_state_nh.vertical_wind_advective_tendency.swap()
     if not at_first_substep:
         diagnostic_state_nh.normal_wind_advective_tendency.swap()
-
-    # TODO: Load iau config from serialized data
-    is_iau_active = False
-    iau_wgt_dyn = 0.0
 
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -504,6 +502,8 @@ def test_nonhydro_corrector_step(
     model_top_height,
     stretch_factor,
     damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -577,10 +577,6 @@ def test_nonhydro_corrector_step(
         diagnostic_state_nh.vertical_wind_advective_tendency.swap()
     if not at_first_substep:
         diagnostic_state_nh.normal_wind_advective_tendency.swap()
-
-    # TODO: Load iau config from serialized data
-    is_iau_active = False
-    iau_wgt_dyn = 0.0
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -709,6 +705,8 @@ def test_run_solve_nonhydro_single_step(
     model_top_height,
     stretch_factor,
     damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -764,10 +762,6 @@ def test_run_solve_nonhydro_single_step(
     )
 
     prognostic_states = utils.create_prognostic_states(sp)
-
-    # TODO: Load iau config from serialized data
-    is_iau_active = False
-    iau_wgt_dyn = 0.0
 
     second_order_divdamp_factor = sp.divdamp_fac_o2()
     solve_nonhydro.time_step(
@@ -845,6 +839,8 @@ def test_run_solve_nonhydro_multi_step(
     model_top_height,
     stretch_factor,
     damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -910,10 +906,6 @@ def test_run_solve_nonhydro_multi_step(
             diagnostic_state_nh.vertical_wind_advective_tendency.swap()
         if not at_first_substep:
             diagnostic_state_nh.normal_wind_advective_tendency.swap()
-
-        # TODO: Load iau config from serialized data
-        is_iau_active = False
-        iau_wgt_dyn = 0.0
 
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -1401,6 +1393,8 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     model_top_height,
     stretch_factor,
     damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -1467,10 +1461,6 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     primal_normal_cell_2 = grid_savepoint.primal_normal_cell_y()
     dual_normal_cell_1 = grid_savepoint.dual_normal_cell_x()
     dual_normal_cell_2 = grid_savepoint.dual_normal_cell_y()
-
-    # TODO: Load iau config from serialized data
-    iau_wgt_dyn = 0.0
-    is_iau_active = False
 
     igradp_method = config.igradp_method
 
@@ -1618,6 +1608,8 @@ def test_apply_divergence_damping_and_update_vn(
     model_top_height,
     stretch_factor,
     damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -1654,10 +1646,6 @@ def test_apply_divergence_damping_and_update_vn(
         dims.KDim,
         allocator=backend,
     )
-
-    # TODO: Load iau config from serialized data
-    is_iau_active = False
-    iau_wgt_dyn = 0.0
 
     divdamp_order = config.divdamp_order
     second_order_divdamp_scaling_coeff = sp_nh_init.divdamp_fac_o2() * mean_cell_area
@@ -2070,6 +2058,8 @@ def test_vertically_implicit_solver_at_predictor_step(
     model_top_height,
     stretch_factor,
     damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -2118,10 +2108,6 @@ def test_vertically_implicit_solver_at_predictor_step(
     next_theta_v = sp_stencil_init.theta_v()
     dwdz_at_cells_on_model_levels = sp_stencil_init.z_dwdz_dd()
     exner_dynamical_increment = sp_stencil_init.exner_dyn_incr()
-
-    # TODO: Load iau config from serialized data
-    is_iau_active = False
-    iau_wgt_dyn = 0.0
 
     divdamp_type = config.divdamp_type
 
@@ -2277,6 +2263,8 @@ def test_vertically_implicit_solver_at_corrector_step(
     model_top_height,
     stretch_factor,
     damping_height,
+    is_iau_active,
+    iau_wgt_dyn,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -2329,10 +2317,6 @@ def test_vertically_implicit_solver_at_corrector_step(
     advection_implicit_weight_parameter = nonhydro_params.advection_implicit_weight_parameter
     r_nsubsteps = 1.0 / ndyn_substeps
     kstart_moist = vertical_params.kstart_moist
-
-    # TODO: Load iau config from serialized data
-    is_iau_active = False
-    iau_wgt_dyn = 0.0
 
     w_ref = sp_nh_exit.w_new()
     rho_ref = sp_nh_exit.rho_new()
