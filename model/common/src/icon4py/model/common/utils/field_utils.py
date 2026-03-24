@@ -8,7 +8,7 @@
 
 import array_api_compat
 from gt4py import next as gtx
-from gt4py.next import typing as gtx_typing, where
+from gt4py.next import typing as gtx_typing
 
 
 def flip(field: gtx.Field, dim: gtx.Dimension, allocator: gtx_typing.Allocator) -> gtx.Field:
@@ -30,6 +30,9 @@ def index2offset(
 ) -> gtx.Field:
     """Convert an index field to an offset field.
 
+    Note: Additionally clips negative indices to become zero offset as Fortran initializes some indices with `0` (which corresponds to `-1` in Python) to indicate that they are not used.
+    As GT4Py's unstructured domain inference is incomplete and runs over the whole domain we might useout-of-bounds offsets in intermediate computations.
+
     Args:
         index_field: Index field in Python indexing (0-based).
         dim: The dimension along which to convert indices to offsets.
@@ -47,9 +50,12 @@ def index2offset(
         ),
         allocator=allocator,
     )
-    # use GT4Py's broadcasting and field arithmetic
-    offset_field = where(
-        index_field >= 0, index_field - current_index, 0
-    )  # TODO: rename this function or undo this change...
+    # use GT4Py's broadcasting and field arithmetic (includes clipping)
+    offset_field = gtx.where(  # type: ignore[attr-defined]
+        index_field >= 0,  # type: ignore[operator]
+        index_field - current_index,
+        0,
+    )
+
     # if GT4Py embedded would propagate the allocator, we could avoid this extra conversion.
     return gtx.as_field(offset_field.domain, offset_field.ndarray, allocator=allocator)
