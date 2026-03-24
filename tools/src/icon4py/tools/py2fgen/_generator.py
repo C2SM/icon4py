@@ -36,6 +36,28 @@ def _get_function_descriptor(fun: Callable) -> _codegen.Func:
     return _codegen.Func(name=fun.__name__, args=fun.param_descriptors)
 
 
+def configure_cffi_builder(
+    library_name: str,
+    c_header: str,
+    python_wrapper: str,
+    build_path: Path,
+    rpath: str,
+) -> cffi.FFI:
+    """Write the C header, configure and return a CFFI FFI builder ready for compilation or code emission."""
+    header_file_path = build_path / f"{library_name}.h"
+    with header_file_path.open("w") as f:
+        f.write(c_header)
+
+    builder = cffi.FFI()
+    extra_link_args = [f"-Wl,-rpath={rpath}"] if rpath else []
+    builder.embedding_api(c_header)
+    builder.set_source(
+        library_name, f'#include "{header_file_path.name}"', extra_link_args=extra_link_args
+    )
+    builder.embedding_init_code(python_wrapper)
+    return builder
+
+
 def generate_and_compile_cffi_plugin(
     library_name: str,
     c_header: str,
@@ -46,8 +68,8 @@ def generate_and_compile_cffi_plugin(
     """
     Create and compile a CFFI plugin.
 
-    This function generates a C shared library and Fortran interface for Python functions
-    to be exposed in the {library_name} module. It creates a linkable C library named
+    Generates a C shared library for Python functions to be exposed in the
+    {library_name} module. Creates a linkable C library named
     'lib{library_name}.so' in the specified build directory.
 
     Args:
@@ -55,46 +77,27 @@ def generate_and_compile_cffi_plugin(
         c_header: C header signatures for the Python functions.
         python_wrapper: Python code wrapping the original function to be exposed.
         build_path: Path to the build directory.
-        backend: Backend used by the generated C shared library.
+        rpath: Runtime library search path to embed in the shared library.
     """
     try:
-        header_file_path = write_c_header(build_path, library_name, c_header)
-        compile_cffi_plugin(
-            builder=configure_cffi_builder(c_header, library_name, header_file_path, rpath),
-            python_wrapper=python_wrapper,
-            build_path=str(build_path),
-            library_name=library_name,
-        )
+        builder = configure_cffi_builder(library_name, c_header, python_wrapper, build_path, rpath)
+        builder.compile(tmpdir=str(build_path), target=f"lib{library_name}.*", verbose=True)
     except Exception as e:
         logging.error(f"Error generating and compiling CFFI plugin: {e}")
         raise
 
 
-def write_c_header(build_path: Path, library_name: str, c_header: str) -> Path:
-    """Write the C header file to the specified path."""
-    c_header_file = library_name + ".h"
-    header_file_path = build_path / c_header_file
-    with header_file_path.open("w") as f:
-        f.write(c_header)
-    return header_file_path
-
-
-def configure_cffi_builder(
-    c_header: str, library_name: str, header_file_path: Path, rpath: str = ""
-) -> cffi.FFI:
-    """Configure and returns a CFFI FFI builder instance."""
-    builder = cffi.FFI()
-    extra_link_args = [f"-Wl,-rpath={rpath}"] if rpath else []
-    builder.embedding_api(c_header)
-    builder.set_source(
-        library_name, f'#include "{header_file_path.name}"', extra_link_args=extra_link_args
-    )
-    return builder
-
-
-def compile_cffi_plugin(
-    builder: cffi.FFI, python_wrapper: str, build_path: str, library_name: str
+def generate_cffi_source(
+    library_name: str,
+    c_header: str,
+    python_wrapper: str,
+    build_path: Path,
+    rpath: str = _utils.get_prefix_lib_path(),
 ) -> None:
-    """Compile the CFFI plugin with the given configuration."""
-    builder.embedding_init_code(python_wrapper)
-    builder.compile(tmpdir=build_path, target=f"lib{library_name}.*", verbose=True)
+    """Generate the C source file and header without compiling."""
+    try:
+        builder = configure_cffi_builder(library_name, c_header, python_wrapper, build_path, rpath)
+        builder.emit_c_code(str(build_path / f"{library_name}.c"))
+    except Exception as e:
+        logging.error(f"Error generating CFFI C source: {e}")
+        raise
