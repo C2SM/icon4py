@@ -37,6 +37,19 @@ def index2offset(
         index_field: Index field in Python indexing (0-based).
         dim: The dimension along which to convert indices to offsets.
         allocator: Allocator to use for the output field.
+
+    Example:
+        >>> import numpy as np
+        >>> from gt4py import next as gtx
+        >>> from icon4py.model.common import dimension as dims
+        >>> index_field = gtx.as_field(
+        ...     {dims.CellDim: range(2, 6)}, np.array([5, 3, 4, 2], dtype=gtx.int32)
+        ... )
+        >>> result = index2offset(index_field, dims.CellDim, allocator=np)
+        >>> result.domain
+        Domain(dims=(Dimension(value='Cell', kind=<DimensionKind.HORIZONTAL: 'horizontal'>),), ranges=(UnitRange(2, 6),))
+        >>> result.ndarray
+        array([ 3,  0,  0, -3], dtype=int32)
     """
     # Note: `allocator` needs to be passed explicitly since GT4Py fields currently don't persist how they were allocated.
     xp = array_api_compat.array_namespace(index_field.ndarray)
