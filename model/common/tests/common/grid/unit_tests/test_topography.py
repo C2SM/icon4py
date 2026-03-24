@@ -13,10 +13,8 @@ import pytest
 
 from icon4py.model.common.grid import topography as topo
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import exchange_utils, test_utils
 from icon4py.model.testing.fixtures import *  # noqa: F403
-
-from ... import utils_test
 
 
 if TYPE_CHECKING:
@@ -53,7 +51,7 @@ def test_topography_smoothing_with_serialized_data(
         c2e2co=icon_grid.get_connectivity("C2E2CO").ndarray,
         num_iterations=num_iterations,
         array_ns=xp,
-        exchange=utils_test.dummy_exchange,
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
     )
 
     assert test_utils.dallclose(topography_smoothed_ref, topography_smoothed, atol=1.0e-14)

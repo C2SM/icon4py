@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
-from icon4py.model.testing import definitions, test_utils
+from icon4py.model.testing import definitions, exchange_utils, test_utils
 from icon4py.model.testing.fixtures import (
     backend,
     damping_height,
@@ -38,8 +38,6 @@ from icon4py.model.testing.fixtures import (
     top_height_limit_for_maximal_layer_thickness,
     topography_savepoint,
 )
-
-from ... import utils_test
 
 
 if TYPE_CHECKING:
@@ -430,7 +428,7 @@ def test_compute_vertical_coordinate(
         SLEVE_minimum_relative_layer_thickness_2=0.5,
         lowest_layer_thickness=vertical_config.lowest_layer_thickness,
         array_ns=xp,
-        exchange=utils_test.dummy_exchange,
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
     )
 
     assert test_utils.dallclose(
