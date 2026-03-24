@@ -222,6 +222,10 @@ def test_nonhydro_predictor_step(
     if not at_first_substep:
         diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
+    # TODO: Load iau config from serialized data
+    is_iau_active = False
+    iau_wgt_dyn = 0.0
+
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_states=prognostic_states,
@@ -229,8 +233,8 @@ def test_nonhydro_predictor_step(
         dtime=dtime,
         at_initial_timestep=at_initial_timestep,
         at_first_substep=at_first_substep,
-        is_iau_active=False,
-        iau_wgt_dyn=0.0,
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -574,6 +578,10 @@ def test_nonhydro_corrector_step(
     if not at_first_substep:
         diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
+    # TODO: Load iau config from serialized data
+    is_iau_active = False
+    iau_wgt_dyn = 0.0
+
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_states=prognostic_states,
@@ -585,8 +593,8 @@ def test_nonhydro_corrector_step(
         lprep_adv=lprep_adv,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
-        is_iau_active=False,
-        iau_wgt_dyn=0.0,
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
     )
 
     # stencil 10
@@ -757,6 +765,10 @@ def test_run_solve_nonhydro_single_step(
 
     prognostic_states = utils.create_prognostic_states(sp)
 
+    # TODO: Load iau config from serialized data
+    is_iau_active = False
+    iau_wgt_dyn = 0.0
+
     second_order_divdamp_factor = sp.divdamp_fac_o2()
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -769,8 +781,8 @@ def test_run_solve_nonhydro_single_step(
         lprep_adv=lprep_adv,
         at_first_substep=substep_init == 1,
         at_last_substep=substep_init == ndyn_substeps,
-        is_iau_active=False,
-        iau_wgt_dyn=0.0,
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
     )
     prognostic_state_nnew = prognostic_states.next
     assert test_utils.dallclose(
@@ -899,6 +911,10 @@ def test_run_solve_nonhydro_multi_step(
         if not at_first_substep:
             diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
+        # TODO: Load iau config from serialized data
+        is_iau_active = False
+        iau_wgt_dyn = 0.0
+
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_states=prognostic_states,
@@ -910,8 +926,8 @@ def test_run_solve_nonhydro_multi_step(
             lprep_adv=lprep_adv,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
-            is_iau_active=False,
-            iau_wgt_dyn=0.0,
+            is_iau_active=is_iau_active,
+            iau_wgt_dyn=iau_wgt_dyn,
         )
 
         if not at_last_substep:
@@ -1452,8 +1468,10 @@ def test_compute_rho_theta_pgrad_and_update_vn(
     dual_normal_cell_1 = grid_savepoint.dual_normal_cell_x()
     dual_normal_cell_2 = grid_savepoint.dual_normal_cell_y()
 
-    iau_wgt_dyn = config.iau_wgt_dyn
-    is_iau_active = config.is_iau_active
+    # TODO: Load iau config from serialized data
+    iau_wgt_dyn = 0.0
+    is_iau_active = False
+
     igradp_method = config.igradp_method
 
     z_rho_e_ref = sp_stencil_exit.z_rho_e()
@@ -1637,7 +1655,10 @@ def test_apply_divergence_damping_and_update_vn(
         allocator=backend,
     )
 
-    iau_wgt_dyn = config.iau_wgt_dyn
+    # TODO: Load iau config from serialized data
+    is_iau_active = False
+    iau_wgt_dyn = 0.0
+
     divdamp_order = config.divdamp_order
     second_order_divdamp_scaling_coeff = sp_nh_init.divdamp_fac_o2() * mean_cell_area
     second_order_divdamp_factor = savepoint_nonhydro_init.divdamp_fac_o2()
@@ -1652,7 +1673,6 @@ def test_apply_divergence_damping_and_update_vn(
             and second_order_divdamp_factor <= (4.0 * config.fourth_order_divdamp_factor)
         )
     )
-    is_iau_active = config.is_iau_active
 
     vn_ref = sp_nh_exit.vn_new()
 
@@ -1692,8 +1712,8 @@ def test_apply_divergence_damping_and_update_vn(
         advection_explicit_weight_parameter=savepoint_nonhydro_init.wgt_nnow_vel(),
         advection_implicit_weight_parameter=savepoint_nonhydro_init.wgt_nnew_vel(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
-        iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         apply_2nd_order_divergence_damping=apply_2nd_order_divergence_damping,
         apply_4th_order_divergence_damping=apply_4th_order_divergence_damping,
@@ -2099,8 +2119,10 @@ def test_vertically_implicit_solver_at_predictor_step(
     dwdz_at_cells_on_model_levels = sp_stencil_init.z_dwdz_dd()
     exner_dynamical_increment = sp_stencil_init.exner_dyn_incr()
 
-    iau_wgt_dyn = config.iau_wgt_dyn
-    is_iau_active = config.is_iau_active
+    # TODO: Load iau config from serialized data
+    is_iau_active = False
+    iau_wgt_dyn = 0.0
+
     divdamp_type = config.divdamp_type
 
     w_concorr_c_ref = sp_nh_exit.w_concorr_c()
@@ -2308,8 +2330,9 @@ def test_vertically_implicit_solver_at_corrector_step(
     r_nsubsteps = 1.0 / ndyn_substeps
     kstart_moist = vertical_params.kstart_moist
 
-    iau_wgt_dyn = config.iau_wgt_dyn
-    is_iau_active = config.is_iau_active
+    # TODO: Load iau config from serialized data
+    is_iau_active = False
+    iau_wgt_dyn = 0.0
 
     w_ref = sp_nh_exit.w_new()
     rho_ref = sp_nh_exit.rho_new()
