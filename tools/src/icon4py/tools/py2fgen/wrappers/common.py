@@ -194,7 +194,6 @@ def construct_icon_grid(
     num_edges: int,
     vertical_size: int,
     limited_area: bool,
-    iau_init: bool,
     distributed: bool,
     allocator: gtx_typing.Allocator | None,
 ) -> icon.IconGrid:
@@ -240,7 +239,6 @@ def construct_icon_grid(
         ),
         vertical_size=vertical_size,
         limited_area=limited_area,
-        iau_init=iau_init,
         distributed=distributed,
         keep_skip_values=False,
     )

@@ -40,5 +40,5 @@ extern int grid_init_wrapper(
     double lowest_layer_thickness, double model_top_height,
     double stretch_factor, double flat_height, double rayleigh_damping_height,
     double mean_cell_area, int comm_id, int num_vertices, int num_cells,
-    int num_edges, int vertical_size, int limited_area, int iau_init,
-    int backend, int on_gpu);
+    int num_edges, int vertical_size, int limited_area, int backend,
+    int on_gpu);

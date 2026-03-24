@@ -51,7 +51,6 @@ class GridConfig:
     # TODO(halungge): Decouple the vertical from horizontal grid.
     vertical_size: int
     limited_area: bool = True
-    iau_init: bool = False
     distributed: bool = False
     n_shift_total: int = 0
     length_rescale_factor: float = 1.0
@@ -152,10 +151,6 @@ class Grid:
     @property
     def limited_area(self) -> bool:
         return self.config.limited_area
-
-    @property
-    def iau_init(self) -> bool:
-        return self.config.iau_init
 
     def get_connectivity(self, offset: str | gtx.FieldOffset) -> gtx_common.NeighborTable:
         """Get the connectivity by its name."""

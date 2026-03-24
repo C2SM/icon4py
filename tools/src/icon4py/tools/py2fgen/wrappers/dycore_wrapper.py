@@ -110,6 +110,7 @@ def solve_nh_init(
     divdamp_trans_end: gtx.float64,
     l_vert_nested: bool,
     ldeepatmo: bool,
+    iau_init: bool,
     rhotheta_offctr: gtx.float64,
     veladv_offctr: gtx.float64,
     nudge_max_coeff: gtx.float64,  # note: this is the scaled ICON value, i.e. not the namelist value
@@ -163,6 +164,7 @@ def solve_nh_init(
         divdamp_trans_end=divdamp_trans_end,
         l_vert_nested=l_vert_nested,
         deepatmos_mode=ldeepatmo,
+        iau_init=iau_init,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
         max_nudging_coefficient=nudge_max_coeff,

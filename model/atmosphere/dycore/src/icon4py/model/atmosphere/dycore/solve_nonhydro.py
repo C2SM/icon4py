@@ -159,6 +159,7 @@ class NonHydrostaticConfig:
         divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
         deepatmos_mode: bool = False,
+        iau_init: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
         _nudge_max_coeff: float | None = None,  # default is set in __init__
@@ -283,6 +284,9 @@ class NonHydrostaticConfig:
         #: from dynamics_nml.f90
         #: deep atmosphere mode, originally defined as ldeepatmo in ICON
         self.deepatmos_mode: bool = deepatmos_mode
+
+        #: incremental analysis init mode, defined as one of the ICON init modes
+        self.iau_init: bool = iau_init,
 
         self._validate()
 
@@ -452,7 +456,7 @@ class SolveNonhydro:
                 "inv_dual_edge_length": self._edge_geometry.inverse_dual_edge_lengths,
                 "limited_area": self._grid.limited_area,
             },
-            variants={"is_iau_active": [False, True] if self._grid.iau_init else [False]},
+            variants={"is_iau_active": [False, True] if self._config.iau_init else [False]},
             horizontal_sizes={
                 "start_edge_lateral_boundary": self._start_edge_lateral_boundary,
                 "start_edge_lateral_boundary_level_7": self._start_edge_lateral_boundary_level_7,
@@ -491,7 +495,7 @@ class SolveNonhydro:
             variants={
                 "apply_2nd_order_divergence_damping": [False, True],
                 "apply_4th_order_divergence_damping": [False, True],
-                "is_iau_active": [False, True] if self._grid.iau_init else [False],
+                "is_iau_active": [False, True] if self._config.iau_init else [False],
             },
             horizontal_sizes={
                 "horizontal_start": gtx.int32(self._start_edge_nudging_level_2),
@@ -569,7 +573,7 @@ class SolveNonhydro:
             },
             variants={
                 "at_first_substep": [False, True],
-                "is_iau_active": [False, True] if self._grid.iau_init else [False],
+                "is_iau_active": [False, True] if self._config.iau_init else [False],
             },
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,
@@ -604,7 +608,7 @@ class SolveNonhydro:
                 "at_first_substep": [False, True],
                 "at_last_substep": [False, True],
                 "lprep_adv": [False, True],
-                "is_iau_active": [False, True] if self._grid.iau_init else [False],
+                "is_iau_active": [False, True] if self._config.iau_init else [False],
             },
             horizontal_sizes={
                 "start_cell_index_nudging": self._start_cell_nudging,

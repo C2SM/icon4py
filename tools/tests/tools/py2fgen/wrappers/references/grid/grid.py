@@ -138,7 +138,6 @@ def grid_init_wrapper(
     num_edges,
     vertical_size,
     limited_area,
-    iau_init,
     backend,
     on_gpu,
 ):
@@ -467,7 +466,6 @@ def grid_init_wrapper(
                 num_edges=num_edges,
                 vertical_size=vertical_size,
                 limited_area=limited_area,
-                iau_init=iau_init,
                 backend=backend,
             )
 

@@ -159,7 +159,6 @@ def grid_init(grid_savepoint):
         e_owner_mask=e_owner_mask,
         v_owner_mask=v_owner_mask,
         comm_id=None,
-        iau_init=False,
         backend=wrapper_common.BackendIntEnum.DEFAULT,
     )
 

@@ -49,6 +49,7 @@ def solve_nh_init(
     divdamp_trans_end = 17500.0
     l_vert_nested = False
     ldeepatmo = False
+    iau_init = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
     max_nudging_coefficient = 0.375
@@ -211,6 +212,7 @@ def solve_nh_init(
         divdamp_trans_end=divdamp_trans_end,
         l_vert_nested=l_vert_nested,
         ldeepatmo=ldeepatmo,
+        iau_init=iau_init,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
         nudge_max_coeff=max_nudging_coefficient,
@@ -281,6 +283,7 @@ def test_dycore_wrapper_granule_inputs(
     divdamp_trans_end = 17500.0
     l_vert_nested = False
     ldeepatmo = False
+    iau_init = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
     max_nudging_coefficient = 0.375
@@ -628,6 +631,7 @@ def test_dycore_wrapper_granule_inputs(
             divdamp_trans_end=divdamp_trans_end,
             l_vert_nested=l_vert_nested,
             ldeepatmo=ldeepatmo,
+            iau_init=iau_init,
             rhotheta_offctr=rhotheta_offctr,
             veladv_offctr=veladv_offctr,
             nudge_max_coeff=max_nudging_coefficient,
