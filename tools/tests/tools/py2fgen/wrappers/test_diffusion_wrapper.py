@@ -97,6 +97,7 @@ def test_diffusion_wrapper_granule_inputs(
     geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
     nudgecoeff_e = test_utils.array_to_array_info(interpolation_savepoint.nudgecoeff_e().ndarray)
 
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     rbf_vec_coeff_v_array = np.squeeze(
         interpolation_savepoint.serializer.read(
             "rbf_vec_coeff_v", interpolation_savepoint.savepoint
@@ -332,6 +333,7 @@ def test_diffusion_wrapper_single_step(
     geofac_grg_y = test_utils.array_to_array_info(geofac_grg_y_field.ndarray)
     geofac_n2s = test_utils.array_to_array_info(interpolation_savepoint.geofac_n2s().ndarray)
     nudgecoeff_e = test_utils.array_to_array_info(interpolation_savepoint.nudgecoeff_e().ndarray)
+    # we need the raw Fortran data instead of the postprocessed GT4Py field, see dycore_wrapper.solve_nh_init
     rbf_vec_coeff_v_array = np.squeeze(
         interpolation_savepoint.serializer.read(
             "rbf_vec_coeff_v", interpolation_savepoint.savepoint

@@ -85,8 +85,18 @@ class IconSavepoint:
     def log_meta_info(self):
         self.log.info(self.savepoint.metainfo)
 
-    def _get_field(self, name, *dimensions, dtype=float, transpose: None | Sequence[int] = None):
+    def _get_field(
+        self,
+        name,
+        *dimensions,
+        dtype=float,
+        slice_: int | slice | tuple[int | slice, ...] | None = None,
+        transpose: None | Sequence[int] = None,
+    ):
+        # Note: slice is applied before transpose!
         buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        if slice_ is not None:
+            buffer = buffer[slice_]
         if transpose is not None:
             buffer = np.transpose(buffer, axes=transpose)
         buffer = self._reduce_to_dim_size(buffer, dimensions)
@@ -680,37 +690,29 @@ class InterpolationSavepoint(IconSavepoint):
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
-        dimensions = (dims.CellDim, dims.C2E2C2EDim)
-        buffer = np.squeeze(
-            self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
-        ).transpose()
-        buffer = self._reduce_to_dim_size(buffer, dimensions)
-        return gtx.as_field(dimensions, buffer, allocator=self.backend)
+        return self._get_field("rbf_vec_coeff_c1", dims.CellDim, dims.C2E2C2EDim, transpose=(1, 0))
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
-        dimensions = (dims.CellDim, dims.C2E2C2EDim)
-        buffer = np.squeeze(
-            self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
-        ).transpose()
-        buffer = self._reduce_to_dim_size(buffer, dimensions)
-        return gtx.as_field(dimensions, buffer, allocator=self.backend)
+        return self._get_field("rbf_vec_coeff_c2", dims.CellDim, dims.C2E2C2EDim, transpose=(1, 0))
 
     def rbf_vec_coeff_v1(self):
-        dimensions = (dims.VertexDim, dims.V2EDim)
-        buffer = np.squeeze(
-            self.serializer.read("rbf_vec_coeff_v", self.savepoint).astype(float)[:, 0, :]
-        ).transpose()
-        buffer = self._reduce_to_dim_size(buffer, dimensions)
-        return gtx.as_field(dimensions, buffer, allocator=self.backend)
+        return self._get_field(
+            "rbf_vec_coeff_v",
+            dims.VertexDim,
+            dims.V2EDim,
+            slice_=(slice(None), 0, slice(None)),
+            transpose=(1, 0),
+        )
 
     def rbf_vec_coeff_v2(self):
-        dimensions = (dims.VertexDim, dims.V2EDim)
-        buffer = np.squeeze(
-            self.serializer.read("rbf_vec_coeff_v", self.savepoint).astype(float)[:, 1, :]
-        ).transpose()
-        buffer = self._reduce_to_dim_size(buffer, dimensions)
-        return gtx.as_field(dimensions, buffer, allocator=self.backend)
+        return self._get_field(
+            "rbf_vec_coeff_v",
+            dims.VertexDim,
+            dims.V2EDim,
+            slice_=(slice(None), 1, slice(None)),
+            transpose=(1, 0),
+        )
 
     def rbf_vec_idx_v(self):
         return self._get_field("rbf_vec_idx_v", dims.VertexDim, dims.V2EDim)

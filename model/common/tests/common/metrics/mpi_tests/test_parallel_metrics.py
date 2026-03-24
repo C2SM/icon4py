@@ -51,6 +51,8 @@ def _get_slice_tuple_from_horizontal_range(
     horizontal_dim: gtx.Dimension,
     horizontal_range: tuple[h_grid.Zone | None, h_grid.Zone | None],
 ) -> tuple[slice | None | EllipsisType, ...]:
+    # TODO(havogt): Ideally we refactor the factories to only construct fields on the domain where they matter,
+    # then this function disappears as we get the verification range directly from the constructed field.
     start_zone, end_zone = horizontal_range
     horizontal_start = (
         grid.start_index(h_grid.domain(horizontal_dim)(start_zone))
@@ -58,7 +60,7 @@ def _get_slice_tuple_from_horizontal_range(
         else None
     )
     horizontal_end = (
-        grid.start_index(h_grid.domain(horizontal_dim)(end_zone)) if end_zone is not None else None
+        grid.end_index(h_grid.domain(horizontal_dim)(end_zone)) if end_zone is not None else None
     )
     return (slice(horizontal_start, horizontal_end), ...)
 
