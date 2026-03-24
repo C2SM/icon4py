@@ -216,14 +216,14 @@ def solve_nh_init(
     nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1
     if len(wgtfacq_c.domain[dims.KDim].unit_range) != 3:
         raise ValueError(
-            f"Expected wgtfacq_c to have a vertical dimension of size 3, but got {len(wgtfacq_c.domain[dims.KDim])}."
+            f"Expected wgtfacq_c to have a vertical dimension of size 3, but got {len(wgtfacq_c.domain[dims.KDim].unit_range)}."
         )
     # uses GT4Py's embedded shift to move the domain to surface levels
     wgtfacq_c = field_utils.flip(wgtfacq_c(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)
 
     if len(wgtfacq_e.domain[dims.KDim].unit_range) != 3:
         raise ValueError(
-            f"Expected wgtfacq_e to have a vertical dimension of size 3, but got {len(wgtfacq_e.domain[dims.KDim])}."
+            f"Expected wgtfacq_e to have a vertical dimension of size 3, but got {len(wgtfacq_e.domain[dims.KDim].unit_range)}."
         )
     # uses GT4Py's embedded shift to move the domain to surface levels
     wgtfacq_e = field_utils.flip(wgtfacq_e(dims.KDim - (nlev - 3)), dims.KDim, allocator=allocator)

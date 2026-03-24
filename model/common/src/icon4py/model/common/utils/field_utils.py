@@ -31,7 +31,7 @@ def index2offset(
     """Convert an index field to an offset field.
 
     Note: Additionally clips negative indices to become zero offset as Fortran initializes some indices with `0` (which corresponds to `-1` in Python) to indicate that they are not used.
-    As GT4Py's unstructured domain inference is incomplete and runs over the whole domain we might useout-of-bounds offsets in intermediate computations.
+    As GT4Py's unstructured domain inference is incomplete and runs over the whole domain we might use out-of-bounds offsets in intermediate computations.
 
     Args:
         index_field: Index field in Python indexing (0-based).
