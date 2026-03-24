@@ -9,12 +9,6 @@ if [[ -z "${CUDA_VISIBLE_DEVICES:-}" ]]; then
     exit 1
 fi
 
-# The job should only use one task per node.
-if [[ "${SLURM_NTASKS_PER_NODE:-}" -gt 1 ]]; then
-    echo "SLURM_NTASKS_PER_NODE is greater than 1. This script should only be used when the job is configured to use one task per node."
-    exit 1
-fi
-
 mps_prefix="/tmp/$(id -un)/slurm-${SLURM_JOBID}.${SLURM_STEPID}/nvidia"
 
 export CUDA_MPS_PIPE_DIRECTORY=${mps_prefix}-mps
@@ -22,7 +16,11 @@ export CUDA_MPS_LOG_DIRECTORY=${mps_prefix}-log
 mkdir -p "${CUDA_MPS_PIPE_DIRECTORY}"
 mkdir -p "${CUDA_MPS_LOG_DIRECTORY}"
 
-nvidia-cuda-mps-control -d
+if [[ "${SLURM_LOCALID}" -eq 0 ]]; then
+    # Only start the MPS server on the first local rank to avoid multiple
+    # servers on the same node.
+    nvidia-cuda-mps-control -d
+fi
 
 pid_file="${CUDA_MPS_PIPE_DIRECTORY}/nvidia-cuda-mps-control.pid"
 mps_pid_file_timeout=120
@@ -31,8 +29,8 @@ if ! timeout ${mps_pid_file_timeout} bash -c "until [[ -f \"${pid_file}\" ]]; do
     exit 1
 fi
 
-echo "Started MPS server on rank ${SLURM_PROCID} with GPU ${CUDA_VISIBLE_DEVICES}, MPS pipe directory ${CUDA_MPS_PIPE_DIRECTORY}, MPS log directory ${CUDA_MPS_LOG_DIRECTORY}"
+echo "Using MPS server with GPU ${CUDA_VISIBLE_DEVICES}, MPS pipe directory ${CUDA_MPS_PIPE_DIRECTORY}, MPS log directory ${CUDA_MPS_LOG_DIRECTORY} on rank ${SLURM_PROCID}"
 
 # Once the daemon has been started, unset CUDA_VISIBLE_DEVICES as the
-# selection has already been made in the daemon. 
+# selection has already been made in the daemon.
 unset CUDA_VISIBLE_DEVICES
