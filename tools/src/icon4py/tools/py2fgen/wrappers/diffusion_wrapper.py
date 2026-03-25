@@ -38,7 +38,12 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, mo
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
+from icon4py.tools.py2fgen.wrappers import (
+    common as wrapper_common,
+    config as wrapper_config,
+    grid_wrapper,
+    icon4py_export,
+)
 
 
 logger = setup_logger(__name__)
@@ -223,7 +228,8 @@ def diffusion_init(
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
-    gtx.wait_for_compilation()
+    if wrapper_config.WAIT_FOR_COMPILATION:
+        gtx.wait_for_compilation()
 
 
 @icon4py_export.export
