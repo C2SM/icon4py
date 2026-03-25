@@ -60,7 +60,6 @@ io = [
   "uxarray==2024.3.0",
   "xarray[complete]>=2024.3.0"
 ]
-rocm7_0 = ['amd-cupy>=13.0']  # TODO(havogt): add gt4py[rocm7_0] once available
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"

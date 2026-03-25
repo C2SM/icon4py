@@ -17,13 +17,9 @@ import time
 from gt4py import next as gtx
 from gt4py.next import config as gtx_config
 from gt4py.next.instrumentation import metrics as gtx_metrics
-from gt4py.next.program_processors.runners.dace import transformations as gtx_transformations
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.driver import common, utils
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import (
-    graupel,
-    graupel_dace_hooks,
-)
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations import graupel
 from icon4py.model.common import dimension as dims, model_backends, model_options, type_alias as ta
 from icon4py.model.common.utils import device_utils
 
@@ -63,17 +59,10 @@ def setup_graupel(
     hrange: tuple[int, int],
     vrange: tuple[int, int],
     enable_masking: bool = True,
-    enable_dace_hooks: bool = True,
     wait_for_completion: bool = False,
 ):
     assert model_backends.is_backend_descriptor(backend)
     backend_descriptor = copy.deepcopy(backend)
-    if enable_dace_hooks:
-        backend_descriptor["optimization_args"] = {
-            "optimization_hooks": {
-                gtx_transformations.GT4PyAutoOptHook.TopLevelDataFlowPre: graupel_dace_hooks.remove_self_copy_inside_scan
-            },
-        }
     backend_descriptor["async_sdfg_call"] = not wait_for_completion
     with utils.recursion_limit(10**4):  # TODO(havogt): make an option in gt4py?
         graupel_run_program = model_options.setup_program(

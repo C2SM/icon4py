@@ -44,7 +44,6 @@ def graupel_run(
     pflx: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     pre_gsp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], ta.wpfloat],
     enable_masking: bool,
-    enable_dace_hooks: bool,
     wait_for_completion: bool,
 ):
     global graupel_program  # noqa: PLW0603 [global-statement]
@@ -60,7 +59,6 @@ def graupel_run(
             hrange=(ivstart, ivend),
             vrange=(kstart, ke),
             enable_masking=enable_masking,
-            enable_dace_hooks=enable_dace_hooks,
             wait_for_completion=wait_for_completion,
         )
 
