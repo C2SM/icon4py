@@ -89,11 +89,10 @@ build_distributed:
     - ci/scripts/ci-mpi-wrapper.sh pytest -sv -k mpi_tests --with-mpi --backend=$BACKEND model/$COMPONENT --level=$LEVEL
   parallel:
     matrix:
-      # - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
-      - COMPONENT: [common]
-        # BACKEND: [embedded, gtfn_cpu, dace_cpu, dace_gpu, gtfn_gpu]
-        # BACKEND: [dace_gpu]
-        BACKEND: [gtfn_gpu]
+      - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common]
+        # TODO(msimberg): Enable dace_gpu when compilation doesn't take as long
+        # or when we can cache across CI jobs.
+        BACKEND: [embedded, gtfn_cpu, dace_cpu, gtfn_gpu]
         LEVEL: [integration]
   rules:
     - if: $COMPONENT == 'atmosphere/diffusion'
@@ -104,7 +103,7 @@ build_distributed:
         SLURM_TIMELIMIT: '00:30:00'
     - if: $COMPONENT == 'common' && ($BACKEND == 'dace_gpu' || $BACKEND == 'gtfn_gpu')
       variables:
-        # TODO(msimberg): This is very long, can we do better?
+        # TODO(msimberg): Decrease this when enabling dace_gpu above, if possible.
         SLURM_TIMELIMIT: '03:00:00'
     - if: $COMPONENT == 'atmosphere/dycore'
       variables:
