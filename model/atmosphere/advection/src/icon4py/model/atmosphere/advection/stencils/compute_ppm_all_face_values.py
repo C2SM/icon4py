@@ -30,15 +30,15 @@ def _compute_ppm_all_face_values(
     slevp1: gtx.int32,
     elevp1: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
-    p_face = concat_where(  # type: ignore[call-overload] # mypy thinks _compute_ppm... results in "Any"
+    p_face = concat_where(
         (dims.KDim == slevp1) | (dims.KDim == elev),
         _compute_ppm_quadratic_face_values(p_cc, p_cellhgt_mc_now),
         p_face_in,
     )
 
-    p_face = concat_where(dims.KDim == slev, p_cc, p_face)  # type: ignore[call-overload] # follow-on from above
+    p_face = concat_where(dims.KDim == slev, p_cc, p_face)
 
-    p_face = concat_where(dims.KDim == elevp1, p_cc(Koff[-1]), p_face)  # type: ignore[call-overload] # follow-on from above
+    p_face = concat_where(dims.KDim == elevp1, p_cc(Koff[-1]), p_face)
 
     return p_face
 
