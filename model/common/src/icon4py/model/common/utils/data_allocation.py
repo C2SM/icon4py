@@ -223,14 +223,6 @@ def list2field(
     return gtx.as_field(domain, arr, allocator=allocator)
 
 
-def kflip_wgtfacq(
-    arr: NDArray,
-    domain: gtx.Domain,
-    allocator: gtx_typing.Allocator,
-) -> gtx.Field:
-    return gtx.as_field(domain, arr[:, ::-1], allocator=allocator)  # type: ignore [arg-type] # type "ndarray[Any, dtype[Any] | Any"; expected "NDArrayObject"
-
-
 def adjust_fortran_indices(inp: NDArray) -> NDArray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
     return inp - 1

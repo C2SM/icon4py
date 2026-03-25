@@ -123,7 +123,7 @@ def check_local_global_field(
     check_halos: bool,
 ) -> None:
     if dim == dims.KDim:
-        np.testing.assert_allclose(global_reference_field, local_field)
+        test_utils.assert_dallclose(global_reference_field, local_field)
         return
 
     _log.info(
@@ -138,7 +138,7 @@ def check_local_global_field(
 
     # Compare halo against global reference field
     if check_halos:
-        np.testing.assert_allclose(
+        test_utils.assert_dallclose(
             global_reference_field[
                 decomposition_info.global_index(dim, decomp_defs.DecompositionInfo.EntryType.HALO)
             ],
@@ -180,7 +180,7 @@ def check_local_global_field(
             f" rank = {processor_props.rank}: SHAPES: global reference field {global_reference_field.shape}, gathered = {gathered_field.shape}"
         )
 
-        np.testing.assert_allclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
+        test_utils.assert_dallclose(sorted_, global_reference_field, atol=1e-9, verbose=True)
 
 
 # These fields can't be computed with the embedded backend for one reason or

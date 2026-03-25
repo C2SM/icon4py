@@ -17,7 +17,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import grid_refinement as refinement, horizontal
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import definitions, test_utils as testing_helpers
+from icon4py.model.testing import definitions, exchange_utils, test_utils as testing_helpers
 from icon4py.model.testing.definitions import construct_metrics_config
 from icon4py.model.testing.fixtures.datatest import (
     backend,
@@ -30,8 +30,6 @@ from icon4py.model.testing.fixtures.datatest import (
     metrics_savepoint,
     processor_props,
 )
-
-from ... import utils
 
 
 if TYPE_CHECKING:
@@ -429,7 +427,7 @@ def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
         c_lin_e=c_lin_e.ndarray,
         z_ifc=z_ifc.ndarray,
         k_lev=k.ndarray,
-        exchange=utils.dummy_exchange,
+        exchange=exchange_utils.dummy_exchange_with_bound_dim,
         array_ns=xp,
     )
     # TODO (nfarabullini): fix type ignore
