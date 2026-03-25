@@ -96,6 +96,25 @@ class MetricsConfig:
     pp.3987-4004)
     """
 
+    divdamp_trans_start: float = 12500.0
+    """
+    Lower bound of transition zone between 2D and 3D divergence damping.
+    """
+
+    divdamp_trans_end: float = 17500.0
+    """
+    Upper bound of transition zone between 2D and 3D divergence damping.
+    """
+
+    divdamp_type: int = 3
+    """Type of divergence damping."""
+
+    igradp_method: int = 3
+    """Method for computing the horizontal pressure gradient."""
+
+    igradp_constant: int = 3
+    """Constant for pressure gradient computation."""
+
     def __post_init__(self):
         if self.rayleigh_type != constants.RayleighType.KLEMP:
             raise NotImplementedError(
@@ -134,22 +153,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             f"initialized metrics factory for backend = '{self._backend_name()}' and grid = '{self._grid}'"
         )
         log.debug(f"using array_ns {self._xp} ")
-        vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0].item()
-        self._config = {
-            "divdamp_trans_start": 12500.0,
-            "divdamp_trans_end": 17500.0,
-            "divdamp_type": 3,
-            "damping_height": vertical_grid.config.rayleigh_damping_height,
-            "rayleigh_type": metrics_config.rayleigh_type,
-            "rayleigh_coeff": metrics_config.rayleigh_coeff,
-            "exner_expol": metrics_config.exner_expol,
-            "vwind_offctr": metrics_config.vwind_offctr,
-            "igradp_method": 3,
-            "igradp_constant": 3,
-            "thslp_zdiffu": metrics_config.thslp_zdiffu,
-            "thhgtd_zdiffu": metrics_config.thhgtd_zdiffu,
-            "vct_a_1": vct_a_1,
-        }
+        self._metrics_config = metrics_config
+        self._vct_a_1 = self._vertical_grid.interface_physical_height.ndarray[0].item()
+        self._damping_height = vertical_grid.config.rayleigh_damping_height
 
         k_index = data_alloc.index_field(
             self._grid, dims.KDim, extend={dims.KDim: 1}, allocator=self._allocator
@@ -316,9 +322,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields={"scaling_factor_for_3d_divdamp": attrs.SCALING_FACTOR_FOR_3D_DIVDAMP},
             deps={"vct_a": "vct_a"},
             params={
-                "divdamp_trans_start": self._config["divdamp_trans_start"],
-                "divdamp_trans_end": self._config["divdamp_trans_end"],
-                "divdamp_type": self._config["divdamp_type"],
+                "divdamp_trans_start": self._metrics_config.divdamp_trans_start,
+                "divdamp_trans_end": self._metrics_config.divdamp_trans_end,
+                "divdamp_type": self._metrics_config.divdamp_type,
             },
             do_exchange=False,
         )
@@ -335,10 +341,10 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"rayleigh_w": attrs.RAYLEIGH_W},
             params={
-                "damping_height": self._config["damping_height"],
-                "rayleigh_type": self._config["rayleigh_type"],
-                "rayleigh_coeff": self._config["rayleigh_coeff"],
-                "vct_a_1": self._config["vct_a_1"],
+                "damping_height": self._damping_height,
+                "rayleigh_type": self._metrics_config.rayleigh_type,
+                "rayleigh_coeff": self._metrics_config.rayleigh_coeff,
+                "vct_a_1": self._vct_a_1,
                 "pi_const": math.pi,
             },
             do_exchange=False,
@@ -599,7 +605,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
             },
             params={
-                "vwind_offctr": self._config["vwind_offctr"],
+                "vwind_offctr": self._metrics_config.vwind_offctr,
                 "nlev": self._grid.num_levels,
                 "horizontal_start_cell": self._grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
@@ -642,7 +648,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={attrs.EXNER_EXFAC: attrs.EXNER_EXFAC},
             params={
-                "exner_expol": self._config["exner_expol"],
+                "exner_expol": self._metrics_config.exner_expol,
                 "lateral_boundary_level_2": self._grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 ),
@@ -980,8 +986,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             domain=(dims.CellDim, dims.KDim),
             fields=(attrs.ZD_DIFFCOEF,),
             params={
-                "thslp_zdiffu": self._config["thslp_zdiffu"],
-                "thhgtd_zdiffu": self._config["thhgtd_zdiffu"],
+                "thslp_zdiffu": self._metrics_config.thslp_zdiffu,
+                "thhgtd_zdiffu": self._metrics_config.thhgtd_zdiffu,
                 "cell_nudging": self._grid.start_index(
                     h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING)
                 ),
@@ -1010,8 +1016,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 attrs.ZD_VERTOFFSET,
             ),
             params={
-                "thslp_zdiffu": self._config["thslp_zdiffu"],
-                "thhgtd_zdiffu": self._config["thhgtd_zdiffu"],
+                "thslp_zdiffu": self._metrics_config.thslp_zdiffu,
+                "thhgtd_zdiffu": self._metrics_config.thhgtd_zdiffu,
                 "cell_nudging": self._grid.start_index(
                     h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING)
                 ),
