@@ -100,6 +100,7 @@ def make_custom_dace_backend(
         auto_optimize=auto_optimize,
         async_sdfg_call=async_sdfg_call,
         optimization_args=optimization_args,
+        unstructured_horizontal_has_unit_stride=True,
         use_metrics=use_metrics,
         use_zero_origin=use_zero_origin,
         use_max_domain_range_on_unstructured_shift=use_max_domain_range_on_unstructured_shift,
