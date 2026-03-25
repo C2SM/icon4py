@@ -28,6 +28,7 @@ from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, model_backends, utils as common_utils
+from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools import py2fgen
@@ -157,7 +158,6 @@ def solve_nh_init(
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
         igradp_method=igradp_method,
-        rayleigh_type=rayleigh_type,
         divdamp_order=divdamp_order,
         is_iau_active=is_iau_active,
         iau_wgt_dyn=iau_wgt_dyn,
@@ -268,6 +268,14 @@ def solve_nh_init(
             owner_mask=c_owner_mask,
             backend=actual_backend,
             exchange=grid_wrapper.grid_state.exchange_runtime,
+            metrics_config=metrics_factory.MetricsConfig(
+                exner_expol=0.333,
+                vwind_offctr=0.2,
+                thslp_zdiffu=0.02,
+                thhgtd_zdiffu=125.0,
+                rayleigh_type=rayleigh_type,
+                rayleigh_coeff=rayleigh_coeff,
+            ),
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )

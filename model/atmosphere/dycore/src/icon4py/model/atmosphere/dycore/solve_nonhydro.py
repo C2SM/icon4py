@@ -62,6 +62,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.model_options import setup_program
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -151,7 +152,6 @@ class NonHydrostaticConfig:
         itime_scheme: dycore_states.TimeSteppingScheme = dycore_states.TimeSteppingScheme.MOST_EFFICIENT,
         iadv_rhotheta: dycore_states.RhoThetaAdvectionType = dycore_states.RhoThetaAdvectionType.MIURA,
         igradp_method: dycore_states.HorizontalPressureDiscretizationType = dycore_states.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
-        rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
         divdamp_order: dycore_states.DivergenceDampingOrder = dycore_states.DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
@@ -179,9 +179,6 @@ class NonHydrostaticConfig:
         #: Use truly horizontal pressure-gradient computation to ensure numerical
         #: stability without heavy orography smoothing
         self.igradp_method: dycore_states.HorizontalPressureDiscretizationType = igradp_method
-
-        #: type of Rayleigh damping
-        self.rayleigh_type: constants.RayleighType = rayleigh_type
 
         #: order of divergence damping
         self.divdamp_order: dycore_states.DivergenceDampingOrder = divdamp_order
@@ -309,11 +306,6 @@ class NonHydrostaticConfig:
                 "`DivergenceDampingType.TWO_DIMENSIONAL` (2) is not yet implemented"
             )
 
-        if self.rayleigh_type != constants.RayleighType.KLEMP:
-            raise NotImplementedError(
-                "Only Klemp type of the Rayleigh damping (nudging vertical wind towards zero) is implemented."
-            )
-
 
 class NonHydrostaticParams:
     """Calculates derived quantities depending on the NonHydrostaticConfig."""
@@ -352,6 +344,7 @@ class SolveNonhydro:
         grid: icon_grid.IconGrid,
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
+        metrics_config: metrics_factory.MetricsConfig,
         metric_state_nonhydro: dycore_states.MetricStateNonHydro,
         interpolation_state: dycore_states.InterpolationState,
         vertical_params: v_grid.VerticalGrid,
@@ -368,6 +361,7 @@ class SolveNonhydro:
 
         self._grid = grid
         self._config = config
+        self._metrics_config = metrics_config
         self._params = params
         self._metric_state_nonhydro = metric_state_nonhydro
         self._interpolation_state = interpolation_state
@@ -568,7 +562,7 @@ class SolveNonhydro:
                 "wgtfacq_c": self._metric_state_nonhydro.wgtfacq_c,
                 "iau_wgt_dyn": self._config.iau_wgt_dyn,
                 "is_iau_active": self._config.is_iau_active,
-                "rayleigh_type": self._config.rayleigh_type,
+                "rayleigh_type": self._metrics_config.rayleigh_type,
                 "divdamp_type": self._config.divdamp_type,
             },
             variants={
@@ -603,7 +597,7 @@ class SolveNonhydro:
                 "advection_implicit_weight_parameter": self._params.advection_implicit_weight_parameter,
                 "iau_wgt_dyn": self._config.iau_wgt_dyn,
                 "is_iau_active": self._config.is_iau_active,
-                "rayleigh_type": self._config.rayleigh_type,
+                "rayleigh_type": self._metrics_config.rayleigh_type,
             },
             variants={
                 "at_first_substep": [False, True],

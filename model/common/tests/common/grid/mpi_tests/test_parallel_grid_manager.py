@@ -569,8 +569,6 @@ def test_metrics_fields_compare_single_multi_rank(
         interpolation_source=single_rank_interpolation,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=experiment_config.nonhydrostatic.rayleigh_type,
-        rayleigh_coeff=experiment_config.nonhydrostatic.rayleigh_coeff,
         metrics_config=experiment_config.metrics,
         exchange=decomp_defs.SingleNodeExchange(),
     )
@@ -629,8 +627,6 @@ def test_metrics_fields_compare_single_multi_rank(
         interpolation_source=multi_rank_interpolation,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=experiment_config.nonhydrostatic.rayleigh_type,
-        rayleigh_coeff=experiment_config.nonhydrostatic.rayleigh_coeff,
         metrics_config=experiment_config.metrics,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
             processor_props, multi_rank_grid_manager.decomposition_info
@@ -742,8 +738,6 @@ def test_metrics_mask_prog_halo_c(
         interpolation_source=multi_rank_interpolation,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=experiment_config.nonhydrostatic.rayleigh_type,
-        rayleigh_coeff=experiment_config.nonhydrostatic.rayleigh_coeff,
         metrics_config=experiment_config.metrics,
         exchange=mpi_decomposition.GHexMultiNodeExchange(
             processor_props, multi_rank_grid_manager.decomposition_info

@@ -16,6 +16,7 @@ from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.driver import initialization_utils as driver_init
 
 
@@ -55,6 +56,11 @@ class Icon4pyConfig:
     vertical_grid_config: v_grid.VerticalGridConfig
     diffusion_config: diffusion.DiffusionConfig
     solve_nonhydro_config: solve_nh.NonHydrostaticConfig
+    metrics_config: metrics_factory.MetricsConfig = dataclasses.field(
+        default_factory=lambda: metrics_factory.MetricsConfig(
+            exner_expol=0.333, vwind_offctr=0.2, thslp_zdiffu=0.02, thhgtd_zdiffu=125.0
+        )
+    )
 
 
 def read_config(

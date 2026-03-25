@@ -118,6 +118,7 @@ def create_static_field_factories(
     vertical_grid: v_grid.VerticalGrid,
     cell_topography: fa.CellField[ta.wpfloat],
     backend: gtx_typing.Backend | None,
+    metrics_config: metrics_factory.MetricsConfig | None = None,
 ) -> driver_states.StaticFieldFactories:
     geometry_field_source = grid_geometry.GridGeometry(
         grid=grid_manager.grid,
@@ -145,14 +146,7 @@ def create_static_field_factories(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=constants.RayleighType.KLEMP,
-        rayleigh_coeff=0.1,
-        metrics_config=metrics_factory.MetricsConfig(
-            exner_expol=1.0 / 3.0,
-            vwind_offctr=0.15,
-            thslp_zdiffu=0.025,
-            thhgtd_zdiffu=200.0,
-        ),
+        metrics_config=metrics_config,
     )
 
     return driver_states.StaticFieldFactories(
@@ -163,6 +157,7 @@ def create_static_field_factories(
 def initialize_granules(
     grid: icon_grid.IconGrid,
     vertical_grid: v_grid.VerticalGrid,
+    metrics_config: metrics_factory.MetricsConfig,
     diffusion_config: diffusion.DiffusionConfig,
     solve_nh_config: solve_nh.NonHydrostaticConfig,
     advection_config: advection.AdvectionConfig,
@@ -346,6 +341,7 @@ def initialize_granules(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=owner_mask,
+        metrics_config=metrics_config,
     )
 
     advection_granule = advection.convert_config_to_advection(

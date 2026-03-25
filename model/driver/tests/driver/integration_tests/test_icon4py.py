@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, model_backends
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
@@ -272,6 +273,9 @@ def test_run_timeloop_single_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        metrics_config=metrics_factory.MetricsConfig(
+            exner_expol=0.333, vwind_offctr=0.2, thslp_zdiffu=0.02, thhgtd_zdiffu=125.0
+        ),
     )
 
     diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(

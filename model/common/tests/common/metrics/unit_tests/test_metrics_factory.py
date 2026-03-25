@@ -78,8 +78,6 @@ def _get_metrics_factory(
             interpolation_source=interpolation_field_source,
             backend=backend,
             metadata=attrs.attrs,
-            rayleigh_type=experiment_config.nonhydrostatic.rayleigh_type,
-            rayleigh_coeff=experiment_config.nonhydrostatic.rayleigh_coeff,
             metrics_config=experiment_config.metrics,
             exchange=exchange,
         )

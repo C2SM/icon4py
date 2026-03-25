@@ -26,7 +26,7 @@ from icon4py.model.common.decomposition import definitions as decomposition_defs
 from icon4py.model.common.grid import geometry_attributes as geom_attr, vertical as v_grid
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.initialization import topography
-from icon4py.model.common.metrics import metrics_attributes as metrics_attr
+from icon4py.model.common.metrics import metrics_attributes as metrics_attr, metrics_factory
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc, device_utils
 from icon4py.model.standalone_driver import (
@@ -492,6 +492,7 @@ def _read_config(
     diffusion.DiffusionConfig,
     advection.AdvectionConfig,
     solve_nh.NonHydrostaticConfig,
+    metrics_factory.MetricsConfig,
 ]:
     vertical_grid_config = v_grid.VerticalGridConfig(
         num_levels=35,
@@ -526,6 +527,14 @@ def _read_config(
         fourth_order_divdamp_factor=0.0025,
     )
 
+    metrics_config = metrics_factory.MetricsConfig(
+        exner_expol=1.0 / 3.0,
+        vwind_offctr=0.15,
+        thslp_zdiffu=0.025,
+        thhgtd_zdiffu=200.0,
+        rayleigh_coeff=0.1,
+    )
+
     profiling_stats = driver_config.ProfilingStats() if enable_profiling else None
 
     icon4py_driver_config = driver_config.DriverConfig(
@@ -546,6 +555,7 @@ def _read_config(
         diffusion_config,
         advection_config,
         nonhydro_config,
+        metrics_config,
     )
 
 
@@ -599,11 +609,16 @@ def initialize_driver(
     allocator = model_backends.get_allocator(backend)
 
     log.info("Initializing the driver")
-    driver_config, vertical_grid_config, diffusion_config, advection_config, solve_nh_config = (
-        _read_config(
-            output_path=output_path,
-            enable_profiling=False,
-        )
+    (
+        driver_config,
+        vertical_grid_config,
+        diffusion_config,
+        advection_config,
+        solve_nh_config,
+        metrics_config,
+    ) = _read_config(
+        output_path=output_path,
+        enable_profiling=False,
     )
 
     log.info(f"initializing the grid manager from '{grid_file_path}'")
@@ -642,6 +657,7 @@ def initialize_driver(
         vertical_grid=vertical_grid,
         cell_topography=gtx.as_field((dims.CellDim,), data=cell_topography, allocator=allocator),  # type: ignore[arg-type] # due to array_ns opacity
         backend=backend,
+        metrics_config=metrics_config,
     )
 
     log.info("initializing granules")
@@ -663,6 +679,7 @@ def initialize_driver(
             allocator=allocator,
         ),
         backend=backend,
+        metrics_config=metrics_config,
     )
     icon4py_driver = Icon4pyDriver(
         config=driver_config,

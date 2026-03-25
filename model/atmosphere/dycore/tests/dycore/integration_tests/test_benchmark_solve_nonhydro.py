@@ -201,6 +201,9 @@ def solve_nonhydro(
         cell_geometry=cell_geometry,
         owner_mask=geometry_field_source.get("cell_owner_mask"),
         backend=backend_like,
+        metrics_config=metrics_factory.MetricsConfig(
+            exner_expol=0.333, vwind_offctr=0.2, thslp_zdiffu=0.02, thhgtd_zdiffu=125.0
+        ),
     )
 
     return solve_nonhydro

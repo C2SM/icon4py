@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.dycore.stencils import (
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, test_utils
 
@@ -211,6 +212,9 @@ def test_nonhydro_predictor_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        metrics_config=metrics_factory.MetricsConfig(
+            exner_expol=0.333, vwind_offctr=0.2, thslp_zdiffu=0.02, thhgtd_zdiffu=125.0
+        ),
     )
     nlev = icon_grid.num_levels
     at_first_substep = substep_init == 1
@@ -561,6 +565,9 @@ def test_nonhydro_corrector_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        metrics_config=metrics_factory.MetricsConfig(
+            exner_expol=0.333, vwind_offctr=0.2, thslp_zdiffu=0.02, thhgtd_zdiffu=125.0
+        ),
     )
     at_first_substep = substep_init == 1
     at_last_substep = substep_init == ndyn_substeps
@@ -749,6 +756,9 @@ def test_run_solve_nonhydro_single_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        metrics_config=metrics_factory.MetricsConfig(
+            exner_expol=0.333, vwind_offctr=0.2, thslp_zdiffu=0.02, thhgtd_zdiffu=125.0
+        ),
     )
 
     prognostic_states = utils.create_prognostic_states(sp)
@@ -882,6 +892,9 @@ def test_run_solve_nonhydro_multi_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        metrics_config=metrics_factory.MetricsConfig(
+            exner_expol=0.333, vwind_offctr=0.2, thslp_zdiffu=0.02, thhgtd_zdiffu=125.0
+        ),
     )
 
     for i_substep in range(ndyn_substeps):
@@ -2156,7 +2169,7 @@ def test_vertically_implicit_solver_at_predictor_step(
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         is_iau_active=is_iau_active,
-        rayleigh_type=config.rayleigh_type,
+        rayleigh_type=constants.RayleighType.KLEMP,
         divdamp_type=divdamp_type,
         at_first_substep=at_first_substep,
         end_index_of_damping_layer=grid_savepoint.nrdmax(),
@@ -2363,7 +2376,7 @@ def test_vertically_implicit_solver_at_corrector_step(
         iau_wgt_dyn=iau_wgt_dyn,
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         is_iau_active=is_iau_active,
-        rayleigh_type=config.rayleigh_type,
+        rayleigh_type=constants.RayleighType.KLEMP,
         at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
         end_index_of_damping_layer=grid_savepoint.nrdmax(),

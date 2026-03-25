@@ -149,8 +149,8 @@ def test_compute_rayleigh_w(
         icon_grid, dims.KDim, extend={dims.KDim: 1}, allocator=backend
     )
     damping_height = experiment_config.vertical_grid.rayleigh_damping_height
-    rayleigh_coeff = experiment_config.nonhydrostatic.rayleigh_coeff
-    rayleigh_type = experiment_config.nonhydrostatic.rayleigh_type
+    rayleigh_coeff = experiment_config.metrics.rayleigh_coeff
+    rayleigh_type = experiment_config.metrics.rayleigh_type
     mf.compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),

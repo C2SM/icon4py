@@ -152,8 +152,6 @@ def metrics_factory_from_savepoint(
         interpolation_source=interpolation_field_source,
         backend=backend,
         metadata=metrics_attributes.attrs,
-        rayleigh_type=experiment_config.nonhydrostatic.rayleigh_type,
-        rayleigh_coeff=experiment_config.nonhydrostatic.rayleigh_coeff,
         metrics_config=experiment_config.metrics,
         exchange=exchange,
         global_reductions=global_reductions,

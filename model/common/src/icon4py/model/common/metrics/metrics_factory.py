@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
-import dataclasses
 import logging
 import math
 
@@ -57,12 +56,51 @@ log = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class MetricsConfig:
-    """Configuration parameters for metrics computation."""
 
-    exner_expol: float
-    vwind_offctr: float
-    thslp_zdiffu: float
-    thhgtd_zdiffu: float
+    exner_expol: float = 1.0 / 3.0
+    """
+    Temporal extrapolation (fraction of dt) of Exner function for computation
+    of horizontal pressure gradient. This damps horizontally propagating sound
+    waves.
+    """
+
+    vwind_offctr: float = 0.15
+    """
+    Oﬀ-centering in vertical wind solver. Higher values may be needed for R2B5
+    or coarser grids when the model top is above 50 km. Negative values are not
+    allowed.
+    """
+
+    thslp_zdiffu: float = 0.025
+    """
+    Slope threshold above which truly horizontal temperature diﬀusion is
+    activated.
+    """
+
+    thhgtd_zdiffu: float = 200.0
+    """
+    Threshold of height diﬀerence between neighboring grid points above which
+    truly horizontal temperature diﬀusion is activated (alternative criterion
+    to thslp_zdiﬀu).
+    """
+
+    rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP
+    """
+    Type of Rayleigh damping to be applied in the upper part of the model
+    domain. Only KLEMP type is supported.
+    """
+
+    rayleigh_coeff: float = 0.05
+    """
+    Rayleigh damping coeﬃcient 1/tau_0 (Klemp, Dudhia, Hassiotis: MWR136,
+    pp.3987-4004)
+    """
+
+    def __post_init__(self):
+        if self.rayleigh_type != constants.RayleighType.KLEMP:
+            raise NotImplementedError(
+                f"Only rayleigh_type = KLEMP is implemented, got {self.rayleigh_type}."
+            )
 
 
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
@@ -76,8 +114,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_typing.Backend | None,
         metadata: dict[str, model.FieldMetaData],
-        rayleigh_type: constants.RayleighType,
-        rayleigh_coeff: float,
         metrics_config: MetricsConfig,
         exchange: decomposition.ExchangeRuntime = decomposition.single_node_default,
         global_reductions: decomposition.Reductions = decomposition.single_node_reductions,
@@ -104,8 +140,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "divdamp_trans_end": 17500.0,
             "divdamp_type": 3,
             "damping_height": vertical_grid.config.rayleigh_damping_height,
-            "rayleigh_type": rayleigh_type,
-            "rayleigh_coeff": rayleigh_coeff,
+            "rayleigh_type": metrics_config.rayleigh_type,
+            "rayleigh_coeff": metrics_config.rayleigh_coeff,
             "exner_expol": metrics_config.exner_expol,
             "vwind_offctr": metrics_config.vwind_offctr,
             "igradp_method": 3,

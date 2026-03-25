@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import icon, states as grid_states, vertical as v_grid
+from icon4py.model.common.metrics import metrics_factory
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import definitions as test_defs, parallel_helpers, serialbox, test_utils
 
@@ -140,6 +141,9 @@ def test_run_solve_nonhydro_single_step(
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
         exchange=exchange,
+        metrics_config=metrics_factory.MetricsConfig(
+            exner_expol=0.333, vwind_offctr=0.2, thslp_zdiffu=0.02, thhgtd_zdiffu=125.0
+        ),
     )
 
     _log.info(
