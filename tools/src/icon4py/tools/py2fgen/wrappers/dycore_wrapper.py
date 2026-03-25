@@ -32,7 +32,12 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc, field_utils
 from icon4py.tools import py2fgen
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common, grid_wrapper, icon4py_export
+from icon4py.tools.py2fgen.wrappers import (
+    common as wrapper_common,
+    config as wrapper_config,
+    grid_wrapper,
+    icon4py_export,
+)
 
 
 logger = setup_logger(__name__)
@@ -285,6 +290,8 @@ def solve_nh_init(
         ),
         dummy_field_factory=wrapper_common.cached_dummy_field_factory(allocator),
     )
+    if wrapper_config.WAIT_FOR_COMPILATION:
+        gtx.wait_for_compilation()
 
 
 NumpyFloatArray1D: TypeAlias = Annotated[
